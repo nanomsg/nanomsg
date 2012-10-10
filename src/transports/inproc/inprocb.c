@@ -27,6 +27,7 @@
 #include "../../utils/err.h"
 #include "../../utils/fast.h"
 #include "../../utils/cont.h"
+#include "../../utils/alloc.h"
 
 #include <string.h>
 
@@ -59,7 +60,6 @@ static int sp_inprocb_close (struct sp_epbase *self, int linger)
     struct sp_inprocb *inprocb;
     struct sp_list_item *it;
     struct sp_list_item *old_it;
-    struct sp_msgpipe *pipe;
 
     inprocb = sp_cont (self, struct sp_inprocb, epbase);
 

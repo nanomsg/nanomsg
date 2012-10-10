@@ -26,6 +26,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
+#include "../../utils/wire.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -156,7 +157,7 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
         }
 
         /*  If the bottom of the backtrace stack is reached, proceed. */
-        if (sp_getl (((uint32_t*) request) + i) & 0x80000000)
+        if (sp_getl ((uint8_t*)(((uint32_t*) request) + i)) & 0x80000000)
             break;
 
         /*  If backtrace is too long, ignore the request. */

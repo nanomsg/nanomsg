@@ -28,6 +28,10 @@ macro(add_libsp_perf NAME)
     target_link_libraries(${NAME} nanomsg)
 endmacro(add_libsp_perf)
 
+if(WIN32)
+    add_definitions(-DSP_HAVE_WINDOWS)
+endif()
+
 add_libsp_perf(inproc_lat)
 add_libsp_perf(inproc_thr)
 add_libsp_perf(local_lat)

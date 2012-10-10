@@ -101,12 +101,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BIN
 
 target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
+add_definitions(-DSP_EXPORTS)
+
 if(UNIX)
     target_link_libraries(nanomsg rt)
 endif()
 
 if(WIN32)
-    SET(SP_HAVE_WINDOWS ON)
+    add_definitions(-DSP_HAVE_WINDOWS)
     target_link_libraries(nanomsg ws2_32)
     target_link_libraries(nanomsg Mswsock.lib)
 endif()

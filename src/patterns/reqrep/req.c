@@ -229,7 +229,6 @@ void sp_req_resend_routine (struct sp_sockbase_timer *self)
 static int sp_req_setopt (struct sp_sockbase *self, int option,
         const void *optval, size_t optvallen)
 {
-    int rc;
     struct sp_req *req;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);
@@ -247,7 +246,6 @@ static int sp_req_setopt (struct sp_sockbase *self, int option,
 static int sp_req_getopt (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen)
 {
-    int rc;
     struct sp_req *req;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);

@@ -32,7 +32,7 @@ extern "C" {
 
 /*  Handle DSO symbol visibility                                             */
 #if defined _WIN32
-#   if defined sp_EXPORTS
+#   if defined SP_EXPORTS
 #       define SP_EXPORT __declspec(dllexport)
 #   else
 #       define SP_EXPORT __declspec(dllimport)

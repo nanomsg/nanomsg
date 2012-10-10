@@ -126,7 +126,7 @@ static void sp_timer_ctx_worker (void *arg)
             now = sp_clock_now (&self.clock);
             timer = sp_cont (sp_list_begin (&self.timers),
                 struct sp_timer, list);
-            timeout = timer->timeout - now;
+            timeout = (int) (timer->timeout - now);
             if (timeout < 0)
                 timeout = 0;
         }

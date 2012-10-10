@@ -54,9 +54,9 @@ void sp_random_seed ()
 
 void sp_random_generate (void *buf, size_t len)
 {
-    uint8_t *pos = (uint8_t*) buf;
-    uint64_t tmp;
-    size_t sz;
+    uint8_t *pos;
+
+    pos = (uint8_t*) buf;
 
     while (1) {
 

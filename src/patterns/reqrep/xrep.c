@@ -25,6 +25,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
+#include "../../utils/random.h"
 #include "../../utils/wire.h"
 
 static const struct sp_sockbase_vfptr sp_xrep_sockbase_vfptr = {
@@ -82,6 +83,8 @@ int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_hash_insert (&xrep->pipes, xrep->next_key, &data->pipes);
     ++xrep->next_key;
     xrep->next_key &= 0x7fffffff;
+
+    return 0;
 }
 
 void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
@@ -161,7 +164,6 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
 int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
     int rc;
-    void *msg;
     struct sp_xrep *xrep;
     struct sp_list_item *next;
 

@@ -25,6 +25,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/alloc.h"
 
 #include <stddef.h>
 
@@ -48,8 +49,6 @@ static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
 void sp_msgpipe_init (struct sp_msgpipe *self,
     struct sp_inprocb *inprocb, struct sp_inprocc *inprocc)
 {
-    int rc;
-
     /*  Intialise the pipes. */ 
     sp_pipebase_init (&self->pipes [0], &sp_msgpipe_vfptr0, &inprocb->epbase);
     sp_pipebase_init (&self->pipes [1], &sp_msgpipe_vfptr1, &inprocc->epbase);

@@ -22,7 +22,12 @@
 
 #include "wire.h"
 
+#include "config.h"
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#else
 #include <arpa/inet.h>
+#endif
 
 uint32_t sp_getl (const uint8_t *buf)
 {

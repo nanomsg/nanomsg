@@ -90,6 +90,8 @@ static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe)
     alloc_assert (data);
     data->pipe = pipe;
     sp_pipe_setdata (pipe, data);
+
+    return 0;
 }
 
 static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe)

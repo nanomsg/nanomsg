@@ -272,6 +272,7 @@ step2:
     *node = sp_alloc (sizeof (struct sp_trie_node) +
         sizeof (struct sp_trie_node*));
     assert (*node);
+    (*node)->refcount = 0;
     (*node)->prefix_len = pos;
     (*node)->type = 1;
     memcpy ((*node)->prefix, ch->prefix, pos);
@@ -360,6 +361,7 @@ step3:
         assert (*node);
 
         /*  Fill in the new node. */
+        (*node)->refcount = 0;
         (*node)->prefix_len = old_node->prefix_len;
         (*node)->type = SP_TRIE_DENSE_TYPE;
         memcpy ((*node)->prefix, old_node->prefix, old_node->prefix_len);
@@ -392,6 +394,7 @@ step4:
         assert (*node);
 
         /*  Fill in the new node. */
+        (*node)->refcount = 0;
         (*node)->type = more_nodes ? 1 : 0;
         (*node)->prefix_len = size < (size_t) SP_TRIE_PREFIX_MAX ?
             size : (size_t) SP_TRIE_PREFIX_MAX;
@@ -593,6 +596,7 @@ static int sp_node_unsubscribe (struct sp_trie_node **self,
         new_node = sp_alloc (sizeof (struct sp_trie_node) +
             SP_TRIE_SPARSE_MAX * sizeof (struct sp_trie_node*));
         assert (new_node);
+        new_node->refcount = 0;
         new_node->prefix_len = (*self)->prefix_len;
         memcpy (new_node->prefix, (*self)->prefix, new_node->prefix_len);
         new_node->type = SP_TRIE_SPARSE_MAX;

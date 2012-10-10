@@ -1,0 +1,115 @@
+#
+#   Copyright (c) 2012 250bpm s.r.o.
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a copy
+#   of this software and associated documentation files (the "Software"),
+#   to deal in the Software without restriction, including without limitation
+#   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#   and/or sell copies of the Software, and to permit persons to whom
+#   the Software is furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included
+#   in all copies or substantial portions of the Software.
+#
+#   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#   THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+#   IN THE SOFTWARE.
+#
+
+add_library(nanomsg SHARED
+    pattern.h
+    sp.h
+    transport.h
+    core/ctx.h
+    core/ctx.c
+    core/ep.h
+    core/ep.c
+    core/pipe.c
+    core/sock.h
+    core/sock.c
+    utils/alloc.h
+    utils/alloc.c
+    utils/clock.h
+    utils/clock.c
+    utils/cmutex.h
+    utils/cmutex.c
+    utils/cond.h
+    utils/cond.c
+    utils/cont.h
+    utils/err.h 
+    utils/err.c
+    utils/excl.h
+    utils/excl.c
+    utils/fast.h
+    utils/hash.h
+    utils/hash.c
+    utils/list.h
+    utils/list.c
+    utils/msg.h
+    utils/msg.c
+    utils/mutex.h
+    utils/mutex.c
+    utils/random.h
+    utils/random.c
+    utils/sleep.h
+    utils/sleep.c
+    utils/thread.h
+    utils/thread.c
+    utils/timer.h
+    utils/timer.c
+    utils/wire.h
+    utils/wire.c
+    patterns/pair/pair.h
+    patterns/pair/pair.c
+    patterns/pubsub/pub.h
+    patterns/pubsub/pub.c
+    patterns/pubsub/sub.h
+    patterns/pubsub/sub.c
+    patterns/pubsub/trie.h
+    patterns/pubsub/trie.c
+    patterns/reqrep/req.h
+    patterns/reqrep/req.c
+    patterns/reqrep/rep.h
+    patterns/reqrep/rep.c
+    patterns/reqrep/xrep.h
+    patterns/reqrep/xrep.c
+    patterns/reqrep/xreq.h
+    patterns/reqrep/xreq.c
+    transports/inproc/inproc.h
+    transports/inproc/inproc_ctx.h
+    transports/inproc/inproc_ctx.c
+    transports/inproc/inprocb.h
+    transports/inproc/inprocb.c
+    transports/inproc/inprocc.h
+    transports/inproc/inprocc.c
+    transports/inproc/msgpipe.h
+    transports/inproc/msgpipe.c
+    transports/inproc/msgqueue.h
+    transports/inproc/msgqueue.c   
+    )
+
+check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)
+check_include_files (sys/epoll.h SP_HAVE_EPOLL)
+check_include_files (poll.h SP_HAVE_POLL)
+check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/utils/config.h)
+
+target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
+
+if(UNIX)
+    target_link_libraries(nanomsg rt)
+endif()
+
+if(WIN32)
+    SET(SP_HAVE_WINDOWS ON)
+    target_link_libraries(nanomsg ws2_32)
+    target_link_libraries(nanomsg Mswsock.lib)
+endif()
+
+install(TARGETS nanomsg DESTINATION lib)
+

@@ -1,0 +1,47 @@
+Welcome to nanomessaging
+------------------------
+
+Nanomessaging is a project to help with building scalable and high performance
+distributed applications.
+
+'nanomsg' library extends the standard socket interfaces with features
+traditionally provided by specialised messaging middleware products,
+providing multiple messaging patterns, seamless access to multiple
+transport protocols, message filtering (subscriptions) and more.
+
+'nanomsg' library provides a native C API for applications.
+
+Building
+--------
+
+1. The build is performed using CMake, so first make sure that CMake is
+   installed on your system
+2. Clone the source repository from git
+3. cd nanomsg
+4. cmake .
+5. make
+6. make test
+7. sudo make install
+8. On Linux or other platforms which use ld.so for dynamic linking, run ldconfig
+   or equivalent as root to update your system’s shared library cache. 
+
+Copying
+-------
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom
+the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+IN THE SOFTWARE.

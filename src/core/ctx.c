@@ -37,6 +37,7 @@
 #include "../utils/timer.h"
 
 #include "../transports/inproc/inproc.h"
+#include "../transports/tcp/tcp.h"
 
 #include "../patterns/pair/pair.h"
 #include "../patterns/pubsub/pub.h"
@@ -155,6 +156,7 @@ int sp_init (void)
 
     /*  Plug in individual transports. */
     sp_ctx_add_transport (sp_inproc);
+    sp_ctx_add_transport (sp_tcp);
 
     /*  Plug in individual socktypes. */
     sp_ctx_add_socktype (sp_pair_socktype);

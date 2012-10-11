@@ -89,7 +89,13 @@ add_library(nanomsg SHARED
     transports/inproc/msgpipe.h
     transports/inproc/msgpipe.c
     transports/inproc/msgqueue.h
-    transports/inproc/msgqueue.c   
+    transports/inproc/msgqueue.c
+    transports/tcp/tcp.h
+    transports/tcp/tcp.c
+    transports/tcp/tcpb.h
+    transports/tcp/tcpb.c
+    transports/tcp/tcpc.h
+    transports/tcp/tcpc.c
     )
 
 check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)

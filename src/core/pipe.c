@@ -23,6 +23,8 @@
 #include "../transport.h"
 #include "../pattern.h"
 
+#include "sock.h"
+
 #include "../utils/err.h"
 
 int sp_pipebase_init (struct sp_pipebase *self,
@@ -31,25 +33,25 @@ int sp_pipebase_init (struct sp_pipebase *self,
     sp_assert (epbase->sock);
     self->vfptr = vfptr;
     self->epbase = epbase;
-    return sp_sock_add (self->epbase->sock, self);
+    return sp_sock_add (self->epbase->sock, (struct sp_pipe*) self);
 }
 
 void sp_pipebase_term (struct sp_pipebase *self)
 {
     if (self->epbase->sock)
-        sp_sock_rm (self->epbase->sock, self);
+        sp_sock_rm (self->epbase->sock, (struct sp_pipe*) self);
 }
 
 void sp_pipebase_in (struct sp_pipebase *self)
 {
     if (self->epbase->sock)
-        sp_sock_in (self->epbase->sock, self);
+        sp_sock_in (self->epbase->sock, (struct sp_pipe*) self);
 }
 
 void sp_pipebase_out (struct sp_pipebase *self)
 {
     if (self->epbase->sock)
-        sp_sock_out (self->epbase->sock, self);
+        sp_sock_out (self->epbase->sock, (struct sp_pipe*) self);
 }
 
 void sp_pipe_setdata (struct sp_pipe *self, void *data)

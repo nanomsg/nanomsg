@@ -43,8 +43,14 @@ int sp_inprocb_init (struct sp_inprocb *self, const char *addr, void *hint)
     /*  Store the name of the endpoint. */
     if (sp_slow (strlen (addr) + 1 > SP_INPROCB_NAMELEN_MAX))
         return -ENAMETOOLONG;
+#if defined _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+#endif
     strcpy (self->addr, addr);
-
+#if defined _MSC_VER
+#pragma warning(pop)
+#endif
     sp_list_init (&self->pipes);
 
     return 0;

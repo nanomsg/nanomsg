@@ -23,6 +23,7 @@
 #include "../transport.h"
 
 #include "ep.h"
+#include "sock.h"
 
 void sp_epbase_init (struct sp_epbase *self,
     const struct sp_epbase_vfptr *vfptr, void *hint)

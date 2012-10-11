@@ -24,6 +24,7 @@
 #define SP_SOCK_INCLUDED
 
 struct sp_sock;
+struct sp_pipe;
 
 /*  Deallocate the socket. */
 void sp_sock_term (struct sp_sock *self);

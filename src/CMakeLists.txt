@@ -53,8 +53,12 @@ add_library(nanomsg SHARED
     utils/msg.c
     utils/mutex.h
     utils/mutex.c
+    utils/poller.h
+    utils/poller.c
     utils/random.h
     utils/random.c
+    utils/signaler.h
+    utils/signaler.c
     utils/sleep.h
     utils/sleep.c
     utils/thread.h
@@ -108,6 +112,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BIN
 target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DSP_EXPORTS)
+add_definitions(-DSP_USE_EPOLL)
+add_definitions(-DSP_USE_EVENTFD)
 
 if(UNIX)
     target_link_libraries(nanomsg rt)

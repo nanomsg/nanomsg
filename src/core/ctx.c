@@ -35,6 +35,7 @@
 #include "../utils/cont.h"
 #include "../utils/random.h"
 #include "../utils/timer.h"
+#include "../utils/glock.h"
 
 #include "../transports/inproc/inproc.h"
 #include "../transports/tcp/tcp.h"
@@ -100,6 +101,10 @@ struct sp_ctx {
 
 };
 
+/*  Number of times sp_init() was called without corresponding sp_term().
+    This variable is synchronised using the global lock (sp_glock). */
+int sp_ctx_refcount = 0;
+
 /*  Singleton object containing the global state of the library. */
 static struct sp_ctx self = {0};
 
@@ -127,8 +132,15 @@ int sp_init (void)
 {
     int i;
 
-    /*  Make sure that library haven't been initialised yet. */
-    sp_assert (!self.socks);
+    sp_glock_lock ();
+
+    /*  If the library is already initialised, do nothing, just increment
+        the reference count. */
+    if (sp_ctx_refcount) {
+        ++sp_ctx_refcount;
+        sp_glock_unlock ();
+        return 0;
+    }
 
     /*  Seed the pseudo-random number generator. */
     sp_random_seed ();
@@ -167,18 +179,24 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_xrep_socktype);
     sp_ctx_add_socktype (sp_xreq_socktype);
 
-     /*  Initialise the timer subsystem. */
-     sp_timer_init ();
+    /*  Initialise the timer subsystem. */
+    sp_timer_init ();
+
+    sp_glock_unlock ();
 
     return 0;
 }
 
 int sp_term (void)
 {
-    /*  Make sure that library is not yet terminated. */
-    if (sp_slow (!self.socks)) {
-        errno = EFAULT;
-        return -1;
+    sp_glock_lock ();
+
+    /*  If there are still references to the library, do nothing, just
+        decrement the reference count. */
+    --sp_ctx_refcount;
+    if (sp_ctx_refcount) {
+        sp_glock_unlock ();
+        return 0;
     }
 
     /*  TODO:  Wait for all sockets to be closed. */
@@ -194,6 +212,8 @@ int sp_term (void)
     self.eps = NULL;
     sp_free (self.socks);
     self.socks = NULL;
+
+    sp_glock_unlock ();
 
     return 0;
 }

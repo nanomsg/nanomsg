@@ -25,7 +25,37 @@
 
 #if defined SP_HAVE_WINDOWS
 
-/* TODO */
+#include "win.h"
+#include "err.h"
+
+static INIT_ONCE sp_glock_once = INIT_ONCE_STATIC_INIT;
+static CRITICAL_SECTION sp_glock_cs;
+
+static BOOL CALLBACK sp_glock_init (PINIT_ONCE once, PVOID param, PVOID *ctx)
+{
+    InitializeCriticalSection (&sp_glock_cs);
+    return TRUE;
+}
+
+void sp_glock_lock (void)
+{
+    BOOL brc;
+
+    brc = InitOnceExecuteOnce (&sp_glock_once, sp_glock_init, NULL, NULL);
+    win_assert (brc);
+
+    EnterCriticalSection (&sp_glock_cs);
+}
+
+void sp_glock_unlock (void)
+{
+    BOOL brc;
+
+    brc = InitOnceExecuteOnce (&sp_glock_once, sp_glock_init, NULL, NULL);
+    win_assert (brc);
+
+    LeaveCriticalSection (&sp_glock_cs);
+}
 
 #else
 

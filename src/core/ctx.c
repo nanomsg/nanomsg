@@ -136,8 +136,8 @@ int sp_init (void)
 
     /*  If the library is already initialised, do nothing, just increment
         the reference count. */
-    if (sp_ctx_refcount) {
-        ++sp_ctx_refcount;
+    ++sp_ctx_refcount;
+    if (sp_ctx_refcount > 1) {
         sp_glock_unlock ();
         return 0;
     }

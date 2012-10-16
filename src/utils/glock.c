@@ -28,32 +28,24 @@
 #include "win.h"
 #include "err.h"
 
-static INIT_ONCE sp_glock_once = INIT_ONCE_STATIC_INIT;
+static LONG sp_glock_initialised = 0;
 static CRITICAL_SECTION sp_glock_cs;
 
-static BOOL CALLBACK sp_glock_init (PINIT_ONCE once, PVOID param, PVOID *ctx)
+static void sp_glock_init (void)
 {
-    InitializeCriticalSection (&sp_glock_cs);
-    return TRUE;
+    if (InterlockedCompareExchange (&sp_glock_initialised, 1, 0) == 0)
+        InitializeCriticalSection (&sp_glock_cs);
 }
 
 void sp_glock_lock (void)
 {
-    BOOL brc;
-
-    brc = InitOnceExecuteOnce (&sp_glock_once, sp_glock_init, NULL, NULL);
-    win_assert (brc);
-
+    sp_glock_init ();
     EnterCriticalSection (&sp_glock_cs);
 }
 
 void sp_glock_unlock (void)
 {
-    BOOL brc;
-
-    brc = InitOnceExecuteOnce (&sp_glock_once, sp_glock_init, NULL, NULL);
-    win_assert (brc);
-
+    sp_glock_init ();
     LeaveCriticalSection (&sp_glock_cs);
 }
 

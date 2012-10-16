@@ -66,8 +66,6 @@ struct sp_poller {
     uint32_t events;
 };
 
-#else
-#error
 #endif
 
 #endif

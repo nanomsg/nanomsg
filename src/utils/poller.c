@@ -451,7 +451,5 @@ static void sp_poller_routine (void *arg)
     }
 }
 
-#else
-#error
 #endif
 

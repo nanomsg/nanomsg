@@ -114,10 +114,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BIN
 target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
 add_definitions(-DSP_EXPORTS)
-add_definitions(-DSP_USE_POLL)
-add_definitions(-DSP_USE_EVENTFD)
 
 if(UNIX)
+    add_definitions(-DSP_USE_POLL)
+    add_definitions(-DSP_USE_EVENTFD)
     target_link_libraries(nanomsg rt)
 endif()
 

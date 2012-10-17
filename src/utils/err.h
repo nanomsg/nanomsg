@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "config.h"
-
 /*  Include SP header to define SP-specific error codes. */
 #include "../sp.h"
 
@@ -108,3 +106,4 @@ void sp_win_error (int err, char *buf, size_t bufsize);
 #endif
 
 #endif
+

@@ -21,7 +21,6 @@
 */
 
 #include "glock.h"
-#include "config.h"
 
 #if defined SP_HAVE_WINDOWS
 

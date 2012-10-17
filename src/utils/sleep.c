@@ -21,15 +21,11 @@
 */
 
 #include "sleep.h"
-#include "config.h"
-#ifdef SP_HAVE_WINDOWS
-#include "win.h"
-#else
-#include <time.h>
-#endif
 #include "err.h"
 
 #ifdef SP_HAVE_WINDOWS
+
+#include "win.h"
 
 void sp_sleep (int milliseconds)
 {
@@ -37,6 +33,8 @@ void sp_sleep (int milliseconds)
 }
 
 #else
+
+#include <time.h>
 
 void sp_sleep (int milliseconds)
 {

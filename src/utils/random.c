@@ -20,7 +20,9 @@
     IN THE SOFTWARE.
 */
 
-#include "config.h"
+#include "random.h"
+#include "clock.h"
+#include "fast.h"
 
 #ifdef SP_HAVE_WINDOWS
 #include "win.h"
@@ -30,10 +32,6 @@
 #endif
 
 #include <string.h>
-
-#include "random.h"
-#include "clock.h"
-#include "fast.h"
 
 static uint64_t sp_random_state = 0xfa9b23e307cc611f;
 

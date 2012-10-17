@@ -115,8 +115,6 @@ if(WIN32)
     target_link_libraries(nanomsg Mswsock.lib)
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/utils/config.h)
-
 target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS nanomsg DESTINATION lib)

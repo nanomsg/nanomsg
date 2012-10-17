@@ -23,8 +23,6 @@
 #ifndef SP_POLLER_INCLUDED
 #define SP_POLLER_INCLUDED
 
-#include "config.h"
-
 #include <stdint.h>
 
 /*  Poller object virtualises different polling mechanism that signal whether

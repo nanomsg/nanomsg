@@ -21,24 +21,59 @@
 #
 
 cmake_minimum_required(VERSION 2.8)
+include(CheckSymbolExists)
+
 project(nanomsg)
 enable_testing()
 
-if(UNIX)
-    add_definitions(-DSP_USE_POLL)
-    add_definitions(-DSP_USE_EVENTFD)
-endif()
+#  Platform checks.
 
 if(WIN32)
     add_definitions(-DSP_HAVE_WINDOWS)
 endif()
 
+#  Feature checks.
+
 find_package(Threads)
 
-check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)
-check_include_files (sys/epoll.h SP_HAVE_EPOLL)
-check_include_files (poll.h SP_HAVE_POLL)
-check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
+check_include_files(sys/eventfd.h SP_HAVE_EVENTFD)
+if(SP_HAVE_EVENTFD)
+    add_definitions(-DSP_HAVE_EVENTFD)
+endif()
+
+check_symbol_exists(socketpair sys/socket.h SP_HAVE_SOCKETPAIR)
+if(SP_HAVE_SOCKETPAIR)
+    add_definitions(-DSP_HAVE_SOCKETPAIR)
+endif()
+
+check_include_files(sys/epoll.h SP_HAVE_EPOLL)
+if(SP_HAVE_EPOLL)
+    add_definitions(-DSP_HAVE_EPOLL)
+endif()
+
+check_include_files(poll.h SP_HAVE_POLL)
+if(SP_HAVE_POLL)
+    add_definitions(-DSP_HAVE_POLL)
+endif()
+
+check_include_files(ifaddrs.h SP_HAVE_IFADDRS)
+if(SP_HAVE_IFADDRS)
+    add_definitions(-DSP_HAVE_IFADDRS)
+endif()
+
+#  Decide which features to actually use.
+
+if(SP_HAVE_EPOLL)
+    add_definitions(-DSP_USE_EPOLL)
+elseif(SP_HAVE_POLL)
+    add_definitions(-DSP_USE_POLL)
+endif()
+
+if(SP_HAVE_EVENTFD)
+    add_definitions(-DSP_USE_EVENTFD)
+elseif(SP_HAVE_SOCKETPAIR)
+    add_definitions(-DSP_USE_SOCKETPAIR)
+endif()
 
 add_subdirectory(src)
 add_subdirectory(tests)

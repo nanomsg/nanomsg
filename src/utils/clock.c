@@ -20,7 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#include "config.h"
 #ifdef SP_HAVE_WINDOWS
 #include "win.h"
 #else

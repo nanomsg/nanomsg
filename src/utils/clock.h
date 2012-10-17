@@ -48,3 +48,4 @@ uint64_t sp_clock_now (struct sp_clock *self);
 uint64_t sp_clock_timestamp ();
 
 #endif
+

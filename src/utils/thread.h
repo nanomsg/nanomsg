@@ -25,7 +25,6 @@
 
 /*  Platform independent implementation of threading. */
 
-#include "config.h"
 #ifdef SP_HAVE_WINDOWS
 #include "win.h"
 #else
@@ -50,3 +49,4 @@ void sp_thread_init (struct sp_thread *self,
 void sp_thread_term (struct sp_thread *self);
 
 #endif
+

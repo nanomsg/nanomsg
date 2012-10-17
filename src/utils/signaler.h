@@ -23,16 +23,6 @@
 #ifndef SP_SIGNALER_INCLUDED
 #define SP_SIGNALER_INCLUDED
 
-#include "config.h"
-
-/*  This class alows to send a signal via a file descriptor. */
-
-/*  There's no signaler on Windows. Implementing it would require a lot of
-    black magic and introduce secutity holes (TCP connections over loopback)
-    and thus we are rather going to assume that signaler won't be needed on
-    Windows platform. */
-#ifndef SP_HAVE_WINDOWS
-
 struct sp_signaler;
 
 void sp_signaler_init (struct sp_signaler *self);
@@ -55,10 +45,7 @@ struct sp_signaler
     int efd;
 };
 
-#else
-#error
 #endif
 
 #endif
 
-#endif

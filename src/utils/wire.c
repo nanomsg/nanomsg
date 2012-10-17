@@ -22,7 +22,6 @@
 
 #include "wire.h"
 
-#include "config.h"
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
 #else

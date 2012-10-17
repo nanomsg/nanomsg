@@ -23,8 +23,6 @@
 #ifndef SP_MUTEX_INCLUDED
 #define SP_MUTEX_INCLUDED
 
-#include "config.h"
-
 #ifdef SP_HAVE_WINDOWS
 #include "win.h"
 #else
@@ -55,3 +53,4 @@ void sp_mutex_lock (struct sp_mutex *self);
 void sp_mutex_unlock (struct sp_mutex *self);
 
 #endif
+

@@ -20,10 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_HAVE_WINDOWS
-#include <signal.h>
-#endif
-
 #include "thread.h"
 #include "err.h"
 
@@ -60,6 +56,8 @@ void sp_thread_term (struct sp_thread *self)
 }
 
 #else
+
+#include <signal.h>
 
 static void *sp_thread_main_routine (void *arg)
 {

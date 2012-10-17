@@ -25,22 +25,27 @@
 
 /*  Platform-independent condition variable. */
 
-#include "config.h"
 #include "mutex.h"
 #include "clock.h"
 
 #ifdef SP_HAVE_WINDOWS
+
 #include "win.h"
+
 struct sp_cond {
     CONDITION_VARIABLE cond;
     struct sp_clock clock;
 };
+
 #else
+
 #include <pthread.h>
+
 struct sp_cond {
     pthread_cond_t cond;
     struct sp_clock clock;
 };
+
 #endif
 
 void sp_cond_init (struct sp_cond *self);
@@ -51,3 +56,4 @@ int sp_cond_wait (struct sp_cond *self,
 void sp_cond_signal (struct sp_cond *self);
 
 #endif
+

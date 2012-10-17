@@ -20,15 +20,13 @@
     IN THE SOFTWARE.
 */
 
-#include "config.h"
+#include "err.h"
 
 #ifdef SP_HAVE_WINDOWS
 #include "win.h"
 #endif
 
 #include <stdlib.h>
-
-#include "err.h"
 
 void sp_err_abort (void)
 {
@@ -111,3 +109,4 @@ void sp_win_error (int err, char *buf, size_t bufsize)
 }
 
 #endif
+

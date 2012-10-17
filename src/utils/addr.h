@@ -23,11 +23,12 @@
 #ifndef SP_ADDR_INCLUDED
 #define SP_ADDR_INCLUDED
 
-#ifdef _WIN32
+#if defined SP_HAVE_WINDWS
 #include "win.h"
 typedef int sp_socklen;
 #else
 #include <sys/socket.h>
+#include <netinet/in.h>
 typedef socklen_t sp_socklen;
 #endif
 

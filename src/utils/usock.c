@@ -38,8 +38,10 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
 #ifdef _WIN32
     u_long flags;
     BOOL brc;
+    DWORD only;
 #else
     int flags;
+    int only;
 #endif
 
 /*  If the operating system allows to directly open the socket with CLOEXEC
@@ -98,7 +100,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
         the best possible latency. */
     if ((domain == AF_INET || domain == AF_INET6) && type == SOCK_STREAM) {
         opt = 1;
-        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY, (char*) &opt,
+        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY, (const char*) &opt,
             sizeof (opt));
 #if defined SP_HAVE_WINDOWS
         wsa_assert (rc != SOCKET_ERROR);
@@ -112,6 +114,21 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     opt = 1;
     rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));
     errno_assert (rc == 0);
+#endif
+
+    /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
+        by default. In such case, switch in on. */
+#if defined IPV6_V6ONLY
+    if (domain == AF_INET6) {
+        only = 0;
+        rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
+            (const char*) &only, sizeof (only));
+#ifdef SP_HAVE_WINDOWS
+        wsa_assert (rc != SOCKET_ERROR);
+#else
+        errno_assert (rc == 0);
+#endif
+    }
 #endif
 
     return 0;
@@ -134,6 +151,25 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
     int rc;
+    int opt;
+
+    /*  To allow for rapid restart of SP services, allow new bind to succeed
+        immediately after previous instance of the process failed, skipping the
+        grace period. */
+#if !defined SP_HAVE_WINDOWS
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
+    errno_assert (rc == 0);
+#endif
+
+    /*  On Windows, the bound port can be hijacked if SO_EXCLUSIVEADDRUSE
+        is not set. */
+#if defined SP_HAVE_WINDOWS
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+        (const char*) &opt, sizeof (opt));
+    wsa_assert (rc != SOCKET_ERROR);
+#endif
 
     rc = bind (self->s, addr, addrlen);
 #if defined SP_HAVE_WINDOWS

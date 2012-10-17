@@ -29,10 +29,6 @@ macro(add_libsp_test NAME)
     add_test(${NAME} ${NAME})
 endmacro(add_libsp_test)
 
-if(WIN32)
-    add_definitions(-DSP_HAVE_WINDOWS)
-endif()
-
 add_libsp_test(basic)
 add_libsp_test(block)
 add_libsp_test(pubsub)

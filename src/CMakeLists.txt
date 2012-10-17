@@ -104,28 +104,20 @@ add_library(nanomsg SHARED
     transports/tcp/tcpc.c
     )
 
-check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)
-check_include_files (sys/epoll.h SP_HAVE_EPOLL)
-check_include_files (poll.h SP_HAVE_POLL)
-check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/utils/config.h)
-
-target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
-
 add_definitions(-DSP_EXPORTS)
 
 if(UNIX)
-    add_definitions(-DSP_USE_POLL)
-    add_definitions(-DSP_USE_EVENTFD)
     target_link_libraries(nanomsg rt)
 endif()
 
 if(WIN32)
-    add_definitions(-DSP_HAVE_WINDOWS)
     target_link_libraries(nanomsg ws2_32)
     target_link_libraries(nanomsg Mswsock.lib)
 endif()
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/utils/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/utils/config.h)
+
+target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS nanomsg DESTINATION lib)
 

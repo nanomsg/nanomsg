@@ -24,7 +24,21 @@ cmake_minimum_required(VERSION 2.8)
 project(nanomsg)
 enable_testing()
 
+if(UNIX)
+    add_definitions(-DSP_USE_POLL)
+    add_definitions(-DSP_USE_EVENTFD)
+endif()
+
+if(WIN32)
+    add_definitions(-DSP_HAVE_WINDOWS)
+endif()
+
 find_package(Threads)
+
+check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)
+check_include_files (sys/epoll.h SP_HAVE_EPOLL)
+check_include_files (poll.h SP_HAVE_POLL)
+check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
 
 add_subdirectory(src)
 add_subdirectory(tests)

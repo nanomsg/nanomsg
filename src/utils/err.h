@@ -102,6 +102,7 @@ int sp_err_errno (void);
 const char *sp_err_strerror (int errnum);
 
 #ifdef SP_HAVE_WINDOWS
+int sp_err_wsa_to_posix (int wsaerr);
 void sp_win_error (int err, char *buf, size_t bufsize);
 #endif
 

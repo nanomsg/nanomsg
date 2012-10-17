@@ -54,8 +54,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     self->s = socket (domain, type, protocol);
 #if defined SP_HAVE_WINDOWS
     if (self->s == INVALID_SOCKET)
-       /*  TODO: Convert WSA error into errno error. */
-       sp_assert (0);
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
 #else
     if (self->s < 0)
        return -errno;
@@ -174,8 +173,7 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     rc = bind (self->s, addr, addrlen);
 #if defined SP_HAVE_WINDOWS
     if (rc == SOCKET_ERROR)
-       /*  TODO: Convert WSA error into errno error. */
-       sp_assert (0);
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
 #else
     if (rc < 0)
        return -errno;
@@ -192,8 +190,7 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     rc = connect (self->s, addr, addrlen);
 #if defined SP_HAVE_WINDOWS
     if (rc == SOCKET_ERROR)
-       /*  TODO: Convert WSA error into errno error. */
-       sp_assert (0);
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
 #else
     if (rc < 0)
        return -errno;

@@ -99,6 +99,56 @@ const char *sp_err_strerror (int errnum)
 
 #ifdef SP_HAVE_WINDOWS
 
+int sp_err_wsa_to_posix (int wsaerr)
+{
+    switch (wsaerr) {
+    case WSAEINPROGRESS:
+        return EAGAIN;
+    case WSAEBADF:
+        return EBADF;
+    case WSAEINVAL:
+        return EINVAL;
+    case WSAEMFILE:
+        return EMFILE;
+    case WSAEFAULT:
+        return EFAULT;
+    case WSAEPROTONOSUPPORT:
+        return EPROTONOSUPPORT;
+    case WSAENOBUFS:
+        return ENOBUFS;
+    case WSAENETDOWN:
+        return ENETDOWN;
+    case WSAEADDRINUSE:
+        return EADDRINUSE;
+    case WSAEADDRNOTAVAIL:
+        return EADDRNOTAVAIL;
+    case WSAEAFNOSUPPORT:
+        return EAFNOSUPPORT;
+    case WSAEACCES:
+        return EACCES;
+    case WSAENETRESET:
+        return ENETRESET;
+    case WSAENETUNREACH:
+        return ENETUNREACH;
+    case WSAEHOSTUNREACH:
+        return EHOSTUNREACH;
+    case WSAENOTCONN:
+        return ENOTCONN;
+    case WSAEMSGSIZE:
+        return EMSGSIZE;
+    case WSAETIMEDOUT:
+        return ETIMEDOUT;
+    case WSAECONNREFUSED:
+        return ECONNREFUSED;
+    case WSAECONNABORTED:
+        return ECONNABORTED;
+    case WSAECONNRESET:
+        return ECONNRESET;
+    default:
+        sp_assert (0);
+    }
+}
+
 void sp_win_error (int err, char *buf, size_t bufsize)
 {
     DWORD rc = FormatMessageA (

@@ -23,7 +23,7 @@
 #ifndef SP_ADDR_INCLUDED
 #define SP_ADDR_INCLUDED
 
-#if defined SP_HAVE_WINDWS
+#if defined SP_HAVE_WINDOWS
 #include "win.h"
 typedef int sp_socklen;
 #else

@@ -20,22 +20,34 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPB_INCLUDED
-#define SP_TCPB_INCLUDED
+#ifndef SP_USOCK_INCLUDED
+#define SP_USOCK_INCLUDED
 
-#include "../../transport.h"
+/*  Platform independent underlying (OS-level) socket object. */
 
-#include "../../utils/usock.h"
+#include "addr.h"
 
-struct sp_tcpb {
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#endif
 
-    /*  This object is an endpoint. */
-    struct sp_epbase epbase;
-
-    /*  The listening TCP socket. */
-    struct sp_usock usock;
+struct sp_usock {
+#if defined SP_HAVE_WINDOWS
+    SOCKET s;
+#else
+    int s;
+#endif
 };
 
-int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);
+/*  The underlying socket is opened and tuned for the best performance. It is
+    also opened in non-blocking mode. */
+int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
+void sp_usock_term (struct sp_usock *self);
+
+int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
+int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
 
 #endif
+

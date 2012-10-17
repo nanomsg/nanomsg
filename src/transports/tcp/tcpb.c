@@ -24,6 +24,15 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/addr.h"
+
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
 
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpb_close (struct sp_epbase *self, int linger);
@@ -32,8 +41,45 @@ static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
 
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
 {
+    int rc;
+    int port;
+    const char *colon;
+    struct sockaddr_storage ss;
+    socklen_t sslen;
+
+    /*  Parse the port. */
+    rc = sp_addr_parse_port (addr, &colon);
+    if (rc < 0)
+        return rc;
+    port = rc;
+
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = sp_addr_parse_local (addr, colon - addr, SP_ADDR_IPV4ONLY,
+        &ss, &sslen);
+    if (rc < 0)
+        return rc;
+
+    /*  Combine the port and the address. */
+    if (ss.ss_family == AF_INET)
+        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
+    else if (ss.ss_family == AF_INET6)
+        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
+    else
+        sp_assert (0);
+
+    /*  Open the listening socket. */
+    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
+    errnum_assert (rc == 0, -rc);
+
+    /*  TODO: Register the listening socket with the poller so that we get
+        a notification when there is a new incoming connection. */
+
+    /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
-    sp_assert (0);
+
     return 0;
 }
 
@@ -42,6 +88,10 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
     struct sp_tcpb *tcpb;
 
     tcpb = sp_cont (self, struct sp_tcpb, epbase);
+
+    /*  Close the listening socket. */
+    sp_usock_term (&tcpb->usock);
+
     sp_assert (0);
     return 0;
 }

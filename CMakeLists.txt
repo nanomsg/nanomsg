@@ -75,6 +75,10 @@ elseif(SP_HAVE_SOCKETPAIR)
     add_definitions(-DSP_USE_SOCKETPAIR)
 endif()
 
+if(SP_HAVE_IFADDRS)
+    add_definitions(-DSP_USE_IFADDRS)
+endif()
+
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(perf)

@@ -31,6 +31,8 @@ add_library(nanomsg SHARED
     core/pipe.c
     core/sock.h
     core/sock.c
+    utils/addr.h
+    utils/addr.c
     utils/alloc.h
     utils/alloc.c
     utils/clock.h

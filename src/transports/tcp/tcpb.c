@@ -26,14 +26,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/addr.h"
 
-#if defined SP_HAVE_WINDOWS
-#include "win.h"
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#endif
-
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =

@@ -34,12 +34,12 @@
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
 {
     int rc;
+    int opt;
 #ifdef _WIN32
     u_long flags;
     BOOL brc;
 #else
     int flags;
-    int opt;
 #endif
 
 /*  If the operating system allows to directly open the socket with CLOEXEC

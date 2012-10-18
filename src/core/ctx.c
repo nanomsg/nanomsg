@@ -50,6 +50,10 @@
 
 #include <stddef.h>
 
+#if defined SP_HAVE_WINDOWS
+#include "../utils/win.h"
+#endif
+
 /*  Max number of concurrent SP sockets. */
 #define SP_MAX_SOCKETS 512
 
@@ -131,6 +135,10 @@ const char *sp_strerror (int errnum)
 int sp_init (void)
 {
     int i;
+#if defined SP_HAVE_WINDOWS
+    WSADATA data;
+    int rc;
+#endif
 
     sp_glock_lock ();
 
@@ -141,6 +149,14 @@ int sp_init (void)
         sp_glock_unlock ();
         return 0;
     }
+
+    /*  On Windows, initilise the socket library. */
+#if defined SP_HAVE_WINDOWS
+    rc = WSAStartup (MAKEWORD (2, 2), &data);
+    sp_assert (rc == 0);
+    sp_assert (LOBYTE (data.wVersion) == 2 &&
+        HIBYTE (data.wVersion) == 2);
+#endif
 
     /*  Seed the pseudo-random number generator. */
     sp_random_seed ();
@@ -189,6 +205,10 @@ int sp_init (void)
 
 int sp_term (void)
 {
+#if defined SP_HAVE_WINDOWS
+    int rc;
+#endif
+
     sp_glock_lock ();
 
     /*  If there are still references to the library, do nothing, just
@@ -212,6 +232,12 @@ int sp_term (void)
     self.eps = NULL;
     sp_free (self.socks);
     self.socks = NULL;
+
+    /*  On Windows, uninitialise the socket library. */
+#if defined SP_HAVE_WINDOWS
+    rc = WSACleanup ();
+    sp_assert (rc == 0);
+#endif
 
     sp_glock_unlock ();
 

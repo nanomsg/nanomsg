@@ -59,6 +59,9 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
+#if !defined SP_HAVE_WINDOWS
+    self->iocp = NULL;
+#endif
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -178,6 +181,9 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
     accepted->domain = self->domain;
     accepted->type = self->type;
     accepted->protocol = self->protocol;
+#if !defined SP_HAVE_WINDOWS
+    accepted->iocp = NULL;
+#endif
 
     /*  If CLOEXEC is not yet set, apply it to the new socket. */
 #if !defined SP_HAVE_ACCEPT && defined FD_CLOEXEC

@@ -33,8 +33,6 @@ add_library(nanomsg SHARED
     core/sock.c
     utils/addr.h
     utils/addr.c
-    utils/aio.h
-    utils/aio.c
     utils/alloc.h
     utils/alloc.c
     utils/clock.h
@@ -53,6 +51,8 @@ add_library(nanomsg SHARED
     utils/glock.c
     utils/hash.h
     utils/hash.c
+    utils/iocp.h
+    utils/iocp.c
     utils/list.h
     utils/list.c
     utils/msg.h

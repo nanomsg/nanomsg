@@ -20,10 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_AIO_INCLUDED
-#define SP_AIO_INCLUDED
-
-#include "usock.h"
+#ifndef SP_IOCP_INCLUDED
+#define SP_IOCP_INCLUDED
 
 #include <stddef.h>
 
@@ -31,26 +29,34 @@
 #include "win.h"
 #endif
 
-/*  If this flag is set, asynchronous recv operation doesn't have to wait for
-    all bytes to be received before completion. One byte is sufficient. */
-#define SP_AIO_RECV_PARTIAL 1
+/*  Platform-independent implementation of I/O completion ports. */
 
-struct sp_aio {
+struct sp_usock;
+
+struct sp_iocp {
 #if defined SP_HAVE_WINDOWS
-    OVERLAPPED io;
+    HANDLE cp;
+#else
 #endif
 };
 
-void sp_aio_init (void);
-void sp_aio_term (void);
+struct sp_iocp_task {
+#if defined SP_HAVE_WINDOWS
+    OVERLAPPED io;
+#else
+    void *buf;
+    size_t len;
+    size_t nbytes;
+#endif
+};
 
-void sp_aio_register (struct sp_usock *usock);
+void sp_iocp_init (struct sp_iocp *self);
+void sp_iocp_term (struct sp_iocp *self);
 
-int sp_aio_send (struct sp_aio *self, struct sp_usock *usock,
-    const void *buf, size_t *len, int flags);
-int sp_aio_recv (struct sp_aio *self, struct sp_usock *usock,
-    void *buf, size_t *len, int flags);
+void sp_iocp_register (struct sp_iocp *self, struct sp_usock *usock);
 
-int sp_aio_wait (struct sp_aio **aio, size_t *len, int timeout);
+int sp_iocp_wait (struct sp_iocp *self, int timeout,
+    struct sp_iocp_task **task, size_t *len);
 
 #endif
+

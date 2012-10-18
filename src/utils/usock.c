@@ -247,7 +247,7 @@ void sp_usock_tune (struct sp_usock *self)
 #endif
 
     /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
-        by default. In such case, switch in on. */
+        by default. In such case, switch it on. */
 #if defined IPV6_V6ONLY
     if (self->domain == AF_INET6) {
         only = 0;

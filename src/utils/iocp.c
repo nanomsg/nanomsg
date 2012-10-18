@@ -45,7 +45,7 @@ void sp_iocp_term (struct sp_iocp *self)
 #if defined SP_HAVE_WINDOWS
     BOOL brc;
 
-    brc = CloseHandle (self.cp);
+    brc = CloseHandle (self->cp);
     win_assert (brc);
 #else
     sp_assert (0);

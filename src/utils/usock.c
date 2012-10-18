@@ -24,8 +24,11 @@
 #include "fast.h"
 #include "err.h"
 
-#if !defined SP_HAVE_WINDOWS
+#if defined SP_HAVE_ACCEPT4
 #define _GNU_SOURCE
+#endif
+
+#if !defined SP_HAVE_WINDOWS
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
@@ -158,7 +161,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
     int rc;
 
 #if defined SP_HAVE_ACCEPT4
-    rc = accept (self->s, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
+    rc = accept4 (self->s, NULL, NULL, SOCK_CLOEXEC);
 #else
     rc = accept (self->s, NULL, NULL);
 #endif
@@ -175,6 +178,13 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
     accepted->domain = self->domain;
     accepted->type = self->type;
     accepted->protocol = self->protocol;
+
+    /*  If CLOEXEC is not yet set, apply it to the new socket. */
+#if !defined SP_HAVE_ACCEPT && defined FD_CLOEXEC
+    rc = fcntl (accepted->s, F_SETFD, FD_CLOEXEC);
+    errno_assert (rc != -1);
+#endif
+
     sp_usock_tune (accepted);
 
     return 0;

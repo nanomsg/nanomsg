@@ -65,6 +65,9 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);
+    /*  TODO:  Get the backlog value from a socket option! */
+    rc = sp_usock_listen (&self->usock, 100);
+    errnum_assert (rc == 0, -rc);
 
     /*  TODO: Register the listening socket with the poller so that we get
         a notification when there is a new incoming connection. */

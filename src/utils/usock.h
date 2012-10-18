@@ -37,17 +37,21 @@ struct sp_usock {
 #else
     int s;
 #endif
+    int domain;
+    int type;
+    int protocol;
 };
 
 /*  The underlying socket is opened and tuned for the best performance. It is
     also opened in non-blocking mode. */
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
 void sp_usock_term (struct sp_usock *self);
-
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
+int sp_usock_listen (struct sp_usock *self, int backlog);
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted);
 
 #endif
 

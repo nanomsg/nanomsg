@@ -61,6 +61,11 @@ if(SP_HAVE_IFADDRS)
     add_definitions(-DSP_HAVE_IFADDRS)
 endif()
 
+check_symbol_exists(accept4 sys/socket.h SP_HAVE_ACCEPT4)
+if(SP_HAVE_ACCEPT4)
+    add_definitions(-DSP_HAVE_ACCEPT4)
+endif()
+
 #  Decide which features to actually use.
 
 if(SP_HAVE_EPOLL)

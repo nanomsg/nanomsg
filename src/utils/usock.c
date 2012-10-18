@@ -21,9 +21,11 @@
 */
 
 #include "usock.h"
+#include "fast.h"
 #include "err.h"
 
 #if !defined SP_HAVE_WINDOWS
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
@@ -31,21 +33,13 @@
 #include <fcntl.h>
 #endif
 
+/*  Private functions. */
+void sp_usock_tune (struct sp_usock *self);
+
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
 {
-    int rc;
-    int opt;
-#ifdef _WIN32
-    u_long flags;
-    BOOL brc;
-    DWORD only;
-#else
-    int flags;
-    int only;
-#endif
-
-/*  If the operating system allows to directly open the socket with CLOEXEC
-    flag, do so. That way there are no race conditions. */
+    /*  If the operating system allows to directly open the socket with CLOEXEC
+        flag, do so. That way there are no race conditions. */
 #ifdef SOCK_CLOEXEC
     type |= SOCK_CLOEXEC;
 #endif
@@ -59,75 +53,17 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     if (self->s < 0)
        return -errno;
 #endif
+    self->domain = domain;
+    self->type = type;
+    self->protocol = protocol;
 
-    /*  Setting FD_CLOEXEC or HANDLE_FLAG_INHERIT option immediately after
-        socket creation is the second best option. There is a race condition
-        (if process is forked between socket creation and setting the option)
-        but the problem is pretty unlikely to happen. */
+    /*  Setting FD_CLOEXEC option immediately after socket creation is the
+        second best option. There is a race condition (if process is forked
+        between socket creation and setting the option) but the problem is
+        pretty unlikely to happen. */
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     rc = fcntl (self->s, F_SETFD, FD_CLOEXEC);
     errno_assert (rc != -1);
-#endif
-#if defined SP_HAVE_WINDOWS && defined HANDLE_FLAG_INHERIT
-    brc = SetHandleInformation ((HANDLE) self->s, HANDLE_FLAG_INHERIT, 0);
-    win_assert (brc);
-#endif
-
-    /*  If applicable, prevent SIGPIPE signal when writing to the connection
-        already closed by the peer. */
-#ifdef SO_NOSIGPIPE
-    opt = 1;
-    rc = setsockopt (self->s, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof (opt));
-    errno_assert (rc == 0);
-#endif
-
-    /*  Switch the socket to the non-blocking mode. All underlying sockets
-        are always used in the asynchronous mode. */
-#if defined SP_HAVE_WINDOWS
-    flags = 1;
-    rc = ioctlsocket (self->s, FIONBIO, &flags);
-    wsa_assert (rc != SOCKET_ERROR);
-#else
-	flags = fcntl (self->s, F_GETFL, 0);
-	if (flags == -1)
-        flags = 0;
-	rc = fcntl (self->s, F_SETFL, flags | O_NONBLOCK);
-    errno_assert (rc != -1);
-#endif
-
-    /*  On TCP sockets switch off the Nagle's algorithm to get
-        the best possible latency. */
-    if ((domain == AF_INET || domain == AF_INET6) && type == SOCK_STREAM) {
-        opt = 1;
-        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY, (const char*) &opt,
-            sizeof (opt));
-#if defined SP_HAVE_WINDOWS
-        wsa_assert (rc != SOCKET_ERROR);
-#else
-        errno_assert (rc == 0);
-#endif
-    }
-
-    /*  If applicable, disable delayed acknowledgements to improve latency. */
-#if defined TCP_NODELACK
-    opt = 1;
-    rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));
-    errno_assert (rc == 0);
-#endif
-
-    /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
-        by default. In such case, switch in on. */
-#if defined IPV6_V6ONLY
-    if (domain == AF_INET6) {
-        only = 0;
-        rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
-            (const char*) &only, sizeof (only));
-#ifdef SP_HAVE_WINDOWS
-        wsa_assert (rc != SOCKET_ERROR);
-#else
-        errno_assert (rc == 0);
-#endif
-    }
 #endif
 
     return 0;
@@ -172,10 +108,10 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 
     rc = bind (self->s, addr, addrlen);
 #if defined SP_HAVE_WINDOWS
-    if (rc == SOCKET_ERROR)
+    if (sp_slow (rc == SOCKET_ERROR))
        return -sp_err_wsa_to_posix (WSAGetLastError ());
 #else
-    if (rc < 0)
+    if (sp_slow (rc < 0))
        return -errno;
 #endif
 
@@ -189,13 +125,134 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 
     rc = connect (self->s, addr, addrlen);
 #if defined SP_HAVE_WINDOWS
-    if (rc == SOCKET_ERROR)
+    if (sp_slow (rc == SOCKET_ERROR))
        return -sp_err_wsa_to_posix (WSAGetLastError ());
 #else
-    if (rc < 0)
+    if (sp_slow (rc < 0))
        return -errno;
 #endif
 
     return 0;
+}
+
+int sp_usock_listen (struct sp_usock *self, int backlog)
+{
+    int rc;
+
+    rc = listen (self->s, backlog);
+#if defined SP_HAVE_WINDOWS
+    if (sp_slow (rc == SOCKET_ERROR))
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
+#else
+    if (sp_slow (rc < 0))
+       return -errno;
+#endif
+
+    return 0;
+}
+
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
+{
+    int rc;
+
+#if defined SP_HAVE_ACCEPT4
+    rc = accept (self->s, NULL, NULL, SOCK_NONBLOCK | SOCK_CLOEXEC);
+#else
+    rc = accept (self->s, NULL, NULL);
+#endif
+#if defined SP_HAVE_WINDOWS
+    if (sp_slow (rc == INVALID_SOCKET))
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
+#else
+    if (sp_slow (rc < 0))
+       return -errno;
+#endif
+
+    /*  Create the new usock object. */
+    accepted->s = rc;
+    accepted->domain = self->domain;
+    accepted->type = self->type;
+    accepted->protocol = self->protocol;
+    sp_usock_tune (accepted);
+
+    return 0;
+}
+
+void sp_usock_tune (struct sp_usock *self)
+{
+    int rc;
+    int opt;
+#ifdef _WIN32
+    u_long flags;
+    BOOL brc;
+    DWORD only;
+#else
+    int flags;
+    int only;
+#endif
+
+    /*  If applicable, prevent SIGPIPE signal when writing to the connection
+        already closed by the peer. */
+#ifdef SO_NOSIGPIPE
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof (opt));
+    errno_assert (rc == 0);
+#endif
+
+    /*  Switch the socket to the non-blocking mode. All underlying sockets
+        are always used in the asynchronous mode. */
+#if defined SP_HAVE_WINDOWS
+    flags = 1;
+    rc = ioctlsocket (self->s, FIONBIO, &flags);
+    wsa_assert (rc != SOCKET_ERROR);
+#else
+	flags = fcntl (self->s, F_GETFL, 0);
+	if (flags == -1)
+        flags = 0;
+	rc = fcntl (self->s, F_SETFL, flags | O_NONBLOCK);
+    errno_assert (rc != -1);
+#endif
+
+    /*  On TCP sockets switch off the Nagle's algorithm to get
+        the best possible latency. */
+    if ((self->domain == AF_INET || self->domain == AF_INET6) &&
+          self->type == SOCK_STREAM) {
+        opt = 1;
+        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY,
+            (const char*) &opt, sizeof (opt));
+#if defined SP_HAVE_WINDOWS
+        wsa_assert (rc != SOCKET_ERROR);
+#else
+        errno_assert (rc == 0);
+#endif
+    }
+
+    /*  If applicable, disable delayed acknowledgements to improve latency. */
+#if defined TCP_NODELACK
+    opt = 1;
+    rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));
+    errno_assert (rc == 0);
+#endif
+
+    /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
+        by default. In such case, switch in on. */
+#if defined IPV6_V6ONLY
+    if (self->domain == AF_INET6) {
+        only = 0;
+        rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
+            (const char*) &only, sizeof (only));
+#ifdef SP_HAVE_WINDOWS
+        wsa_assert (rc != SOCKET_ERROR);
+#else
+        errno_assert (rc == 0);
+#endif
+    }
+#endif
+
+/*  On Windows, disable inheriting the socket to the child processes. */
+#if defined SP_HAVE_WINDOWS && defined HANDLE_FLAG_INHERIT
+    brc = SetHandleInformation ((HANDLE) self->s, HANDLE_FLAG_INHERIT, 0);
+    win_assert (brc);
+#endif
 }
 

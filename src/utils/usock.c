@@ -66,6 +66,8 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     errno_assert (rc != -1);
 #endif
 
+    sp_usock_tune (self);
+
     return 0;
 }
 

@@ -27,7 +27,18 @@
 
 #include <stddef.h>
 
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#endif
+
+/*  If this flag is set, asynchronous recv operation doesn't have to wait for
+    all bytes to be received before completion. One byte is sufficient. */
+#define SP_AIO_RECV_PARTIAL 1
+
 struct sp_aio {
+#if defined SP_HAVE_WINDOWS
+    OVERLAPPED io;
+#endif
 };
 
 void sp_aio_init (void);
@@ -35,12 +46,11 @@ void sp_aio_term (void);
 
 void sp_aio_register (struct sp_usock *usock);
 
-void sp_aio_send (struct sp_aio *self, struct sp_usock *usock,
+int sp_aio_send (struct sp_aio *self, struct sp_usock *usock,
     const void *buf, size_t *len, int flags);
-void sp_aio_recv (struct sp_aio *self, struct sp_usock *usock,
+int sp_aio_recv (struct sp_aio *self, struct sp_usock *usock,
     void *buf, size_t *len, int flags);
 
-void sp_aio_wait (struct sp_aio **aio, int timeout);
+int sp_aio_wait (struct sp_aio **aio, size_t *len, int timeout);
 
 #endif
-

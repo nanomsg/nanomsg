@@ -27,7 +27,8 @@
 
 void sp_mutex_init (struct sp_mutex *self, int flags)
 {
-    sp_assert (flags == 0);
+    /*  CRITICAL_SECTION is recursive by default so no need to check
+        for SP_MUTEX_RECURSIVE flag. */
     InitializeCriticalSection (&self->mutex);
 }
 

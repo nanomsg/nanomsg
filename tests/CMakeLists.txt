@@ -20,8 +20,7 @@
 #   IN THE SOFTWARE.
 #
 
-include_directories(${sp_SOURCE_DIR}/src)
-link_directories(${sp_BINARY_DIR}/src)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 macro(add_libsp_test NAME)
     add_executable(${NAME} ${NAME}.c)

@@ -21,6 +21,53 @@
 */
 
 #include "cp.h"
+
+#if defined SP_HAVE_WINDOWS
+
+#include "err.h"
+#include "cont.h"
+
+void sp_cp_init (struct sp_cp *self)
+{
+    self->hndl = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
+    win_assert (self->hndl);
+}
+
+void sp_cp_term (struct sp_cp *self)
+{
+    BOOL brc;
+
+    brc = CloseHandle (self->hndl);
+    win_assert (brc);
+}
+
+void sp_cp_post (struct sp_cp *self, struct sp_cp_task *task)
+{
+    BOOL brc;
+
+    brc = PostQueuedCompletionStatus (self->hndl, 0,
+        (ULONG_PTR) NULL, &task->olpd);
+    win_assert (brc);
+}
+
+int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
+{
+    BOOL brc;
+    LPOVERLAPPED olpd;
+
+    brc = GetQueuedCompletionStatus (self->hndl, NULL, NULL,
+        &olpd, timeout < 0 ? INFINITE : timeout);
+    if (!brc && !olpd)
+        return -ETIMEDOUT;
+    win_assert (brc);
+
+    *task = sp_cont (olpd, struct sp_cp_task, olpd);
+
+    return 0;
+}
+
+#else
+
 #include "fast.h"
 #include "cont.h"
 #include "err.h"
@@ -77,3 +124,4 @@ int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
     return 0;
 }
 
+#endif

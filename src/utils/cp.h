@@ -27,16 +27,28 @@
 #include "mutex.h"
 #include "cond.h"
 
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#endif
+
 /*  Implementation of platform-neutral completion port. */
 
 struct sp_cp_task {
+#if defined SP_HAVE_WINDOWS
+    OVERLAPPED olpd;
+#else
     struct sp_list_item list;
+#endif
 };
 
 struct sp_cp {
+#if defined SP_HAVE_WINDOWS
+    HANDLE hndl;
+#else
     struct sp_mutex sync;
     struct sp_cond cond;
     struct sp_list tasks;
+#endif
 };
 
 void sp_cp_init (struct sp_cp *self);

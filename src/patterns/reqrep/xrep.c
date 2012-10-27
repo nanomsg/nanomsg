@@ -103,25 +103,32 @@ void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_free (data);
 }
 
-void sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_xrep *xrep;
     struct sp_xrep_data *data;
+    int result;
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
     data = sp_pipe_getdata (pipe);
+    result = sp_list_empty (&xrep->inpipes) ? 1 : 0;
     sp_list_insert (&xrep->inpipes, &data->inpipes,
         sp_list_end (&xrep->inpipes));
     if (!xrep->current)
         xrep->current = data;
+
+    return result;
 }
 
-void sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_xrep_data *data;
 
     data = sp_pipe_getdata (pipe);
     data->flags |= SP_XREP_OUT;
+
+    /*  XREP socket never blocks on send, so there's no point in unblocking. */
+    return 0;
 }
 
 int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)

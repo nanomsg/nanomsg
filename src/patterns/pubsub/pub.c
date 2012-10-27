@@ -46,8 +46,8 @@ struct sp_pub {
 static void sp_pub_term (struct sp_sockbase *self);
 static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_pub_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_pub_setopt (struct sp_sockbase *self, int option,
@@ -105,22 +105,27 @@ static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_free (data);
 }
 
-static void sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     /*  We shouldn't get any messages from subscribers. */
     sp_assert (0);
+    return 0;
 }
 
-static void sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_pub *pub;
     struct sp_pub_data *data;
+    int result;
 
     pub = sp_cont (self, struct sp_pub, sockbase);
     data = sp_pipe_getdata (pipe);
 
     /*  New subscriber. Let's remember it. */
+    result = sp_list_empty (&pub->pipes) ? 1 : 0;
     sp_list_insert (&pub->pipes, &data->out, sp_list_end (&pub->pipes));
+
+    return result;
 }
 
 static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)

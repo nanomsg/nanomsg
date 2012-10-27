@@ -76,8 +76,8 @@ struct sp_sockbase_vfptr {
     void (*term) (struct sp_sockbase *self);
     int (*add) (struct sp_sockbase *self, struct sp_pipe *pipe);
     void (*rm) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    void (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    void (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
+    int (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);
+    int (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*send) (struct sp_sockbase *self, const void *buf, size_t len);
     int (*recv) (struct sp_sockbase *self, void *buf, size_t *len);
     int (*setopt) (struct sp_sockbase *self, int option,
@@ -94,16 +94,12 @@ struct sp_sockbase
     /*  Synchronises inbound-related state of the socket. */
     struct sp_mutex sync;
 
+    /*  Condition variable to implement sleeping in blocking socket
+        operations. */
+    struct sp_cond cond;
+
     /*  File descriptor for this socket. */
     int fd;
-
-    /*  List of delayed 'in' and 'out' commands synchronised via a mutex.
-        These commands cannot be executed straight away because that could
-        cause a deadlock. */
-    struct sp_mutex delayed_sync;
-    struct sp_cond delayed_cond;
-    struct sp_list delayed_ins;
-    struct sp_list delayed_outs;
 
     /*  Worker thread's instance of the clock. */
     struct sp_clock clock;
@@ -113,15 +109,6 @@ struct sp_sockbase
 
     /*  Completion port processed the worker thread. */
     struct sp_cp cp;
-
-    /*  Special task to ask the worker thread to stop. */
-    struct sp_cp_task stop;
-
-    /*  Special task used to notify the worker thread that the timers
-        have been modified. */
-    /*  TODO: What happens if timer is modified while last 'modified' task
-        is not yet processed. Some kind of idempotency is needed here. */
-    struct sp_cp_task timers_modified;
 
     /*  Worker thread associated with the socket. */
     /*  At the moment there's one worker thread per socket. Later on we can

@@ -59,18 +59,20 @@ void sp_excl_rm (struct sp_excl *self, struct sp_pipe *pipe)
    self->outpipe = NULL;
 }
 
-void sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe)
+int sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe)
 {
     sp_assert (!self->inpipe);
     sp_assert (pipe == self->pipe);
     self->inpipe = pipe;
+    return 1;
 }
 
-void sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe)
+int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe)
 {
     sp_assert (!self->outpipe);
     sp_assert (pipe == self->pipe);
     self->outpipe = pipe;
+    return 1;
 }
 
 int sp_excl_send (struct sp_excl *self, const void *buf, size_t len)

@@ -23,7 +23,6 @@
 #ifndef SP_CP_INCLUDED
 #define SP_CP_INCLUDED
 
-#include "list.h"
 #include "mutex.h"
 #include "cond.h"
 
@@ -31,15 +30,9 @@
 #include "win.h"
 #endif
 
-/*  Implementation of platform-neutral completion port. */
+#include <stddef.h>
 
-struct sp_cp_task {
-#if defined SP_HAVE_WINDOWS
-    OVERLAPPED olpd;
-#else
-    struct sp_list_item list;
-#endif
-};
+/*  Implementation of platform-neutral completion port. */
 
 struct sp_cp {
 #if defined SP_HAVE_WINDOWS
@@ -47,14 +40,22 @@ struct sp_cp {
 #else
     struct sp_mutex sync;
     struct sp_cond cond;
-    struct sp_list tasks;
+    size_t capacity;
+    size_t head;
+    size_t tail;
+    struct sp_cp_item {
+        int op;
+        void *arg;
+    } *items;
 #endif
 };
 
 void sp_cp_init (struct sp_cp *self);
 void sp_cp_term (struct sp_cp *self);
-void sp_cp_post (struct sp_cp *self, struct sp_cp_task *task);
-int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task);
+void sp_cp_post (struct sp_cp *self, int op, void *arg);
+
+/*  The function is suspectible to spurious ETIMEDOUT wake-ups. */
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg);
 
 #endif
 

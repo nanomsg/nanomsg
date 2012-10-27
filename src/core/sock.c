@@ -28,6 +28,11 @@
 #include "../utils/err.h"
 #include "../utils/cont.h"
 
+#define SP_SOCK_OP_STOP 1
+#define SP_SOCK_OP_TIMERS 2
+#define SP_SOCK_OP_IN 3
+#define SP_SOCK_OP_OUT 4
+
 /*  Private functions. */
 void sp_sockbase_timer_routine (struct sp_timer *self);
 static void sp_sock_worker_routine (void *arg);
@@ -37,11 +42,8 @@ void sp_sockbase_init (struct sp_sockbase *self,
 {
     self->vfptr = vfptr;
     sp_mutex_init (&self->sync, 0);
+    sp_cond_init (&self->cond);
     self->fd = fd;
-    sp_mutex_init (&self->delayed_sync, 0);
-    sp_cond_init (&self->delayed_cond);
-    sp_list_init (&self->delayed_ins);
-    sp_list_init (&self->delayed_outs);
     sp_clock_init (&self->clock);
     sp_list_init (&self->timers);
     sp_cp_init (&self->cp);
@@ -58,17 +60,14 @@ void sp_sock_term (struct sp_sock *self)
     sockbase->vfptr->term (sockbase);
 
     /*  Ask the worker thread to terminate and wait till it does. */
-    sp_cp_post (&sockbase->cp, &sockbase->stop);
+    sp_cp_post (&sockbase->cp, SP_SOCK_OP_STOP, NULL);
     sp_thread_term (&sockbase->worker);
     sp_cp_term (&sockbase->cp);
     sp_list_term (&sockbase->timers);
     sp_clock_term (&sockbase->clock);
 
     /*  Terminate the sp_sockbase itself. */
-    sp_list_term (&sockbase->delayed_outs);
-    sp_list_term (&sockbase->delayed_ins);
-    sp_cond_term (&sockbase->delayed_cond);
-    sp_mutex_term (&sockbase->delayed_sync);
+    sp_cond_term (&sockbase->cond);
     sp_mutex_term (&sockbase->sync);
 }
 
@@ -138,45 +137,33 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
     sockbase = (struct sp_sockbase*) self;
 
     sp_mutex_lock (&sockbase->sync);
-    sp_mutex_lock (&sockbase->delayed_sync);
 
     while (1) {
 
-        /*  Move any delayed outs to the working set of outbound pipes. */
-        for (it = sp_list_begin (&sockbase->delayed_outs);
-              it != sp_list_end (&sockbase->delayed_outs);
-              it = sp_list_next (&sockbase->delayed_outs, it)) {
-            pipe = sp_cont (it, struct sp_pipebase, delayed_out);
-            sockbase->vfptr->out (sockbase, (struct sp_pipe*) pipe);
-        }
-        sp_list_clear (&sockbase->delayed_outs);
-        sp_mutex_unlock (&sockbase->delayed_sync);
-
         /*  Try to send the message in a non-blocking way. */
         rc = sockbase->vfptr->send (sockbase, buf, len);
-        sp_mutex_unlock (&sockbase->sync);
-        if (sp_fast (rc == 0))
+        if (sp_fast (rc == 0)) {
+            sp_mutex_unlock (&sockbase->sync);
             return 0;
+        }
 
         /*  Any unexpected error is forwarded to the caller. */
-        if (sp_slow (rc != -EAGAIN))
+        if (sp_slow (rc != -EAGAIN)) {
+            sp_mutex_unlock (&sockbase->sync);
             return rc;
+        }
 
         /*  If the message cannot be sent at the moment and the send call
             is non-blocking, return immediately. */
-        if (sp_fast (flags & SP_DONTWAIT))
+        if (sp_fast (flags & SP_DONTWAIT)) {
+            sp_mutex_unlock (&sockbase->sync);
             return -EAGAIN;
+        }
 
         /*  With blocking send, wait while there are new pipes available
             for sending. */
-        sp_mutex_lock (&sockbase->delayed_sync);
-        if (sp_list_empty (&sockbase->delayed_outs)) {
-            rc = sp_cond_wait (&sockbase->delayed_cond,
-                &sockbase->delayed_sync, -1);
-            errnum_assert (rc == 0, rc);
-        }
-
-        sp_mutex_lock (&sockbase->sync);
+        rc = sp_cond_wait (&sockbase->cond, &sockbase->sync, -1);
+        errnum_assert (rc == 0, rc);
     }   
 }
 
@@ -190,45 +177,33 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
     sockbase = (struct sp_sockbase*) self;
 
     sp_mutex_lock (&sockbase->sync);
-    sp_mutex_lock (&sockbase->delayed_sync);
 
     while (1) {
 
-        /*  Move any delayed ins to the working set of inbound pipes. */
-        for (it = sp_list_begin (&sockbase->delayed_ins);
-              it != sp_list_end (&sockbase->delayed_ins);
-              it = sp_list_next (&sockbase->delayed_ins, it)) {
-            pipe = sp_cont (it, struct sp_pipebase, delayed_in);
-            sockbase->vfptr->in (sockbase, (struct sp_pipe*) pipe);
-        }
-        sp_list_clear (&sockbase->delayed_ins);
-        sp_mutex_unlock (&sockbase->delayed_sync);
-
         /*  Try to receive the message in a non-blocking way. */
         rc = sockbase->vfptr->recv (sockbase, buf, len);
-        sp_mutex_unlock (&sockbase->sync);
-        if (sp_fast (rc == 0))
+        if (sp_fast (rc == 0)) {
+            sp_mutex_unlock (&sockbase->sync);
             return 0;
+        }
 
         /*  Any unexpected error is forwarded to the caller. */
-        if (sp_slow (rc != -EAGAIN))
+        if (sp_slow (rc != -EAGAIN)) {
+            sp_mutex_unlock (&sockbase->sync);
             return rc;
+        }
 
         /*  If the message cannot be received at the moment and the recv call
             is non-blocking, return immediately. */
-        if (sp_fast (flags & SP_DONTWAIT))
+        if (sp_fast (flags & SP_DONTWAIT)) {
+            sp_mutex_unlock (&sockbase->sync);
             return -EAGAIN;
+        }
 
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        sp_mutex_lock (&sockbase->delayed_sync);
-        if (sp_list_empty (&sockbase->delayed_ins)) {
-            rc = sp_cond_wait (&sockbase->delayed_cond,
-                &sockbase->delayed_sync, -1);
-            errnum_assert (rc == 0, rc);
-        }
-
-        sp_mutex_lock (&sockbase->sync);
+        rc = sp_cond_wait (&sockbase->cond, &sockbase->sync, -1);
+        errnum_assert (rc == 0, rc);
     }  
 }
 
@@ -268,32 +243,12 @@ void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe)
 
 void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    struct sp_sockbase *sockbase;
-    struct sp_pipebase *pipebase;
-
-    sockbase = (struct sp_sockbase*) self;
-    pipebase = (struct sp_pipebase*) pipe;
-
-    sp_mutex_lock (&sockbase->delayed_sync);
-    sp_list_insert (&sockbase->delayed_ins, &pipebase->delayed_in,
-        sp_list_end (&sockbase->delayed_ins));
-    sp_cond_signal (&sockbase->delayed_cond);
-    sp_mutex_unlock (&sockbase->delayed_sync);    
+    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_OP_IN, pipe);
 }
 
 void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    struct sp_sockbase *sockbase;
-    struct sp_pipebase *pipebase;
-
-    sockbase = (struct sp_sockbase*) self;
-    pipebase = (struct sp_pipebase*) pipe;
-
-    sp_mutex_lock (&sockbase->delayed_sync);
-    sp_list_insert (&sockbase->delayed_outs, &pipebase->delayed_out,
-        sp_list_end (&sockbase->delayed_outs));
-    sp_cond_signal (&sockbase->delayed_cond);
-    sp_mutex_unlock (&sockbase->delayed_sync);
+    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_OP_OUT, pipe);
 }
 
 void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
@@ -314,7 +269,7 @@ void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
     }
     sp_list_insert (&sockbase->timers, &self->list, it);
     if (&self->list == sp_list_begin (&sockbase->timers))
-        sp_cp_post (&sockbase->cp, &sockbase->timers_modified);
+        sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
     sp_mutex_unlock (&sockbase->sync);
 }
 
@@ -326,7 +281,7 @@ void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
     signal = (&self->list == sp_list_begin (&sockbase->timers)) ? 1 : 0;
     sp_list_erase (&sockbase->timers, &self->list);
     if (signal)
-        sp_cp_post (&sockbase->cp, &sockbase->timers_modified);
+        sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
     sp_mutex_unlock (&sockbase->sync);
 }
 
@@ -337,7 +292,8 @@ static void sp_sock_worker_routine (void *arg)
     uint64_t now;
     struct sp_sockbase *sockbase;
     struct sp_timer *timer;
-    struct sp_cp_task *task;
+    int op;
+    void *oparg;
 
     sockbase = (struct sp_sockbase*) arg;
 
@@ -361,22 +317,41 @@ static void sp_sock_worker_routine (void *arg)
 
         /*  Wait for a completion of an operation or a timer expiration. */
         sp_mutex_unlock (&sockbase->sync);
-        rc = sp_cp_wait (&sockbase->cp, timeout, &task);
+        rc = sp_cp_wait (&sockbase->cp, timeout, &op, &oparg);
         errnum_assert (rc == 0 || rc == -ETIMEDOUT, -rc);
         sp_mutex_lock (&sockbase->sync);
 
         /*  If there's a task completion event available. */
         if (rc == 0) {
 
-            /*  If the socket is terminating, exit the worker thread. */
-            if (task != &sockbase->stop)
-                break;
+            /*  Handle inbound pipes. */
+            if (sp_fast (op == SP_SOCK_OP_IN)) {
+                rc = sockbase->vfptr->in (sockbase, (struct sp_pipe*) oparg);
+                errnum_assert (rc >= 0, -rc);
+                if (rc > 0)
+                    sp_cond_signal (&sockbase->cond);
+            }
+
+            /*  Handle outbound pipes. */
+            else if (sp_fast (op == SP_SOCK_OP_OUT)) {
+                rc = sockbase->vfptr->out (sockbase, (struct sp_pipe*) oparg);
+                errnum_assert (rc >= 0, -rc);
+                if (rc > 0)
+                    sp_cond_signal (&sockbase->cond);
+            }
 
             /*  If timers were modified do nothing and move straight to
                 execution and re-computation of the timers. */
-            if (task != &sockbase->timers_modified) {
-                sp_assert (0);
+            else if (sp_fast (op == SP_SOCK_OP_TIMERS)) {
             }
+
+            /*  If the socket is terminating, exit the worker thread. */
+            else if (sp_fast (op == SP_SOCK_OP_STOP))
+                break;
+
+            /*  Unknown operation. */
+            else
+                sp_assert (0);
         }
 
         /*  Adjust the current time. */
@@ -399,5 +374,7 @@ static void sp_sock_worker_routine (void *arg)
             timer->fn (timer);
         }
     }
+
+    sp_mutex_unlock (&sockbase->sync);
 }
 

@@ -65,14 +65,14 @@ void sp_xreq_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_excl_rm (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
 }
 
-void sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_in (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    return sp_excl_in (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
 }
 
-void sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_out (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    return sp_excl_out (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
 }
 
 int sp_xreq_send (struct sp_sockbase *self, const void *buf, size_t len)

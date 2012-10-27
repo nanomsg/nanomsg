@@ -41,8 +41,8 @@ struct sp_sub {
 static void sp_sub_term (struct sp_sockbase *self);
 static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_sub_setopt (struct sp_sockbase *self, int option,
@@ -89,14 +89,14 @@ static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_excl_rm (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
 }
 
-static void sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_in (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    return sp_excl_in (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
 }
 
-static void sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_out (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    return sp_excl_out (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
 }
 
 static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len)

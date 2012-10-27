@@ -68,60 +68,98 @@ int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
 
 #else
 
+#include "alloc.h"
 #include "fast.h"
 #include "cont.h"
 #include "err.h"
+
+#define SP_CP_INITIAL_CAPACITY 64
 
 void sp_cp_init (struct sp_cp *self)
 {
     sp_mutex_init (&self->sync, 0);
     sp_cond_init (&self->cond);
-    sp_list_init (&self->tasks);
+    self->capacity = SP_CP_INITIAL_CAPACITY;
+    self->head = 0;
+    self->tail = 0;
+    self->items = sp_alloc (self->capacity * sizeof (struct sp_cp_item));
+    alloc_assert (self->items);
 }
 
 void sp_cp_term (struct sp_cp *self)
 {
-    sp_list_term (&self->tasks);
+    sp_free (self->items);
     sp_cond_term (&self->cond);
     sp_mutex_term (&self->sync);
 }
 
-void sp_cp_post (struct sp_cp *self, struct sp_cp_task *task)
+void sp_cp_post (struct sp_cp *self, int op, void *arg)
 {
     int empty;
 
     sp_mutex_lock (&self->sync);
 
-    empty = sp_list_empty (&self->tasks);
-    sp_list_insert (&self->tasks, &task->list, sp_list_end (&self->tasks));
+    /*  Fill in new item in the circular buffer. */
+    self->items [self->tail].op = op;
+    self->items [self->tail].arg = arg;
+
+    /*  Move tail by 1 position. */
+    empty = self->tail == self->head ? 1 : 0;
+    self->tail = (self->tail + 1) % self->capacity;
+
+    /*  If the capacity of the circular buffer is exhausted, allocate some
+        more memory. */
+    if (sp_slow (self->head == self->tail)) {
+        self->items = sp_realloc (self->items,
+            self->capacity * 2 * sizeof (struct sp_cp_item));
+        alloc_assert (self->items);
+        memcpy (self->items + self->capacity, self->items,
+            self->tail * sizeof (struct sp_cp_item));
+        self->tail += self->capacity;
+        self->capacity *= 2;
+    }
+    
     if (empty)
         sp_cond_signal (&self->cond);
 
     sp_mutex_unlock (&self->sync);
 }
 
-int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 {
     int rc;
 
     sp_mutex_lock (&self->sync);
-    while (1) {
-        rc = sp_cond_wait (&self->cond, &self->sync, timeout);
-        if (sp_slow (rc == -ETIMEDOUT)) {
-            sp_mutex_unlock (&self->sync);
-            return -ETIMEDOUT;
-        }
 
-        /*  TODO: Adjust the timeout here. */
-        if (sp_slow (sp_list_empty (&self->tasks)))
-            continue;
-
-        *task = sp_cont (sp_list_begin (&self->tasks), struct sp_cp_task, list);
-        sp_list_erase (&self->tasks, &(*task)->list);
+    /*  If there's an item available, return it. */
+    if (sp_fast (self->head != self->tail)) {
+        *op = self->items [self->head].op;
+        *arg = self->items [self->head].arg;
+        self->head = (self->head + 1) % self->capacity;
+        sp_mutex_unlock (&self->sync);
+        return 0;
     }
-    sp_mutex_unlock (&self->sync);
 
-    return 0;
+    /*  Wait for new item. */
+    rc = sp_cond_wait (&self->cond, &self->sync, timeout);
+    if (sp_slow (rc == -ETIMEDOUT)) {
+        sp_mutex_unlock (&self->sync);
+        return -ETIMEDOUT;
+    }
+
+    /*  If there's an item available now, return it. */
+    if (sp_fast (self->head != self->tail)) {
+        *op = self->items [self->head].op;
+        *arg = self->items [self->head].arg;
+        self->head = (self->head + 1) % self->capacity;
+        sp_mutex_unlock (&self->sync);
+        return 0;
+    }
+
+    /*  Spurious wake-up. */
+    sp_mutex_unlock (&self->sync);
+    return -ETIMEDOUT;
 }
 
 #endif
+

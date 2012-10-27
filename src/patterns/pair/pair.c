@@ -36,8 +36,8 @@ struct sp_pair {
 static void sp_pair_term (struct sp_sockbase *self);
 static int sp_pair_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_pair_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_pair_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_pair_out (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_pair_in (struct sp_sockbase *self, struct sp_pipe *pipe);
+static int sp_pair_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pair_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_pair_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_pair_setopt (struct sp_sockbase *self, int option,
@@ -82,14 +82,14 @@ static void sp_pair_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
     sp_excl_rm (&sp_cont (self, struct sp_pair, sockbase)->excl, pipe);
 }
 
-static void sp_pair_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_pair_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_in (&sp_cont (self, struct sp_pair, sockbase)->excl, pipe);
+    return sp_excl_in (&sp_cont (self, struct sp_pair, sockbase)->excl, pipe);
 }
 
-static void sp_pair_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int sp_pair_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
-    sp_excl_out (&sp_cont (self, struct sp_pair, sockbase)->excl, pipe);
+    return sp_excl_out (&sp_cont (self, struct sp_pair, sockbase)->excl, pipe);
 }
 
 static int sp_pair_send (struct sp_sockbase *self, const void *buf, size_t len)

@@ -23,12 +23,15 @@
 #ifndef SP_PATTERN_INCLUDED
 #define SP_PATTERN_INCLUDED
 
-#include "utils/cmutex.h"
-#include "utils/timer.h"
+#include "utils/mutex.h"
+#include "utils/thread.h"
+#include "utils/clock.h"
 #include "utils/cond.h"
 #include "utils/list.h"
+#include "utils/cp.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 /******************************************************************************/
 /*  Pipe class.                                                               */
@@ -42,6 +45,25 @@ void sp_pipe_setdata (struct sp_pipe *self, void *data);
 void *sp_pipe_getdata (struct sp_pipe *self);
 int sp_pipe_send (struct sp_pipe *self, const void *buf, size_t len);
 int sp_pipe_recv (struct sp_pipe *self, void *buf, size_t *len);
+
+/******************************************************************************/
+/*  Timers.                                                                   */
+/******************************************************************************/
+
+struct sp_sockbase;
+
+struct sp_timer {
+    struct sp_list_item list;
+    uint64_t timeout;
+    void (*fn) (struct sp_timer *self);
+};
+
+/*  Start the timer. */
+void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
+    int timeout, void (*fn) (struct sp_timer *self));
+
+/*  Cancel a running timer. */
+void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase);
 
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
@@ -70,7 +92,7 @@ struct sp_sockbase
     const struct sp_sockbase_vfptr *vfptr;
 
     /*  Synchronises inbound-related state of the socket. */
-    struct sp_cmutex sync;
+    struct sp_mutex sync;
 
     /*  File descriptor for this socket. */
     int fd;
@@ -82,6 +104,29 @@ struct sp_sockbase
     struct sp_cond delayed_cond;
     struct sp_list delayed_ins;
     struct sp_list delayed_outs;
+
+    /*  Worker thread's instance of the clock. */
+    struct sp_clock clock;
+
+    /*  List of active timers. */
+    struct sp_list timers;
+
+    /*  Completion port processed the worker thread. */
+    struct sp_cp cp;
+
+    /*  Special task to ask the worker thread to stop. */
+    struct sp_cp_task stop;
+
+    /*  Special task used to notify the worker thread that the timers
+        have been modified. */
+    /*  TODO: What happens if timer is modified while last 'modified' task
+        is not yet processed. Some kind of idempotency is needed here. */
+    struct sp_cp_task timers_modified;
+
+    /*  Worker thread associated with the socket. */
+    /*  At the moment there's one worker thread per socket. Later on we can
+        move to thread pool model if needed. */
+    struct sp_thread worker;
 };
 
 /*  Initialise the socket. */
@@ -95,15 +140,6 @@ struct sp_sockbase_timer {
     struct sp_sockbase *sockbase;
     void (*fn) (struct sp_sockbase_timer *self);
 };
-
-/*  Start the timer. */
-void sp_sockbase_timer_start (struct sp_sockbase *self,
-    struct sp_sockbase_timer *timer, int timeout,
-    void (*fn) (struct sp_sockbase_timer *self));
-
-/*  Cancel a running timer. */
-void sp_sockbase_timer_cancel (struct sp_sockbase *self,
-    struct sp_sockbase_timer *timer);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

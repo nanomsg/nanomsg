@@ -41,8 +41,6 @@ add_library(nanomsg SHARED
     utils/alloc.c
     utils/clock.h
     utils/clock.c
-    utils/cmutex.h
-    utils/cmutex.c
     utils/cond.h
     utils/cond.c
     utils/cont.h
@@ -75,8 +73,6 @@ add_library(nanomsg SHARED
     utils/sleep.c
     utils/thread.h
     utils/thread.c
-    utils/timer.h
-    utils/timer.c
     utils/usock.h
     utils/usock.c
     utils/wire.h

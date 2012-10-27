@@ -30,56 +30,22 @@
 
 /*  Private functions. */
 void sp_sockbase_timer_routine (struct sp_timer *self);
+static void sp_sock_worker_routine (void *arg);
 
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     self->vfptr = vfptr;
-    sp_cmutex_init (&self->sync);
+    sp_mutex_init (&self->sync, 0);
     self->fd = fd;
     sp_mutex_init (&self->delayed_sync, 0);
     sp_cond_init (&self->delayed_cond);
     sp_list_init (&self->delayed_ins);
     sp_list_init (&self->delayed_outs);
-}
-
-void sp_sockbase_timer_start (struct sp_sockbase *self,
-    struct sp_sockbase_timer *timer, int timeout,
-    void (*fn) (struct sp_sockbase_timer *self))
-{
-    sp_cmutex_start_cancelling (&self->sync);
-    timer->sockbase = self;
-    timer->fn = fn;
-    sp_timer_start (&timer->timer, timeout, sp_sockbase_timer_routine);
-    sp_cmutex_stop_cancelling (&self->sync);
-}
-
-void sp_sockbase_timer_cancel (struct sp_sockbase *self,
-    struct sp_sockbase_timer *timer)
-{
-    sp_cmutex_start_cancelling (&self->sync);
-    sp_timer_cancel (&timer->timer);
-    sp_cmutex_stop_cancelling (&self->sync);
-}
-
-void sp_sockbase_timer_routine (struct sp_timer *self)
-{
-    int rc;
-    struct sp_sockbase_timer *timer;
-
-    timer = sp_cont (self, struct sp_sockbase_timer, timer);
-
-    /*  Try to grab the ownership of the mutex. If it's in cancellation state
-        drop the timer and don't invoke the callback. */
-    rc = sp_cmutex_cancellable_lock (&timer->sockbase->sync);
-    if (rc == -ECANCELED)
-        return;
-    errnum_assert (rc == 0, -rc);
-
-    /*  Invoke the callback. */
-    timer->fn (timer);
-
-    sp_cmutex_unlock (&timer->sockbase->sync);
+    sp_clock_init (&self->clock);
+    sp_list_init (&self->timers);
+    sp_cp_init (&self->cp);
+    sp_thread_init (&self->worker, sp_sock_worker_routine, self);
 }
 
 void sp_sock_term (struct sp_sock *self)
@@ -91,12 +57,19 @@ void sp_sock_term (struct sp_sock *self)
     /*  Terminate the derived class. */
     sockbase->vfptr->term (sockbase);
 
+    /*  Ask the worker thread to terminate and wait till it does. */
+    sp_cp_post (&sockbase->cp, &sockbase->stop);
+    sp_thread_term (&sockbase->worker);
+    sp_cp_term (&sockbase->cp);
+    sp_list_term (&sockbase->timers);
+    sp_clock_term (&sockbase->clock);
+
     /*  Terminate the sp_sockbase itself. */
     sp_list_term (&sockbase->delayed_outs);
     sp_list_term (&sockbase->delayed_ins);
     sp_cond_term (&sockbase->delayed_cond);
     sp_mutex_term (&sockbase->delayed_sync);
-    sp_cmutex_term (&sockbase->sync);
+    sp_mutex_term (&sockbase->sync);
 }
 
 int sp_sock_setopt (struct sp_sock *self, int level, int option,
@@ -107,7 +80,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
 
     /*  TODO: Handle socket-leven options here. */
 
@@ -115,7 +88,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
     if (level == SP_SOL_SOCKET) {
         rc = sockbase->vfptr->setopt (sockbase, option, optval, optvallen);
         if (rc != -ENOPROTOOPT) {
-            sp_cmutex_unlock (&sockbase->sync);
+            sp_mutex_unlock (&sockbase->sync);
             return rc;
         }
     }
@@ -123,7 +96,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
     /*   TODO: Check transport-specific options here. */
 
     /*  Socket option not found. */
-    sp_cmutex_unlock (&sockbase->sync);
+    sp_mutex_unlock (&sockbase->sync);
     return -ENOPROTOOPT;
 }
 
@@ -135,7 +108,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
 
     /*  TODO: Handle socket-leven options here. */
 
@@ -143,7 +116,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
     if (level == SP_SOL_SOCKET) {
         rc = sockbase->vfptr->getopt (sockbase, option, optval, optvallen);
         if (rc != -ENOPROTOOPT) {
-            sp_cmutex_unlock (&sockbase->sync);
+            sp_mutex_unlock (&sockbase->sync);
             return rc;
         }
     }
@@ -151,7 +124,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
     /*   TODO: Check transport-specific options here. */
 
     /*  Socket option not found. */
-    sp_cmutex_unlock (&sockbase->sync);
+    sp_mutex_unlock (&sockbase->sync);
     return -ENOPROTOOPT;
 }
 
@@ -164,7 +137,7 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
     sp_mutex_lock (&sockbase->delayed_sync);
 
     while (1) {
@@ -181,7 +154,7 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 
         /*  Try to send the message in a non-blocking way. */
         rc = sockbase->vfptr->send (sockbase, buf, len);
-        sp_cmutex_unlock (&sockbase->sync);
+        sp_mutex_unlock (&sockbase->sync);
         if (sp_fast (rc == 0))
             return 0;
 
@@ -203,7 +176,7 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
             errnum_assert (rc == 0, rc);
         }
 
-        sp_cmutex_lock (&sockbase->sync);
+        sp_mutex_lock (&sockbase->sync);
     }   
 }
 
@@ -216,7 +189,7 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
     sp_mutex_lock (&sockbase->delayed_sync);
 
     while (1) {
@@ -233,7 +206,7 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
 
         /*  Try to receive the message in a non-blocking way. */
         rc = sockbase->vfptr->recv (sockbase, buf, len);
-        sp_cmutex_unlock (&sockbase->sync);
+        sp_mutex_unlock (&sockbase->sync);
         if (sp_fast (rc == 0))
             return 0;
 
@@ -255,7 +228,7 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
             errnum_assert (rc == 0, rc);
         }
 
-        sp_cmutex_lock (&sockbase->sync);
+        sp_mutex_lock (&sockbase->sync);
     }  
 }
 
@@ -275,9 +248,9 @@ int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe)
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
     rc = sockbase->vfptr->add (sockbase, pipe);
-    sp_cmutex_unlock (&sockbase->sync);
+    sp_mutex_unlock (&sockbase->sync);
 
     return rc;
 }
@@ -288,9 +261,9 @@ void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe)
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cmutex_lock (&sockbase->sync);
+    sp_mutex_lock (&sockbase->sync);
     sockbase->vfptr->rm (sockbase, pipe);
-    sp_cmutex_unlock (&sockbase->sync);
+    sp_mutex_unlock (&sockbase->sync);
 }
 
 void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe)
@@ -321,5 +294,110 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
         sp_list_end (&sockbase->delayed_outs));
     sp_cond_signal (&sockbase->delayed_cond);
     sp_mutex_unlock (&sockbase->delayed_sync);
+}
+
+void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
+    int timeout, void (*fn) (struct sp_timer *self))
+{
+    struct sp_list_item *it;
+    struct sp_timer *itt;
+
+    sp_mutex_lock (&sockbase->sync);
+    self->timeout = sp_clock_now (&sockbase->clock) + timeout;
+    self->fn = fn;
+    for (it = sp_list_begin (&sockbase->timers);
+          it != sp_list_end (&sockbase->timers);
+          it = sp_list_next (&sockbase->timers, it)) {
+        itt = sp_cont (it, struct sp_timer, list);
+        if (self->timeout < itt->timeout)
+            break;
+    }
+    sp_list_insert (&sockbase->timers, &self->list, it);
+    if (&self->list == sp_list_begin (&sockbase->timers))
+        sp_cp_post (&sockbase->cp, &sockbase->timers_modified);
+    sp_mutex_unlock (&sockbase->sync);
+}
+
+void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
+{
+    int signal;
+
+    sp_mutex_lock (&sockbase->sync);
+    signal = (&self->list == sp_list_begin (&sockbase->timers)) ? 1 : 0;
+    sp_list_erase (&sockbase->timers, &self->list);
+    if (signal)
+        sp_cp_post (&sockbase->cp, &sockbase->timers_modified);
+    sp_mutex_unlock (&sockbase->sync);
+}
+
+static void sp_sock_worker_routine (void *arg)
+{
+    int rc;
+    int timeout;
+    uint64_t now;
+    struct sp_sockbase *sockbase;
+    struct sp_timer *timer;
+    struct sp_cp_task *task;
+
+    sockbase = (struct sp_sockbase*) arg;
+
+    /*  Get the current time. */
+    now = sp_clock_now (&sockbase->clock);
+
+    sp_mutex_lock (&sockbase->sync);
+
+    while (1) {
+
+        /*  Compute the waiting period till first timer expires. */
+        if (sp_list_empty (&sockbase->timers))
+            timeout = -1;
+        else {
+            timer = sp_cont (sp_list_begin (&sockbase->timers),
+                struct sp_timer, list);
+            timeout = (int) (timer->timeout - now);
+            if (timeout < 0)
+                timeout = 0;
+        }
+
+        /*  Wait for a completion of an operation or a timer expiration. */
+        sp_mutex_unlock (&sockbase->sync);
+        rc = sp_cp_wait (&sockbase->cp, timeout, &task);
+        errnum_assert (rc == 0 || rc == -ETIMEDOUT, -rc);
+        sp_mutex_lock (&sockbase->sync);
+
+        /*  If there's a task completion event available. */
+        if (rc == 0) {
+
+            /*  If the socket is terminating, exit the worker thread. */
+            if (task != &sockbase->stop)
+                break;
+
+            /*  If timers were modified do nothing and move straight to
+                execution and re-computation of the timers. */
+            if (task != &sockbase->timers_modified) {
+                sp_assert (0);
+            }
+        }
+
+        /*  Adjust the current time. */
+        now = sp_clock_now (&sockbase->clock);
+
+        /* Execute the timers. */
+        while (1) {
+            if (sp_list_empty (&sockbase->timers))
+                break;
+            timer = sp_cont (sp_list_begin (&sockbase->timers),
+                struct sp_timer, list);
+            if (timer->timeout > now)
+                break;
+            sp_list_erase (&sockbase->timers, &timer->list);
+
+            /*  Invoke the timer callback. The important point here is that
+                the timer structure is not referenced anymore and none of its
+                members will be used again. Thus, callback is free to re-use
+                it to launch a new timer. */
+            timer->fn (timer);
+        }
+    }
 }
 

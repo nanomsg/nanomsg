@@ -34,7 +34,6 @@
 #include "../utils/list.h"
 #include "../utils/cont.h"
 #include "../utils/random.h"
-#include "../utils/timer.h"
 #include "../utils/glock.h"
 
 #include "../transports/inproc/inproc.h"
@@ -195,9 +194,6 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_xrep_socktype);
     sp_ctx_add_socktype (sp_xreq_socktype);
 
-    /*  Initialise the timer subsystem. */
-    sp_timer_init ();
-
     sp_glock_unlock ();
 
     return 0;
@@ -223,7 +219,6 @@ int sp_term (void)
     /*  TODO:  Wait for all endpoints to be closed. */
 
     /*  Final deallocation of the global resources. */
-    sp_timer_term ();
     sp_list_term (&self.socktypes);
     sp_list_term (&self.transports);
     sp_mutex_term (&self.esync);

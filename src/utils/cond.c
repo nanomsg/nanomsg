@@ -29,14 +29,12 @@
 void sp_cond_init (struct sp_cond *self)
 {
     InitializeConditionVariable (&self->cond);
-    sp_clock_init (&self->clock);
 }
 
 void sp_cond_term (struct sp_cond *self)
 {
-    sp_clock_term (&self->clock);
-
-    /*  It seems there's no need to deallocate the condition variable. */
+    /*  It seems that on Windows there's no need to terminate
+        the condition variable. */
 }
 
 int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
@@ -67,14 +65,12 @@ void sp_cond_init (struct sp_cond *self)
 
     rc = pthread_cond_init (&self->cond, NULL);
     errnum_assert (rc == 0, rc);
-    sp_clock_init (&self->clock);
 }
 
 void sp_cond_term (struct sp_cond *self)
 {
     int rc;
 
-    sp_clock_term (&self->clock);
     rc = pthread_cond_destroy (&self->cond);
     errnum_assert (rc == 0, rc);
 }

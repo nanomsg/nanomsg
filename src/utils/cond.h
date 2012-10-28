@@ -26,7 +26,6 @@
 /*  Platform-independent condition variable. */
 
 #include "mutex.h"
-#include "clock.h"
 
 #ifdef SP_HAVE_WINDOWS
 
@@ -34,7 +33,6 @@
 
 struct sp_cond {
     CONDITION_VARIABLE cond;
-    struct sp_clock clock;
 };
 
 #else
@@ -43,7 +41,6 @@ struct sp_cond {
 
 struct sp_cond {
     pthread_cond_t cond;
-    struct sp_clock clock;
 };
 
 #endif

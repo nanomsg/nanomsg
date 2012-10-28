@@ -253,6 +253,8 @@ void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
     struct sp_list_item *it;
     struct sp_timer *itt;
 
+    /*  No need to lock the socket mutex here as the function is always
+        called from within the socket. I.e. the mutex is already locked. */
     self->timeout = sp_clock_now (&sockbase->clock) + timeout;
     self->fn = fn;
     for (it = sp_list_begin (&sockbase->timers);
@@ -271,6 +273,8 @@ void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
 {
     int signal;
 
+    /*  No need to lock the socket mutex here as the function is always
+        called from within the socket. I.e. the mutex is already locked. */
     signal = (&self->list == sp_list_begin (&sockbase->timers)) ? 1 : 0;
     sp_list_erase (&sockbase->timers, &self->list);
     if (signal)

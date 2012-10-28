@@ -134,7 +134,9 @@ static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
         pretend it was sent anyway. Re-send mechanism will take care of the
         rest. */
     rc = sp_xreq_send (&req->xreq.sockbase, req->request, req->requestlen);
-    errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
+    if (sp_slow (rc == -EAGAIN))
+        return -EAGAIN;
+    errnum_assert (rc == 0, -rc);
 
     /*  Remember that we are processing a request and waiting for the reply
         at the moment. */

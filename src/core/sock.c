@@ -253,7 +253,6 @@ void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
     struct sp_list_item *it;
     struct sp_timer *itt;
 
-    sp_mutex_lock (&sockbase->sync);
     self->timeout = sp_clock_now (&sockbase->clock) + timeout;
     self->fn = fn;
     for (it = sp_list_begin (&sockbase->timers);
@@ -266,19 +265,16 @@ void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
     sp_list_insert (&sockbase->timers, &self->list, it);
     if (&self->list == sp_list_begin (&sockbase->timers))
         sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
-    sp_mutex_unlock (&sockbase->sync);
 }
 
 void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
 {
     int signal;
 
-    sp_mutex_lock (&sockbase->sync);
     signal = (&self->list == sp_list_begin (&sockbase->timers)) ? 1 : 0;
     sp_list_erase (&sockbase->timers, &self->list);
     if (signal)
         sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
-    sp_mutex_unlock (&sockbase->sync);
 }
 
 static void sp_sock_worker_routine (void *arg)

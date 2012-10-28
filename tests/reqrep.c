@@ -37,6 +37,8 @@ int main ()
 
     printf ("reqrep test running...\n");
 
+    /*  Test req/rep with raw socket types. */
+
     rc = sp_init ();
     errno_assert (rc == 0);
     rep = sp_socket (AF_SP_RAW, SP_REP);
@@ -86,6 +88,8 @@ int main ()
     errno_assert (rc == 0);
     rc = sp_term ();
     errno_assert (rc == 0);
+
+    /*  Test req/rep with full socket types. */
 
     rc = sp_init ();
     errno_assert (rc == 0);

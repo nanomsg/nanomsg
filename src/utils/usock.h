@@ -26,7 +26,7 @@
 /*  Platform independent underlying (OS-level) socket object. */
 
 #include "addr.h"
-#include "iocp.h"
+#include "cp.h"
 
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
@@ -48,7 +48,7 @@ struct sp_usock {
     int type;
     int protocol;
 #if !defined SP_HAVE_WINDOWS
-    struct sp_iocp *iocp;
+    struct sp_cp *cp;
 #endif
 };
 
@@ -62,11 +62,6 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 int sp_usock_listen (struct sp_usock *self, int backlog);
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted);
-
-int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_iocp_task *task);
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_iocp_task *task); 
 
 #endif
 

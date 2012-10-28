@@ -71,6 +71,7 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 #else
 
 #include "alloc.h"
+#include "usock.h"
 #include "fast.h"
 #include "err.h"
 
@@ -160,6 +161,20 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
     /*  Spurious wake-up. */
     sp_mutex_unlock (&self->sync);
     return -ETIMEDOUT;
+}
+
+void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock)
+{
+#if defined SP_HAVE_WINDOWS
+    HANDLE cp;
+
+    cp = CreateIoCompletionPort ((HANDLE) usock->s, cp->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (cp);
+#else
+    sp_assert (!usock->cp);
+    usock->cp = self;
+#endif
 }
 
 #endif

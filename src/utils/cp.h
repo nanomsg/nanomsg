@@ -32,6 +32,8 @@
 
 #include <stddef.h>
 
+struct sp_usock;
+
 /*  Implementation of platform-neutral completion port. */
 
 struct sp_cp {
@@ -56,6 +58,10 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg);
 
 /*  The function is suspectible to spurious ETIMEDOUT wake-ups. */
 int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg);
+
+/*  Associates the socket with the completion point. Association is broken
+    when the socket is destroyed. */
+void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock);
 
 #endif
 

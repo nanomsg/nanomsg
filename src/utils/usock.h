@@ -26,7 +26,6 @@
 /*  Platform independent underlying (OS-level) socket object. */
 
 #include "addr.h"
-#include "cp.h"
 
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
@@ -37,6 +36,8 @@
 /*  If this flag is set, recv doesn't have to wait for all bytes to be received
     before it completes. One byte is sufficient. */
 #define SP_USOCK_PARTIAL 1
+
+struct sp_cp;
 
 struct sp_usock {
 #if defined SP_HAVE_WINDOWS

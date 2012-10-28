@@ -14,16 +14,18 @@ transport protocols, message filtering (subscriptions) and more.
 Building
 --------
 
-1. The build is performed using CMake, so first make sure that CMake is
-   installed on your system
-2. Clone the source repository from git
-3. cd nanomsg
-4. cmake .
-5. make
-6. make test
-7. sudo make install
-8. On Linux or other platforms which use ld.so for dynamic linking, run ldconfig
-   or equivalent as root to update your system’s shared library cache. 
+1.  The build is performed using CMake, so first make sure that CMake is
+    installed on your system
+2.  git clone git@github.com:250bpm/nanomsg.git
+3.  cd nanomsg
+4.  mkdir build
+5.  cd build
+6.  cmake ..
+7.  make
+8.  make test
+9.  sudo make install
+10. On Linux or other platforms which use ld.so for dynamic linking, run
+    ldconfig or equivalent as root to update your system’s shared library cache. 
 
 Copying
 -------
@@ -45,3 +47,4 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+

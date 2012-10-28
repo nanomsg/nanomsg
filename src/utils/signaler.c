@@ -22,6 +22,8 @@
 
 #include "signaler.h"
 
+#if !defined SP_HAVE_WINDOWS
+
 #if defined SP_USE_SOCKETPAIR
 
 #include "err.h"
@@ -111,6 +113,8 @@ void sp_signaler_post (struct sp_signaler *self)
     nbytes = write (self->efd, &one, sizeof (one));
     errno_assert (nbytes == sizeof (one));
 }
+
+#endif
 
 #endif
 

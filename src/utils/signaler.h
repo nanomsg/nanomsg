@@ -23,6 +23,8 @@
 #ifndef SP_SIGNALER_INCLUDED
 #define SP_SIGNALER_INCLUDED
 
+#if !defined SP_HAVE_WINDOWS
+
 struct sp_signaler;
 
 void sp_signaler_init (struct sp_signaler *self);
@@ -44,6 +46,8 @@ struct sp_signaler
 {
     int efd;
 };
+
+#endif
 
 #endif
 

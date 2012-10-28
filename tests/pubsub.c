@@ -24,6 +24,7 @@
 
 #include "../src/sp.h"
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.c"
 
 int main ()
 {
@@ -53,6 +54,9 @@ int main ()
     errno_assert (rc == 0);
     rc = sp_connect (sub2, "inproc://a");
     errno_assert (rc >= 0);
+
+    /*  Wait till connections are established to prevent message loss. */
+    sp_sleep (10);
 
     rc = sp_send (pub, "ABC", 3, 0);
     errno_assert (rc >= 0);

@@ -86,8 +86,6 @@ struct sp_pipebase_vfptr {
 struct sp_pipebase {
     const struct sp_pipebase_vfptr *vfptr;
     struct sp_epbase *epbase;
-    struct sp_list_item delayed_in;
-    struct sp_list_item delayed_out;
     void *data;
 };
 

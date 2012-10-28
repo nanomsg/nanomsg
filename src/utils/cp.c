@@ -25,7 +25,7 @@
 #if defined SP_HAVE_WINDOWS
 
 #include "err.h"
-#include "cont.h"
+#include "fast.h"
 
 void sp_cp_init (struct sp_cp *self)
 {
@@ -41,27 +41,29 @@ void sp_cp_term (struct sp_cp *self)
     win_assert (brc);
 }
 
-void sp_cp_post (struct sp_cp *self, struct sp_cp_task *task)
+void sp_cp_post (struct sp_cp *self, int op, void *arg)
 {
     BOOL brc;
 
-    brc = PostQueuedCompletionStatus (self->hndl, 0,
-        (ULONG_PTR) NULL, &task->olpd);
+    brc = PostQueuedCompletionStatus (self->hndl, (DWORD) op,
+        (ULONG_PTR) arg, NULL);
     win_assert (brc);
 }
 
-int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 {
     BOOL brc;
+    DWORD nbytes;
+    ULONG_PTR key;
     LPOVERLAPPED olpd;
 
-    brc = GetQueuedCompletionStatus (self->hndl, NULL, NULL,
+    brc = GetQueuedCompletionStatus (self->hndl, &nbytes, &key,
         &olpd, timeout < 0 ? INFINITE : timeout);
-    if (!brc && !olpd)
+    if (sp_slow (!brc && !olpd))
         return -ETIMEDOUT;
     win_assert (brc);
-
-    *task = sp_cont (olpd, struct sp_cp_task, olpd);
+    *op = (int) nbytes;
+    *arg = (void*) key;
 
     return 0;
 }
@@ -70,7 +72,6 @@ int sp_cp_wait (struct sp_cp *self, int timeout, struct sp_cp_task **task)
 
 #include "alloc.h"
 #include "fast.h"
-#include "cont.h"
 #include "err.h"
 
 #define SP_CP_INITIAL_CAPACITY 64

@@ -131,8 +131,6 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
-    struct sp_list_item *it;
-    struct sp_pipebase *pipe;
 
     sockbase = (struct sp_sockbase*) self;
 
@@ -171,8 +169,6 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
-    struct sp_list_item *it;
-    struct sp_pipebase *pipe;
 
     sockbase = (struct sp_sockbase*) self;
 

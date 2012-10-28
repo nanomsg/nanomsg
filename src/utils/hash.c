@@ -21,6 +21,7 @@
 */
 
 #include "hash.h"
+#include "fast.h"
 #include "alloc.h"
 #include "cont.h"
 #include "err.h"
@@ -54,7 +55,11 @@ void sp_hash_insert (struct sp_hash *self, uint32_t key,
     struct sp_hash_item *item)
 {
     int slot;
+    int newslot;
     struct sp_list_item *it;
+    struct sp_list_item *newit;
+    struct sp_list *oldarray;
+    struct sp_hash_item *itm;
 
     slot = sp_hash_key (key) % self->slots;
 
@@ -68,8 +73,32 @@ void sp_hash_insert (struct sp_hash *self, uint32_t key,
         sp_list_end (&self->array [slot]));
     ++self->items;
 
-    /*  TODO: If the hash is getting full, double the amount of slots and
+    /*  If the hash is getting full, double the amount of slots and
         re-hash all the items. */
+    if (sp_slow (self->items * 2 > self->slots)) {
+        oldarray = self->array;
+        self->slots *= 2;
+        self->array = sp_alloc (sizeof (struct sp_list) * self->slots);
+        alloc_assert (self->array);
+        for (slot = 0; slot != self->slots; ++slot) {
+            for (it = sp_list_begin (&oldarray [slot]);
+                  it != sp_list_end (&oldarray [slot]);
+                  it = sp_list_next (&oldarray [slot], it)) {
+                sp_list_erase (&self->array [slot], it);
+                itm = sp_cont (it, struct sp_hash_item, list);
+                newslot = sp_hash_key (itm->key) % self->slots;
+                for (newit = sp_list_begin (&self->array [newslot]);
+                      newit != sp_list_end (&self->array [newslot]);
+                      newit = sp_list_next (&self->array [newslot], newit))
+                    sp_assert (sp_cont (newit, struct sp_hash_item,
+                        list)->key != itm->key);
+                sp_list_insert (&self->array [newslot], &itm->list,
+                        sp_list_end (&self->array [newslot]));
+            }
+            sp_list_term (&self->array [slot]);
+        }
+        sp_free (oldarray);
+    }
 }
 
 void sp_hash_erase (struct sp_hash *self, struct sp_hash_item *item)

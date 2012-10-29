@@ -23,22 +23,16 @@
 #ifndef SP_POLLER_INCLUDED
 #define SP_POLLER_INCLUDED
 
-#include <stdint.h>
+#if !defined SP_HAVE_WINDOWS
 
-/*  Poller object virtualises different polling mechanism that signal whether
-    a socket is ready for sending and/or receiving. It's not meant to virtualise
-    polling mechanisms that signal I/O operation completaion (IOCP). */
+#define SP_POLLER_IN 1
+#define SP_POLLER_OUT 2
+#define SP_POLLER_ERR 3
 
 struct sp_poller;
 struct sp_poller_hndl;
 
-struct sp_poller_vfptr {
-    void (*in) (struct sp_poller *self, struct sp_poller_hndl *hndl);
-    void (*out) (struct sp_poller *self, struct sp_poller_hndl *hndl);
-    void (*err) (struct sp_poller *self, struct sp_poller_hndl *hndl);
-};
-
-void sp_poller_init (struct sp_poller *self, struct sp_poller_vfptr *vfptr);
+void sp_poller_init (struct sp_poller *self);
 void sp_poller_term (struct sp_poller *self);
 void sp_poller_add_fd (struct sp_poller *self, int fd,
     struct sp_poller_hndl *hndl);
@@ -47,55 +41,10 @@ void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
+int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
+    struct sp_poller_hndl **hndl);
 
-#if defined SP_USE_POLL
-
-#include "thread.h"
-#include "signaler.h"
-
-#include <poll.h>
-
-struct sp_poller_hndl {
-    int index;
-};
-
-struct sp_poller {
-
-    /*  Callback functions. */
-    struct sp_poller_vfptr *vfptr;
-
-    /*  Actual number of elements in the pollset. */
-    int size;
-
-    /*  Number of allocated elements in the pollset. */
-    int capacity;
-
-    /*  The pollset. */
-    struct pollfd *pollset;
-
-    /*  List of handles associated with elements in the pollset. Either points
-        to the handle associated with the file descriptor (hndl) or is part
-        of the list of removed pollitems (removed). */
-    struct sp_hndls_item {
-        struct sp_poller_hndl *hndl;
-        int prev;
-        int next;
-    } *hndls;
-
-    /*  List of removed pollitems, linked by indices. -1 means empty list. */
-    int removed;
-
-    /*  Used to send signals to the worker thread. */
-    struct sp_signaler signaler;
-
-    /*  The worker thread. */
-    struct sp_thread worker;
-};
-
-#elif defined SP_USE_EPOLL
-
-#include "thread.h"
-#include "signaler.h"
+#if defined SP_USE_EPOLL
 
 #include <sys/epoll.h>
 
@@ -108,9 +57,6 @@ struct sp_poller_hndl {
 
 struct sp_poller {
 
-    /*  Callback functions. */
-    struct sp_poller_vfptr *vfptr;
-
     /*  Current pollset. */
     int ep;
 
@@ -122,13 +68,9 @@ struct sp_poller {
 
     /*  Events beign processed at the moment. */
     struct epoll_event events [SP_POLLER_MAX_EVENTS];
-
-    /*  Used to send signals to the worker thread. */
-    struct sp_signaler signaler;
-
-    /*  The worker thread. */
-    struct sp_thread worker;
 };
+
+#endif
 
 #endif
 

@@ -22,195 +22,22 @@
 
 #include "poller.h"
 
-#if defined SP_USE_POLL
+#if defined SP_USE_EPOLL
 
-#include "alloc.h"
-#include "err.h"
-
-#define SP_POLLER_GRANULARITY 16
-
-/*  Forward declarations. */
-static void sp_poller_routine (void *arg);
-
-void sp_poller_init (struct sp_poller *self, struct sp_poller_vfptr *vfptr)
-{
-    /*  Store the callback functions. */
-    self->vfptr = vfptr;
-
-    self->size = 1;
-    self->capacity = SP_POLLER_GRANULARITY;
-    self->pollset =
-        sp_alloc (sizeof (struct pollfd*) * SP_POLLER_GRANULARITY);
-    alloc_assert (self->pollset);
-    self->pollset [0].fd = sp_signaler_fd (&self->signaler);
-    self->pollset [0].events = POLLIN;
-    self->hndls =
-        sp_alloc (sizeof (struct sp_hndls_item) * SP_POLLER_GRANULARITY);
-    alloc_assert (self->hndls);
-    self->hndls [0].hndl = NULL;
-    self->removed = -1;
-
-    /*  Start the worker thread. */
-    sp_signaler_init (&self->signaler);
-    sp_thread_init (&self->worker, sp_poller_routine, (void*) self);
-}
-
-void sp_poller_term (struct sp_poller *self)
-{
-    /*  Ask the worker thread to terminate. */
-    sp_signaler_post (&self->signaler);
-
-    /*  Wait while worker thread terminates. */
-    sp_thread_term (&self->worker);
-    sp_signaler_term (&self->signaler);
-
-    /*  Deallocate the resources. */
-    sp_free (self->pollset);
-    sp_free (self->hndls);
-}
-
-void sp_poller_add_fd (struct sp_poller *self, int fd,
-    struct sp_poller_hndl *hndl)
-{
-    int rc;
-
-    /*  Initialise the handle and add the file descriptor to the pollset. */
-    if (sp_slow (self->size >= self->capacity)) {
-        self->capacity += SP_POLLER_GRANULARITY;
-        self->pollset = sp_realloc (self->pollset,
-            sizeof (struct pollfd*) * self->capacity);
-        alloc_assert (self->pollset);
-        self->hndls = sp_realloc (self->hndls,
-            sizeof (struct sp_hndls_item) * self->capacity);
-        alloc_assert (self->hndls);
-    }
-    self->pollset [self->size].fd = fd;
-    self->pollset [self->size].events = 0;
-    self->pollset [self->size].revents = 0;
-    hndl->index = self->size;
-    self->hndls [self->size].hndl = hndl;
-    ++self->size;
-}
-
-void sp_poller_rm_fd (struct sp_poller *self, struct sp_poller_hndl *hndl)
-{
-    /*  Add the fd to the list of removed file descriptors. */
-    self->pollset [hndl->index].revents = 0;
-    if (self->removed != -1)
-        self->hndls [self->removed].prev = hndl->index;
-    self->hndls [hndl->index].hndl = NULL;
-    self->hndls [hndl->index].prev = -1;
-    self->hndls [hndl->index].next = self->removed;
-    self->removed = hndl->index;
-}
-
-void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
-{
-    self->pollset [hndl->index].events |= POLLIN;
-}
-
-void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
-{
-    self->pollset [hndl->index].events &= ~POLLIN;
-    self->pollset [hndl->index].revents &= ~POLLIN;
-}
-
-void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
-{
-    self->pollset [hndl->index].events |= POLLOUT;
-}
-
-void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
-{
-    self->pollset [hndl->index].events &= ~POLLOUT;
-    self->pollset [hndl->index].revents &= ~POLLOUT;
-}
-
-static void sp_poller_routine (void *arg)
-{
-    struct sp_poller *self;
-    int rc;
-    int timeout;
-    int i;
-    struct sp_poller_hndl *hndl;
-
-    self = (struct sp_poller*) arg;
-
-    while (1) {
-
-        /*  Wait for both network events and async operation requests. */
-        rc = poll (self->pollset, self->size, -1);
-        if (sp_slow (rc < 0 && errno == EINTR))
-            continue;
-        if (rc == 0)
-            continue;
-        errno_assert (rc >= 0);
-
-        /*  If required, terminate the worker thread. */
-        if (self->pollset [0].revents & POLLIN)
-            break;
-        
-        for (i = 1; i != self->size; ++i) {
-
-            /*  The descriptor may already have been removed. */
-            if (!self->hndls [i].hndl)
-                continue;
-
-            /*  Network events. Invoke appropriate callbacks. */
-            hndl = self->hndls [i].hndl;
-            sp_assert (hndl->index == i);
-            if (self->pollset [i].revents & POLLOUT)
-                self->vfptr->out (self, hndl);
-            if (!self->hndls [i].hndl)
-                continue;
-            if (self->pollset [i].revents & POLLIN)
-                self->vfptr->in (self, hndl);
-            if (!self->hndls [i].hndl)
-                continue;
-            if (self->pollset [i].revents & ~(POLLIN | POLLOUT))
-                self->vfptr->err (self, hndl);
-        }
-
-        /*  Physically delete all the previosuly removed file descriptors from
-            the pollset. */
-        while (self->removed != -1) {
-            i = self->removed;
-            self->removed = self->hndls [i].next;
-            self->pollset [i] = self->pollset [self->size - 1];
-            self->hndls [i] = self->hndls [self->size - 1];
-            self->hndls [i].hndl->index = i;
-
-            if (!self->hndls [i].hndl) {
-                if (self->hndls [i].prev != -1)
-                   self->hndls [self->hndls [i].prev].next = i;
-                if (self->hndls [i].next != -1)
-                   self->hndls [self->hndls [i].next].prev = i;
-                if (self->removed == self->size - 1)
-                    self->removed = i;
-            }
-            --self->size;
-        }
-    }
-}
-
-#elif defined SP_USE_EPOLL
-
+#include "fast.h"
 #include "err.h"
 
 #include <string.h>
 
-void sp_poller_init (struct sp_poller *self, struct sp_poller_vfptr *vfptr)
+void sp_poller_init (struct sp_poller *self)
 {
     int rc;
     struct epoll_event ev;
 
     self->ep = epoll_create1 (EPOLL_CLOEXEC);
     errno_assert (self->ep != -1);
-    memset (&ev, 0, sizeof (ev));
-    ev.events = EPOLLIN;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_ADD,
-        sp_signaler_fd (&self->signaler), &ev);
-    errno_assert (rc == 0);
+    self->nevents = 0;
+    self->index = 0;
 }
 
 void sp_poller_term (struct sp_poller *self)
@@ -336,42 +163,44 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].events &= ~EPOLLOUT;
 }
 
-static void sp_poller_routine (void *arg)
+int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
+    struct sp_poller_hndl **hndl)
 {
-    struct sp_poller *self;
-    int rc;
-    int timeout;
-    struct sp_poller_hndl *hndl;
+    /*  Skip over empty events. */
+    while (self->index < self->nevents) {
+        if (self->events [self->index].events != 0)
+            break;
+        ++self->index;
+    }
 
-    self = (struct sp_poller*) arg;
-
-    while (1) {
-
-        /*  Wait for both network events and async operation requests. */
+    /*  If there is no stored event, wait for one. */
+    if (sp_slow (self->index >= self->nevents)) {
         self->nevents = epoll_wait (self->ep, self->events,
-            SP_POLLER_MAX_EVENTS, -1);
+            SP_POLLER_MAX_EVENTS, timeout);
         if (sp_slow (self->nevents == -1 && errno == EINTR))
-            continue;
-        if (self->nevents == 0)
-            continue;
+            return -EINTR;
+        if (sp_slow (self->nevents == 0))
+            return -ETIMEDOUT;
         errno_assert (self->nevents != -1);
+        self->index = 0;
+    }
 
-        for (self->index = 0; self->index != self->nevents; ++self->index) {
-
-            /*  If required, terminate the worker thread. */
-            if (self->events [self->index].events & EPOLLIN &&
-                  self->events [self->index].data.ptr == NULL)
-                return;
-
-            /*  Network events. Invoke appropriate callbacks. */
-            hndl = (struct sp_poller_hndl*) self->events [self->index].data.ptr;
-            if (self->events [self->index].events & EPOLLOUT)
-                self->vfptr->out (self, hndl);
-            if (self->events [self->index].events & EPOLLIN)
-                self->vfptr->in (self, hndl);
-            if (self->events [self->index].events & ~(EPOLLIN | EPOLLOUT))
-                self->vfptr->err (self, hndl);
-        }
+    /*  Return next event to the caller. Remove the event from the set. */
+    *hndl = (struct sp_poller_hndl*) self->events [self->index].data.ptr;
+    if (sp_fast (self->events [self->index].events & EPOLLIN)) {
+        *event = SP_POLLER_IN;
+        self->events [self->index].events & ~EPOLLIN;
+        return 0;
+    }
+    else if (sp_fast (self->events [self->index].events & EPOLLOUT)) {
+        *event = SP_POLLER_OUT;
+        self->events [self->index].events & ~EPOLLOUT;
+        return 0;
+    }
+    else {
+        *event = SP_POLLER_ERR;
+        ++self->index;
+        return 0;
     }
 }
 

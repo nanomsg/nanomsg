@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012 Julien Ammous
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,8 +21,10 @@
     IN THE SOFTWARE.
 */
 
-#ifdef SP_HAVE_WINDOWS
+#if defined SP_HAVE_WINDOWS
 #include "win.h"
+#elif defined SP_HAVE_OSX
+#include <mach/mach_time.h>
 #else
 #include <time.h>
 #endif
@@ -33,6 +36,10 @@
 /* 1 millisecond expressed in CPU ticks. The value is chosen is such a way that
    it works pretty well for CPU frequencies above 500MHz. */
 #define SP_CLOCK_PRECISION 1000000
+
+#if defined SP_HAVE_OSX
+static mach_timebase_info_data_t sp_clock_timebase_info = {0};
+#endif
 
 static uint64_t sp_clock_rdtsc ()
 {
@@ -60,7 +67,7 @@ static uint64_t sp_clock_rdtsc ()
 
 static uint64_t sp_clock_time ()
 {
-#ifdef SP_HAVE_WINDOWS
+#if defined SP_HAVE_WINDOWS
 
     LARGE_INTEGER tps;
     LARGE_INTEGER time;
@@ -71,6 +78,18 @@ static uint64_t sp_clock_time ()
     tpms = (double) (tps.QuadPart / 1000);     
     return (uint64_t) (time.QuadPart / tpms);
 
+#elif defined SP_HAVE_OSX
+
+    uint64_t ticks;
+
+    /*  If the global timebase info is not initialised yet, init it. */
+    if (sp_slow (!sp_clock_timebase_info.denom))
+        mach_timebase_info (&sp_clock_timebase_info);
+
+    ticks = mach_absolute_time ();
+    return ticks * sp_clock_timebase_info.numer /
+        sp_clock_timebase_info.denom / 1000000;
+ 
 #else
 
     int rc;

@@ -32,6 +32,10 @@ if(WIN32)
     add_definitions(-DSP_HAVE_WINDOWS)
 endif()
 
+if (APPLE)
+    add_definitions(-DSP_HAVE_OSX)
+endif()
+
 #  Feature checks.
 
 find_package(Threads)

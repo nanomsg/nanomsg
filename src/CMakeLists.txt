@@ -112,7 +112,7 @@ add_library(nanomsg SHARED
 
 add_definitions(-DSP_EXPORTS)
 
-if(UNIX)
+if(UNIX AND NOT APPLE)
     target_link_libraries(nanomsg rt)
 endif()
 

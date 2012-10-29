@@ -41,6 +41,10 @@ void sp_usock_tune (struct sp_usock *self);
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
 {
+#if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
+    int rc;
+#endif
+
     /*  If the operating system allows to directly open the socket with CLOEXEC
         flag, do so. That way there are no race conditions. */
 #ifdef SOCK_CLOEXEC

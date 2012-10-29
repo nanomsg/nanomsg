@@ -44,6 +44,43 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
 int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
     struct sp_poller_hndl **hndl);
 
+#if defined SP_USE_POLL
+
+#include <poll.h>
+
+struct sp_poller_hndl {
+    int index;
+};
+
+struct sp_poller {
+
+    /*  Actual number of elements in the pollset. */
+    int size;
+
+    /*  Index of the event being processed at the moment. */
+    int index;
+
+    /*  Number of allocated elements in the pollset. */
+    int capacity;
+
+    /*  The pollset. */
+    struct pollfd *pollset;
+
+    /*  List of handles associated with elements in the pollset. Either points
+        to the handle associated with the file descriptor (hndl) or is part
+        of the list of removed pollitems (removed). */
+    struct sp_hndls_item {
+        struct sp_poller_hndl *hndl;
+        int prev;
+        int next;
+    } *hndls;
+
+    /*  List of removed pollitems, linked by indices. -1 means empty list. */
+    int removed;
+};
+
+#endif
+
 #if defined SP_USE_EPOLL
 
 #include <sys/epoll.h>

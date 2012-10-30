@@ -116,10 +116,14 @@ int sp_aio_wait (struct sp_aio *self, int timeout, struct sp_aio_hndl **hndl,
         /*  Process inbound data. */
         if (ahndl->in.len <= 0)
             goto recv_done;
+
+        /*  This operation doesn't copy arbitrary amount of data. The amount
+            is bounded by the socket's RCVBUF. */
         nbytes = recv (ahndl->fd, ahndl->in.buf, ahndl->in.len, 0);
         errno_assert (nbytes >= 0);
         if (sp_slow (nbytes == 0))
             goto error;
+
         ahndl->in.buf = ((uint8_t*) ahndl->in.buf) + nbytes;
         ahndl->in.len -= nbytes;
         if (ahndl->in.len > 0 && !(ahndl->in.flags & SP_AIO_PARTIAL))
@@ -136,8 +140,12 @@ recv_done:
         /* Process outbound data. */
         if (ahndl->out.len <= 0)
             goto send_done;
+
+        /*  This operation doesn't copy arbitrary amount of data. The amount
+            is bounded by the socket's SNDBUF. */
         nbytes = send (ahndl->fd, ahndl->in.buf, ahndl->in.len, 0);
         errno_assert (nbytes >= 0);
+
         ahndl->out.buf = ((uint8_t*) ahndl->out.buf) + nbytes;
         ahndl->out.len -= nbytes;
         if (ahndl->out.len > 0 && !(ahndl->out.flags & SP_AIO_PARTIAL))

@@ -68,6 +68,7 @@ void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
     hndl->out.flags = SP_AIO_IN_PROGRESS | flags;
     hndl->out.buf = buf;
     hndl->out.len = len;
+    hndl->out.olen = len;
 }
 
 void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
@@ -80,6 +81,7 @@ void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
     hndl->in.flags = SP_AIO_IN_PROGRESS | flags;
     hndl->in.buf = buf;
     hndl->in.len = len;
+    hndl->in.olen = len;
 }
 
 void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl)
@@ -92,8 +94,8 @@ void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl)
     sp_aio_send (self, hndl, NULL, 0, 0);
 }
 
-int sp_aio_wait (struct sp_aio *self, int timeout, int *event,
-    struct sp_aio_hndl **hndl)
+int sp_aio_wait (struct sp_aio *self, int timeout, struct sp_aio_hndl **hndl,
+    int *event, size_t *len)
 {
     int rc;
     int pevent;
@@ -120,12 +122,13 @@ int sp_aio_wait (struct sp_aio *self, int timeout, int *event,
             goto error;
         ahndl->in.buf = ((uint8_t*) ahndl->in.buf) + nbytes;
         ahndl->in.len -= nbytes;
-        if (ahndl->in.len > 0)
+        if (ahndl->in.len > 0 && !(ahndl->in.flags & SP_AIO_PARTIAL))
             return -ETIMEDOUT;
 recv_done:
         ahndl->in.flags = 0;
-        *event = SP_AIO_IN;
         *hndl = ahndl;
+        *event = SP_AIO_IN;
+        *len = ahndl->in.olen - ahndl->in.len;
         return 0;
 
     case SP_POLLER_OUT:
@@ -137,19 +140,21 @@ recv_done:
         errno_assert (nbytes >= 0);
         ahndl->out.buf = ((uint8_t*) ahndl->out.buf) + nbytes;
         ahndl->out.len -= nbytes;
-        if (ahndl->out.len > 0)
+        if (ahndl->out.len > 0 && !(ahndl->out.flags & SP_AIO_PARTIAL))
             return -ETIMEDOUT;
 send_done:
         ahndl->out.flags = 0;
-        *event = SP_AIO_OUT;
         *hndl = ahndl;
+        *event = SP_AIO_OUT;
+        *len = ahndl->out.olen - ahndl->out.len;
         return 0;
 
     case SP_POLLER_ERR:
 error:
         /*  Socket error. */
-        *event = SP_AIO_ERR;
         *hndl = ahndl;
+        *event = SP_AIO_ERR;
+        *len = 0;
         return 0;
 
     default:

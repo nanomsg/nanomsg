@@ -43,11 +43,13 @@ struct sp_aio_hndl {
         int flags;
         void *buf;
         size_t len;
+        size_t olen;
     } in;
     struct {
         int flags;
         const void *buf;
         size_t len;
+        size_t olen;
     } out;
 };
 
@@ -68,8 +70,8 @@ void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
 void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl);
 void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl);
 
-int sp_aio_wait (struct sp_aio *self, int timeout, int *event,
-    struct sp_aio_hndl **hndl);
+int sp_aio_wait (struct sp_aio *self, int timeout, struct sp_aio_hndl **hndl,
+    int *event, size_t *len);
 
 #endif
 

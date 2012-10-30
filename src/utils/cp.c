@@ -122,7 +122,7 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg)
     }
     
     if (empty)
-        sp_cond_signal (&self->cond);
+        sp_cond_post (&self->cond);
 
     sp_mutex_unlock (&self->sync);
 }

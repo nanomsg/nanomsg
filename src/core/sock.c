@@ -325,7 +325,7 @@ static void sp_sock_worker_routine (void *arg)
                 rc = sockbase->vfptr->in (sockbase, (struct sp_pipe*) oparg);
                 errnum_assert (rc >= 0, -rc);
                 if (rc > 0)
-                    sp_cond_signal (&sockbase->cond);
+                    sp_cond_post (&sockbase->cond);
             }
 
             /*  Handle outbound pipes. */
@@ -333,7 +333,7 @@ static void sp_sock_worker_routine (void *arg)
                 rc = sockbase->vfptr->out (sockbase, (struct sp_pipe*) oparg);
                 errnum_assert (rc >= 0, -rc);
                 if (rc > 0)
-                    sp_cond_signal (&sockbase->cond);
+                    sp_cond_post (&sockbase->cond);
             }
 
             /*  If timers were modified do nothing and move straight to

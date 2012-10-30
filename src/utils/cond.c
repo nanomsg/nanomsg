@@ -52,7 +52,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
     return 0;
 }
 
-void sp_cond_signal (struct sp_cond *self)
+void sp_cond_post (struct sp_cond *self)
 {
     WakeConditionVariable (&self->cond);
 }
@@ -96,7 +96,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
     return 0;
 }
 
-void sp_cond_signal (struct sp_cond *self)
+void sp_cond_post (struct sp_cond *self)
 {
     int rc;
 

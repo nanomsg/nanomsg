@@ -61,10 +61,12 @@ void sp_aio_term (struct sp_aio *self);
 void sp_aio_register (struct sp_aio *self, int fd, struct sp_aio_hndl *hndl);
 void sp_aio_unregister (struct sp_aio *self, struct sp_aio_hndl *hndl);
 
-int sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
+void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
     const void *buf, size_t len, int flags);
-int sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
+void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
     void *buf, size_t len, int flags);
+void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl);
+void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl);
 
 int sp_aio_wait (struct sp_aio *self, int timeout, int *event,
     struct sp_aio_hndl **hndl);

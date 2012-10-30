@@ -58,34 +58,38 @@ void sp_aio_unregister (struct sp_aio *self, struct sp_aio_hndl *hndl)
     sp_assert (0);
 }
 
-int sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
+void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
     const void *buf, size_t len, int flags)
 {
-    /*  If there's out operation already in progress, don't start a new one. */
-    if (sp_slow (hndl->out.flags))
-        return -EAGAIN;
+    /*  If there's out operation already in progress, fail. */
+    sp_assert (!hndl->out.flags);
 
     /*  Store the info about the asynchronous operation requested. */
     hndl->out.flags = SP_AIO_IN_PROGRESS | flags;
     hndl->out.buf = buf;
     hndl->out.len = len;
-
-    return 0;
 }
 
-int sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
+void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
     void *buf, size_t len, int flags)
 {
-    /*  If there's in operation already in progress, don't start a new one. */
-    if (sp_slow (hndl->in.flags))
-        return -EAGAIN;
+    /*  If there's in operation already in progress, fail. */
+    sp_assert (!hndl->in.flags);
 
     /*  Store the info about the asynchronous operation requested. */
     hndl->in.flags = SP_AIO_IN_PROGRESS | flags;
     hndl->in.buf = buf;
     hndl->in.len = len;
+}
 
-    return 0;
+void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl)
+{
+    sp_aio_recv (self, hndl, NULL, 0, 0);
+}
+
+void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl)
+{
+    sp_aio_send (self, hndl, NULL, 0, 0);
 }
 
 int sp_aio_wait (struct sp_aio *self, int timeout, int *event,

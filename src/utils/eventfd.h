@@ -20,21 +20,22 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SIGNALER_INCLUDED
-#define SP_SIGNALER_INCLUDED
+#ifndef SP_EVENTFD_INCLUDED
+#define SP_EVENTFD_INCLUDED
 
 #if !defined SP_HAVE_WINDOWS
 
-struct sp_signaler;
+struct sp_eventfd;
 
-void sp_signaler_init (struct sp_signaler *self);
-void sp_signaler_term (struct sp_signaler *self);
-int sp_signaler_fd (struct sp_signaler *self);
-void sp_signaler_post (struct sp_signaler *self);
+void sp_eventfd_init (struct sp_eventfd *self);
+void sp_eventfd_term (struct sp_eventfd *self);
+int sp_eventfd_getfd (struct sp_eventfd *self);
+void sp_eventfd_signal (struct sp_eventfd *self);
+void sp_eventfd_unsignal (struct sp_eventfd *self);
 
 #if defined SP_USE_SOCKETPAIR
 
-struct sp_signaler
+struct sp_eventfd
 {
     int r;
     int w;
@@ -42,7 +43,7 @@ struct sp_signaler
 
 #elif defined SP_USE_EVENTFD
 
-struct sp_signaler
+struct sp_eventfd
 {
     int efd;
 };

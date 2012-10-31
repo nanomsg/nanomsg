@@ -20,21 +20,24 @@
     IN THE SOFTWARE.
 */
 
-#include "signaler.h"
+#include "eventfd.h"
 
 #if !defined SP_HAVE_WINDOWS
 
 #if defined SP_USE_SOCKETPAIR
 
 #include "err.h"
+#include "fast.h"
 
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <fcntl.h>
 
-void sp_signaler_init (struct sp_signaler *self)
+void sp_eventfd_init (struct sp_eventfd *self)
 {
     int rc;
+    int flags;
     int sp [2];
 
 #if defined SOCK_CLOEXEC
@@ -52,9 +55,15 @@ void sp_signaler_init (struct sp_signaler *self)
     rc = fcntl (self->w, F_SETFD, FD_CLOEXEC);
     errno_assert (rc != -1);
 #endif
+
+    flags = fcntl (self->r, F_GETFL, 0);
+	if (flags == -1)
+        flags = 0;
+	rc = fcntl (self->r, F_SETFL, flags | O_NONBLOCK);
+    errno_assert (rc != -1);
 }
 
-void sp_signaler_term (struct sp_signaler *self)
+void sp_eventfd_term (struct sp_eventfd *self)
 {
     int rc;
 
@@ -64,12 +73,12 @@ void sp_signaler_term (struct sp_signaler *self)
     errno_assert (rc == 0);
 }
 
-int sp_signaler_fd (struct sp_signaler *self)
+int sp_eventfd_getfd (struct sp_eventfd *self)
 {
     return self->r;
 }
 
-void sp_signaler_post (struct sp_signaler *self)
+void sp_eventfd_signal (struct sp_eventfd *self)
 {
     ssize_t nbytes;
     char c = 101;
@@ -79,20 +88,44 @@ void sp_signaler_post (struct sp_signaler *self)
     sp_assert (nbytes == 1);
 }
 
+void sp_eventfd_unsignal (struct sp_eventfd *self)
+{
+    ssize_t nbytes;
+    uint8_t buf [16];
+
+    while (1) {
+        nbytes = recv (self->r, buf, sizeof (buf), 0);
+        errno_assert (nbytes >= 0);
+        if (sp_fast (nbytes < sizeof (buf)))
+            break;
+    }
+}
+
+
 #elif defined SP_USE_EVENTFD
 
 #include "err.h"
 
 #include <stdint.h>
 #include <sys/eventfd.h>
+#include <fcntl.h>
 
-void sp_signaler_init (struct sp_signaler *self)
+void sp_eventfd_init (struct sp_eventfd *self)
 {
+    int rc;
+    int flags;
+
     self->efd = eventfd (0, EFD_CLOEXEC);
     errno_assert (self->efd != -1);
+
+    flags = fcntl (self->efd, F_GETFL, 0);
+	if (flags == -1)
+        flags = 0;
+	rc = fcntl (self->efd, F_SETFL, flags | O_NONBLOCK);
+    errno_assert (rc != -1);
 }
 
-void sp_signaler_term (struct sp_signaler *self)
+void sp_eventfd_term (struct sp_eventfd *self)
 {
     int rc;
 
@@ -100,18 +133,28 @@ void sp_signaler_term (struct sp_signaler *self)
     errno_assert (rc == 0);
 }
 
-int sp_signaler_fd (struct sp_signaler *self)
+int sp_eventfd_getfd (struct sp_eventfd *self)
 {
     return self->efd;
 }
 
-void sp_signaler_post (struct sp_signaler *self)
+void sp_eventfd_signal (struct sp_eventfd *self)
 {
     const uint64_t one = 1;
     ssize_t nbytes;
 
     nbytes = write (self->efd, &one, sizeof (one));
     errno_assert (nbytes == sizeof (one));
+}
+
+void sp_eventfd_unsignal (struct sp_eventfd *self)
+{
+    uint64_t count;
+
+    /*  Extract all the signals from the eventfd. */
+    ssize_t sz = read (self->efd, &count, sizeof (count));
+    errno_assert (sz == sizeof (count));
+    sp_assert (count > 0);
 }
 
 #endif

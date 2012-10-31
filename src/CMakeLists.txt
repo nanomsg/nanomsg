@@ -50,6 +50,8 @@ add_library(nanomsg SHARED
     utils/cp.c
     utils/err.h 
     utils/err.c
+    utils/eventfd.h
+    utils/eventfd.c
     utils/excl.h
     utils/excl.c
     utils/fast.h
@@ -67,8 +69,6 @@ add_library(nanomsg SHARED
     utils/poller.c
     utils/random.h
     utils/random.c
-    utils/signaler.h
-    utils/signaler.c
     utils/sleep.h
     utils/sleep.c
     utils/thread.h

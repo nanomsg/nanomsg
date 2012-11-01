@@ -167,12 +167,12 @@ int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
     *hndl = self->hndls [self->index].hndl;
     if (sp_fast (self->pollset [self->index].revents & POLLIN)) {
         *event = SP_POLLER_IN;
-        self->pollset [self->index].revents & ~POLLIN;
+        self->pollset [self->index].revents &= ~POLLIN;
         return 0;
     }
     else if (sp_fast (self->pollset [self->index].revents & POLLOUT)) {
         *event = SP_POLLER_OUT;
-        self->pollset [self->index].revents & ~POLLOUT;
+        self->pollset [self->index].revents &= ~POLLOUT;
         return 0;
     }
     else {
@@ -352,12 +352,12 @@ again:
     *hndl = (struct sp_poller_hndl*) self->events [self->index].data.ptr;
     if (sp_fast (self->events [self->index].events & EPOLLIN)) {
         *event = SP_POLLER_IN;
-        self->events [self->index].events & ~EPOLLIN;
+        self->events [self->index].events &= ~EPOLLIN;
         return 0;
     }
     else if (sp_fast (self->events [self->index].events & EPOLLOUT)) {
         *event = SP_POLLER_OUT;
-        self->events [self->index].events & ~EPOLLOUT;
+        self->events [self->index].events &= ~EPOLLOUT;
         return 0;
     }
     else {

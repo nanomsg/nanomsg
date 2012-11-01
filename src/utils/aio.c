@@ -55,7 +55,7 @@ void sp_aio_register (struct sp_aio *self, int fd, struct sp_aio_hndl *hndl)
 
 void sp_aio_unregister (struct sp_aio *self, struct sp_aio_hndl *hndl)
 {
-    sp_assert (0);
+    sp_poller_rm_fd (&self->poller, &hndl->hndl);
 }
 
 void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
@@ -69,6 +69,9 @@ void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
     hndl->out.buf = buf;
     hndl->out.len = len;
     hndl->out.olen = len;
+
+    /*  Start polling for out. */
+    sp_poller_set_out (&self->poller, &hndl->hndl);
 }
 
 void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
@@ -82,6 +85,9 @@ void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
     hndl->in.buf = buf;
     hndl->in.len = len;
     hndl->in.olen = len;
+
+    /*  Start polling for in. */
+    sp_poller_set_in (&self->poller, &hndl->hndl);
 }
 
 void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl)

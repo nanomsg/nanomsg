@@ -337,10 +337,11 @@ int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
 
     /*  If there is no stored event, wait for one. */
     if (sp_slow (self->index >= self->nevents)) {
+again:
         self->nevents = epoll_wait (self->ep, self->events,
             SP_POLLER_MAX_EVENTS, timeout);
         if (sp_slow (self->nevents == -1 && errno == EINTR))
-            return -EINTR;
+            goto again; //return -EINTR;
         if (sp_slow (self->nevents == 0))
             return -ETIMEDOUT;
         errno_assert (self->nevents != -1);

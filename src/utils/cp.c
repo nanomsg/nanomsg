@@ -80,7 +80,11 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 void sp_cp_init (struct sp_cp *self)
 {
     sp_mutex_init (&self->sync, 0);
-    sp_cond_init (&self->cond);
+    sp_aio_init (&self->aio);
+    sp_eventfd_init (&self->eventfd);
+    sp_aio_register (&self->aio, sp_eventfd_getfd (&self->eventfd),
+        &self->evhndl);
+    sp_aio_pollin (&self->aio, &self->evhndl);
     self->capacity = SP_CP_INITIAL_CAPACITY;
     self->head = 0;
     self->tail = 0;
@@ -91,7 +95,9 @@ void sp_cp_init (struct sp_cp *self)
 void sp_cp_term (struct sp_cp *self)
 {
     sp_free (self->items);
-    sp_cond_term (&self->cond);
+    sp_aio_unregister (&self->aio, &self->evhndl);
+    sp_eventfd_term (&self->eventfd);
+    sp_aio_term (&self->aio);
     sp_mutex_term (&self->sync);
 }
 
@@ -122,7 +128,7 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg)
     }
     
     if (empty)
-        sp_cond_post (&self->cond);
+        sp_eventfd_signal (&self->eventfd);
 
     sp_mutex_unlock (&self->sync);
 }
@@ -130,36 +136,46 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg)
 int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 {
     int rc;
-
-    sp_mutex_lock (&self->sync);
+    struct sp_aio_hndl *hndl;
+    int event;
+    size_t len;
 
     /*  If there's an item available, return it. */
+    sp_mutex_lock (&self->sync);
     if (sp_fast (self->head != self->tail)) {
         *op = self->items [self->head].op;
         *arg = self->items [self->head].arg;
         self->head = (self->head + 1) % self->capacity;
+        if (self->head == self->tail)
+           sp_eventfd_unsignal (&self->eventfd);
         sp_mutex_unlock (&self->sync);
         return 0;
     }
+    sp_mutex_unlock (&self->sync);
 
     /*  Wait for new item. */
-    rc = sp_cond_wait (&self->cond, &self->sync, timeout);
-    if (sp_slow (rc == -ETIMEDOUT)) {
-        sp_mutex_unlock (&self->sync);
-        return -ETIMEDOUT;
-    }
+    rc = sp_aio_wait (&self->aio, timeout, &hndl, &event, &len);
+    if (sp_slow (rc == -ETIMEDOUT || rc == -EINTR))
+        return rc;
+    errnum_assert (rc == 0, -rc);
+
+    /*  TODO */
+    sp_assert (hndl == &self->evhndl);
 
     /*  If there's an item available now, return it. */
+    sp_mutex_lock (&self->sync);
     if (sp_fast (self->head != self->tail)) {
         *op = self->items [self->head].op;
         *arg = self->items [self->head].arg;
         self->head = (self->head + 1) % self->capacity;
+        if (self->head == self->tail)
+           sp_eventfd_unsignal (&self->eventfd);
         sp_mutex_unlock (&self->sync);
         return 0;
     }
+    sp_mutex_unlock (&self->sync);
 
     /*  Spurious wake-up. */
-    sp_mutex_unlock (&self->sync);
     return -ETIMEDOUT;
 }
 

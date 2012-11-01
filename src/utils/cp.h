@@ -24,7 +24,8 @@
 #define SP_CP_INCLUDED
 
 #include "mutex.h"
-#include "cond.h"
+#include "aio.h"
+#include "eventfd.h"
 
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
@@ -41,7 +42,9 @@ struct sp_cp {
     HANDLE hndl;
 #else
     struct sp_mutex sync;
-    struct sp_cond cond;
+    struct sp_aio aio;
+    struct sp_eventfd eventfd;
+    struct sp_aio_hndl evhndl;
     size_t capacity;
     size_t head;
     size_t tail;

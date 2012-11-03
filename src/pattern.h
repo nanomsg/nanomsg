@@ -28,7 +28,7 @@
 #include "utils/clock.h"
 #include "utils/cond.h"
 #include "utils/list.h"
-#include "utils/cp.h"
+#include "utils/aio.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -108,7 +108,7 @@ struct sp_sockbase
     struct sp_list timers;
 
     /*  Completion port processed the worker thread. */
-    struct sp_cp cp;
+    struct sp_aio aio;
 
     /*  Worker thread associated with the socket. */
     /*  At the moment there's one worker thread per socket. Later on we can

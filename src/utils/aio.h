@@ -23,18 +23,51 @@
 #ifndef SP_AIO_INCLUDED
 #define SP_AIO_INCLUDED
 
-#if !defined SP_HAVE_WINDOWS
-
+#include "mutex.h"
 #include "poller.h"
+#include "eventfd.h"
+
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#endif
 
 #include <stddef.h>
 
-#define SP_AIO_IN_PROGRESS 1
-#define SP_AIO_PARTIAL 2
+/*  Implementation of platform-neutral asynchronous I/O subsystem. */
 
-#define SP_AIO_IN 1
-#define SP_AIO_OUT 2
-#define SP_AIO_ERR 3
+struct sp_aio;
+struct sp_aio_hndl;
+struct sp_usock;
+
+void sp_aio_init (struct sp_aio *self);
+void sp_aio_term (struct sp_aio *self);
+void sp_aio_post (struct sp_aio *self, int op, void *arg);
+
+/*  The function is suspectible to spurious ETIMEDOUT wake-ups. */
+int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg);
+
+/*  Associates the socket with the completion point. Association is broken
+    when the socket is destroyed. */
+void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock);
+
+#if defined SP_HAVE_WINDOWS
+
+struct sp_aio_hndl {
+    OVERLAPPED olpd;
+};
+
+struct sp_aio {
+    HANDLE hndl;
+};
+
+#else
+
+#define SP_CP_IN_PROGRESS 1
+#define SP_CP_PARTIAL 2
+
+#define SP_CP_IN 1
+#define SP_CP_OUT 2
+#define SP_CP_ERR 3
 
 struct sp_aio_hndl {
     int fd;
@@ -54,24 +87,18 @@ struct sp_aio_hndl {
 };
 
 struct sp_aio {
+    struct sp_mutex sync;
     struct sp_poller poller;
+    struct sp_eventfd eventfd;
+    struct sp_poller_hndl evhndl;
+    size_t capacity;
+    size_t head;
+    size_t tail;
+    struct sp_aio_item {
+        int op;
+        void *arg;
+    } *items;
 };
-
-void sp_aio_init (struct sp_aio *self);
-void sp_aio_term (struct sp_aio *self);
-
-void sp_aio_register (struct sp_aio *self, int fd, struct sp_aio_hndl *hndl);
-void sp_aio_unregister (struct sp_aio *self, struct sp_aio_hndl *hndl);
-
-void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
-    const void *buf, size_t len, int flags);
-void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
-    void *buf, size_t len, int flags);
-void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl);
-void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl);
-
-int sp_aio_wait (struct sp_aio *self, int timeout, struct sp_aio_hndl **hndl,
-    int *event, size_t *len);
 
 #endif
 

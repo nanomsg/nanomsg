@@ -46,8 +46,6 @@ add_library(nanomsg SHARED
     utils/cond.h
     utils/cond.c
     utils/cont.h
-    utils/cp.h
-    utils/cp.c
     utils/err.h 
     utils/err.c
     utils/eventfd.h

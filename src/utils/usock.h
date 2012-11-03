@@ -37,7 +37,7 @@
     before it completes. One byte is sufficient. */
 #define SP_USOCK_PARTIAL 1
 
-struct sp_cp;
+struct sp_aio;
 
 struct sp_usock {
 #if defined SP_HAVE_WINDOWS
@@ -49,7 +49,7 @@ struct sp_usock {
     int type;
     int protocol;
 #if !defined SP_HAVE_WINDOWS
-    struct sp_cp *cp;
+    struct sp_aio *aio;
 #endif
 };
 

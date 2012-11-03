@@ -64,7 +64,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     self->type = type;
     self->protocol = protocol;
 #if !defined SP_HAVE_WINDOWS
-    self->cp = NULL;
+    self->aio = NULL;
 #endif
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
@@ -186,7 +186,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
     accepted->type = self->type;
     accepted->protocol = self->protocol;
 #if !defined SP_HAVE_WINDOWS
-    accepted->cp = NULL;
+    accepted->aio = NULL;
 #endif
 
     /*  If CLOEXEC is not yet set, apply it to the new socket. */

@@ -22,161 +22,174 @@
 
 #include "aio.h"
 
-#if !defined SP_HAVE_WINDOWS
+#if defined SP_HAVE_WINDOWS
 
 #include "err.h"
 #include "fast.h"
-#include "cont.h"
-
-#include <stdint.h>
-#include <sys/socket.h>
 
 void sp_aio_init (struct sp_aio *self)
 {
-    sp_poller_init (&self->poller);
+    self->hndl = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
+    win_assert (self->hndl);
 }
 
 void sp_aio_term (struct sp_aio *self)
 {
+    BOOL brc;
+
+    brc = CloseHandle (self->hndl);
+    win_assert (brc);
+}
+
+void sp_aio_post (struct sp_aio *self, int op, void *arg)
+{
+    BOOL brc;
+
+    brc = PostQueuedCompletionStatus (self->hndl, (DWORD) op,
+        (ULONG_PTR) arg, NULL);
+    win_assert (brc);
+}
+
+int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg)
+{
+    BOOL brc;
+    DWORD nbytes;
+    ULONG_PTR key;
+    LPOVERLAPPED olpd;
+
+    brc = GetQueuedCompletionStatus (self->hndl, &nbytes, &key,
+        &olpd, timeout < 0 ? INFINITE : timeout);
+    if (sp_slow (!brc && !olpd))
+        return -ETIMEDOUT;
+    win_assert (brc);
+    *op = (int) nbytes;
+    *arg = (void*) key;
+
+    return 0;
+}
+
+#else
+
+#include "alloc.h"
+#include "usock.h"
+#include "fast.h"
+#include "err.h"
+
+#define SP_CP_INITIAL_CAPACITY 64
+
+void sp_aio_init (struct sp_aio *self)
+{
+    sp_mutex_init (&self->sync, 0);
+    sp_poller_init (&self->poller);
+    sp_eventfd_init (&self->eventfd);
+    sp_poller_add_fd (&self->poller, sp_eventfd_getfd (&self->eventfd),
+        &self->evhndl);
+    sp_poller_set_in (&self->poller, &self->evhndl);
+    self->capacity = SP_CP_INITIAL_CAPACITY;
+    self->head = 0;
+    self->tail = 0;
+    self->items = sp_alloc (self->capacity * sizeof (struct sp_aio_item));
+    alloc_assert (self->items);
+}
+
+void sp_aio_term (struct sp_aio *self)
+{
+    sp_free (self->items);
+    sp_poller_rm_fd (&self->poller, &self->evhndl);
+    sp_eventfd_term (&self->eventfd);
     sp_poller_term (&self->poller);
+    sp_mutex_term (&self->sync);
 }
 
-void sp_aio_register (struct sp_aio *self, int fd, struct sp_aio_hndl *hndl)
+void sp_aio_post (struct sp_aio *self, int op, void *arg)
 {
-    hndl->fd = fd;
+    int empty;
 
-    /*  Start polling on the file descriptor. */
-    sp_poller_add_fd (&self->poller, fd, &hndl->hndl);
+    sp_mutex_lock (&self->sync);
 
-    /*  Mark that there's no in or out operation in progress. */
-    hndl->in.flags = 0;
-    hndl->out.flags = 0;
+    /*  Fill in new item in the circular buffer. */
+    self->items [self->tail].op = op;
+    self->items [self->tail].arg = arg;
+
+    /*  Move tail by 1 position. */
+    empty = self->tail == self->head ? 1 : 0;
+    self->tail = (self->tail + 1) % self->capacity;
+
+    /*  If the capacity of the circular buffer is exhausted, allocate some
+        more memory. */
+    if (sp_slow (self->head == self->tail)) {
+        self->items = sp_realloc (self->items,
+            self->capacity * 2 * sizeof (struct sp_aio_item));
+        alloc_assert (self->items);
+        memcpy (self->items + self->capacity, self->items,
+            self->tail * sizeof (struct sp_aio_item));
+        self->tail += self->capacity;
+        self->capacity *= 2;
+    }
+    
+    if (empty)
+        sp_eventfd_signal (&self->eventfd);
+
+    sp_mutex_unlock (&self->sync);
 }
 
-void sp_aio_unregister (struct sp_aio *self, struct sp_aio_hndl *hndl)
-{
-    sp_poller_rm_fd (&self->poller, &hndl->hndl);
-}
-
-void sp_aio_send (struct sp_aio *self, struct sp_aio_hndl *hndl,
-    const void *buf, size_t len, int flags)
-{
-    /*  If there's out operation already in progress, fail. */
-    sp_assert (!hndl->out.flags);
-
-    /*  Store the info about the asynchronous operation requested. */
-    hndl->out.flags = SP_AIO_IN_PROGRESS | flags;
-    hndl->out.buf = buf;
-    hndl->out.len = len;
-    hndl->out.olen = len;
-
-    /*  Start polling for out. */
-    sp_poller_set_out (&self->poller, &hndl->hndl);
-}
-
-void sp_aio_recv (struct sp_aio *self, struct sp_aio_hndl *hndl,
-    void *buf, size_t len, int flags)
-{
-    /*  If there's in operation already in progress, fail. */
-    sp_assert (!hndl->in.flags);
-
-    /*  Store the info about the asynchronous operation requested. */
-    hndl->in.flags = SP_AIO_IN_PROGRESS | flags;
-    hndl->in.buf = buf;
-    hndl->in.len = len;
-    hndl->in.olen = len;
-
-    /*  Start polling for in. */
-    sp_poller_set_in (&self->poller, &hndl->hndl);
-}
-
-void sp_aio_pollin (struct sp_aio *self, struct sp_aio_hndl *hndl)
-{
-    sp_aio_recv (self, hndl, NULL, 0, 0);
-}
-
-void sp_aio_pollout (struct sp_aio *self, struct sp_aio_hndl *hndl)
-{
-    sp_aio_send (self, hndl, NULL, 0, 0);
-}
-
-int sp_aio_wait (struct sp_aio *self, int timeout, struct sp_aio_hndl **hndl,
-    int *event, size_t *len)
+int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg)
 {
     int rc;
-    int pevent;
-    struct sp_poller_hndl *phndl;
-    struct sp_aio_hndl *ahndl;
-    ssize_t nbytes;
+    int event;
+    struct sp_poller_hndl *hndl;
 
-    /*  Get one event. */        
-    rc = sp_poller_wait (&self->poller, timeout, &pevent, &phndl);
-    if (sp_slow (rc < 0))
-       return rc;
-    ahndl = sp_cont (phndl, struct sp_aio_hndl, hndl);
-
-    switch (pevent) {
-
-    case SP_POLLER_IN:
-
-        /*  Process inbound data. */
-        if (ahndl->in.len <= 0)
-            goto recv_done;
-
-        /*  This operation doesn't copy arbitrary amount of data. The amount
-            is bounded by the socket's RCVBUF. */
-        nbytes = recv (ahndl->fd, ahndl->in.buf, ahndl->in.len, 0);
-        errno_assert (nbytes >= 0);
-        if (sp_slow (nbytes == 0))
-            goto error;
-
-        ahndl->in.buf = ((uint8_t*) ahndl->in.buf) + nbytes;
-        ahndl->in.len -= nbytes;
-        if (ahndl->in.len > 0 && !(ahndl->in.flags & SP_AIO_PARTIAL))
-            return -ETIMEDOUT;
-recv_done:
-        ahndl->in.flags = 0;
-        *hndl = ahndl;
-        *event = SP_AIO_IN;
-        *len = ahndl->in.olen - ahndl->in.len;
-        return 0;
-
-    case SP_POLLER_OUT:
-
-        /* Process outbound data. */
-        if (ahndl->out.len <= 0)
-            goto send_done;
-
-        /*  This operation doesn't copy arbitrary amount of data. The amount
-            is bounded by the socket's SNDBUF. */
-        nbytes = send (ahndl->fd, ahndl->in.buf, ahndl->in.len, 0);
-        errno_assert (nbytes >= 0);
-
-        ahndl->out.buf = ((uint8_t*) ahndl->out.buf) + nbytes;
-        ahndl->out.len -= nbytes;
-        if (ahndl->out.len > 0 && !(ahndl->out.flags & SP_AIO_PARTIAL))
-            return -ETIMEDOUT;
-send_done:
-        ahndl->out.flags = 0;
-        *hndl = ahndl;
-        *event = SP_AIO_OUT;
-        *len = ahndl->out.olen - ahndl->out.len;
-        return 0;
-
-    case SP_POLLER_ERR:
-error:
-        /*  Socket error. */
-        *hndl = ahndl;
-        *event = SP_AIO_ERR;
-        *len = 0;
-        return 0;
-
-    default:
-
-        /*  Invalid event. */
-        sp_assert (0);
+    /*  If there's an item available, return it. */
+    sp_mutex_lock (&self->sync);
+    if (sp_fast (self->head != self->tail)) {
+        *op = self->items [self->head].op;
+        *arg = self->items [self->head].arg;
+        self->head = (self->head + 1) % self->capacity;
+        if (self->head == self->tail)
+           sp_eventfd_unsignal (&self->eventfd);
+        sp_mutex_unlock (&self->sync);
         return 0;
     }
+    sp_mutex_unlock (&self->sync);
+
+    /*  Wait for new item. */
+    rc = sp_poller_wait (&self->poller, timeout, &event, &hndl);
+    if (sp_slow (rc == -ETIMEDOUT || rc == -EINTR))
+        return rc;
+    errnum_assert (rc == 0, -rc);
+
+    /*  TODO */
+    sp_assert (hndl == &self->evhndl);
+
+    /*  If there's an item available now, return it. */
+    sp_mutex_lock (&self->sync);
+    if (sp_fast (self->head != self->tail)) {
+        *op = self->items [self->head].op;
+        *arg = self->items [self->head].arg;
+        self->head = (self->head + 1) % self->capacity;
+        if (self->head == self->tail)
+           sp_eventfd_unsignal (&self->eventfd);
+        sp_mutex_unlock (&self->sync);
+        return 0;
+    }
+    sp_mutex_unlock (&self->sync);
+
+    /*  Spurious wake-up. */
+    return -ETIMEDOUT;
+}
+
+void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock)
+{
+#if defined SP_HAVE_WINDOWS
+    HANDLE cp;
+
+    cp = CreateIoCompletionPort ((HANDLE) usock->s, self->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (cp);
+#else
+    sp_assert (!usock->aio);
+    usock->aio = self;
+#endif
 }
 
 #endif

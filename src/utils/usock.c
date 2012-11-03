@@ -94,6 +94,8 @@ void sp_usock_term (struct sp_usock *self)
 #endif
 }
 
+#if 0
+
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
@@ -199,6 +201,8 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted)
 
     return 0;
 }
+
+#endif
 
 void sp_usock_tune (struct sp_usock *self)
 {

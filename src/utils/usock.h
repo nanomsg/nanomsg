@@ -26,6 +26,7 @@
 /*  Platform independent underlying (OS-level) socket object. */
 
 #include "addr.h"
+#include "aio.h"
 
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
@@ -36,8 +37,6 @@
 /*  If this flag is set, recv doesn't have to wait for all bytes to be received
     before it completes. One byte is sufficient. */
 #define SP_USOCK_PARTIAL 1
-
-struct sp_aio;
 
 struct sp_usock {
 #if defined SP_HAVE_WINDOWS
@@ -53,16 +52,20 @@ struct sp_usock {
 #endif
 };
 
-/*  The underlying socket is opened and tuned for the best performance. It is
-    also opened in non-blocking mode. */
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
 void sp_usock_term (struct sp_usock *self);
+
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen);
+    sp_socklen addrlen, struct sp_aio_hndl *hndl);
 int sp_usock_listen (struct sp_usock *self, int backlog);
-int sp_usock_accept (struct sp_usock *self, struct sp_usock *accepted);
+int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl);
+
+void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl);
+void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl);
 
 #endif
 

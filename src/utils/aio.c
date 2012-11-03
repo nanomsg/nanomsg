@@ -68,6 +68,49 @@ int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg)
     return 0;
 }
 
+void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock)
+{
+    HANDLE cp;
+
+    cp = CreateIoCompletionPort ((HANDLE) usock->s, self->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (cp);
+}
+
+int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen)
+{
+    sp_assert (0);
+}
+
+int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+int sp_usock_listen (struct sp_usock *self, int backlog)
+{
+    sp_assert (0);
+}
+
+int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
 #else
 
 #include "alloc.h"
@@ -180,16 +223,42 @@ int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg)
 
 void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock)
 {
-#if defined SP_HAVE_WINDOWS
-    HANDLE cp;
-
-    cp = CreateIoCompletionPort ((HANDLE) usock->s, self->hndl,
-        (ULONG_PTR) NULL, 0);
-    sp_assert (cp);
-#else
     sp_assert (!usock->aio);
     usock->aio = self;
-#endif
+}
+
+int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen)
+{
+    sp_assert (0);
+}
+
+int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+int sp_usock_listen (struct sp_usock *self, int backlog)
+{
+    sp_assert (0);
+}
+
+int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+    int flags, struct sp_aio_hndl *hndl)
+{
+    sp_assert (0);
 }
 
 #endif

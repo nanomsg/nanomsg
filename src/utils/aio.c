@@ -159,15 +159,45 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
-    sp_assert (0);
-    return 0;
+    int rc;
+    WSABUF wbuf;
+    DWORD nbytes;
+
+    /*  TODO: Support partial send. */
+
+    wbuf.len = (u_long) *len;
+    wbuf.buf = (char FAR*) buf;
+    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &hndl->olpd, NULL);
+    if (sp_fast (rc == 0)) {
+        *len = nbytes;
+        return 0;
+    }
+    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    return -EINPROGRESS;
 }
 
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
-    sp_assert (0);
-    return 0;
+    int rc;
+    WSABUF wbuf;
+    DWORD wflags;
+    DWORD nbytes;
+
+    /*  TODO: Support partial recv. */
+
+    wbuf.len = (u_long) *len;
+    wbuf.buf = (char FAR*) buf;
+    wflags = MSG_WAITALL;
+    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &hndl->olpd, NULL);
+    if (sp_fast (rc == 0)) {
+        *len = nbytes;
+        return 0;
+    }
+    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    return -EINPROGRESS;
 }
 
 #else

@@ -26,6 +26,9 @@
 
 #include "err.h"
 #include "fast.h"
+#include "usock.h"
+
+#include <string.h>
 
 void sp_aio_init (struct sp_aio *self)
 {
@@ -80,35 +83,91 @@ void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock)
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
-    sp_assert (0);
+    int rc;
+
+    rc = bind (self->s, addr, addrlen);
+    if (sp_slow (rc == SOCKET_ERROR))
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
+
+    return 0;
 }
 
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen, struct sp_aio_hndl *hndl)
 {
-    sp_assert (0);
+    int rc;
+    BOOL brc;
+    const GUID fid = WSAID_CONNECTEX;
+    LPFN_CONNECTEX pconnectex;
+    DWORD nbytes;
+
+    rc = WSAIoctl (self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+        (void*) &fid, sizeof (fid), (void*) &pconnectex, sizeof (pconnectex),
+        &nbytes, NULL, NULL);
+    wsa_assert (rc == 0);
+    sp_assert (nbytes == sizeof (pconnectex));
+    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    brc = pconnectex (self->s, (struct sockaddr*) &addr, addrlen,
+        NULL, 0, NULL, (OVERLAPPED*) &hndl->olpd);
+    if (sp_fast (brc == TRUE))
+        return 0;
+    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    return -EINPROGRESS;
 }
 
 int sp_usock_listen (struct sp_usock *self, int backlog)
 {
-    sp_assert (0);
+    int rc;
+    int opt;
+
+    /*  On Windows, the bound port can be hijacked if SO_EXCLUSIVEADDRUSE
+        is not set. */
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+        (const char*) &opt, sizeof (opt));
+    wsa_assert (rc != SOCKET_ERROR);
+
+    rc = listen (self->s, backlog);
+    if (sp_slow (rc == SOCKET_ERROR))
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
+
+    return 0;
 }
 
-int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl)
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
+    struct sp_aio_hndl *hndl)
 {
-    sp_assert (0);
+    BOOL brc;
+    char info [64];
+    DWORD nbytes;
+
+    usock->s = socket (self->domain, self->type, self->protocol);
+    wsa_assert (usock->s != INVALID_SOCKET);
+    usock->domain = self->domain;
+    usock->type = self->type;
+    usock->protocol = self->protocol;
+
+    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    brc = AcceptEx (self->s, usock->s, info, 0, 256, 256, &nbytes,
+        &hndl->olpd);
+    if (sp_fast (brc == TRUE))
+        return 0;
+    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    return -EINPROGRESS;
 }
 
-void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
     sp_assert (0);
+    return 0;
 }
 
-void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
     sp_assert (0);
+    return 0;
 }
 
 #else
@@ -244,18 +303,19 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     sp_assert (0);
 }
 
-int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl)
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
+    struct sp_aio_hndl *hndl)
 {
     sp_assert (0);
 }
 
-void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
     sp_assert (0);
 }
 
-void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl)
 {
     sp_assert (0);

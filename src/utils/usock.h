@@ -60,11 +60,12 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen, struct sp_aio_hndl *hndl);
 int sp_usock_listen (struct sp_usock *self, int backlog);
-int sp_usock_accept (struct sp_usock *self, struct sp_aio_hndl *hndl);
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
+    struct sp_aio_hndl *hndl);
 
-void sp_usock_send (struct sp_usock *self, const void *buf, size_t len,
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl);
-void sp_usock_recv (struct sp_usock *self, void *buf, size_t len,
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     int flags, struct sp_aio_hndl *hndl);
 
 #endif

@@ -46,7 +46,7 @@ void sp_sockbase_init (struct sp_sockbase *self,
     self->fd = fd;
     sp_clock_init (&self->clock);
     sp_list_init (&self->timers);
-    sp_aio_init (&self->aio);
+    sp_cp_init (&self->cp);
     sp_thread_init (&self->worker, sp_sock_worker_routine, self);
 }
 
@@ -60,9 +60,9 @@ void sp_sock_term (struct sp_sock *self)
     sockbase->vfptr->term (sockbase);
 
     /*  Ask the worker thread to terminate and wait till it does. */
-    sp_aio_post (&sockbase->aio, SP_SOCK_OP_STOP, NULL);
+    sp_cp_post (&sockbase->cp, SP_SOCK_OP_STOP, NULL);
     sp_thread_term (&sockbase->worker);
-    sp_aio_term (&sockbase->aio);
+    sp_cp_term (&sockbase->cp);
     sp_list_term (&sockbase->timers);
     sp_clock_term (&sockbase->clock);
 
@@ -239,12 +239,12 @@ void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe)
 
 void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    sp_aio_post (&((struct sp_sockbase*) self)->aio, SP_SOCK_OP_IN, pipe);
+    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_OP_IN, pipe);
 }
 
 void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    sp_aio_post (&((struct sp_sockbase*) self)->aio, SP_SOCK_OP_OUT, pipe);
+    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_OP_OUT, pipe);
 }
 
 void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
@@ -266,7 +266,7 @@ void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
     }
     sp_list_insert (&sockbase->timers, &self->list, it);
     if (&self->list == sp_list_begin (&sockbase->timers))
-        sp_aio_post (&sockbase->aio, SP_SOCK_OP_TIMERS, NULL);
+        sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
 }
 
 void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
@@ -278,7 +278,7 @@ void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase)
     signal = (&self->list == sp_list_begin (&sockbase->timers)) ? 1 : 0;
     sp_list_erase (&sockbase->timers, &self->list);
     if (signal)
-        sp_aio_post (&sockbase->aio, SP_SOCK_OP_TIMERS, NULL);
+        sp_cp_post (&sockbase->cp, SP_SOCK_OP_TIMERS, NULL);
 }
 
 static void sp_sock_worker_routine (void *arg)
@@ -313,7 +313,7 @@ static void sp_sock_worker_routine (void *arg)
 
         /*  Wait for a completion of an operation or a timer expiration. */
         sp_mutex_unlock (&sockbase->sync);
-        rc = sp_aio_wait (&sockbase->aio, timeout, &op, &oparg);
+        rc = sp_cp_wait (&sockbase->cp, timeout, &op, &oparg);
         errnum_assert (rc == 0 || rc == -ETIMEDOUT, -rc);
         sp_mutex_lock (&sockbase->sync);
 

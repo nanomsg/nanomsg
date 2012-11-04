@@ -108,7 +108,7 @@ struct sp_sockbase
     struct sp_list timers;
 
     /*  Completion port processed the worker thread. */
-    struct sp_aio aio;
+    struct sp_cp cp;
 
     /*  Worker thread associated with the socket. */
     /*  At the moment there's one worker thread per socket. Later on we can

@@ -26,6 +26,7 @@
 #include "mutex.h"
 #include "poller.h"
 #include "eventfd.h"
+#include "addr.h"
 
 #if defined SP_HAVE_WINDOWS
 #include "win.h"
@@ -35,28 +36,55 @@
 
 /*  Implementation of platform-neutral asynchronous I/O subsystem. */
 
-struct sp_aio;
-struct sp_aio_hndl;
+/*  If this flag is set, recv doesn't have to wait for all bytes to be received
+    before it completes. */
+#define SP_USOCK_PARTIAL 1
+
+struct sp_cp;
+struct sp_cp_hndl;
 struct sp_usock;
 
-void sp_aio_init (struct sp_aio *self);
-void sp_aio_term (struct sp_aio *self);
-void sp_aio_post (struct sp_aio *self, int op, void *arg);
+int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
+void sp_usock_term (struct sp_usock *self);
+
+int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
+int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, struct sp_cp_hndl *hndl);
+int sp_usock_listen (struct sp_usock *self, int backlog);
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
+    struct sp_cp_hndl *hndl);
+
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
+    int flags, struct sp_cp_hndl *hndl);
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
+    int flags, struct sp_cp_hndl *hndl);
+
+void sp_cp_init (struct sp_cp *self);
+void sp_cp_term (struct sp_cp *self);
+void sp_cp_post (struct sp_cp *self, int op, void *arg);
 
 /*  The function is suspectible to spurious ETIMEDOUT wake-ups. */
-int sp_aio_wait (struct sp_aio *self, int timeout, int *op, void **arg);
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg);
 
 /*  Associates the socket with the completion point. Association is broken
     when the socket is destroyed. */
-void sp_aio_register_usock (struct sp_aio *self, struct sp_usock *usock);
+void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock);
 
 #if defined SP_HAVE_WINDOWS
 
-struct sp_aio_hndl {
+struct sp_usock {
+    SOCKET s;
+    int domain;
+    int type;
+    int protocol;
+};
+
+struct sp_cp_hndl {
     OVERLAPPED olpd;
 };
 
-struct sp_aio {
+struct sp_cp {
     HANDLE hndl;
 };
 
@@ -69,7 +97,15 @@ struct sp_aio {
 #define SP_CP_OUT 2
 #define SP_CP_ERR 3
 
-struct sp_aio_hndl {
+struct sp_usock {
+    int s;
+    int domain;
+    int type;
+    int protocol;
+    struct sp_cp *aio;
+};
+
+struct sp_cp_hndl {
     int fd;
     struct sp_poller_hndl hndl;
     struct {
@@ -86,7 +122,7 @@ struct sp_aio_hndl {
     } out;
 };
 
-struct sp_aio {
+struct sp_cp {
     struct sp_mutex sync;
     struct sp_poller poller;
     struct sp_eventfd eventfd;
@@ -94,7 +130,7 @@ struct sp_aio {
     size_t capacity;
     size_t head;
     size_t tail;
-    struct sp_aio_item {
+    struct sp_cp_item {
         int op;
         void *arg;
     } *items;

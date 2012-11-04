@@ -233,7 +233,7 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 }
 
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, struct sp_cp_hndl *hndl)
+    sp_socklen addrlen, struct sp_chndl *hndl)
 {
     int rc;
     BOOL brc;
@@ -275,7 +275,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
 }
 
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
-    struct sp_cp_hndl *hndl)
+    struct sp_chndl *hndl)
 {
     BOOL brc;
     char info [64];
@@ -297,7 +297,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
 }
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl)
+    int flags, struct sp_chndl *hndl)
 {
     int rc;
     WSABUF wbuf;
@@ -318,7 +318,7 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
 }
 
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl)
+    int flags, struct sp_chndl *hndl)
 {
     int rc;
     WSABUF wbuf;
@@ -474,7 +474,7 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 }
 
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, struct sp_cp_hndl *hndl)
+    sp_socklen addrlen, struct sp_chndl *hndl)
 {
     sp_assert (0);
 }
@@ -499,13 +499,13 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
 }
 
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
-    struct sp_cp_hndl *hndl)
+    struct sp_chndl *hndl)
 {
     sp_assert (0);
 }
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl)
+    int flags, struct sp_chndl *hndl)
 {
     ssize_t nbytes;
 #if defined MSG_NOSIGNAL
@@ -552,7 +552,7 @@ async:
 }
 
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl)
+    int flags, struct sp_chndl *hndl)
 {
     ssize_t nbytes;
 

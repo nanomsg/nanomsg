@@ -41,7 +41,7 @@
 #define SP_USOCK_PARTIAL 1
 
 struct sp_cp;
-struct sp_cp_hndl;
+struct sp_chndl;
 struct sp_usock;
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
@@ -50,15 +50,15 @@ void sp_usock_term (struct sp_usock *self);
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, struct sp_cp_hndl *hndl);
+    sp_socklen addrlen, struct sp_chndl *hndl);
 int sp_usock_listen (struct sp_usock *self, int backlog);
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
-    struct sp_cp_hndl *hndl);
+    struct sp_chndl *hndl);
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl);
+    int flags, struct sp_chndl *hndl);
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_cp_hndl *hndl);
+    int flags, struct sp_chndl *hndl);
 
 void sp_cp_init (struct sp_cp *self);
 void sp_cp_term (struct sp_cp *self);
@@ -80,7 +80,7 @@ struct sp_usock {
     int protocol;
 };
 
-struct sp_cp_hndl {
+struct sp_chndl {
     OVERLAPPED olpd;
 };
 
@@ -105,7 +105,7 @@ struct sp_usock {
     struct sp_cp *aio;
 };
 
-struct sp_cp_hndl {
+struct sp_chndl {
     int fd;
     struct sp_poller_hndl hndl;
     struct {

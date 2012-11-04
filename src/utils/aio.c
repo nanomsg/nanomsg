@@ -63,7 +63,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     self->type = type;
     self->protocol = protocol;
 #if !defined SP_HAVE_WINDOWS
-    self->aio = NULL;
+    self->cp = NULL;
 #endif
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
@@ -346,6 +346,11 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 
 #define SP_CP_INITIAL_CAPACITY 64
 
+/*  Operation IDs are negative, leaving the positive namespace
+    to the user-defined operations. */
+#define SP_CP_OP_SEND -1
+#define SP_CP_OP_RECV -2
+
 void sp_cp_init (struct sp_cp *self)
 {
     sp_mutex_init (&self->sync, 0);
@@ -449,8 +454,8 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 
 void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock)
 {
-    sp_assert (!usock->aio);
-    usock->aio = self;
+    sp_assert (!usock->cp);
+    usock->cp = self;
 }
 
 void sp_usock_term (struct sp_usock *self)
@@ -547,7 +552,18 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
 
 async:
 
-    sp_assert (0);
+    /*  If there's out operation already in progress, fail. */
+    sp_assert (!hndl->out.flags);
+
+    /*  Store the info about the asynchronous operation requested. */
+    hndl->out.flags = SP_CP_IN_PROGRESS | flags;
+    hndl->out.buf = buf;
+    hndl->out.len = *len;
+    hndl->out.olen = *len;
+
+    /*  Move the operation to the worker thread. */
+    sp_cp_post (self->cp, SP_CP_OP_SEND, (void*) hndl);
+
     return -EINPROGRESS;
 }
 
@@ -600,7 +616,18 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 
 async:
 
-    sp_assert (0);
+    /*  If there's in operation already in progress, fail. */
+    sp_assert (!hndl->in.flags);
+
+    /*  Store the info about the asynchronous operation requested. */
+    hndl->in.flags = SP_CP_IN_PROGRESS | flags;
+    hndl->in.buf = buf;
+    hndl->in.len = *len;
+    hndl->in.olen = *len;
+
+    /*  Move the operation to the worker thread. */
+    sp_cp_post (self->cp, SP_CP_OP_RECV, (void*) hndl);
+
     return -EINPROGRESS;
 }
 

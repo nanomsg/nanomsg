@@ -32,8 +32,48 @@ static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
 {
+    int rc;
+    int port;
+    const char *colon;
+    struct sockaddr_storage ss;
+    socklen_t sslen;
+
+    /*  Parse the port. */
+    rc = sp_addr_parse_port (addr, &colon);
+    if (rc < 0)
+        return rc;
+    port = rc;
+
+    /*  TODO: Parse the local address, if any. */
+
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = sp_addr_parse_remote (addr, colon - addr, SP_ADDR_IPV4ONLY,
+        &ss, &sslen);
+    if (rc < 0)
+        return rc;
+
+    /*  Combine the port and the address. */
+    if (ss.ss_family == AF_INET)
+        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
+    else if (ss.ss_family == AF_INET6)
+        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
+    else
+        sp_assert (0);
+
+    /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
-    sp_assert (0);
+
+    /*  Open the underlying socket. */
+    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+        sp_epbase_getcp (&self->epbase));
+    errnum_assert (rc == 0, -rc);
+
+    /*  Start connecting. */
+    rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen,
+        &self->hndl);
+    errnum_assert (rc == 0, -rc);
+
     return 0;
 }
 

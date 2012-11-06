@@ -22,14 +22,14 @@
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-macro(add_libsp_perf NAME)
+macro(add_libnanomsg_perf NAME)
     add_executable(${NAME} ${NAME}.c)
     target_link_libraries(${NAME} nanomsg)
-endmacro(add_libsp_perf)
+endmacro(add_libnanomsg_perf)
 
-add_libsp_perf(inproc_lat)
-add_libsp_perf(inproc_thr)
-add_libsp_perf(local_lat)
-add_libsp_perf(remote_lat)
-add_libsp_perf(local_thr)
-add_libsp_perf(remote_thr)
+add_libnanomsg_perf(inproc_lat)
+add_libnanomsg_perf(inproc_thr)
+add_libnanomsg_perf(local_lat)
+add_libnanomsg_perf(remote_lat)
+add_libnanomsg_perf(local_thr)
+add_libnanomsg_perf(remote_thr)

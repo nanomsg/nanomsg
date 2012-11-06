@@ -22,14 +22,15 @@
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-macro(add_libsp_test NAME)
+macro(add_libnanomsg_test NAME)
     add_executable(${NAME} ${NAME}.c)
     target_link_libraries(${NAME} nanomsg)
     add_test(${NAME} ${CMAKE_BINARY_DIR}/${NAME})
-endmacro(add_libsp_test)
+endmacro(add_libnanomsg_test)
 
-add_libsp_test(basic)
-add_libsp_test(block)
-add_libsp_test(pubsub)
-add_libsp_test(reqrep)
+add_libnanomsg_test(basic)
+add_libnanomsg_test(block)
+add_libnanomsg_test(pubsub)
+add_libnanomsg_test(reqrep)
+add_libnanomsg_test(tcp)
 

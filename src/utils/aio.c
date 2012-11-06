@@ -66,6 +66,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
+    self->cp = cp;
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -82,8 +83,6 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
         (ULONG_PTR) NULL, 0);
     sp_assert (wcp);
-#else
-    self->cp = cp;
 #endif
 
     return 0;
@@ -281,11 +280,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
     char info [64];
     DWORD nbytes;
 
-    usock->s = socket (self->domain, self->type, self->protocol);
-    wsa_assert (usock->s != INVALID_SOCKET);
-    usock->domain = self->domain;
-    usock->type = self->type;
-    usock->protocol = self->protocol;
+    sp_usock_init (&usock, self->domain, self->type, self->protocol, self->cp);
 
     memset (&hndl->olpd, 0, sizeof (hndl->olpd));
     brc = AcceptEx (self->s, usock->s, info, 0, 256, 256, &nbytes,
@@ -348,8 +343,10 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 
 /*  Operation IDs are negative, leaving the positive namespace
     to the user-defined operations. */
-#define SP_CP_OP_SEND -1
-#define SP_CP_OP_RECV -2
+#define SP_CP_OP_ACCEPT -1
+#define SP_CP_OP_CONNECT -2
+#define SP_CP_OP_SEND -3
+#define SP_CP_OP_RECV -4
 
 void sp_cp_init (struct sp_cp *self)
 {
@@ -475,7 +472,24 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen, struct sp_chndl *hndl)
 {
-    sp_assert (0);
+    int rc;
+
+    rc = connect (self->s, addr, addrlen) ;
+    if (sp_fast (rc == 0))
+        return 0;
+
+    /*  Move the operation to the worker thread. */
+    if (errno == EINPROGRESS || errno == EAGAIN || errno == EWOULDBLOCK) {
+        sp_cp_post (self->cp, SP_CP_OP_CONNECT, (void*) hndl);
+        return -EINPROGRESS;
+    }
+
+    /*  TODO: Handle EINTR, ECONREFUSED, ENETUNREACH. */
+
+    /*  Anything else is considered to be a fatal error. */
+    errno_assert (0);
+    return 0;
+
 }
 
 int sp_usock_listen (struct sp_usock *self, int backlog)
@@ -500,7 +514,41 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
     struct sp_chndl *hndl)
 {
-    sp_assert (0);
+#if !defined SP_HAVE_ACCEPT4 && defined FD_CLOEXEC
+    int rc;
+#endif
+
+    usock->domain = self->domain;
+    usock->type = self->type;
+    usock->protocol = self->protocol;
+    usock->cp = self->cp;
+#if defined SP_HAVE_ACCEPT4
+    usock->s = accept4 (self->s, NULL, NULL, SOCK_CLOEXEC);
+#else
+    usock->s = accept (self->s, NULL, NULL);
+#endif
+    if (sp_fast (usock->s >= 0)) {
+#if !defined SP_HAVE_ACCEPT4 && defined FD_CLOEXEC
+        rc = fcntl (self->s, F_SETFD, FD_CLOEXEC);
+        errno_assert (rc != -1);
+#endif
+        sp_usock_tune (usock);
+        return 0;
+    }
+
+
+    /*  Move the operation to the worker thread. */
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        sp_cp_post (self->cp, SP_CP_OP_ACCEPT, (void*) hndl);
+        return -EINPROGRESS;
+    }
+
+    /*   TODO: Handle EINTR, ECONNABORTED, EPROTO, ENOBUFS, ENOMEM, EMFILE
+         and ENFILE. */
+
+    /*  Anything else is considered to be a fatal error. */
+    errno_assert (0);
+    return 0;
 }
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,

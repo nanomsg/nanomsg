@@ -59,6 +59,9 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     else
         sp_assert (0);
 
+    /*  Initialise the base class. */
+    sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
+
     /*  Open the listening socket. */
     rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
         sp_epbase_getcp (&self->epbase));
@@ -69,11 +72,14 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     rc = sp_usock_listen (&self->usock, 100);
     errnum_assert (rc == 0, -rc);
 
-    /*  TODO: Register the listening socket with the poller so that we get
-        a notification when there is a new incoming connection. */
-
-    /*  Initialise the base class. */
-    sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
+    /*  Start accepting new connections. */
+    while (1) {
+        rc = sp_usock_accept (&self->usock, &self->newsock, &self->hndl);
+        if (rc == -EINPROGRESS)
+            break;
+        errnum_assert (rc == 0, -rc);
+        /*  TODO */
+    }
 
     return 0;
 }

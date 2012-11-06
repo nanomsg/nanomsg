@@ -20,26 +20,51 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPB_INCLUDED
-#define SP_TCPB_INCLUDED
+#include <stdio.h>
 
-#include "../../transport.h"
+#include "../src/sp.h"
 
-#include "../../utils/aio.h"
+#include "../src/utils/err.c"
 
-struct sp_tcpb {
+/*  This test does nothing but passes a single message from one socket
+    to another one. It's goal is to make sure that all the basic pieces
+    of the infrastructure are present and functional. */
 
-    /*  This object is an endpoint. */
-    struct sp_epbase epbase;
+int main ()
+{
+    int rc;
+    int sb;
+    int sc;
+    char buf [3];
 
-    /*  The listening TCP socket. */
-    struct sp_usock usock;
-    struct sp_chndl hndl;
+    printf ("tcp test running...\n");
 
-    /*  The freshly accepted connection. */
-    struct sp_usock newsock;
-};
+    rc = sp_init ();
+    errno_assert (rc == 0);
+    sb = sp_socket (AF_SP, SP_PAIR);
+    errno_assert (sb != -1);
+    rc = sp_bind (sb, "tcp://127.0.0.1:5555");
+    errno_assert (rc >= 0);
+    sc = sp_socket (AF_SP, SP_PAIR);
+    errno_assert (sc != -1);
+    rc = sp_connect (sc, "tcp://127.0.0.1:5555");
+    errno_assert (rc >= 0);
 
-int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);
+    rc = sp_send (sc, "ABC", 3, 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 3);
 
-#endif
+    rc = sp_recv (sb, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 3);
+
+    rc = sp_close (sc);
+    errno_assert (rc == 0);
+    rc = sp_close (sb);
+    errno_assert (rc == 0);
+    rc = sp_term ();
+    errno_assert (rc == 0);
+
+    return 0;
+}
+

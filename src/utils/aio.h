@@ -75,6 +75,7 @@ struct sp_usock {
     int domain;
     int type;
     int protocol;
+    struct sp_cp *cp;
 };
 
 struct sp_chndl {

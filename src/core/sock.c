@@ -50,11 +50,6 @@ void sp_sockbase_init (struct sp_sockbase *self,
     sp_thread_init (&self->worker, sp_sock_worker_routine, self);
 }
 
-struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self)
-{
-    return &self->cp;
-}
-
 void sp_sock_term (struct sp_sock *self)
 {
     struct sp_sockbase *sockbase;
@@ -377,5 +372,10 @@ static void sp_sock_worker_routine (void *arg)
     }
 
     sp_mutex_unlock (&sockbase->sync);
+}
+
+struct sp_cp *sp_sock_getcp (struct sp_sock *self)
+{
+    return &((struct sp_sockbase*) self)->cp;
 }
 

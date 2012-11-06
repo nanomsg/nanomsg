@@ -25,6 +25,7 @@
 
 struct sp_sock;
 struct sp_pipe;
+struct sp_cp;
 
 /*  Deallocate the socket. */
 void sp_sock_term (struct sp_sock *self);
@@ -43,5 +44,8 @@ int sp_sock_send (struct sp_sock *self, const void *buf,
 
 /*  Receive a message from the socket. */
 int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags);
+
+/*  Get access to the completion port associated with the socket. */
+struct sp_cp *sp_sock_getcp (struct sp_sock *self);
 
 #endif

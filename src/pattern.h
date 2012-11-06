@@ -120,9 +120,6 @@ struct sp_sockbase
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
 
-/*  Get access to the completion point associated with the socket. */
-struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
-
 /******************************************************************************/
 /*  The socktype class.                                                       */
 /******************************************************************************/

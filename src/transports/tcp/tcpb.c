@@ -60,7 +60,8 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
         sp_assert (0);
 
     /*  Open the listening socket. */
-    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+        sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);

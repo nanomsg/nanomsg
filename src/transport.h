@@ -31,6 +31,7 @@
 /*  This is the API between the SP core and individual transports. */
 
 struct sp_sock;
+struct sp_cp;
 
 /******************************************************************************/
 /*  The base class for endpoints.                                             */
@@ -60,6 +61,9 @@ void sp_epbase_init (struct sp_epbase *self,
 
 /*  Destroys the endpoint. */
 void sp_epbase_term (struct sp_epbase *self);
+
+/*  Get access to the completion port associated with the socket. */
+struct sp_cp *sp_epbase_getcp (struct sp_epbase *self);
 
 /******************************************************************************/
 /*  The base class for pipes.                                                 */

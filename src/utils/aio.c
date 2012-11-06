@@ -38,10 +38,14 @@
 /*  Private functions. */
 void sp_usock_tune (struct sp_usock *self);
 
-int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
+int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
+    struct sp_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     int rc;
+#endif
+#if defined SP_HAVE_WINDOWS
+    HANDLE wcp;
 #endif
 
     /*  If the operating system allows to directly open the socket with CLOEXEC
@@ -62,9 +66,6 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
-#if !defined SP_HAVE_WINDOWS
-    self->cp = NULL;
-#endif
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -76,6 +77,14 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol)
 #endif
 
     sp_usock_tune (self);
+
+#if defined SP_HAVE_WINDOWS
+    wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (wcp);
+#else
+    self->cp = cp;
+#endif
 
     return 0;
 }
@@ -201,15 +210,6 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
     *arg = (void*) key;
 
     return 0;
-}
-
-void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock)
-{
-    HANDLE cp;
-
-    cp = CreateIoCompletionPort ((HANDLE) usock->s, self->hndl,
-        (ULONG_PTR) NULL, 0);
-    sp_assert (cp);
 }
 
 void sp_usock_term (struct sp_usock *self)
@@ -450,12 +450,6 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
 
     /*  Spurious wake-up. */
     return -ETIMEDOUT;
-}
-
-void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock)
-{
-    sp_assert (!usock->cp);
-    usock->cp = self;
 }
 
 void sp_usock_term (struct sp_usock *self)

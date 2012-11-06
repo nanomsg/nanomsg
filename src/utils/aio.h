@@ -44,7 +44,8 @@ struct sp_cp;
 struct sp_chndl;
 struct sp_usock;
 
-int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol);
+int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
+    struct sp_cp *cp);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
@@ -66,10 +67,6 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg);
 
 /*  The function is suspectible to spurious ETIMEDOUT wake-ups. */
 int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg);
-
-/*  Associates the socket with the completion point. Association is broken
-    when the socket is destroyed. */
-void sp_cp_register_usock (struct sp_cp *self, struct sp_usock *usock);
 
 #if defined SP_HAVE_WINDOWS
 

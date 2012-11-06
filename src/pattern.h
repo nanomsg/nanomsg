@@ -120,13 +120,8 @@ struct sp_sockbase
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
 
-/*  Timers to be used from within the socket. */
-
-struct sp_sockbase_timer {
-    struct sp_timer timer;
-    struct sp_sockbase *sockbase;
-    void (*fn) (struct sp_sockbase_timer *self);
-};
+/*  Get access to the completion point associated with the socket. */
+struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

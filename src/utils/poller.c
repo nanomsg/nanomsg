@@ -361,6 +361,7 @@ again:
         return 0;
     }
     else {
+printf ("err: %d\n", (int) self->events [self->index].events);
         *event = SP_POLLER_ERR;
         ++self->index;
         return 0;

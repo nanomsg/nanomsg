@@ -94,8 +94,15 @@ struct sp_cp {
 
 #else
 
-#define SP_USOCK_FLAG_INPROGRESS 1
-#define SP_USOCK_FLAG_PARTIAL 2
+#define SP_USOCK_INOP_NONE 0
+#define SP_USOCK_INOP_ACCEPT 1
+#define SP_USOCK_INOP_RECV 2
+#define SP_USOCK_INOP_PARTIAL_RECV 3
+
+#define SP_USOCK_OUTOP_NONE 0
+#define SP_USOCK_OUTOP_CONNECT 1
+#define SP_USOCK_OUTOP_SEND 2
+#define SP_USOCK_OUTOP_PARTIAL_SEND 3
 
 struct sp_usock {
     int s;
@@ -105,13 +112,13 @@ struct sp_usock {
     struct sp_cp *cp;
     struct sp_poller_hndl hndl;
     struct {
-        int flags;
+        int op;
         void *buf;
         size_t len;
         size_t olen;
     } in;
     struct {
-        int flags;
+        int op;
         const void *buf;
         size_t len;
         size_t olen;

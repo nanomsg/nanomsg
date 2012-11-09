@@ -23,6 +23,7 @@
 #include "aio.h"
 #include "err.h"
 #include "fast.h"
+#include "cont.h"
 
 #if !defined SP_HAVE_WINDOWS
 #if defined SP_HAVE_ACCEPT4
@@ -67,6 +68,10 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     self->type = type;
     self->protocol = protocol;
     self->cp = cp;
+#if !defined SP_HAVE_WINDOWS
+    self->in.op = SP_USOCK_INOP_NONE;
+    self->out.op = SP_USOCK_OUTOP_NONE;
+#endif
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -83,8 +88,6 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
         (ULONG_PTR) NULL, 0);
     sp_assert (wcp);
-#else
-    sp_cp_post (cp, SP_USOCK_REGISTER, (void*) self);
 #endif
 
     return 0;
@@ -473,7 +476,43 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
         return -ETIMEDOUT;
     }
 
-    /*  TODO: Handle user-supplied file descriptors. */
+    *usock = sp_cont (hndl, struct sp_usock, hndl);
+
+    if (event == SP_POLLER_IN) {
+
+        if ((*usock)->in.op == SP_USOCK_INOP_ACCEPT) {
+            sp_assert (0);
+        }
+
+        if ((*usock)->in.op == SP_USOCK_INOP_RECV ||
+              (*usock)->in.op == SP_USOCK_INOP_PARTIAL_RECV) {
+            sp_assert (0);
+        }
+
+        /*  Invalid operation. */
+        sp_assert (0);
+    }
+
+    if (event == SP_POLLER_OUT) {
+
+        if ((*usock)->out.op == SP_USOCK_OUTOP_CONNECT) {
+            sp_assert (0);
+        }
+
+        if ((*usock)->out.op == SP_USOCK_OUTOP_SEND ||
+              (*usock)->out.op == SP_USOCK_OUTOP_PARTIAL_SEND) {
+            sp_assert (0);
+        }
+
+        /*  Invalid operation. */
+        sp_assert (0);
+    }
+
+    if (event == SP_POLLER_ERR) {
+        sp_assert (0);
+    }
+
+    /*  Invalid event. */
     sp_assert (0);
 }
 
@@ -503,11 +542,11 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     int rc;
 
     rc = connect (self->s, addr, addrlen) ;
-    if (sp_fast (rc == 0))
-        return 0;
 
     /*  Move the operation to the worker thread. */
-    if (errno == EINPROGRESS || errno == EAGAIN || errno == EWOULDBLOCK) {
+    if (rc == 0 || errno == EINPROGRESS || errno == EAGAIN ||
+          errno == EWOULDBLOCK) {
+        sp_cp_post (self->cp, SP_USOCK_REGISTER, (void*) self);
         sp_cp_post (self->cp, SP_USOCK_CONNECT, (void*) self);
         return -EINPROGRESS;
     }
@@ -535,6 +574,9 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     rc = listen (self->s, backlog);
     if (sp_slow (rc < 0))
        return -errno;
+
+    /*  Register the socket with the poller. */
+    sp_cp_post (self->cp, SP_USOCK_REGISTER, (void*) self);
 
     return 0;
 }
@@ -622,10 +664,11 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
 async:
 
     /*  If there's out operation already in progress, fail. */
-    sp_assert (!self->out.flags);
+    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Store the info about the asynchronous operation requested. */
-    self->out.flags = SP_USOCK_FLAG_INPROGRESS | flags;
+    self->out.op = flags & SP_USOCK_PARTIAL ?
+        SP_USOCK_OUTOP_PARTIAL_SEND : SP_USOCK_OUTOP_SEND;
     self->out.buf = buf;
     self->out.len = *len;
     self->out.olen = *len;
@@ -651,7 +694,7 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     /*  Success. */
     if (sp_fast (nbytes == *len))
         return 0;
-    if (sp_fast (nbytes > 0 && flags & SP_USOCK_FLAG_PARTIAL)) {
+    if (sp_fast (nbytes > 0 && flags & SP_USOCK_PARTIAL)) {
         *len = nbytes;
         return 0;
     }
@@ -686,10 +729,11 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 async:
 
     /*  If there's in operation already in progress, fail. */
-    sp_assert (!self->in.flags);
+    sp_assert (self->in.op == SP_USOCK_INOP_NONE);
 
     /*  Store the info about the asynchronous operation requested. */
-    self->in.flags = SP_USOCK_FLAG_INPROGRESS | flags;
+    self->in.op = flags & SP_USOCK_PARTIAL ?
+        SP_USOCK_INOP_PARTIAL_RECV : SP_USOCK_INOP_RECV;
     self->in.buf = buf;
     self->in.len = *len;
     self->in.olen = *len;

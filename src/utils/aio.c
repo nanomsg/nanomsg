@@ -83,6 +83,8 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
         (ULONG_PTR) NULL, 0);
     sp_assert (wcp);
+#else
+    sp_cp_post (cp, SP_USOCK_REGISTER, (void*) self);
 #endif
 
     return 0;
@@ -448,6 +450,16 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
 
             if (*op == SP_USOCK_CONNECT) {
                 sp_poller_set_out (&self->poller, &(*usock)->hndl);
+                continue;
+            }
+
+            if (*op == SP_USOCK_REGISTER) {
+                sp_poller_add_fd (&self->poller, (*usock)->s, &(*usock)->hndl);
+                continue;
+            }
+
+            if (*op == SP_USOCK_UNREGISTER) {
+                sp_poller_rm_fd (&self->poller, &(*usock)->hndl);
                 continue;
             }
 

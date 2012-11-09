@@ -42,10 +42,12 @@
 
 /*  These standard operations have negative indices so that positive namespace
     if free for custom events. */
-#define SP_USOCK_ACCEPT -1
-#define SP_USOCK_CONNECT -2
-#define SP_USOCK_SEND -3
-#define SP_USOCK_RECV -4
+#define SP_USOCK_REGISTER -1
+#define SP_USOCK_UNREGISTER -2
+#define SP_USOCK_ACCEPT -3
+#define SP_USOCK_CONNECT -4
+#define SP_USOCK_SEND -5
+#define SP_USOCK_RECV -6
 
 struct sp_cp;
 struct sp_usock;

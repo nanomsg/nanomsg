@@ -193,7 +193,8 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg)
     win_assert (brc);
 }
 
-int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
+    struct sp_usock **usock, void **arg)
 {
     BOOL brc;
     DWORD nbytes;
@@ -232,7 +233,7 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 }
 
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, struct sp_chndl *hndl)
+    sp_socklen addrlen)
 {
     int rc;
     BOOL brc;
@@ -245,9 +246,9 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
         &nbytes, NULL, NULL);
     wsa_assert (rc == 0);
     sp_assert (nbytes == sizeof (pconnectex));
-    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    memset (&self->conn, 0, sizeof (self->conn));
     brc = pconnectex (self->s, (struct sockaddr*) &addr, addrlen,
-        NULL, 0, NULL, (OVERLAPPED*) &hndl->olpd);
+        NULL, 0, NULL, (OVERLAPPED*) &self->conn);
     if (sp_fast (brc == TRUE))
         return 0;
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
@@ -273,18 +274,17 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     return 0;
 }
 
-int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
-    struct sp_chndl *hndl)
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock)
 {
     BOOL brc;
     char info [64];
     DWORD nbytes;
 
-    sp_usock_init (&usock, self->domain, self->type, self->protocol, self->cp);
+    sp_usock_init (usock, self->domain, self->type, self->protocol, self->cp);
 
-    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
+    memset (&usock->conn, 0, sizeof (usock->conn));
     brc = AcceptEx (self->s, usock->s, info, 0, 256, 256, &nbytes,
-        &hndl->olpd);
+        &usock->conn);
     if (sp_fast (brc == TRUE))
         return 0;
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
@@ -292,7 +292,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
 }
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_chndl *hndl)
+    int flags)
 {
     int rc;
     WSABUF wbuf;
@@ -302,8 +302,8 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
 
     wbuf.len = (u_long) *len;
     wbuf.buf = (char FAR*) buf;
-    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
-    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &hndl->olpd, NULL);
+    memset (&self->out, 0, sizeof (self->out));
+    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &self->out, NULL);
     if (sp_fast (rc == 0)) {
         *len = nbytes;
         return 0;
@@ -312,8 +312,7 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     return -EINPROGRESS;
 }
 
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_chndl *hndl)
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len, int flags)
 {
     int rc;
     WSABUF wbuf;
@@ -325,8 +324,8 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     wbuf.len = (u_long) *len;
     wbuf.buf = (char FAR*) buf;
     wflags = MSG_WAITALL;
-    memset (&hndl->olpd, 0, sizeof (hndl->olpd));
-    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &hndl->olpd, NULL);
+    memset (&self->in, 0, sizeof (self->in));
+    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &self->in, NULL);
     if (sp_fast (rc == 0)) {
         *len = nbytes;
         return 0;

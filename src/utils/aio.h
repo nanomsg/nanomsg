@@ -81,7 +81,7 @@ struct sp_usock {
     int type;
     int protocol;
     struct sp_cp *cp;
-    OVERLAPPED err;
+    OVERLAPPED conn;
     OVERLAPPED in;
     OVERLAPPED out;
 };

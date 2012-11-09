@@ -70,8 +70,9 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     errnum_assert (rc == 0, -rc);
 
     /*  Start connecting. */
-    rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen,
-        &self->hndl);
+    rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen);
+    if (rc == -EINPROGRESS)
+        return 0;
     errnum_assert (rc == 0, -rc);
 
     return 0;

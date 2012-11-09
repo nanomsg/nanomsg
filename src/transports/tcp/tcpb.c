@@ -74,7 +74,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
 
     /*  Start accepting new connections. */
     while (1) {
-        rc = sp_usock_accept (&self->usock, &self->newsock, &self->hndl);
+        rc = sp_usock_accept (&self->usock, &self->newsock);
         if (rc == -EINPROGRESS)
             break;
         errnum_assert (rc == 0, -rc);

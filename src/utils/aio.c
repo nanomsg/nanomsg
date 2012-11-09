@@ -341,13 +341,6 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 
 #define SP_CP_INITIAL_CAPACITY 64
 
-/*  Operation IDs are negative, leaving the positive namespace
-    to the user-defined operations. */
-#define SP_CP_OP_ACCEPT -1
-#define SP_CP_OP_CONNECT -2
-#define SP_CP_OP_SEND -3
-#define SP_CP_OP_RECV -4
-
 void sp_cp_init (struct sp_cp *self)
 {
     sp_mutex_init (&self->sync, 0);
@@ -404,24 +397,12 @@ void sp_cp_post (struct sp_cp *self, int op, void *arg)
     sp_mutex_unlock (&self->sync);
 }
 
-int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
+int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
+    struct sp_usock **usock, void **arg)
 {
     int rc;
     int event;
     struct sp_poller_hndl *hndl;
-
-    /*  If there's an item available, return it. */
-    sp_mutex_lock (&self->sync);
-    if (sp_fast (self->head != self->tail)) {
-        *op = self->items [self->head].op;
-        *arg = self->items [self->head].arg;
-        self->head = (self->head + 1) % self->capacity;
-        if (self->head == self->tail)
-           sp_eventfd_unsignal (&self->eventfd);
-        sp_mutex_unlock (&self->sync);
-        return 0;
-    }
-    sp_mutex_unlock (&self->sync);
 
     /*  Wait for new item. */
     rc = sp_poller_wait (&self->poller, timeout, &event, &hndl);
@@ -429,24 +410,60 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op, void **arg)
         return rc;
     errnum_assert (rc == 0, -rc);
 
-    /*  TODO */
-    sp_assert (hndl == &self->evhndl);
+    /*  If there are any queued operations, process them. */
+    if (hndl == &self->evhndl) {
+        sp_mutex_lock (&self->sync);
+        while (self->head != self->tail) {
 
-    /*  If there's an item available now, return it. */
-    sp_mutex_lock (&self->sync);
-    if (sp_fast (self->head != self->tail)) {
-        *op = self->items [self->head].op;
-        *arg = self->items [self->head].arg;
-        self->head = (self->head + 1) % self->capacity;
-        if (self->head == self->tail)
-           sp_eventfd_unsignal (&self->eventfd);
+            /*  Retrieve one operation from the queue. */
+            *op = self->items [self->head].op;
+            *arg = self->items [self->head].arg;
+            self->head = (self->head + 1) % self->capacity;
+            if (self->head == self->tail)
+               sp_eventfd_unsignal (&self->eventfd);
+
+            /*  Custom operations are returned to the caller straight away. */
+            if (*op >= 0) {
+                *usock = NULL;
+                sp_mutex_unlock (&self->sync);
+                return 0;
+            }
+
+            *usock = (struct sp_usock*) *arg;
+            *arg = NULL;
+
+            if (*op == SP_USOCK_RECV) {
+                sp_poller_set_in (&self->poller, &(*usock)->hndl);
+                continue;
+            }
+
+            if (*op == SP_USOCK_SEND) {
+                sp_poller_set_out (&self->poller, &(*usock)->hndl);
+                continue;
+            }
+
+            if (*op == SP_USOCK_ACCEPT) {
+                sp_poller_set_in (&self->poller, &(*usock)->hndl);
+                continue;
+            }
+
+            if (*op == SP_USOCK_CONNECT) {
+                sp_poller_set_out (&self->poller, &(*usock)->hndl);
+                continue;
+            }
+
+            /*  Invalid operation. */
+            sp_assert (0);
+        }
         sp_mutex_unlock (&self->sync);
-        return 0;
-    }
-    sp_mutex_unlock (&self->sync);
 
-    /*  Spurious wake-up. */
-    return -ETIMEDOUT;
+        /*  All queued operations were processed but there's no event to
+            return to the called. Do spurious wake-up. */
+        return -ETIMEDOUT;
+    }
+
+    /*  TODO: Handle user-supplied file descriptors. */
+    sp_assert (0);
 }
 
 void sp_usock_term (struct sp_usock *self)
@@ -470,7 +487,7 @@ int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
 }
 
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, struct sp_chndl *hndl)
+    sp_socklen addrlen)
 {
     int rc;
 
@@ -480,7 +497,7 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 
     /*  Move the operation to the worker thread. */
     if (errno == EINPROGRESS || errno == EAGAIN || errno == EWOULDBLOCK) {
-        sp_cp_post (self->cp, SP_CP_OP_CONNECT, (void*) hndl);
+        sp_cp_post (self->cp, SP_USOCK_CONNECT, (void*) self);
         return -EINPROGRESS;
     }
 
@@ -511,8 +528,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     return 0;
 }
 
-int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
-    struct sp_chndl *hndl)
+int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock)
 {
 #if !defined SP_HAVE_ACCEPT4 && defined FD_CLOEXEC
     int rc;
@@ -539,7 +555,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
 
     /*  Move the operation to the worker thread. */
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        sp_cp_post (self->cp, SP_CP_OP_ACCEPT, (void*) hndl);
+        sp_cp_post (self->cp, SP_USOCK_ACCEPT, (void*) self);
         return -EINPROGRESS;
     }
 
@@ -552,7 +568,7 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock,
 }
 
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags, struct sp_chndl *hndl)
+    int flags)
 {
     ssize_t nbytes;
 #if defined MSG_NOSIGNAL
@@ -595,22 +611,22 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
 async:
 
     /*  If there's out operation already in progress, fail. */
-    sp_assert (!hndl->out.flags);
+    sp_assert (!self->out.flags);
 
     /*  Store the info about the asynchronous operation requested. */
-    hndl->out.flags = SP_CP_IN_PROGRESS | flags;
-    hndl->out.buf = buf;
-    hndl->out.len = *len;
-    hndl->out.olen = *len;
+    self->out.flags = SP_USOCK_FLAG_INPROGRESS | flags;
+    self->out.buf = buf;
+    self->out.len = *len;
+    self->out.olen = *len;
 
     /*  Move the operation to the worker thread. */
-    sp_cp_post (self->cp, SP_CP_OP_SEND, (void*) hndl);
+    sp_cp_post (self->cp, SP_USOCK_SEND, (void*) self);
 
     return -EINPROGRESS;
 }
 
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags, struct sp_chndl *hndl)
+    int flags)
 {
     ssize_t nbytes;
 
@@ -624,7 +640,7 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     /*  Success. */
     if (sp_fast (nbytes == *len))
         return 0;
-    if (sp_fast (nbytes > 0 && flags & SP_USOCK_PARTIAL)) {
+    if (sp_fast (nbytes > 0 && flags & SP_USOCK_FLAG_PARTIAL)) {
         *len = nbytes;
         return 0;
     }
@@ -659,16 +675,16 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
 async:
 
     /*  If there's in operation already in progress, fail. */
-    sp_assert (!hndl->in.flags);
+    sp_assert (!self->in.flags);
 
     /*  Store the info about the asynchronous operation requested. */
-    hndl->in.flags = SP_CP_IN_PROGRESS | flags;
-    hndl->in.buf = buf;
-    hndl->in.len = *len;
-    hndl->in.olen = *len;
+    self->in.flags = SP_USOCK_FLAG_INPROGRESS | flags;
+    self->in.buf = buf;
+    self->in.len = *len;
+    self->in.olen = *len;
 
     /*  Move the operation to the worker thread. */
-    sp_cp_post (self->cp, SP_CP_OP_RECV, (void*) hndl);
+    sp_cp_post (self->cp, SP_USOCK_RECV, (void*) self);
 
     return -EINPROGRESS;
 }

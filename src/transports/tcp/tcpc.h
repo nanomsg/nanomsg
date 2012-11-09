@@ -34,7 +34,6 @@ struct sp_tcpc {
 
     /*  The underlying TCP socket. */
     struct sp_usock usock;
-    struct sp_chndl hndl;
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint);

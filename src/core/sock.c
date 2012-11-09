@@ -289,6 +289,7 @@ static void sp_sock_worker_routine (void *arg)
     struct sp_sockbase *sockbase;
     struct sp_timer *timer;
     int op;
+    struct sp_usock *usock;
     void *oparg;
 
     sockbase = (struct sp_sockbase*) arg;
@@ -313,7 +314,7 @@ static void sp_sock_worker_routine (void *arg)
 
         /*  Wait for a completion of an operation or a timer expiration. */
         sp_mutex_unlock (&sockbase->sync);
-        rc = sp_cp_wait (&sockbase->cp, timeout, &op, &oparg);
+        rc = sp_cp_wait (&sockbase->cp, timeout, &op, &usock, &oparg);
         errnum_assert (rc == 0 || rc == -ETIMEDOUT, -rc);
         sp_mutex_lock (&sockbase->sync);
 

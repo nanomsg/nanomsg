@@ -34,7 +34,6 @@ struct sp_tcpb {
 
     /*  The listening TCP socket. */
     struct sp_usock usock;
-    struct sp_chndl hndl;
 
     /*  The freshly accepted connection. */
     struct sp_usock newsock;

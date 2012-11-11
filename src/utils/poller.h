@@ -34,9 +34,9 @@ struct sp_poller_hndl;
 
 void sp_poller_init (struct sp_poller *self);
 void sp_poller_term (struct sp_poller *self);
-void sp_poller_add_fd (struct sp_poller *self, int fd,
+void sp_poller_add (struct sp_poller *self, int fd,
     struct sp_poller_hndl *hndl);
-void sp_poller_rm_fd (struct sp_poller *self, struct sp_poller_hndl *hndl);
+void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl);

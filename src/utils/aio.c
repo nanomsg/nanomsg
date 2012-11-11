@@ -350,7 +350,7 @@ void sp_cp_init (struct sp_cp *self)
     sp_mutex_init (&self->sync, 0);
     sp_poller_init (&self->poller);
     sp_eventfd_init (&self->eventfd);
-    sp_poller_add_fd (&self->poller, sp_eventfd_getfd (&self->eventfd),
+    sp_poller_add (&self->poller, sp_eventfd_getfd (&self->eventfd),
         &self->evhndl);
     sp_poller_set_in (&self->poller, &self->evhndl);
     self->capacity = SP_CP_INITIAL_CAPACITY;
@@ -363,7 +363,7 @@ void sp_cp_init (struct sp_cp *self)
 void sp_cp_term (struct sp_cp *self)
 {
     sp_free (self->items);
-    sp_poller_rm_fd (&self->poller, &self->evhndl);
+    sp_poller_rm (&self->poller, &self->evhndl);
     sp_eventfd_term (&self->eventfd);
     sp_poller_term (&self->poller);
     sp_mutex_term (&self->sync);
@@ -463,12 +463,12 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
             }
 
             if (*op == SP_USOCK_REGISTER) {
-                sp_poller_add_fd (&self->poller, (*usock)->s, &(*usock)->hndl);
+                sp_poller_add (&self->poller, (*usock)->s, &(*usock)->hndl);
                 continue;
             }
 
             if (*op == SP_USOCK_UNREGISTER) {
-                sp_poller_rm_fd (&self->poller, &(*usock)->hndl);
+                sp_poller_rm (&self->poller, &(*usock)->hndl);
                 continue;
             }
 

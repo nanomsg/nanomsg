@@ -49,7 +49,7 @@ void sp_poller_term (struct sp_poller *self)
     sp_free (self->hndls);
 }
 
-void sp_poller_add_fd (struct sp_poller *self, int fd,
+void sp_poller_add (struct sp_poller *self, int fd,
     struct sp_poller_hndl *hndl)
 {
     int rc;
@@ -74,7 +74,7 @@ void sp_poller_add_fd (struct sp_poller *self, int fd,
     ++self->size;
 }
 
-void sp_poller_rm_fd (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
 {
     /*  No more events will be reported on this fd. */
     self->pollset [hndl->index].revents = 0;
@@ -221,7 +221,7 @@ void sp_poller_term (struct sp_poller *self)
     errno_assert (rc == 0);
 }
 
-void sp_poller_add_fd (struct sp_poller *self, int fd,
+void sp_poller_add (struct sp_poller *self, int fd,
     struct sp_poller_hndl *hndl)
 {
     int rc;
@@ -237,7 +237,7 @@ void sp_poller_add_fd (struct sp_poller *self, int fd,
     errno_assert (rc == 0);
 }
 
-void sp_poller_rm_fd (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
 {
     int rc;
     int i;

@@ -47,10 +47,8 @@ int main ()
     errno_assert (rc >= 0);
     sc = sp_socket (AF_SP, SP_PAIR);
     errno_assert (sc != -1);
-#if 0
     rc = sp_connect (sc, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
-#endif
 
     rc = sp_send (sc, "ABC", 3, 0);
     errno_assert (rc >= 0);

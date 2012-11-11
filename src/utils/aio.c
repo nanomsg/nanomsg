@@ -407,6 +407,7 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
     int rc;
     int event;
     struct sp_poller_hndl *hndl;
+    int newsock;
 
     /*  Wait for new item. */
     rc = sp_poller_wait (&self->poller, timeout, &event, &hndl);
@@ -481,6 +482,20 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
     if (event == SP_POLLER_IN) {
 
         if ((*usock)->in.op == SP_USOCK_INOP_ACCEPT) {
+            newsock = accept ((*usock)->parent->s, NULL, NULL);
+            if (newsock == -1) {
+
+                /*  Make sure this is a network error,
+                    not a programming error. */
+                errno_assert (errno == ECONNABORTED ||
+                    errno == EPROTO || errno == ENOBUFS || errno == EMFILE ||
+                    errno == ENFILE || errno == ENOMEM);
+
+                /*  Do nothing, wait for new connections. */
+                return -ETIMEDOUT;
+            }
+
+            /*  TODO: Intialise the usock. */
             sp_assert (0);
         }
 
@@ -540,6 +555,10 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
     int rc;
+
+    /*  If there's out operation already in progress, fail. */
+    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
+    self->out.op = SP_USOCK_OUTOP_CONNECT;
 
     rc = connect (self->s, addr, addrlen) ;
 
@@ -604,10 +623,14 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock)
         sp_usock_tune (usock);
         return 0;
     }
-
+ 
+    /*  If there's an in operaton in progress, fail. */
+    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Move the operation to the worker thread. */
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        usock->parent = self;
+        self->in.op = SP_USOCK_INOP_ACCEPT;
         sp_cp_post (self->cp, SP_USOCK_ACCEPT, (void*) self);
         return -EINPROGRESS;
     }

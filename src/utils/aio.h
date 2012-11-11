@@ -111,6 +111,7 @@ struct sp_usock {
     int protocol;
     struct sp_cp *cp;
     struct sp_poller_hndl hndl;
+    struct sp_usock *parent;
     struct {
         int op;
         void *buf;

@@ -409,11 +409,16 @@ int sp_cp_wait (struct sp_cp *self, int timeout, int *op,
     struct sp_poller_hndl *hndl;
     int newsock;
 
-    /*  Wait for new item. */
-    rc = sp_poller_wait (&self->poller, timeout, &event, &hndl);
-    if (sp_slow (rc == -ETIMEDOUT || rc == -EINTR))
-        return rc;
-    errnum_assert (rc == 0, -rc);
+    rc = sp_poller_event (&self->poller, &event, &hndl);
+    if (rc == -EAGAIN) {
+        rc = sp_poller_wait (&self->poller, timeout);
+        if (sp_slow (rc == -EINTR))
+            return -EINTR;
+        errnum_assert (rc == 0, -rc);
+        return -ETIMEDOUT;
+    }
+    else
+        errnum_assert (rc == 0, -rc);
 
     /*  If there are any queued operations, process them. */
     if (hndl == &self->evhndl) {

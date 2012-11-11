@@ -41,7 +41,8 @@ void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
 void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
-int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
+int sp_poller_wait (struct sp_poller *self, int timeout);
+int sp_poller_event (struct sp_poller *self, int *event,
     struct sp_poller_hndl **hndl);
 
 #if defined SP_USE_POLL

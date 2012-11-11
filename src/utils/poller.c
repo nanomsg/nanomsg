@@ -110,11 +110,57 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
     self->pollset [hndl->index].revents &= ~POLLOUT;
 }
 
-int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
-    struct sp_poller_hndl **hndl)
+int sp_poller_wait (struct sp_poller *self, int timeout)
 {
     int rc;
     int i;
+
+    /*  First, get rid of removed fds. */
+    while (self->removed != -1) {
+
+        /*  Remove the fd from the list of removed fds. */
+        i = self->removed;
+        self->removed = self->hndls [i].next;
+
+        /*  Replace the removed fd by the one at the end of the pollset. */
+        --self->size;
+        if (i != self->size) { 
+            self->pollset [i] = self->pollset [self->size];
+            self->hndls [i] = self->hndls [self->size];
+            self->hndls [i].hndl->index = i;
+        }
+
+        /*  The fd from the end of the pollset may have been on removed fds
+            list itself. If so, adjust the list. */
+        if (sp_slow (!self->hndls [i].hndl)) {
+            if (self->hndls [i].prev != -1)
+               self->hndls [self->hndls [i].prev].next = i;
+            if (self->hndls [i].next != -1)
+               self->hndls [self->hndls [i].next].prev = i;
+            if (self->removed == self->size)
+                self->removed = i;
+        }
+    }
+
+    /*  Wait for new events. */
+#if defined SP_IGNORE_EINTR
+again:
+#endif
+    rc = poll (self->pollset, self->size, timeout);
+    if (sp_slow (rc < 0 && errno == EINTR))
+#if defined SP_IGNORE_EINTR
+        goto again;
+#else
+        return -EINTR;
+#endif
+    errno_assert (rc >= 0);
+    return 0;
+}
+
+int sp_poller_event (struct sp_poller *self, int *event,
+    struct sp_poller_hndl **hndl)
+{
+    int rc;
 
     /*  Skip over empty events. This will also skip over removed fds as they
         have their revents nullified. */
@@ -124,44 +170,9 @@ int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
         ++self->index;
     }
 
-    /*  If there is no available event, wait for one. */
-    if (sp_slow (self->index >= self->size)) {
-
-        /*  First, get rid of removed fds. */
-        while (self->removed != -1) {
-
-            /*  Remove the fd from the list of removed fds. */
-            i = self->removed;
-            self->removed = self->hndls [i].next;
-
-            /*  Replace the removed fd by the one at the end of the pollset. */
-            --self->size;
-            if (i != self->size) { 
-                self->pollset [i] = self->pollset [self->size];
-                self->hndls [i] = self->hndls [self->size];
-                self->hndls [i].hndl->index = i;
-            }
-
-            /*  The fd from the end of the pollset may have been on removed fds
-                list itself. If so, adjust the list. */
-            if (sp_slow (!self->hndls [i].hndl)) {
-                if (self->hndls [i].prev != -1)
-                   self->hndls [self->hndls [i].prev].next = i;
-                if (self->hndls [i].next != -1)
-                   self->hndls [self->hndls [i].next].prev = i;
-                if (self->removed == self->size)
-                    self->removed = i;
-            }
-        }
-
-        /*  Wait for new events. */
-        rc = poll (self->pollset, self->size, timeout);
-        if (sp_slow (rc < 0 && errno == EINTR))
-            return -EINTR;
-        if (sp_slow (rc == 0))
-            return -ETIMEDOUT;
-        errno_assert (rc >= 0);
-    }
+    /*  If there is no available event, let the caller know. */
+    if (sp_slow (self->index >= self->size))
+        return -EAGAIN;
 
     /*  Return next event to the caller. Remove the event from revents. */
     *hndl = self->hndls [self->index].hndl;
@@ -325,7 +336,32 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].events &= ~EPOLLOUT;
 }
 
-int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
+int sp_poller_wait (struct sp_poller *self, int timeout)
+{
+    int nevents;
+
+    /*  Clear all existing events. */
+    self->nevents = 0;
+    self->index = 0;
+
+    /*  Wait for new events. */
+#if defined SP_IGNORE_EINTR
+again:
+#endif
+    nevents = epoll_wait (self->ep, self->events,
+        SP_POLLER_MAX_EVENTS, timeout);
+    if (sp_slow (nevents == -1 && errno == EINTR))
+#if defined SP_IGNORE_EINTR
+        goto again;
+#else
+        return -EINTR;
+#endif
+    errno_assert (self->nevents != -1);
+    self->nevents = nevents;
+    return 0;
+}
+
+int sp_poller_event (struct sp_poller *self, int *event,
     struct sp_poller_hndl **hndl)
 {
     /*  Skip over empty events. */
@@ -335,18 +371,9 @@ int sp_poller_wait (struct sp_poller *self, int timeout, int *event,
         ++self->index;
     }
 
-    /*  If there is no stored event, wait for one. */
-    if (sp_slow (self->index >= self->nevents)) {
-again:
-        self->nevents = epoll_wait (self->ep, self->events,
-            SP_POLLER_MAX_EVENTS, timeout);
-        if (sp_slow (self->nevents == -1 && errno == EINTR))
-            goto again; //return -EINTR;
-        if (sp_slow (self->nevents == 0))
-            return -ETIMEDOUT;
-        errno_assert (self->nevents != -1);
-        self->index = 0;
-    }
+    /*  If there is no stored event, let the caller know. */
+    if (sp_slow (self->index >= self->nevents))
+        return -EAGAIN;
 
     /*  Return next event to the caller. Remove the event from the set. */
     *hndl = (struct sp_poller_hndl*) self->events [self->index].data.ptr;
@@ -361,7 +388,6 @@ again:
         return 0;
     }
     else {
-printf ("err: %d\n", (int) self->events [self->index].events);
         *event = SP_POLLER_ERR;
         ++self->index;
         return 0;

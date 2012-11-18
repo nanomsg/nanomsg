@@ -55,8 +55,3 @@ int sp_ep_close (struct sp_ep *self, int linger)
     return epbase->vfptr->close (epbase, linger);
 }
 
-struct sp_cp *sp_epbase_getcp (struct sp_epbase *self)
-{
-    return sp_sock_getcp (self->sock);
-}
-

@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/addr.h"
 
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpb_close (struct sp_epbase *self, int linger);
@@ -62,24 +63,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
 
-    /*  Open the listening socket. */
-    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
-        sp_epbase_getcp (&self->epbase));
-    errnum_assert (rc == 0, -rc);
-    rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
-    errnum_assert (rc == 0, -rc);
-    /*  TODO:  Get the backlog value from a socket option! */
-    rc = sp_usock_listen (&self->usock, 100);
-    errnum_assert (rc == 0, -rc);
-
-    /*  Start accepting new connections. */
-    while (1) {
-        rc = sp_usock_accept (&self->usock, &self->newsock);
-        if (rc == -EINPROGRESS)
-            break;
-        errnum_assert (rc == 0, -rc);
-        /*  TODO */
-    }
+    /*  TODO: Open the listing socket here and start accepting connections. */
 
     return 0;
 }
@@ -89,9 +73,6 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
     struct sp_tcpb *tcpb;
 
     tcpb = sp_cont (self, struct sp_tcpb, epbase);
-
-    /*  Close the listening socket. */
-    sp_usock_term (&tcpb->usock);
 
     sp_assert (0);
     return 0;

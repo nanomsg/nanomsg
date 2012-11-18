@@ -25,17 +25,13 @@
 
 #include "../../transport.h"
 
-#include "../../utils/aio.h"
-
 struct sp_tcpc {
 
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
-
-    /*  The underlying TCP socket. */
-    struct sp_usock usock;
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint);
 
 #endif
+

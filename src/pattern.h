@@ -24,11 +24,8 @@
 #define SP_PATTERN_INCLUDED
 
 #include "utils/mutex.h"
-#include "utils/thread.h"
-#include "utils/clock.h"
 #include "utils/cond.h"
 #include "utils/list.h"
-#include "utils/aio.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -45,25 +42,6 @@ void sp_pipe_setdata (struct sp_pipe *self, void *data);
 void *sp_pipe_getdata (struct sp_pipe *self);
 int sp_pipe_send (struct sp_pipe *self, const void *buf, size_t len);
 int sp_pipe_recv (struct sp_pipe *self, void *buf, size_t *len);
-
-/******************************************************************************/
-/*  Timers.                                                                   */
-/******************************************************************************/
-
-struct sp_sockbase;
-
-struct sp_timer {
-    struct sp_list_item list;
-    uint64_t timeout;
-    void (*fn) (struct sp_timer *self);
-};
-
-/*  Start the timer. */
-void sp_timer_start (struct sp_timer *self, struct sp_sockbase *sockbase,
-    int timeout, void (*fn) (struct sp_timer *self));
-
-/*  Cancel a running timer. */
-void sp_timer_cancel (struct sp_timer *self, struct sp_sockbase *sockbase);
 
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
@@ -91,7 +69,7 @@ struct sp_sockbase
     /*  Table of virtual functions supplied by the socket type. */
     const struct sp_sockbase_vfptr *vfptr;
 
-    /*  Synchronises inbound-related state of the socket. */
+    /*  Synchronises state of the socket. */
     struct sp_mutex sync;
 
     /*  Condition variable to implement sleeping in blocking socket
@@ -100,20 +78,6 @@ struct sp_sockbase
 
     /*  File descriptor for this socket. */
     int fd;
-
-    /*  Worker thread's instance of the clock. */
-    struct sp_clock clock;
-
-    /*  List of active timers. */
-    struct sp_list timers;
-
-    /*  Completion port processed the worker thread. */
-    struct sp_cp cp;
-
-    /*  Worker thread associated with the socket. */
-    /*  At the moment there's one worker thread per socket. Later on we can
-        move to thread pool model if needed. */
-    struct sp_thread worker;
 };
 
 /*  Initialise the socket. */

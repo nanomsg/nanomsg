@@ -25,18 +25,10 @@
 
 #include "../../transport.h"
 
-#include "../../utils/aio.h"
-
 struct sp_tcpb {
 
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
-
-    /*  The listening TCP socket. */
-    struct sp_usock usock;
-
-    /*  The freshly accepted connection. */
-    struct sp_usock newsock;
 };
 
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);

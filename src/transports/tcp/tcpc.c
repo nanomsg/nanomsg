@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/addr.h"
 
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpc_close (struct sp_epbase *self, int linger);
@@ -64,16 +65,7 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
 
-    /*  Open the underlying socket. */
-    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
-        sp_epbase_getcp (&self->epbase));
-    errnum_assert (rc == 0, -rc);
-
-    /*  Start connecting. */
-    rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen);
-    if (rc == -EINPROGRESS)
-        return 0;
-    errnum_assert (rc == 0, -rc);
+    /*  TODO:  Open the socket and start connecting. */
 
     return 0;
 }

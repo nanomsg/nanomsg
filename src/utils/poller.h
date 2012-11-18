@@ -49,6 +49,8 @@ int sp_poller_event (struct sp_poller *self, int *event,
 
 #include <poll.h>
 
+#define SP_POLLER_HAVE_ASYNC_ADD 0
+
 struct sp_poller_hndl {
     int index;
 };
@@ -85,6 +87,8 @@ struct sp_poller {
 #if defined SP_USE_EPOLL
 
 #include <sys/epoll.h>
+
+#define SP_POLLER_HAVE_ASYNC_ADD 1
 
 #define SP_POLLER_MAX_EVENTS 32
 

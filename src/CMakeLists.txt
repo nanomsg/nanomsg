@@ -69,6 +69,8 @@ add_library(nanomsg SHARED
     utils/sleep.c
     utils/thread.h
     utils/thread.c
+    utils/timer.h
+    utils/timer.c
     utils/wire.h
     utils/wire.c
     patterns/pair/pair.h

@@ -24,6 +24,7 @@
 #define SP_TRANSPORT_INCLUDED
 
 #include "utils/list.h"
+#include "utils/aio.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -87,6 +88,8 @@ struct sp_pipebase_vfptr {
 struct sp_pipebase {
     const struct sp_pipebase_vfptr *vfptr;
     struct sp_epbase *epbase;
+    struct sp_event_hndl inevent;
+    struct sp_event_hndl outevent;
     void *data;
 };
 

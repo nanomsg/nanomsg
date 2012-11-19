@@ -51,9 +51,11 @@ static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_pub_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_pub_setopt (struct sp_sockbase *self, int option,
-        const void *optval, size_t optvallen);
+    const void *optval, size_t optvallen);
 static int sp_pub_getopt (struct sp_sockbase *self, int option,
-        void *optval, size_t *optvallen);
+    void *optval, size_t *optvallen);
+static void sp_pub_timeout (struct sp_sockbase *self,
+    struct sp_timer_hndl *hndl);
 static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
     sp_pub_term,
     sp_pub_add,
@@ -63,7 +65,8 @@ static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
     sp_pub_send,
     sp_pub_recv,
     sp_pub_setopt,
-    sp_pub_getopt
+    sp_pub_getopt,
+    sp_pub_timeout
 };
 
 void sp_pub_init (struct sp_pub *self, const struct sp_sockbase_vfptr *vfptr,
@@ -169,6 +172,12 @@ static int sp_pub_getopt (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+void sp_pub_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl)
+{
+    /*  No timers are used in this socket type. */
+    sp_assert (0);
 }
 
 static struct sp_sockbase *sp_pub_create (int fd)

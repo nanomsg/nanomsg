@@ -37,11 +37,11 @@ void sp_cond_term (struct sp_cond *self)
         the condition variable. */
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
+int sp_cond_wait (struct sp_cond *self, struct sp_aio *aio, int timeout)
 {
     BOOL brc;
 
-    brc = SleepConditionVariableCS (&self->cond, &mutex->mutex,
+    brc = SleepConditionVariableCS (&self->cond, &aio->sync.mutex,
         timeout < 0 ? INFINITE : timeout);
     if (sp_slow (!brc)) {
         if (GetLastError () == ERROR_TIMEOUT)
@@ -75,19 +75,19 @@ void sp_cond_term (struct sp_cond *self)
     errnum_assert (rc == 0, rc);
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
+int sp_cond_wait (struct sp_cond *self, struct sp_aio *aio, int timeout)
 {
     int rc;
     struct timespec ts;
 
     if (timeout < 0) {
-        rc = pthread_cond_wait (&self->cond, &mutex->mutex);
+        rc = pthread_cond_wait (&self->cond, &aio->sync.mutex);
         errnum_assert (rc == 0, rc);
     }
     else {
         ts.tv_sec = timeout / 1000;
         ts.tv_nsec = timeout % 1000 * 1000000;
-        rc = pthread_cond_timedwait (&self->cond, &mutex->mutex, &ts);
+        rc = pthread_cond_timedwait (&self->cond, &aio->sync.mutex, &ts);
         if (rc == ETIMEDOUT)
             return -ETIMEDOUT;
         errnum_assert (rc == 0, rc);

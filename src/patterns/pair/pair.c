@@ -44,6 +44,7 @@ static int sp_pair_setopt (struct sp_sockbase *self, int option,
         const void *optval, size_t optvallen);
 static int sp_pair_getopt (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen);
+static void sp_pair_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl);
 static const struct sp_sockbase_vfptr sp_pair_sockbase_vfptr = {
     sp_pair_term,
     sp_pair_add,
@@ -53,7 +54,8 @@ static const struct sp_sockbase_vfptr sp_pair_sockbase_vfptr = {
     sp_pair_send,
     sp_pair_recv,
     sp_pair_setopt,
-    sp_pair_getopt
+    sp_pair_getopt,
+    sp_pair_timeout
 };
 
 void sp_pair_init (struct sp_pair *self, const struct sp_sockbase_vfptr *vfptr,
@@ -114,6 +116,12 @@ static int sp_pair_getopt (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+void sp_pair_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl)
+{
+    /*  No timers are used in this socket type. */
+    sp_assert (0);
 }
 
 static struct sp_sockbase *sp_pair_create (int fd)

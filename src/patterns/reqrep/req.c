@@ -44,6 +44,7 @@ struct sp_req {
     size_t requestlen;
     void *request;
     int resend_ivl;
+    struct sp_timer_hndl resend_timer;
 };
 
 /*  Implementation of sp_sockbase's virtual functions. */
@@ -51,9 +52,11 @@ static void sp_req_term (struct sp_sockbase *self);
 static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_req_setopt (struct sp_sockbase *self, int option,
-        const void *optval, size_t optvallen);
+    const void *optval, size_t optvallen);
 static int sp_req_getopt (struct sp_sockbase *self, int option,
-        void *optval, size_t *optvallen);
+    void *optval, size_t *optvallen);
+static void sp_req_timeout (struct sp_sockbase *self,
+    struct sp_timer_hndl *hndl);
 
 static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_term,
@@ -65,6 +68,7 @@ static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_recv,
     sp_req_setopt,
     sp_req_getopt,
+    sp_req_timeout
 };
 
 void sp_req_init (struct sp_req *self, const struct sp_sockbase_vfptr *vfptr,
@@ -91,7 +95,7 @@ static void sp_req_term (struct sp_sockbase *self)
     req = sp_cont (self, struct sp_req, xreq.sockbase);
 
     if (req->flags & SP_REQ_INPROGRESS) {
-        /*  TODO:  Cancel the timer here. */
+        sp_sockbase_rm_timer (&req->xreq.sockbase, &req->resend_timer);
         sp_free (req->request);
     }
 
@@ -111,7 +115,7 @@ static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
         req->requestlen = 0;
         req->request = NULL;
         req->flags &= ~SP_REQ_INPROGRESS;
-        /*  TODO:  Cancel the resend timer here. */
+        sp_sockbase_rm_timer (&req->xreq.sockbase, &req->resend_timer);
     }
 
     /*  Generate new request ID for the new request. */
@@ -138,7 +142,9 @@ static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
         at the moment. */
     req->flags |= SP_REQ_INPROGRESS;
 
-    /*  TODO: Set up the re-send timer. */
+    /*  Set up the re-send timer. */
+    sp_sockbase_add_timer (&req->xreq.sockbase, req->resend_ivl,
+       &req->resend_timer);
 
     return 0;
 }
@@ -195,7 +201,7 @@ static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
     *len = replylen - sizeof (uint32_t);
 
     /*  Clean-up. */
-    /*  TODO: Cancel the resend timer here. */
+    sp_sockbase_rm_timer (&req->xreq.sockbase, &req->resend_timer);
     sp_free (reply);
     sp_free (req->request);
     req->requestlen = 0;
@@ -238,6 +244,27 @@ static int sp_req_getopt (struct sp_sockbase *self, int option,
     }
 
     return -ENOPROTOOPT;
+}
+
+static void sp_req_timeout (struct sp_sockbase *self,
+    struct sp_timer_hndl *hndl)
+{
+    int rc;
+    struct sp_req *req;
+
+    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    sp_assert (req->flags & SP_REQ_INPROGRESS);
+
+    /*  Resend timer is the only one we have. */
+    sp_assert (hndl == &req->resend_timer);
+
+    /*  Re-send the request. */
+    rc = sp_xreq_send (&req->xreq.sockbase, req->request, req->requestlen);
+    errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
+
+    /*  Set up the next re-send timer. */
+    sp_sockbase_add_timer (&req->xreq.sockbase, req->resend_ivl,
+       &req->resend_timer);
 }
 
 static struct sp_sockbase *sp_req_create (int fd)

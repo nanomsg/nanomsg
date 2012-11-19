@@ -38,9 +38,9 @@ struct sp_timer {
 
 void sp_timer_init (struct sp_timer *self);
 void sp_timer_term (struct sp_timer *self);
-void sp_timer_add (struct sp_timer *self, int timeout,
+int sp_timer_add (struct sp_timer *self, int timeout,
     struct sp_timer_hndl *hndl);
-void sp_timer_rm (struct sp_timer *self, struct sp_timer_hndl *hndl);
+int sp_timer_rm (struct sp_timer *self, struct sp_timer_hndl *hndl);
 int sp_timer_timeout (struct sp_timer *self);
 int sp_timer_event (struct sp_timer *self, struct sp_timer_hndl **hndl);
 

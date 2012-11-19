@@ -39,6 +39,7 @@ struct sp_thread
     void *arg;
 #ifdef SP_HAVE_WINDOWS
     HANDLE handle;
+    unsigned int tid;
 #else
     pthread_t handle;
 #endif
@@ -47,6 +48,10 @@ struct sp_thread
 void sp_thread_init (struct sp_thread *self,
     sp_thread_routine *routine, void *arg);
 void sp_thread_term (struct sp_thread *self);
+
+/*  Returns 1 if the current thread is the one managed by the sp_thread object,
+    0 otherwise. */
+int sp_thread_current (struct sp_thread *self);
 
 #endif
 

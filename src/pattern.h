@@ -23,7 +23,7 @@
 #ifndef SP_PATTERN_INCLUDED
 #define SP_PATTERN_INCLUDED
 
-#include "utils/mutex.h"
+#include "utils/aio.h"
 #include "utils/cond.h"
 #include "utils/list.h"
 
@@ -62,6 +62,7 @@ struct sp_sockbase_vfptr {
         const void *optval, size_t optvallen);
     int (*getopt) (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen);
+    void (*timeout) (struct sp_sockbase *seld, struct sp_timer_hndl *hndl);
 };
 
 struct sp_sockbase
@@ -69,8 +70,8 @@ struct sp_sockbase
     /*  Table of virtual functions supplied by the socket type. */
     const struct sp_sockbase_vfptr *vfptr;
 
-    /*  Synchronises state of the socket. */
-    struct sp_mutex sync;
+    /*  Async I/O to handle file descriptors, timers and locking. */
+    struct sp_aio aio;
 
     /*  Condition variable to implement sleeping in blocking socket
         operations. */
@@ -83,6 +84,12 @@ struct sp_sockbase
 /*  Initialise the socket. */
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
+
+/*  Manage timers. */
+void sp_sockbase_add_timer (struct sp_sockbase *self, int timeout,
+    struct sp_timer_hndl *hndl);
+void sp_sockbase_rm_timer (struct sp_sockbase *self,
+    struct sp_timer_hndl *hndl);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

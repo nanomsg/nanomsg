@@ -36,7 +36,8 @@ static const struct sp_sockbase_vfptr sp_xreq_sockbase_vfptr = {
     sp_xreq_send,
     sp_xreq_recv,
     sp_xreq_setopt,
-    sp_xreq_getopt
+    sp_xreq_getopt,
+    sp_xreq_timeout
 };
 
 void sp_xreq_init (struct sp_xreq *self, const struct sp_sockbase_vfptr *vfptr,
@@ -97,6 +98,12 @@ int sp_xreq_getopt (struct sp_sockbase *self, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+void sp_xreq_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl)
+{
+    /*  No timers are used in this socket type. */
+    sp_assert (0);
 }
 
 static struct sp_sockbase *sp_xreq_create (int fd)

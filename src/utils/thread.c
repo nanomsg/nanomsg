@@ -40,7 +40,7 @@ void sp_thread_init (struct sp_thread *self,
     self->routine = routine;
     self->arg = arg;
     self->handle = (HANDLE) _beginthreadex (NULL, 0,
-        sp_thread_main_routine, (void*) self, 0 , NULL);
+        sp_thread_main_routine, (void*) self, 0 , &self->tid);
     win_assert (self->handle != NULL);
 }
 
@@ -53,6 +53,11 @@ void sp_thread_term (struct sp_thread *self)
     win_assert (rc != WAIT_FAILED);
     brc = CloseHandle (self->handle);
     win_assert (brc != 0);
+}
+
+int sp_thread_current (struct sp_thread *self)
+{
+    return ((unsigned int) GetCurrentThreadId ()) == self->tid ? 1 : 0;
 }
 
 #else
@@ -69,7 +74,7 @@ static void *sp_thread_main_routine (void *arg)
    
     /*  No signals should be processed by this thread. The library doesn't
         use signals and thus all the signals should be delivered to application
-        threads, none to worker threads. */
+        threads, not to worker threads. */
     rc = sigfillset (&sigset);
     errno_assert (rc == 0);
     rc = pthread_sigmask (SIG_BLOCK, &sigset, NULL);
@@ -98,6 +103,11 @@ void sp_thread_term (struct sp_thread *self)
 
     rc = pthread_join (self->handle, NULL);
     errnum_assert (rc == 0, rc);
+}
+
+int sp_thread_current (struct sp_thread *self)
+{
+    return pthread_equal (pthread_self (), self->handle) ? 1 : 0;
 }
 
 #endif

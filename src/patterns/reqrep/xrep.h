@@ -72,6 +72,7 @@ int sp_xrep_setopt (struct sp_sockbase *self, int option,
     const void *optval, size_t optvallen);
 int sp_xrep_getopt (struct sp_sockbase *self, int option,
     void *optval, size_t *optvallen);
+void sp_xrep_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl);
 
 extern struct sp_socktype *sp_xrep_socktype;
 

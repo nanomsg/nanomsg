@@ -58,6 +58,7 @@ static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
     sp_rep_recv,
     sp_xrep_setopt,
     sp_xrep_getopt,
+    sp_xrep_timeout
 };
 
 void sp_rep_init (struct sp_rep *self, const struct sp_sockbase_vfptr *vfptr,

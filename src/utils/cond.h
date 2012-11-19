@@ -25,7 +25,7 @@
 
 /*  Platform-independent condition variable. */
 
-#include "mutex.h"
+#include "aio.h"
 
 #ifdef SP_HAVE_WINDOWS
 
@@ -49,7 +49,7 @@ void sp_cond_init (struct sp_cond *self);
 void sp_cond_term (struct sp_cond *self);
 
 int sp_cond_wait (struct sp_cond *self,
-    struct sp_mutex *mutex, int timeout);
+    struct sp_aio *aio, int timeout);
 void sp_cond_post (struct sp_cond *self);
 
 #endif

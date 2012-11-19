@@ -37,11 +37,12 @@ void sp_timer_term (struct sp_timer *self)
     sp_clock_term (&self->clock);
 }
 
-void sp_timer_add (struct sp_timer *self, int timeout,
+int sp_timer_add (struct sp_timer *self, int timeout,
     struct sp_timer_hndl *hndl)
 {
     struct sp_list_item *it;
     struct sp_timer_hndl *ith;
+    int first;
 
     /*  Compute the instant when the timer will be due. */
     hndl->timeout = sp_clock_now (&self->clock) + timeout;
@@ -54,12 +55,23 @@ void sp_timer_add (struct sp_timer *self, int timeout,
         if (hndl->timeout < ith->timeout)
             break;
     }
+
+    /*  If the new timer happens to be the first one to expire, let the user
+        know that the current waiting interval has to be changed. */
+    first = sp_list_begin (&self->timers) == it ? 1 : 0;
     sp_list_insert (&self->timers, &hndl->list, it);
+    return first;
 }
 
-void sp_timer_rm (struct sp_timer *self, struct sp_timer_hndl *hndl)
+int sp_timer_rm (struct sp_timer *self, struct sp_timer_hndl *hndl)
 {
+    int first;
+
+    /*  If it was the first timer that was removed, the actual waiting time
+        may have changed. We'll thus return 1 to let the user know. */
+    first = sp_list_begin (&self->timers) == &hndl->list ? 1 : 0;
     sp_list_erase (&self->timers, &hndl->list);
+    return first;
 }
 
 int sp_timer_timeout (struct sp_timer *self)

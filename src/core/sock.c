@@ -33,7 +33,7 @@
 
 /*  Virtual functions. */
 static void sp_sock_io (struct sp_aio *self, int event,
-    struct sp_poller_hndl *hndl);
+    struct sp_io_hndl *hndl);
 static void sp_sock_event (struct sp_aio *self, int event,
     struct sp_event_hndl *hndl);
 static void sp_sock_timeout (struct sp_aio *self,
@@ -238,7 +238,7 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
 }
 
 static void sp_sock_io (struct sp_aio *self, int event,
-    struct sp_poller_hndl *hndl)
+    struct sp_io_hndl *hndl)
 {
     sp_assert (0);
 }

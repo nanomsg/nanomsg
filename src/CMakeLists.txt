@@ -57,6 +57,8 @@ add_library(nanomsg SHARED
     utils/glock.c
     utils/hash.h
     utils/hash.c
+    utils/io.h
+    utils/io.c
     utils/list.h
     utils/list.c
     utils/msg.h

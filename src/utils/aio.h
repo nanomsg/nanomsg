@@ -35,6 +35,10 @@
 /*  This object is not thread-safe. To make it work correctly, all the calls
     should by synchronised via sp_aio_lock(). */
 
+#define SP_AIO_IN 1
+#define SP_AIO_OUT 2
+#define SP_AIO_ERR 3
+
 struct sp_aio;
 
 struct sp_event_hndl {
@@ -42,8 +46,33 @@ struct sp_event_hndl {
     int event;
 };
 
+#define SP_AIO_INOP_RECV 1
+#define SP_AIO_INOP_RECV_PARTIAL 2
+#define SP_AIO_INOP_POLLIN 3
+
+#define SP_AIO_OUTOP_SEND 1
+#define SP_AIO_OUTOP_SEND_PARTIAL 2
+#define SP_AIO_OUTOP_POLLOUT 3
+
+struct sp_io_hndl {
+    int s;
+    struct sp_poller_hndl hndl;
+    struct {
+        int op;
+        void *buf;
+        size_t buflen;
+        size_t len;
+    } in;
+    struct {
+        int op;
+        const void *buf;
+        size_t buflen;
+        size_t len;
+    } out;
+};
+
 struct sp_aio_vfptr {
-    void (*io) (struct sp_aio *self, int event, struct sp_poller_hndl *hndl);
+    void (*io) (struct sp_aio *self, int event, struct sp_io_hndl *hndl);
     void (*event) (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
     void (*timeout) (struct sp_aio *self, struct sp_timer_hndl *hndl);
 };

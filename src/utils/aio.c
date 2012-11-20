@@ -23,6 +23,7 @@
 #include "aio.h"
 #include "err.h"
 #include "cont.h"
+#include "io.h"
 
 /*  Private functions. */
 static void sp_aio_worker (void *arg);
@@ -127,6 +128,8 @@ static void sp_aio_worker (void *arg)
     int event;
     struct sp_poller_hndl *phndl;
     struct sp_event_hndl *ehndl;
+    struct sp_io_hndl *ihndl;
+    int nbytes;
 
     self = (struct sp_aio*) arg;
 
@@ -141,8 +144,7 @@ static void sp_aio_worker (void *arg)
         sp_mutex_unlock (&self->sync);
 again:
         rc = sp_poller_wait (&self->poller, timeout);
-if (rc == -EINTR)
-    goto again;
+if (rc == -EINTR) goto again;
         errnum_assert (rc == 0, -rc);
         sp_mutex_lock (&self->sync);
 
@@ -179,7 +181,52 @@ if (rc == -EINTR)
             }
 
             /*  Process the I/O event. */
-            self->vfptr->io (self, event, phndl);
+            ihndl = sp_cont (phndl, struct sp_io_hndl ,hndl);
+            switch (event) {
+            case SP_POLLER_IN:
+                switch (ihndl->in.op) {
+                case SP_AIO_INOP_RECV:
+                case SP_AIO_INOP_RECV_PARTIAL:
+                    nbytes = sp_io_recv (ihndl->s, ((char*) ihndl->in.buf) +
+                        ihndl->in.len, ihndl->in.buflen - ihndl->in.len);
+                    if (nbytes < 0)
+                        goto err;
+                    ihndl->in.len += nbytes;
+                    if (ihndl->in.op == SP_AIO_INOP_RECV_PARTIAL ||
+                          ihndl->in.len == ihndl->in.buflen)
+                        self->vfptr->io (self, SP_AIO_IN, ihndl);
+                    break;
+                case SP_AIO_INOP_POLLIN:
+                    self->vfptr->io (self, SP_AIO_IN, ihndl);
+                    break;
+                default:
+                    sp_assert (0);
+                }
+            case SP_POLLER_OUT:
+                switch (ihndl->out.op) {
+                case SP_AIO_OUTOP_SEND:
+                case SP_AIO_OUTOP_SEND_PARTIAL:
+                    nbytes = sp_io_send (ihndl->s, ((char*) ihndl->out.buf) +
+                        ihndl->out.len, ihndl->out.buflen - ihndl->out.len);
+                    if (nbytes < 0)
+                        goto err;
+                    ihndl->out.len += nbytes;
+                    if (ihndl->out.op == SP_AIO_OUTOP_SEND_PARTIAL ||
+                          ihndl->out.len == ihndl->out.buflen)
+                        self->vfptr->io (self, SP_AIO_OUT, ihndl);
+                    break;
+                case SP_AIO_OUTOP_POLLOUT:
+                    self->vfptr->io (self, SP_AIO_OUT, ihndl);
+                    break;
+                default:
+                    sp_assert (0);
+                }
+            case SP_POLLER_ERR:
+err:
+                sp_assert (0);
+            default:
+                sp_assert (0);
+            }
         }
 
         /*  Process any external events. */

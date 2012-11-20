@@ -349,10 +349,15 @@ if (rc == -EINTR) goto again;
                         goto err;
                     ihndl->in.len += sz;
                     if (ihndl->in.op == SP_AIO_INOP_RECV_PARTIAL ||
-                          ihndl->in.len == ihndl->in.buflen)
+                          ihndl->in.len == ihndl->in.buflen) {
+                        ihndl->in.op = SP_AIO_INOP_NONE;
+                        sp_poller_reset_in (&self->poller, &ihndl->hndl);
                         self->vfptr->in (self, ihndl);
+                    }
                     break;
                 case SP_AIO_INOP_POLLIN:
+                    ihndl->in.op = SP_AIO_INOP_NONE;
+                    sp_poller_reset_in (&self->poller, &ihndl->hndl);
                     self->vfptr->in (self, ihndl);
                     break;
                 default:
@@ -369,10 +374,15 @@ if (rc == -EINTR) goto again;
                         goto err;
                     ihndl->out.len += sz;
                     if (ihndl->out.op == SP_AIO_OUTOP_SEND_PARTIAL ||
-                          ihndl->out.len == ihndl->out.buflen)
+                          ihndl->out.len == ihndl->out.buflen) {
+                        ihndl->out.op = SP_AIO_OUTOP_NONE;
+                        sp_poller_reset_out (&self->poller, &ihndl->hndl);
                         self->vfptr->out (self, ihndl);
+                    }
                     break;
                 case SP_AIO_OUTOP_POLLOUT:
+                    ihndl->out.op = SP_AIO_OUTOP_NONE;
+                    sp_poller_reset_out (&self->poller, &ihndl->hndl);
                     self->vfptr->out (self, ihndl);
                     break;
                 default:

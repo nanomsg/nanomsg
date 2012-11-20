@@ -67,6 +67,8 @@ add_library(nanomsg SHARED
     utils/mutex.c
     utils/poller.h
     utils/poller.c
+    utils/queue.h
+    utils/queue.c
     utils/random.h
     utils/random.c
     utils/sleep.h

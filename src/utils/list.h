@@ -66,7 +66,4 @@ void sp_list_insert (struct sp_list *self, struct sp_list_item *item,
 struct sp_list_item *sp_list_erase (struct sp_list *self,
     struct sp_list_item *item);
 
-/*  Removes all the elements from the list. */
-void sp_list_clear (struct sp_list *self);
-
 #endif

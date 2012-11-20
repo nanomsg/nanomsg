@@ -92,9 +92,3 @@ struct sp_list_item *sp_list_erase (struct sp_list *self,
     return item->next;
 }
 
-void sp_list_clear (struct sp_list *self)
-{
-    self->first = NULL;
-    self->last = NULL;
-}
-

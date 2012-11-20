@@ -23,10 +23,14 @@
 #include "aio.h"
 #include "err.h"
 #include "cont.h"
-#include "io.h"
+#include "fast.h"
+
+#include <sys/socket.h>
 
 /*  Private functions. */
 static void sp_aio_worker (void *arg);
+static int sp_aio_send_raw (int s, const void *buf, size_t *len);
+static int sp_aio_recv_raw (int s, void *buf, size_t *len);
 
 void sp_aio_init (struct sp_aio *self, const struct sp_aio_vfptr *vfptr)
 {
@@ -172,7 +176,7 @@ int sp_aio_send (struct sp_aio *self, struct sp_io_hndl *hndl, const void *buf,
 
     /*  Try to send the data immediately. */
     sz = *len;
-    rc = sp_io_send (hndl->s, buf, len);
+    rc = sp_aio_send_raw (hndl->s, buf, len);
     if (sp_slow (rc < 0))
         return rc;
 
@@ -211,7 +215,7 @@ int sp_aio_recv (struct sp_aio *self, struct sp_io_hndl *hndl, void *buf,
 
     /*  Try to receive the data immediately. */
     sz = *len;
-    rc = sp_io_recv (hndl->s, buf, len);
+    rc = sp_aio_recv_raw (hndl->s, buf, len);
     if (sp_slow (rc < 0))
         return rc;
 
@@ -339,7 +343,7 @@ if (rc == -EINTR) goto again;
                 case SP_AIO_INOP_RECV:
                 case SP_AIO_INOP_RECV_PARTIAL:
                     sz = ihndl->in.buflen - ihndl->in.len;
-                    rc = sp_io_recv (ihndl->s, ((char*) ihndl->in.buf) +
+                    rc = sp_aio_recv_raw (ihndl->s, ((char*) ihndl->in.buf) +
                         ihndl->in.len, &sz);
                     if (rc < 0)
                         goto err;
@@ -359,7 +363,7 @@ if (rc == -EINTR) goto again;
                 case SP_AIO_OUTOP_SEND:
                 case SP_AIO_OUTOP_SEND_PARTIAL:
                     sz = ihndl->out.buflen - ihndl->out.len;
-                    rc = sp_io_send (ihndl->s, ((char*) ihndl->out.buf) +
+                    rc = sp_aio_send_raw (ihndl->s, ((char*) ihndl->out.buf) +
                         ihndl->out.len, &sz);
                     if (rc < 0)
                         goto err;
@@ -393,5 +397,45 @@ err:
         }
         sp_mutex_unlock (&self->events_sync);
     }
+}
+
+static int sp_aio_send_raw (int s, const void *buf, size_t *len)
+{
+    ssize_t nbytes;
+
+#if defined MSG_NOSIGNAL
+    nbytes = send (s, buf, *len, MSG_NOSIGNAL);
+#else
+    nbytes = send (s, buf, *len, 0);
+#endif
+
+    /*  Success. */
+    if (sp_fast (nbytes >= 0)) {
+        *len = (size_t) nbytes;
+        return 0;
+    }
+
+    /*  If the connection fails, return ECONNRESET. */
+    sp_assert (errno == ECONNRESET || errno == ETIMEDOUT || errno == EPIPE);
+    return -ECONNRESET;
+}
+
+static int sp_aio_recv_raw (int s, void *buf, size_t *len)
+{
+    ssize_t nbytes;
+
+    nbytes = recv (s, buf, *len, 0);
+
+    /*  Success. */
+    if (sp_fast (nbytes > 0)) {
+        *len = (size_t) nbytes;
+        return 0;
+    }
+
+    /*  If the peer closes the connection, return ECONNRESET. */
+    sp_assert (nbytes == 0 || errno == ECONNRESET || errno == ENOTCONN ||
+          errno == ECONNREFUSED || errno == ETIMEDOUT ||
+          errno == EHOSTUNREACH);
+    return -ECONNRESET;
 }
 

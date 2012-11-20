@@ -28,43 +28,44 @@
 
 #include <sys/socket.h>
 
-int sp_io_send (int s, const void *buf, size_t len)
+int sp_io_send (int s, const void *buf, size_t *len)
 {
     ssize_t nbytes;
 
 #if defined MSG_NOSIGNAL
-    nbytes = send (s, buf, len, MSG_NOSIGNAL);
+    nbytes = send (s, buf, *len, MSG_NOSIGNAL);
 #else
-    nbytes = send (s, buf, len, 0);
+    nbytes = send (s, buf, *len, 0);
 #endif
 
-    /*  If the connection fails, return ECONNRESET. */
-    if (sp_slow (nbytes == -1 && (errno == ECONNRESET || errno == ETIMEDOUT ||
-          errno == EPIPE)))
-        return -ECONNRESET;
-    errno_assert (nbytes >= 0);
+    /*  Success. */
+    if (sp_fast (nbytes >= 0)) {
+        *len = (size_t) nbytes;
+        return 0;
+    }
 
-    return (int) nbytes;
+    /*  If the connection fails, return ECONNRESET. */
+    sp_assert (errno == ECONNRESET || errno == ETIMEDOUT || errno == EPIPE);
+    return -ECONNRESET;
 }
 
-int sp_io_recv (int s, void *buf, size_t len)
+int sp_io_recv (int s, void *buf, size_t *len)
 {
     ssize_t nbytes;
 
-    nbytes = recv (s, buf, len, 0);
+    nbytes = recv (s, buf, *len, 0);
+
+    /*  Success. */
+    if (sp_fast (nbytes > 0)) {
+        *len = (size_t) nbytes;
+        return 0;
+    }
 
     /*  If the peer closes the connection, return ECONNRESET. */
-    if (sp_slow (nbytes == 0))
-        return -ECONNRESET;
-
-    /*  If the connection fails, return ECONNRESET. */
-    if (sp_slow (nbytes == -1 && (errno == ECONNRESET || errno == ENOTCONN ||
+    sp_assert (nbytes == 0 || errno == ECONNRESET || errno == ENOTCONN ||
           errno == ECONNREFUSED || errno == ETIMEDOUT ||
-          errno == EHOSTUNREACH)))
-        return -ECONNRESET;
-    errno_assert (nbytes >= 0);
-
-    return (int) nbytes;
+          errno == EHOSTUNREACH);
+    return -ECONNRESET;
 }
 
 #endif

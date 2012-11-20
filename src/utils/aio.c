@@ -161,6 +161,84 @@ void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl)
     sp_eventfd_signal (&self->efd);
 }
 
+int sp_aio_send (struct sp_aio *self, struct sp_io_hndl *hndl, const void *buf,
+    size_t *len, int flags)
+{
+    int rc;
+    size_t sz;
+
+    /*  Make sure that there's no outbound operation already in progress. */
+    sp_assert (hndl->out.op == SP_AIO_OUTOP_NONE);
+
+    /*  Try to send the data immediately. */
+    sz = *len;
+    rc = sp_io_send (hndl->s, buf, len);
+    if (sp_slow (rc < 0))
+        return rc;
+
+    /*  Success. */
+    if (sp_fast ((flags & SP_AIO_PARTIAL && *len > 0) || *len == sz))
+        return 0;
+
+    /*  There are still data to send in the background. */ 
+    hndl->out.op = flags & SP_AIO_PARTIAL ? SP_AIO_OUTOP_SEND_PARTIAL :
+        SP_AIO_OUTOP_SEND;
+    hndl->out.buf = buf;
+    hndl->out.buflen = sz;
+    hndl->out.len = *len;
+
+    /*  If we are in the worker thread we can simply start polling for out. */
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_set_out (&self->poller, &hndl->hndl);
+        return -EINPROGRESS;
+    }
+
+    /*  Otherwise, ask worker thread to start polling for out. */
+    sp_queue_push (&self->opqueue, &hndl->out.hndl.item);
+    sp_eventfd_signal (&self->efd);
+
+    return -EINPROGRESS;
+}
+
+int sp_aio_recv (struct sp_aio *self, struct sp_io_hndl *hndl, void *buf,
+    size_t *len, int flags)
+{
+    int rc;
+    size_t sz;
+
+    /*  Make sure that there's no inbound operation already in progress. */
+    sp_assert (hndl->in.op == SP_AIO_INOP_NONE);
+
+    /*  Try to receive the data immediately. */
+    sz = *len;
+    rc = sp_io_recv (hndl->s, buf, len);
+    if (sp_slow (rc < 0))
+        return rc;
+
+    /*  Success. */
+    if (sp_fast ((flags & SP_AIO_PARTIAL && *len > 0) || *len == sz))
+        return 0;
+
+    /*  There are still data to receive in the background. */ 
+    hndl->in.op = flags & SP_AIO_PARTIAL ? SP_AIO_INOP_RECV_PARTIAL :
+        SP_AIO_INOP_RECV;
+    hndl->in.buf = buf;
+    hndl->in.buflen = sz;
+    hndl->in.len = *len;
+
+    /*  If we are in the worker thread we can simply start polling for in. */
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_set_in (&self->poller, &hndl->hndl);
+        return -EINPROGRESS;
+    }
+
+    /*  Otherwise, ask worker thread to start polling for in. */
+    sp_queue_push (&self->opqueue, &hndl->in.hndl.item);
+    sp_eventfd_signal (&self->efd);
+
+    return -EINPROGRESS;
+}
+
 static void sp_aio_worker (void *arg)
 {
     int rc;
@@ -172,7 +250,7 @@ static void sp_aio_worker (void *arg)
     struct sp_poller_hndl *phndl;
     struct sp_event_hndl *ehndl;
     struct sp_io_hndl *ihndl;
-    int nbytes;
+    size_t sz;
 
     self = (struct sp_aio*) arg;
 
@@ -208,11 +286,11 @@ if (rc == -EINTR) goto again;
             switch (ohndl->op) {
             case SP_AIO_OP_IN:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, in.hndl);
-                sp_assert (0);
+                sp_poller_set_in (&self->poller, &ihndl->hndl);
                 break;
             case SP_AIO_OP_OUT:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, out.hndl);
-                sp_assert (0);
+                sp_poller_set_out (&self->poller, &ihndl->hndl);
                 break;
             case SP_AIO_OP_ADD:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, add_hndl);
@@ -260,11 +338,12 @@ if (rc == -EINTR) goto again;
                 switch (ihndl->in.op) {
                 case SP_AIO_INOP_RECV:
                 case SP_AIO_INOP_RECV_PARTIAL:
-                    nbytes = sp_io_recv (ihndl->s, ((char*) ihndl->in.buf) +
-                        ihndl->in.len, ihndl->in.buflen - ihndl->in.len);
-                    if (nbytes < 0)
+                    sz = ihndl->in.buflen - ihndl->in.len;
+                    rc = sp_io_recv (ihndl->s, ((char*) ihndl->in.buf) +
+                        ihndl->in.len, &sz);
+                    if (rc < 0)
                         goto err;
-                    ihndl->in.len += nbytes;
+                    ihndl->in.len += sz;
                     if (ihndl->in.op == SP_AIO_INOP_RECV_PARTIAL ||
                           ihndl->in.len == ihndl->in.buflen)
                         self->vfptr->in (self, ihndl);
@@ -279,11 +358,12 @@ if (rc == -EINTR) goto again;
                 switch (ihndl->out.op) {
                 case SP_AIO_OUTOP_SEND:
                 case SP_AIO_OUTOP_SEND_PARTIAL:
-                    nbytes = sp_io_send (ihndl->s, ((char*) ihndl->out.buf) +
-                        ihndl->out.len, ihndl->out.buflen - ihndl->out.len);
-                    if (nbytes < 0)
+                    sz = ihndl->out.buflen - ihndl->out.len;
+                    rc = sp_io_send (ihndl->s, ((char*) ihndl->out.buf) +
+                        ihndl->out.len, &sz);
+                    if (rc < 0)
                         goto err;
-                    ihndl->out.len += nbytes;
+                    ihndl->out.len += sz;
                     if (ihndl->out.op == SP_AIO_OUTOP_SEND_PARTIAL ||
                           ihndl->out.len == ihndl->out.buflen)
                         self->vfptr->out (self, ihndl);

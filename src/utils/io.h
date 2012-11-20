@@ -30,8 +30,8 @@
 /*  Portable I/O operations for different UNIX flavours. The functions are
     not defined on non-UNIX OSes such as Windows. */
 
-int sp_io_send (int s, const void *buf, size_t len);
-int sp_io_recv (int s, void *buf, size_t len);
+int sp_io_send (int s, const void *buf, size_t *len);
+int sp_io_recv (int s, void *buf, size_t *len);
 
 #endif
 

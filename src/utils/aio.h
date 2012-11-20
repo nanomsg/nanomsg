@@ -35,6 +35,8 @@
 /*  This object is not thread-safe. To make it work correctly, all the calls
     should by synchronised via sp_aio_lock(). */
 
+#define SP_AIO_PARTIAL 1
+
 struct sp_aio;
 
 struct sp_event_hndl {
@@ -119,6 +121,11 @@ void sp_aio_post (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
 
 void sp_aio_add_fd (struct sp_aio *self, int s, struct sp_io_hndl *hndl);
 void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl);
+
+int sp_aio_send (struct sp_aio *self, struct sp_io_hndl *hndl, const void *buf,
+    size_t *len, int flags);
+int sp_aio_recv (struct sp_aio *self, struct sp_io_hndl *hndl, void *buf,
+    size_t *len, int flags);
 
 #endif
 

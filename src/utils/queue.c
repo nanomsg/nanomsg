@@ -40,6 +40,8 @@ void sp_queue_term (struct sp_queue *self)
 void sp_queue_push (struct sp_queue *self, struct sp_queue_item *item)
 {
     item->next = NULL;
+    if (!self->head)
+        self->head = item;
     if (self->tail)
         self->tail->next = item;
     self->tail = item;

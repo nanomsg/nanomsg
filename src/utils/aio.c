@@ -35,9 +35,9 @@ void sp_aio_init (struct sp_aio *self, const struct sp_aio_vfptr *vfptr)
     sp_timer_init (&self->timer);
     sp_eventfd_init (&self->efd);
     sp_poller_init (&self->poller);
-    sp_list_init (&self->opqueue);
+    sp_queue_init (&self->opqueue);
     sp_mutex_init (&self->events_sync, 0);
-    sp_list_init (&self->events);
+    sp_queue_init (&self->events);
 
     /*  Make poller listen on the internal eventfd object. */
     sp_poller_add (&self->poller, sp_eventfd_getfd (&self->efd),
@@ -64,8 +64,8 @@ void sp_aio_term (struct sp_aio *self)
     sp_poller_rm (&self->poller, &self->efd_hndl);
 
     /*  Deallocate the resources. */
-    sp_list_term (&self->opqueue);
-    sp_list_term (&self->events);
+    sp_queue_term (&self->opqueue);
+    sp_queue_term (&self->events);
     sp_mutex_term (&self->events_sync);
     sp_poller_term (&self->poller);
     sp_eventfd_term (&self->efd);
@@ -116,7 +116,7 @@ void sp_aio_post (struct sp_aio *self, int event, struct sp_event_hndl *hndl)
     /*  Othrewise enqueue the event for later processing. */
     hndl->event = event;
     sp_mutex_lock (&self->events_sync);
-    sp_list_insert (&self->events, &hndl->list, sp_list_end (&self->events));
+    sp_queue_push (&self->events, &hndl->item);
     sp_mutex_unlock (&self->events_sync);
     sp_eventfd_signal (&self->efd);
 }
@@ -139,8 +139,7 @@ void sp_aio_add_fd (struct sp_aio *self, int s, struct sp_io_hndl *hndl)
     }
 
     /*  Send an event to the worker thread. */
-    sp_list_insert (&self->opqueue, &hndl->add_hndl.list,
-        sp_list_end (&self->opqueue));
+    sp_queue_push (&self->opqueue, &hndl->add_hndl.item);
     sp_eventfd_signal (&self->efd);
 }
 
@@ -158,8 +157,7 @@ void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl)
     }
 
     /*  Send an event to the worker thread. */
-    sp_list_insert (&self->opqueue, &hndl->rm_hndl.list,
-        sp_list_end (&self->opqueue));
+    sp_queue_push (&self->opqueue, &hndl->rm_hndl.item);
     sp_eventfd_signal (&self->efd);
 }
 
@@ -201,11 +199,12 @@ if (rc == -EINTR) goto again;
 
         /*  Process the events in the opqueue. */
         while (1) {
-            if (sp_list_empty (&self->opqueue))
+
+            ohndl = sp_cont (sp_queue_pop (&self->opqueue),
+                struct sp_op_hndl, item);
+            if (!ohndl)
                 break;
-            ohndl = sp_cont (sp_list_begin (&self->opqueue),
-                struct sp_op_hndl, list);
-            sp_list_erase (&self->opqueue, sp_list_begin (&self->opqueue));
+
             switch (ohndl->op) {
             case SP_AIO_OP_IN:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, in.hndl);
@@ -306,11 +305,10 @@ err:
         /*  Process any external events. */
         sp_mutex_lock (&self->events_sync);
         while (1) {
-            if (sp_list_empty (&self->events))
+            ehndl = sp_cont (sp_queue_pop (&self->events),
+                struct sp_event_hndl, item);
+            if (!ehndl)
                 break;
-            ehndl = sp_cont (sp_list_begin (&self->events),
-                struct sp_event_hndl, list);
-            sp_list_erase (&self->events, sp_list_begin (&self->events));
             self->vfptr->event (self, ehndl->event, ehndl);
         }
         sp_mutex_unlock (&self->events_sync);

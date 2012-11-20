@@ -28,7 +28,7 @@
 #include "poller.h"
 #include "thread.h"
 #include "timer.h"
-#include "list.h"
+#include "queue.h"
 
 #include <stddef.h>
 
@@ -38,7 +38,7 @@
 struct sp_aio;
 
 struct sp_event_hndl {
-    struct sp_list_item list;
+    struct sp_queue_item item;
     int event;
 };
 
@@ -48,7 +48,7 @@ struct sp_event_hndl {
 #define SP_AIO_OP_OUT 4
 
 struct sp_op_hndl {
-    struct sp_list_item list;
+    struct sp_queue_item item;
     int op;
 };
 
@@ -98,9 +98,9 @@ struct sp_aio {
     struct sp_eventfd efd;
     struct sp_poller_hndl efd_hndl;
     struct sp_poller poller;
-    struct sp_list opqueue;
+    struct sp_queue opqueue;
     struct sp_mutex events_sync;
-    struct sp_list events;
+    struct sp_queue events;
     int stop;
     struct sp_thread worker;
 };

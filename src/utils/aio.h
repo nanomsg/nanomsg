@@ -46,10 +46,22 @@ struct sp_event_hndl {
     int event;
 };
 
+#define SP_AIO_OP_ADD 1
+#define SP_AIO_OP_RM 2
+#define SP_AIO_OP_IN 3
+#define SP_AIO_OP_OUT 4
+
+struct sp_op_hndl {
+    struct sp_list_item list;
+    int op;
+};
+
+#define SP_AIO_INOP_NONE 0
 #define SP_AIO_INOP_RECV 1
 #define SP_AIO_INOP_RECV_PARTIAL 2
 #define SP_AIO_INOP_POLLIN 3
 
+#define SP_AIO_OUTOP_NONE 0
 #define SP_AIO_OUTOP_SEND 1
 #define SP_AIO_OUTOP_SEND_PARTIAL 2
 #define SP_AIO_OUTOP_POLLOUT 3
@@ -57,17 +69,21 @@ struct sp_event_hndl {
 struct sp_io_hndl {
     int s;
     struct sp_poller_hndl hndl;
+    struct sp_op_hndl add_hndl;
+    struct sp_op_hndl rm_hndl;
     struct {
         int op;
         void *buf;
         size_t buflen;
         size_t len;
+        struct sp_op_hndl hndl;
     } in;
     struct {
         int op;
         const void *buf;
         size_t buflen;
         size_t len;
+        struct sp_op_hndl hndl;
     } out;
 };
 
@@ -84,6 +100,7 @@ struct sp_aio {
     struct sp_eventfd efd;
     struct sp_poller_hndl efd_hndl;
     struct sp_poller poller;
+    struct sp_list opqueue;
     struct sp_mutex events_sync;
     struct sp_list events;
     int stop;
@@ -101,6 +118,9 @@ void sp_aio_add_timer (struct sp_aio *self, int timeout,
 void sp_aio_rm_timer (struct sp_aio *self, struct sp_timer_hndl *hndl);
 
 void sp_aio_post (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
+
+void sp_aio_add_fd (struct sp_aio *self, int s, struct sp_io_hndl *hndl);
+void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl);
 
 #endif
 

@@ -35,6 +35,7 @@ void sp_aio_init (struct sp_aio *self, const struct sp_aio_vfptr *vfptr)
     sp_timer_init (&self->timer);
     sp_eventfd_init (&self->efd);
     sp_poller_init (&self->poller);
+    sp_list_init (&self->opqueue);
     sp_mutex_init (&self->events_sync, 0);
     sp_list_init (&self->events);
 
@@ -63,6 +64,7 @@ void sp_aio_term (struct sp_aio *self)
     sp_poller_rm (&self->poller, &self->efd_hndl);
 
     /*  Deallocate the resources. */
+    sp_list_term (&self->opqueue);
     sp_list_term (&self->events);
     sp_mutex_term (&self->events_sync);
     sp_poller_term (&self->poller);
@@ -119,11 +121,54 @@ void sp_aio_post (struct sp_aio *self, int event, struct sp_event_hndl *hndl)
     sp_eventfd_signal (&self->efd);
 }
 
+void sp_aio_add_fd (struct sp_aio *self, int s, struct sp_io_hndl *hndl)
+{
+    hndl->s = s;
+    hndl->in.op = SP_AIO_INOP_NONE;
+    hndl->out.op = SP_AIO_OUTOP_NONE;
+
+    /*  Initialise op types. */
+    hndl->add_hndl.op = SP_AIO_OP_ADD;
+    hndl->rm_hndl.op = SP_AIO_OP_RM;
+    hndl->in.hndl.op = SP_AIO_OP_IN;
+    hndl->out.hndl.op = SP_AIO_OP_OUT;
+
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_add (&self->poller, s, &hndl->hndl);
+        return;
+    }
+
+    /*  Send an event to the worker thread. */
+    sp_list_insert (&self->opqueue, &hndl->add_hndl.list,
+        sp_list_end (&self->opqueue));
+    sp_eventfd_signal (&self->efd);
+}
+
+void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl)
+{
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_rm (&self->poller, &hndl->hndl);
+
+        /*  For diagnostic purposes, mark the handle as invalid. */
+        hndl->s = -1;
+        hndl->in.op = SP_AIO_INOP_NONE;
+        hndl->out.op = SP_AIO_OUTOP_NONE;
+
+        return;
+    }
+
+    /*  Send an event to the worker thread. */
+    sp_list_insert (&self->opqueue, &hndl->rm_hndl.list,
+        sp_list_end (&self->opqueue));
+    sp_eventfd_signal (&self->efd);
+}
+
 static void sp_aio_worker (void *arg)
 {
     int rc;
     struct sp_aio *self;
     int timeout;
+    struct sp_op_hndl *ohndl;
     struct sp_timer_hndl *thndl;
     int event;
     struct sp_poller_hndl *phndl;
@@ -152,6 +197,35 @@ if (rc == -EINTR) goto again;
         if (self->stop) {
             sp_mutex_unlock (&self->sync);
             break;
+        }
+
+        /*  Process the events in the opqueue. */
+        while (1) {
+            if (sp_list_empty (&self->opqueue))
+                break;
+            ohndl = sp_cont (sp_list_begin (&self->opqueue),
+                struct sp_op_hndl, list);
+            sp_list_erase (&self->opqueue, sp_list_begin (&self->opqueue));
+            switch (ohndl->op) {
+            case SP_AIO_OP_IN:
+                ihndl = sp_cont (ohndl, struct sp_io_hndl, in.hndl);
+                sp_assert (0);
+                break;
+            case SP_AIO_OP_OUT:
+                ihndl = sp_cont (ohndl, struct sp_io_hndl, out.hndl);
+                sp_assert (0);
+                break;
+            case SP_AIO_OP_ADD:
+                ihndl = sp_cont (ohndl, struct sp_io_hndl, add_hndl);
+                sp_aio_add_fd (self, ihndl->s, ihndl);
+                break;
+            case SP_AIO_OP_RM:
+                ihndl = sp_cont (ohndl, struct sp_io_hndl, rm_hndl);
+                sp_aio_rm_fd (self, ihndl);
+                break;
+            default:
+                sp_assert (0);
+            }
         }
 
         /*  Process any expired timers. */

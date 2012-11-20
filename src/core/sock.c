@@ -32,14 +32,17 @@
 #define SP_SOCK_EVENT_OUT 2
 
 /*  Virtual functions. */
-static void sp_sock_io (struct sp_aio *self, int event,
-    struct sp_io_hndl *hndl);
+static void sp_sock_pollin (struct sp_aio *self, struct sp_io_hndl *hndl);
+static void sp_sock_pollout (struct sp_aio *self, struct sp_io_hndl *hndl);
+static void sp_sock_pollerr (struct sp_aio *self, struct sp_io_hndl *hndl);
 static void sp_sock_event (struct sp_aio *self, int event,
     struct sp_event_hndl *hndl);
 static void sp_sock_timeout (struct sp_aio *self,
     struct sp_timer_hndl *hndl);
 static const struct sp_aio_vfptr sp_sock_aio_vfptr = {
-    sp_sock_io,
+    sp_sock_pollin,
+    sp_sock_pollout,
+    sp_sock_pollerr,
     sp_sock_event,
     sp_sock_timeout
 };
@@ -237,8 +240,17 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
         &((struct sp_pipebase*) pipe)->outevent);
 }
 
-static void sp_sock_io (struct sp_aio *self, int event,
-    struct sp_io_hndl *hndl)
+static void sp_sock_pollin (struct sp_aio *self, struct sp_io_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+static void sp_sock_pollout (struct sp_aio *self, struct sp_io_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+static void sp_sock_pollerr (struct sp_aio *self, struct sp_io_hndl *hndl)
 {
     sp_assert (0);
 }

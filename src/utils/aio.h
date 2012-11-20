@@ -35,10 +35,6 @@
 /*  This object is not thread-safe. To make it work correctly, all the calls
     should by synchronised via sp_aio_lock(). */
 
-#define SP_AIO_IN 1
-#define SP_AIO_OUT 2
-#define SP_AIO_ERR 3
-
 struct sp_aio;
 
 struct sp_event_hndl {
@@ -88,7 +84,9 @@ struct sp_io_hndl {
 };
 
 struct sp_aio_vfptr {
-    void (*io) (struct sp_aio *self, int event, struct sp_io_hndl *hndl);
+    void (*in) (struct sp_aio *self, struct sp_io_hndl *hndl);
+    void (*out) (struct sp_aio *self, struct sp_io_hndl *hndl);
+    void (*err) (struct sp_aio *self, struct sp_io_hndl *hndl);
     void (*event) (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
     void (*timeout) (struct sp_aio *self, struct sp_timer_hndl *hndl);
 };

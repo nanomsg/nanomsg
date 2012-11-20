@@ -268,10 +268,10 @@ if (rc == -EINTR) goto again;
                     ihndl->in.len += nbytes;
                     if (ihndl->in.op == SP_AIO_INOP_RECV_PARTIAL ||
                           ihndl->in.len == ihndl->in.buflen)
-                        self->vfptr->io (self, SP_AIO_IN, ihndl);
+                        self->vfptr->in (self, ihndl);
                     break;
                 case SP_AIO_INOP_POLLIN:
-                    self->vfptr->io (self, SP_AIO_IN, ihndl);
+                    self->vfptr->in (self, ihndl);
                     break;
                 default:
                     sp_assert (0);
@@ -287,10 +287,10 @@ if (rc == -EINTR) goto again;
                     ihndl->out.len += nbytes;
                     if (ihndl->out.op == SP_AIO_OUTOP_SEND_PARTIAL ||
                           ihndl->out.len == ihndl->out.buflen)
-                        self->vfptr->io (self, SP_AIO_OUT, ihndl);
+                        self->vfptr->out (self, ihndl);
                     break;
                 case SP_AIO_OUTOP_POLLOUT:
-                    self->vfptr->io (self, SP_AIO_OUT, ihndl);
+                    self->vfptr->out (self, ihndl);
                     break;
                 default:
                     sp_assert (0);

@@ -47,6 +47,17 @@ extern "C" {
 #   endif
 #endif
 
+/* Handle function attributes                                                 */
+#if defined _WIN32
+#   define SP_NORETURN __declspec(noreturn)
+#else
+#   if defined __GNUC__
+#       define SP_NORETURN __attribute__ ((noreturn))
+#   else
+#       define SP_NORETURN
+#   endif
+#endif
+
 /******************************************************************************/
 /*  Versioning support.                                                       */
 /******************************************************************************/

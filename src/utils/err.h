@@ -97,7 +97,7 @@
         }\
     } while (0)
 
-void sp_err_abort (void);
+SP_NORETURN void sp_err_abort (void);
 int sp_err_errno (void);
 const char *sp_err_strerror (int errnum);
 

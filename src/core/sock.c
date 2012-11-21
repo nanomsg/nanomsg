@@ -31,16 +31,10 @@
 #define SP_SOCK_EVENT_IN 1
 #define SP_SOCK_EVENT_OUT 2
 
-/*  Virtual functions. */
-static void sp_sock_pollin (struct sp_cp *self, struct sp_io_hndl *hndl);
-static void sp_sock_pollout (struct sp_cp *self, struct sp_io_hndl *hndl);
-static void sp_sock_pollerr (struct sp_cp *self, struct sp_io_hndl *hndl);
+/*  sp_cp callbacks. */
 static void sp_sock_event (struct sp_cp *self, int event,
     struct sp_event_hndl *hndl);
 static const struct sp_cp_vfptr sp_sock_cp_vfptr = {
-    sp_sock_pollin,
-    sp_sock_pollout,
-    sp_sock_pollerr,
     sp_sock_event
 };
 
@@ -240,21 +234,6 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
 {
     sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_EVENT_OUT,
         &((struct sp_pipebase*) pipe)->outevent);
-}
-
-static void sp_sock_pollin (struct sp_cp *self, struct sp_io_hndl *hndl)
-{
-    sp_assert (0);
-}
-
-static void sp_sock_pollout (struct sp_cp *self, struct sp_io_hndl *hndl)
-{
-    sp_assert (0);
-}
-
-static void sp_sock_pollerr (struct sp_cp *self, struct sp_io_hndl *hndl)
-{
-    sp_assert (0);
 }
 
 static void sp_sock_event (struct sp_cp *self, int event,

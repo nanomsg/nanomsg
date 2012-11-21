@@ -34,6 +34,16 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
+/*  cp_io_hndl callbacks. */
+static void sp_tcpb_in (struct sp_cp_io_hndl *hndl);
+static void sp_tcpb_out (struct sp_cp_io_hndl *hndl);
+static void sp_tcpb_err (struct sp_cp_io_hndl *hndl);
+static const struct sp_cp_io_vfptr sp_tcpb_io_vfptr = {
+    sp_tcpb_in,
+    sp_tcpb_out,
+    sp_tcpb_err
+};
+
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
 {
     int rc;
@@ -68,7 +78,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
 
     /*  Open the listening socket. */
     rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
-        sp_epbase_getcp (&self->epbase));
+        sp_epbase_getcp (&self->epbase), &sp_tcpb_io_vfptr);
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);
@@ -107,5 +117,20 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
         /*  TODO */
         sp_assert (0);
     }
+}
+
+static void sp_tcpb_in (struct sp_cp_io_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+static void sp_tcpb_out (struct sp_cp_io_hndl *hndl)
+{
+    sp_assert (0);
+}
+
+static void sp_tcpb_err (struct sp_cp_io_hndl *hndl)
+{
+    sp_assert (0);
 }
 

@@ -126,8 +126,10 @@ void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-void sp_cp_add_fd (struct sp_cp *self, int s, struct sp_io_hndl *hndl)
+void sp_cp_add_fd (struct sp_cp *self, int s,
+    const struct sp_cp_io_vfptr *vfptr, struct sp_cp_io_hndl *hndl)
 {
+    hndl->vfptr = vfptr;
     hndl->s = s;
     hndl->in.op = SP_CP_INOP_NONE;
     hndl->out.op = SP_CP_OUTOP_NONE;
@@ -148,7 +150,7 @@ void sp_cp_add_fd (struct sp_cp *self, int s, struct sp_io_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-void sp_cp_rm_fd (struct sp_cp *self, struct sp_io_hndl *hndl)
+void sp_cp_rm_fd (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
 {
     if (sp_thread_current (&self->worker)) {
         sp_poller_rm (&self->poller, &hndl->hndl);
@@ -160,7 +162,7 @@ void sp_cp_rm_fd (struct sp_cp *self, struct sp_io_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-void sp_cp_pollin (struct sp_cp *self, struct sp_io_hndl *hndl)
+void sp_cp_pollin (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
 {
     /*  Make sure that there's no inbound operation already in progress. */
     sp_assert (hndl->in.op == SP_CP_INOP_NONE);
@@ -179,7 +181,7 @@ void sp_cp_pollin (struct sp_cp *self, struct sp_io_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-void sp_cp_pollout (struct sp_cp *self, struct sp_io_hndl *hndl)
+void sp_cp_pollout (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
 {
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (hndl->out.op == SP_CP_OUTOP_NONE);
@@ -198,7 +200,7 @@ void sp_cp_pollout (struct sp_cp *self, struct sp_io_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-int sp_cp_send (struct sp_cp *self, struct sp_io_hndl *hndl, const void *buf,
+int sp_cp_send (struct sp_cp *self, struct sp_cp_io_hndl *hndl, const void *buf,
     size_t *len, int flags)
 {
     int rc;
@@ -237,7 +239,7 @@ int sp_cp_send (struct sp_cp *self, struct sp_io_hndl *hndl, const void *buf,
     return -EINPROGRESS;
 }
 
-int sp_cp_recv (struct sp_cp *self, struct sp_io_hndl *hndl, void *buf,
+int sp_cp_recv (struct sp_cp *self, struct sp_cp_io_hndl *hndl, void *buf,
     size_t *len, int flags)
 {
     int rc;
@@ -287,7 +289,7 @@ static void sp_cp_worker (void *arg)
     int event;
     struct sp_poller_hndl *phndl;
     struct sp_event_hndl *ehndl;
-    struct sp_io_hndl *ihndl;
+    struct sp_cp_io_hndl *ihndl;
     size_t sz;
 
     self = (struct sp_cp*) arg;
@@ -323,19 +325,19 @@ if (rc == -EINTR) goto again;
 
             switch (ohndl->op) {
             case SP_CP_OP_IN:
-                ihndl = sp_cont (ohndl, struct sp_io_hndl, in.hndl);
+                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, in.hndl);
                 sp_poller_set_in (&self->poller, &ihndl->hndl);
                 break;
             case SP_CP_OP_OUT:
-                ihndl = sp_cont (ohndl, struct sp_io_hndl, out.hndl);
+                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, out.hndl);
                 sp_poller_set_out (&self->poller, &ihndl->hndl);
                 break;
             case SP_CP_OP_ADD:
-                ihndl = sp_cont (ohndl, struct sp_io_hndl, add_hndl);
+                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, add_hndl);
                 sp_poller_add (&self->poller, ihndl->s, &ihndl->hndl);
                 break;
             case SP_CP_OP_RM:
-                ihndl = sp_cont (ohndl, struct sp_io_hndl, rm_hndl);
+                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, rm_hndl);
                 sp_poller_rm (&self->poller, &ihndl->hndl);
                 break;
             default:
@@ -371,7 +373,7 @@ if (rc == -EINTR) goto again;
             }
 
             /*  Process the I/O event. */
-            ihndl = sp_cont (phndl, struct sp_io_hndl ,hndl);
+            ihndl = sp_cont (phndl, struct sp_cp_io_hndl ,hndl);
             switch (event) {
             case SP_POLLER_IN:
                 switch (ihndl->in.op) {
@@ -387,13 +389,13 @@ if (rc == -EINTR) goto again;
                           ihndl->in.len == ihndl->in.buflen) {
                         ihndl->in.op = SP_CP_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &ihndl->hndl);
-                        self->vfptr->in (self, ihndl);
+                        ihndl->vfptr->in (ihndl);
                     }
                     break;
                 case SP_CP_INOP_POLLIN:
                     ihndl->in.op = SP_CP_INOP_NONE;
                     sp_poller_reset_in (&self->poller, &ihndl->hndl);
-                    self->vfptr->in (self, ihndl);
+                    ihndl->vfptr->in (ihndl);
                     break;
                 default:
                     sp_assert (0);
@@ -412,13 +414,13 @@ if (rc == -EINTR) goto again;
                           ihndl->out.len == ihndl->out.buflen) {
                         ihndl->out.op = SP_CP_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &ihndl->hndl);
-                        self->vfptr->out (self, ihndl);
+                        ihndl->vfptr->out (ihndl);
                     }
                     break;
                 case SP_CP_OUTOP_POLLOUT:
                     ihndl->out.op = SP_CP_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &ihndl->hndl);
-                    self->vfptr->out (self, ihndl);
+                    ihndl->vfptr->out (ihndl);
                     break;
                 default:
                     sp_assert (0);

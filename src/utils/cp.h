@@ -81,7 +81,16 @@ struct sp_op_hndl {
 #define SP_CP_OUTOP_SEND_PARTIAL 2
 #define SP_CP_OUTOP_POLLOUT 3
 
-struct sp_io_hndl {
+struct sp_cp_io_hndl;
+
+struct sp_cp_io_vfptr {
+    void (*in) (struct sp_cp_io_hndl *hndl);
+    void (*out) (struct sp_cp_io_hndl *hndl);
+    void (*err) (struct sp_cp_io_hndl *hndl);
+};
+
+struct sp_cp_io_hndl {
+    const struct sp_cp_io_vfptr *vfptr;
     int s;
     struct sp_poller_hndl hndl;
     struct sp_op_hndl add_hndl;
@@ -102,14 +111,11 @@ struct sp_io_hndl {
     } out;
 };
 
-/*  The completion port. */
+/*  The completion port itself. */
 
 struct sp_cp;
 
 struct sp_cp_vfptr {
-    void (*in) (struct sp_cp *self, struct sp_io_hndl *hndl);
-    void (*out) (struct sp_cp *self, struct sp_io_hndl *hndl);
-    void (*err) (struct sp_cp *self, struct sp_io_hndl *hndl);
     void (*event) (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
 };
 
@@ -139,15 +145,16 @@ void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl);
 
 void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
 
-void sp_cp_add_fd (struct sp_cp *self, int s, struct sp_io_hndl *hndl);
-void sp_cp_rm_fd (struct sp_cp *self, struct sp_io_hndl *hndl);
+void sp_cp_add_fd (struct sp_cp *self, int s,
+    const struct sp_cp_io_vfptr *vfptr, struct sp_cp_io_hndl *hndl);
+void sp_cp_rm_fd (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
 
-void sp_cp_pollin (struct sp_cp *self, struct sp_io_hndl *hndl);
-void sp_cp_pollout (struct sp_cp *self, struct sp_io_hndl *hndl);
+void sp_cp_pollin (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
+void sp_cp_pollout (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
 
-int sp_cp_send (struct sp_cp *self, struct sp_io_hndl *hndl, const void *buf,
+int sp_cp_send (struct sp_cp *self, struct sp_cp_io_hndl *hndl, const void *buf,
     size_t *len, int flags);
-int sp_cp_recv (struct sp_cp *self, struct sp_io_hndl *hndl, void *buf,
+int sp_cp_recv (struct sp_cp *self, struct sp_cp_io_hndl *hndl, void *buf,
     size_t *len, int flags);
 
 #endif

@@ -31,15 +31,16 @@
 #define SP_USOCK_PARTIAL SP_CP_PARTIAL
 
 struct sp_usock {
-    struct sp_io_hndl hndl;
+    struct sp_cp_io_hndl hndl;
     struct sp_cp *cp;
     int domain;
     int type;
     int protocol;
+    const struct sp_cp_io_vfptr *vfptr;
 };
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
-    struct sp_cp *cp);
+    struct sp_cp *cp, const struct sp_cp_io_vfptr *vfptr);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

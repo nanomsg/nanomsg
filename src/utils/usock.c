@@ -38,7 +38,7 @@
 static void sp_usock_tune (struct sp_usock *self);
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
-    struct sp_cp *cp)
+    struct sp_cp *cp, const struct sp_cp_io_vfptr *vfptr)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     int rc;
@@ -66,6 +66,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     self->type = type;
     self->protocol = protocol;
     self->cp = cp;
+    self->vfptr = vfptr;
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -218,7 +219,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
        return -errno;
 
     /*  Register the socket with the completion port. */
-    sp_cp_add_fd (self->cp, self->hndl.s, &self->hndl);
+    sp_cp_add_fd (self->cp, self->hndl.s, self->vfptr, &self->hndl);
 
     return 0;
 }

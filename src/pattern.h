@@ -23,7 +23,7 @@
 #ifndef SP_PATTERN_INCLUDED
 #define SP_PATTERN_INCLUDED
 
-#include "utils/aio.h"
+#include "utils/cp.h"
 #include "utils/cond.h"
 #include "utils/list.h"
 
@@ -70,8 +70,8 @@ struct sp_sockbase
     /*  Table of virtual functions supplied by the socket type. */
     const struct sp_sockbase_vfptr *vfptr;
 
-    /*  Async I/O to handle file descriptors, timers and locking. */
-    struct sp_aio aio;
+    /*  Completion port to handle file descriptors, timers and locking. */
+    struct sp_cp cp;
 
     /*  Condition variable to implement sleeping in blocking socket
         operations. */

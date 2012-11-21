@@ -38,7 +38,7 @@
 static void sp_usock_tune (struct sp_usock *self);
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
-    struct sp_aio *aio)
+    struct sp_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     int rc;
@@ -65,7 +65,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
-    self->aio = aio;
+    self->cp = cp;
 
     /*  Setting FD_CLOEXEC option immediately after socket creation is the
         second best option. There is a race condition (if process is forked
@@ -79,7 +79,7 @@ int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
     sp_usock_tune (self);
 
 #if defined SP_HAVE_WINDOWS
-    wcp = CreateIoCompletionPort ((HANDLE) self->hndl.s, aio->hndl,
+    wcp = CreateIoCompletionPort ((HANDLE) self->hndl.s, cp->hndl,
         (ULONG_PTR) NULL, 0);
     sp_assert (wcp);
 #endif
@@ -177,7 +177,7 @@ void sp_usock_term (struct sp_usock *self)
 
     /*  Stop polling on the socket and close it. */
     /*  TODO: What if term is called before connect or listen? */
-    sp_aio_rm_fd (self->aio, &self->hndl);
+    sp_cp_rm_fd (self->cp, &self->hndl);
     rc = close (self->hndl.s);
     errno_assert (rc == 0);
 }
@@ -218,7 +218,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
        return -errno;
 
     /*  Register the socket with the completion port. */
-    sp_aio_add_fd (self->aio, self->hndl.s, &self->hndl);
+    sp_cp_add_fd (self->cp, self->hndl.s, &self->hndl);
 
     return 0;
 }
@@ -231,13 +231,13 @@ int sp_usock_accept (struct sp_usock *self, struct sp_usock *usock)
 int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     int flags)
 {
-    return sp_aio_send (self->aio, &self->hndl, buf, len, flags);
+    return sp_cp_send (self->cp, &self->hndl, buf, len, flags);
 }
 
 int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     int flags)
 {
-    return sp_aio_recv (self->aio, &self->hndl, buf, len, flags);
+    return sp_cp_recv (self->cp, &self->hndl, buf, len, flags);
 }
 
 #endif

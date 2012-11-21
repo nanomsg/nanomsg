@@ -20,11 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_AIO_INCLUDED
-#define SP_AIO_INCLUDED
+#ifndef SP_CP_INCLUDED
+#define SP_CP_INCLUDED
 
 #include "mutex.h"
-#include "eventfd.h"
+#include "efd.h"
 #include "poller.h"
 #include "thread.h"
 #include "timer.h"
@@ -33,36 +33,36 @@
 #include <stddef.h>
 
 /*  This object is not thread-safe. To make it work correctly, all the calls
-    should by synchronised via sp_aio_lock(). */
+    should by synchronised via sp_cp_lock(). */
 
-#define SP_AIO_PARTIAL 1
+#define SP_CP_PARTIAL 1
 
-struct sp_aio;
+struct sp_cp;
 
 struct sp_event_hndl {
     struct sp_queue_item item;
     int event;
 };
 
-#define SP_AIO_OP_ADD 1
-#define SP_AIO_OP_RM 2
-#define SP_AIO_OP_IN 3
-#define SP_AIO_OP_OUT 4
+#define SP_CP_OP_ADD 1
+#define SP_CP_OP_RM 2
+#define SP_CP_OP_IN 3
+#define SP_CP_OP_OUT 4
 
 struct sp_op_hndl {
     struct sp_queue_item item;
     int op;
 };
 
-#define SP_AIO_INOP_NONE 0
-#define SP_AIO_INOP_RECV 1
-#define SP_AIO_INOP_RECV_PARTIAL 2
-#define SP_AIO_INOP_POLLIN 3
+#define SP_CP_INOP_NONE 0
+#define SP_CP_INOP_RECV 1
+#define SP_CP_INOP_RECV_PARTIAL 2
+#define SP_CP_INOP_POLLIN 3
 
-#define SP_AIO_OUTOP_NONE 0
-#define SP_AIO_OUTOP_SEND 1
-#define SP_AIO_OUTOP_SEND_PARTIAL 2
-#define SP_AIO_OUTOP_POLLOUT 3
+#define SP_CP_OUTOP_NONE 0
+#define SP_CP_OUTOP_SEND 1
+#define SP_CP_OUTOP_SEND_PARTIAL 2
+#define SP_CP_OUTOP_POLLOUT 3
 
 struct sp_io_hndl {
     int s;
@@ -85,19 +85,19 @@ struct sp_io_hndl {
     } out;
 };
 
-struct sp_aio_vfptr {
-    void (*in) (struct sp_aio *self, struct sp_io_hndl *hndl);
-    void (*out) (struct sp_aio *self, struct sp_io_hndl *hndl);
-    void (*err) (struct sp_aio *self, struct sp_io_hndl *hndl);
-    void (*event) (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
-    void (*timeout) (struct sp_aio *self, struct sp_timer_hndl *hndl);
+struct sp_cp_vfptr {
+    void (*in) (struct sp_cp *self, struct sp_io_hndl *hndl);
+    void (*out) (struct sp_cp *self, struct sp_io_hndl *hndl);
+    void (*err) (struct sp_cp *self, struct sp_io_hndl *hndl);
+    void (*event) (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
+    void (*timeout) (struct sp_cp *self, struct sp_timer_hndl *hndl);
 };
 
-struct sp_aio {
-    const struct sp_aio_vfptr *vfptr;
+struct sp_cp {
+    const struct sp_cp_vfptr *vfptr;
     struct sp_mutex sync;
     struct sp_timer timer;
-    struct sp_eventfd efd;
+    struct sp_efd efd;
     struct sp_poller_hndl efd_hndl;
     struct sp_poller poller;
     struct sp_queue opqueue;
@@ -107,27 +107,27 @@ struct sp_aio {
     struct sp_thread worker;
 };
 
-void sp_aio_init (struct sp_aio *self, const struct sp_aio_vfptr *vfptr);
-void sp_aio_term (struct sp_aio *self);
+void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr);
+void sp_cp_term (struct sp_cp *self);
 
-void sp_aio_lock (struct sp_aio *self);
-void sp_aio_unlock (struct sp_aio *self);
+void sp_cp_lock (struct sp_cp *self);
+void sp_cp_unlock (struct sp_cp *self);
 
-void sp_aio_add_timer (struct sp_aio *self, int timeout,
+void sp_cp_add_timer (struct sp_cp *self, int timeout,
     struct sp_timer_hndl *hndl);
-void sp_aio_rm_timer (struct sp_aio *self, struct sp_timer_hndl *hndl);
+void sp_cp_rm_timer (struct sp_cp *self, struct sp_timer_hndl *hndl);
 
-void sp_aio_post (struct sp_aio *self, int event, struct sp_event_hndl *hndl);
+void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
 
-void sp_aio_add_fd (struct sp_aio *self, int s, struct sp_io_hndl *hndl);
-void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl);
+void sp_cp_add_fd (struct sp_cp *self, int s, struct sp_io_hndl *hndl);
+void sp_cp_rm_fd (struct sp_cp *self, struct sp_io_hndl *hndl);
 
-void sp_aio_pollin (struct sp_aio *self, struct sp_io_hndl *hndl);
-void sp_aio_pollout (struct sp_aio *self, struct sp_io_hndl *hndl);
+void sp_cp_pollin (struct sp_cp *self, struct sp_io_hndl *hndl);
+void sp_cp_pollout (struct sp_cp *self, struct sp_io_hndl *hndl);
 
-int sp_aio_send (struct sp_aio *self, struct sp_io_hndl *hndl, const void *buf,
+int sp_cp_send (struct sp_cp *self, struct sp_io_hndl *hndl, const void *buf,
     size_t *len, int flags);
-int sp_aio_recv (struct sp_aio *self, struct sp_io_hndl *hndl, void *buf,
+int sp_cp_recv (struct sp_cp *self, struct sp_io_hndl *hndl, void *buf,
     size_t *len, int flags);
 
 #endif

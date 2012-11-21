@@ -24,7 +24,7 @@
 #define SP_TRANSPORT_INCLUDED
 
 #include "utils/list.h"
-#include "utils/aio.h"
+#include "utils/cp.h"
 
 #include <stddef.h>
 #include <stdint.h>

@@ -25,7 +25,7 @@
 
 /*  Platform-independent condition variable. */
 
-#include "aio.h"
+#include "cp.h"
 
 #ifdef SP_HAVE_WINDOWS
 
@@ -49,7 +49,7 @@ void sp_cond_init (struct sp_cond *self);
 void sp_cond_term (struct sp_cond *self);
 
 int sp_cond_wait (struct sp_cond *self,
-    struct sp_aio *aio, int timeout);
+    struct sp_cp *cp, int timeout);
 void sp_cond_post (struct sp_cond *self);
 
 #endif

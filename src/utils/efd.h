@@ -20,22 +20,22 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_EVENTFD_INCLUDED
-#define SP_EVENTFD_INCLUDED
+#ifndef SP_EFD_INCLUDED
+#define SP_EFD_INCLUDED
 
 #if !defined SP_HAVE_WINDOWS
 
-struct sp_eventfd;
+struct sp_efd;
 
-void sp_eventfd_init (struct sp_eventfd *self);
-void sp_eventfd_term (struct sp_eventfd *self);
-int sp_eventfd_getfd (struct sp_eventfd *self);
-void sp_eventfd_signal (struct sp_eventfd *self);
-void sp_eventfd_unsignal (struct sp_eventfd *self);
+void sp_efd_init (struct sp_efd *self);
+void sp_efd_term (struct sp_efd *self);
+int sp_efd_getfd (struct sp_efd *self);
+void sp_efd_signal (struct sp_efd *self);
+void sp_efd_unsignal (struct sp_efd *self);
 
 #if defined SP_USE_SOCKETPAIR
 
-struct sp_eventfd
+struct sp_efd
 {
     int r;
     int w;
@@ -43,7 +43,7 @@ struct sp_eventfd
 
 #elif defined SP_USE_EVENTFD
 
-struct sp_eventfd
+struct sp_efd
 {
     int efd;
 };

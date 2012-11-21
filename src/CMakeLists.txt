@@ -37,8 +37,6 @@ add_library(nanomsg SHARED
     core/sock.c
     utils/addr.h
     utils/addr.c
-    utils/aio.h
-    utils/aio.c
     utils/alloc.h
     utils/alloc.c
     utils/clock.h
@@ -46,10 +44,12 @@ add_library(nanomsg SHARED
     utils/cond.h
     utils/cond.c
     utils/cont.h
+    utils/cp.h
+    utils/cp.c
+    utils/efd.h
+    utils/efd.c
     utils/err.h 
     utils/err.c
-    utils/eventfd.h
-    utils/eventfd.c
     utils/excl.h
     utils/excl.c
     utils/fast.h

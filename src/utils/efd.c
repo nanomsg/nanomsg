@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "eventfd.h"
+#include "efd.h"
 
 #if !defined SP_HAVE_WINDOWS
 
@@ -34,7 +34,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 
-void sp_eventfd_init (struct sp_eventfd *self)
+void sp_efd_init (struct sp_efd *self)
 {
     int rc;
     int flags;
@@ -63,7 +63,7 @@ void sp_eventfd_init (struct sp_eventfd *self)
     errno_assert (rc != -1);
 }
 
-void sp_eventfd_term (struct sp_eventfd *self)
+void sp_efd_term (struct sp_efd *self)
 {
     int rc;
 
@@ -73,12 +73,12 @@ void sp_eventfd_term (struct sp_eventfd *self)
     errno_assert (rc == 0);
 }
 
-int sp_eventfd_getfd (struct sp_eventfd *self)
+int sp_efd_getfd (struct sp_efd *self)
 {
     return self->r;
 }
 
-void sp_eventfd_signal (struct sp_eventfd *self)
+void sp_efd_signal (struct sp_efd *self)
 {
     ssize_t nbytes;
     char c = 101;
@@ -88,7 +88,7 @@ void sp_eventfd_signal (struct sp_eventfd *self)
     sp_assert (nbytes == 1);
 }
 
-void sp_eventfd_unsignal (struct sp_eventfd *self)
+void sp_efd_unsignal (struct sp_efd *self)
 {
     ssize_t nbytes;
     uint8_t buf [16];
@@ -110,7 +110,7 @@ void sp_eventfd_unsignal (struct sp_eventfd *self)
 #include <sys/eventfd.h>
 #include <fcntl.h>
 
-void sp_eventfd_init (struct sp_eventfd *self)
+void sp_efd_init (struct sp_efd *self)
 {
     int rc;
     int flags;
@@ -125,7 +125,7 @@ void sp_eventfd_init (struct sp_eventfd *self)
     errno_assert (rc != -1);
 }
 
-void sp_eventfd_term (struct sp_eventfd *self)
+void sp_efd_term (struct sp_efd *self)
 {
     int rc;
 
@@ -133,12 +133,12 @@ void sp_eventfd_term (struct sp_eventfd *self)
     errno_assert (rc == 0);
 }
 
-int sp_eventfd_getfd (struct sp_eventfd *self)
+int sp_efd_getfd (struct sp_efd *self)
 {
     return self->efd;
 }
 
-void sp_eventfd_signal (struct sp_eventfd *self)
+void sp_efd_signal (struct sp_efd *self)
 {
     const uint64_t one = 1;
     ssize_t nbytes;
@@ -147,7 +147,7 @@ void sp_eventfd_signal (struct sp_eventfd *self)
     errno_assert (nbytes == sizeof (one));
 }
 
-void sp_eventfd_unsignal (struct sp_eventfd *self)
+void sp_efd_unsignal (struct sp_efd *self)
 {
     uint64_t count;
 

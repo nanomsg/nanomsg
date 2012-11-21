@@ -23,21 +23,23 @@
 #ifndef SP_USOCK_INCLUDED
 #define SP_USOCK_INCLUDED
 
-#include "aio.h"
+#include "cp.h"
 #include "addr.h"
 
 #include <stddef.h>
 
+#define SP_USOCK_PARTIAL SP_CP_PARTIAL
+
 struct sp_usock {
     struct sp_io_hndl hndl;
-    struct sp_aio *aio;
+    struct sp_cp *cp;
     int domain;
     int type;
     int protocol;
 };
 
 int sp_usock_init (struct sp_usock *self, int domain, int type, int protocol,
-    struct sp_aio *aio);
+    struct sp_cp *cp);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

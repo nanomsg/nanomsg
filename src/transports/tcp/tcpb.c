@@ -63,7 +63,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
 
-    /*  Open the listing socket and start accepting connections. */
+    /*  TODO */
 
     return 0;
 }

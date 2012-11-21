@@ -49,7 +49,7 @@ static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
 void sp_msgpipe_init (struct sp_msgpipe *self,
     struct sp_inprocb *inprocb, struct sp_inprocc *inprocc)
 {
-    /*  Intialise the pipes. */ 
+    /*  Initialise the pipes. */ 
     sp_pipebase_init (&self->pipes [0], &sp_msgpipe_vfptr0, &inprocb->epbase);
     sp_pipebase_init (&self->pipes [1], &sp_msgpipe_vfptr1, &inprocc->epbase);
     self->flags = SP_MSGPIPE_PIPE0_ACTIVE | SP_MSGPIPE_PIPE1_ACTIVE;
@@ -98,7 +98,7 @@ static void sp_msgpipe_term (struct sp_msgpipe *self)
     sp_msgqueue_term (&(self->queues [1]));
     sp_msgqueue_term (&(self->queues [0]));
 
-    /*  The lifelime of this object is managed by reference count (number
+    /*  The lifetime of this object is managed by reference count (number
         of endpoints having reference to it) not by a particular owner. Thus,
         the object has to deallocate itself once there are no more
         references. */

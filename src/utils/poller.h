@@ -108,7 +108,7 @@ struct sp_poller {
     /*  Index of the event being processed at the moment. */
     int index;
 
-    /*  Events beign processed at the moment. */
+    /*  Events being processed at the moment. */
     struct epoll_event events [SP_POLLER_MAX_EVENTS];
 };
 

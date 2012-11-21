@@ -165,6 +165,44 @@ void sp_aio_rm_fd (struct sp_aio *self, struct sp_io_hndl *hndl)
     sp_eventfd_signal (&self->efd);
 }
 
+void sp_aio_pollin (struct sp_aio *self, struct sp_io_hndl *hndl)
+{
+    /*  Make sure that there's no inbound operation already in progress. */
+    sp_assert (hndl->in.op == SP_AIO_INOP_NONE);
+
+    /*  Adjust the handle. */
+    hndl->in.op = SP_AIO_INOP_POLLIN;
+
+    /*  If we are in the worker thread we can simply start polling for out. */
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_set_in (&self->poller, &hndl->hndl);
+        return;
+    }
+
+    /*  Otherwise, ask worker thread to start polling for in. */
+    sp_queue_push (&self->opqueue, &hndl->in.hndl.item);
+    sp_eventfd_signal (&self->efd);
+}
+
+void sp_aio_pollout (struct sp_aio *self, struct sp_io_hndl *hndl)
+{
+    /*  Make sure that there's no outbound operation already in progress. */
+    sp_assert (hndl->out.op == SP_AIO_OUTOP_NONE);
+
+    /*  Adjust the handle. */
+    hndl->out.op = SP_AIO_OUTOP_POLLOUT;
+
+    /*  If we are in the worker thread we can simply start polling for out. */
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_set_out (&self->poller, &hndl->hndl);
+        return;
+    }
+
+    /*  Otherwise, ask worker thread to start polling for out. */
+    sp_queue_push (&self->opqueue, &hndl->out.hndl.item);
+    sp_eventfd_signal (&self->efd);
+}
+
 int sp_aio_send (struct sp_aio *self, struct sp_io_hndl *hndl, const void *buf,
     size_t *len, int flags)
 {

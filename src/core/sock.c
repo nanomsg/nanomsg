@@ -70,6 +70,11 @@ void sp_sock_term (struct sp_sock *self)
     sp_cp_term (&sockbase->cp);
 }
 
+struct sp_cp *sp_sock_getcp (struct sp_sock *self)
+{
+    return &((struct sp_sockbase*) self)->cp;
+}
+
 int sp_sock_setopt (struct sp_sock *self, int level, int option,
     const void *optval, size_t optvallen)
 {

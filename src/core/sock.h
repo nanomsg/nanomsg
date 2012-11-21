@@ -30,6 +30,9 @@ struct sp_cp;
 /*  Deallocate the socket. */
 void sp_sock_term (struct sp_sock *self);
 
+/*  Returns default completion port associated with the socket. */
+struct sp_cp *sp_sock_getcp (struct sp_sock *self);
+
 /*  Set a socket option. */
 int sp_sock_setopt (struct sp_sock *self, int level, int option,
     const void *optval, size_t optvallen); 

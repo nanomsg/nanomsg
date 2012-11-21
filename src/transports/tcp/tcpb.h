@@ -25,10 +25,18 @@
 
 #include "../../transport.h"
 
+#include "../../utils/usock.h"
+
 struct sp_tcpb {
 
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
+
+    /*  The listening socket. */
+    struct sp_usock usock;
+
+    /*  Socket used for asynchronous accepting of new connections. */
+    struct sp_usock newsock;
 };
 
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);

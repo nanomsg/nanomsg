@@ -26,6 +26,9 @@
 #include "../../utils/cont.h"
 #include "../../utils/addr.h"
 
+/*  Private functions. */
+static void sp_tcpb_accept (struct sp_tcpb *self);
+
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
@@ -63,7 +66,18 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
 
-    /*  TODO */
+    /*  Open the listening socket. */
+    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+        sp_epbase_getcp (&self->epbase));
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
+    errnum_assert (rc == 0, -rc);
+    /*  TODO:  Get the backlog value from the socket option! */
+    rc = sp_usock_listen (&self->usock, 100);
+    errnum_assert (rc == 0, -rc);
+
+    /*  Accept any connections that may be available at the moment. */
+    sp_tcpb_accept (self);
 
     return 0;
 }
@@ -76,5 +90,22 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
 
     sp_assert (0);
     return 0;
+}
+
+static void sp_tcpb_accept (struct sp_tcpb *self)
+{
+    int rc;
+
+    while (1) {
+
+        /*  Launch new accept request. */
+        rc = sp_usock_accept (&self->usock, &self->newsock);
+        if (rc == -EINPROGRESS)
+            break;
+        errnum_assert (rc == 0, -rc);
+
+        /*  TODO */
+        sp_assert (0);
+    }
 }
 

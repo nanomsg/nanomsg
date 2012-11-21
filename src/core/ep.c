@@ -39,6 +39,11 @@ void sp_epbase_term (struct sp_epbase *self)
 {
 }
 
+struct sp_cp *sp_epbase_getcp (struct sp_epbase *self)
+{
+    return sp_sock_getcp (self->sock);
+}
+
 int sp_ep_fd (struct sp_ep *self)
 {
     struct sp_epbase *epbase;

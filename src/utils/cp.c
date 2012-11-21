@@ -151,12 +151,6 @@ void sp_cp_rm_fd (struct sp_cp *self, struct sp_io_hndl *hndl)
 {
     if (sp_thread_current (&self->worker)) {
         sp_poller_rm (&self->poller, &hndl->hndl);
-
-        /*  For diagnostic purposes, mark the handle as invalid. */
-        hndl->s = -1;
-        hndl->in.op = SP_CP_INOP_NONE;
-        hndl->out.op = SP_CP_OUTOP_NONE;
-
         return;
     }
 
@@ -336,11 +330,11 @@ if (rc == -EINTR) goto again;
                 break;
             case SP_CP_OP_ADD:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, add_hndl);
-                sp_cp_add_fd (self, ihndl->s, ihndl);
+                sp_poller_add (&self->poller, ihndl->s, &ihndl->hndl);
                 break;
             case SP_CP_OP_RM:
                 ihndl = sp_cont (ohndl, struct sp_io_hndl, rm_hndl);
-                sp_cp_rm_fd (self, ihndl);
+                sp_poller_rm (&self->poller, &ihndl->hndl);
                 break;
             default:
                 sp_assert (0);

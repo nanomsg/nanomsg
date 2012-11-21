@@ -63,6 +63,9 @@ void sp_epbase_init (struct sp_epbase *self,
 /*  Destroys the endpoint. */
 void sp_epbase_term (struct sp_epbase *self);
 
+/*  Returns the default completion port associated with the current socket. */
+struct sp_cp *sp_epbase_getcp (struct sp_epbase *self);
+
 /******************************************************************************/
 /*  The base class for pipes.                                                 */
 /******************************************************************************/

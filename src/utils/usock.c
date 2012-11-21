@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netinet/in.h>
+#include <unistd.h>
 #include <fcntl.h>
 #endif
 

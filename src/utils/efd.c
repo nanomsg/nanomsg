@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 void sp_efd_init (struct sp_efd *self)
@@ -108,6 +109,7 @@ void sp_efd_unsignal (struct sp_efd *self)
 
 #include <stdint.h>
 #include <sys/eventfd.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 void sp_efd_init (struct sp_efd *self)

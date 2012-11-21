@@ -37,12 +37,27 @@
 
 #define SP_CP_PARTIAL 1
 
-struct sp_cp;
+struct sp_cp_timer_hndl;
+
+/*  Timer handle definition. */
+
+struct sp_cp_timer_vfptr {
+    void (*timeout) (struct sp_cp_timer_hndl *self);
+};
+
+struct sp_cp_timer_hndl {
+    const struct sp_cp_timer_vfptr *vfptr;
+    struct sp_timer_hndl hndl;
+};
+
+/*  Event handle definition. */
 
 struct sp_event_hndl {
     struct sp_queue_item item;
     int event;
 };
+
+/*  Operation handle. Used internally by sp_cp. */
 
 #define SP_CP_OP_ADD 1
 #define SP_CP_OP_RM 2
@@ -53,6 +68,8 @@ struct sp_op_hndl {
     struct sp_queue_item item;
     int op;
 };
+
+/*  I/O handle definition. */
 
 #define SP_CP_INOP_NONE 0
 #define SP_CP_INOP_RECV 1
@@ -85,12 +102,15 @@ struct sp_io_hndl {
     } out;
 };
 
+/*  The completion port. */
+
+struct sp_cp;
+
 struct sp_cp_vfptr {
     void (*in) (struct sp_cp *self, struct sp_io_hndl *hndl);
     void (*out) (struct sp_cp *self, struct sp_io_hndl *hndl);
     void (*err) (struct sp_cp *self, struct sp_io_hndl *hndl);
     void (*event) (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
-    void (*timeout) (struct sp_cp *self, struct sp_timer_hndl *hndl);
 };
 
 struct sp_cp {
@@ -114,8 +134,8 @@ void sp_cp_lock (struct sp_cp *self);
 void sp_cp_unlock (struct sp_cp *self);
 
 void sp_cp_add_timer (struct sp_cp *self, int timeout,
-    struct sp_timer_hndl *hndl);
-void sp_cp_rm_timer (struct sp_cp *self, struct sp_timer_hndl *hndl);
+    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl);
+void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl);
 
 void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
 

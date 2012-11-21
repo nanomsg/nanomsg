@@ -62,7 +62,6 @@ struct sp_sockbase_vfptr {
         const void *optval, size_t optvallen);
     int (*getopt) (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen);
-    void (*timeout) (struct sp_sockbase *seld, struct sp_timer_hndl *hndl);
 };
 
 struct sp_sockbase
@@ -87,9 +86,9 @@ void sp_sockbase_init (struct sp_sockbase *self,
 
 /*  Manage timers. */
 void sp_sockbase_add_timer (struct sp_sockbase *self, int timeout,
-    struct sp_timer_hndl *hndl);
+    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl);
 void sp_sockbase_rm_timer (struct sp_sockbase *self,
-    struct sp_timer_hndl *hndl);
+    struct sp_cp_timer_hndl *hndl);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

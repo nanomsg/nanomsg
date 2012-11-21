@@ -37,14 +37,11 @@ static void sp_sock_pollout (struct sp_cp *self, struct sp_io_hndl *hndl);
 static void sp_sock_pollerr (struct sp_cp *self, struct sp_io_hndl *hndl);
 static void sp_sock_event (struct sp_cp *self, int event,
     struct sp_event_hndl *hndl);
-static void sp_sock_timeout (struct sp_cp *self,
-    struct sp_timer_hndl *hndl);
 static const struct sp_cp_vfptr sp_sock_cp_vfptr = {
     sp_sock_pollin,
     sp_sock_pollout,
     sp_sock_pollerr,
-    sp_sock_event,
-    sp_sock_timeout
+    sp_sock_event
 };
 
 void sp_sockbase_init (struct sp_sockbase *self,
@@ -289,25 +286,15 @@ static void sp_sock_event (struct sp_cp *self, int event,
     }
 }
 
-static void sp_sock_timeout (struct sp_cp *self,
-    struct sp_timer_hndl *hndl)
-{
-    struct sp_sockbase *sockbase;
-
-    sockbase = sp_cont (self, struct sp_sockbase, cp);
-    sockbase->vfptr->timeout (sockbase, hndl);
-}
-
 void sp_sockbase_add_timer (struct sp_sockbase *self, int timeout,
-    struct sp_timer_hndl *hndl)
+    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl)
 {
-    sp_cp_add_timer (&self->cp, timeout, hndl);
+    sp_cp_add_timer (&self->cp, timeout, vfptr, hndl);
 }
 
 void sp_sockbase_rm_timer (struct sp_sockbase *self,
-    struct sp_timer_hndl *hndl)
+    struct sp_cp_timer_hndl *hndl)
 {
     sp_cp_rm_timer (&self->cp, hndl);
 }
-
 

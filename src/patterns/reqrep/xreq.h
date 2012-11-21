@@ -46,7 +46,6 @@ int sp_xreq_setopt (struct sp_sockbase *self, int option,
     const void *optval, size_t optvallen);
 int sp_xreq_getopt (struct sp_sockbase *self, int option,
     void *optval, size_t *optvallen);
-void sp_xreq_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl);
 
 extern struct sp_socktype *sp_xreq_socktype;
 

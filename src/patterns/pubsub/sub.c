@@ -49,8 +49,6 @@ static int sp_sub_setopt (struct sp_sockbase *self, int option,
     const void *optval, size_t optvallen);
 static int sp_sub_getopt (struct sp_sockbase *self, int option,
     void *optval, size_t *optvallen);
-static void sp_sub_timeout (struct sp_sockbase *self,
-    struct sp_timer_hndl *hndl);
 static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_term,
     sp_sub_add,
@@ -60,8 +58,7 @@ static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_send,
     sp_sub_recv,
     sp_sub_setopt,
-    sp_sub_getopt,
-    sp_sub_timeout
+    sp_sub_getopt
 };
 
 void sp_sub_init (struct sp_sub *self, const struct sp_sockbase_vfptr *vfptr,
@@ -160,12 +157,6 @@ static int sp_sub_getopt (struct sp_sockbase *self, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-void sp_sub_timeout (struct sp_sockbase *self, struct sp_timer_hndl *hndl)
-{
-    /*  No timers are used in this socket type. */
-    sp_assert (0);
 }
 
 static struct sp_sockbase *sp_sub_create (int fd)

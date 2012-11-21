@@ -88,21 +88,22 @@ void sp_cp_unlock (struct sp_cp *self)
 }
 
 void sp_cp_add_timer (struct sp_cp *self, int timeout,
-    struct sp_timer_hndl *hndl)
+    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl)
 {
     int rc;
 
-    rc = sp_timer_add (&self->timer, timeout, hndl);
+    hndl->vfptr = vfptr;
+    rc = sp_timer_add (&self->timer, timeout, &hndl->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->worker))
         sp_efd_signal (&self->efd);
 }
 
-void sp_cp_rm_timer (struct sp_cp *self, struct sp_timer_hndl *hndl)
+void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl)
 {
     int rc;
 
-    rc = sp_timer_rm (&self->timer, hndl);
+    rc = sp_timer_rm (&self->timer, &hndl->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->worker))
         sp_efd_signal (&self->efd);
@@ -282,6 +283,7 @@ static void sp_cp_worker (void *arg)
     int timeout;
     struct sp_op_hndl *ohndl;
     struct sp_timer_hndl *thndl;
+    struct sp_cp_timer_hndl *cthndl;
     int event;
     struct sp_poller_hndl *phndl;
     struct sp_event_hndl *ehndl;
@@ -349,7 +351,8 @@ if (rc == -EINTR) goto again;
             errnum_assert (rc == 0, -rc);
 
             /*  Fire the timeout event. */
-            self->vfptr->timeout (self, thndl);
+            cthndl = sp_cont (thndl, struct sp_cp_timer_hndl, hndl);
+            cthndl->vfptr->timeout (cthndl);
         }
 
         /*  Process any events from the poller. */

@@ -39,6 +39,9 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     struct sockaddr_storage ss;
     socklen_t sslen;
 
+    // Make sure we're working from a clean slate. Required on Mac OS X.
+    memset(&ss, 0, sizeof(ss));
+
     /*  Parse the port. */
     rc = sp_addr_parse_port (addr, &colon);
     if (rc < 0)

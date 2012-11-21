@@ -26,6 +26,8 @@
 #include "../../utils/cont.h"
 #include "../../utils/addr.h"
 
+#include <string.h>
+
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
@@ -38,6 +40,9 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
+
+    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    memset (&ss, 0, sizeof (ss));
 
     /*  Parse the port. */
     rc = sp_addr_parse_port (addr, &colon);

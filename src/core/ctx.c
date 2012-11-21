@@ -111,7 +111,7 @@ int sp_ctx_refcount = 0;
 /*  Singleton object containing the global state of the library. */
 static struct sp_ctx self = {0};
 
-/*  Trasnsport-related private functions. */
+/*  Transport-related private functions. */
 static void sp_ctx_add_transport (struct sp_transport *transport);
 static void sp_ctx_add_socktype (struct sp_socktype *socktype);
 static struct sp_transport *sp_ctx_find_transport (const char *name,
@@ -149,7 +149,7 @@ int sp_init (void)
         return 0;
     }
 
-    /*  On Windows, initilise the socket library. */
+    /*  On Windows, initialise the socket library. */
 #if defined SP_HAVE_WINDOWS
     rc = WSAStartup (MAKEWORD (2, 2), &data);
     sp_assert (rc == 0);
@@ -245,7 +245,7 @@ int sp_socket (int domain, int protocol)
     struct sp_list_item *it;
     struct sp_socktype *socktype;
 
-    /*  Check whether library was intialised. */
+    /*  Check whether library was initialised. */
     if (sp_slow (!self.socks)) {
         errno = EFAULT;
         return -1;

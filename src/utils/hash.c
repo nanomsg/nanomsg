@@ -130,7 +130,7 @@ struct sp_hash_item *sp_hash_get (struct sp_hash *self, uint32_t key)
 
 uint32_t sp_hash_key (uint32_t key)
 {
-    /*  TODO: This is a randomly choosen hashing function. Give some thought
+    /*  TODO: This is a randomly chosen hashing function. Give some thought
         to picking a more fitting one. */
     key = (key ^ 61) ^ (key >> 16);
     key += key << 3;

@@ -128,7 +128,7 @@ SP_EXPORT int sp_errno (void);
 SP_EXPORT const char *sp_strerror (int errnum);
 
 /******************************************************************************/
-/*  Intilisation and shutdown.                                                */
+/*  Initialisation and shutdown.                                                */
 /******************************************************************************/
 
 SP_EXPORT int sp_init (void);

@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 /*  This class is a simple uni-directional message queue. */
-/*  TODO: Recv-side batching can be implemented here to inprove performance. */
+/*  TODO: Recv-side batching can be implemented here to improve performance. */
 
 /*  This value is returned from send/recv functions to let the user know that
     other side of the pipe should be re-activated. This flag can be combined
@@ -74,7 +74,7 @@ struct sp_msgqueue {
     struct sp_mutex sync;
 
     /*  One empty chunk is always cached so that in case of steady stream
-        of messages throught the pipe there are no memory allocations. The chunk
+        of messages through the pipe there are no memory allocations. The chunk
         is being handed from the reading thread to the writing thread so it
         is guarded by the 'sync' mutex. */
     struct sp_msgqueue_chunk *cache;
@@ -96,7 +96,7 @@ int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len);
 
 /*  Reads a message from the pipe. Any content already in msg is deallocated.
     -EAGAIN is returned if there's no message to receive. 0 is returned in case
-    of success. If, additionally, this makes the the queue writeable, the
+    of success. If, additionally, this makes the queue writeable, the
     return value is 1. 'len' is inout parameter -- it contains the size
     of the buffer on input and actual size of the message on output. */
 int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len);

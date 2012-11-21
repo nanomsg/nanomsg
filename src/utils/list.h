@@ -46,7 +46,7 @@ int sp_list_empty (struct sp_list *self);
 /*  Returns iterator to the first item in the list. */
 struct sp_list_item *sp_list_begin (struct sp_list *self);
 
-/*  Rreturns iterator to one past the last item in the list. */
+/*  Returns iterator to one past the last item in the list. */
 struct sp_list_item *sp_list_end (struct sp_list *self);
 
 /*  Returns iterator to an element prior to the one pointed to be it. */

@@ -54,7 +54,7 @@ void sp_poller_add (struct sp_poller *self, int fd,
 {
     int rc;
 
-    /*  If the capacity is too low to accomodate the next item, resize it. */
+    /*  If the capacity is too low to accommodate the next item, resize it. */
     if (sp_slow (self->size >= self->capacity)) {
         self->capacity *= 2;
         self->pollset = sp_realloc (self->pollset,

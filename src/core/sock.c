@@ -76,7 +76,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 
     sp_cp_lock (&sockbase->cp);
 
-    /*  TODO: Handle socket-leven options here. */
+    /*  TODO: Handle socket-level options here. */
 
     /*  Unknown options may be pattern-specific. */
     if (level == SP_SOL_SOCKET) {
@@ -104,7 +104,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
 
     sp_cp_lock (&sockbase->cp);
 
-    /*  TODO: Handle socket-leven options here. */
+    /*  TODO: Handle socket-level options here. */
 
     /*  Unknown options may be pattern-specific. */
     if (level == SP_SOL_SOCKET) {

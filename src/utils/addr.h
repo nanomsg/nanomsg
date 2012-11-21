@@ -40,7 +40,7 @@ typedef socklen_t sp_socklen;
 
 /*  Parse port numbers at the end of the address string. The function returns
     L4 port (e.g. TCP port). If successful, 'colon' output parameter will
-    contain poiter to the colon character in the address string (delimiter
+    contain a pointer to the colon character in the address string (delimiter
     between address and port part of the string). */
 int sp_addr_parse_port (const char *addr, const char **colon);
 

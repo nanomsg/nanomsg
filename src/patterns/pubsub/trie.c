@@ -138,7 +138,7 @@ void sp_node_term (struct sp_trie_node *self)
 int sp_node_check_prefix (struct sp_trie_node *self,
     const uint8_t *data, size_t size)
 {
-    /*  Check how many charecters from the data match the prefix. */
+    /*  Check how many characters from the data match the prefix. */
 
     int i;
 
@@ -185,7 +185,7 @@ struct sp_trie_node **sp_node_next (struct sp_trie_node *self, uint8_t c)
 struct sp_trie_node *sp_node_compact (struct sp_trie_node *self)
 {
     /*  Tries to merge the node with the child node. Returns pointer to
-        the comapcted node. */
+        the comapacted node. */
 
     struct sp_trie_node *ch;
 

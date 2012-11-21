@@ -125,7 +125,7 @@ uint64_t sp_clock_now (struct sp_clock *self)
           tsc >= self->last_tsc))
         return self->last_time;
 
-    /*  It's a long time sice we've last measured the time. We'll do a new
+    /*  It's a long time since we've last measured the time. We'll do a new
         measurement now. */
     self->last_tsc = tsc;
     self->last_time = sp_clock_time ();

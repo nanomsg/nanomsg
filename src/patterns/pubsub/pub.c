@@ -109,7 +109,6 @@ static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     /*  We shouldn't get any messages from subscribers. */
     sp_assert (0);
-    return 0;
 }
 
 static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)

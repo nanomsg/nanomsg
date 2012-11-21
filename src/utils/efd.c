@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 void sp_efd_init (struct sp_efd *self)
 {

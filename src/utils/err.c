@@ -146,7 +146,6 @@ int sp_err_wsa_to_posix (int wsaerr)
         return ECONNRESET;
     default:
         sp_assert (0);
-        return -1;
     }
 }
 

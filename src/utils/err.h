@@ -32,6 +32,14 @@
 
 #include "fast.h"
 
+#if defined _MSC_VER
+#define SP_NORETURN __declspec(noreturn)
+#elif defined __GNUC__
+#define SP_NORETURN __attribute__ ((noreturn))
+#else
+#define SP_NORETURN
+#endif
+
 /*  Same as system assert(). However, under Win32 assert has some deficiencies.
     Thus this macro. */
 #define sp_assert(x) \
@@ -97,7 +105,7 @@
         }\
     } while (0)
 
-void sp_err_abort (void);
+SP_NORETURN void sp_err_abort (void);
 int sp_err_errno (void);
 const char *sp_err_strerror (int errnum);
 

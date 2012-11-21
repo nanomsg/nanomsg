@@ -81,6 +81,5 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
 
     tcpc = sp_cont (self, struct sp_tcpc, epbase);
     sp_assert (0);
-    return 0;
 }
 

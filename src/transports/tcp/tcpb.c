@@ -102,7 +102,6 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
     tcpb = sp_cont (self, struct sp_tcpb, epbase);
 
     sp_assert (0);
-    return 0;
 }
 
 static void sp_tcpb_accept (struct sp_tcpb *self)

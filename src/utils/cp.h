@@ -59,26 +59,17 @@ void sp_timer_term (struct sp_timer *self);
 void sp_timer_start (struct sp_timer *self, int timeout);
 void sp_timer_stop (struct sp_timer *self);
 
-/*  Event handle definition. */
-
-struct sp_event_hndl {
-    struct sp_queue_item item;
-    int event;
-};
-
-/*  Operation handle. Used internally by sp_cp. */
+/*  I/O handle definition. */
 
 #define SP_CP_OP_ADD 1
 #define SP_CP_OP_RM 2
 #define SP_CP_OP_IN 3
 #define SP_CP_OP_OUT 4
 
-struct sp_op_hndl {
+struct sp_cp_op_hndl {
     struct sp_queue_item item;
     int op;
 };
-
-/*  I/O handle definition. */
 
 #define SP_CP_INOP_NONE 0
 #define SP_CP_INOP_RECV 1
@@ -104,27 +95,32 @@ struct sp_cp_io_hndl {
     const struct sp_cp_io_vfptr *vfptr;
     int s;
     struct sp_poller_hndl hndl;
-    struct sp_op_hndl add_hndl;
-    struct sp_op_hndl rm_hndl;
+    struct sp_cp_op_hndl add_hndl;
+    struct sp_cp_op_hndl rm_hndl;
     struct {
         int op;
         void *buf;
         size_t buflen;
         size_t len;
-        struct sp_op_hndl hndl;
+        struct sp_cp_op_hndl hndl;
     } in;
     struct {
         int op;
         const void *buf;
         size_t buflen;
         size_t len;
-        struct sp_op_hndl hndl;
+        struct sp_cp_op_hndl hndl;
     } out;
 };
 
 /*  The completion port itself. */
 
 #define SP_CP_PARTIAL 1
+
+struct sp_event_hndl {
+    struct sp_queue_item item;
+    int event;
+};
 
 struct sp_cp;
 

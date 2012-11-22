@@ -261,7 +261,7 @@ static void sp_cp_worker (void *arg)
     int rc;
     struct sp_cp *self;
     int timeout;
-    struct sp_op_hndl *ohndl;
+    struct sp_cp_op_hndl *ophndl;
     struct sp_timeout_hndl *tohndl;
     struct sp_timer *timer;
     int event;
@@ -303,26 +303,26 @@ if (rc == -EINTR) goto again;
         /*  Process the events in the opqueue. */
         while (1) {
 
-            ohndl = sp_cont (sp_queue_pop (&self->opqueue),
-                struct sp_op_hndl, item);
-            if (!ohndl)
+            ophndl = sp_cont (sp_queue_pop (&self->opqueue),
+                struct sp_cp_op_hndl, item);
+            if (!ophndl)
                 break;
 
-            switch (ohndl->op) {
+            switch (ophndl->op) {
             case SP_CP_OP_IN:
-                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, in.hndl);
+                ihndl = sp_cont (ophndl, struct sp_cp_io_hndl, in.hndl);
                 sp_poller_set_in (&self->poller, &ihndl->hndl);
                 break;
             case SP_CP_OP_OUT:
-                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, out.hndl);
+                ihndl = sp_cont (ophndl, struct sp_cp_io_hndl, out.hndl);
                 sp_poller_set_out (&self->poller, &ihndl->hndl);
                 break;
             case SP_CP_OP_ADD:
-                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, add_hndl);
+                ihndl = sp_cont (ophndl, struct sp_cp_io_hndl, add_hndl);
                 sp_poller_add (&self->poller, ihndl->s, &ihndl->hndl);
                 break;
             case SP_CP_OP_RM:
-                ihndl = sp_cont (ohndl, struct sp_cp_io_hndl, rm_hndl);
+                ihndl = sp_cont (ophndl, struct sp_cp_io_hndl, rm_hndl);
                 sp_poller_rm (&self->poller, &ihndl->hndl);
                 break;
             default:
@@ -542,8 +542,4 @@ void sp_timer_stop (struct sp_timer *self)
     if (rc == 1 && !sp_thread_current (&self->cp->worker))
         sp_efd_signal (&self->cp->efd);
 }
-
-
-
-
 

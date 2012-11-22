@@ -316,13 +316,24 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
 int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
+    int rc;
+
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Adjust the handle. */
     self->out.op = SP_USOCK_OUTOP_CONNECT;
 
-    /*  TODO: Do the connect itself. */
+    /*  Do the connect itself. */
+    rc = connect (self->s, addr, addrlen);
+
+    /*  Immediate success. */
+    if (rc == 0)
+        return 0;
+
+    /*  Return unexpected errors to the caller. */
+    if (errno != EINPROGRESS)
+        return -errno;
 
     /*  If we are in the worker thread we can simply start polling for out. */
     if (sp_thread_current (&self->cp->worker)) {

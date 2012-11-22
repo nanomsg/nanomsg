@@ -127,12 +127,12 @@ int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
 
     self->vfptr = vfptr;
     self->cp = cp;
-    self->in.op = SP_CP_INOP_NONE;
-    self->out.op = SP_CP_OUTOP_NONE;
-    self->add_hndl.op = SP_CP_OP_ADD;
-    self->rm_hndl.op = SP_CP_OP_RM;
-    self->in.hndl.op = SP_CP_OP_IN;
-    self->out.hndl.op = SP_CP_OP_OUT;
+    self->in.op = SP_USOCK_INOP_NONE;
+    self->out.op = SP_USOCK_OUTOP_NONE;
+    self->add_hndl.op = SP_USOCK_OP_ADD;
+    self->rm_hndl.op = SP_USOCK_OP_RM;
+    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->out.hndl.op = SP_USOCK_OP_OUT;
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
@@ -317,10 +317,10 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
     /*  Make sure that there's no outbound operation already in progress. */
-    sp_assert (self->out.op == SP_CP_OUTOP_NONE);
+    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Adjust the handle. */
-    self->out.op = SP_CP_OUTOP_CONNECT;
+    self->out.op = SP_USOCK_OUTOP_CONNECT;
 
     /*  TODO: Do the connect itself. */
 
@@ -340,10 +340,10 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 int sp_usock_accept (struct sp_usock *self)
 {
     /*  Make sure that there's no inbound operation already in progress. */
-    sp_assert (self->in.op == SP_CP_INOP_NONE);
+    sp_assert (self->in.op == SP_USOCK_INOP_NONE);
 
     /*  Adjust the handle. */
-    self->in.op = SP_CP_INOP_ACCEPT;
+    self->in.op = SP_USOCK_INOP_ACCEPT;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for in. */
@@ -364,7 +364,7 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     size_t sz;
 
     /*  Make sure that there's no outbound operation already in progress. */
-    sp_assert (self->out.op == SP_CP_OUTOP_NONE);
+    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Try to send the data immediately. */
     sz = *len;
@@ -377,8 +377,8 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
         return 0;
 
     /*  There are still data to send in the background. */ 
-    self->out.op = flags & SP_USOCK_PARTIAL ? SP_CP_OUTOP_SEND_PARTIAL :
-        SP_CP_OUTOP_SEND;
+    self->out.op = flags & SP_USOCK_PARTIAL ? SP_USOCK_OUTOP_SEND_PARTIAL :
+        SP_USOCK_OUTOP_SEND;
     self->out.buf = buf;
     self->out.buflen = sz;
     self->out.len = *len;
@@ -401,7 +401,7 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
     size_t sz;
 
     /*  Make sure that there's no inbound operation already in progress. */
-    sp_assert (self->in.op == SP_CP_INOP_NONE);
+    sp_assert (self->in.op == SP_USOCK_INOP_NONE);
 
     /*  Try to receive the data immediately. */
     sz = *len;
@@ -414,8 +414,8 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
         return 0;
 
     /*  There are still data to receive in the background. */ 
-    self->in.op = flags & SP_USOCK_PARTIAL ? SP_CP_INOP_RECV_PARTIAL :
-        SP_CP_INOP_RECV;
+    self->in.op = flags & SP_USOCK_PARTIAL ? SP_USOCK_INOP_RECV_PARTIAL :
+        SP_USOCK_INOP_RECV;
     self->in.buf = buf;
     self->in.buflen = sz;
     self->in.len = *len;
@@ -484,19 +484,19 @@ if (rc == -EINTR) goto again;
                 break;
 
             switch (ophndl->op) {
-            case SP_CP_OP_IN:
+            case SP_USOCK_OP_IN:
                 usock = sp_cont (ophndl, struct sp_usock, in.hndl);
                 sp_poller_set_in (&self->poller, &usock->hndl);
                 break;
-            case SP_CP_OP_OUT:
+            case SP_USOCK_OP_OUT:
                 usock = sp_cont (ophndl, struct sp_usock, out.hndl);
                 sp_poller_set_out (&self->poller, &usock->hndl);
                 break;
-            case SP_CP_OP_ADD:
+            case SP_USOCK_OP_ADD:
                 usock = sp_cont (ophndl, struct sp_usock, add_hndl);
                 sp_poller_add (&self->poller, usock->s, &usock->hndl);
                 break;
-            case SP_CP_OP_RM:
+            case SP_USOCK_OP_RM:
                 /*  TODO: Race condition here! usock may not exist at this point. */
                 usock = sp_cont (ophndl, struct sp_usock, rm_hndl);
                 sp_poller_rm (&self->poller, &usock->hndl);
@@ -540,22 +540,22 @@ if (rc == -EINTR) goto again;
             switch (event) {
             case SP_POLLER_IN:
                 switch (usock->in.op) {
-                case SP_CP_INOP_RECV:
-                case SP_CP_INOP_RECV_PARTIAL:
+                case SP_USOCK_INOP_RECV:
+                case SP_USOCK_INOP_RECV_PARTIAL:
                     sz = usock->in.buflen - usock->in.len;
                     rc = sp_usock_recv_raw (usock->s, ((char*) usock->in.buf) +
                         usock->in.len, &sz);
                     if (rc < 0)
                         goto err;
                     usock->in.len += sz;
-                    if (usock->in.op == SP_CP_INOP_RECV_PARTIAL ||
+                    if (usock->in.op == SP_USOCK_INOP_RECV_PARTIAL ||
                           usock->in.len == usock->in.buflen) {
-                        usock->in.op = SP_CP_INOP_NONE;
+                        usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
                         usock->vfptr->received (usock, usock->in.len);
                     }
                     break;
-                case SP_CP_INOP_ACCEPT:
+                case SP_USOCK_INOP_ACCEPT:
                     newsock = accept (usock->s, NULL, NULL);
                     if (newsock == -1) {
 
@@ -568,12 +568,12 @@ if (rc == -EINTR) goto again;
                               errno == ENFILE)
                             break;
 
-                        usock->in.op = SP_CP_INOP_NONE;
+                        usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
                         rc = -errno;
                         goto err;
                     }
-                    usock->in.op = SP_CP_INOP_NONE;
+                    usock->in.op = SP_USOCK_INOP_NONE;
                     sp_poller_reset_in (&self->poller, &usock->hndl);
                     usock->vfptr->accepted (usock, newsock);
                     break;
@@ -583,23 +583,23 @@ if (rc == -EINTR) goto again;
                 break;
             case SP_POLLER_OUT:
                 switch (usock->out.op) {
-                case SP_CP_OUTOP_SEND:
-                case SP_CP_OUTOP_SEND_PARTIAL:
+                case SP_USOCK_OUTOP_SEND:
+                case SP_USOCK_OUTOP_SEND_PARTIAL:
                     sz = usock->out.buflen - usock->out.len;
                     rc = sp_usock_send_raw (usock->s, ((char*) usock->out.buf) +
                         usock->out.len, &sz);
                     if (rc < 0)
                         goto err;
                     usock->out.len += sz;
-                    if (usock->out.op == SP_CP_OUTOP_SEND_PARTIAL ||
+                    if (usock->out.op == SP_USOCK_OUTOP_SEND_PARTIAL ||
                           usock->out.len == usock->out.buflen) {
-                        usock->out.op = SP_CP_OUTOP_NONE;
+                        usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
                         usock->vfptr->sent (usock, usock->out.len);
                     }
                     break;
-                case SP_CP_OUTOP_CONNECT:
-                    usock->out.op = SP_CP_OUTOP_NONE;
+                case SP_USOCK_OUTOP_CONNECT:
+                    usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
                     usock->vfptr->connected (usock);
                     break;

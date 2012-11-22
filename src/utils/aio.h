@@ -62,10 +62,10 @@ void sp_timer_stop (struct sp_timer *self);
 
 /*  Underlying L4 socket object. */
 
-#define SP_CP_OP_ADD 1
-#define SP_CP_OP_RM 2
-#define SP_CP_OP_IN 3
-#define SP_CP_OP_OUT 4
+#define SP_USOCK_OP_ADD 1
+#define SP_USOCK_OP_RM 2
+#define SP_USOCK_OP_IN 3
+#define SP_USOCK_OP_OUT 4
 
 struct sp_cp_op_hndl {
     struct sp_queue_item item;
@@ -74,15 +74,15 @@ struct sp_cp_op_hndl {
 
 #define SP_USOCK_PARTIAL 1
 
-#define SP_CP_INOP_NONE 0
-#define SP_CP_INOP_RECV 1
-#define SP_CP_INOP_RECV_PARTIAL 2
-#define SP_CP_INOP_ACCEPT 3
+#define SP_USOCK_INOP_NONE 0
+#define SP_USOCK_INOP_RECV 1
+#define SP_USOCK_INOP_RECV_PARTIAL 2
+#define SP_USOCK_INOP_ACCEPT 3
 
-#define SP_CP_OUTOP_NONE 0
-#define SP_CP_OUTOP_SEND 1
-#define SP_CP_OUTOP_SEND_PARTIAL 2
-#define SP_CP_OUTOP_CONNECT 3
+#define SP_USOCK_OUTOP_NONE 0
+#define SP_USOCK_OUTOP_SEND 1
+#define SP_USOCK_OUTOP_SEND_PARTIAL 2
+#define SP_USOCK_OUTOP_CONNECT 3
 
 struct sp_usock;
 

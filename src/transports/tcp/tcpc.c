@@ -116,8 +116,7 @@ static void sp_tcpc_sent (struct sp_usock *self, size_t len)
 
 static void sp_tcpc_connected (struct sp_usock *self)
 {
-    /*  TODO */
-    sp_assert (0);
+   printf ("connected!\n");
 }
 
 static void sp_tcpc_accepted (struct sp_usock *self, int s)

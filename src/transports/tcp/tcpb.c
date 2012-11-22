@@ -148,7 +148,6 @@ static void sp_tcpb_connected (struct sp_usock *self)
 static void sp_tcpb_accepted (struct sp_usock *self, int s)
 {
     printf ("accepted %d\n", s);
-    sp_assert (0);
 }
 
 static void sp_tcpb_err (struct sp_usock *self, int errnum)

@@ -73,8 +73,8 @@ add_library(nanomsg SHARED
     utils/sleep.c
     utils/thread.h
     utils/thread.c
-    utils/timer.h
-    utils/timer.c
+    utils/timeout.h
+    utils/timeout.c
     utils/usock.h
     utils/usock.c
     utils/wire.h

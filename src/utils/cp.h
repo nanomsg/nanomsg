@@ -27,7 +27,7 @@
 #include "efd.h"
 #include "poller.h"
 #include "thread.h"
-#include "timer.h"
+#include "timeout.h"
 #include "queue.h"
 
 #include <stddef.h>
@@ -47,7 +47,7 @@ struct sp_cp_timer_vfptr {
 
 struct sp_cp_timer_hndl {
     const struct sp_cp_timer_vfptr *vfptr;
-    struct sp_timer_hndl hndl;
+    struct sp_timeout_hndl hndl;
 };
 
 /*  Event handle definition. */
@@ -124,7 +124,7 @@ struct sp_cp_vfptr {
 struct sp_cp {
     const struct sp_cp_vfptr *vfptr;
     struct sp_mutex sync;
-    struct sp_timer timer;
+    struct sp_timeout timeout;
     struct sp_efd efd;
     struct sp_poller_hndl efd_hndl;
     struct sp_poller poller;

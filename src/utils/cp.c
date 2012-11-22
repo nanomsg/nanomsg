@@ -36,7 +36,7 @@ void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {
     self->vfptr = vfptr;
     sp_mutex_init (&self->sync, 0);
-    sp_timer_init (&self->timer);
+    sp_timeout_init (&self->timeout);
     sp_efd_init (&self->efd);
     sp_poller_init (&self->poller);
     sp_queue_init (&self->opqueue);
@@ -73,7 +73,7 @@ void sp_cp_term (struct sp_cp *self)
     sp_mutex_term (&self->events_sync);
     sp_poller_term (&self->poller);
     sp_efd_term (&self->efd);
-    sp_timer_term (&self->timer);
+    sp_timeout_term (&self->timeout);
     sp_mutex_term (&self->sync);
 }
 
@@ -93,7 +93,7 @@ void sp_cp_add_timer (struct sp_cp *self, int timeout,
     int rc;
 
     hndl->vfptr = vfptr;
-    rc = sp_timer_add (&self->timer, timeout, &hndl->hndl);
+    rc = sp_timeout_add (&self->timeout, timeout, &hndl->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->worker))
         sp_efd_signal (&self->efd);
@@ -103,7 +103,7 @@ void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl)
 {
     int rc;
 
-    rc = sp_timer_rm (&self->timer, &hndl->hndl);
+    rc = sp_timeout_rm (&self->timeout, &hndl->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->worker))
         sp_efd_signal (&self->efd);
@@ -284,7 +284,7 @@ static void sp_cp_worker (void *arg)
     struct sp_cp *self;
     int timeout;
     struct sp_op_hndl *ohndl;
-    struct sp_timer_hndl *thndl;
+    struct sp_timeout_hndl *thndl;
     struct sp_cp_timer_hndl *cthndl;
     int event;
     struct sp_poller_hndl *phndl;
@@ -306,7 +306,7 @@ static void sp_cp_worker (void *arg)
     while (1) {
 
         /*  Compute the time interval till next timer expiration. */
-        timeout = sp_timer_timeout (&self->timer);
+        timeout = sp_timeout_timeout (&self->timeout);
 
         /*  Wait for new events and/or timeouts. */
         sp_mutex_unlock (&self->sync);
@@ -354,7 +354,7 @@ if (rc == -EINTR) goto again;
 
         /*  Process any expired timers. */
         while (1) {
-            rc = sp_timer_event (&self->timer, &thndl);
+            rc = sp_timeout_event (&self->timeout, &thndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);

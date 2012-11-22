@@ -20,29 +20,32 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TIMER_INCLUDED
-#define SP_TIMER_INCLUDED
+#ifndef SP_TIMEOUT_INCLUDED
+#define SP_TIMEOUT_INCLUDED
 
 #include "clock.h"
 #include "list.h"
 
-struct sp_timer_hndl {
+/*  This class stores a list of timeouts and reports the next one to expire
+    along with the time till it happens. */
+
+struct sp_timeout_hndl {
     struct sp_list_item list;
     uint64_t timeout;
 };
 
-struct sp_timer {
+struct sp_timeout {
     struct sp_clock clock;
-    struct sp_list timers;
+    struct sp_list timeouts;
 };
 
-void sp_timer_init (struct sp_timer *self);
-void sp_timer_term (struct sp_timer *self);
-int sp_timer_add (struct sp_timer *self, int timeout,
-    struct sp_timer_hndl *hndl);
-int sp_timer_rm (struct sp_timer *self, struct sp_timer_hndl *hndl);
-int sp_timer_timeout (struct sp_timer *self);
-int sp_timer_event (struct sp_timer *self, struct sp_timer_hndl **hndl);
+void sp_timeout_init (struct sp_timeout *self);
+void sp_timeout_term (struct sp_timeout *self);
+int sp_timeout_add (struct sp_timeout *self, int timeout,
+    struct sp_timeout_hndl *hndl);
+int sp_timeout_rm (struct sp_timeout *self, struct sp_timeout_hndl *hndl);
+int sp_timeout_timeout (struct sp_timeout *self);
+int sp_timeout_event (struct sp_timeout *self, struct sp_timeout_hndl **hndl);
 
 #endif
 

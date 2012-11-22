@@ -84,11 +84,8 @@ struct sp_sockbase
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
 
-/*  Manage timers. */
-void sp_sockbase_add_timer (struct sp_sockbase *self, int timeout,
-    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl);
-void sp_sockbase_rm_timer (struct sp_sockbase *self,
-    struct sp_cp_timer_hndl *hndl);
+/*  Returns completion port associated with the socket. */
+struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

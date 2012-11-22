@@ -61,6 +61,11 @@ void sp_sock_term (struct sp_sock *self)
     sp_cp_term (&sockbase->cp);
 }
 
+struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self)
+{
+    return &self->cp;
+}
+
 struct sp_cp *sp_sock_getcp (struct sp_sock *self)
 {
     return &((struct sp_sockbase*) self)->cp;
@@ -263,17 +268,5 @@ static void sp_sock_event (struct sp_cp *self, int event,
     default:
         sp_assert (0);
     }
-}
-
-void sp_sockbase_add_timer (struct sp_sockbase *self, int timeout,
-    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl)
-{
-    sp_cp_add_timer (&self->cp, timeout, vfptr, hndl);
-}
-
-void sp_sockbase_rm_timer (struct sp_sockbase *self,
-    struct sp_cp_timer_hndl *hndl)
-{
-    sp_cp_rm_timer (&self->cp, hndl);
 }
 

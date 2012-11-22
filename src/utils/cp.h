@@ -32,23 +32,32 @@
 
 #include <stddef.h>
 
-/*  This object is not thread-safe. To make it work correctly, all the calls
-    should by synchronised via sp_cp_lock(). */
+/*  These objects are not thread-safe. To make it work correctly, all the calls
+    should by synchronised via sp_cp_lock(). All the callback are already
+    called inside of the same critical section. */
 
-#define SP_CP_PARTIAL 1
+struct sp_cp;
 
-struct sp_cp_timer_hndl;
+/*  Timer object. */
 
-/*  Timer handle definition. */
+struct sp_timer;
 
-struct sp_cp_timer_vfptr {
-    void (*timeout) (struct sp_cp_timer_hndl *self);
+struct sp_timer_vfptr {
+    void (*timeout) (struct sp_timer *self);
 };
 
-struct sp_cp_timer_hndl {
-    const struct sp_cp_timer_vfptr *vfptr;
+struct sp_timer {
+    const struct sp_timer_vfptr *vfptr;
+    struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
+    int active;
 };
+
+void sp_timer_init (struct sp_timer *self, const struct sp_timer_vfptr *vfptr,
+    struct sp_cp *cp);
+void sp_timer_term (struct sp_timer *self);
+void sp_timer_start (struct sp_timer *self, int timeout);
+void sp_timer_stop (struct sp_timer *self);
 
 /*  Event handle definition. */
 
@@ -115,6 +124,8 @@ struct sp_cp_io_hndl {
 
 /*  The completion port itself. */
 
+#define SP_CP_PARTIAL 1
+
 struct sp_cp;
 
 struct sp_cp_vfptr {
@@ -140,10 +151,6 @@ void sp_cp_term (struct sp_cp *self);
 
 void sp_cp_lock (struct sp_cp *self);
 void sp_cp_unlock (struct sp_cp *self);
-
-void sp_cp_add_timer (struct sp_cp *self, int timeout,
-    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl);
-void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl);
 
 void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
 

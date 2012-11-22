@@ -87,28 +87,6 @@ void sp_cp_unlock (struct sp_cp *self)
     sp_mutex_unlock (&self->sync);
 }
 
-void sp_cp_add_timer (struct sp_cp *self, int timeout,
-    const struct sp_cp_timer_vfptr *vfptr, struct sp_cp_timer_hndl *hndl)
-{
-    int rc;
-
-    hndl->vfptr = vfptr;
-    rc = sp_timeout_add (&self->timeout, timeout, &hndl->hndl);
-    errnum_assert (rc >= 0, -rc);
-    if (rc == 1 && !sp_thread_current (&self->worker))
-        sp_efd_signal (&self->efd);
-}
-
-void sp_cp_rm_timer (struct sp_cp *self, struct sp_cp_timer_hndl *hndl)
-{
-    int rc;
-
-    rc = sp_timeout_rm (&self->timeout, &hndl->hndl);
-    errnum_assert (rc >= 0, -rc);
-    if (rc == 1 && !sp_thread_current (&self->worker))
-        sp_efd_signal (&self->efd);
-}
-
 void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
 {
     /*  In case the event is fired from inside of the worker thread we can
@@ -284,8 +262,8 @@ static void sp_cp_worker (void *arg)
     struct sp_cp *self;
     int timeout;
     struct sp_op_hndl *ohndl;
-    struct sp_timeout_hndl *thndl;
-    struct sp_cp_timer_hndl *cthndl;
+    struct sp_timeout_hndl *tohndl;
+    struct sp_timer *timer;
     int event;
     struct sp_poller_hndl *phndl;
     struct sp_event_hndl *ehndl;
@@ -354,14 +332,14 @@ if (rc == -EINTR) goto again;
 
         /*  Process any expired timers. */
         while (1) {
-            rc = sp_timeout_event (&self->timeout, &thndl);
+            rc = sp_timeout_event (&self->timeout, &tohndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);
 
             /*  Fire the timeout event. */
-            cthndl = sp_cont (thndl, struct sp_cp_timer_hndl, hndl);
-            cthndl->vfptr->timeout (cthndl);
+            timer = sp_cont (tohndl, struct sp_timer, hndl);
+            timer->vfptr->timeout (timer);
         }
 
         /*  Process any events from the poller. */
@@ -523,4 +501,49 @@ static int sp_cp_recv_raw (int s, void *buf, size_t *len)
           errno == EHOSTUNREACH);
     return -ECONNRESET;
 }
+
+void sp_timer_init (struct sp_timer *self, const struct sp_timer_vfptr *vfptr,
+    struct sp_cp *cp)
+{
+    self->vfptr = vfptr;
+    self->cp = cp;
+    self->active = 0;
+}
+
+void sp_timer_term (struct sp_timer *self)
+{
+    sp_timer_stop (self);
+}
+
+void sp_timer_start (struct sp_timer *self, int timeout)
+{
+    int rc;
+
+    /*  If the timer is active, cancel it first. */
+    if (self->active)
+        sp_timer_stop (self);
+
+    rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        sp_efd_signal (&self->cp->efd);
+}
+
+void sp_timer_stop (struct sp_timer *self)
+{
+    int rc;
+
+    /*  If the timer is not active, do nothing. */
+    if (!self->active)
+         return;
+
+    rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        sp_efd_signal (&self->cp->efd);
+}
+
+
+
+
 

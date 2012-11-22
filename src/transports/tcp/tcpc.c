@@ -33,6 +33,20 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
+/*  cp_io_hndl callbacks. */
+static void sp_tcpc_received (struct sp_cp_io_hndl *hndl, size_t len);
+static void sp_tcpc_sent (struct sp_cp_io_hndl *hndl, size_t len);
+static void sp_tcpc_connected (struct sp_cp_io_hndl *hndl);
+static void sp_tcpc_accepted (struct sp_cp_io_hndl *hndl, int s);
+static void sp_tcpc_err (struct sp_cp_io_hndl *hndl, int errnum);
+static const struct sp_cp_io_vfptr sp_tcpc_io_vfptr = {
+    sp_tcpc_received,
+    sp_tcpc_sent,
+    sp_tcpc_connected,
+    sp_tcpc_accepted,
+    sp_tcpc_err
+};
+
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
 {
     int rc;
@@ -70,7 +84,12 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
 
-    /*  TODO:  Open the socket and start connecting. */
+    /*  Open the socket and start connecting. */
+    rc = sp_usock_init (&self->usock, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+        sp_epbase_getcp (&self->epbase), &sp_tcpc_io_vfptr);
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen);
+    errnum_assert (rc == 0, -rc);
 
     return 0;
 }
@@ -83,3 +102,32 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     sp_assert (0);
 }
 
+static void sp_tcpc_received (struct sp_cp_io_hndl *hndl, size_t len)
+{
+    /*  The socket is never used for receiving. */
+    sp_assert (0);
+}
+
+static void sp_tcpc_sent (struct sp_cp_io_hndl *hndl, size_t len)
+{
+    /*  The socket is never used for sending. */
+    sp_assert (0);
+}
+
+static void sp_tcpc_connected (struct sp_cp_io_hndl *hndl)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
+static void sp_tcpc_accepted (struct sp_cp_io_hndl *hndl, int s)
+{
+    /*  The socket is never used for accepting new connections. */
+    sp_assert (0);
+}
+
+static void sp_tcpc_err (struct sp_cp_io_hndl *hndl, int errnum)
+{
+    /*  TODO */
+    sp_assert (0);
+}

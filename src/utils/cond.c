@@ -22,6 +22,7 @@
 
 #include "cond.h"
 #include "fast.h"
+#include "aio.h"
 #include "err.h"
 
 #ifdef SP_HAVE_WINDOWS

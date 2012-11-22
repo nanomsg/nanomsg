@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_CP_INCLUDED
-#define SP_CP_INCLUDED
+#ifndef SP_AIO_INCLUDED
+#define SP_AIO_INCLUDED
 
 #include "mutex.h"
 #include "efd.h"
@@ -29,6 +29,7 @@
 #include "thread.h"
 #include "timeout.h"
 #include "queue.h"
+#include "addr.h"
 
 #include <stddef.h>
 
@@ -59,7 +60,7 @@ void sp_timer_term (struct sp_timer *self);
 void sp_timer_start (struct sp_timer *self, int timeout);
 void sp_timer_stop (struct sp_timer *self);
 
-/*  I/O handle definition. */
+/*  Underlying L4 socket object. */
 
 #define SP_CP_OP_ADD 1
 #define SP_CP_OP_RM 2
@@ -71,6 +72,8 @@ struct sp_cp_op_hndl {
     int op;
 };
 
+#define SP_USOCK_PARTIAL 1
+
 #define SP_CP_INOP_NONE 0
 #define SP_CP_INOP_RECV 1
 #define SP_CP_INOP_RECV_PARTIAL 2
@@ -81,19 +84,20 @@ struct sp_cp_op_hndl {
 #define SP_CP_OUTOP_SEND_PARTIAL 2
 #define SP_CP_OUTOP_CONNECT 3
 
-struct sp_cp_io_hndl;
+struct sp_usock;
 
-struct sp_cp_io_vfptr {
-    void (*received) (struct sp_cp_io_hndl *hndl, size_t len);
-    void (*sent) (struct sp_cp_io_hndl *hndl, size_t len);
-    void (*connected) (struct sp_cp_io_hndl *hndl);
-    void (*accepted) (struct sp_cp_io_hndl *hndl, int s);
-    void (*err) (struct sp_cp_io_hndl *hndl, int errnum);
+struct sp_usock_vfptr {
+    void (*received) (struct sp_usock *self, size_t len);
+    void (*sent) (struct sp_usock *self, size_t len);
+    void (*connected) (struct sp_usock *self);
+    void (*accepted) (struct sp_usock *self, int s);
+    void (*err) (struct sp_usock *self, int errnum);
 };
 
-struct sp_cp_io_hndl {
-    const struct sp_cp_io_vfptr *vfptr;
+struct sp_usock {
+    const struct sp_usock_vfptr *vfptr;
     int s;
+    struct sp_cp *cp;
     struct sp_poller_hndl hndl;
     struct sp_cp_op_hndl add_hndl;
     struct sp_cp_op_hndl rm_hndl;
@@ -111,11 +115,27 @@ struct sp_cp_io_hndl {
         size_t len;
         struct sp_cp_op_hndl hndl;
     } out;
+    int domain;
+    int type;
+    int protocol;
 };
 
-/*  The completion port itself. */
+int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
+    int domain, int type, int protocol, struct sp_cp *cp);
+void sp_usock_term (struct sp_usock *self);
 
-#define SP_CP_PARTIAL 1
+int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
+int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
+int sp_usock_listen (struct sp_usock *self, int backlog);
+int sp_usock_accept (struct sp_usock *self);
+
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
+    int flags);
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len, int flags);
+
+/*  The completion port. */
 
 struct sp_event_hndl {
     struct sp_queue_item item;
@@ -149,18 +169,6 @@ void sp_cp_lock (struct sp_cp *self);
 void sp_cp_unlock (struct sp_cp *self);
 
 void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl);
-
-void sp_cp_add_fd (struct sp_cp *self, int s,
-    const struct sp_cp_io_vfptr *vfptr, struct sp_cp_io_hndl *hndl);
-void sp_cp_rm_fd (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
-
-void sp_cp_connect (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
-void sp_cp_accept (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
-
-int sp_cpsend (struct sp_cp *self, struct sp_cp_io_hndl *hndl, const void *buf,
-    size_t *len, int flags);
-int sp_cp_recv (struct sp_cp *self, struct sp_cp_io_hndl *hndl, void *buf,
-    size_t *len, int flags);
 
 #endif
 

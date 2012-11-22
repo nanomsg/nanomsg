@@ -25,7 +25,7 @@
 
 #include "../../transport.h"
 
-#include "../../utils/usock.h"
+#include "../../utils/aio.h"
 
 struct sp_tcpb {
 
@@ -34,9 +34,6 @@ struct sp_tcpb {
 
     /*  The listening socket. */
     struct sp_usock usock;
-
-    /*  Socket used for asynchronous accepting of new connections. */
-    struct sp_usock newsock;
 };
 
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);

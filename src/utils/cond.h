@@ -25,7 +25,7 @@
 
 /*  Platform-independent condition variable. */
 
-#include "cp.h"
+struct sp_cp;
 
 #ifdef SP_HAVE_WINDOWS
 

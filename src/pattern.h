@@ -23,7 +23,7 @@
 #ifndef SP_PATTERN_INCLUDED
 #define SP_PATTERN_INCLUDED
 
-#include "utils/cp.h"
+#include "utils/aio.h"
 #include "utils/cond.h"
 #include "utils/list.h"
 

@@ -162,32 +162,13 @@ void sp_cp_rm_fd (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-void sp_cp_pollin (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
-{
-    /*  Make sure that there's no inbound operation already in progress. */
-    sp_assert (hndl->in.op == SP_CP_INOP_NONE);
-
-    /*  Adjust the handle. */
-    hndl->in.op = SP_CP_INOP_POLLIN;
-
-    /*  If we are in the worker thread we can simply start polling for out. */
-    if (sp_thread_current (&self->worker)) {
-        sp_poller_set_in (&self->poller, &hndl->hndl);
-        return;
-    }
-
-    /*  Otherwise, ask worker thread to start polling for in. */
-    sp_queue_push (&self->opqueue, &hndl->in.hndl.item);
-    sp_efd_signal (&self->efd);
-}
-
-void sp_cp_pollout (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
+void sp_cp_connect (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
 {
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (hndl->out.op == SP_CP_OUTOP_NONE);
 
     /*  Adjust the handle. */
-    hndl->out.op = SP_CP_OUTOP_POLLOUT;
+    hndl->out.op = SP_CP_OUTOP_CONNECT;
 
     /*  If we are in the worker thread we can simply start polling for out. */
     if (sp_thread_current (&self->worker)) {
@@ -197,6 +178,25 @@ void sp_cp_pollout (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
 
     /*  Otherwise, ask worker thread to start polling for out. */
     sp_queue_push (&self->opqueue, &hndl->out.hndl.item);
+    sp_efd_signal (&self->efd);
+}
+
+void sp_cp_accept (struct sp_cp *self, struct sp_cp_io_hndl *hndl)
+{
+    /*  Make sure that there's no inbound operation already in progress. */
+    sp_assert (hndl->in.op == SP_CP_INOP_NONE);
+
+    /*  Adjust the handle. */
+    hndl->in.op = SP_CP_INOP_ACCEPT;
+
+    /*  If we are in the worker thread we can simply start polling for out. */
+    if (sp_thread_current (&self->worker)) {
+        sp_poller_set_in (&self->poller, &hndl->hndl);
+        return;
+    }
+
+    /*  Otherwise, ask worker thread to start polling for in. */
+    sp_queue_push (&self->opqueue, &hndl->in.hndl.item);
     sp_efd_signal (&self->efd);
 }
 
@@ -291,6 +291,13 @@ static void sp_cp_worker (void *arg)
     struct sp_event_hndl *ehndl;
     struct sp_cp_io_hndl *ihndl;
     size_t sz;
+    int err;
+#if defined SP_HAVE_HPUX
+    int errlen;
+#else
+    socklen_t errlen;
+#endif
+    int newsock;
 
     self = (struct sp_cp*) arg;
 
@@ -389,17 +396,35 @@ if (rc == -EINTR) goto again;
                           ihndl->in.len == ihndl->in.buflen) {
                         ihndl->in.op = SP_CP_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &ihndl->hndl);
-                        ihndl->vfptr->in (ihndl);
+                        ihndl->vfptr->received (ihndl, ihndl->in.len);
                     }
                     break;
-                case SP_CP_INOP_POLLIN:
+                case SP_CP_INOP_ACCEPT:
+                    newsock = accept (ihndl->s, NULL, NULL);
+                    if (newsock == -1) {
+
+                        /*  The following are recoverable errors when accpting
+                            a new connection. We can continue waiting for new
+                            connection without even notifying the user. */
+                        if (errno == ECONNABORTED ||
+                              errno == EPROTO || errno == ENOBUFS ||
+                              errno == ENOMEM || errno == EMFILE ||
+                              errno == ENFILE)
+                            break;
+
+                        ihndl->in.op = SP_CP_INOP_NONE;
+                        sp_poller_reset_in (&self->poller, &ihndl->hndl);
+                        rc = -errno;
+                        goto err;
+                    }
                     ihndl->in.op = SP_CP_INOP_NONE;
                     sp_poller_reset_in (&self->poller, &ihndl->hndl);
-                    ihndl->vfptr->in (ihndl);
+                    ihndl->vfptr->accepted (ihndl, newsock);
                     break;
                 default:
                     sp_assert (0);
                 }
+                break;
             case SP_POLLER_OUT:
                 switch (ihndl->out.op) {
                 case SP_CP_OUTOP_SEND:
@@ -414,20 +439,33 @@ if (rc == -EINTR) goto again;
                           ihndl->out.len == ihndl->out.buflen) {
                         ihndl->out.op = SP_CP_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &ihndl->hndl);
-                        ihndl->vfptr->out (ihndl);
+                        ihndl->vfptr->sent (ihndl, ihndl->out.len);
                     }
                     break;
-                case SP_CP_OUTOP_POLLOUT:
+                case SP_CP_OUTOP_CONNECT:
                     ihndl->out.op = SP_CP_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &ihndl->hndl);
-                    ihndl->vfptr->out (ihndl);
+                    ihndl->vfptr->connected (ihndl);
                     break;
                 default:
                     sp_assert (0);
                 }
+                break;
             case SP_POLLER_ERR:
+
+                /*  Retrieve the error from the failed file descriptor. */
+                err = 0;
+                errlen = sizeof (err);
+                rc = getsockopt (ihndl->s, SOL_SOCKET, SO_ERROR,
+                    (char*) &err, &errlen);
+                if (rc == -1)
+                    err = errno;
+                else
+                    sp_assert (errlen == sizeof (err));
+                rc = -err;
 err:
-                sp_assert (0);
+                ihndl->vfptr->err (ihndl, -rc);
+                break;
             default:
                 sp_assert (0);
             }

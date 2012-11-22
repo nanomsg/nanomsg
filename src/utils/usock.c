@@ -227,7 +227,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
 
 int sp_usock_accept (struct sp_usock *self, struct sp_usock *newsock)
 {
-    sp_cp_pollin (self->cp, &self->hndl);
+    sp_cp_accept (self->cp, &self->hndl);
     return -EINPROGRESS;
 }
 

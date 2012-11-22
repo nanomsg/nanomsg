@@ -74,19 +74,21 @@ struct sp_op_hndl {
 #define SP_CP_INOP_NONE 0
 #define SP_CP_INOP_RECV 1
 #define SP_CP_INOP_RECV_PARTIAL 2
-#define SP_CP_INOP_POLLIN 3
+#define SP_CP_INOP_ACCEPT 3
 
 #define SP_CP_OUTOP_NONE 0
 #define SP_CP_OUTOP_SEND 1
 #define SP_CP_OUTOP_SEND_PARTIAL 2
-#define SP_CP_OUTOP_POLLOUT 3
+#define SP_CP_OUTOP_CONNECT 3
 
 struct sp_cp_io_hndl;
 
 struct sp_cp_io_vfptr {
-    void (*in) (struct sp_cp_io_hndl *hndl);
-    void (*out) (struct sp_cp_io_hndl *hndl);
-    void (*err) (struct sp_cp_io_hndl *hndl);
+    void (*received) (struct sp_cp_io_hndl *hndl, size_t len);
+    void (*sent) (struct sp_cp_io_hndl *hndl, size_t len);
+    void (*connected) (struct sp_cp_io_hndl *hndl);
+    void (*accepted) (struct sp_cp_io_hndl *hndl, int s);
+    void (*err) (struct sp_cp_io_hndl *hndl, int errnum);
 };
 
 struct sp_cp_io_hndl {
@@ -149,10 +151,10 @@ void sp_cp_add_fd (struct sp_cp *self, int s,
     const struct sp_cp_io_vfptr *vfptr, struct sp_cp_io_hndl *hndl);
 void sp_cp_rm_fd (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
 
-void sp_cp_pollin (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
-void sp_cp_pollout (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
+void sp_cp_connect (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
+void sp_cp_accept (struct sp_cp *self, struct sp_cp_io_hndl *hndl);
 
-int sp_cp_send (struct sp_cp *self, struct sp_cp_io_hndl *hndl, const void *buf,
+int sp_cpsend (struct sp_cp *self, struct sp_cp_io_hndl *hndl, const void *buf,
     size_t *len, int flags);
 int sp_cp_recv (struct sp_cp *self, struct sp_cp_io_hndl *hndl, void *buf,
     size_t *len, int flags);

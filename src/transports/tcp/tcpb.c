@@ -37,12 +37,16 @@ static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
 /*  cp_io_hndl callbacks. */
-static void sp_tcpb_in (struct sp_cp_io_hndl *hndl);
-static void sp_tcpb_out (struct sp_cp_io_hndl *hndl);
-static void sp_tcpb_err (struct sp_cp_io_hndl *hndl);
+static void sp_tcpb_received (struct sp_cp_io_hndl *hndl, size_t len);
+static void sp_tcpb_sent (struct sp_cp_io_hndl *hndl, size_t len);
+static void sp_tcpb_connected (struct sp_cp_io_hndl *hndl);
+static void sp_tcpb_accepted (struct sp_cp_io_hndl *hndl, int s);
+static void sp_tcpb_err (struct sp_cp_io_hndl *hndl, int errnum);
 static const struct sp_cp_io_vfptr sp_tcpb_io_vfptr = {
-    sp_tcpb_in,
-    sp_tcpb_out,
+    sp_tcpb_received,
+    sp_tcpb_sent,
+    sp_tcpb_connected,
+    sp_tcpb_accepted,
     sp_tcpb_err
 };
 
@@ -123,18 +127,33 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
     }
 }
 
-static void sp_tcpb_in (struct sp_cp_io_hndl *hndl)
+static void sp_tcpb_received (struct sp_cp_io_hndl *hndl, size_t len)
 {
+    /*  Listening socket is never used for receiving. */
     sp_assert (0);
 }
 
-static void sp_tcpb_out (struct sp_cp_io_hndl *hndl)
+static void sp_tcpb_sent (struct sp_cp_io_hndl *hndl, size_t len)
 {
+    /*  Listening socket is never used for sending. */
     sp_assert (0);
 }
 
-static void sp_tcpb_err (struct sp_cp_io_hndl *hndl)
+static void sp_tcpb_connected (struct sp_cp_io_hndl *hndl)
 {
+    /*  Listening socket is never used for connecting. */
     sp_assert (0);
+}
+
+static void sp_tcpb_accepted (struct sp_cp_io_hndl *hndl, int s)
+{
+    printf ("accepted %d\n", s);
+    sp_assert (0);
+}
+
+static void sp_tcpb_err (struct sp_cp_io_hndl *hndl, int errnum)
+{
+    /*  Unexpected error on the listening socket. */
+    errnum_assert (0, errnum);
 }
 

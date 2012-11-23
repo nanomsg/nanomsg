@@ -107,7 +107,7 @@ void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
         return;
     }
 
-    /*  Othrewise enqueue the event for later processing. */
+    /*  Otherwise enqueue the event for later processing. */
     hndl->event = event;
     sp_mutex_lock (&self->events_sync);
     sp_queue_push (&self->events, &hndl->item);
@@ -592,7 +592,7 @@ if (rc == -EINTR) goto again;
                     newsock = accept (usock->s, NULL, NULL);
                     if (newsock == -1) {
 
-                        /*  The following are recoverable errors when accpting
+                        /*  The following are recoverable errors when accepting
                             a new connection. We can continue waiting for new
                             connection without even notifying the user. */
                         if (errno == ECONNABORTED ||

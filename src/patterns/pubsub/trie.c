@@ -185,7 +185,7 @@ struct sp_trie_node **sp_node_next (struct sp_trie_node *self, uint8_t c)
 struct sp_trie_node *sp_node_compact (struct sp_trie_node *self)
 {
     /*  Tries to merge the node with the child node. Returns pointer to
-        the comapacted node. */
+        the compacted node. */
 
     struct sp_trie_node *ch;
 

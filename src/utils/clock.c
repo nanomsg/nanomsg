@@ -110,7 +110,8 @@ static uint64_t sp_clock_time ()
     int rc;
     struct timeval tv;
 
-    /*  Gettimeofday is slow on some systems, so it's used as a last resort. */
+    /*  Gettimeofday is slow on some systems. Moreover, it's not necessarily
+        monotonic. Thus, it's used as a last resort mechanism. */
     rc = gettimeofday (&tv, NULL);
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_usec / 1000;

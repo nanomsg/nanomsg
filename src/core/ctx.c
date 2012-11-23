@@ -121,6 +121,16 @@ static struct sp_transport *sp_ctx_find_transport (const char *name,
     It returns the ID of the newly created endpoint. */
 static int sp_ctx_create_endpoint (int fd, const char *addr, int bind);
 
+void sp_version (int *major, int *minor, int *patch)
+{
+    if (major)
+        *major = SP_VERSION_MAJOR;
+    if (minor)
+        *minor = SP_VERSION_MINOR;
+    if (patch)
+        *patch = SP_VERSION_PATCH;
+}
+
 int sp_errno (void)
 {
     return sp_err_errno ();

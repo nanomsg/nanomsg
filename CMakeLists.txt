@@ -50,6 +50,21 @@ if(SP_HAVE_SOCKETPAIR)
     add_definitions(-DSP_HAVE_SOCKETPAIR)
 endif()
 
+check_symbol_exists(CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
+if(SP_HAVE_CLOCK_MONOTONIC)
+    add_definitions(-DSP_HAVE_CLOCK_MONOTONIC)
+endif()
+
+check_symbol_exists(CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
+if(SP_HAVE_CLOCK_MONOTONIC)
+    add_definitions(-DSP_HAVE_CLOCK_MONOTONIC)
+endif()
+
+check_symbol_exists(gethrtime time.h SP_HAVE_GETHRTIME)
+if(SP_HAVE_GETHRTIME)
+    add_definitions(-DSP_HAVE_GETHRTIME)
+endif()
+
 check_include_files(sys/epoll.h SP_HAVE_EPOLL)
 if(SP_HAVE_EPOLL)
     add_definitions(-DSP_HAVE_EPOLL)

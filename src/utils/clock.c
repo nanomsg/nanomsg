@@ -25,8 +25,10 @@
 #include "win.h"
 #elif defined SP_HAVE_OSX
 #include <mach/mach_time.h>
-#else
+#elif defined SP_HAVE_CLOCK_MONOTONIC || defined SP_HAVE_GETHRTIME
 #include <time.h>
+#else
+#include <sys/time.h>
 #endif
 
 #include "clock.h"
@@ -90,7 +92,7 @@ static uint64_t sp_clock_time ()
     return ticks * sp_clock_timebase_info.numer /
         sp_clock_timebase_info.denom / 1000000;
  
-#else
+#elif defined SP_HAVE_CLOCK_MONOTONIC
 
     int rc;
     struct timespec tv;
@@ -98,6 +100,20 @@ static uint64_t sp_clock_time ()
     rc = clock_gettime (CLOCK_MONOTONIC, &tv);
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_nsec / 1000000;
+
+#elif defined SP_HAVE_GETHRTIME
+
+    return gethrtime () / 1000000;
+
+#else
+
+    int rc;
+    struct timeval tv;
+
+    /*  Gettimeofday is slow on some systems, so it's used as a last resort. */
+    rc = gettimeofday (&tv, NULL);
+    errno_assert (rc == 0);
+    return tv.tv_sec * (uint64_t) 1000 + tv.tv_usec / 1000;
 
 #endif
 }

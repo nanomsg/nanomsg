@@ -360,13 +360,14 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     if (sp_thread_current (&self->cp->worker)) {
         sp_poller_add (&self->cp->poller, self->s, &self->hndl);
         sp_poller_set_out (&self->cp->poller, &self->hndl);
-        return;
     }
 
     /*  Otherwise, ask worker thread to start polling for out. */
     sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
     sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
     sp_efd_signal (&self->cp->efd);
+
+    return -EINPROGRESS;
 }
 
 int sp_usock_accept (struct sp_usock *self)

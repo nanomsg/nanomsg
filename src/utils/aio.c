@@ -173,6 +173,27 @@ int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
     return 0;
 }
 
+int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+    int s, const struct sp_usock_vfptr *vfptr, struct sp_cp *cp)
+{
+    self->vfptr = vfptr;
+    self->s = s;
+    self->cp = cp;
+    self->in.op = SP_USOCK_INOP_NONE;
+    self->out.op = SP_USOCK_OUTOP_NONE;
+    self->add_hndl.op = SP_USOCK_OP_ADD;
+    self->rm_hndl.op = SP_USOCK_OP_RM;
+    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->out.hndl.op = SP_USOCK_OP_OUT;
+    self->domain = parent->domain;
+    self->type = parent->type;
+    self->protocol = parent->protocol;
+
+    sp_usock_tune (self);
+
+    return 0;
+}
+
 static void sp_usock_tune (struct sp_usock *self)
 {
     int rc;
@@ -199,7 +220,7 @@ static void sp_usock_tune (struct sp_usock *self)
         are always used in the asynchronous mode. */
 #if defined SP_HAVE_WINDOWS
     flags = 1;
-    rc = ioctlsocket (self->.s, FIONBIO, &flags);
+    rc = ioctlsocket (self->s, FIONBIO, &flags);
     wsa_assert (rc != SOCKET_ERROR);
 #else
 	flags = fcntl (self->s, F_GETFL, 0);

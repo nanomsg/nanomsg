@@ -122,6 +122,8 @@ struct sp_usock {
 
 int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
     int domain, int type, int protocol, struct sp_cp *cp);
+int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+    int s, const struct sp_usock_vfptr *vfptr, struct sp_cp *cp);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

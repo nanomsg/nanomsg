@@ -585,6 +585,7 @@ if (rc == -EINTR) goto again;
                           usock->in.len == usock->in.buflen) {
                         usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
+                        sp_assert (usock->vfptr->received);
                         usock->vfptr->received (usock, usock->in.len);
                     }
                     break;
@@ -608,6 +609,7 @@ if (rc == -EINTR) goto again;
                     }
                     usock->in.op = SP_USOCK_INOP_NONE;
                     sp_poller_reset_in (&self->poller, &usock->hndl);
+                    sp_assert (usock->vfptr->accepted);
                     usock->vfptr->accepted (usock, newsock);
                     break;
                 default:
@@ -628,12 +630,14 @@ if (rc == -EINTR) goto again;
                           usock->out.len == usock->out.buflen) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
+                        sp_assert (usock->vfptr->sent);
                         usock->vfptr->sent (usock, usock->out.len);
                     }
                     break;
                 case SP_USOCK_OUTOP_CONNECT:
                     usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
+                    sp_assert (usock->vfptr->connected);
                     usock->vfptr->connected (usock);
                     break;
                 default:
@@ -653,6 +657,7 @@ if (rc == -EINTR) goto again;
                     sp_assert (errlen == sizeof (err));
                 rc = -err;
 err:
+                sp_assert (usock->vfptr->err);
                 usock->vfptr->err (usock, -rc);
                 break;
             default:

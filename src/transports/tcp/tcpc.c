@@ -33,17 +33,14 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
-/*  cp_io_hndl callbacks. */
-static void sp_tcpc_received (struct sp_usock *self, size_t len);
-static void sp_tcpc_sent (struct sp_usock *self, size_t len);
+/*  sp_usock callbacks. */
 static void sp_tcpc_connected (struct sp_usock *self);
-static void sp_tcpc_accepted (struct sp_usock *self, int s);
 static void sp_tcpc_err (struct sp_usock *self, int errnum);
 static const struct sp_usock_vfptr sp_tcpc_usock_vfptr = {
-    sp_tcpc_received,
-    sp_tcpc_sent,
+    NULL,
+    NULL,
     sp_tcpc_connected,
-    sp_tcpc_accepted,
+    NULL,
     sp_tcpc_err
 };
 
@@ -102,27 +99,9 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     sp_assert (0);
 }
 
-static void sp_tcpc_received (struct sp_usock *self, size_t len)
-{
-    /*  The socket is never used for receiving. */
-    sp_assert (0);
-}
-
-static void sp_tcpc_sent (struct sp_usock *self, size_t len)
-{
-    /*  The socket is never used for sending. */
-    sp_assert (0);
-}
-
 static void sp_tcpc_connected (struct sp_usock *self)
 {
    printf ("connected!\n");
-}
-
-static void sp_tcpc_accepted (struct sp_usock *self, int s)
-{
-    /*  The socket is never used for accepting new connections. */
-    sp_assert (0);
 }
 
 static void sp_tcpc_err (struct sp_usock *self, int errnum)

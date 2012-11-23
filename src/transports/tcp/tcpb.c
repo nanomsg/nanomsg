@@ -36,18 +36,14 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
-/*  cp_io_hndl callbacks. */
-static void sp_tcpb_received (struct sp_usock *self, size_t len);
-static void sp_tcpb_sent (struct sp_usock *self, size_t len);
-static void sp_tcpb_connected (struct sp_usock *self);
+/*  sp_usock callbacks. */
 static void sp_tcpb_accepted (struct sp_usock *self, int s);
-static void sp_tcpb_err (struct sp_usock *self, int errnum);
 static const struct sp_usock_vfptr sp_tcpb_usock_vfptr = {
-    sp_tcpb_received,
-    sp_tcpb_sent,
-    sp_tcpb_connected,
+    NULL,
+    NULL,
+    NULL,
     sp_tcpb_accepted,
-    sp_tcpb_err
+    NULL
 };
 
 int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
@@ -127,32 +123,9 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
     }
 }
 
-static void sp_tcpb_received (struct sp_usock *self, size_t len)
-{
-    /*  Listening socket is never used for receiving. */
-    sp_assert (0);
-}
-
-static void sp_tcpb_sent (struct sp_usock *self, size_t len)
-{
-    /*  Listening socket is never used for sending. */
-    sp_assert (0);
-}
-
-static void sp_tcpb_connected (struct sp_usock *self)
-{
-    /*  Listening socket is never used for connecting. */
-    sp_assert (0);
-}
-
 static void sp_tcpb_accepted (struct sp_usock *self, int s)
 {
     printf ("accepted %d\n", s);
 }
 
-static void sp_tcpb_err (struct sp_usock *self, int errnum)
-{
-    /*  Unexpected error on the listening socket. */
-    errnum_assert (0, errnum);
-}
 

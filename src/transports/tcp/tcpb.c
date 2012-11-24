@@ -130,7 +130,8 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
 static void sp_tcpb_accepted (const struct sp_sink **self,
     struct sp_usock *usock, int s)
 {
-    printf ("accepted %d\n", s);
+    printf ("accepted\n");
+    sp_assert (0);
 }
 
 

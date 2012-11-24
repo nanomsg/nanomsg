@@ -359,16 +359,17 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     if (errno != EINPROGRESS)
         return -errno;
 
-    /*  If we are in the worker thread we can simply start polling for out. */
+    /*  If we are in the worker thread we can simply start polling for out.
+        Otherwise, ask worker thread to start polling for out. */
     if (sp_thread_current (&self->cp->worker)) {
         sp_poller_add (&self->cp->poller, self->s, &self->hndl);
         sp_poller_set_out (&self->cp->poller, &self->hndl);
     }
-
-    /*  Otherwise, ask worker thread to start polling for out. */
-    sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
-    sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
-    sp_efd_signal (&self->cp->efd);
+    else {
+        sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+        sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
+        sp_efd_signal (&self->cp->efd);
+    }
 
     return -EINPROGRESS;
 }
@@ -563,6 +564,7 @@ if (rc == -EINTR) goto again;
                 waiting. */
             if (phndl == &self->efd_hndl) {
                 sp_assert (event == SP_POLLER_IN);
+                sp_efd_unsignal (&self->efd);
                 continue;
             }
 

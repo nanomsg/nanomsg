@@ -95,7 +95,7 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
         sp_assert (0);
 
     /*  Initialise the base class. */
-    sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
+    sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, addr, hint);
 
     /*  Initialise the retry timer. */
     sp_timer_init (&self->retry_timer, &self->sink,
@@ -155,6 +155,10 @@ printf ("connect failed!\n");
 static void sp_tcpc_timeout (const struct sp_sink **self,
     struct sp_timer *timer)
 {
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
     /*  Retry timer expired. */
     sp_assert (0);
 }

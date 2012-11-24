@@ -83,7 +83,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
         sp_assert (0);
 
     /*  Initialise the base class. */
-    sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
+    sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, addr, hint);
 
     /*  Open the listening socket. */
     rc = sp_usock_init (&self->usock, &self->sink,

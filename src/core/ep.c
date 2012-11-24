@@ -25,14 +25,22 @@
 #include "ep.h"
 #include "sock.h"
 
+#include "../utils/err.h"
+
+#include <string.h>
+
 void sp_epbase_init (struct sp_epbase *self,
-    const struct sp_epbase_vfptr *vfptr, void *hint)
+    const struct sp_epbase_vfptr *vfptr, const char *addr, void *hint)
 {
     /*  Set up the virtual functions table. */
     self->vfptr = vfptr;
 
     /*  Remember which socket the endpoint belongs to. */
     self->sock = (struct sp_sock*) hint;
+
+    /*  Store the textual for of the address. */
+    sp_assert (strlen (addr) <= SP_SOCKADDR_MAX);
+    strcpy (self->addr, addr);
 }
 
 void sp_epbase_term (struct sp_epbase *self)
@@ -42,6 +50,11 @@ void sp_epbase_term (struct sp_epbase *self)
 struct sp_cp *sp_epbase_getcp (struct sp_epbase *self)
 {
     return sp_sock_getcp (self->sock);
+}
+
+const char *sp_epbase_getaddr (struct sp_epbase *self)
+{
+    return self->addr;
 }
 
 int sp_ep_fd (struct sp_ep *self)

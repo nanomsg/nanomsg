@@ -38,7 +38,7 @@ static const struct sp_epbase_vfptr sp_inprocc_epbase_vfptr =
 
 int sp_inprocc_init (struct sp_inprocc *self, const char *addr, void *hint)
 {
-    sp_epbase_init (&self->epbase, &sp_inprocc_epbase_vfptr, hint);
+    sp_epbase_init (&self->epbase, &sp_inprocc_epbase_vfptr, addr, hint);
 
     /*  Store the name of the endpoint. */
     if (sp_slow (strlen (addr) + 1 > SP_INPROCC_NAMELEN_MAX))

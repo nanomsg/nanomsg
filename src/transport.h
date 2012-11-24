@@ -23,6 +23,8 @@
 #ifndef SP_TRANSPORT_INCLUDED
 #define SP_TRANSPORT_INCLUDED
 
+#include "sp.h"
+
 #include "utils/list.h"
 #include "utils/aio.h"
 
@@ -54,17 +56,21 @@ struct sp_epbase_vfptr {
 struct sp_epbase {
     const struct sp_epbase_vfptr *vfptr;
     struct sp_sock *sock;
+    char addr [SP_SOCKADDR_MAX + 1];
 };
 
 /*  Creates a new endpoint. Returns the endpoint ID. */
 void sp_epbase_init (struct sp_epbase *self,
-    const struct sp_epbase_vfptr *vfptr, void *hint);
+    const struct sp_epbase_vfptr *vfptr, const char *addr, void *hint);
 
 /*  Destroys the endpoint. */
 void sp_epbase_term (struct sp_epbase *self);
 
 /*  Returns the default completion port associated with the current socket. */
 struct sp_cp *sp_epbase_getcp (struct sp_epbase *self);
+
+/*  Returns the address associated with this endpoint. */
+const char *sp_epbase_getaddr (struct sp_epbase *self);
 
 /******************************************************************************/
 /*  The base class for pipes.                                                 */

@@ -34,14 +34,17 @@ static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
 /*  sp_usock callbacks. */
-static void sp_tcpc_connected (struct sp_usock *self);
-static void sp_tcpc_err (struct sp_usock *self, int errnum);
-static const struct sp_usock_vfptr sp_tcpc_usock_vfptr = {
+static void sp_tcpc_connected (const struct sp_sink **self,
+    struct sp_usock *usock);
+static void sp_tcpc_err (const struct sp_sink **self,
+    struct sp_usock *usock, int errnum);
+static const struct sp_sink sp_tcpc_sink = {
     NULL,
     NULL,
     sp_tcpc_connected,
     NULL,
-    sp_tcpc_err
+    sp_tcpc_err,
+    NULL
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
@@ -51,6 +54,8 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
+
+    self->sink = &sp_tcpc_sink;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
@@ -82,7 +87,7 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
 
     /*  Open the socket and start connecting. */
-    rc = sp_usock_init (&self->usock, &sp_tcpc_usock_vfptr,
+    rc = sp_usock_init (&self->usock, &self->sink,
         AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen);
@@ -99,12 +104,14 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     sp_assert (0);
 }
 
-static void sp_tcpc_connected (struct sp_usock *self)
+static void sp_tcpc_connected (const struct sp_sink **self,
+    struct sp_usock *usock)
 {
    printf ("connected!\n");
 }
 
-static void sp_tcpc_err (struct sp_usock *self, int errnum)
+static void sp_tcpc_err (const struct sp_sink **self,
+    struct sp_usock *usock, int errnum)
 {
     /*  TODO */
     sp_assert (0);

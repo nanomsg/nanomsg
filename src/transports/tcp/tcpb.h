@@ -29,6 +29,9 @@
 
 struct sp_tcpb {
 
+    /*  Event sink. */
+    const struct sp_sink *sink;
+
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
 

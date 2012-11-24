@@ -115,7 +115,7 @@ void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
-int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
+int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
@@ -125,7 +125,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
     HANDLE wcp;
 #endif
 
-    self->vfptr = vfptr;
+    self->sink = sink;
     self->cp = cp;
     self->in.op = SP_USOCK_INOP_NONE;
     self->out.op = SP_USOCK_OUTOP_NONE;
@@ -174,9 +174,9 @@ int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
 }
 
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_usock_vfptr *vfptr, struct sp_cp *cp)
+    int s, const struct sp_sink **sink, struct sp_cp *cp)
 {
-    self->vfptr = vfptr;
+    self->sink = sink;
     self->s = s;
     self->cp = cp;
     self->in.op = SP_USOCK_INOP_NONE;
@@ -550,7 +550,8 @@ if (rc == -EINTR) goto again;
 
             /*  Fire the timeout event. */
             timer = sp_cont (tohndl, struct sp_timer, hndl);
-            timer->vfptr->timeout (timer);
+            sp_assert ((*timer->sink)->timeout);
+            (*timer->sink)->timeout (timer->sink, timer);
         }
 
         /*  Process any events from the poller. */
@@ -585,8 +586,9 @@ if (rc == -EINTR) goto again;
                           usock->in.len == usock->in.buflen) {
                         usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
-                        sp_assert (usock->vfptr->received);
-                        usock->vfptr->received (usock, usock->in.len);
+                        sp_assert ((*usock->sink)->received);
+                        (*usock->sink)->received (usock->sink,
+                            usock, usock->in.len);
                     }
                     break;
                 case SP_USOCK_INOP_ACCEPT:
@@ -609,8 +611,8 @@ if (rc == -EINTR) goto again;
                     }
                     usock->in.op = SP_USOCK_INOP_NONE;
                     sp_poller_reset_in (&self->poller, &usock->hndl);
-                    sp_assert (usock->vfptr->accepted);
-                    usock->vfptr->accepted (usock, newsock);
+                    sp_assert ((*usock->sink)->accepted);
+                    (*usock->sink)->accepted (usock->sink, usock, newsock);
                     break;
                 default:
                     sp_assert (0);
@@ -630,15 +632,16 @@ if (rc == -EINTR) goto again;
                           usock->out.len == usock->out.buflen) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
-                        sp_assert (usock->vfptr->sent);
-                        usock->vfptr->sent (usock, usock->out.len);
+                        sp_assert ((*usock->sink)->sent);
+                        (*usock->sink)->sent (usock->sink,
+                            usock, usock->out.len);
                     }
                     break;
                 case SP_USOCK_OUTOP_CONNECT:
                     usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
-                    sp_assert (usock->vfptr->connected);
-                    usock->vfptr->connected (usock);
+                    sp_assert ((*usock->sink)->connected);
+                    (*usock->sink)->connected (usock->sink, usock);
                     break;
                 default:
                     sp_assert (0);
@@ -657,8 +660,8 @@ if (rc == -EINTR) goto again;
                     sp_assert (errlen == sizeof (err));
                 rc = -err;
 err:
-                sp_assert (usock->vfptr->err);
-                usock->vfptr->err (usock, -rc);
+                sp_assert ((*usock->sink)->err);
+                (*usock->sink)->err (usock->sink, usock, -rc);
                 break;
             default:
                 sp_assert (0);
@@ -718,10 +721,10 @@ static int sp_usock_recv_raw (int s, void *buf, size_t *len)
     return -ECONNRESET;
 }
 
-void sp_timer_init (struct sp_timer *self, const struct sp_timer_vfptr *vfptr,
+void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
     struct sp_cp *cp)
 {
-    self->vfptr = vfptr;
+    self->sink = sink;
     self->cp = cp;
     self->active = 0;
 }

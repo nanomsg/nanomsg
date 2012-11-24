@@ -39,6 +39,7 @@
 
 struct sp_req {
     struct sp_xreq xreq;
+    const struct sp_sink *sink;
     uint32_t reqid;
     uint32_t flags;
     size_t requestlen;
@@ -67,16 +68,24 @@ static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_getopt
 };
 
-/*  Resend timer callback. */
-static void sp_req_resend_timeout (struct sp_timer *timer);
-static const struct sp_timer_vfptr sp_req_resend_vfptr = {
-    sp_req_resend_timeout
+/*  Event sink. */
+static void sp_req_timeout (const struct sp_sink **self,
+    struct sp_timer *timer);
+static const struct sp_sink sp_req_sink = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_req_timeout
 };
 
 void sp_req_init (struct sp_req *self, const struct sp_sockbase_vfptr *vfptr,
     int fd)
 {
     sp_xreq_init (&self->xreq, vfptr, fd);
+
+    self->sink = &sp_req_sink;
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started.
@@ -88,7 +97,7 @@ void sp_req_init (struct sp_req *self, const struct sp_sockbase_vfptr *vfptr,
     self->requestlen = 0;
     self->request = NULL;
     self->resend_ivl = SP_REQ_DEFAULT_RESEND_IVL;
-    sp_timer_init (&self->resend_timer, &sp_req_resend_vfptr,
+    sp_timer_init (&self->resend_timer, &self->sink,
         sp_sockbase_getcp (&self->xreq.sockbase));
 }
 
@@ -248,20 +257,21 @@ static int sp_req_getopt (struct sp_sockbase *self, int option,
     return -ENOPROTOOPT;
 }
 
-static void sp_req_resend_timeout (struct sp_timer *timer)
+static void sp_req_timeout (const struct sp_sink **self,
+    struct sp_timer *timer)
 {
     int rc;
-    struct sp_req *self;
+    struct sp_req *req;
 
-    self = sp_cont (timer, struct sp_req, resend_timer);
-    sp_assert (self->flags & SP_REQ_INPROGRESS);
+    req = sp_cont (self, struct sp_req, sink);
+    sp_assert (req->flags & SP_REQ_INPROGRESS);
 
     /*  Re-send the request. */
-    rc = sp_xreq_send (&self->xreq.sockbase, self->request, self->requestlen);
+    rc = sp_xreq_send (&req->xreq.sockbase, req->request, req->requestlen);
     errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
 
     /*  Set up the next re-send timer. */
-    sp_timer_start (&self->resend_timer, self->resend_ivl);
+    sp_timer_start (&req->resend_timer, req->resend_ivl);
 }
 
 static struct sp_sockbase *sp_req_create (int fd)

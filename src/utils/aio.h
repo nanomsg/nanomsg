@@ -38,23 +38,36 @@
     called inside of the same critical section. */
 
 struct sp_cp;
+struct sp_timer;
+struct sp_usock;
+
+/*  Sink for aio events. To be implemented by the user. */
+
+struct sp_sink {
+    void (*received) (const struct sp_sink **self,
+        struct sp_usock *usock, size_t len);
+    void (*sent) (const struct sp_sink **self,
+        struct sp_usock *usock, size_t len);
+    void (*connected) (const struct sp_sink **self,
+        struct sp_usock *usock);
+    void (*accepted) (const struct sp_sink **self,
+        struct sp_usock *usock, int s);
+    void (*err) (const struct sp_sink **self,
+        struct sp_usock *usock, int errnum);
+    void (*timeout) (const struct sp_sink **self,
+        struct sp_timer *timer);
+};
 
 /*  Timer object. */
 
-struct sp_timer;
-
-struct sp_timer_vfptr {
-    void (*timeout) (struct sp_timer *self);
-};
-
 struct sp_timer {
-    const struct sp_timer_vfptr *vfptr;
+    const struct sp_sink **sink;
     struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
     int active;
 };
 
-void sp_timer_init (struct sp_timer *self, const struct sp_timer_vfptr *vfptr,
+void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
     struct sp_cp *cp);
 void sp_timer_term (struct sp_timer *self);
 void sp_timer_start (struct sp_timer *self, int timeout);
@@ -84,18 +97,8 @@ struct sp_cp_op_hndl {
 #define SP_USOCK_OUTOP_SEND_PARTIAL 2
 #define SP_USOCK_OUTOP_CONNECT 3
 
-struct sp_usock;
-
-struct sp_usock_vfptr {
-    void (*received) (struct sp_usock *self, size_t len);
-    void (*sent) (struct sp_usock *self, size_t len);
-    void (*connected) (struct sp_usock *self);
-    void (*accepted) (struct sp_usock *self, int s);
-    void (*err) (struct sp_usock *self, int errnum);
-};
-
 struct sp_usock {
-    const struct sp_usock_vfptr *vfptr;
+    const struct sp_sink **sink;
     int s;
     struct sp_cp *cp;
     struct sp_poller_hndl hndl;
@@ -120,10 +123,10 @@ struct sp_usock {
     int protocol;
 };
 
-int sp_usock_init (struct sp_usock *self, const struct sp_usock_vfptr *vfptr,
+int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp);
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_usock_vfptr *vfptr, struct sp_cp *cp);
+    int s, const struct sp_sink **sink, struct sp_cp *cp);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

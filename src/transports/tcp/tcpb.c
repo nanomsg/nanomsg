@@ -36,13 +36,15 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
-/*  sp_usock callbacks. */
-static void sp_tcpb_accepted (struct sp_usock *self, int s);
-static const struct sp_usock_vfptr sp_tcpb_usock_vfptr = {
+/*  Sink for aio events. */
+static void sp_tcpb_accepted (const struct sp_sink **self,
+    struct sp_usock *usock, int s);
+static const struct sp_sink sp_tcpb_sink = {
     NULL,
     NULL,
     NULL,
     sp_tcpb_accepted,
+    NULL,
     NULL
 };
 
@@ -53,6 +55,8 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
+
+    self->sink = &sp_tcpb_sink;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
@@ -82,7 +86,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, hint);
 
     /*  Open the listening socket. */
-    rc = sp_usock_init (&self->usock, &sp_tcpb_usock_vfptr,
+    rc = sp_usock_init (&self->usock, &self->sink,
         AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
@@ -123,7 +127,8 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
     }
 }
 
-static void sp_tcpb_accepted (struct sp_usock *self, int s)
+static void sp_tcpb_accepted (const struct sp_sink **self,
+    struct sp_usock *usock, int s)
 {
     printf ("accepted %d\n", s);
 }

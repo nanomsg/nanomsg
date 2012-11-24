@@ -174,7 +174,17 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     return 0;
 }
 
-int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_sink **sink)
+{
+    const struct sp_sink **original;
+
+    original = self->sink;
+    self->sink = sink;
+    return original;
+}
+
+int sp_usock_init_accepted (struct sp_usock *self, struct sp_usock *parent,
     int s, const struct sp_sink **sink, struct sp_cp *cp)
 {
     self->sink = sink;
@@ -691,6 +701,12 @@ static int sp_usock_send_raw (int s, const void *buf, size_t *len)
         return 0;
     }
 
+    /*  Zero bytes sent. */
+    if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        *len = 0;
+        return 0;
+    }
+
     /*  If the connection fails, return ECONNRESET. */
     sp_assert (errno == ECONNRESET || errno == ETIMEDOUT || errno == EPIPE);
     return -ECONNRESET;
@@ -699,12 +715,19 @@ static int sp_usock_send_raw (int s, const void *buf, size_t *len)
 static int sp_usock_recv_raw (int s, void *buf, size_t *len)
 {
     ssize_t nbytes;
+int err;
 
     nbytes = recv (s, buf, *len, 0);
 
     /*  Success. */
     if (sp_fast (nbytes > 0)) {
         *len = (size_t) nbytes;
+        return 0;
+    }
+
+    /*  Zero bytes received. */
+    if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        *len = 0;
         return 0;
     }
 

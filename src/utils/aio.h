@@ -125,8 +125,10 @@ struct sp_usock {
 
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp);
-int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+int sp_usock_init_accepted (struct sp_usock *self, struct sp_usock *parent,
     int s, const struct sp_sink **sink, struct sp_cp *cp);
+const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_sink **sink);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

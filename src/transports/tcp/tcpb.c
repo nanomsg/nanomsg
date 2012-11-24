@@ -131,7 +131,6 @@ static void sp_tcpb_accepted (const struct sp_sink **self,
     struct sp_usock *usock, int s)
 {
     printf ("accepted\n");
-    sp_assert (0);
 }
 
 

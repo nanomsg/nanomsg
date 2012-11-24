@@ -110,6 +110,8 @@ add_library(nanomsg SHARED
     transports/tcp/tcpb.c
     transports/tcp/tcpc.h
     transports/tcp/tcpc.c
+    transports/tcp/tcps.h
+    transports/tcp/tcps.c
     )
 
 add_definitions(-DSP_EXPORTS)

@@ -98,9 +98,12 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
 static void sp_tcpc_connected (const struct sp_sink **self,
     struct sp_usock *usock)
 {
-    /*  Connect succeeded. */
-printf ("connected!\n");
-    sp_assert (0);
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  Connect succeeded. Switch to the session state machine. */
+    sp_tcps_init (&tcpc->session, &tcpc->usock);
 }
 
 static void sp_tcpc_err (const struct sp_sink **self,

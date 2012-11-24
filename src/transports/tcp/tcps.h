@@ -20,35 +20,30 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPC_INCLUDED
-#define SP_TCPC_INCLUDED
-
-#include "tcps.h"
-
-#include "../../transport.h"
+#ifndef SP_TCPS_INCLUDED
+#define SP_TCPS_INCLUDED
 
 #include "../../utils/aio.h"
 
-struct sp_tcpc {
+#include <stdint.h>
+
+struct sp_tcps {
 
     /*  Event sink. */
     const struct sp_sink *sink;
 
-    /*  This object is an endpoint. */
-    struct sp_epbase epbase;
-
     /*  The underlying TCP socket. */
-    struct sp_usock usock;
+    struct sp_usock *usock;
 
-    /*  There's at most one session per connecting endpoint, thus we can
-        embed the session object directly into the connecter class. */
-    struct sp_tcps session;
+    /*  Protocol header received from the peer. */
+    uint8_t hdr [8];
 
-    /*  Timer to wait before retrying to connect. */
-    struct sp_timer retry_timer;
+    /*  Stores the sink of the parent state machine while this state machine
+        does its job. */
+    const struct sp_sink **original_sink;
 };
 
-int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint);
+void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock);
+void sp_tcps_term ();
 
 #endif
-

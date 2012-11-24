@@ -42,6 +42,7 @@ static void sp_cp_worker (void *arg);
 static void sp_usock_tune (struct sp_usock *self);
 static int sp_usock_send_raw (int s, const void *buf, size_t *len);
 static int sp_usock_recv_raw (int s, void *buf, size_t *len);
+static int sp_usock_geterr (int s);
 
 void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {
@@ -290,6 +291,8 @@ void sp_usock_term (struct sp_usock *self)
     }
 
     /*  Otherwise, send an event to the worker thread. */
+    /*  TODO: Possible race condition. */
+    sp_assert (0);
     sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
     sp_efd_signal (&self->cp->efd);
 }
@@ -477,12 +480,6 @@ static void sp_cp_worker (void *arg)
     struct sp_event_hndl *ehndl;
     struct sp_usock *usock;
     size_t sz;
-    int err;
-#if defined SP_HAVE_HPUX
-    int errlen;
-#else
-    socklen_t errlen;
-#endif
     int newsock;
 
     self = (struct sp_cp*) arg;
@@ -615,6 +612,8 @@ if (rc == -EINTR) goto again;
                     (*usock->sink)->accepted (usock->sink, usock, newsock);
                     break;
                 default:
+                    /*  TODO:  When async connect succeeds both OUT and IN
+                        are signaled, which means we can end up here. */
                     sp_assert (0);
                 }
                 break;
@@ -640,6 +639,9 @@ if (rc == -EINTR) goto again;
                 case SP_USOCK_OUTOP_CONNECT:
                     usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
+                    rc = sp_usock_geterr (usock->s);
+                    if (rc != 0)
+                        goto err;
                     sp_assert ((*usock->sink)->connected);
                     (*usock->sink)->connected (usock->sink, usock);
                     break;
@@ -648,20 +650,10 @@ if (rc == -EINTR) goto again;
                 }
                 break;
             case SP_POLLER_ERR:
-
-                /*  Retrieve the error from the failed file descriptor. */
-                err = 0;
-                errlen = sizeof (err);
-                rc = getsockopt (usock->s, SOL_SOCKET, SO_ERROR,
-                    (char*) &err, &errlen);
-                if (rc == -1)
-                    err = errno;
-                else
-                    sp_assert (errlen == sizeof (err));
-                rc = -err;
+                rc = sp_usock_geterr (usock->s);
 err:
                 sp_assert ((*usock->sink)->err);
-                (*usock->sink)->err (usock->sink, usock, -rc);
+                (*usock->sink)->err (usock->sink, usock, rc);
                 break;
             default:
                 sp_assert (0);
@@ -719,6 +711,29 @@ static int sp_usock_recv_raw (int s, void *buf, size_t *len)
           errno == ECONNREFUSED || errno == ETIMEDOUT ||
           errno == EHOSTUNREACH);
     return -ECONNRESET;
+}
+
+static int sp_usock_geterr (int s)
+{
+    int rc;
+    int err;
+#if defined SP_HAVE_HPUX
+    int errlen;
+#else
+    socklen_t errlen;
+#endif
+
+    err = 0;
+    errlen = sizeof (err);
+    rc = getsockopt (s, SOL_SOCKET, SO_ERROR, (char*) &err, &errlen);
+
+    /*  On Solaris error is returned via errno. */
+    if (rc == -1)
+        return errno;
+
+    /*  On other platforms the error is in err. */
+    sp_assert (errlen == sizeof (err));
+    return err;
 }
 
 void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,

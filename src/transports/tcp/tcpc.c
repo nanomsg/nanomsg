@@ -33,18 +33,31 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
-/*  sp_usock callbacks. */
+
+/*  CONNECTING state. */
 static void sp_tcpc_connected (const struct sp_sink **self,
     struct sp_usock *usock);
 static void sp_tcpc_err (const struct sp_sink **self,
     struct sp_usock *usock, int errnum);
-static const struct sp_sink sp_tcpc_sink = {
+static const struct sp_sink sp_tcpc_state_connecting = {
     NULL,
     NULL,
     sp_tcpc_connected,
     NULL,
     sp_tcpc_err,
     NULL
+};
+
+/*  WAITING state. */
+static void sp_tcpc_timeout (const struct sp_sink **self,
+    struct sp_timer *timer);
+static const struct sp_sink sp_tcpc_state_waiting = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_tcpc_timeout
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
@@ -54,8 +67,6 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
-
-    self->sink = &sp_tcpc_sink;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
@@ -86,12 +97,20 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, hint);
 
+    /*  Initialise the retry timer. */
+    sp_timer_init (&self->retry_timer, &self->sink,
+        sp_epbase_getcp (&self->epbase));
+
     /*  Open the socket and start connecting. */
+    self->sink = &sp_tcpc_state_connecting;
     rc = sp_usock_init (&self->usock, &self->sink,
         AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_connect (&self->usock, (struct sockaddr*) &ss, sslen);
-    errnum_assert (rc == 0, -rc);
+    if (rc == 0)
+        sp_tcpc_connected (&self->sink, &self->usock);
+    else
+        errnum_assert (rc == -EINPROGRESS, -rc);
 
     return 0;
 }
@@ -107,12 +126,35 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
 static void sp_tcpc_connected (const struct sp_sink **self,
     struct sp_usock *usock)
 {
-   printf ("connected!\n");
+    /*  Connect succeeded. */
+printf ("connected!\n");
+    sp_assert (0);
 }
 
 static void sp_tcpc_err (const struct sp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    /*  TODO */
+    int rc;
+    struct sp_tcpc *tcpc;
+
+printf ("connect failed!\n");
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  Connect failed. Close the old socket and create a new one. */
+    sp_usock_term (&tcpc->usock);
+    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
+        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
+    errnum_assert (rc == 0, -rc);
+
+    tcpc->sink = &sp_tcpc_state_waiting;
+    /*  TODO: Get the retry interval from the socket option. */
+    sp_timer_start (&tcpc->retry_timer, 100);
+}
+
+static void sp_tcpc_timeout (const struct sp_sink **self,
+    struct sp_timer *timer)
+{
+    /*  Retry timer expired. */
     sp_assert (0);
 }
+

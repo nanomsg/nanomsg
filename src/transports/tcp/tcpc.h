@@ -38,6 +38,8 @@ struct sp_tcpc {
     /*  The underlying TCP socket. */
     struct sp_usock usock;
 
+    /*  Timer to wait before retrying to connect. */
+    struct sp_timer retry_timer;
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint);

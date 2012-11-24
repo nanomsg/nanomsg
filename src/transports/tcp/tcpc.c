@@ -146,6 +146,7 @@ printf ("connect failed!\n");
         AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
     errnum_assert (rc == 0, -rc);
 
+    /*  Switch to the WAITING state. */
     tcpc->sink = &sp_tcpc_state_waiting;
     /*  TODO: Get the retry interval from the socket option. */
     sp_timer_start (&tcpc->retry_timer, 100);

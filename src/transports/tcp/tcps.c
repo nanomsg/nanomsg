@@ -94,7 +94,7 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
 
     /*  Send the protocol header. */
     len = 8;
-    rc = sp_usock_send (usock, "\0\0SP\0\0\0\0", &len, 0);
+    rc = sp_usock_send (usock, "\0\0SP\0\0\0\0", &len);
     if (rc == 0) {
         sp_assert (len == 8);
         self->sink = &sp_tcps_state_sent;
@@ -104,7 +104,7 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
 
     /*  Receive the protocol header from the peer. */
     len = 8;
-    rc = sp_usock_recv (usock, self->hdr, &len, 0);
+    rc = sp_usock_recv (usock, self->hdr, &len);
     if (rc == 0) {
         sp_assert (len == 8);
         self->sink = &sp_tcps_state_active;

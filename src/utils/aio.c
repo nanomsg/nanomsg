@@ -224,15 +224,13 @@ if (rc == -EINTR) goto again;
             case SP_POLLER_IN:
                 switch (usock->in.op) {
                 case SP_USOCK_INOP_RECV:
-                case SP_USOCK_INOP_RECV_PARTIAL:
                     sz = usock->in.buflen - usock->in.len;
                     rc = sp_usock_recv_raw (usock->s, ((char*) usock->in.buf) +
                         usock->in.len, &sz);
                     if (rc < 0)
                         goto err;
                     usock->in.len += sz;
-                    if (usock->in.op == SP_USOCK_INOP_RECV_PARTIAL ||
-                          usock->in.len == usock->in.buflen) {
+                    if (usock->in.len == usock->in.buflen) {
                         usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->received);
@@ -272,15 +270,13 @@ if (rc == -EINTR) goto again;
             case SP_POLLER_OUT:
                 switch (usock->out.op) {
                 case SP_USOCK_OUTOP_SEND:
-                case SP_USOCK_OUTOP_SEND_PARTIAL:
                     sz = usock->out.buflen - usock->out.len;
                     rc = sp_usock_send_raw (usock->s, ((char*) usock->out.buf) +
                         usock->out.len, &sz);
                     if (rc < 0)
                         goto err;
                     usock->out.len += sz;
-                    if (usock->out.op == SP_USOCK_OUTOP_SEND_PARTIAL ||
-                          usock->out.len == usock->out.buflen) {
+                    if (usock->out.len == usock->out.buflen) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->sent);
@@ -619,8 +615,7 @@ int sp_usock_accept (struct sp_usock *self)
     return -EINPROGRESS;
 }
 
-int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags)
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len)
 {
     int rc;
     size_t sz;
@@ -635,12 +630,11 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
         return rc;
 
     /*  Success. */
-    if (sp_fast ((flags & SP_USOCK_PARTIAL && *len > 0) || *len == sz))
+    if (sp_fast (*len == sz))
         return 0;
 
     /*  There are still data to send in the background. */ 
-    self->out.op = flags & SP_USOCK_PARTIAL ? SP_USOCK_OUTOP_SEND_PARTIAL :
-        SP_USOCK_OUTOP_SEND;
+    self->out.op = SP_USOCK_OUTOP_SEND;
     self->out.buf = buf;
     self->out.buflen = sz;
     self->out.len = *len;
@@ -656,8 +650,7 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
     return -EINPROGRESS;
 }
 
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
-    int flags)
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len)
 {
     int rc;
     size_t sz;
@@ -672,12 +665,11 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
         return rc;
 
     /*  Success. */
-    if (sp_fast ((flags & SP_USOCK_PARTIAL && *len > 0) || *len == sz))
+    if (sp_fast (*len == sz))
         return 0;
 
     /*  There are still data to receive in the background. */ 
-    self->in.op = flags & SP_USOCK_PARTIAL ? SP_USOCK_INOP_RECV_PARTIAL :
-        SP_USOCK_INOP_RECV;
+    self->in.op = SP_USOCK_INOP_RECV;
     self->in.buf = buf;
     self->in.buflen = sz;
     self->in.len = *len;

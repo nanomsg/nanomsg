@@ -92,19 +92,15 @@ struct sp_cp_op_hndl {
 };
 #endif
 
-#define SP_USOCK_PARTIAL 1
-
 #if !defined SP_HAVE_WINDOWS
 
 #define SP_USOCK_INOP_NONE 0
 #define SP_USOCK_INOP_RECV 1
-#define SP_USOCK_INOP_RECV_PARTIAL 2
-#define SP_USOCK_INOP_ACCEPT 3
+#define SP_USOCK_INOP_ACCEPT 2
 
 #define SP_USOCK_OUTOP_NONE 0
 #define SP_USOCK_OUTOP_SEND 1
-#define SP_USOCK_OUTOP_SEND_PARTIAL 2
-#define SP_USOCK_OUTOP_CONNECT 3
+#define SP_USOCK_OUTOP_CONNECT 2
 
 #endif
 
@@ -153,9 +149,8 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 int sp_usock_listen (struct sp_usock *self, int backlog);
 int sp_usock_accept (struct sp_usock *self);
 
-int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len,
-    int flags);
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len, int flags);
+int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len);
+int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len);
 
 /*  The completion port. */
 

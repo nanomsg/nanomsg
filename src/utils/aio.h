@@ -109,6 +109,10 @@ struct sp_usock {
     struct sp_cp *cp;
 #if defined SP_HAVE_WINDOWS
     SOCKET s;
+    OVERLAPPED conn;
+    OVERLAPPED in;
+    OVERLAPPED out;
+    SOCKET newsock;
 #else
     int s;
     struct sp_poller_hndl hndl;

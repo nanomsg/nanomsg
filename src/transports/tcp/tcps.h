@@ -38,6 +38,12 @@ struct sp_tcps {
     /*  Protocol header received from the peer. */
     uint8_t hdr [8];
 
+    /*  If header is not received in certain amount of time, connection is
+        closed. This solves a rare race condition in TCP. It also minimises
+        the usage of resources in case of erroneous connections. Also, it
+        prevents a simple DoS attack. */
+    struct sp_timer hdr_timeout;
+
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */
     const struct sp_sink **original_sink;

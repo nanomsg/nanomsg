@@ -23,6 +23,7 @@
 #include "tcps.h"
 
 #include "../../utils/err.h"
+#include "../../utils/cont.h"
 
 static void sp_tcps_hdr_received (const struct sp_sink **self,
     struct sp_usock *usock, size_t len);
@@ -87,6 +88,10 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
     self->sink = &sp_tcps_state_start;
     self->original_sink = sp_usock_setsink (usock, &self->sink);
 
+    /*  Start the header timeout timer. */
+    sp_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
+    sp_timer_start (&self->hdr_timeout, 1000);
+
     /*  Send the protocol header. */
     len = 8;
     rc = sp_usock_send (usock, "\0\0SP\0\0\0\0", &len, 0);
@@ -103,6 +108,7 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
     if (rc == 0) {
         sp_assert (len == 8);
         self->sink = &sp_tcps_state_active;
+        sp_timer_stop (&self->hdr_timeout);
     }
     else
         errnum_assert (rc == -EINPROGRESS, -rc);
@@ -116,6 +122,24 @@ void sp_tcps_term ()
 static void sp_tcps_hdr_received (const struct sp_sink **self,
     struct sp_usock *usock, size_t len)
 {
+    struct sp_tcps *tcps;
+
+    tcps = sp_cont (self, struct sp_tcps, sink);
+
+    sp_assert (len == 8);
+
+    if (tcps->sink == &sp_tcps_state_sent) {
+        tcps->sink = &sp_tcps_state_active;
+        sp_timer_stop (&tcps->hdr_timeout);
+        return;
+    }
+
+    if (tcps->sink == &sp_tcps_state_start) {
+        tcps->sink = &sp_tcps_state_received;
+        return;
+    }
+
+    /*  This event is not defined in other states. */
     sp_assert (0);
 }
 

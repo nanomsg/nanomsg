@@ -39,6 +39,8 @@ add_library(nanomsg SHARED
     utils/addr.c
     utils/aio.h
     utils/aio.c
+    utils/aio_posix.inc
+    utils/aio_win.inc
     utils/alloc.h
     utils/alloc.c
     utils/clock.h

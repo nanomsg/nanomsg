@@ -106,6 +106,8 @@ add_library(nanomsg SHARED
     transports/inproc/msgqueue.c
     transports/tcp/tcp.h
     transports/tcp/tcp.c
+    transports/tcp/tcpa.h
+    transports/tcp/tcpa.c
     transports/tcp/tcpb.h
     transports/tcp/tcpb.c
     transports/tcp/tcpc.h

@@ -21,10 +21,12 @@
 */
 
 #include "tcpb.h"
+#include "tcpa.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/addr.h"
+#include "../../utils/alloc.h"
 
 #include <string.h>
 
@@ -57,6 +59,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     socklen_t sslen;
 
     self->sink = &sp_tcpb_sink;
+    sp_list_init (&self->tcpas);
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
@@ -130,7 +133,15 @@ static void sp_tcpb_accept (struct sp_tcpb *self)
 static void sp_tcpb_accepted (const struct sp_sink **self,
     struct sp_usock *usock, int s)
 {
-    printf ("accepted\n");
+    struct sp_tcpb *tcpb;
+    struct sp_tcpa *tcpa;
+
+    tcpb = sp_cont (self, struct sp_tcpb, sink);
+
+    tcpa = sp_alloc (sizeof (struct sp_tcpa));
+    alloc_assert (tcpa);
+    sp_tcpa_init (tcpa, s, usock);
+    sp_list_insert (&tcpb->tcpas, &tcpa->item, sp_list_end (&tcpb->tcpas));
 }
 
 

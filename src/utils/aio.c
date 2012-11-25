@@ -184,7 +184,7 @@ const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
     return original;
 }
 
-int sp_usock_init_accepted (struct sp_usock *self, struct sp_usock *parent,
+int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     int s, const struct sp_sink **sink, struct sp_cp *cp)
 {
     self->sink = sink;

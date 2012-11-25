@@ -20,30 +20,18 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPB_INCLUDED
-#define SP_TCPB_INCLUDED
+#include "tcpa.h"
 
-#include "../../transport.h"
+#include "../../utils/err.h"
 
-#include "../../utils/aio.h"
+void sp_tcpa_init (struct sp_tcpa *self, int s, struct sp_usock *usock)
+{
+    sp_usock_init_child (&self->usock, usock, s, NULL, usock->cp);
+    sp_tcps_init (&self->session, &self->usock);
+}
 
-/*  Bound TCP endpoint, i.e. TCP listening socket. */
+void sp_tcpa_term (struct sp_tcpa *self)
+{
+    sp_assert (0);
+}
 
-struct sp_tcpb {
-
-    /*  Event sink. */
-    const struct sp_sink *sink;
-
-    /*  This object is an endpoint. */
-    struct sp_epbase epbase;
-
-    /*  The listening socket. */
-    struct sp_usock usock;
-
-    /*  List of all sockets accepted via this endpoint. */
-    struct sp_list tcpas;
-};
-
-int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);
-
-#endif

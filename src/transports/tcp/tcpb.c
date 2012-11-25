@@ -30,9 +30,6 @@
 
 #include <string.h>
 
-/*  Private functions. */
-static void sp_tcpb_accept (struct sp_tcpb *self);
-
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
@@ -98,8 +95,8 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     rc = sp_usock_listen (&self->usock, 100);
     errnum_assert (rc == 0, -rc);
 
-    /*  Accept any connections that may be available at the moment. */
-    sp_tcpb_accept (self);
+    /*  Start waiting for incoming connection. */
+    sp_usock_accept (&self->usock);
 
     return 0;
 }
@@ -111,23 +108,6 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
     tcpb = sp_cont (self, struct sp_tcpb, epbase);
 
     sp_assert (0);
-}
-
-static void sp_tcpb_accept (struct sp_tcpb *self)
-{
-    int rc;
-
-    while (1) {
-
-        /*  Launch new accept request. */
-        rc = sp_usock_accept (&self->usock);
-        if (rc == -EINPROGRESS)
-            break;
-        errnum_assert (rc == 0, -rc);
-
-        /*  TODO */
-        sp_assert (0);
-    }
 }
 
 static void sp_tcpb_accepted (const struct sp_sink **self,

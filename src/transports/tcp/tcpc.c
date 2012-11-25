@@ -176,10 +176,6 @@ static void sp_tcpc_timeout (const struct sp_sink **self,
 
     /*  Open the socket and start connecting. */
     tcpc->sink = &sp_tcpc_state_connecting;
-    rc = sp_usock_connect (&tcpc->usock, (struct sockaddr*) &ss, sslen);
-    if (rc == 0)
-        sp_tcpc_connected (&tcpc->sink, &tcpc->usock);
-    else
-        errnum_assert (rc == -EINPROGRESS, -rc);
+    sp_usock_connect (&tcpc->usock, (struct sockaddr*) &ss, sslen);
 }
 

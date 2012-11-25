@@ -558,7 +558,7 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     return 0;
 }
 
-int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen)
 {
     int rc;
@@ -573,12 +573,18 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     rc = connect (self->s, addr, addrlen);
 
     /*  Immediate success. */
-    if (rc == 0)
-        return 0;
+    if (sp_fast (rc == 0)) { 
+        sp_assert ((*self->sink)->connected);
+        (*self->sink)->connected (self->sink, self);
+        return;
+    }
 
     /*  Return unexpected errors to the caller. */
-    if (errno != EINPROGRESS)
-        return -errno;
+    if (sp_slow (errno != EINPROGRESS)) {
+        sp_assert ((*self->sink)->err);
+        (*self->sink)->err (self->sink, self, errno);
+        return;
+    }
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
@@ -591,11 +597,9 @@ int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
         sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
         sp_efd_signal (&self->cp->efd);
     }
-
-    return -EINPROGRESS;
 }
 
-int sp_usock_accept (struct sp_usock *self)
+void sp_usock_accept (struct sp_usock *self)
 {
     /*  Make sure that there's no inbound operation already in progress. */
     sp_assert (self->in.op == SP_USOCK_INOP_NONE);
@@ -611,33 +615,38 @@ int sp_usock_accept (struct sp_usock *self)
         sp_queue_push (&self->cp->opqueue, &self->in.hndl.item);
         sp_efd_signal (&self->cp->efd);
     }
-
-    return -EINPROGRESS;
 }
 
-int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len)
+void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 {
     int rc;
-    size_t sz;
+    size_t nbytes;
 
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
     /*  Try to send the data immediately. */
-    sz = *len;
-    rc = sp_usock_send_raw (self->s, buf, len);
-    if (sp_slow (rc < 0))
-        return rc;
+    nbytes = len;
+    rc = sp_usock_send_raw (self->s, buf, &nbytes);
+    if (sp_slow (rc < 0)) {
+        errnum_assert (rc == -ECONNRESET, -rc);
+        sp_assert ((*self->sink)->err);
+        (*self->sink)->err (self->sink, self, -rc);
+        return;
+    }
 
     /*  Success. */
-    if (sp_fast (*len == sz))
-        return 0;
+    if (sp_fast (nbytes == len)) {
+        sp_assert ((*self->sink)->sent);
+        (*self->sink)->sent (self->sink, self, nbytes);
+        return;
+    }
 
     /*  There are still data to send in the background. */ 
     self->out.op = SP_USOCK_OUTOP_SEND;
     self->out.buf = buf;
-    self->out.buflen = sz;
-    self->out.len = *len;
+    self->out.buflen = len;
+    self->out.len = nbytes;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
@@ -647,32 +656,38 @@ int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len)
         sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
         sp_efd_signal (&self->cp->efd);
     }
-    return -EINPROGRESS;
 }
 
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len)
+void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
 {
     int rc;
-    size_t sz;
+    size_t nbytes;
 
     /*  Make sure that there's no inbound operation already in progress. */
     sp_assert (self->in.op == SP_USOCK_INOP_NONE);
 
     /*  Try to receive the data immediately. */
-    sz = *len;
-    rc = sp_usock_recv_raw (self->s, buf, len);
-    if (sp_slow (rc < 0))
-        return rc;
+    nbytes = len;
+    rc = sp_usock_recv_raw (self->s, buf, &nbytes);
+    if (sp_slow (rc < 0)) {
+        errnum_assert (rc == -ECONNRESET, -rc);
+        sp_assert ((*self->sink)->err);
+        (*self->sink)->err (self->sink, self, -rc);
+        return;
+    }
 
     /*  Success. */
-    if (sp_fast (*len == sz))
-        return 0;
+    if (sp_fast (nbytes == len)) {
+        sp_assert ((*self->sink)->received);
+        (*self->sink)->received (self->sink, self, nbytes);
+        return;
+    }
 
     /*  There are still data to receive in the background. */ 
     self->in.op = SP_USOCK_INOP_RECV;
     self->in.buf = buf;
-    self->in.buflen = sz;
-    self->in.len = *len;
+    self->in.buflen = len;
+    self->in.len = nbytes;
 
     /*  If we are in the worker thread we can simply start polling for in.
         Otherwise, ask worker thread to start polling for in. */
@@ -682,7 +697,6 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len)
         sp_queue_push (&self->cp->opqueue, &self->in.hndl.item);
         sp_efd_signal (&self->cp->efd);
     }
-    return -EINPROGRESS;
 }
 
 static int sp_usock_send_raw (int s, const void *buf, size_t *len)

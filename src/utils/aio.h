@@ -144,13 +144,14 @@ void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
-int sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen);
 int sp_usock_listen (struct sp_usock *self, int backlog);
-int sp_usock_accept (struct sp_usock *self);
 
-int sp_usock_send (struct sp_usock *self, const void *buf, size_t *len);
-int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len);
+void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen);
+void sp_usock_accept (struct sp_usock *self);
+
+void sp_usock_send (struct sp_usock *self, const void *buf, size_t len);
+void sp_usock_recv (struct sp_usock *self, void *buf, size_t len);
 
 /*  The completion port. */
 

@@ -80,9 +80,6 @@ static const struct sp_sink sp_tcps_state_active = {
 
 void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
 {
-    int rc;
-    size_t len;
-
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
     self->sink = &sp_tcps_state_start;
@@ -93,25 +90,10 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
     sp_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
-    len = 8;
-    rc = sp_usock_send (usock, "\0\0SP\0\0\0\0", &len);
-    if (rc == 0) {
-        sp_assert (len == 8);
-        self->sink = &sp_tcps_state_sent;
-    }
-    else
-        errnum_assert (rc == -EINPROGRESS, -rc);
+    sp_usock_send (usock, "\0\0SP\0\0\0\0", 8);
 
     /*  Receive the protocol header from the peer. */
-    len = 8;
-    rc = sp_usock_recv (usock, self->hdr, &len);
-    if (rc == 0) {
-        sp_assert (len == 8);
-        self->sink = &sp_tcps_state_active;
-        sp_timer_stop (&self->hdr_timeout);
-    }
-    else
-        errnum_assert (rc == -EINPROGRESS, -rc);
+    sp_usock_recv (usock, self->hdr, 8);
 }
 
 void sp_tcps_term ()
@@ -146,6 +128,24 @@ static void sp_tcps_hdr_received (const struct sp_sink **self,
 static void sp_tcps_hdr_sent (const struct sp_sink **self,
     struct sp_usock *usock, size_t len)
 {
+    struct sp_tcps *tcps;
+
+    tcps = sp_cont (self, struct sp_tcps, sink);
+
+    sp_assert (len == 8);
+
+    if (tcps->sink == &sp_tcps_state_received) {
+        tcps->sink = &sp_tcps_state_active;
+        sp_timer_stop (&tcps->hdr_timeout);
+        return;
+    }
+
+    if (tcps->sink == &sp_tcps_state_start) {
+        tcps->sink = &sp_tcps_state_sent;
+        return;
+    }
+
+    /*  This event is not defined in other states. */
     sp_assert (0);
 }
 

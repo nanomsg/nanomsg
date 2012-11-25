@@ -111,6 +111,7 @@ static void sp_tcps_hdr_received (const struct sp_sink **self,
     sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_sent) {
+printf ("activated\n");
         tcps->sink = &sp_tcps_state_active;
         sp_timer_stop (&tcps->hdr_timeout);
         return;
@@ -135,6 +136,7 @@ static void sp_tcps_hdr_sent (const struct sp_sink **self,
     sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_received) {
+printf ("activated\n");
         tcps->sink = &sp_tcps_state_active;
         sp_timer_stop (&tcps->hdr_timeout);
         return;

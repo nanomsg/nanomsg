@@ -796,6 +796,7 @@ void sp_timer_start (struct sp_timer *self, int timeout)
     if (self->active)
         sp_timer_stop (self);
 
+    self->active = 1;
     rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->cp->worker))

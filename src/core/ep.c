@@ -40,7 +40,14 @@ void sp_epbase_init (struct sp_epbase *self,
 
     /*  Store the textual for of the address. */
     sp_assert (strlen (addr) <= SP_SOCKADDR_MAX);
+#if defined _MSC_VER
+#pragma warning (push)
+#pragma warning (disable:4996)
+#endif
     strcpy (self->addr, addr);
+#if defined _MSC_VER
+#pragma warning (pop)
+#endif
 }
 
 void sp_epbase_term (struct sp_epbase *self)

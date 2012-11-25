@@ -23,12 +23,17 @@
 #ifndef SP_AIO_INCLUDED
 #define SP_AIO_INCLUDED
 
-#include "mutex.h"
+#if defined SP_HAVE_WINDOWS
+#include "win.h"
+#else
 #include "efd.h"
 #include "poller.h"
-#include "thread.h"
-#include "timeout.h"
 #include "queue.h"
+#endif
+
+#include "timeout.h"
+#include "thread.h"
+#include "mutex.h"
 #include "addr.h"
 
 #include <stddef.h>
@@ -75,6 +80,7 @@ void sp_timer_stop (struct sp_timer *self);
 
 /*  Underlying L4 socket object. */
 
+#if !defined SP_HAVE_WINDOWS
 #define SP_USOCK_OP_ADD 1
 #define SP_USOCK_OP_RM 2
 #define SP_USOCK_OP_IN 3
@@ -84,8 +90,11 @@ struct sp_cp_op_hndl {
     struct sp_queue_item item;
     int op;
 };
+#endif
 
 #define SP_USOCK_PARTIAL 1
+
+#if !defined SP_HAVE_WINDOWS
 
 #define SP_USOCK_INOP_NONE 0
 #define SP_USOCK_INOP_RECV 1
@@ -97,10 +106,15 @@ struct sp_cp_op_hndl {
 #define SP_USOCK_OUTOP_SEND_PARTIAL 2
 #define SP_USOCK_OUTOP_CONNECT 3
 
+#endif
+
 struct sp_usock {
     const struct sp_sink **sink;
-    int s;
     struct sp_cp *cp;
+#if defined SP_HAVE_WINDOWS
+    SOCKET s;
+#else
+    int s;
     struct sp_poller_hndl hndl;
     struct sp_cp_op_hndl add_hndl;
     struct sp_cp_op_hndl rm_hndl;
@@ -118,6 +132,7 @@ struct sp_usock {
         size_t len;
         struct sp_cp_op_hndl hndl;
     } out;
+#endif
     int domain;
     int type;
     int protocol;
@@ -145,7 +160,9 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len, int flags);
 /*  The completion port. */
 
 struct sp_event_hndl {
+#if !defined SP_HAVE_WINDOWS
     struct sp_queue_item item;
+#endif
     int event;
 };
 
@@ -159,12 +176,16 @@ struct sp_cp {
     const struct sp_cp_vfptr *vfptr;
     struct sp_mutex sync;
     struct sp_timeout timeout;
+#if defined SP_HAVE_WINDOWS
+    HANDLE hndl;
+#else
     struct sp_efd efd;
     struct sp_poller_hndl efd_hndl;
     struct sp_poller poller;
     struct sp_queue opqueue;
     struct sp_mutex events_sync;
     struct sp_queue events;
+#endif
     int stop;
     struct sp_thread worker;
 };

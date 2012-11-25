@@ -44,6 +44,8 @@ static int sp_usock_send_raw (int s, const void *buf, size_t *len);
 static int sp_usock_recv_raw (int s, void *buf, size_t *len);
 static int sp_usock_geterr (int s);
 
+#if !defined SP_HAVE_WINDOWS
+
 void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {
     self->vfptr = vfptr;
@@ -116,6 +118,215 @@ void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
     sp_efd_signal (&self->efd);
 }
 
+static void sp_cp_worker (void *arg)
+{
+    int rc;
+    struct sp_cp *self;
+    int timeout;
+    struct sp_cp_op_hndl *ophndl;
+    struct sp_timeout_hndl *tohndl;
+    struct sp_timer *timer;
+    int event;
+    struct sp_poller_hndl *phndl;
+    struct sp_event_hndl *ehndl;
+    struct sp_usock *usock;
+    size_t sz;
+    int newsock;
+
+    self = (struct sp_cp*) arg;
+
+    sp_mutex_lock (&self->sync);
+
+    while (1) {
+
+        /*  Compute the time interval till next timer expiration. */
+        timeout = sp_timeout_timeout (&self->timeout);
+
+        /*  Wait for new events and/or timeouts. */
+        sp_mutex_unlock (&self->sync);
+again:
+        rc = sp_poller_wait (&self->poller, timeout);
+if (rc == -EINTR) goto again;
+        errnum_assert (rc == 0, -rc);
+        sp_mutex_lock (&self->sync);
+
+        /*  Termination of the worker thread. */
+        if (self->stop) {
+            sp_mutex_unlock (&self->sync);
+            break;
+        }
+
+        /*  Process the events in the opqueue. */
+        while (1) {
+
+            ophndl = sp_cont (sp_queue_pop (&self->opqueue),
+                struct sp_cp_op_hndl, item);
+            if (!ophndl)
+                break;
+
+            switch (ophndl->op) {
+            case SP_USOCK_OP_IN:
+                usock = sp_cont (ophndl, struct sp_usock, in.hndl);
+                sp_poller_set_in (&self->poller, &usock->hndl);
+                break;
+            case SP_USOCK_OP_OUT:
+                usock = sp_cont (ophndl, struct sp_usock, out.hndl);
+                sp_poller_set_out (&self->poller, &usock->hndl);
+                break;
+            case SP_USOCK_OP_ADD:
+                usock = sp_cont (ophndl, struct sp_usock, add_hndl);
+                sp_poller_add (&self->poller, usock->s, &usock->hndl);
+                break;
+            case SP_USOCK_OP_RM:
+                /*  TODO: Race condition here! usock may not exist at this point. */
+                usock = sp_cont (ophndl, struct sp_usock, rm_hndl);
+                sp_poller_rm (&self->poller, &usock->hndl);
+                rc = close (usock->s);
+                errno_assert (rc == 0);
+                break;
+            default:
+                sp_assert (0);
+            }
+        }
+
+        /*  Process any expired timers. */
+        while (1) {
+            rc = sp_timeout_event (&self->timeout, &tohndl);
+            if (rc == -EAGAIN)
+                break;
+            errnum_assert (rc == 0, -rc);
+
+            /*  Fire the timeout event. */
+            timer = sp_cont (tohndl, struct sp_timer, hndl);
+            sp_assert ((*timer->sink)->timeout);
+            (*timer->sink)->timeout (timer->sink, timer);
+        }
+
+        /*  Process any events from the poller. */
+        while (1) {
+            rc = sp_poller_event (&self->poller, &event, &phndl);
+            if (rc == -EAGAIN)
+                break;
+            errnum_assert (rc == 0, -rc);
+
+            /*  The events delivered through the internal efd object require
+                no action in response. Their sole intent is to interrupt the
+                waiting. */
+            if (phndl == &self->efd_hndl) {
+                sp_assert (event == SP_POLLER_IN);
+                sp_efd_unsignal (&self->efd);
+                continue;
+            }
+
+            /*  Process the I/O event. */
+            usock = sp_cont (phndl, struct sp_usock, hndl);
+            switch (event) {
+            case SP_POLLER_IN:
+                switch (usock->in.op) {
+                case SP_USOCK_INOP_RECV:
+                case SP_USOCK_INOP_RECV_PARTIAL:
+                    sz = usock->in.buflen - usock->in.len;
+                    rc = sp_usock_recv_raw (usock->s, ((char*) usock->in.buf) +
+                        usock->in.len, &sz);
+                    if (rc < 0)
+                        goto err;
+                    usock->in.len += sz;
+                    if (usock->in.op == SP_USOCK_INOP_RECV_PARTIAL ||
+                          usock->in.len == usock->in.buflen) {
+                        usock->in.op = SP_USOCK_INOP_NONE;
+                        sp_poller_reset_in (&self->poller, &usock->hndl);
+                        sp_assert ((*usock->sink)->received);
+                        (*usock->sink)->received (usock->sink,
+                            usock, usock->in.len);
+                    }
+                    break;
+                case SP_USOCK_INOP_ACCEPT:
+                    newsock = accept (usock->s, NULL, NULL);
+                    if (newsock == -1) {
+
+                        /*  The following are recoverable errors when accepting
+                            a new connection. We can continue waiting for new
+                            connection without even notifying the user. */
+                        if (errno == ECONNABORTED ||
+                              errno == EPROTO || errno == ENOBUFS ||
+                              errno == ENOMEM || errno == EMFILE ||
+                              errno == ENFILE)
+                            break;
+
+                        usock->in.op = SP_USOCK_INOP_NONE;
+                        sp_poller_reset_in (&self->poller, &usock->hndl);
+                        rc = -errno;
+                        goto err;
+                    }
+                    usock->in.op = SP_USOCK_INOP_NONE;
+                    sp_poller_reset_in (&self->poller, &usock->hndl);
+                    sp_assert ((*usock->sink)->accepted);
+                    (*usock->sink)->accepted (usock->sink, usock, newsock);
+                    break;
+                default:
+                    /*  TODO:  When async connect succeeds both OUT and IN
+                        are signaled, which means we can end up here. */
+                    sp_assert (0);
+                }
+                break;
+            case SP_POLLER_OUT:
+                switch (usock->out.op) {
+                case SP_USOCK_OUTOP_SEND:
+                case SP_USOCK_OUTOP_SEND_PARTIAL:
+                    sz = usock->out.buflen - usock->out.len;
+                    rc = sp_usock_send_raw (usock->s, ((char*) usock->out.buf) +
+                        usock->out.len, &sz);
+                    if (rc < 0)
+                        goto err;
+                    usock->out.len += sz;
+                    if (usock->out.op == SP_USOCK_OUTOP_SEND_PARTIAL ||
+                          usock->out.len == usock->out.buflen) {
+                        usock->out.op = SP_USOCK_OUTOP_NONE;
+                        sp_poller_reset_out (&self->poller, &usock->hndl);
+                        sp_assert ((*usock->sink)->sent);
+                        (*usock->sink)->sent (usock->sink,
+                            usock, usock->out.len);
+                    }
+                    break;
+                case SP_USOCK_OUTOP_CONNECT:
+                    usock->out.op = SP_USOCK_OUTOP_NONE;
+                    sp_poller_reset_out (&self->poller, &usock->hndl);
+                    rc = sp_usock_geterr (usock->s);
+                    if (rc != 0)
+                        goto err;
+                    sp_assert ((*usock->sink)->connected);
+                    (*usock->sink)->connected (usock->sink, usock);
+                    break;
+                default:
+                    sp_assert (0);
+                }
+                break;
+            case SP_POLLER_ERR:
+                rc = sp_usock_geterr (usock->s);
+err:
+                sp_assert ((*usock->sink)->err);
+                (*usock->sink)->err (usock->sink, usock, rc);
+                break;
+            default:
+                sp_assert (0);
+            }
+        }
+
+        /*  Process any external events. */
+        sp_mutex_lock (&self->events_sync);
+        while (1) {
+            ehndl = sp_cont (sp_queue_pop (&self->events),
+                struct sp_event_hndl, item);
+            if (!ehndl)
+                break;
+            self->vfptr->event (self, ehndl->event, ehndl);
+        }
+        sp_mutex_unlock (&self->events_sync);
+    }
+}
+
+#endif
+
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp)
 {
@@ -128,12 +339,14 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
 
     self->sink = sink;
     self->cp = cp;
+#if !defined SP_HAVE_WINDOWS
     self->in.op = SP_USOCK_INOP_NONE;
     self->out.op = SP_USOCK_OUTOP_NONE;
     self->add_hndl.op = SP_USOCK_OP_ADD;
     self->rm_hndl.op = SP_USOCK_OP_RM;
     self->in.hndl.op = SP_USOCK_OP_IN;
     self->out.hndl.op = SP_USOCK_OP_OUT;
+#endif
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
@@ -166,7 +379,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     sp_usock_tune (self);
 
 #if defined SP_HAVE_WINDOWS
-    wcp = CreateIoCompletionPort ((HANDLE) self->hndl.s, cp->hndl,
+    wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
         (ULONG_PTR) NULL, 0);
     sp_assert (wcp);
 #endif
@@ -190,12 +403,14 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->sink = sink;
     self->s = s;
     self->cp = cp;
+#if !defined SP_HAVE_WINDOWS
     self->in.op = SP_USOCK_INOP_NONE;
     self->out.op = SP_USOCK_OUTOP_NONE;
     self->add_hndl.op = SP_USOCK_OP_ADD;
     self->rm_hndl.op = SP_USOCK_OP_RM;
     self->in.hndl.op = SP_USOCK_OP_IN;
     self->out.hndl.op = SP_USOCK_OP_OUT;
+#endif
     self->domain = parent->domain;
     self->type = parent->type;
     self->protocol = parent->protocol;
@@ -476,213 +691,6 @@ int sp_usock_recv (struct sp_usock *self, void *buf, size_t *len,
         sp_efd_signal (&self->cp->efd);
     }
     return -EINPROGRESS;
-}
-
-static void sp_cp_worker (void *arg)
-{
-    int rc;
-    struct sp_cp *self;
-    int timeout;
-    struct sp_cp_op_hndl *ophndl;
-    struct sp_timeout_hndl *tohndl;
-    struct sp_timer *timer;
-    int event;
-    struct sp_poller_hndl *phndl;
-    struct sp_event_hndl *ehndl;
-    struct sp_usock *usock;
-    size_t sz;
-    int newsock;
-
-    self = (struct sp_cp*) arg;
-
-    sp_mutex_lock (&self->sync);
-
-    while (1) {
-
-        /*  Compute the time interval till next timer expiration. */
-        timeout = sp_timeout_timeout (&self->timeout);
-
-        /*  Wait for new events and/or timeouts. */
-        sp_mutex_unlock (&self->sync);
-again:
-        rc = sp_poller_wait (&self->poller, timeout);
-if (rc == -EINTR) goto again;
-        errnum_assert (rc == 0, -rc);
-        sp_mutex_lock (&self->sync);
-
-        /*  Termination of the worker thread. */
-        if (self->stop) {
-            sp_mutex_unlock (&self->sync);
-            break;
-        }
-
-        /*  Process the events in the opqueue. */
-        while (1) {
-
-            ophndl = sp_cont (sp_queue_pop (&self->opqueue),
-                struct sp_cp_op_hndl, item);
-            if (!ophndl)
-                break;
-
-            switch (ophndl->op) {
-            case SP_USOCK_OP_IN:
-                usock = sp_cont (ophndl, struct sp_usock, in.hndl);
-                sp_poller_set_in (&self->poller, &usock->hndl);
-                break;
-            case SP_USOCK_OP_OUT:
-                usock = sp_cont (ophndl, struct sp_usock, out.hndl);
-                sp_poller_set_out (&self->poller, &usock->hndl);
-                break;
-            case SP_USOCK_OP_ADD:
-                usock = sp_cont (ophndl, struct sp_usock, add_hndl);
-                sp_poller_add (&self->poller, usock->s, &usock->hndl);
-                break;
-            case SP_USOCK_OP_RM:
-                /*  TODO: Race condition here! usock may not exist at this point. */
-                usock = sp_cont (ophndl, struct sp_usock, rm_hndl);
-                sp_poller_rm (&self->poller, &usock->hndl);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
-                break;
-            default:
-                sp_assert (0);
-            }
-        }
-
-        /*  Process any expired timers. */
-        while (1) {
-            rc = sp_timeout_event (&self->timeout, &tohndl);
-            if (rc == -EAGAIN)
-                break;
-            errnum_assert (rc == 0, -rc);
-
-            /*  Fire the timeout event. */
-            timer = sp_cont (tohndl, struct sp_timer, hndl);
-            sp_assert ((*timer->sink)->timeout);
-            (*timer->sink)->timeout (timer->sink, timer);
-        }
-
-        /*  Process any events from the poller. */
-        while (1) {
-            rc = sp_poller_event (&self->poller, &event, &phndl);
-            if (rc == -EAGAIN)
-                break;
-            errnum_assert (rc == 0, -rc);
-
-            /*  The events delivered through the internal efd object require
-                no action in response. Their sole intent is to interrupt the
-                waiting. */
-            if (phndl == &self->efd_hndl) {
-                sp_assert (event == SP_POLLER_IN);
-                sp_efd_unsignal (&self->efd);
-                continue;
-            }
-
-            /*  Process the I/O event. */
-            usock = sp_cont (phndl, struct sp_usock, hndl);
-            switch (event) {
-            case SP_POLLER_IN:
-                switch (usock->in.op) {
-                case SP_USOCK_INOP_RECV:
-                case SP_USOCK_INOP_RECV_PARTIAL:
-                    sz = usock->in.buflen - usock->in.len;
-                    rc = sp_usock_recv_raw (usock->s, ((char*) usock->in.buf) +
-                        usock->in.len, &sz);
-                    if (rc < 0)
-                        goto err;
-                    usock->in.len += sz;
-                    if (usock->in.op == SP_USOCK_INOP_RECV_PARTIAL ||
-                          usock->in.len == usock->in.buflen) {
-                        usock->in.op = SP_USOCK_INOP_NONE;
-                        sp_poller_reset_in (&self->poller, &usock->hndl);
-                        sp_assert ((*usock->sink)->received);
-                        (*usock->sink)->received (usock->sink,
-                            usock, usock->in.len);
-                    }
-                    break;
-                case SP_USOCK_INOP_ACCEPT:
-                    newsock = accept (usock->s, NULL, NULL);
-                    if (newsock == -1) {
-
-                        /*  The following are recoverable errors when accepting
-                            a new connection. We can continue waiting for new
-                            connection without even notifying the user. */
-                        if (errno == ECONNABORTED ||
-                              errno == EPROTO || errno == ENOBUFS ||
-                              errno == ENOMEM || errno == EMFILE ||
-                              errno == ENFILE)
-                            break;
-
-                        usock->in.op = SP_USOCK_INOP_NONE;
-                        sp_poller_reset_in (&self->poller, &usock->hndl);
-                        rc = -errno;
-                        goto err;
-                    }
-                    usock->in.op = SP_USOCK_INOP_NONE;
-                    sp_poller_reset_in (&self->poller, &usock->hndl);
-                    sp_assert ((*usock->sink)->accepted);
-                    (*usock->sink)->accepted (usock->sink, usock, newsock);
-                    break;
-                default:
-                    /*  TODO:  When async connect succeeds both OUT and IN
-                        are signaled, which means we can end up here. */
-                    sp_assert (0);
-                }
-                break;
-            case SP_POLLER_OUT:
-                switch (usock->out.op) {
-                case SP_USOCK_OUTOP_SEND:
-                case SP_USOCK_OUTOP_SEND_PARTIAL:
-                    sz = usock->out.buflen - usock->out.len;
-                    rc = sp_usock_send_raw (usock->s, ((char*) usock->out.buf) +
-                        usock->out.len, &sz);
-                    if (rc < 0)
-                        goto err;
-                    usock->out.len += sz;
-                    if (usock->out.op == SP_USOCK_OUTOP_SEND_PARTIAL ||
-                          usock->out.len == usock->out.buflen) {
-                        usock->out.op = SP_USOCK_OUTOP_NONE;
-                        sp_poller_reset_out (&self->poller, &usock->hndl);
-                        sp_assert ((*usock->sink)->sent);
-                        (*usock->sink)->sent (usock->sink,
-                            usock, usock->out.len);
-                    }
-                    break;
-                case SP_USOCK_OUTOP_CONNECT:
-                    usock->out.op = SP_USOCK_OUTOP_NONE;
-                    sp_poller_reset_out (&self->poller, &usock->hndl);
-                    rc = sp_usock_geterr (usock->s);
-                    if (rc != 0)
-                        goto err;
-                    sp_assert ((*usock->sink)->connected);
-                    (*usock->sink)->connected (usock->sink, usock);
-                    break;
-                default:
-                    sp_assert (0);
-                }
-                break;
-            case SP_POLLER_ERR:
-                rc = sp_usock_geterr (usock->s);
-err:
-                sp_assert ((*usock->sink)->err);
-                (*usock->sink)->err (usock->sink, usock, rc);
-                break;
-            default:
-                sp_assert (0);
-            }
-        }
-
-        /*  Process any external events. */
-        sp_mutex_lock (&self->events_sync);
-        while (1) {
-            ehndl = sp_cont (sp_queue_pop (&self->events),
-                struct sp_event_hndl, item);
-            if (!ehndl)
-                break;
-            self->vfptr->event (self, ehndl->event, ehndl);
-        }
-        sp_mutex_unlock (&self->events_sync);
-    }
 }
 
 static int sp_usock_send_raw (int s, const void *buf, size_t *len)

@@ -81,8 +81,8 @@ int sp_timeout_timeout (struct sp_timeout *self)
     if (sp_fast (sp_list_empty (&self->timeouts)))
         return -1;
 
-    timeout = sp_cont (sp_list_begin (&self->timeouts),
-        struct sp_timeout_hndl, list)->timeout - sp_clock_now (&self->clock);
+    timeout = (int) (sp_cont (sp_list_begin (&self->timeouts),
+        struct sp_timeout_hndl, list)->timeout - sp_clock_now (&self->clock));
     return timeout < 0 ? 0 : timeout;
 }
 

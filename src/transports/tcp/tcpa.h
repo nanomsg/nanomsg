@@ -42,7 +42,8 @@ struct sp_tcpa {
     struct sp_list_item item;
 };
 
-void sp_tcpa_init (struct sp_tcpa *self, int s, struct sp_usock *usock);
+void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
+    int s, struct sp_usock *usock);
 void sp_tcpa_term (struct sp_tcpa *self);
 
 #endif

@@ -120,7 +120,7 @@ static void sp_tcpb_accepted (const struct sp_sink **self,
 
     tcpa = sp_alloc (sizeof (struct sp_tcpa));
     alloc_assert (tcpa);
-    sp_tcpa_init (tcpa, s, usock);
+    sp_tcpa_init (tcpa, &tcpb->epbase, s, usock);
     sp_list_insert (&tcpb->tcpas, &tcpa->item, sp_list_end (&tcpb->tcpas));
 }
 

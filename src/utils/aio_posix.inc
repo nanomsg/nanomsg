@@ -84,19 +84,19 @@ void sp_cp_unlock (struct sp_cp *self)
     sp_mutex_unlock (&self->sync);
 }
 
-void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
+void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event)
 {
     /*  In case the event is fired from inside of the worker thread we can
         invoke the handler straight away. */
     if (sp_fast (sp_thread_current (&self->worker))) {
-        self->vfptr->event (self, event, hndl);
+        self->vfptr->event (self, op, event);
         return;
     }
 
     /*  Otherwise enqueue the event for later processing. */
-    hndl->event = event;
+    event->op = op;
     sp_mutex_lock (&self->events_sync);
-    sp_queue_push (&self->events, &hndl->item);
+    sp_queue_push (&self->events, &event->item);
     sp_mutex_unlock (&self->events_sync);
     sp_efd_signal (&self->efd);
 }
@@ -109,9 +109,9 @@ static void sp_cp_worker (void *arg)
     struct sp_cp_op_hndl *ophndl;
     struct sp_timeout_hndl *tohndl;
     struct sp_timer *timer;
-    int event;
+    int op;
     struct sp_poller_hndl *phndl;
-    struct sp_event_hndl *ehndl;
+    struct sp_event *event;
     struct sp_usock *usock;
     size_t sz;
     int newsock;
@@ -187,7 +187,7 @@ if (rc == -EINTR) goto again;
 
         /*  Process any events from the poller. */
         while (1) {
-            rc = sp_poller_event (&self->poller, &event, &phndl);
+            rc = sp_poller_event (&self->poller, &op, &phndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);
@@ -196,14 +196,14 @@ if (rc == -EINTR) goto again;
                 no action in response. Their sole intent is to interrupt the
                 waiting. */
             if (phndl == &self->efd_hndl) {
-                sp_assert (event == SP_POLLER_IN);
+                sp_assert (op == SP_POLLER_IN);
                 sp_efd_unsignal (&self->efd);
                 continue;
             }
 
             /*  Process the I/O event. */
             usock = sp_cont (phndl, struct sp_usock, hndl);
-            switch (event) {
+            switch (op) {
             case SP_POLLER_IN:
                 switch (usock->in.op) {
                 case SP_USOCK_INOP_RECV:
@@ -294,11 +294,11 @@ err:
         /*  Process any external events. */
         sp_mutex_lock (&self->events_sync);
         while (1) {
-            ehndl = sp_cont (sp_queue_pop (&self->events),
-                struct sp_event_hndl, item);
-            if (!ehndl)
+            event = sp_cont (sp_queue_pop (&self->events),
+                struct sp_event, item);
+            if (!event)
                 break;
-            self->vfptr->event (self, ehndl->event, ehndl);
+            self->vfptr->event (self, event->op, event);
         }
         sp_mutex_unlock (&self->events_sync);
     }

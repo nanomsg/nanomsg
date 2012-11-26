@@ -97,8 +97,8 @@ struct sp_pipebase_vfptr {
 struct sp_pipebase {
     const struct sp_pipebase_vfptr *vfptr;
     struct sp_epbase *epbase;
-    struct sp_event_hndl inevent;
-    struct sp_event_hndl outevent;
+    struct sp_event inevent;
+    struct sp_event outevent;
     void *data;
 };
 

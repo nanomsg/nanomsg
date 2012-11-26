@@ -32,8 +32,8 @@
 #define SP_SOCK_EVENT_OUT 2
 
 /*  sp_cp callbacks. */
-static void sp_sock_event (struct sp_cp *self, int event,
-    struct sp_event_hndl *hndl);
+static void sp_sock_event (struct sp_cp *self, int op,
+    struct sp_event *event);
 static const struct sp_cp_vfptr sp_sock_cp_vfptr = {
     sp_sock_event
 };
@@ -241,8 +241,8 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
         &((struct sp_pipebase*) pipe)->outevent);
 }
 
-static void sp_sock_event (struct sp_cp *self, int event,
-    struct sp_event_hndl *hndl)
+static void sp_sock_event (struct sp_cp *self, int op,
+    struct sp_event *event)
 {
     int rc;
     struct sp_sockbase *sockbase;
@@ -250,16 +250,16 @@ static void sp_sock_event (struct sp_cp *self, int event,
 
     sockbase = sp_cont (self, struct sp_sockbase, cp);
 
-    switch (event) {
+    switch (op) {
     case SP_SOCK_EVENT_IN:
-        pipebase = sp_cont (hndl, struct sp_pipebase, inevent);
+        pipebase = sp_cont (event, struct sp_pipebase, inevent);
         rc = sockbase->vfptr->in (sockbase, (struct sp_pipe*) pipebase);
         errnum_assert (rc >= 0, -rc);
         if (rc == 1)
             sp_cond_post (&sockbase->cond);
         return;
     case SP_SOCK_EVENT_OUT:
-        pipebase = sp_cont (hndl, struct sp_pipebase, outevent);
+        pipebase = sp_cont (event, struct sp_pipebase, outevent);
         rc = sockbase->vfptr->out (sockbase, (struct sp_pipe*) pipebase);
         errnum_assert (rc >= 0, -rc);
         if (rc == 1)

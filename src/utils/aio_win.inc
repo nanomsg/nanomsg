@@ -49,12 +49,12 @@ void sp_cp_unlock (struct sp_cp *self)
     sp_mutex_unlock (&self->sync);
 }
 
-void sp_cp_post (struct sp_cp *self, int event, struct sp_event_hndl *hndl)
+void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event)
 {
     BOOL brc;
 
-    brc = PostQueuedCompletionStatus (self->hndl, (DWORD) event,
-        (ULONG_PTR) hndl, NULL);
+    brc = PostQueuedCompletionStatus (self->hndl, (DWORD) op,
+        (ULONG_PTR) event, NULL);
     win_assert (brc);
 }
 

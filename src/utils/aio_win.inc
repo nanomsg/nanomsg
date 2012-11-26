@@ -20,6 +20,152 @@
     IN THE SOFTWARE.
 */
 
+#include "aio.h"
+#include "win.h"
+#include "err.h"
+
+/*  Private functions. */
+static void sp_usock_tune (struct sp_usock *self);
+
+void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
+    struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->cp = cp;
+    self->active = 0;
+}
+
+void sp_timer_term (struct sp_timer *self)
+{
+    sp_timer_stop (self);
+}
+
+void sp_timer_start (struct sp_timer *self, int timeout)
+{
+    int rc;
+
+    /*  If the timer is active, cancel it first. */
+    if (self->active)
+        sp_timer_stop (self);
+
+    self->active = 1;
+    rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        /* TODO: Interrupt the worker thread. */;
+}
+
+void sp_timer_stop (struct sp_timer *self)
+{
+    int rc;
+
+    /*  If the timer is not active, do nothing. */
+    if (!self->active)
+         return;
+
+    rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        /* TODO: Interrupt the worker thread. */;
+}
+
+int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
+    int domain, int type, int protocol, struct sp_cp *cp)
+{
+    HANDLE wcp;
+
+    self->sink = sink;
+    self->cp = cp;
+    self->domain = domain;
+    self->type = type;
+    self->protocol = protocol;
+
+    /*  Open the underlying socket. */
+    self->s = socket (domain, type, protocol);
+    if (self->s == INVALID_SOCKET)
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
+
+    sp_usock_tune (self);
+
+    /*  On Windows platform, socket is assocaited with a completion port
+        immediately after creation. */
+    wcp = CreateIoCompletionPort ((HANDLE) self->s, cp->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (wcp);
+
+    return 0;
+}
+
+const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_sink **sink)
+{
+    const struct sp_sink **original;
+
+    original = self->sink;
+    self->sink = sink;
+    return original;
+}
+
+int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+    int s, const struct sp_sink **sink, struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->s = s;
+    self->cp = cp;
+    self->domain = parent->domain;
+    self->type = parent->type;
+    self->protocol = parent->protocol;
+
+    sp_usock_tune (self);
+
+    return 0;
+}
+
+static void sp_usock_tune (struct sp_usock *self)
+{
+    int rc;
+    int opt;
+    u_long flags;
+    DWORD only;
+#if defined HANDLE_FLAG_INHERIT
+    BOOL brc;
+#endif
+
+    /*  Switch the socket to the non-blocking mode. All underlying sockets
+        are always used in the asynchronous mode. */
+    flags = 1;
+    rc = ioctlsocket (self->s, FIONBIO, &flags);
+    wsa_assert (rc != SOCKET_ERROR);
+
+    /*  On TCP sockets switch off the Nagle's algorithm to get
+        the best possible latency. */
+    if ((self->domain == AF_INET || self->domain == AF_INET6) &&
+          self->type == SOCK_STREAM) {
+        opt = 1;
+        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY,
+            (const char*) &opt, sizeof (opt));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
+
+    /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
+        by default. In such case, switch it on. */
+#if defined IPV6_V6ONLY
+    if (self->domain == AF_INET6) {
+        only = 0;
+        rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
+            (const char*) &only, sizeof (only));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
+#endif
+
+    /*  Disable inheriting the socket to the child processes. */
+#if defined HANDLE_FLAG_INHERIT
+    brc = SetHandleInformation ((HANDLE) self->s, HANDLE_FLAG_INHERIT, 0);
+    win_assert (brc);
+#endif
+}
+
 void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {
     /*  Create system-level completion port. */

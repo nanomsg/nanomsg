@@ -20,14 +20,196 @@
     IN THE SOFTWARE.
 */
 
+#include "aio.h"
+#include "err.h"
 #include "cont.h"
 #include "fast.h"
 
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 /*  Private functions. */
 static void sp_cp_worker (void *arg);
+static void sp_usock_tune (struct sp_usock *self);
 static int sp_usock_send_raw (int s, const void *buf, size_t *len);
 static int sp_usock_recv_raw (int s, void *buf, size_t *len);
 static int sp_usock_geterr (int s);
+
+void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
+    struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->cp = cp;
+    self->active = 0;
+}
+
+void sp_timer_term (struct sp_timer *self)
+{
+    sp_timer_stop (self);
+}
+
+void sp_timer_start (struct sp_timer *self, int timeout)
+{
+    int rc;
+
+    /*  If the timer is active, cancel it first. */
+    if (self->active)
+        sp_timer_stop (self);
+
+    self->active = 1;
+    rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        sp_efd_signal (&self->cp->efd);
+}
+
+void sp_timer_stop (struct sp_timer *self)
+{
+    int rc;
+
+    /*  If the timer is not active, do nothing. */
+    if (!self->active)
+         return;
+
+    rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker))
+        sp_efd_signal (&self->cp->efd);
+}
+
+int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
+    int domain, int type, int protocol, struct sp_cp *cp)
+{
+#if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
+    int rc;
+#endif
+
+    self->sink = sink;
+    self->cp = cp;
+    self->in.op = SP_USOCK_INOP_NONE;
+    self->out.op = SP_USOCK_OUTOP_NONE;
+    self->add_hndl.op = SP_USOCK_OP_ADD;
+    self->rm_hndl.op = SP_USOCK_OP_RM;
+    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->out.hndl.op = SP_USOCK_OP_OUT;
+    self->domain = domain;
+    self->type = type;
+    self->protocol = protocol;
+
+    /*  If the operating system allows to directly open the socket with CLOEXEC
+        flag, do so. That way there are no race conditions. */
+#ifdef SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+
+    /*  Open the underlying socket. */
+    self->s = socket (domain, type, protocol);
+    if (self->s < 0)
+       return -errno;
+
+    /*  Setting FD_CLOEXEC option immediately after socket creation is the
+        second best option. There is a race condition (if process is forked
+        between socket creation and setting the option) but the problem is
+        pretty unlikely to happen. */
+#if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
+    rc = fcntl (self->s, F_SETFD, FD_CLOEXEC);
+    errno_assert (rc != -1);
+#endif
+
+    sp_usock_tune (self);
+
+    return 0;
+}
+
+const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_sink **sink)
+{
+    const struct sp_sink **original;
+
+    original = self->sink;
+    self->sink = sink;
+    return original;
+}
+
+int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
+    int s, const struct sp_sink **sink, struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->s = s;
+    self->cp = cp;
+    self->in.op = SP_USOCK_INOP_NONE;
+    self->out.op = SP_USOCK_OUTOP_NONE;
+    self->add_hndl.op = SP_USOCK_OP_ADD;
+    self->rm_hndl.op = SP_USOCK_OP_RM;
+    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->out.hndl.op = SP_USOCK_OP_OUT;
+    self->domain = parent->domain;
+    self->type = parent->type;
+    self->protocol = parent->protocol;
+
+    sp_usock_tune (self);
+
+    return 0;
+}
+
+static void sp_usock_tune (struct sp_usock *self)
+{
+    int rc;
+    int opt;
+    int flags;
+    int only;
+
+    /*  If applicable, prevent SIGPIPE signal when writing to the connection
+        already closed by the peer. */
+#ifdef SO_NOSIGPIPE
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_NOSIGPIPE,
+        &opt, sizeof (opt));
+    errno_assert (rc == 0);
+#endif
+
+    /*  Switch the socket to the non-blocking mode. All underlying sockets
+        are always used in the asynchronous mode. */
+	flags = fcntl (self->s, F_GETFL, 0);
+	if (flags == -1)
+        flags = 0;
+	rc = fcntl (self->s, F_SETFL, flags | O_NONBLOCK);
+    errno_assert (rc != -1);
+
+    /*  On TCP sockets switch off the Nagle's algorithm to get
+        the best possible latency. */
+    if ((self->domain == AF_INET || self->domain == AF_INET6) &&
+          self->type == SOCK_STREAM) {
+        opt = 1;
+        rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY,
+            (const char*) &opt, sizeof (opt));
+        errno_assert (rc == 0);
+    }
+
+    /*  If applicable, disable delayed acknowledgements to improve latency. */
+#if defined TCP_NODELACK
+    opt = 1;
+    rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));
+    errno_assert (rc == 0);
+#endif
+
+    /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
+        by default. In such case, switch it on. */
+#if defined IPV6_V6ONLY
+    if (self->domain == AF_INET6) {
+        only = 0;
+        rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
+            (const char*) &only, sizeof (only));
+        errno_assert (rc == 0);
+    }
+#endif
+}
 
 void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {

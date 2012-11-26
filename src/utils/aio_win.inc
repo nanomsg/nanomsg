@@ -26,6 +26,7 @@
 
 /*  Private functions. */
 static void sp_usock_tune (struct sp_usock *self);
+static void sp_cp_worker (void *arg);
 
 void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
     struct sp_cp *cp)

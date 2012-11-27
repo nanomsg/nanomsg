@@ -87,6 +87,12 @@ if(SP_HAVE_ACCEPT4)
     add_definitions(-DSP_HAVE_ACCEPT4)
 endif()
 
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+list(APPEND CMAKE_REQUIRED_LIBRARIES anl)
+check_symbol_exists(getaddrinfo_a netdb.h HAVE_GETADDRINFO_A)
+list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES anl)
+list(REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+
 #  Decide which features to actually use.
 
 if(SP_HAVE_EPOLL)

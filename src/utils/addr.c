@@ -28,6 +28,8 @@
 #include <string.h>
 
 #ifndef SP_HAVE_WINDOWS
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif
@@ -261,6 +263,9 @@ void sp_addr_any (int flags, struct sockaddr_storage *result,
 {
     if (flags & SP_ADDR_IPV4ONLY) {
         result->ss_family = AF_INET;
+
+INADDR_ANY;
+
         ((struct sockaddr_in*) result)->sin_addr.s_addr =
             htonl (INADDR_ANY);
         *resultlen = sizeof (struct sockaddr_in);

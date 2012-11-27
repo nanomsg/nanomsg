@@ -33,7 +33,7 @@
 
 #include <string.h>
 
-static uint64_t sp_random_state = 0xfa9b23e307cc611f;
+static uint64_t sp_random_state = 0xfa9b23e307cc611fULL;
 
 void sp_random_seed ()
 {

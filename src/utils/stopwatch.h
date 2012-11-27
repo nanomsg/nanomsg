@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+/*  Measures time interval in microseconds. */
+
 struct sp_stopwatch {
     uint64_t start;
 };

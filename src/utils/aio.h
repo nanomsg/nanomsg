@@ -124,7 +124,8 @@ struct sp_cp {
     struct sp_mutex sync;
     struct sp_timeout timeout;
     HANDLE hndl;
-    int stop;
+    struct sp_event stop_event;
+    struct sp_event timer_event;
     struct sp_thread worker;
 };
 

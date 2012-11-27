@@ -38,13 +38,10 @@ uint64_t sp_stopwatch_term (struct sp_stopwatch *self)
 {
     LARGE_INTEGER tps;
     LARGE_INTEGER time;
-    double tpms;
 
     QueryPerformanceFrequency (&tps);
-    tpms = (double) (tps.QuadPart / 1000);
-
     QueryPerformanceCounter (&time);
-    return (uint64_t) ((time.QuadPart - self->start) / tpms);
+    return (uint64_t) ((time.QuadPart - self->start) * 1000000 / tps.QuadPart);
 }
 
 #else

@@ -22,7 +22,12 @@
 
 #include "aio.h"
 #include "win.h"
+#include "cont.h"
 #include "err.h"
+
+/*  Interal events IDs. */
+#define SP_CP_EVENT_STOP -1
+#define SP_CP_EVENT_TIMER -2
 
 /*  Private functions. */
 static void sp_usock_tune (struct sp_usock *self);
@@ -54,7 +59,7 @@ void sp_timer_start (struct sp_timer *self, int timeout)
     errnum_assert (rc >= 0, -rc);
 
     if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        /* TODO: Interrupt the worker thread. */;
+        sp_cp_post (self->cp, SP_CP_EVENT_TIMER, &self->cp->timer_event);
 }
 
 void sp_timer_stop (struct sp_timer *self)
@@ -68,7 +73,7 @@ void sp_timer_stop (struct sp_timer *self)
     rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        /* TODO: Interrupt the worker thread. */;
+        sp_cp_post (self->cp, SP_CP_EVENT_TIMER, &self->cp->timer_event);
 }
 
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
@@ -169,12 +174,15 @@ static void sp_usock_tune (struct sp_usock *self)
 
 void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
 {
+    self->vfptr = vfptr;
+    sp_mutex_init (&self->sync, 0);
+    sp_timeout_init (&self->timeout);
+
     /*  Create system-level completion port. */
     self->hndl = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
     win_assert (self->hndl);
 
     /*  Launch the worker thread. */
-    self->stop = 0;
     sp_thread_init (&self->worker, sp_cp_worker, self);
 }
 
@@ -182,8 +190,20 @@ void sp_cp_term (struct sp_cp *self)
 {
     BOOL brc;
 
+    /*  Ask worker thread to terminate. */
+    sp_cp_post (self, SP_CP_EVENT_STOP, &self->stop_event);
+
+    /*  Wait till it terminates. */
+    sp_thread_term (&self->worker);
+
+    /*  TODO: Cancel any pending operations
+        (unless closing CP terminates them automatically). */
+
+    /*  Deallocate the resources. */
     brc = CloseHandle (self->hndl);
     win_assert (brc);
+    sp_timeout_term (&self->timeout);
+    sp_mutex_term (&self->sync);
 }
 
 void sp_cp_lock (struct sp_cp *self)
@@ -200,19 +220,24 @@ void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event)
 {
     BOOL brc;
 
-    brc = PostQueuedCompletionStatus (self->hndl, (DWORD) op,
+    event->op = op;
+    brc = PostQueuedCompletionStatus (self->hndl, 0,
         (ULONG_PTR) event, NULL);
     win_assert (brc);
 }
 
 static void sp_cp_worker (void *arg)
 {
+    int rc;
     struct sp_cp *self;
     int timeout;
     BOOL brc;
     DWORD nbytes;
     ULONG_PTR key;
     LPOVERLAPPED olpd;
+    struct sp_timeout_hndl *tohndl;
+    struct sp_timer *timer;
+    struct sp_event *event;
 
     self = (struct sp_cp*) arg;
 
@@ -227,14 +252,39 @@ static void sp_cp_worker (void *arg)
             &olpd, timeout < 0 ? INFINITE : timeout);
         sp_mutex_lock (&self->sync);
 
-        if (sp_slow (!brc && !olpd)) {
-            /*  TODO: Timeout. */
+        /*  If there's an error that is not an timeout, fail. */
+        win_assert (brc || !olpd);
+
+        /*  Process any expired timers. */
+        while (1) {
+            rc = sp_timeout_event (&self->timeout, &tohndl);
+            if (rc == -EAGAIN)
+                break;
+            errnum_assert (rc == 0, -rc);
+
+            /*  Fire the timeout event. */
+            timer = sp_cont (tohndl, struct sp_timer, hndl);
+            sp_assert ((*timer->sink)->timeout);
+            (*timer->sink)->timeout (timer->sink, timer);
+        }
+
+        /*  Process the received event itself. */
+        event = (struct sp_event*) key;
+
+        /*  Custom events are reported via callback to the user. */
+        if (event->op >= 0) {
+            self->vfptr->event (self, event->op, event);
+            continue;
+        }
+
+        switch (event->op) {
+        case SP_CP_EVENT_STOP:
+            return;
+        case SP_CP_EVENT_TIMER:
+            continue;
+        default:
             sp_assert (0);
         }
-        win_assert (brc);
-
-        /*  TODO */
-        sp_assert (0);
     }
 }
 

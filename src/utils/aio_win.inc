@@ -354,12 +354,19 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 void sp_usock_accept (struct sp_usock *self)
 {
     BOOL brc;
-    char info [64];
+    char info [512];
     DWORD nbytes;
+    HANDLE wcp;
 
-    /*  TODO: Create newsock here. */
-    sp_assert (0);
+    /*  Open new socket and associate it with the completion port. */
+    self->newsock = socket (self->domain, self->type, self->protocol);
+    wsa_assert (self->newsock != INVALID_SOCKET);
+    wcp = CreateIoCompletionPort ((HANDLE) self->newsock, self->cp->hndl,
+        (ULONG_PTR) NULL, 0);
+    sp_assert (wcp);
 
+    /*  Asynchronously wait for new incoming connection. */
+    memset (&self->in, 0, sizeof (self->in));
     brc = AcceptEx (self->s, self->newsock, info, 0, 256, 256, &nbytes,
         &self->in);
     if (sp_fast (brc == TRUE)) {

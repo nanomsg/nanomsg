@@ -102,9 +102,7 @@ struct sp_pipebase {
     void *data;
 };
 
-/*  Initialise the pipe. Once this function returns the pipe is transferred
-    to a different critical section and should not be accessed from the original
-    context. */
+/*  Initialise the pipe.  */
 int sp_pipebase_init (struct sp_pipebase *self,
     const struct sp_pipebase_vfptr *vfptr, struct sp_epbase *epbase);
 

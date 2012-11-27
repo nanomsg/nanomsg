@@ -25,12 +25,16 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 
+#include <string.h>
+
+/*   Private functions. */
 static void sp_tcps_hdr_received (const struct sp_sink **self,
     struct sp_usock *usock, size_t len);
 static void sp_tcps_hdr_sent (const struct sp_sink **self,
     struct sp_usock *usock, size_t len);
 static void sp_tcps_hdr_timeout (const struct sp_sink **self,
     struct sp_timer *timer);
+static void sp_tcps_activate (struct sp_tcps *self);
 static void sp_tcps_received (const struct sp_sink **self,
     struct sp_usock *usock, size_t len);
 static void sp_tcps_sent (const struct sp_sink **self,
@@ -78,12 +82,29 @@ static const struct sp_sink sp_tcps_state_active = {
     NULL
 };
 
-void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock)
+/*  Pipe interface. */
+int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len);
+int sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len);
+
+const struct sp_pipebase_vfptr sp_tcps_pipebase_vfptr = {
+    sp_tcps_send,
+    sp_tcps_recv
+};
+
+void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
+    struct sp_usock *usock)
 {
+    int rc;
+
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
     self->sink = &sp_tcps_state_start;
     self->original_sink = sp_usock_setsink (usock, &self->sink);
+
+    /*  Initialise the pipe to communicate with the user. */
+    /*  TODO: Socket type may reject the pipe. What then? */
+    rc = sp_pipebase_init (&self->pipebase, &sp_tcps_pipebase_vfptr, epbase);
+    sp_assert (rc == 0);
 
     /*  Start the header timeout timer. */
     sp_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
@@ -111,9 +132,7 @@ static void sp_tcps_hdr_received (const struct sp_sink **self,
     sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_sent) {
-printf ("activated\n");
-        tcps->sink = &sp_tcps_state_active;
-        sp_timer_stop (&tcps->hdr_timeout);
+        sp_tcps_activate (tcps);
         return;
     }
 
@@ -136,9 +155,7 @@ static void sp_tcps_hdr_sent (const struct sp_sink **self,
     sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_received) {
-printf ("activated\n");
-        tcps->sink = &sp_tcps_state_active;
-        sp_timer_stop (&tcps->hdr_timeout);
+        sp_tcps_activate (tcps);
         return;
     }
 
@@ -154,7 +171,27 @@ printf ("activated\n");
 static void sp_tcps_hdr_timeout (const struct sp_sink **self,
     struct sp_timer *timer)
 {
+    /*  TODO: Header timeout. Drop the connection here. */
     sp_assert (0);
+}
+
+static void sp_tcps_activate (struct sp_tcps *self)
+{
+    self->sink = &sp_tcps_state_active;
+    sp_timer_stop (&self->hdr_timeout);
+
+    /*  Check the header. */
+    /*  TODO: If it does not conform, drop the connection. */
+    if (memcmp (self->hdr, "\0\0SP\0\0\0\0", 8) != 0)
+        sp_assert (0);
+
+    /*  Connection is ready for sending. Make outpipe available
+        to the SP socket. */
+    sp_pipebase_out (&self->pipebase);
+
+    /*  Start waiting for incoming messages. First, read the 8-byte size. */
+    self->instate = SP_TCPS_INSTATE_HDR;
+    sp_usock_recv (self->usock, self->inhdr, 8);
 }
 
 static void sp_tcps_received (const struct sp_sink **self,
@@ -171,6 +208,16 @@ static void sp_tcps_sent (const struct sp_sink **self,
 
 static void sp_tcps_err (const struct sp_sink **self,
     struct sp_usock *usock, int errnum)
+{
+    sp_assert (0);
+}
+
+int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
+{
+    sp_assert (0);
+}
+
+int sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
 {
     sp_assert (0);
 }

@@ -103,7 +103,7 @@ static void sp_tcpc_connected (const struct sp_sink **self,
     tcpc = sp_cont (self, struct sp_tcpc, sink);
 
     /*  Connect succeeded. Switch to the session state machine. */
-    sp_tcps_init (&tcpc->session, &tcpc->usock);
+    sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
 }
 
 static void sp_tcpc_err (const struct sp_sink **self,

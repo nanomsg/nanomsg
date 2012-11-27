@@ -23,14 +23,22 @@
 #ifndef SP_TCPS_INCLUDED
 #define SP_TCPS_INCLUDED
 
+#include "../../transport.h"
+
 #include "../../utils/aio.h"
 
 #include <stdint.h>
+
+#define SP_TCPS_INSTATE_HDR 1
+#define SP_TCPS_INSTATE_BODY 2
 
 struct sp_tcps {
 
     /*  Event sink. */
     const struct sp_sink *sink;
+
+    /*  Pipe to exchange messages with the user of the library. */
+    struct sp_pipebase pipebase;
 
     /*  The underlying TCP socket. */
     struct sp_usock *usock;
@@ -44,12 +52,19 @@ struct sp_tcps {
         prevents a simple DoS attack. */
     struct sp_timer hdr_timeout;
 
+    /*  State of inbound state machine. */
+    int instate;
+
+    /*  Buffer used to store the size of incoming message. */
+    uint8_t inhdr [8];
+
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */
     const struct sp_sink **original_sink;
 };
 
-void sp_tcps_init (struct sp_tcps *self, struct sp_usock *usock);
+void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
+    struct sp_usock *usock);
 void sp_tcps_term ();
 
 #endif

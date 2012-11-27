@@ -24,10 +24,11 @@
 
 #include "../../utils/err.h"
 
-void sp_tcpa_init (struct sp_tcpa *self, int s, struct sp_usock *usock)
+void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
+    int s, struct sp_usock *usock)
 {
     sp_usock_init_child (&self->usock, usock, s, NULL, usock->cp);
-    sp_tcps_init (&self->session, &self->usock);
+    sp_tcps_init (&self->session, epbase, &self->usock);
 }
 
 void sp_tcpa_term (struct sp_tcpa *self)

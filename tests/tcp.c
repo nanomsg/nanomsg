@@ -56,8 +56,6 @@ int main ()
     rc = sp_bind (sb, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
 
-sp_sleep (100000000);
-
     rc = sp_send (sc, "ABC", 3, 0);
     errno_assert (rc >= 0);
     sp_assert (rc == 3);

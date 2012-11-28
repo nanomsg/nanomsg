@@ -155,6 +155,16 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
 
     sp_usock_tune (self);
 
+    /*  Register the new socket with the suplied completion port. 
+        If the function is called from the worker thread, modify the pollset
+        straight away. Otherwise send an event to the worker thread. */
+    if (sp_thread_current (&self->cp->worker))
+        sp_poller_add (&self->cp->poller, self->s, &self->hndl);
+    else {
+        sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+        sp_efd_signal (&self->cp->efd);
+    }
+
     return 0;
 }
 

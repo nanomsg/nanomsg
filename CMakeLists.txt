@@ -20,103 +20,108 @@
 #   IN THE SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 2.8)
-include(CheckSymbolExists)
+cmake_minimum_required (VERSION 2.8)
+include (CheckIncludeFiles)
+include (CheckSymbolExists)
 
-project(nanomsg)
-enable_testing()
+project (nanomsg)
+enable_testing ()
 
 #  Platform checks.
 
-if(WIN32)
-    add_definitions(-DSP_HAVE_WINDOWS)
-endif()
+if (WIN32)
+    add_definitions (-DSP_HAVE_WINDOWS)
+endif ()
 
 if (APPLE)
-    add_definitions(-DSP_HAVE_OSX)
-endif()
+    add_definitions (-DSP_HAVE_OSX)
+endif ()
 
 #  Feature checks.
 
-find_package(Threads)
+find_package (Threads)
 
-check_include_files(sys/eventfd.h SP_HAVE_EVENTFD)
-if(SP_HAVE_EVENTFD)
-    add_definitions(-DSP_HAVE_EVENTFD)
+check_include_files (sys/eventfd.h SP_HAVE_EVENTFD)
+if (SP_HAVE_EVENTFD)
+    add_definitions (-DSP_HAVE_EVENTFD)
 endif()
 
-check_symbol_exists(socketpair sys/socket.h SP_HAVE_SOCKETPAIR)
-if(SP_HAVE_SOCKETPAIR)
-    add_definitions(-DSP_HAVE_SOCKETPAIR)
+check_symbol_exists (socketpair sys/socket.h SP_HAVE_SOCKETPAIR)
+if (SP_HAVE_SOCKETPAIR)
+    add_definitions (-DSP_HAVE_SOCKETPAIR)
 endif()
 
-check_symbol_exists(CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
-if(SP_HAVE_CLOCK_MONOTONIC)
-    add_definitions(-DSP_HAVE_CLOCK_MONOTONIC)
+check_symbol_exists (CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
+if (SP_HAVE_CLOCK_MONOTONIC)
+    add_definitions (-DSP_HAVE_CLOCK_MONOTONIC)
 endif()
 
-check_symbol_exists(CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
-if(SP_HAVE_CLOCK_MONOTONIC)
-    add_definitions(-DSP_HAVE_CLOCK_MONOTONIC)
+check_symbol_exists (CLOCK_MONOTONIC time.h SP_HAVE_CLOCK_MONOTONIC)
+if (SP_HAVE_CLOCK_MONOTONIC)
+    add_definitions (-DSP_HAVE_CLOCK_MONOTONIC)
 endif()
 
-check_symbol_exists(gethrtime time.h SP_HAVE_GETHRTIME)
-if(SP_HAVE_GETHRTIME)
-    add_definitions(-DSP_HAVE_GETHRTIME)
+check_symbol_exists (gethrtime time.h SP_HAVE_GETHRTIME)
+if (SP_HAVE_GETHRTIME)
+    add_definitions (-DSP_HAVE_GETHRTIME)
+endif ()
+
+check_include_files (sys/epoll.h SP_HAVE_EPOLL)
+if (SP_HAVE_EPOLL)
+    add_definitions (-DSP_HAVE_EPOLL)
+endif ()
+
+check_include_files (poll.h SP_HAVE_POLL)
+if (SP_HAVE_POLL)
+    add_definitions (-DSP_HAVE_POLL)
 endif()
 
-check_include_files(sys/epoll.h SP_HAVE_EPOLL)
-if(SP_HAVE_EPOLL)
-    add_definitions(-DSP_HAVE_EPOLL)
-endif()
+check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
+if (SP_HAVE_IFADDRS)
+    add_definitions (-DSP_HAVE_IFADDRS)
+endif ()
 
-check_include_files(poll.h SP_HAVE_POLL)
-if(SP_HAVE_POLL)
-    add_definitions(-DSP_HAVE_POLL)
-endif()
+list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+check_symbol_exists (accept4 sys/socket.h SP_HAVE_ACCEPT4)
+list (REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+if (SP_HAVE_ACCEPT4)
+    add_definitions (-DSP_HAVE_ACCEPT4)
+endif ()
 
-check_include_files(ifaddrs.h SP_HAVE_IFADDRS)
-if(SP_HAVE_IFADDRS)
-    add_definitions(-DSP_HAVE_IFADDRS)
-endif()
-
-list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
-check_symbol_exists(accept4 sys/socket.h SP_HAVE_ACCEPT4)
-list(REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
-if(SP_HAVE_ACCEPT4)
-    add_definitions(-DSP_HAVE_ACCEPT4)
-endif()
-
-list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
-list(APPEND CMAKE_REQUIRED_LIBRARIES anl)
-check_symbol_exists(getaddrinfo_a netdb.h HAVE_GETADDRINFO_A)
-list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES anl)
-list(REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
-if(SP_HAVE_GETADDRINFO_A)
-    add_definitions(-DSP_HAVE_GETADDRINFO_A)
-endif()
+list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+list (APPEND CMAKE_REQUIRED_LIBRARIES anl)
+check_symbol_exists (getaddrinfo_a netdb.h HAVE_GETADDRINFO_A)
+list (REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES anl)
+list (REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+if (SP_HAVE_GETADDRINFO_A)
+    add_definitions (-DSP_HAVE_GETADDRINFO_A)
+endif ()
 
 #  Decide which features to actually use.
 
-if(SP_HAVE_EPOLL)
-    add_definitions(-DSP_USE_EPOLL)
-elseif(SP_HAVE_POLL)
-    add_definitions(-DSP_USE_POLL)
-endif()
+if (SP_HAVE_EPOLL)
+    add_definitions (-DSP_USE_EPOLL)
+elseif (SP_HAVE_POLL)
+    add_definitions (-DSP_USE_POLL)
+endif ()
 
-if(SP_HAVE_EVENTFD)
-    add_definitions(-DSP_USE_EVENTFD)
-elseif(SP_HAVE_SOCKETPAIR)
-    add_definitions(-DSP_USE_SOCKETPAIR)
-endif()
+if (SP_HAVE_EVENTFD)
+    add_definitions (-DSP_USE_EVENTFD)
+elseif (SP_HAVE_SOCKETPAIR)
+    add_definitions (-DSP_USE_SOCKETPAIR)
+endif ()
 
-if(SP_HAVE_IFADDRS)
-    add_definitions(-DSP_USE_IFADDRS)
-endif()
+if (SP_HAVE_IFADDRS)
+    add_definitions (-DSP_USE_IFADDRS)
+endif ()
 
-add_subdirectory(src)
-add_subdirectory(tests)
-add_subdirectory(perf)
+#  Subdirectiories to build.
 
-install(FILES src/sp.h DESTINATION include/sp)
+add_subdirectory (src)
+add_subdirectory (tests)
+add_subdirectory (perf)
+
+#  Installation.
+
+install (FILES src/sp.h DESTINATION include/sp)
 

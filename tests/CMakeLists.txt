@@ -20,17 +20,17 @@
 #   IN THE SOFTWARE.
 #
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-macro(add_libnanomsg_test NAME)
-    add_executable(${NAME} ${NAME}.c)
-    target_link_libraries(${NAME} nanomsg)
-    add_test(${NAME} ${CMAKE_BINARY_DIR}/${NAME})
-endmacro(add_libnanomsg_test)
+macro (add_libnanomsg_test NAME)
+    add_executable (${NAME} ${NAME}.c)
+    target_link_libraries (${NAME} nanomsg)
+    add_test (${NAME} ${CMAKE_BINARY_DIR}/${NAME})
+endmacro (add_libnanomsg_test)
 
-add_libnanomsg_test(basic)
-add_libnanomsg_test(block)
-add_libnanomsg_test(pubsub)
-add_libnanomsg_test(reqrep)
-add_libnanomsg_test(tcp)
+add_libnanomsg_test (basic)
+add_libnanomsg_test (block)
+add_libnanomsg_test (pubsub)
+add_libnanomsg_test (reqrep)
+add_libnanomsg_test (tcp)
 

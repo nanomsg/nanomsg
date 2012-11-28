@@ -20,11 +20,11 @@
 #   IN THE SOFTWARE.
 #
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_library(nanomsg SHARED
+add_library (nanomsg SHARED
     pattern.h
     sp.h
     transport.h
@@ -118,18 +118,18 @@ add_library(nanomsg SHARED
     transports/tcp/tcps.c
     )
 
-add_definitions(-DSP_EXPORTS)
+add_definitions (-DSP_EXPORTS)
 
-if(UNIX AND NOT APPLE)
-    target_link_libraries(nanomsg rt)
-endif()
+if (UNIX AND NOT APPLE)
+    target_link_libraries (nanomsg rt)
+endif ()
 
-if(WIN32)
-    target_link_libraries(nanomsg ws2_32)
-    target_link_libraries(nanomsg Mswsock.lib)
-endif()
+if (WIN32)
+    target_link_libraries (nanomsg ws2_32)
+    target_link_libraries (nanomsg Mswsock.lib)
+endif ()
 
-target_link_libraries(nanomsg ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
-install(TARGETS nanomsg DESTINATION lib)
+install (TARGETS nanomsg DESTINATION lib)
 

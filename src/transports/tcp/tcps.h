@@ -26,11 +26,15 @@
 #include "../../transport.h"
 
 #include "../../utils/aio.h"
+#include "../../utils/msg.h"
 
 #include <stdint.h>
 
 #define SP_TCPS_INSTATE_HDR 1
 #define SP_TCPS_INSTATE_BODY 2
+
+#define SP_TCPS_OUTSTATE_HDR 1
+#define SP_TCPS_OUTSTATE_BODY 2
 
 struct sp_tcps {
 
@@ -52,11 +56,23 @@ struct sp_tcps {
         prevents a simple DoS attack. */
     struct sp_timer hdr_timeout;
 
-    /*  State of inbound state machine. */
+    /*  State of the inbound state machine. */
     int instate;
 
-    /*  Buffer used to store the size of incoming message. */
+    /*  Buffer used to store the header of incoming message. */
     uint8_t inhdr [8];
+
+    /*  Message being received at the moment. */
+    struct sp_msg inmsg;
+
+    /*  State of the outbound state machine. */
+    int outstate;
+
+    /*  Buffer for the header of outgoing message. */
+    uint8_t outhdr [8];
+
+    /*  Message being sent at the moment. */
+    struct sp_msg outmsg;
 
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */

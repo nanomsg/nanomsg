@@ -110,7 +110,8 @@ elseif(SP_HAVE_SOCKETPAIR)
     add_definitions(-DSP_USE_SOCKETPAIR)
 endif()
 
-if(SP_HAVE_IFADDRS)
+# Bug in FreeBSD prevents ifaddrs.h to be detected by CMake.
+if(SP_HAVE_IFADDRS OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     add_definitions(-DSP_USE_IFADDRS)
 endif()
 

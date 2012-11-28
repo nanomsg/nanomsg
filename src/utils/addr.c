@@ -70,23 +70,7 @@ int sp_addr_parse_port (const char *addr, const char **colon)
     return port;
 }
 
-#if defined SP_HAVE_WINDOWS
-
-int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
-{
-    /*  Asterisk is a special name meaning "all interfaces". */
-    if (addrlen == 1 && addr [0] == '*') {
-        sp_addr_any (flags, result, resultlen);
-        return 0;
-    }
-
-    /*  On Windows there are no sane network interface names. We'll treat the
-        name as a IP address literal. */
-    return sp_addr_parse_literal (addr, addrlen, flags, result, resultlen);
-}
-
-#elif defined SP_USE_IFADDRS
+#if defined SP_USE_IFADDRS
 
 #include <ifaddrs.h>
 
@@ -161,6 +145,25 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
     /*  There's no such interface. */
     freeifaddrs (ifaces);
     return -ENODEV;
+}
+
+#else
+
+/*  The last resort case. If we haven't found any mechanism for turning
+    NIC names into addresses, we'll try to resolve the string as an address
+    literal. */
+int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, sp_socklen *resultlen)
+{
+    /*  Asterisk is a special name meaning "all interfaces". */
+    if (addrlen == 1 && addr [0] == '*') {
+        sp_addr_any (flags, result, resultlen);
+        return 0;
+    }
+
+    /*  On Windows there are no sane network interface names. We'll treat the
+        name as a IP address literal. */
+    return sp_addr_parse_literal (addr, addrlen, flags, result, resultlen);
 }
 
 #endif

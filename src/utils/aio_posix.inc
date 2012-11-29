@@ -409,8 +409,7 @@ if (rc == -EINTR) goto again;
                         usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->received);
-                        (*usock->sink)->received (usock->sink,
-                            usock, usock->in.len);
+                        (*usock->sink)->received (usock->sink, usock);
                     }
                     break;
                 case SP_USOCK_INOP_ACCEPT:
@@ -455,8 +454,7 @@ if (rc == -EINTR) goto again;
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->sent);
-                        (*usock->sink)->sent (usock->sink,
-                            usock, usock->out.len);
+                        (*usock->sink)->sent (usock->sink, usock);
                     }
                     break;
                 case SP_USOCK_OUTOP_CONNECT:
@@ -640,7 +638,7 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
     /*  Success. */
     if (sp_fast (nbytes == len)) {
         sp_assert ((*self->sink)->sent);
-        (*self->sink)->sent (self->sink, self, nbytes);
+        (*self->sink)->sent (self->sink, self);
         return;
     }
 
@@ -681,7 +679,7 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     /*  Success. */
     if (sp_fast (nbytes == len)) {
         sp_assert ((*self->sink)->received);
-        (*self->sink)->received (self->sink, self, nbytes);
+        (*self->sink)->received (self->sink, self);
         return;
     }
 

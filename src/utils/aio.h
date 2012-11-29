@@ -38,9 +38,9 @@ struct sp_event;
 
 struct sp_sink {
     void (*received) (const struct sp_sink **self,
-        struct sp_usock *usock, size_t len);
+        struct sp_usock *usock);
     void (*sent) (const struct sp_sink **self,
-        struct sp_usock *usock, size_t len);
+        struct sp_usock *usock);
     void (*connected) (const struct sp_sink **self,
         struct sp_usock *usock);
     void (*accepted) (const struct sp_sink **self,

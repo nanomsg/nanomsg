@@ -32,16 +32,16 @@
 
 /*   Private functions. */
 static void sp_tcps_hdr_received (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len);
+    struct sp_usock *usock);
 static void sp_tcps_hdr_sent (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len);
+    struct sp_usock *usock);
 static void sp_tcps_hdr_timeout (const struct sp_sink **self,
     struct sp_timer *timer);
 static void sp_tcps_activate (struct sp_tcps *self);
 static void sp_tcps_received (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len);
+    struct sp_usock *usock);
 static void sp_tcps_sent (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len);
+    struct sp_usock *usock);
 static void sp_tcps_err (const struct sp_sink **self,
     struct sp_usock *usock, int errnum);
 
@@ -126,13 +126,11 @@ void sp_tcps_term ()
 }
 
 static void sp_tcps_hdr_received (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len)
+    struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
 
     tcps = sp_cont (self, struct sp_tcps, sink);
-
-    sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_sent) {
         sp_tcps_activate (tcps);
@@ -149,13 +147,11 @@ static void sp_tcps_hdr_received (const struct sp_sink **self,
 }
 
 static void sp_tcps_hdr_sent (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len)
+    struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
 
     tcps = sp_cont (self, struct sp_tcps, sink);
-
-    sp_assert (len == 8);
 
     if (tcps->sink == &sp_tcps_state_received) {
         sp_tcps_activate (tcps);
@@ -198,7 +194,7 @@ static void sp_tcps_activate (struct sp_tcps *self)
 }
 
 static void sp_tcps_received (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len)
+    struct sp_usock *usock)
 {
     int rc;
     struct sp_tcps *tcps;
@@ -222,7 +218,7 @@ static void sp_tcps_received (const struct sp_sink **self,
 }
 
 static void sp_tcps_sent (const struct sp_sink **self,
-    struct sp_usock *usock, size_t len)
+    struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
 

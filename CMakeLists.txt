@@ -76,7 +76,7 @@ if (SP_HAVE_POLL)
     add_definitions (-DSP_HAVE_POLL)
 endif()
 
-check_include_files (ifaddrs.h SP_HAVE_IFADDRS)
+check_symbol_exists (getifaddrs "sys/types.h;ifaddrs.h" SP_HAVE_IFADDRS)
 if (SP_HAVE_IFADDRS)
     add_definitions (-DSP_HAVE_IFADDRS)
 endif ()
@@ -111,8 +111,7 @@ elseif (SP_HAVE_SOCKETPAIR)
     add_definitions (-DSP_USE_SOCKETPAIR)
 endif ()
 
-# Bug in FreeBSD prevents ifaddrs.h to be detected by CMake.
-if (SP_HAVE_IFADDRS OR ${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+if (SP_HAVE_IFADDRS)
     add_definitions (-DSP_USE_IFADDRS)
 endif ()
 

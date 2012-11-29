@@ -173,14 +173,12 @@ struct sp_usock {
     struct {
         int op;
         void *buf;
-        size_t buflen;
         size_t len;
         struct sp_cp_op_hndl hndl;
     } in;
     struct {
         int op;
         const void *buf;
-        size_t buflen;
         size_t len;
         struct sp_cp_op_hndl hndl;
     } out;

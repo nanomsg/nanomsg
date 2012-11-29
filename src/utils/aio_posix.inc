@@ -399,13 +399,12 @@ if (rc == -EINTR) goto again;
             case SP_POLLER_IN:
                 switch (usock->in.op) {
                 case SP_USOCK_INOP_RECV:
-                    sz = usock->in.buflen - usock->in.len;
-                    rc = sp_usock_recv_raw (usock->s, ((char*) usock->in.buf) +
-                        usock->in.len, &sz);
+                    sz = usock->in.len;
+                    rc = sp_usock_recv_raw (usock->s, usock->in.buf, &sz);
                     if (rc < 0)
                         goto err;
-                    usock->in.len += sz;
-                    if (usock->in.len == usock->in.buflen) {
+                    usock->in.len -= sz;
+                    if (!usock->in.len) {
                         usock->in.op = SP_USOCK_INOP_NONE;
                         sp_poller_reset_in (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->received);
@@ -444,13 +443,12 @@ if (rc == -EINTR) goto again;
             case SP_POLLER_OUT:
                 switch (usock->out.op) {
                 case SP_USOCK_OUTOP_SEND:
-                    sz = usock->out.buflen - usock->out.len;
-                    rc = sp_usock_send_raw (usock->s, ((char*) usock->out.buf) +
-                        usock->out.len, &sz);
+                    sz = usock->out.len;
+                    rc = sp_usock_send_raw (usock->s, usock->out.buf, &sz);
                     if (rc < 0)
                         goto err;
-                    usock->out.len += sz;
-                    if (usock->out.len == usock->out.buflen) {
+                    usock->out.len -= sz;
+                    if (!usock->out.len) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->sent);
@@ -644,9 +642,8 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 
     /*  There are still data to send in the background. */ 
     self->out.op = SP_USOCK_OUTOP_SEND;
-    self->out.buf = buf;
-    self->out.buflen = len;
-    self->out.len = nbytes;
+    self->out.buf = ((char*) buf) + nbytes;
+    self->out.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
@@ -685,9 +682,8 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
 
     /*  There are still data to receive in the background. */ 
     self->in.op = SP_USOCK_INOP_RECV;
-    self->in.buf = buf;
-    self->in.buflen = len;
-    self->in.len = nbytes;
+    self->in.buf = ((char*) buf) + nbytes;
+    self->in.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for in.
         Otherwise, ask worker thread to start polling for in. */

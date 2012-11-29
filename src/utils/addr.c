@@ -147,7 +147,60 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
     return -ENODEV;
 }
 
+#endif
+
+#if defined SP_USE_SIOCGIFADDR
+
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+
+int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, sp_socklen *resultlen)
+{
+    int rc;
+    int s;
+    struct ifreq req;
+
+    /*  Open the helper socket. */
+#ifdef SOCK_CLOEXEC
+    s = socket (AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
 #else
+    s = socket (AF_INET, SOCK_DGRAM, 0);
+#endif
+    errno_assert (s != -1);
+
+    /*  Create the interface name resolution request. */
+    if (sizeof (req.ifr_name) <= addrlen) {
+        rc = close (s);
+        errno_assert (rc == 0);
+        return -ENODEV;
+    }
+    memcpy (req.ifr_name, addr, addrlen);
+    req.ifr_name [addrlen] = 0;
+
+    /*  Execute the request. */
+    rc = ioctl (s, SIOCGIFADDR, (caddr_t) &req, sizeof (struct ifreq));
+    if (rc == -1) {
+        rc = close (s);
+        errno_assert (rc == 0);
+        return -ENODEV;
+    }
+
+    /*  Interface name resolution succeeded. Return the address to the user. */
+    /*  TODO: What about IPv6 addresses? */
+    sp_assert (req.ifr_addr.sa_family == AF_INET);
+    memcpy (result, (struct sockaddr_in*) &req.ifr_addr,
+        sizeof (struct sockaddr_in));
+    *resultlen = sizeof (struct sockaddr_in);
+    rc = close (s);
+    errno_assert (rc == 0);
+    return 0;
+}
+
+#endif
+
+#if defined SP_USE_LITERAL_IFADDR
 
 /*  The last resort case. If we haven't found any mechanism for turning
     NIC names into addresses, we'll try to resolve the string as an address

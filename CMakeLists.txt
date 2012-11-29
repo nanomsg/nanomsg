@@ -81,6 +81,11 @@ if (SP_HAVE_IFADDRS)
     add_definitions (-DSP_HAVE_IFADDRS)
 endif ()
 
+check_symbol_exists (SIOCGIFADDR sys/ioctl.h SP_HAVE_SIOCGIFADDR)
+if (SP_HAVE_SIOCGIFADDR)
+    add_definitions (-DSP_HAVE_SIOCGIFADDR)
+endif ()
+
 list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists (accept4 sys/socket.h SP_HAVE_ACCEPT4)
 list (REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
@@ -113,6 +118,10 @@ endif ()
 
 if (SP_HAVE_IFADDRS)
     add_definitions (-DSP_USE_IFADDRS)
+elseif (SP_HAVE_SIOCGIFADDR)
+    add_definitions (-DSP_USE_SIOCGIFADDR)
+else ()
+    add_definitions (-DSP_USE_LITERAL_IFADDR)
 endif ()
 
 #  Subdirectories to build.

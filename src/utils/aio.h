@@ -138,6 +138,8 @@ struct sp_cp {
 #include "thread.h"
 #include "mutex.h"
 
+#include <stdint.h>
+
 struct sp_timer {
     const struct sp_sink **sink;
     struct sp_cp *cp;
@@ -163,6 +165,8 @@ struct sp_cp_op_hndl {
 #define SP_USOCK_OUTOP_SEND 1
 #define SP_USOCK_OUTOP_CONNECT 2
 
+#define SP_USOCK_BATCH_SIZE 2048
+
 struct sp_usock {
     const struct sp_sink **sink;
     struct sp_cp *cp;
@@ -172,13 +176,16 @@ struct sp_usock {
     struct sp_cp_op_hndl rm_hndl;
     struct {
         int op;
-        void *buf;
+        uint8_t *buf;
         size_t len;
         struct sp_cp_op_hndl hndl;
+        uint8_t *batch;
+        size_t batch_len;
+        size_t batch_pos;
     } in;
     struct {
         int op;
-        const void *buf;
+        const uint8_t *buf;
         size_t len;
         struct sp_cp_op_hndl hndl;
     } out;

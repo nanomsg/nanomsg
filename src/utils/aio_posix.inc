@@ -24,8 +24,10 @@
 #include "err.h"
 #include "cont.h"
 #include "fast.h"
+#include "alloc.h"
 
 #define _GNU_SOURCE
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
@@ -36,9 +38,10 @@
 /*  Private functions. */
 static void sp_cp_worker (void *arg);
 static void sp_usock_tune (struct sp_usock *self);
-static int sp_usock_send_raw (int s, const void *buf, size_t *len);
-static int sp_usock_recv_raw (int s, void *buf, size_t *len);
-static int sp_usock_geterr (int s);
+static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
+    size_t *len);
+static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
+static int sp_usock_geterr (struct sp_usock *self);
 
 void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
     struct sp_cp *cp)
@@ -92,6 +95,9 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
 
     self->sink = sink;
     self->cp = cp;
+    self->in.batch = NULL;
+    self->in.batch_len = 0;
+    self->in.batch_pos = 0;
     self->in.op = SP_USOCK_INOP_NONE;
     self->out.op = SP_USOCK_OUTOP_NONE;
     self->add_hndl.op = SP_USOCK_OP_ADD;
@@ -143,6 +149,9 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->sink = sink;
     self->s = s;
     self->cp = cp;
+    self->in.batch = NULL;
+    self->in.batch_len = 0;
+    self->in.batch_pos = 0;
     self->in.op = SP_USOCK_INOP_NONE;
     self->out.op = SP_USOCK_OUTOP_NONE;
     self->add_hndl.op = SP_USOCK_OP_ADD;
@@ -400,7 +409,7 @@ if (rc == -EINTR) goto again;
                 switch (usock->in.op) {
                 case SP_USOCK_INOP_RECV:
                     sz = usock->in.len;
-                    rc = sp_usock_recv_raw (usock->s, usock->in.buf, &sz);
+                    rc = sp_usock_recv_raw (usock, usock->in.buf, &sz);
                     if (rc < 0)
                         goto err;
                     usock->in.len -= sz;
@@ -410,7 +419,7 @@ if (rc == -EINTR) goto again;
                         sp_assert ((*usock->sink)->received);
                         (*usock->sink)->received (usock->sink, usock);
                     }
-                    break;
+                    break;                    
                 case SP_USOCK_INOP_ACCEPT:
                     newsock = accept (usock->s, NULL, NULL);
                     if (newsock == -1) {
@@ -444,9 +453,10 @@ if (rc == -EINTR) goto again;
                 switch (usock->out.op) {
                 case SP_USOCK_OUTOP_SEND:
                     sz = usock->out.len;
-                    rc = sp_usock_send_raw (usock->s, usock->out.buf, &sz);
+                    rc = sp_usock_send_raw (usock, usock->out.buf, &sz);
                     if (rc < 0)
                         goto err;
+                    usock->out.buf += sz;
                     usock->out.len -= sz;
                     if (!usock->out.len) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
@@ -458,7 +468,7 @@ if (rc == -EINTR) goto again;
                 case SP_USOCK_OUTOP_CONNECT:
                     usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
-                    rc = sp_usock_geterr (usock->s);
+                    rc = sp_usock_geterr (usock);
                     if (rc != 0)
                         goto err;
                     sp_assert ((*usock->sink)->connected);
@@ -469,7 +479,7 @@ if (rc == -EINTR) goto again;
                 }
                 break;
             case SP_POLLER_ERR:
-                rc = sp_usock_geterr (usock->s);
+                rc = sp_usock_geterr (usock);
 err:
                 sp_assert ((*usock->sink)->err);
                 (*usock->sink)->err (usock->sink, usock, rc);
@@ -514,6 +524,9 @@ void sp_usock_term (struct sp_usock *self)
     sp_assert (0);
     sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
     sp_efd_signal (&self->cp->efd);
+
+    if (self->in.batch)
+        sp_free (self->in.batch);
 }
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
@@ -625,7 +638,7 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 
     /*  Try to send the data immediately. */
     nbytes = len;
-    rc = sp_usock_send_raw (self->s, buf, &nbytes);
+    rc = sp_usock_send_raw (self, buf, &nbytes);
     if (sp_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         sp_assert ((*self->sink)->err);
@@ -665,7 +678,7 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
 
     /*  Try to receive the data immediately. */
     nbytes = len;
-    rc = sp_usock_recv_raw (self->s, buf, &nbytes);
+    rc = sp_usock_recv_raw (self, buf, &nbytes);
     if (sp_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         sp_assert ((*self->sink)->err);
@@ -695,14 +708,15 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     }
 }
 
-static int sp_usock_send_raw (int s, const void *buf, size_t *len)
+static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
+    size_t *len)
 {
     ssize_t nbytes;
 
 #if defined MSG_NOSIGNAL
-    nbytes = send (s, buf, *len, MSG_NOSIGNAL);
+    nbytes = send (self->s, buf, *len, MSG_NOSIGNAL);
 #else
-    nbytes = send (s, buf, *len, 0);
+    nbytes = send (self->s, buf, *len, 0);
 #endif
 
     /*  Success. */
@@ -722,33 +736,80 @@ static int sp_usock_send_raw (int s, const void *buf, size_t *len)
     return -ECONNRESET;
 }
 
-static int sp_usock_recv_raw (int s, void *buf, size_t *len)
+static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
 {
+    size_t sz;
+    size_t length;
     ssize_t nbytes;
-int err;
 
-    nbytes = recv (s, buf, *len, 0);
+    /*  If batch buffer doesn't exist, allocate it. The point of delayed
+        deallocation to allow non-receiving sockets, such as TCP listening
+        sockets, to do without the batch buffer. */
+    if (sp_slow (!self->in.batch)) {
+        self->in.batch = sp_alloc (SP_USOCK_BATCH_SIZE);
+        alloc_assert (self->in.batch);
+    }
 
-    /*  Success. */
-    if (sp_fast (nbytes > 0)) {
-        *len = (size_t) nbytes;
+    /*  Try to satisfy the recv request by data from the batch buffer. */
+    length = *len;
+    sz = self->in.batch_len - self->in.batch_pos;
+    if (sz) {
+        if (sz > length)
+            sz = length;
+        memcpy (buf, self->in.batch + self->in.batch_pos, sz);
+        buf = ((char*) buf) + sz;
+        length -= sz;
+        if (!length)
+            return 0;
+    }
+
+    /*  If recv request is greater than the batch buffer, get the data directly
+        into the place. Otherwise, read data to the batch buffer. */
+    if (length > SP_USOCK_BATCH_SIZE)
+        nbytes = recv (self->s, buf, length, 0);
+    else 
+        nbytes = recv (self->s, self->in.batch, SP_USOCK_BATCH_SIZE, 0);
+
+    /*  Handle any possible errors. */
+    if (sp_slow (nbytes < 0)) {
+
+        /*  Zero bytes received. */
+        if (sp_fast (errno == EAGAIN || errno == EWOULDBLOCK))
+            nbytes = 0;
+        else {
+
+            /*  If the peer closes the connection, return ECONNRESET. */
+            sp_assert (nbytes == 0 || errno == ECONNRESET ||
+                  errno == ENOTCONN || errno == ECONNREFUSED ||
+                  errno == ETIMEDOUT || errno == EHOSTUNREACH);
+            return -ECONNRESET;
+        }
+    }
+
+    /*  If the data were received directly into the place we can return
+        straight away. */
+    if (length > SP_USOCK_BATCH_SIZE) {
+        length -= nbytes;
+        *len = *len - length;
         return 0;
     }
 
-    /*  Zero bytes received. */
-    if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-        *len = 0;
-        return 0;
+    /*  New data were read to the batch buffer. Copy the requested amount of it
+        to the user-supplied buffer. */
+    self->in.batch_len = nbytes;
+    self->in.batch_pos = 0;
+    if (nbytes) {
+        sz = nbytes > length ? length : nbytes;
+        memcpy (buf, self->in.batch, sz);
+        length -= sz;
+        self->in.batch_pos += sz;
     }
 
-    /*  If the peer closes the connection, return ECONNRESET. */
-    sp_assert (nbytes == 0 || errno == ECONNRESET || errno == ENOTCONN ||
-          errno == ECONNREFUSED || errno == ETIMEDOUT ||
-          errno == EHOSTUNREACH);
-    return -ECONNRESET;
+    *len = *len - length;
+    return 0;
 }
 
-static int sp_usock_geterr (int s)
+static int sp_usock_geterr (struct sp_usock *self)
 {
     int rc;
     int err;
@@ -760,7 +821,7 @@ static int sp_usock_geterr (int s)
 
     err = 0;
     errlen = sizeof (err);
-    rc = getsockopt (s, SOL_SOCKET, SO_ERROR, (char*) &err, &errlen);
+    rc = getsockopt (self->s, SOL_SOCKET, SO_ERROR, (char*) &err, &errlen);
 
     /*  On Solaris error is returned via errno. */
     if (rc == -1)

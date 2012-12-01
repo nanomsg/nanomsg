@@ -510,7 +510,6 @@ err:
     }
 }
 
-
 void sp_usock_term (struct sp_usock *self)
 {
     int rc;
@@ -524,6 +523,8 @@ void sp_usock_term (struct sp_usock *self)
         sp_poller_rm (&self->cp->poller, &self->hndl);
         rc = close (self->s);
         errno_assert (rc == 0);
+        if (self->in.batch)
+            sp_free (self->in.batch);
         return;
     }
 

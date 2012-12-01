@@ -54,6 +54,11 @@ void sp_pipebase_out (struct sp_pipebase *self)
         sp_sock_out (self->epbase->sock, (struct sp_pipe*) self);
 }
 
+struct sp_cp *sp_pipebase_getcp (struct sp_pipebase *self)
+{
+    return sp_epbase_getcp (self->epbase);
+}
+
 void sp_pipe_setdata (struct sp_pipe *self, void *data)
 {
     ((struct sp_pipebase*) self)->data = data;

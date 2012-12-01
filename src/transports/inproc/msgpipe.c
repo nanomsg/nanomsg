@@ -46,6 +46,32 @@ static const struct sp_pipebase_vfptr sp_msgpipe_vfptr0 =
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
     {sp_msgpipe_send1, sp_msgpipe_recv1};
 
+/*  Implementation of event callbacks. */
+static void sp_msgpipe_inevent0 (const struct sp_sink **self,
+    struct sp_event *event);
+static const struct sp_sink sp_msgpipe_inevent0_sink =
+    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent0};
+static const struct sp_sink *sp_msgpipe_inevent0_sinkptr =
+    &sp_msgpipe_inevent0_sink;
+static void sp_msgpipe_inevent1 (const struct sp_sink **self,
+    struct sp_event *event);
+static const struct sp_sink sp_msgpipe_inevent1_sink =
+    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent1};
+static const struct sp_sink *sp_msgpipe_inevent1_sinkptr =
+    &sp_msgpipe_inevent1_sink;
+static void sp_msgpipe_outevent0 (const struct sp_sink **self,
+    struct sp_event *event);
+static const struct sp_sink sp_msgpipe_outevent0_sink =
+    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent0};
+static const struct sp_sink *sp_msgpipe_outevent0_sinkptr =
+    &sp_msgpipe_outevent0_sink;
+static void sp_msgpipe_outevent1 (const struct sp_sink **self,
+    struct sp_event *event);
+static const struct sp_sink sp_msgpipe_outevent1_sink =
+    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent1};
+static const struct sp_sink *sp_msgpipe_outevent1_sinkptr =
+    &sp_msgpipe_outevent1_sink;
+
 void sp_msgpipe_init (struct sp_msgpipe *self,
     struct sp_inprocb *inprocb, struct sp_inprocc *inprocc)
 {
@@ -58,6 +84,16 @@ void sp_msgpipe_init (struct sp_msgpipe *self,
     /*  TODO: Set up proper queue limits. */
     sp_msgqueue_init (&(self->queues [0]), 1000000);
     sp_msgqueue_init (&(self->queues [1]), 1000000);
+
+    /*  Initlaise the events to communicate between peers. */
+    sp_event_init (&self->inevents [0], &sp_msgpipe_inevent0_sinkptr,
+        sp_pipebase_getcp (&self->pipes [0]));
+    sp_event_init (&self->inevents [1], &sp_msgpipe_inevent1_sinkptr,
+        sp_pipebase_getcp (&self->pipes [1]));
+    sp_event_init (&self->outevents [0], &sp_msgpipe_outevent0_sinkptr,
+        sp_pipebase_getcp (&self->pipes [0]));
+    sp_event_init (&self->outevents [1], &sp_msgpipe_outevent1_sinkptr,
+        sp_pipebase_getcp (&self->pipes [1]));
 
     /*  Let the endpoints know they own this pipe. */
     sp_inprocb_add_pipe (inprocb, self);
@@ -98,6 +134,11 @@ static void sp_msgpipe_term (struct sp_msgpipe *self)
     sp_msgqueue_term (&(self->queues [1]));
     sp_msgqueue_term (&(self->queues [0]));
 
+    sp_event_term (&self->inevents [0]);
+    sp_event_term (&self->inevents [1]);
+    sp_event_term (&self->outevents [0]);
+    sp_event_term (&self->outevents [1]);
+
     /*  The lifetime of this object is managed by reference count (number
         of endpoints having reference to it) not by a particular owner. Thus,
         the object has to deallocate itself once there are no more
@@ -118,7 +159,7 @@ static int sp_msgpipe_send0 (struct sp_pipebase *self,
     if (!(rc & SP_MSGQUEUE_SIGNAL))
         return rc;
 
-    sp_pipebase_in (&msgpipe->pipes [1]);
+    sp_event_signal (&msgpipe->inevents [1]);
     rc &= ~SP_MSGQUEUE_SIGNAL;
     return rc;
 }
@@ -136,7 +177,7 @@ static int sp_msgpipe_recv0 (struct sp_pipebase *self,
     if (!(rc & SP_MSGQUEUE_SIGNAL))
         return rc;
 
-    sp_pipebase_out (&msgpipe->pipes [1]);
+    sp_event_signal (&msgpipe->outevents [1]);
     rc &= ~SP_MSGQUEUE_SIGNAL;
     return rc;
 }
@@ -154,7 +195,7 @@ static int sp_msgpipe_send1 (struct sp_pipebase *self,
     if (!(rc & SP_MSGQUEUE_SIGNAL))
         return rc;
 
-    sp_pipebase_in (&msgpipe->pipes [0]);
+    sp_event_signal (&msgpipe->inevents [0]);
     rc &= ~SP_MSGQUEUE_SIGNAL;
     return rc;
 }
@@ -172,9 +213,44 @@ static int sp_msgpipe_recv1 (struct sp_pipebase *self,
     if (!(rc & SP_MSGQUEUE_SIGNAL))
         return rc;
 
-    sp_pipebase_out (&msgpipe->pipes [0]);
+    sp_event_signal (&msgpipe->outevents [0]);
     rc &= ~SP_MSGQUEUE_SIGNAL;
     return rc;
+}
 
+static void sp_msgpipe_inevent0 (const struct sp_sink **self,
+    struct sp_event *event)
+{
+    struct sp_msgpipe *msgpipe;
+
+    msgpipe = sp_cont (event, struct sp_msgpipe, inevents [0]);
+    sp_pipebase_in (&msgpipe->pipes [0]);
+}
+
+static void sp_msgpipe_inevent1 (const struct sp_sink **self,
+    struct sp_event *event)
+{
+    struct sp_msgpipe *msgpipe;
+
+    msgpipe = sp_cont (event, struct sp_msgpipe, inevents [1]);
+    sp_pipebase_in (&msgpipe->pipes [1]);
+}
+
+static void sp_msgpipe_outevent0 (const struct sp_sink **self,
+    struct sp_event *event)
+{
+    struct sp_msgpipe *msgpipe;
+
+    msgpipe = sp_cont (event, struct sp_msgpipe, outevents [0]);
+    sp_pipebase_out (&msgpipe->pipes [0]);
+}
+
+static void sp_msgpipe_outevent1 (const struct sp_sink **self,
+    struct sp_event *event)
+{
+    struct sp_msgpipe *msgpipe;
+
+    msgpipe = sp_cont (event, struct sp_msgpipe, outevents [1]);
+    sp_pipebase_out (&msgpipe->pipes [1]);
 }
 

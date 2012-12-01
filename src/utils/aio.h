@@ -49,6 +49,8 @@ struct sp_sink {
         struct sp_usock *usock, int errnum);
     void (*timeout) (const struct sp_sink **self,
         struct sp_timer *timer);
+    void (*event) (const struct sp_sink **self,
+        struct sp_event *event);
 };
 
 void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
@@ -56,6 +58,11 @@ void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
 void sp_timer_term (struct sp_timer *self);
 void sp_timer_start (struct sp_timer *self, int timeout);
 void sp_timer_stop (struct sp_timer *self);
+
+void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+    struct sp_cp *cp);
+void sp_event_term (struct sp_event *self);
+void sp_event_signal (struct sp_event *self);
 
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp);
@@ -76,17 +83,11 @@ void sp_usock_accept (struct sp_usock *self);
 void sp_usock_send (struct sp_usock *self, const void *buf, size_t len);
 void sp_usock_recv (struct sp_usock *self, void *buf, size_t len);
 
-struct sp_cp_vfptr {
-    void (*event) (struct sp_cp *self, int op, struct sp_event *event);
-};
-
-void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr);
+void sp_cp_init (struct sp_cp *self);
 void sp_cp_term (struct sp_cp *self);
 
 void sp_cp_lock (struct sp_cp *self);
 void sp_cp_unlock (struct sp_cp *self);
-
-void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event);
 
 #if defined SP_HAVE_WINDOWS
 
@@ -99,6 +100,13 @@ struct sp_timer {
     const struct sp_sink **sink;
     struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
+    int active;
+};
+
+struct sp_event {
+    int op;
+    const struct sp_sink **sink;
+    struct sp_cp *cp;
     int active;
 };
 
@@ -115,12 +123,7 @@ struct sp_usock {
     int protocol;
 };
 
-struct sp_event {
-    int op;
-};
-
 struct sp_cp {
-    const struct sp_cp_vfptr *vfptr;
     struct sp_mutex sync;
     struct sp_timeout timeout;
     HANDLE hndl;
@@ -145,6 +148,13 @@ struct sp_timer {
     struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
     int active;
+};
+
+struct sp_event {
+    const struct sp_sink **sink;
+    struct sp_cp *cp;
+    int active;
+    struct sp_queue_item item;
 };
 
 #define SP_USOCK_OP_ADD 1
@@ -194,13 +204,7 @@ struct sp_usock {
     int protocol;
 };
 
-struct sp_event {
-    struct sp_queue_item item;
-    int op;
-};
-
 struct sp_cp {
-    const struct sp_cp_vfptr *vfptr;
     struct sp_mutex sync;
     struct sp_timeout timeout;
     struct sp_efd efd;

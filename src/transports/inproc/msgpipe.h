@@ -27,6 +27,8 @@
 
 #include "msgqueue.h"
 
+#include "../../utils/aio.h"
+
 struct sp_inprocb;
 struct sp_inprocc;
 
@@ -35,6 +37,9 @@ struct sp_inprocc;
 
 #define SP_MSGPIPE_PIPE0_ACTIVE 1
 #define SP_MSGPIPE_PIPE1_ACTIVE 2
+
+#define SP_MSGPIPE_EVENT_IN 1
+#define SP_MSGPIPE_EVENT_OUT 2
 
 struct sp_msgpipe {
 
@@ -48,6 +53,10 @@ struct sp_msgpipe {
 
     /*  The two underlying queues to achieve bi-directional communication. */
     struct sp_msgqueue queues [2];
+
+    /*  Incoming notifications. */
+    struct sp_event inevents [2];
+    struct sp_event outevents [2];
 
     /*  The pipe is owned by exactly one bound endpoint. */
     struct sp_list_item inprocb;

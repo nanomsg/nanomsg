@@ -31,18 +31,11 @@
 #define SP_SOCK_EVENT_IN 1
 #define SP_SOCK_EVENT_OUT 2
 
-/*  sp_cp callbacks. */
-static void sp_sock_event (struct sp_cp *self, int op,
-    struct sp_event *event);
-static const struct sp_cp_vfptr sp_sock_cp_vfptr = {
-    sp_sock_event
-};
-
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     self->vfptr = vfptr;
-    sp_cp_init (&self->cp, &sp_sock_cp_vfptr);
+    sp_cp_init (&self->cp);
     sp_cond_init (&self->cond);
     self->fd = fd;
 }
@@ -231,42 +224,33 @@ void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe)
 
 void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_EVENT_IN,
-        &((struct sp_pipebase*) pipe)->inevent);
+    int rc;
+    struct sp_sockbase *sockbase;
+
+    /*  Forward the call to the specific socket type. */
+    sockbase = (struct sp_sockbase*) self;
+    rc = sockbase->vfptr->in (sockbase, pipe);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1)
+        sp_cond_post (&sockbase->cond);
 }
 
 void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
 {
-    sp_cp_post (&((struct sp_sockbase*) self)->cp, SP_SOCK_EVENT_OUT,
-        &((struct sp_pipebase*) pipe)->outevent);
+    int rc;
+    struct sp_sockbase *sockbase;
+
+    /*  Forward the call to the specific socket type. */
+    sockbase = (struct sp_sockbase*) self;
+    rc = sockbase->vfptr->out (sockbase, pipe);
+    errnum_assert (rc >= 0, -rc);
+    if (rc == 1)
+        sp_cond_post (&sockbase->cond);
 }
 
 static void sp_sock_event (struct sp_cp *self, int op,
     struct sp_event *event)
 {
-    int rc;
-    struct sp_sockbase *sockbase;
-    struct sp_pipebase *pipebase;
-
-    sockbase = sp_cont (self, struct sp_sockbase, cp);
-
-    switch (op) {
-    case SP_SOCK_EVENT_IN:
-        pipebase = sp_cont (event, struct sp_pipebase, inevent);
-        rc = sockbase->vfptr->in (sockbase, (struct sp_pipe*) pipebase);
-        errnum_assert (rc >= 0, -rc);
-        if (rc == 1)
-            sp_cond_post (&sockbase->cond);
-        return;
-    case SP_SOCK_EVENT_OUT:
-        pipebase = sp_cont (event, struct sp_pipebase, outevent);
-        rc = sockbase->vfptr->out (sockbase, (struct sp_pipe*) pipebase);
-        errnum_assert (rc >= 0, -rc);
-        if (rc == 1)
-            sp_cond_post (&sockbase->cond);
-        return;
-    default:
-        sp_assert (0);
-    }
+    sp_assert (0);
 }
 

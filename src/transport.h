@@ -97,8 +97,6 @@ struct sp_pipebase_vfptr {
 struct sp_pipebase {
     const struct sp_pipebase_vfptr *vfptr;
     struct sp_epbase *epbase;
-    struct sp_event inevent;
-    struct sp_event outevent;
     void *data;
 };
 
@@ -114,6 +112,10 @@ void sp_pipebase_in (struct sp_pipebase *self);
 
 /*  Mark the pipe as ready for sending. */
 void sp_pipebase_out (struct sp_pipebase *self);
+
+/*  Returns the default completion port associated with the pipe. */
+struct sp_cp *sp_pipebase_getcp (struct sp_pipebase *self);
+
 
 /******************************************************************************/
 /*  The transport class.                                                      */

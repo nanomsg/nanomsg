@@ -86,6 +86,29 @@ void sp_timer_stop (struct sp_timer *self)
         sp_efd_signal (&self->cp->efd);
 }
 
+void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+    struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->cp = cp;
+    self->active = 0;
+}
+
+void sp_event_term (struct sp_event *self)
+{
+    sp_assert (!self->active);
+}
+
+void sp_event_signal (struct sp_event *self)
+{
+    /*  Enqueue the event for later processing. */
+    self->active = 1;
+    sp_mutex_lock (&self->cp->events_sync);
+    sp_queue_push (&self->cp->events, &self->item);
+    sp_mutex_unlock (&self->cp->events_sync);
+    sp_efd_signal (&self->cp->efd);
+}
+
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp)
 {
@@ -230,9 +253,8 @@ static void sp_usock_tune (struct sp_usock *self)
 #endif
 }
 
-void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
+void sp_cp_init (struct sp_cp *self)
 {
-    self->vfptr = vfptr;
     sp_mutex_init (&self->sync, 0);
     sp_timeout_init (&self->timeout);
     sp_efd_init (&self->efd);
@@ -285,23 +307,6 @@ void sp_cp_unlock (struct sp_cp *self)
     sp_mutex_unlock (&self->sync);
 }
 
-void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event)
-{
-    /*  In case the event is fired from inside of the worker thread we can
-        invoke the handler straight away. */
-    if (sp_fast (sp_thread_current (&self->worker))) {
-        self->vfptr->event (self, op, event);
-        return;
-    }
-
-    /*  Otherwise enqueue the event for later processing. */
-    event->op = op;
-    sp_mutex_lock (&self->events_sync);
-    sp_queue_push (&self->events, &event->item);
-    sp_mutex_unlock (&self->events_sync);
-    sp_efd_signal (&self->efd);
-}
-
 static void sp_cp_worker (void *arg)
 {
     int rc;
@@ -312,6 +317,7 @@ static void sp_cp_worker (void *arg)
     struct sp_timer *timer;
     int op;
     struct sp_poller_hndl *phndl;
+    struct sp_queue_item *it;
     struct sp_event *event;
     struct sp_usock *usock;
     size_t sz;
@@ -492,11 +498,13 @@ err:
         /*  Process any external events. */
         sp_mutex_lock (&self->events_sync);
         while (1) {
-            event = sp_cont (sp_queue_pop (&self->events),
-                struct sp_event, item);
-            if (!event)
+            it = sp_queue_pop (&self->events);
+            if (!it)
                 break;
-            self->vfptr->event (self, event->op, event);
+            event = sp_cont (it ,struct sp_event, item);
+            sp_assert ((*event->sink)->event);
+            (*event->sink)->event (event->sink, event);
+            event->active = 0;
         }
         sp_mutex_unlock (&self->events_sync);
     }

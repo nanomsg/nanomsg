@@ -248,9 +248,3 @@ void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
         sp_cond_post (&sockbase->cond);
 }
 
-static void sp_sock_event (struct sp_cp *self, int op,
-    struct sp_event *event)
-{
-    sp_assert (0);
-}
-

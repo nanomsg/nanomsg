@@ -48,4 +48,10 @@ int sp_sock_send (struct sp_sock *self, const void *buf,
 /*  Receive a message from the socket. */
 int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags);
 
+int sp_sock_fd (struct sp_sock *self);
+int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe);
+void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe);
+void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe);
+void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe);
+
 #endif

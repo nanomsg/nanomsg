@@ -204,10 +204,10 @@ static void sp_tcps_received (const struct sp_sink **self,
     switch (tcps->instate) {
     case SP_TCPS_INSTATE_HDR:
         size = sp_getll (tcps->inhdr);
-        rc = sp_msg_init (&tcps->inmsg, size);
+        rc = sp_msg_init (&tcps->inmsg, (size_t) size);
         errnum_assert (rc == 0, -rc);
         tcps->instate = SP_TCPS_INSTATE_BODY;
-        sp_usock_recv (tcps->usock, sp_msg_data (&tcps->inmsg), size);
+        sp_usock_recv (tcps->usock, sp_msg_data (&tcps->inmsg), (size_t) size);
         break;
     case SP_TCPS_INSTATE_BODY:
         sp_assert (0);

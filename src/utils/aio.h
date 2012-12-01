@@ -104,7 +104,6 @@ struct sp_timer {
 };
 
 struct sp_event {
-    int op;
     const struct sp_sink **sink;
     struct sp_cp *cp;
     int active;
@@ -127,8 +126,12 @@ struct sp_cp {
     struct sp_mutex sync;
     struct sp_timeout timeout;
     HANDLE hndl;
-    struct sp_event stop_event;
-    struct sp_event timer_event;
+
+    /*  The values of these members are never used. They serve just like
+        placeholders to provide unique addresses. */
+    char stop_event;
+    char timer_event;
+
     struct sp_thread worker;
 };
 

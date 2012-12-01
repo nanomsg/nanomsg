@@ -23,11 +23,8 @@
 #include "aio.h"
 #include "win.h"
 #include "cont.h"
+#include "fast.h"
 #include "err.h"
-
-/*  Interal events IDs. */
-#define SP_CP_EVENT_STOP -1
-#define SP_CP_EVENT_TIMER -2
 
 /*  Private functions. */
 static void sp_usock_tune (struct sp_usock *self);
@@ -49,6 +46,7 @@ void sp_timer_term (struct sp_timer *self)
 void sp_timer_start (struct sp_timer *self, int timeout)
 {
     int rc;
+    BOOL brc;
 
     /*  If the timer is active, cancel it first. */
     if (self->active)
@@ -58,13 +56,17 @@ void sp_timer_start (struct sp_timer *self, int timeout)
     rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        sp_cp_post (self->cp, SP_CP_EVENT_TIMER, &self->cp->timer_event);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker)) {
+        brc = PostQueuedCompletionStatus (self->cp->hndl, 0,
+            (ULONG_PTR) &self->cp->timer_event, NULL);
+        win_assert (brc);
+    }
 }
 
 void sp_timer_stop (struct sp_timer *self)
 {
     int rc;
+    BOOL brc;
 
     /*  If the timer is not active, do nothing. */
     if (!self->active)
@@ -72,8 +74,33 @@ void sp_timer_stop (struct sp_timer *self)
 
     rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
-    if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        sp_cp_post (self->cp, SP_CP_EVENT_TIMER, &self->cp->timer_event);
+    if (rc == 1 && !sp_thread_current (&self->cp->worker)) {
+        brc = PostQueuedCompletionStatus (self->cp->hndl, 0,
+            (ULONG_PTR) &self->cp->timer_event, NULL);
+        win_assert (brc);
+    }
+}
+
+void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+    struct sp_cp *cp)
+{
+    self->sink = sink;
+    self->cp = cp;
+    self->active = 0;
+}
+
+void sp_event_term (struct sp_event *self)
+{
+    sp_assert (!self->active);
+}
+
+void sp_event_signal (struct sp_event *self)
+{
+    BOOL brc;
+
+    brc = PostQueuedCompletionStatus (self->cp->hndl, 0,
+            (ULONG_PTR) self, NULL);
+    win_assert (brc);
 }
 
 int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
@@ -172,9 +199,8 @@ static void sp_usock_tune (struct sp_usock *self)
 #endif
 }
 
-void sp_cp_init (struct sp_cp *self, const struct sp_cp_vfptr *vfptr)
+void sp_cp_init (struct sp_cp *self)
 {
-    self->vfptr = vfptr;
     sp_mutex_init (&self->sync, 0);
     sp_timeout_init (&self->timeout);
 
@@ -191,7 +217,9 @@ void sp_cp_term (struct sp_cp *self)
     BOOL brc;
 
     /*  Ask worker thread to terminate. */
-    sp_cp_post (self, SP_CP_EVENT_STOP, &self->stop_event);
+    brc = PostQueuedCompletionStatus (self->hndl, 0,
+        (ULONG_PTR) &self->stop_event, NULL);
+    win_assert (brc);
 
     /*  Wait till it terminates. */
     sp_thread_term (&self->worker);
@@ -214,16 +242,6 @@ void sp_cp_lock (struct sp_cp *self)
 void sp_cp_unlock (struct sp_cp *self)
 {
     sp_mutex_unlock (&self->sync);
-}
-
-void sp_cp_post (struct sp_cp *self, int op, struct sp_event *event)
-{
-    BOOL brc;
-
-    event->op = op;
-    brc = PostQueuedCompletionStatus (self->hndl, 0,
-        (ULONG_PTR) event, NULL);
-    win_assert (brc);
 }
 
 static void sp_cp_worker (void *arg)
@@ -268,23 +286,26 @@ static void sp_cp_worker (void *arg)
             (*timer->sink)->timeout (timer->sink, timer);
         }
 
-        /*  Process the received event itself. */
-        event = (struct sp_event*) key;
+        /*  Timer event requires no processing. Its sole intent is to
+            interrupt the polling in the worker thread. */
+        if (sp_slow ((char*) key == &self->timer_event))
+            continue;
 
-        /*  Custom events are reported via callback to the user. */
-        if (event->op >= 0) {
-            self->vfptr->event (self, event->op, event);
+        /*  Completion port shutdown is underway. Exit the worker thread. */
+        if (sp_slow ((char*) key == &self->stop_event))
+            break;
+
+        /*  Custom events are reported via callback. */
+        if (key) {
+            event = (struct sp_event*) key;
+            sp_assert ((*event->sink)->event);
+            (*event->sink)->event (event->sink, event);
+            event->active = 0;
             continue;
         }
-
-        switch (event->op) {
-        case SP_CP_EVENT_STOP:
-            return;
-        case SP_CP_EVENT_TIMER:
-            continue;
-        default:
-            sp_assert (0);
-        }
+        
+        /*  I/O completion events */
+        sp_assert (0);
     }
 }
 
@@ -390,7 +411,7 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
     if (sp_fast (rc == 0)) {
         sp_assert (nbytes == len);
         sp_assert ((*self->sink)->sent);
-        (*self->sink)->sent (self->sink, self, nbytes);
+        (*self->sink)->sent (self->sink, self);
         return;
     }
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
@@ -411,7 +432,7 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     if (sp_fast (rc == 0)) {
         sp_assert (nbytes == len);
         sp_assert ((*self->sink)->received);
-        (*self->sink)->received (self->sink, self, nbytes);
+        (*self->sink)->received (self->sink, self);
         return;
     }
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);

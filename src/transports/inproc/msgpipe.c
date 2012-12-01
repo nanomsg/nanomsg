@@ -156,12 +156,10 @@ static int sp_msgpipe_send0 (struct sp_pipebase *self,
     rc = sp_msgqueue_send (&msgpipe->queues [0], buf, len);
     errnum_assert (rc >= 0, -rc);
 
-    if (!(rc & SP_MSGQUEUE_SIGNAL))
-        return rc;
-
-    sp_event_signal (&msgpipe->inevents [1]);
-    rc &= ~SP_MSGQUEUE_SIGNAL;
-    return rc;
+    if (rc & SP_MSGQUEUE_SIGNAL)
+        sp_event_signal (&msgpipe->inevents [1]);
+    
+    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
 }
 
 static int sp_msgpipe_recv0 (struct sp_pipebase *self,
@@ -174,12 +172,10 @@ static int sp_msgpipe_recv0 (struct sp_pipebase *self,
     rc = sp_msgqueue_recv (&msgpipe->queues [1], buf, len);
     errnum_assert (rc >= 0, -rc);
 
-    if (!(rc & SP_MSGQUEUE_SIGNAL))
-        return rc;
+    if (rc & SP_MSGQUEUE_SIGNAL)
+        sp_event_signal (&msgpipe->outevents [1]);
 
-    sp_event_signal (&msgpipe->outevents [1]);
-    rc &= ~SP_MSGQUEUE_SIGNAL;
-    return rc;
+    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
 }
 
 static int sp_msgpipe_send1 (struct sp_pipebase *self,
@@ -192,12 +188,10 @@ static int sp_msgpipe_send1 (struct sp_pipebase *self,
     rc = sp_msgqueue_send (&msgpipe->queues [1], buf, len);
     errnum_assert (rc >= 0, -rc);
 
-    if (!(rc & SP_MSGQUEUE_SIGNAL))
-        return rc;
+    if (rc & SP_MSGQUEUE_SIGNAL)
+        sp_event_signal (&msgpipe->inevents [0]);
 
-    sp_event_signal (&msgpipe->inevents [0]);
-    rc &= ~SP_MSGQUEUE_SIGNAL;
-    return rc;
+    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
 }
 
 static int sp_msgpipe_recv1 (struct sp_pipebase *self,
@@ -210,12 +204,10 @@ static int sp_msgpipe_recv1 (struct sp_pipebase *self,
     rc = sp_msgqueue_recv (&msgpipe->queues [0], buf, len);
     errnum_assert (rc >= 0, -rc);
 
-    if (!(rc & SP_MSGQUEUE_SIGNAL))
-        return rc;
+    if (rc & SP_MSGQUEUE_SIGNAL)
+        sp_event_signal (&msgpipe->outevents [0]);
 
-    sp_event_signal (&msgpipe->outevents [0]);
-    rc &= ~SP_MSGQUEUE_SIGNAL;
-    return rc;
+    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
 }
 
 static void sp_msgpipe_inevent0 (const struct sp_sink **self,

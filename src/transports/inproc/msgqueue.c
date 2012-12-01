@@ -22,8 +22,6 @@
 
 #include "msgqueue.h"
 
-#include "../../transport.h"
-
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
 #include "../../utils/err.h"
@@ -97,7 +95,7 @@ int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len)
     ++self->count;
     self->mem += len;
     if (self->mem >= self->maxmem)
-        result |= SP_PIPEBASE_RELEASE;
+        result |= SP_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
     msg = &self->out.chunk->msgs [self->out.pos];
@@ -167,7 +165,7 @@ int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
     --self->count;
     self->mem -= msgsz;
     if (!self->count)
-        result |= SP_PIPEBASE_RELEASE;
+        result |= SP_MSGQUEUE_RELEASE;
     
     sp_mutex_unlock (&self->sync);
 

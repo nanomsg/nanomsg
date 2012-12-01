@@ -31,9 +31,12 @@
 /*  This class is a simple uni-directional message queue. */
 /*  TODO: Recv-side batching can be implemented here to improve performance. */
 
-/*  This value is returned from send/recv functions to let the user know that
-    other side of the pipe should be re-activated. This flag can be combined
-    with SP_PIPE_RELEASE. */
+/*  This flag is returned from send/recv functions to let the user know that
+    more sends/recvs are not possible. */
+#define SP_MSGQUEUE_RELEASE 1
+
+/*  This flag is returned from send/recv functions to let the user know that
+    other side of the pipe should be re-activated. */
 #define SP_MSGQUEUE_SIGNAL 2
 
 /*  It's not 128 so that chunk including its footer fits into a memory page. */

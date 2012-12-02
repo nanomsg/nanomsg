@@ -227,6 +227,7 @@ int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
     int rc;
     struct addrinfo query;
     struct addrinfo *reply;
+    char hostname [SP_SOCKADDR_MAX];
 
     /*  Try to resolve the supplied string as a literal address. Note that
         in this case, there's no DNS lookup involved. */
@@ -245,10 +246,13 @@ int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
         query.ai_flags = AI_V4MAPPED;
 #endif
     }
+    sp_assert (sizeof (hostname) > addrlen);
     query.ai_socktype = SOCK_STREAM;
+    memcpy (hostname, addr, addrlen);
+    hostname [addrlen] = 0;
 
     /*  Perform the DNS lookup itself. */
-    rc = getaddrinfo (addr, NULL, &query, &reply);
+    rc = getaddrinfo (hostname, NULL, &query, &reply);
     if (rc)
         return -EFAULT;
 

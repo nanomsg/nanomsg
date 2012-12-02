@@ -274,11 +274,10 @@ static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
     sz = sp_msg_size (&tcps->inmsg);
     if (*len < sz)
         *len = sz;
-    memcpy (buf, sp_msg_data (&tcps->inmsg), sz);  
+    memcpy (buf, sp_msg_data (&tcps->inmsg), sz);
 
     /* Start receiving new message. */ 
     tcps->instate = SP_TCPS_INSTATE_HDR;
     sp_usock_recv (tcps->usock, tcps->inhdr, 8);
-    
 }
 

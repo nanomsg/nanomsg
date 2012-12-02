@@ -352,9 +352,21 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 {
     int rc;
     BOOL brc;
+    struct sockaddr_in baddr;
     const GUID fid = WSAID_CONNECTEX;
     LPFN_CONNECTEX pconnectex;
     DWORD nbytes;
+
+    /*  Set local address for the connection. */
+    /*  TODO: User should be able to specify the address. */
+    /*  TODO: What about IPv6? If so, we should bind to in6addr_any. */
+    sp_assert (addr->sa_family == AF_INET);
+    memset (&baddr, 0, sizeof (baddr));
+    baddr.sin_family = AF_INET;
+    baddr.sin_port = htons (0);
+    baddr.sin_addr.s_addr = INADDR_ANY;
+    rc = bind (self->s, (struct sockaddr*) &baddr, sizeof (baddr));
+    wsa_assert (rc == 0);
 
     rc = WSAIoctl (self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
         (void*) &fid, sizeof (fid), (void*) &pconnectex, sizeof (pconnectex),
@@ -362,7 +374,7 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     wsa_assert (rc == 0);
     sp_assert (nbytes == sizeof (pconnectex));
     memset (&self->conn, 0, sizeof (self->conn));
-    brc = pconnectex (self->s, (struct sockaddr*) &addr, addrlen,
+    brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
         NULL, 0, NULL, (OVERLAPPED*) &self->conn);
     if (sp_fast (brc == TRUE)) {
         sp_assert ((*self->sink)->connected);

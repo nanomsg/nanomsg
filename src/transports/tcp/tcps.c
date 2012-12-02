@@ -86,9 +86,9 @@ static const struct sp_sink sp_tcps_state_active = {
 };
 
 /*  Pipe interface. */
-int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len);
-int sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len);
-
+static void sp_tcps_send (struct sp_pipebase *self, const void *buf,
+    size_t len);
+static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len);
 const struct sp_pipebase_vfptr sp_tcps_pipebase_vfptr = {
     sp_tcps_send,
     sp_tcps_recv
@@ -186,7 +186,7 @@ static void sp_tcps_activate (struct sp_tcps *self)
 
     /*  Connection is ready for sending. Make outpipe available
         to the SP socket. */
-    sp_pipebase_out (&self->pipebase);
+    sp_pipebase_activate (&self->pipebase);
 
     /*  Start waiting for incoming messages. First, read the 8-byte size. */
     self->instate = SP_TCPS_INSTATE_HDR;
@@ -210,7 +210,7 @@ static void sp_tcps_received (const struct sp_sink **self,
         sp_usock_recv (tcps->usock, sp_msg_data (&tcps->inmsg), (size_t) size);
         break;
     case SP_TCPS_INSTATE_BODY:
-        sp_assert (0);
+        sp_pipebase_received (&tcps->pipebase);
         break;
     default:
         sp_assert (0);
@@ -230,7 +230,7 @@ static void sp_tcps_sent (const struct sp_sink **self,
             sp_msg_size (&tcps->outmsg));
         break;
     case SP_TCPS_OUTSTATE_BODY:
-        sp_assert (0);
+        sp_pipebase_sent (&tcps->pipebase);
         break;
     default:
         sp_assert (0);
@@ -243,7 +243,7 @@ static void sp_tcps_err (const struct sp_sink **self,
     sp_assert (0);
 }
 
-int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
+static void sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
 {
     int rc;
     struct sp_tcps *tcps;
@@ -252,8 +252,7 @@ int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
 
     /*  Make a local copy of the message. */
     rc = sp_msg_init (&tcps->outmsg, len);
-    if (sp_slow (rc < 0))
-        return rc;
+    errnum_assert (rc == 0, -rc);
     memcpy (sp_msg_data (&tcps->outmsg), buf, len);
 
     /*  Serialise the message header. */
@@ -262,11 +261,9 @@ int sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
     /*  Start the outbound state machine. */
     tcps->outstate = SP_TCPS_OUTSTATE_HDR;
     sp_usock_send (tcps->usock, tcps->outhdr, 8);
-
-    return 0;
 }
 
-int sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
+static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
 {
     sp_assert (0);
 }

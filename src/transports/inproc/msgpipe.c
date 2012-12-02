@@ -33,13 +33,13 @@
 static void sp_msgpipe_term (struct sp_msgpipe *self);
 
 /*  Implementation of both sp_pipe interfaces. */
-static int sp_msgpipe_send0 (struct sp_pipebase *self,
+static void sp_msgpipe_send0 (struct sp_pipebase *self,
     const void *buf, size_t len);
-static int sp_msgpipe_recv0 (struct sp_pipebase *self,
+static void sp_msgpipe_recv0 (struct sp_pipebase *self,
     void *buf, size_t *len);
-static int sp_msgpipe_send1 (struct sp_pipebase *self,
+static void sp_msgpipe_send1 (struct sp_pipebase *self,
     const void *buf, size_t len);
-static int sp_msgpipe_recv1 (struct sp_pipebase *self,
+static void sp_msgpipe_recv1 (struct sp_pipebase *self,
     void *buf, size_t *len);
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr0 =
     {sp_msgpipe_send0, sp_msgpipe_recv0};
@@ -100,8 +100,8 @@ void sp_msgpipe_init (struct sp_msgpipe *self,
     sp_inprocc_add_pipe (inprocc, self);
 
     /*  Mark the pipe as writeable in both directions. */
-    sp_pipebase_out (&self->pipes [0]);
-    sp_pipebase_out (&self->pipes [1]);
+    sp_pipebase_activate (&self->pipes [0]);
+    sp_pipebase_activate (&self->pipes [1]);
 }
 
 void sp_msgpipe_detachb (struct sp_msgpipe *self)
@@ -146,7 +146,7 @@ static void sp_msgpipe_term (struct sp_msgpipe *self)
     sp_free (self);
 }
 
-static int sp_msgpipe_send0 (struct sp_pipebase *self,
+static void sp_msgpipe_send0 (struct sp_pipebase *self,
     const void *buf, size_t len)
 {
     int rc;
@@ -159,10 +159,11 @@ static int sp_msgpipe_send0 (struct sp_pipebase *self,
     if (rc & SP_MSGQUEUE_SIGNAL)
         sp_event_signal (&msgpipe->inevents [1]);
     
-    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
+    if (!(rc & SP_MSGQUEUE_RELEASE))
+        sp_pipebase_sent (self);
 }
 
-static int sp_msgpipe_recv0 (struct sp_pipebase *self,
+static void sp_msgpipe_recv0 (struct sp_pipebase *self,
     void *buf, size_t *len)
 {
     int rc;
@@ -175,10 +176,11 @@ static int sp_msgpipe_recv0 (struct sp_pipebase *self,
     if (rc & SP_MSGQUEUE_SIGNAL)
         sp_event_signal (&msgpipe->outevents [1]);
 
-    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
+    if (!(rc & SP_MSGQUEUE_RELEASE))
+        sp_pipebase_received (self);
 }
 
-static int sp_msgpipe_send1 (struct sp_pipebase *self,
+static void sp_msgpipe_send1 (struct sp_pipebase *self,
     const void *buf, size_t len)
 {
     int rc;
@@ -191,10 +193,11 @@ static int sp_msgpipe_send1 (struct sp_pipebase *self,
     if (rc & SP_MSGQUEUE_SIGNAL)
         sp_event_signal (&msgpipe->inevents [0]);
 
-    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
+    if (!(rc & SP_MSGQUEUE_RELEASE))
+        sp_pipebase_sent (self);
 }
 
-static int sp_msgpipe_recv1 (struct sp_pipebase *self,
+static void sp_msgpipe_recv1 (struct sp_pipebase *self,
     void *buf, size_t *len)
 {
     int rc;
@@ -207,7 +210,8 @@ static int sp_msgpipe_recv1 (struct sp_pipebase *self,
     if (rc & SP_MSGQUEUE_SIGNAL)
         sp_event_signal (&msgpipe->outevents [0]);
 
-    return rc & SP_MSGQUEUE_RELEASE ? SP_PIPEBASE_RELEASE : 0;
+    if (!(rc & SP_MSGQUEUE_RELEASE))
+        sp_pipebase_received (self);
 }
 
 static void sp_msgpipe_inevent0 (const struct sp_sink **self,
@@ -216,7 +220,7 @@ static void sp_msgpipe_inevent0 (const struct sp_sink **self,
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (event, struct sp_msgpipe, inevents [0]);
-    sp_pipebase_in (&msgpipe->pipes [0]);
+    sp_pipebase_received (&msgpipe->pipes [0]);
 }
 
 static void sp_msgpipe_inevent1 (const struct sp_sink **self,
@@ -225,7 +229,7 @@ static void sp_msgpipe_inevent1 (const struct sp_sink **self,
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (event, struct sp_msgpipe, inevents [1]);
-    sp_pipebase_in (&msgpipe->pipes [1]);
+    sp_pipebase_received (&msgpipe->pipes [1]);
 }
 
 static void sp_msgpipe_outevent0 (const struct sp_sink **self,
@@ -234,7 +238,7 @@ static void sp_msgpipe_outevent0 (const struct sp_sink **self,
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (event, struct sp_msgpipe, outevents [0]);
-    sp_pipebase_out (&msgpipe->pipes [0]);
+    sp_pipebase_sent (&msgpipe->pipes [0]);
 }
 
 static void sp_msgpipe_outevent1 (const struct sp_sink **self,
@@ -243,6 +247,6 @@ static void sp_msgpipe_outevent1 (const struct sp_sink **self,
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (event, struct sp_msgpipe, outevents [1]);
-    sp_pipebase_out (&msgpipe->pipes [1]);
+    sp_pipebase_sent (&msgpipe->pipes [1]);
 }
 

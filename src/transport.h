@@ -81,21 +81,33 @@ struct sp_pipebase;
 /*  This value is returned by pipe's send and recv functions to signalise that
     more sends/recvs are not possible at the moment. From that moment on,
     the core will stop invoking the function. To re-establish the message
-    flow sp_pipebase_in (respectively sp_pipebase_out) should be called. */
+    flow sp_pipebase_received (respectively sp_pipebase_sent) should
+    be called. */
 #define SP_PIPEBASE_RELEASE 1
 
-/*  Functions in sp_pipe interface are guarded by socket-wide critical section.
-    Same function on the same pipe in never called from different threads in
-    parallel. */
+/*  Internal pipe states. */
+#define SP_PIPEBASE_INSTATE_DEACTIVATED 0
+#define SP_PIPEBASE_INSTATE_IDLE 1
+#define SP_PIPEBASE_INSTATE_RECEIVING 2
+#define SP_PIPEBASE_INSTATE_RECEIVED 3
+#define SP_PIPEBASE_INSTATE_ASYNC 4
+#define SP_PIPEBASE_OUTSTATE_DEACTIVATED 0
+#define SP_PIPEBASE_OUTSTATE_IDLE 1
+#define SP_PIPEBASE_OUTSTATE_SENDING 2
+#define SP_PIPEBASE_OUTSTATE_SENT 3
+#define SP_PIPEBASE_OUTSTATE_ASYNC 4
+
 struct sp_pipebase_vfptr {
-    int (*send) (struct sp_pipebase *self, const void *buf, size_t len);
-    int (*recv) (struct sp_pipebase *self, void *buf, size_t *len);
+    void (*send) (struct sp_pipebase *self, const void *buf, size_t len);
+    void (*recv) (struct sp_pipebase *self, void *buf, size_t *len);
 };
 
 /*  The member of this structure are used internally by the core. Never use
     or modify them directly from the transport. */
 struct sp_pipebase {
     const struct sp_pipebase_vfptr *vfptr;
+    uint8_t instate;
+    uint8_t outstate;
     struct sp_epbase *epbase;
     void *data;
 };
@@ -107,11 +119,15 @@ int sp_pipebase_init (struct sp_pipebase *self,
 /*  Terminate the pipe. */
 void sp_pipebase_term (struct sp_pipebase *self);
 
-/*  Mark the pipe as ready for receiving. */
-void sp_pipebase_in (struct sp_pipebase *self);
+/*  Informs the user that the pipe is ready for sending and that asynchronous
+    receiving of messages have already started. */
+void sp_pipebase_activate (struct sp_pipebase *self);
 
-/*  Mark the pipe as ready for sending. */
-void sp_pipebase_out (struct sp_pipebase *self);
+/*  Call this function when new message was fully received. */
+void sp_pipebase_received (struct sp_pipebase *self);
+
+/*  Call this function when current outgoing message was fully sent. */
+void sp_pipebase_sent (struct sp_pipebase *self);
 
 /*  Returns the default completion port associated with the pipe. */
 struct sp_cp *sp_pipebase_getcp (struct sp_pipebase *self);

@@ -265,6 +265,20 @@ static void sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
 
 static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
 {
-    sp_assert (0);
+    struct sp_tcps *tcps;
+    size_t sz;
+
+    tcps = sp_cont (self, struct sp_tcps, pipebase);
+
+    /*  Copy the data to the supplied buffer. */
+    sz = sp_msg_size (&tcps->inmsg);
+    if (*len < sz)
+        *len = sz;
+    memcpy (buf, sp_msg_data (&tcps->inmsg), sz);  
+
+    /* Start receiving new message. */ 
+    tcps->instate = SP_TCPS_INSTATE_HDR;
+    sp_usock_recv (tcps->usock, tcps->inhdr, 8);
+    
 }
 

@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#include <stdio.h>
-
 #include "../src/sp.h"
 
 #include "../src/utils/err.c"
@@ -58,8 +56,6 @@ int main ()
     int rc;
     char buf [3];
     struct sp_thread thread;
-
-    printf ("block test running...\n");
 
     rc = sp_init ();
     errno_assert (rc == 0);

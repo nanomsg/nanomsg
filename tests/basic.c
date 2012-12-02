@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#include <stdio.h>
-
 #include "../src/sp.h"
 
 #include "../src/utils/err.c"
@@ -36,8 +34,6 @@ int main ()
     int sb;
     int sc;
     char buf [3];
-
-    printf ("basic test running...\n");
 
     rc = sp_init ();
     errno_assert (rc == 0);

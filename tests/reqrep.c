@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#include <stdio.h>
-
 #include "../src/sp.h"
 
 #include "../src/utils/err.c"
@@ -35,8 +33,6 @@ int main ()
     int resend_ivl;
     char buf [7];
 
-    printf ("reqrep test running...\n");
-#if 0
     /*  Test req/rep with raw socket types. */
 
     rc = sp_init ();
@@ -145,7 +141,6 @@ int main ()
     errno_assert (rc == 0);
     rc = sp_term ();
     errno_assert (rc == 0);
-#endif
 
     /*  Test re-sending of the request. */
 

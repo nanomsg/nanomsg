@@ -441,15 +441,13 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 {
     int rc;
     WSABUF wbuf;
-    DWORD nbytes;
 
     wbuf.len = (u_long) len;
     wbuf.buf = (char FAR*) buf;
     self->out.op = SP_USOCK_OP_SEND;
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &self->out.olpd, NULL);
+    rc = WSASend (self->s, &wbuf, 1, NULL, 0, &self->out.olpd, NULL);
     if (sp_fast (rc == 0)) {
-        sp_assert (nbytes == len);
         sp_assert ((*self->sink)->sent);
         (*self->sink)->sent (self->sink, self);
         return;

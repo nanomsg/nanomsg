@@ -153,6 +153,8 @@ SP_EXPORT int sp_term (void);
 #define SP_REQ 5
 #define SP_SINK 6
 #define SP_SOURCE 7
+#define SP_PUSH 8
+#define SP_PULL 9
 
 /*  Socket option levels.                                                     */
 #define SP_SOL_SOCKET 1

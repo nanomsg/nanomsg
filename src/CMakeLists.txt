@@ -83,6 +83,10 @@ add_library (nanomsg SHARED
     patterns/fanin/sink.c
     patterns/fanin/source.h
     patterns/fanin/source.c
+    patterns/fanout/push.h
+    patterns/fanout/push.c
+    patterns/fanout/pull.h
+    patterns/fanout/pull.c
     patterns/pair/pair.h
     patterns/pair/pair.c
     patterns/pubsub/pub.h

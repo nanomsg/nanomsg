@@ -140,6 +140,7 @@ static int sp_sink_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
     int rc;
     struct sp_sink *sink;
+    struct sp_list_item *it;
 
     sink = sp_cont (self, struct sp_sink, sockbase);
 
@@ -153,14 +154,15 @@ static int sp_sink_recv (struct sp_sockbase *self, void *buf, size_t *len)
 
     /*  Move the current pointer to next pipe. */
     if (rc & SP_PIPE_RELEASE)
-        sink->current = sp_cont (sp_list_erase (&sink->pipes,
-            &sink->current->item), struct sp_sink_data, item);
+        it = sp_list_erase (&sink->pipes, &sink->current->item);
     else
-        sink->current = sp_cont (sp_list_next (&sink->pipes,
-            &sink->current->item), struct sp_sink_data, item);
-    if (!sink->current)
-        sink->current = sp_cont (sp_list_begin (&sink->pipes),
-            struct sp_sink_data, item);
+        it = sp_list_next (&sink->pipes, &sink->current->item);
+    if (!it)
+        it = sp_list_begin (&sink->pipes);
+    if (!it)
+        sink->current = NULL;
+    else
+        sink->current = sp_cont (it, struct sp_sink_data, item);
 
     return 0;
 }

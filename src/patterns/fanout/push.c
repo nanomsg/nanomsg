@@ -134,6 +134,7 @@ static int sp_push_send (struct sp_sockbase *self, const void *buf, size_t len)
 {
     int rc;
     struct sp_push *push;
+    struct sp_list_item *it;
 
     push = sp_cont (self, struct sp_push, sockbase);
 
@@ -147,14 +148,15 @@ static int sp_push_send (struct sp_sockbase *self, const void *buf, size_t len)
 
     /*  Move the current pointer to next pipe. */
     if (rc & SP_PIPE_RELEASE)
-        push->current = sp_cont (sp_list_erase (&push->pipes,
-            &push->current->item), struct sp_push_data, item);
+        it = sp_list_erase (&push->pipes, &push->current->item);
     else
-        push->current = sp_cont (sp_list_next (&push->pipes,
-            &push->current->item), struct sp_push_data, item);
-    if (!push->current)
-        push->current = sp_cont (sp_list_begin (&push->pipes),
-            struct sp_push_data, item);
+        it = sp_list_next (&push->pipes, &push->current->item);
+    if (!it)
+        it = sp_list_begin (&push->pipes);
+    if (!it)
+        push->current = NULL;
+    else
+        push->current = sp_cont (it, struct sp_push_data, item);
 
     return 0;
 

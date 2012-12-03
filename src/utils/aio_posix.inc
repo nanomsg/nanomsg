@@ -43,7 +43,7 @@ static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
 static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
 static int sp_usock_geterr (struct sp_usock *self);
 
-void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
+void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp)
 {
     self->sink = sink;
@@ -86,7 +86,7 @@ void sp_timer_stop (struct sp_timer *self)
         sp_efd_signal (&self->cp->efd);
 }
 
-void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+void sp_event_init (struct sp_event *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp)
 {
     self->sink = sink;
@@ -109,7 +109,7 @@ void sp_event_signal (struct sp_event *self)
     sp_efd_signal (&self->cp->efd);
 }
 
-int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
+int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
@@ -156,10 +156,10 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     return 0;
 }
 
-const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
-    const struct sp_sink **sink)
+const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_cp_sink **sink)
 {
-    const struct sp_sink **original;
+    const struct sp_cp_sink **original;
 
     original = self->sink;
     self->sink = sink;
@@ -167,7 +167,7 @@ const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
 }
 
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_sink **sink, struct sp_cp *cp)
+    int s, const struct sp_cp_sink **sink, struct sp_cp *cp)
 {
     self->sink = sink;
     self->s = s;

@@ -30,7 +30,7 @@
 static void sp_usock_tune (struct sp_usock *self);
 static void sp_cp_worker (void *arg);
 
-void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
+void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp)
 {
     self->sink = sink;
@@ -81,7 +81,7 @@ void sp_timer_stop (struct sp_timer *self)
     }
 }
 
-void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+void sp_event_init (struct sp_event *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp)
 {
     self->sink = sink;
@@ -103,7 +103,7 @@ void sp_event_signal (struct sp_event *self)
     win_assert (brc);
 }
 
-int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
+int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp)
 {
     HANDLE wcp;
@@ -130,10 +130,10 @@ int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
     return 0;
 }
 
-const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
-    const struct sp_sink **sink)
+const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_cp_sink **sink)
 {
-    const struct sp_sink **original;
+    const struct sp_cp_sink **original;
 
     original = self->sink;
     self->sink = sink;
@@ -141,7 +141,7 @@ const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
 }
 
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_sink **sink, struct sp_cp *cp)
+    int s, const struct sp_cp_sink **sink, struct sp_cp *cp)
 {
     self->sink = sink;
     self->s = s;

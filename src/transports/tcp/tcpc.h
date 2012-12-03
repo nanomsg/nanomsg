@@ -32,7 +32,7 @@
 struct sp_tcpc {
 
     /*  Event sink. */
-    const struct sp_sink *sink;
+    const struct sp_cp_sink *sink;
 
     /*  This object is an endpoint. */
     struct sp_epbase epbase;

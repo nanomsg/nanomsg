@@ -36,40 +36,40 @@ struct sp_timer;
 struct sp_usock;
 struct sp_event;
 
-struct sp_sink {
-    void (*received) (const struct sp_sink **self,
+struct sp_cp_sink {
+    void (*received) (const struct sp_cp_sink **self,
         struct sp_usock *usock);
-    void (*sent) (const struct sp_sink **self,
+    void (*sent) (const struct sp_cp_sink **self,
         struct sp_usock *usock);
-    void (*connected) (const struct sp_sink **self,
+    void (*connected) (const struct sp_cp_sink **self,
         struct sp_usock *usock);
-    void (*accepted) (const struct sp_sink **self,
+    void (*accepted) (const struct sp_cp_sink **self,
         struct sp_usock *usock, int s);
-    void (*err) (const struct sp_sink **self,
+    void (*err) (const struct sp_cp_sink **self,
         struct sp_usock *usock, int errnum);
-    void (*timeout) (const struct sp_sink **self,
+    void (*timeout) (const struct sp_cp_sink **self,
         struct sp_timer *timer);
-    void (*event) (const struct sp_sink **self,
+    void (*event) (const struct sp_cp_sink **self,
         struct sp_event *event);
 };
 
-void sp_timer_init (struct sp_timer *self, const struct sp_sink **sink,
+void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp);
 void sp_timer_term (struct sp_timer *self);
 void sp_timer_start (struct sp_timer *self, int timeout);
 void sp_timer_stop (struct sp_timer *self);
 
-void sp_event_init (struct sp_event *self, const struct sp_sink **sink,
+void sp_event_init (struct sp_event *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp);
 void sp_event_term (struct sp_event *self);
 void sp_event_signal (struct sp_event *self);
 
-int sp_usock_init (struct sp_usock *self, const struct sp_sink **sink,
+int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     int domain, int type, int protocol, struct sp_cp *cp);
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_sink **sink, struct sp_cp *cp);
-const struct sp_sink **sp_usock_setsink (struct sp_usock *self,
-    const struct sp_sink **sink);
+    int s, const struct sp_cp_sink **sink, struct sp_cp *cp);
+const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
+    const struct sp_cp_sink **sink);
 void sp_usock_term (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
@@ -97,14 +97,14 @@ void sp_cp_unlock (struct sp_cp *self);
 #include "mutex.h"
 
 struct sp_timer {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
     int active;
 };
 
 struct sp_event {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     int active;
 };
@@ -121,7 +121,7 @@ struct sp_usock_op {
 };
 
 struct sp_usock {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     SOCKET s;
     struct sp_usock_op conn;
@@ -158,14 +158,14 @@ struct sp_cp {
 #include <stdint.h>
 
 struct sp_timer {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     struct sp_timeout_hndl hndl;
     int active;
 };
 
 struct sp_event {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     int active;
     struct sp_queue_item item;
@@ -192,7 +192,7 @@ struct sp_cp_op_hndl {
 #define SP_USOCK_BATCH_SIZE 2048
 
 struct sp_usock {
-    const struct sp_sink **sink;
+    const struct sp_cp_sink **sink;
     struct sp_cp *cp;
     int s;
     struct sp_poller_hndl hndl;

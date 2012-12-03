@@ -34,9 +34,9 @@ static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
 /*  WAITING state. */
-static void sp_tcpc_timeout (const struct sp_sink **self,
+static void sp_tcpc_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
-static const struct sp_sink sp_tcpc_state_waiting = {
+static const struct sp_cp_sink sp_tcpc_state_waiting = {
     NULL,
     NULL,
     NULL,
@@ -46,11 +46,11 @@ static const struct sp_sink sp_tcpc_state_waiting = {
 };
 
 /*  CONNECTING state. */
-static void sp_tcpc_connected (const struct sp_sink **self,
+static void sp_tcpc_connected (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcpc_err (const struct sp_sink **self,
+static void sp_tcpc_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
-static const struct sp_sink sp_tcpc_state_connecting = {
+static const struct sp_cp_sink sp_tcpc_state_connecting = {
     NULL,
     NULL,
     sp_tcpc_connected,
@@ -95,7 +95,7 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     sp_assert (0);
 }
 
-static void sp_tcpc_connected (const struct sp_sink **self,
+static void sp_tcpc_connected (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcpc *tcpc;
@@ -106,7 +106,7 @@ static void sp_tcpc_connected (const struct sp_sink **self,
     sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
 }
 
-static void sp_tcpc_err (const struct sp_sink **self,
+static void sp_tcpc_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
     int rc;
@@ -126,7 +126,7 @@ static void sp_tcpc_err (const struct sp_sink **self,
     sp_timer_start (&tcpc->retry_timer, 100);
 }
 
-static void sp_tcpc_timeout (const struct sp_sink **self,
+static void sp_tcpc_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
     int rc;

@@ -36,9 +36,9 @@ static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
 /*  Sink for aio events. */
-static void sp_tcpb_accepted (const struct sp_sink **self,
+static void sp_tcpb_accepted (const struct sp_cp_sink **self,
     struct sp_usock *usock, int s);
-static const struct sp_sink sp_tcpb_sink = {
+static const struct sp_cp_sink sp_tcpb_sink = {
     NULL,
     NULL,
     NULL,
@@ -110,7 +110,7 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger)
     sp_assert (0);
 }
 
-static void sp_tcpb_accepted (const struct sp_sink **self,
+static void sp_tcpb_accepted (const struct sp_cp_sink **self,
     struct sp_usock *usock, int s)
 {
     struct sp_tcpb *tcpb;

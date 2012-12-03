@@ -39,7 +39,7 @@
 
 struct sp_req {
     struct sp_xreq xreq;
-    const struct sp_sink *sink;
+    const struct sp_cp_sink *sink;
     uint32_t reqid;
     uint32_t flags;
     size_t requestlen;
@@ -69,9 +69,9 @@ static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
 };
 
 /*  Event sink. */
-static void sp_req_timeout (const struct sp_sink **self,
+static void sp_req_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
-static const struct sp_sink sp_req_sink = {
+static const struct sp_cp_sink sp_req_sink = {
     NULL,
     NULL,
     NULL,
@@ -257,7 +257,7 @@ static int sp_req_getopt (struct sp_sockbase *self, int option,
     return -ENOPROTOOPT;
 }
 
-static void sp_req_timeout (const struct sp_sink **self,
+static void sp_req_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
     int rc;

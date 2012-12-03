@@ -39,7 +39,7 @@
 struct sp_tcps {
 
     /*  Event sink. */
-    const struct sp_sink *sink;
+    const struct sp_cp_sink *sink;
 
     /*  Pipe to exchange messages with the user of the library. */
     struct sp_pipebase pipebase;
@@ -76,7 +76,7 @@ struct sp_tcps {
 
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */
-    const struct sp_sink **original_sink;
+    const struct sp_cp_sink **original_sink;
 };
 
 void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,

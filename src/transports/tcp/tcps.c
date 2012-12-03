@@ -31,22 +31,22 @@
 #include <stdint.h>
 
 /*   Private functions. */
-static void sp_tcps_hdr_received (const struct sp_sink **self,
+static void sp_tcps_hdr_received (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_hdr_sent (const struct sp_sink **self,
+static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_hdr_timeout (const struct sp_sink **self,
+static void sp_tcps_hdr_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
 static void sp_tcps_activate (struct sp_tcps *self);
-static void sp_tcps_received (const struct sp_sink **self,
+static void sp_tcps_received (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_sent (const struct sp_sink **self,
+static void sp_tcps_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_err (const struct sp_sink **self,
+static void sp_tcps_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
 
 /*  START state. */
-static const struct sp_sink sp_tcps_state_start = {
+static const struct sp_cp_sink sp_tcps_state_start = {
     sp_tcps_hdr_received,
     sp_tcps_hdr_sent,
     NULL,
@@ -56,7 +56,7 @@ static const struct sp_sink sp_tcps_state_start = {
 };
 
 /*  SENT state. */
-static const struct sp_sink sp_tcps_state_sent = {
+static const struct sp_cp_sink sp_tcps_state_sent = {
     sp_tcps_hdr_received,
     NULL,
     NULL,
@@ -66,7 +66,7 @@ static const struct sp_sink sp_tcps_state_sent = {
 };
 
 /*  RECEIVED state. */
-static const struct sp_sink sp_tcps_state_received = {
+static const struct sp_cp_sink sp_tcps_state_received = {
     NULL,
     sp_tcps_hdr_sent,
     NULL,
@@ -76,7 +76,7 @@ static const struct sp_sink sp_tcps_state_received = {
 };
 
 /*  ACTIVE state. */
-static const struct sp_sink sp_tcps_state_active = {
+static const struct sp_cp_sink sp_tcps_state_active = {
     sp_tcps_received,
     sp_tcps_sent,
     NULL,
@@ -125,7 +125,7 @@ void sp_tcps_term ()
     sp_assert (0);
 }
 
-static void sp_tcps_hdr_received (const struct sp_sink **self,
+static void sp_tcps_hdr_received (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
@@ -146,7 +146,7 @@ static void sp_tcps_hdr_received (const struct sp_sink **self,
     sp_assert (0);
 }
 
-static void sp_tcps_hdr_sent (const struct sp_sink **self,
+static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
@@ -167,7 +167,7 @@ static void sp_tcps_hdr_sent (const struct sp_sink **self,
     sp_assert (0);
 }
 
-static void sp_tcps_hdr_timeout (const struct sp_sink **self,
+static void sp_tcps_hdr_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
     /*  TODO: Header timeout. Drop the connection here. */
@@ -193,7 +193,7 @@ static void sp_tcps_activate (struct sp_tcps *self)
     sp_usock_recv (self->usock, self->inhdr, 8);
 }
 
-static void sp_tcps_received (const struct sp_sink **self,
+static void sp_tcps_received (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     int rc;
@@ -217,7 +217,7 @@ static void sp_tcps_received (const struct sp_sink **self,
     }
 }
 
-static void sp_tcps_sent (const struct sp_sink **self,
+static void sp_tcps_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
@@ -237,7 +237,7 @@ static void sp_tcps_sent (const struct sp_sink **self,
     }
 }
 
-static void sp_tcps_err (const struct sp_sink **self,
+static void sp_tcps_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
     sp_assert (0);

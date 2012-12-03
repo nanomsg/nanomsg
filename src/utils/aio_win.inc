@@ -161,7 +161,6 @@ static void sp_usock_tune (struct sp_usock *self)
 {
     int rc;
     int opt;
-    u_long flags;
     DWORD only;
 #if defined HANDLE_FLAG_INHERIT
     BOOL brc;

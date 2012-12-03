@@ -118,7 +118,6 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     self->s = socket (domain, type, protocol);
     if (self->s == INVALID_SOCKET)
        return -sp_err_wsa_to_posix (WSAGetLastError ());
-printf ("created %p\n", (void*) self->s);
 
     sp_usock_tune (self);
 
@@ -146,7 +145,6 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
 {
     self->sink = sink;
     self->s = s;
-printf ("created-child %p\n", (void*) self->s);
     self->cp = cp;
     self->domain = parent->domain;
     self->type = parent->type;
@@ -464,17 +462,14 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     int rc;
     WSABUF wbuf;
     DWORD wflags;
-    DWORD nbytes;
 
     wbuf.len = (u_long) len;
     wbuf.buf = (char FAR*) buf;
     wflags = MSG_WAITALL;
     self->in.op = SP_USOCK_OP_RECV;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-printf ("recv %p\n", (void*) self->s);
-    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &self->in.olpd, NULL);
+    rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
     if (sp_fast (rc == 0)) {
-        sp_assert (nbytes == len);
         sp_assert ((*self->sink)->received);
         (*self->sink)->received (self->sink, self);
         return;

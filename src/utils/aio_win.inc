@@ -256,6 +256,8 @@ static void sp_cp_worker (void *arg)
     struct sp_timeout_hndl *tohndl;
     struct sp_timer *timer;
     struct sp_event *event;
+    struct sp_usock_op *op;
+    struct sp_usock *usock;
 
     self = (struct sp_cp*) arg;
 
@@ -265,6 +267,8 @@ static void sp_cp_worker (void *arg)
         timeout = sp_timeout_timeout (&self->timeout);
 
         /*  Wait for new events and/or timeouts. */
+        /*  TODO: In theory we may gain some performance by getting multiple
+            events at once via GetQueuedCompletionStatusEx function. */
         sp_mutex_unlock (&self->sync);
         brc = GetQueuedCompletionStatus (self->hndl, &nbytes, &key,
             &olpd, timeout < 0 ? INFINITE : timeout);
@@ -305,7 +309,35 @@ static void sp_cp_worker (void *arg)
         }
         
         /*  I/O completion events */
-        sp_assert (0);
+        sp_assert (olpd);
+        op = sp_cont (olpd, struct sp_usock_op, olpd);
+        switch (op->op) {
+        case SP_USOCK_OP_RECV:
+            usock = sp_cont (op, struct sp_usock, in);
+            sp_assert ((*usock->sink)->received);
+            (*usock->sink)->received (usock->sink, usock);
+            break;
+        case SP_USOCK_OP_SEND:
+            usock = sp_cont (op, struct sp_usock, out);
+            sp_assert ((*usock->sink)->sent);
+            (*usock->sink)->sent (usock->sink, usock);
+            break;
+        case SP_USOCK_OP_CONNECT:
+            usock = sp_cont (op, struct sp_usock, out);
+            sp_assert ((*usock->sink)->connected);
+            (*usock->sink)->connected (usock->sink, usock);
+            break;
+        case SP_USOCK_OP_ACCEPT:
+            usock = sp_cont (op, struct sp_usock, in);
+            sp_assert ((*usock->sink)->accepted);
+            (*usock->sink)->accepted (usock->sink, usock, usock->newsock);
+            break;
+        case SP_USOCK_OP_CONN:
+            usock = sp_cont (op, struct sp_usock, conn);
+            sp_assert (0);
+        default:
+            sp_assert (0);
+        }
     }
 }
 
@@ -373,9 +405,10 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
         &nbytes, NULL, NULL);
     wsa_assert (rc == 0);
     sp_assert (nbytes == sizeof (pconnectex));
-    memset (&self->conn, 0, sizeof (self->conn));
+    self->out.op = SP_USOCK_OP_CONNECT;
+    memset (&self->out.olpd, 0, sizeof (self->out.olpd));
     brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
-        NULL, 0, NULL, (OVERLAPPED*) &self->conn);
+        NULL, 0, NULL, &self->out.olpd);
     if (sp_fast (brc == TRUE)) {
         sp_assert ((*self->sink)->connected);
         (*self->sink)->connected (self->sink, self);
@@ -399,9 +432,10 @@ void sp_usock_accept (struct sp_usock *self)
     sp_assert (wcp);
 
     /*  Asynchronously wait for new incoming connection. */
-    memset (&self->in, 0, sizeof (self->in));
+    self->in.op = SP_USOCK_OP_ACCEPT;
+    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
     brc = AcceptEx (self->s, self->newsock, info, 0, 256, 256, &nbytes,
-        &self->in);
+        &self->in.olpd);
     if (sp_fast (brc == TRUE)) {
         sp_assert ((*self->sink)->accepted);
         (*self->sink)->accepted (self->sink, self, self->newsock);
@@ -418,8 +452,9 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 
     wbuf.len = (u_long) len;
     wbuf.buf = (char FAR*) buf;
-    memset (&self->out, 0, sizeof (self->out));
-    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &self->out, NULL);
+    self->out.op = SP_USOCK_OP_SEND;
+    memset (&self->out.olpd, 0, sizeof (self->out.olpd));
+    rc = WSASend (self->s, &wbuf, 1, &nbytes, 0, &self->out.olpd, NULL);
     if (sp_fast (rc == 0)) {
         sp_assert (nbytes == len);
         sp_assert ((*self->sink)->sent);
@@ -439,8 +474,9 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     wbuf.len = (u_long) len;
     wbuf.buf = (char FAR*) buf;
     wflags = MSG_WAITALL;
-    memset (&self->in, 0, sizeof (self->in));
-    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &self->in, NULL);
+    self->in.op = SP_USOCK_OP_RECV;
+    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+    rc = WSARecv (self->s, &wbuf, 1, &nbytes, &wflags, &self->in.olpd, NULL);
     if (sp_fast (rc == 0)) {
         sp_assert (nbytes == len);
         sp_assert ((*self->sink)->received);

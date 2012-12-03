@@ -109,13 +109,24 @@ struct sp_event {
     int active;
 };
 
+#define SP_USOCK_OP_CONN 1
+#define SP_USOCK_OP_RECV 2
+#define SP_USOCK_OP_SEND 3
+#define SP_USOCK_OP_CONNECT 4
+#define SP_USOCK_OP_ACCEPT 5
+
+struct sp_usock_op {
+    OVERLAPPED olpd;
+    int op;
+};
+
 struct sp_usock {
     const struct sp_sink **sink;
     struct sp_cp *cp;
     SOCKET s;
-    OVERLAPPED conn;
-    OVERLAPPED in;
-    OVERLAPPED out;
+    struct sp_usock_op conn;
+    struct sp_usock_op in;
+    struct sp_usock_op out;
     SOCKET newsock;
     int domain;
     int type;

@@ -79,6 +79,10 @@ add_library (nanomsg SHARED
     utils/timeout.c
     utils/wire.h
     utils/wire.c
+    patterns/fanin/sink.h
+    patterns/fanin/sink.c
+    patterns/fanin/source.h
+    patterns/fanin/source.c
     patterns/pair/pair.h
     patterns/pair/pair.c
     patterns/pubsub/pub.h

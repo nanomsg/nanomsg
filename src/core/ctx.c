@@ -46,6 +46,8 @@
 #include "../patterns/reqrep/req.h"
 #include "../patterns/reqrep/xrep.h"
 #include "../patterns/reqrep/xreq.h"
+#include "../patterns/fanin/sink.h"
+#include "../patterns/fanin/source.h"
 
 #include <stddef.h>
 
@@ -203,6 +205,8 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_req_socktype);
     sp_ctx_add_socktype (sp_xrep_socktype);
     sp_ctx_add_socktype (sp_xreq_socktype);
+    sp_ctx_add_socktype (sp_sink_socktype);
+    sp_ctx_add_socktype (sp_source_socktype);
 
     sp_glock_unlock ();
 

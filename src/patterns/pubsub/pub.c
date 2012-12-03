@@ -123,7 +123,6 @@ static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     /*  New subscriber. Let's remember it. */
     result = sp_list_empty (&pub->pipes) ? 1 : 0;
     sp_list_insert (&pub->pipes, &data->out, sp_list_end (&pub->pipes));
-
     return result;
 }
 

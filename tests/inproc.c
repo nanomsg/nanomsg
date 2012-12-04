@@ -23,7 +23,6 @@
 #include "../src/sp.h"
 
 #include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
 
 /*  This test does nothing but passes a single message from one socket
     to another one. It's goal is to make sure that all the basic pieces
@@ -42,15 +41,12 @@ int main ()
 
     sc = sp_socket (AF_SP, SP_PAIR);
     errno_assert (sc != -1);
-    rc = sp_connect (sc, "tcp://127.0.0.1:5555");
+    rc = sp_connect (sc, "inproc://test");
     errno_assert (rc >= 0);
-
-    /*  Leave enough time for at least on re-connect attempt. */
-    sp_sleep (200);
 
     sb = sp_socket (AF_SP, SP_PAIR);
     errno_assert (sb != -1);
-    rc = sp_bind (sb, "tcp://127.0.0.1:5555");
+    rc = sp_bind (sb, "inproc://test");
     errno_assert (rc >= 0);
 
     /*  Ping-pong test. */

@@ -28,11 +28,17 @@ macro (add_libnanomsg_test NAME)
     add_test (${NAME} ${CMAKE_BINARY_DIR}/${NAME})
 endmacro (add_libnanomsg_test)
 
-add_libnanomsg_test (basic)
-add_libnanomsg_test (block)
+#  Transport tests.
+add_libnanomsg_test (inproc)
+add_libnanomsg_test (tcp)
+
+#  Pattern tests.
+add_libnanomsg_test (pair)
 add_libnanomsg_test (pubsub)
 add_libnanomsg_test (reqrep)
 add_libnanomsg_test (fanin)
 add_libnanomsg_test (fanout)
-add_libnanomsg_test (tcp)
+
+#  Feature tests.
+add_libnanomsg_test (block)
 

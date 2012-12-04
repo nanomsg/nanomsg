@@ -24,10 +24,6 @@
 
 #include "../src/utils/err.c"
 
-/*  This test does nothing but passes a single message from one socket
-    to another one. It's goal is to make sure that all the basic pieces
-    of the infrastructure are present and functional. */
-
 int main ()
 {
     int rc;
@@ -51,6 +47,14 @@ int main ()
     sp_assert (rc == 3);
 
     rc = sp_recv (sb, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 3);
+
+    rc = sp_send (sb, "DEF", 3, 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 3);
+
+    rc = sp_recv (sc, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     sp_assert (rc == 3);
 

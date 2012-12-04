@@ -766,6 +766,7 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
         if (sz > length)
             sz = length;
         memcpy (buf, self->in.batch + self->in.batch_pos, sz);
+        self->in.batch_pos += sz;
         buf = ((char*) buf) + sz;
         length -= sz;
         if (!length)
@@ -799,7 +800,7 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
         straight away. */
     if (length > SP_USOCK_BATCH_SIZE) {
         length -= nbytes;
-        *len = *len - length;
+        *len -= length;
         return 0;
     }
 
@@ -814,7 +815,7 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
         self->in.batch_pos += sz;
     }
 
-    *len = *len - length;
+    *len -= length;
     return 0;
 }
 

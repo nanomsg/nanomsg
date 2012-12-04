@@ -34,6 +34,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int i;
     char buf [3];
 
     rc = sp_init ();
@@ -52,13 +53,24 @@ int main ()
     rc = sp_bind (sb, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
 
-    rc = sp_send (sc, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    for (i = 0; i != 100; ++i) {
 
-    rc = sp_recv (sb, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+        rc = sp_send (sc, "ABC", 3, 0);
+        errno_assert (rc >= 0);
+        sp_assert (rc == 3);
+
+        rc = sp_recv (sb, buf, sizeof (buf), 0);
+        errno_assert (rc >= 0);
+        sp_assert (rc == 3);
+
+        rc = sp_send (sb, "DEF", 3, 0);
+        errno_assert (rc >= 0);
+        sp_assert (rc == 3);
+
+        rc = sp_recv (sc, buf, sizeof (buf), 0);
+        errno_assert (rc >= 0);
+        sp_assert (rc == 3);
+    }
 
     rc = sp_close (sc);
     errno_assert (rc == 0);

@@ -308,21 +308,25 @@ static void sp_cp_worker (void *arg)
         case SP_USOCK_OP_RECV:
             usock = sp_cont (op, struct sp_usock, in);
             sp_assert ((*usock->sink)->received);
+printf ("received olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->received (usock->sink, usock);
             break;
         case SP_USOCK_OP_SEND:
             usock = sp_cont (op, struct sp_usock, out);
             sp_assert ((*usock->sink)->sent);
+printf ("sent olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->sent (usock->sink, usock);
             break;
         case SP_USOCK_OP_CONNECT:
             usock = sp_cont (op, struct sp_usock, out);
             sp_assert ((*usock->sink)->connected);
+printf ("connected olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->connected (usock->sink, usock);
             break;
         case SP_USOCK_OP_ACCEPT:
             usock = sp_cont (op, struct sp_usock, in);
             sp_assert ((*usock->sink)->accepted);
+printf ("accepted olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->accepted (usock->sink, usock, usock->newsock);
             break;
         case SP_USOCK_OP_CONN:
@@ -400,9 +404,13 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_assert (nbytes == sizeof (pconnectex));
     self->out.op = SP_USOCK_OP_CONNECT;
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
+printf ("sp_usock_connect olpd=%p\n", (void*) &self->out.olpd);
     brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
         NULL, 0, NULL, &self->out.olpd);
+    /*  TODO: It's not clear what happens when connect is immediately
+        successful. Is the completion reported in async way anyway? */
     if (sp_fast (brc == TRUE)) {
+printf ("connected immediately olpd=%p\n", (void*) &self->out.olpd);
         sp_assert ((*self->sink)->connected);
         (*self->sink)->connected (self->sink, self);
         return;
@@ -427,9 +435,13 @@ void sp_usock_accept (struct sp_usock *self)
     /*  Asynchronously wait for new incoming connection. */
     self->in.op = SP_USOCK_OP_ACCEPT;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+printf ("sp_usock_accept olpd=%p\n", (void*) &self->in.olpd);
     brc = AcceptEx (self->s, self->newsock, info, 0, 256, 256, &nbytes,
         &self->in.olpd);
+    /*  TODO: It's not clear what happens when accept is immediately
+        successful. Is the completion reported in async way anyway? */
     if (sp_fast (brc == TRUE)) {
+printf ("accepted immediately olpd=%p\n", (void*) &self->in.olpd);
         sp_assert ((*self->sink)->accepted);
         (*self->sink)->accepted (self->sink, self, self->newsock);
         return;
@@ -446,13 +458,9 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
     wbuf.buf = (char FAR*) buf;
     self->out.op = SP_USOCK_OP_SEND;
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
+printf ("sp_usock_send olpd=%p size=%d\n", (void*) &self->out.olpd, (int) len);
     rc = WSASend (self->s, &wbuf, 1, NULL, 0, &self->out.olpd, NULL);
-    if (sp_fast (rc == 0)) {
-        sp_assert ((*self->sink)->sent);
-        (*self->sink)->sent (self->sink, self);
-        return;
-    }
-    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
 
 void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
@@ -466,12 +474,8 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     wflags = MSG_WAITALL;
     self->in.op = SP_USOCK_OP_RECV;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+printf ("sp_usock_recv olpd=%p size=%d\n", (void*) &self->in.olpd, (int) len);
     rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
-    if (sp_fast (rc == 0)) {
-        sp_assert ((*self->sink)->received);
-        (*self->sink)->received (self->sink, self);
-        return;
-    }
-    wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
+    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
 

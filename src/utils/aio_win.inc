@@ -478,4 +478,3 @@ printf ("sp_usock_recv olpd=%p size=%d\n", (void*) &self->in.olpd, (int) len);
     rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
     wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
-

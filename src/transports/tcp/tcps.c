@@ -206,6 +206,10 @@ static void sp_tcps_received (const struct sp_cp_sink **self,
         size = sp_getll (tcps->inhdr);
         rc = sp_msg_init (&tcps->inmsg, (size_t) size);
         errnum_assert (rc == 0, -rc);
+        if (!size) {
+            sp_pipebase_received (&tcps->pipebase);
+            break;
+        }
         tcps->instate = SP_TCPS_INSTATE_BODY;
         sp_usock_recv (tcps->usock, sp_msg_data (&tcps->inmsg), (size_t) size);
         break;
@@ -221,13 +225,18 @@ static void sp_tcps_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcps *tcps;
+    size_t size;
 
     tcps = sp_cont (self, struct sp_tcps, sink);
     switch (tcps->outstate) {
     case SP_TCPS_OUTSTATE_HDR:
+        size = sp_msg_size (&tcps->outmsg);
         tcps->outstate = SP_TCPS_OUTSTATE_BODY;
-        sp_usock_send (tcps->usock, sp_msg_data (&tcps->outmsg),
-            sp_msg_size (&tcps->outmsg));
+        if (!size) {
+            sp_pipebase_sent (&tcps->pipebase);
+            break;
+        }
+        sp_usock_send (tcps->usock, sp_msg_data (&tcps->outmsg), size);
         break;
     case SP_TCPS_OUTSTATE_BODY:
         sp_pipebase_sent (&tcps->pipebase);

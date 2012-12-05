@@ -52,6 +52,8 @@
 #include "../patterns/fanin/xsource.h"
 #include "../patterns/fanout/push.h"
 #include "../patterns/fanout/pull.h"
+#include "../patterns/fanout/xpush.h"
+#include "../patterns/fanout/xpull.h"
 
 #include <stddef.h>
 
@@ -215,6 +217,7 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_xsource_socktype);
     sp_ctx_add_socktype (sp_push_socktype);
     sp_ctx_add_socktype (sp_pull_socktype);
+    sp_ctx_add_socktype (sp_xpull_socktype);
 
     sp_glock_unlock ();
 

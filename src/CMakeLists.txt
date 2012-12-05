@@ -91,6 +91,10 @@ add_library (nanomsg SHARED
     patterns/fanout/push.c
     patterns/fanout/pull.h
     patterns/fanout/pull.c
+    patterns/fanout/xpull.h
+    patterns/fanout/xpull.c
+    patterns/fanout/xpush.h
+    patterns/fanout/xpush.c
     patterns/pair/pair.h
     patterns/pair/pair.c
     patterns/pubsub/pub.h

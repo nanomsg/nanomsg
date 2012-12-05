@@ -20,16 +20,13 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef SP_XPULL_INCLUDED
+#define SP_XPULL_INCLUDED
 
-#include "../../sp.h"
+#include "../../pattern.h"
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+extern struct sp_socktype *sp_xpull_socktype;
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+struct sp_sockbase *sp_xpull_create (int fd);
 
+#endif

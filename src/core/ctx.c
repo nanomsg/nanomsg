@@ -48,6 +48,8 @@
 #include "../patterns/reqrep/xreq.h"
 #include "../patterns/fanin/sink.h"
 #include "../patterns/fanin/source.h"
+#include "../patterns/fanin/xsink.h"
+#include "../patterns/fanin/xsource.h"
 #include "../patterns/fanout/push.h"
 #include "../patterns/fanout/pull.h"
 
@@ -209,6 +211,8 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_xreq_socktype);
     sp_ctx_add_socktype (sp_sink_socktype);
     sp_ctx_add_socktype (sp_source_socktype);
+    sp_ctx_add_socktype (sp_xsink_socktype);
+    sp_ctx_add_socktype (sp_xsource_socktype);
     sp_ctx_add_socktype (sp_push_socktype);
     sp_ctx_add_socktype (sp_pull_socktype);
 

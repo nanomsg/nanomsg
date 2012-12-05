@@ -20,16 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#include "sink.h"
-#include "xsink.h"
+#ifndef SP_XSINK_INCLUDED
+#define SP_XSINK_INCLUDED
 
-#include "../../sp.h"
+#include "../../pattern.h"
 
-static struct sp_socktype sp_sink_socktype_struct = {
-    AF_SP,
-    SP_SINK,
-    sp_xsink_create
-};
+extern struct sp_socktype *sp_xsink_socktype;
 
-struct sp_socktype *sp_sink_socktype = &sp_sink_socktype_struct;
+struct sp_sockbase *sp_xsink_create (int fd);
+
+#endif
 

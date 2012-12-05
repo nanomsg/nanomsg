@@ -113,7 +113,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
         }
     }
 
-    /*   TODO: Check transport-specific options here. */
+    /*  TODO: Check transport-specific options here. */
 
     /*  Socket option not found. */
     sp_cp_unlock (&sockbase->cp);

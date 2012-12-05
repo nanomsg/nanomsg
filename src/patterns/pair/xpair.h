@@ -20,16 +20,13 @@
     IN THE SOFTWARE.
 */
 
-#include "pair.h"
-#include "xpair.h"
+#ifndef SP_XPAIR_INCLUDED
+#define SP_XPAIR_INCLUDED
 
-#include "../../sp.h"
+#include "../../pattern.h"
 
-static struct sp_socktype sp_pair_socktype_struct = {
-    AF_SP,
-    SP_PAIR,
-    sp_xpair_create
-};
+extern struct sp_socktype *sp_xpair_socktype;
 
-struct sp_socktype *sp_pair_socktype = &sp_pair_socktype_struct;
+struct sp_sockbase *sp_xpair_create (int fd);
 
+#endif

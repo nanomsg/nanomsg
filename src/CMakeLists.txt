@@ -28,6 +28,7 @@ add_library (nanomsg SHARED
     pattern.h
     sp.h
     transport.h
+
     core/ctx.h
     core/ctx.c
     core/ep.h
@@ -35,6 +36,7 @@ add_library (nanomsg SHARED
     core/pipe.c
     core/sock.h
     core/sock.c
+
     utils/addr.h
     utils/addr.c
     utils/aio.h
@@ -79,6 +81,7 @@ add_library (nanomsg SHARED
     utils/timeout.c
     utils/wire.h
     utils/wire.c
+
     patterns/fanin/sink.h
     patterns/fanin/sink.c
     patterns/fanin/source.h
@@ -87,6 +90,7 @@ add_library (nanomsg SHARED
     patterns/fanin/xsink.c
     patterns/fanin/xsource.h
     patterns/fanin/xsource.c
+
     patterns/fanout/push.h
     patterns/fanout/push.c
     patterns/fanout/pull.h
@@ -95,14 +99,19 @@ add_library (nanomsg SHARED
     patterns/fanout/xpull.c
     patterns/fanout/xpush.h
     patterns/fanout/xpush.c
+
     patterns/pair/pair.h
     patterns/pair/pair.c
+    patterns/pair/xpair.h
+    patterns/pair/xpair.c
+
     patterns/pubsub/pub.h
     patterns/pubsub/pub.c
     patterns/pubsub/sub.h
     patterns/pubsub/sub.c
     patterns/pubsub/trie.h
     patterns/pubsub/trie.c
+
     patterns/reqrep/req.h
     patterns/reqrep/req.c
     patterns/reqrep/rep.h
@@ -111,6 +120,7 @@ add_library (nanomsg SHARED
     patterns/reqrep/xrep.c
     patterns/reqrep/xreq.h
     patterns/reqrep/xreq.c
+
     transports/inproc/inproc.h
     transports/inproc/inproc_ctx.h
     transports/inproc/inproc_ctx.c
@@ -122,6 +132,7 @@ add_library (nanomsg SHARED
     transports/inproc/msgpipe.c
     transports/inproc/msgqueue.h
     transports/inproc/msgqueue.c
+
     transports/tcp/tcp.h
     transports/tcp/tcp.c
     transports/tcp/tcpa.h

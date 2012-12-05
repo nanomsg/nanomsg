@@ -40,6 +40,7 @@
 #include "../transports/tcp/tcp.h"
 
 #include "../patterns/pair/pair.h"
+#include "../patterns/pair/xpair.h"
 #include "../patterns/pubsub/pub.h"
 #include "../patterns/pubsub/sub.h"
 #include "../patterns/reqrep/rep.h"
@@ -205,6 +206,7 @@ int sp_init (void)
 
     /*  Plug in individual socktypes. */
     sp_ctx_add_socktype (sp_pair_socktype);
+    sp_ctx_add_socktype (sp_xpair_socktype);
     sp_ctx_add_socktype (sp_pub_socktype);
     sp_ctx_add_socktype (sp_sub_socktype);
     sp_ctx_add_socktype (sp_rep_socktype);

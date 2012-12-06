@@ -29,8 +29,10 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
+#include "../../utils/wire.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #define SP_RESPONDENT_INPROGRESS 1
 
@@ -77,20 +79,60 @@ void sp_respondent_term (struct sp_sockbase *self)
 static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
     size_t len)
 {
+    int rc;
     struct sp_respondent *respondent;
+    uint8_t *tmpbuf;
 
     respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
 
-    sp_assert (0);
+    /*  If there's no survey going on, report EFSM error. */
+    if (sp_slow (!(respondent->flags & SP_RESPONDENT_INPROGRESS)))
+        return -EFSM;
+
+    /*  Tag the message with survey ID. */
+    tmpbuf = sp_alloc (len + 4);
+    alloc_assert (tmpbuf);
+    sp_putl (tmpbuf, respondent->surveyid);
+    memcpy (tmpbuf + 4, buf, len);
+    rc = sp_xrespondent_send (&respondent->xrespondent.sockbase,
+        tmpbuf, len + 4);
+    errnum_assert (rc == 0, -rc);
+    sp_free (tmpbuf);
+
+    /*  Remember that no survey is being processed. */
+    respondent->flags &= ~SP_RESPONDENT_INPROGRESS;
+
+    return 0;
 }
 
 static int sp_respondent_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
+    int rc;
     struct sp_respondent *respondent;
+    size_t tmplen;
+    uint8_t *tmpbuf;
 
     respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
 
-    sp_assert (0);
+    /*  Cancel current survey, if it exists. */
+    respondent->flags &= ~SP_RESPONDENT_INPROGRESS;
+
+    /*  Get next survey. Split it into survey ID and the body. */
+    tmplen = *len + 4;
+    tmpbuf = sp_alloc (tmplen);
+    alloc_assert (tmpbuf);
+    rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase,
+        tmpbuf, &tmplen);
+    errnum_assert (rc == 0, -rc);
+    respondent->surveyid = sp_getl (tmpbuf);
+    memcpy (buf, tmpbuf + 4, tmplen - 4);
+    *len = tmplen - 4;
+    sp_free (tmpbuf);
+
+    /*  Remember that survey is being processed. */
+    respondent->flags |= SP_RESPONDENT_INPROGRESS;
+
+    return 0;
 }
 
 static struct sp_sockbase *sp_respondent_create (int fd)

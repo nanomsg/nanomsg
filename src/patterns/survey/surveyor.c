@@ -28,6 +28,9 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 
+#include <stdint.h>
+#include <string.h>
+
 #define SP_SURVEYOR_DEFAULT_DEADLINE_IVL 1000
 
 #define SP_SURVEYOR_INPROGRESS 1
@@ -125,9 +128,8 @@ static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
 
     /*  Send the survey. */
     rc = sp_xsurveyor_send (&surveyor->xsurveyor.sockbase, survey, surveylen);
+    errnum_assert (rc == 0, -rc);
     sp_free (survey);
-    if (sp_slow (rc < 0))
-        return rc;
 
     surveyor->flags |= SP_SURVEYOR_INPROGRESS;
 
@@ -139,7 +141,11 @@ static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
 
 static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
+    int rc;
     struct sp_surveyor *surveyor;
+    size_t tmplen;
+    uint8_t *tmpbuf;
+    uint32_t surveyid;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
 
@@ -147,7 +153,33 @@ static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
     if (sp_slow (!(surveyor->flags & SP_SURVEYOR_INPROGRESS)))
        return -EFSM;
 
-    sp_assert (0);
+    /*  Prepare temporary buffer for incoming messages. */
+    tmpbuf = sp_alloc (*len + 4);
+    alloc_assert (tmpbuf);
+
+    while (1) {
+
+        /*  Get next response. Split it into survey ID and the body. */
+        tmplen = *len + 4;
+        rc = sp_xsurveyor_recv (&surveyor->xsurveyor.sockbase,
+            tmpbuf, &tmplen);
+        if (sp_slow (rc == -EAGAIN)) {
+            sp_free (tmpbuf);
+            return -EAGAIN;
+        }
+        errnum_assert (rc == 0, -rc);
+        surveyid = sp_getl (tmpbuf);
+
+        /*  Ignore any stale responses. */
+        if (surveyid == surveyor->surveyid)
+            break;
+    }
+
+    memcpy (buf, tmpbuf + 4, tmplen - 4);
+    *len = tmplen - 4;
+    sp_free (tmpbuf);
+
+    return 0;
 }
 
 static void sp_surveyor_timeout (const struct sp_cp_sink **self,

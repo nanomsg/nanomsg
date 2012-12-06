@@ -38,6 +38,7 @@ add_libnanomsg_test (pubsub)
 add_libnanomsg_test (reqrep)
 add_libnanomsg_test (fanin)
 add_libnanomsg_test (fanout)
+add_libnanomsg_test (survey)
 
 #  Feature tests.
 add_libnanomsg_test (block)

@@ -121,6 +121,15 @@ add_library (nanomsg SHARED
     patterns/reqrep/xreq.h
     patterns/reqrep/xreq.c
 
+    patterns/survey/respondent.h
+    patterns/survey/respondent.c
+    patterns/survey/surveyor.h
+    patterns/survey/surveyor.c
+    patterns/survey/xrespondent.h
+    patterns/survey/xrespondent.c
+    patterns/survey/xsurveyor.h
+    patterns/survey/xsurveyor.c
+
     transports/inproc/inproc.h
     transports/inproc/inproc_ctx.h
     transports/inproc/inproc_ctx.c

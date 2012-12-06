@@ -55,6 +55,10 @@
 #include "../patterns/fanout/pull.h"
 #include "../patterns/fanout/xpush.h"
 #include "../patterns/fanout/xpull.h"
+#include "../patterns/survey/respondent.h"
+#include "../patterns/survey/surveyor.h"
+#include "../patterns/survey/xrespondent.h"
+#include "../patterns/survey/xsurveyor.h"
 
 #include <stddef.h>
 
@@ -220,6 +224,10 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_push_socktype);
     sp_ctx_add_socktype (sp_pull_socktype);
     sp_ctx_add_socktype (sp_xpull_socktype);
+    sp_ctx_add_socktype (sp_respondent_socktype);
+    sp_ctx_add_socktype (sp_surveyor_socktype);
+//    sp_ctx_add_socktype (sp_xrespondent_socktype);
+    sp_ctx_add_socktype (sp_xsurveyor_socktype);
 
     sp_glock_unlock ();
 

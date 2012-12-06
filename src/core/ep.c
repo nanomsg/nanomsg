@@ -66,9 +66,6 @@ const char *sp_epbase_getaddr (struct sp_epbase *self)
 
 int sp_ep_fd (struct sp_ep *self)
 {
-    struct sp_epbase *epbase;
-
-    epbase = (struct sp_epbase*) self;
     return sp_sock_fd (((struct sp_epbase*) self)->sock);
 }
 

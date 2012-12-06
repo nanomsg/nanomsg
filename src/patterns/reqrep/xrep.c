@@ -136,7 +136,6 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
     int rc;
     uint32_t key;
     struct sp_xrep *xrep;
-    struct sp_hash_item *item;
     struct sp_xrep_data *data;
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
@@ -152,11 +151,9 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
 
     /*  Find the appropriate pipe to send the message to. If there's none,
         or if it's not ready for sending, silently drop the message. */
-    item = sp_hash_get (&xrep->pipes, key);
-    if (!item)
-        return 0;
-    data = sp_cont (item, struct sp_xrep_data, pipes);
-    if (!(data->flags & SP_XREP_OUT))
+    data = sp_cont (sp_hash_get (&xrep->pipes, key), struct sp_xrep_data,
+        pipes);
+    if (!data || !(data->flags & SP_XREP_OUT))
         return 0;
 
     /*  Send the message. */
@@ -196,10 +193,7 @@ int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
         next = sp_list_next (&xrep->inpipes, &xrep->current->inpipes);
     if (next == sp_list_end (&xrep->inpipes))
         next = sp_list_begin (&xrep->inpipes);
-    if (!next)
-        xrep->current = NULL;
-    else
-        xrep->current = sp_cont (next, struct sp_xrep_data, inpipes);
+    xrep->current = sp_cont (next, struct sp_xrep_data, inpipes);
 
     return 0;
 }

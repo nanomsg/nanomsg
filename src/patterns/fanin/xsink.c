@@ -160,10 +160,7 @@ static int sp_xsink_recv (struct sp_sockbase *self, void *buf, size_t *len)
         it = sp_list_next (&xsink->pipes, &xsink->current->item);
     if (!it)
         it = sp_list_begin (&xsink->pipes);
-    if (!it)
-        xsink->current = NULL;
-    else
-        xsink->current = sp_cont (it, struct sp_xsink_data, item);
+    xsink->current = sp_cont (it, struct sp_xsink_data, item);
 
     return 0;
 }

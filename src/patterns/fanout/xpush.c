@@ -154,10 +154,7 @@ static int sp_xpush_send (struct sp_sockbase *self, const void *buf, size_t len)
         it = sp_list_next (&xpush->pipes, &xpush->current->item);
     if (!it)
         it = sp_list_begin (&xpush->pipes);
-    if (!it)
-        xpush->current = NULL;
-    else
-        xpush->current = sp_cont (it, struct sp_xpush_data, item);
+    xpush->current = sp_cont (it, struct sp_xpush_data, item);
 
     return 0;
 

@@ -164,10 +164,7 @@ int sp_xsurveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
         it = sp_list_next (&xsurveyor->inpipes, &xsurveyor->current->initem);
     if (!it)
         it = sp_list_begin (&xsurveyor->inpipes);
-    if (!it)
-        xsurveyor->current = NULL;
-    else
-        xsurveyor->current = sp_cont (it, struct sp_xsurveyor_data, initem);
+    xsurveyor->current = sp_cont (it, struct sp_xsurveyor_data, initem);
 
     return 0;
 }

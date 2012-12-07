@@ -24,13 +24,28 @@
 
 #if defined SP_ALLOC_MONITOR
 
+#include "mutex.h"
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
-static size_t sp_alloc_bytes = 0;
-static size_t sp_alloc_blocks = 0;
+static struct sp_mutex sp_alloc_sync;
+static size_t sp_alloc_bytes;
+static size_t sp_alloc_blocks;
+
+void sp_alloc_init (void)
+{
+    sp_mutex_init (&sp_alloc_sync, 0);
+    sp_alloc_bytes = 0;
+    sp_alloc_blocks = 0;
+}
+
+void sp_alloc_term (void)
+{
+    sp_mutex_term (&sp_alloc_sync);
+}
 
 void *sp_alloc (size_t size)
 {
@@ -39,11 +54,15 @@ void *sp_alloc (size_t size)
     chunk = malloc (size + sizeof (size_t));
     if (!chunk)
         return NULL;
+
+    sp_mutex_lock (&sp_alloc_sync);
     *(size_t*) chunk = size;
     sp_alloc_bytes += size;
     ++sp_alloc_blocks;
     printf ("alloc %zu bytes (now there are %zu bytes allocated in %zu "
         "blocks)\n", size, sp_alloc_bytes, sp_alloc_blocks);
+    sp_mutex_unlock (&sp_alloc_sync);
+
     return chunk + sizeof (size_t);
 }
 
@@ -59,11 +78,15 @@ void *sp_realloc (void *ptr, size_t size)
     if (!newchunk)
         return NULL;
     *(size_t*) newchunk = size;
+
+    sp_mutex_lock (&sp_alloc_sync);
     sp_alloc_bytes -= oldsize;
     sp_alloc_bytes += size;
     printf ("realloc %zu bytes to %zu bytes (now there are %zu bytes "
         "allocated in %zu blocks)\n", oldsize, size, sp_alloc_bytes,
         sp_alloc_blocks);
+    sp_mutex_unlock (&sp_alloc_sync);
+
     return newchunk + sizeof (size_t);
 }
 
@@ -74,16 +97,28 @@ void sp_free (void *ptr)
     if (!ptr)
         return;
     chunk = (uint8_t*) (((size_t*) ptr) - 1);
+
+    sp_mutex_lock (&sp_alloc_sync);
     sp_alloc_bytes -= *(size_t*) chunk;
     --sp_alloc_blocks;
     printf ("free %zu bytes (now there are %zu bytes allocated in %zu "
         "blocks)\n", *(size_t*) chunk, sp_alloc_bytes, sp_alloc_blocks);
+    sp_mutex_unlock (&sp_alloc_sync);
+
     free (chunk);
 }
 
 #else
 
 #include <stdlib.h>
+
+void sp_alloc_init (void)
+{
+}
+
+void sp_alloc_term (void)
+{
+}
 
 void *sp_alloc (size_t size)
 {

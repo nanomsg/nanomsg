@@ -28,6 +28,8 @@
 /*  These functions allows for interception of memory allocation-related
     functionality. */
 
+void sp_alloc_init (void);
+void sp_alloc_term (void);
 void *sp_alloc (size_t size);
 void *sp_realloc (void *ptr, size_t size);
 void sp_free (void *ptr);

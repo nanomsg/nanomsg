@@ -180,6 +180,9 @@ int sp_init (void)
         HIBYTE (data.wVersion) == 2);
 #endif
 
+    /*  Initialise the memory allocation subsystem. */
+    sp_alloc_init ();
+
     /*  Seed the pseudo-random number generator. */
     sp_random_seed ();
 
@@ -262,6 +265,9 @@ int sp_term (void)
     self.eps = NULL;
     sp_free (self.socks);
     self.socks = NULL;
+
+    /*  Shut down the memory allocation subsystem. */
+    sp_alloc_term ();
 
     /*  On Windows, uninitialise the socket library. */
 #if defined SP_HAVE_WINDOWS

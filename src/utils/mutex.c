@@ -25,10 +25,8 @@
 
 #ifdef SP_HAVE_WINDOWS
 
-void sp_mutex_init (struct sp_mutex *self, int flags)
+void sp_mutex_init (struct sp_mutex *self)
 {
-    /*  CRITICAL_SECTION is recursive by default so no need to check
-        for SP_MUTEX_RECURSIVE flag. */
     InitializeCriticalSection (&self->mutex);
 }
 
@@ -49,25 +47,12 @@ void sp_mutex_unlock (struct sp_mutex *self)
 
 #else
 
-void sp_mutex_init (struct sp_mutex *self, int flags)
+void sp_mutex_init (struct sp_mutex *self)
 {
     int rc;
-    pthread_mutexattr_t attr;
 
-    if (flags & SP_MUTEX_RECURSIVE) {
-        rc = pthread_mutexattr_init (&attr);
-        errnum_assert (rc == 0, rc);
-        rc = pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
-        errnum_assert (rc == 0, rc);
-        rc = pthread_mutex_init (&self->mutex, &attr);
-        errnum_assert (rc == 0, rc);
-        rc = pthread_mutexattr_destroy (&attr);
-        errnum_assert (rc == 0, rc);
-    }
-    else {
-        rc = pthread_mutex_init (&self->mutex, NULL);
-        errnum_assert (rc == 0, rc);
-    }
+    rc = pthread_mutex_init (&self->mutex, NULL);
+    errnum_assert (rc == 0, rc);
 }
 
 void sp_mutex_term (struct sp_mutex *self)

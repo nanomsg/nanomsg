@@ -203,8 +203,8 @@ int sp_init (void)
         self.eps [i] = NULL;
 
     /*  Initialise other parts of the global state. */
-    sp_mutex_init (&self.ssync, 0);
-    sp_mutex_init (&self.esync, 0);
+    sp_mutex_init (&self.ssync);
+    sp_mutex_init (&self.esync);
     sp_list_init (&self.transports);
     sp_list_init (&self.socktypes);
     self.next_eid = 1;

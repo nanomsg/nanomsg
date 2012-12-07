@@ -32,7 +32,7 @@ void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem)
 {
     struct sp_msgqueue_chunk *chunk;
 
-    sp_mutex_init (&self->sync, 0);
+    sp_mutex_init (&self->sync);
 
     self->count = 0;
     self->mem = 0;

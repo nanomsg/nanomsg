@@ -255,12 +255,12 @@ static void sp_usock_tune (struct sp_usock *self)
 
 void sp_cp_init (struct sp_cp *self)
 {
-    sp_mutex_init (&self->sync, 0);
+    sp_mutex_init (&self->sync);
     sp_timeout_init (&self->timeout);
     sp_efd_init (&self->efd);
     sp_poller_init (&self->poller);
     sp_queue_init (&self->opqueue);
-    sp_mutex_init (&self->events_sync, 0);
+    sp_mutex_init (&self->events_sync);
     sp_queue_init (&self->events);
 
     /*  Make poller listen on the internal efd object. */

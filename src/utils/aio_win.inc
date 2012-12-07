@@ -194,7 +194,7 @@ static void sp_usock_tune (struct sp_usock *self)
 
 void sp_cp_init (struct sp_cp *self)
 {
-    sp_mutex_init (&self->sync, 0);
+    sp_mutex_init (&self->sync);
     sp_timeout_init (&self->timeout);
 
     /*  Create system-level completion port. */

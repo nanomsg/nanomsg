@@ -42,7 +42,7 @@ static size_t sp_alloc_blocks;
 
 void sp_alloc_init (void)
 {
-    sp_mutex_init (&sp_alloc_sync, 0);
+    sp_mutex_init (&sp_alloc_sync);
     sp_alloc_bytes = 0;
     sp_alloc_blocks = 0;
 }

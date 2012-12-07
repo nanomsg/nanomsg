@@ -29,8 +29,6 @@
 #include <pthread.h>
 #endif
 
-#define SP_MUTEX_RECURSIVE 1
-
 struct sp_mutex {
 #ifdef SP_HAVE_WINDOWS
     CRITICAL_SECTION mutex;
@@ -40,7 +38,7 @@ struct sp_mutex {
 };
 
 /*  Initialise the mutex. */
-void sp_mutex_init (struct sp_mutex *self, int flags);
+void sp_mutex_init (struct sp_mutex *self);
 
 /*  Terminate the mutex. */
 void sp_mutex_term (struct sp_mutex *self);

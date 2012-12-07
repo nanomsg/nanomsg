@@ -121,7 +121,7 @@ struct sp_sockbase *sp_xpair_create (int fd)
 {
     struct sp_xpair *self;
 
-    self = sp_alloc (sizeof (struct sp_xpair));
+    self = sp_alloc (sizeof (struct sp_xpair), "socket (pair)");
     alloc_assert (self);
     sp_xpair_init (self, &sp_xpair_sockbase_vfptr, fd);
     return &self->sockbase;

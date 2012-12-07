@@ -755,7 +755,7 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
         deallocation to allow non-receiving sockets, such as TCP listening
         sockets, to do without the batch buffer. */
     if (sp_slow (!self->in.batch)) {
-        self->in.batch = sp_alloc (SP_USOCK_BATCH_SIZE);
+        self->in.batch = sp_alloc (SP_USOCK_BATCH_SIZE, "AIO batch buffer");
         alloc_assert (self->in.batch);
     }
 

@@ -163,7 +163,7 @@ static struct sp_sockbase *sp_sub_create (int fd)
 {
     struct sp_sub *self;
 
-    self = sp_alloc (sizeof (struct sp_sub));
+    self = sp_alloc (sizeof (struct sp_sub), "socket (sub)");
     alloc_assert (self);
     sp_sub_init (self, &sp_sub_sockbase_vfptr, fd);
     return &self->sockbase;

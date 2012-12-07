@@ -35,7 +35,8 @@ int sp_msg_init (struct sp_msg *self, size_t size)
 
     /*  Large message. */
     self->lmsg.type = SP_MSGTYPE_LMSG;
-    self->lmsg.content = sp_alloc (sizeof (struct sp_content) + size);
+    self->lmsg.content = sp_alloc (sizeof (struct sp_content) + size,
+        "message body");
     if (!self->lmsg.content)
         return -ENOMEM;
     self->lmsg.content->size = size;

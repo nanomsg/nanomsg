@@ -188,14 +188,16 @@ int sp_init (void)
 
     /*  Allocate the global table of SP sockets. */
     self.max_socks = SP_MAX_SOCKETS;
-    self.socks = sp_alloc (sizeof (struct sp_sock*) * self.max_socks);
+    self.socks = sp_alloc (sizeof (struct sp_sock*) * self.max_socks,
+        "socket table");
     alloc_assert (self.socks);
     for (i = 0; i != self.max_socks; ++i)
         self.socks [i] = NULL;
 
     /*  Allocate the global table of SP endpoints. */
     self.max_eps = SP_MAX_EPS;
-    self.eps = sp_alloc (sizeof (struct sp_ep*) * self.max_eps);
+    self.eps = sp_alloc (sizeof (struct sp_ep*) * self.max_eps,
+        "endpoint table");
     alloc_assert (self.eps);
     for (i = 0; i != self.max_eps; ++i)
         self.eps [i] = NULL;

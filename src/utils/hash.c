@@ -36,7 +36,8 @@ void sp_hash_init (struct sp_hash *self)
 
     self->slots = SP_HASH_INITIAL_SLOTS;
     self->items = 0;
-    self->array = sp_alloc (sizeof (struct sp_list) * SP_HASH_INITIAL_SLOTS);
+    self->array = sp_alloc (sizeof (struct sp_list) * SP_HASH_INITIAL_SLOTS,
+        "hash map");
     alloc_assert (self->array);
     for (i = 0; i != SP_HASH_INITIAL_SLOTS; ++i)
         sp_list_init (&self->array [i]);
@@ -78,7 +79,8 @@ void sp_hash_insert (struct sp_hash *self, uint32_t key,
     if (sp_slow (self->items * 2 > self->slots)) {
         oldarray = self->array;
         self->slots *= 2;
-        self->array = sp_alloc (sizeof (struct sp_list) * self->slots);
+        self->array = sp_alloc (sizeof (struct sp_list) * self->slots,
+            "hash map");
         alloc_assert (self->array);
         for (slot = 0; slot != self->slots; ++slot) {
             for (it = sp_list_begin (&oldarray [slot]);

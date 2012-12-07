@@ -73,7 +73,7 @@ int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
 
-    data = sp_alloc (sizeof (struct sp_xrep_data));
+    data = sp_alloc (sizeof (struct sp_xrep_data), "pipe data (xrep)");
     alloc_assert (data);
     data->pipe = pipe;
     data->flags = 0;
@@ -214,7 +214,7 @@ static struct sp_sockbase *sp_xrep_create (int fd)
 {
     struct sp_xrep *self;
 
-    self = sp_alloc (sizeof (struct sp_xrep));
+    self = sp_alloc (sizeof (struct sp_xrep), "socket (xrep)");
     alloc_assert (self);
     sp_xrep_init (self, &sp_xrep_sockbase_vfptr, fd);
     return &self->sockbase;

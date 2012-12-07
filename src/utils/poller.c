@@ -35,10 +35,12 @@ void sp_poller_init (struct sp_poller *self)
     self->index = 0;
     self->capacity = SP_POLLER_GRANULARITY;
     self->pollset =
-        sp_alloc (sizeof (struct pollfd*) * SP_POLLER_GRANULARITY);
+        sp_alloc (sizeof (struct pollfd*) * SP_POLLER_GRANULARITY,
+            "pollset");
     alloc_assert (self->pollset);
     self->hndls =
-        sp_alloc (sizeof (struct sp_hndls_item) * SP_POLLER_GRANULARITY);
+        sp_alloc (sizeof (struct sp_hndls_item) * SP_POLLER_GRANULARITY,
+            "hndlset");
     alloc_assert (self->hndls);
     self->removed = -1;
 }

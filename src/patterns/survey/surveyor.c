@@ -121,7 +121,7 @@ static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
     /*  Tag the survey body with survey ID. */
     /*  TODO: Do this using iovecs. */
     surveylen = sizeof (uint32_t) + len;
-    survey = sp_alloc (surveylen);
+    survey = sp_alloc (surveylen, "survey");
     alloc_assert (survey);
     sp_putl (survey, surveyor->surveyid);
     memcpy (((uint32_t*) survey) + 1, buf, len);
@@ -154,7 +154,7 @@ static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
        return -EFSM;
 
     /*  Prepare temporary buffer for incoming messages. */
-    tmpbuf = sp_alloc (*len + 4);
+    tmpbuf = sp_alloc (*len + 4, "response");
     alloc_assert (tmpbuf);
 
     while (1) {
@@ -196,7 +196,7 @@ static struct sp_sockbase *sp_surveyor_create (int fd)
 {
     struct sp_surveyor *self;
 
-    self = sp_alloc (sizeof (struct sp_surveyor));
+    self = sp_alloc (sizeof (struct sp_surveyor), "socket (surveyor)");
     alloc_assert (self);
     sp_surveyor_init (self, &sp_surveyor_sockbase_vfptr, fd);
     return &self->xsurveyor.sockbase;

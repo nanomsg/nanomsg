@@ -66,7 +66,7 @@ static int sp_tcp_bind (const char *addr, void *hint,
     int rc;
     struct sp_tcpb *tcpb;
 
-    tcpb = sp_alloc (sizeof (struct sp_tcpb));
+    tcpb = sp_alloc (sizeof (struct sp_tcpb), "tcpb");
     alloc_assert (tcpb);
     rc = sp_tcpb_init (tcpb, addr, hint);
     if (sp_slow (rc != 0)) {
@@ -83,7 +83,7 @@ static int sp_tcp_connect (const char *addr, void *hint,
     int rc;
     struct sp_tcpc *tcpc;
 
-    tcpc = sp_alloc (sizeof (struct sp_tcpc));
+    tcpc = sp_alloc (sizeof (struct sp_tcpc), "tcpc");
     alloc_assert (tcpc);
     rc = sp_tcpc_init (tcpc, addr, hint);
     if (sp_slow (rc != 0)) {

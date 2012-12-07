@@ -90,7 +90,7 @@ static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
         return -EFSM;
 
     /*  Tag the message with survey ID. */
-    tmpbuf = sp_alloc (len + 4);
+    tmpbuf = sp_alloc (len + 4, "response");
     alloc_assert (tmpbuf);
     sp_putl (tmpbuf, respondent->surveyid);
     memcpy (tmpbuf + 4, buf, len);
@@ -119,7 +119,7 @@ static int sp_respondent_recv (struct sp_sockbase *self, void *buf, size_t *len)
 
     /*  Get next survey. Split it into survey ID and the body. */
     tmplen = *len + 4;
-    tmpbuf = sp_alloc (tmplen);
+    tmpbuf = sp_alloc (tmplen, "survey");
     alloc_assert (tmpbuf);
     rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase,
         tmpbuf, &tmplen);
@@ -139,7 +139,7 @@ static struct sp_sockbase *sp_respondent_create (int fd)
 {
     struct sp_respondent *self;
 
-    self = sp_alloc (sizeof (struct sp_respondent));
+    self = sp_alloc (sizeof (struct sp_respondent), "socket (respondent)");
     alloc_assert (self);
     sp_respondent_init (self, &sp_respondent_sockbase_vfptr, fd);
     return &self->xrespondent.sockbase;

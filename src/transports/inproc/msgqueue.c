@@ -38,7 +38,7 @@ void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem)
     self->mem = 0;
     self->maxmem = maxmem;
 
-    chunk = sp_alloc (sizeof (struct sp_msgqueue_chunk));
+    chunk = sp_alloc (sizeof (struct sp_msgqueue_chunk), "msgqueue chunk");
     alloc_assert (chunk);
     chunk->next = NULL;
 
@@ -108,7 +108,8 @@ int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len)
         the cache chunk or allocate a new chunk if it does not exist. */
     if (sp_slow (self->out.pos == SP_MSGQUEUE_GRANULARITY)) {
         if (sp_slow (!self->cache)) {
-            self->cache = sp_alloc (sizeof (struct sp_msgqueue_chunk));
+            self->cache = sp_alloc (sizeof (struct sp_msgqueue_chunk),
+                "msgqueue chunk");
             alloc_assert (self->cache);
             self->cache->next = NULL;
         }

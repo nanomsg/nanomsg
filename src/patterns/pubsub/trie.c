@@ -270,7 +270,7 @@ step2:
 
     ch = *node;
     *node = sp_alloc (sizeof (struct sp_trie_node) +
-        sizeof (struct sp_trie_node*));
+        sizeof (struct sp_trie_node*), "trie node");
     assert (*node);
     (*node)->refcount = 0;
     (*node)->prefix_len = pos;
@@ -357,7 +357,8 @@ step3:
         /*  Create a new mode, while keeping the old one for a while. */
         old_node = *node;
         *node = (struct sp_trie_node*) sp_alloc (sizeof (struct sp_trie_node) +
-            (new_max - new_min + 1) * sizeof (struct sp_trie_node*));
+            (new_max - new_min + 1) * sizeof (struct sp_trie_node*),
+            "trie node");
         assert (*node);
 
         /*  Fill in the new node. */
@@ -390,7 +391,7 @@ step4:
         /*  Create a new node to hold the next part of the subscription. */
         more_nodes = size > SP_TRIE_PREFIX_MAX;
         *node = sp_alloc (sizeof (struct sp_trie_node) +
-            (more_nodes ? sizeof (struct sp_trie_node*) : 0));
+            (more_nodes ? sizeof (struct sp_trie_node*) : 0), "trie node");
         assert (*node);
 
         /*  Fill in the new node. */
@@ -594,7 +595,7 @@ static int sp_node_unsubscribe (struct sp_trie_node **self,
     /*  Convert dense array into sparse array. */
     {
         new_node = sp_alloc (sizeof (struct sp_trie_node) +
-            SP_TRIE_SPARSE_MAX * sizeof (struct sp_trie_node*));
+            SP_TRIE_SPARSE_MAX * sizeof (struct sp_trie_node*), "trie node");
         assert (new_node);
         new_node->refcount = 0;
         new_node->prefix_len = (*self)->prefix_len;

@@ -99,7 +99,7 @@ static int sp_inproc_ctx_bind (const char *addr, void *hint,
     }
 
     /*  Insert the entry into the endpoint repository. */
-    inprocb = sp_alloc (sizeof (struct sp_inprocb));
+    inprocb = sp_alloc (sizeof (struct sp_inprocb), "inprocb");
     alloc_assert (inprocb);
     rc = sp_inprocb_init (inprocb, addr, hint);
     if (sp_slow (rc != 0))
@@ -112,7 +112,7 @@ static int sp_inproc_ctx_bind (const char *addr, void *hint,
           it = sp_list_next (&self.connected, it)) {
         inprocc = sp_cont (it, struct sp_inprocc, list);
         if (strncmp (addr, inprocc->addr, SP_INPROCC_NAMELEN_MAX) == 0) {
-            pipe = sp_alloc (sizeof (struct sp_msgpipe));
+            pipe = sp_alloc (sizeof (struct sp_msgpipe), "msgpipe");
             alloc_assert (pipe);
             sp_msgpipe_init (pipe, inprocb, inprocc);
         }
@@ -133,7 +133,7 @@ static int sp_inproc_ctx_connect (const char *addr, void *hint,
     struct sp_msgpipe *pipe;
 
     /*  Insert the entry into the endpoint repository. */
-    inprocc = sp_alloc (sizeof (struct sp_inprocc));
+    inprocc = sp_alloc (sizeof (struct sp_inprocc), "inprocc");
     alloc_assert (inprocc);
     rc = sp_inprocc_init (inprocc, addr, hint);
     if (sp_slow (rc != 0))
@@ -147,7 +147,7 @@ static int sp_inproc_ctx_connect (const char *addr, void *hint,
           it = sp_list_next (&self.bound, it)) {
         inprocb = sp_cont (it, struct sp_inprocb, list);
         if (strcmp (addr, inprocb->addr) == 0) {
-            pipe = sp_alloc (sizeof (struct sp_msgpipe));
+            pipe = sp_alloc (sizeof (struct sp_msgpipe), "msgpipe");
             alloc_assert (pipe);
             sp_msgpipe_init (pipe, inprocb, inprocc);
             break;

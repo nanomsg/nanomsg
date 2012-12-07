@@ -65,7 +65,8 @@ int sp_xsurveyor_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_xsurveyor_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xsurveyor_data));
+    data = sp_alloc (sizeof (struct sp_xsurveyor_data),
+        "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
     sp_pipe_setdata (pipe, data);
@@ -185,7 +186,7 @@ static struct sp_sockbase *sp_xsurveyor_create (int fd)
 {
     struct sp_xsurveyor *self;
 
-    self = sp_alloc (sizeof (struct sp_xsurveyor));
+    self = sp_alloc (sizeof (struct sp_xsurveyor), "socket (xsurveyor)");
     alloc_assert (self);
     sp_xsurveyor_init (self, &sp_xsurveyor_sockbase_vfptr, fd);
     return &self->sockbase;

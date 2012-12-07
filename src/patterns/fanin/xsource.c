@@ -128,7 +128,7 @@ struct sp_sockbase *sp_xsource_create (int fd)
 {
     struct sp_xsource *self;
 
-    self = sp_alloc (sizeof (struct sp_xsource));
+    self = sp_alloc (sizeof (struct sp_xsource), "socket (source)");
     alloc_assert (self);
     sp_xsource_init (self, &sp_xsource_sockbase_vfptr, fd);
     return &self->sockbase;

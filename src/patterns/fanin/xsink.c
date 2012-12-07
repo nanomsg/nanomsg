@@ -90,7 +90,7 @@ static int sp_xsink_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_xsink_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xsink_data));
+    data = sp_alloc (sizeof (struct sp_xsink_data), "pipe data (sink)");
     alloc_assert (data);
     data->pipe = pipe;
     sp_pipe_setdata (pipe, data);
@@ -181,7 +181,7 @@ struct sp_sockbase *sp_xsink_create (int fd)
 {
     struct sp_xsink *self;
 
-    self = sp_alloc (sizeof (struct sp_xsink));
+    self = sp_alloc (sizeof (struct sp_xsink), "socket (sink)");
     alloc_assert (self);
     sp_xsink_init (self, &sp_xsink_sockbase_vfptr, fd);
     return &self->sockbase;

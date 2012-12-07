@@ -90,7 +90,7 @@ static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_xpush_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xpush_data));
+    data = sp_alloc (sizeof (struct sp_xpush_data), "pipe data (push)");
     alloc_assert (data);
     data->pipe = pipe;
     sp_pipe_setdata (pipe, data);
@@ -182,7 +182,7 @@ struct sp_sockbase *sp_xpush_create (int fd)
 {
     struct sp_xpush *self;
 
-    self = sp_alloc (sizeof (struct sp_xpush));
+    self = sp_alloc (sizeof (struct sp_xpush), "socket (push)");
     alloc_assert (self);
     sp_xpush_init (self, &sp_xpush_sockbase_vfptr, fd);
     return &self->sockbase;

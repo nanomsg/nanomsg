@@ -136,7 +136,7 @@ static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
     /*  Store the message so that it can be re-send if there's no reply.
         Tag it with the request ID. */
     req->requestlen = sizeof (uint32_t) + len;
-    req->request = sp_alloc (req->requestlen);
+    req->request = sp_alloc (req->requestlen, "request");
     alloc_assert (req->request);
     sp_putl (req->request, req->reqid | 0x80000000);
     memcpy (((uint32_t*) (req->request)) + 1, buf, len);
@@ -179,7 +179,7 @@ static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
 
     /*  TODO: Do this using iovecs. */
     replylen = sizeof (uint32_t) + *len;
-    reply = sp_alloc (replylen);
+    reply = sp_alloc (replylen, "reply");
     alloc_assert (reply);
     rc = sp_xreq_recv (&req->xreq.sockbase, reply, &replylen);
     if (sp_slow (rc == -EAGAIN)) {
@@ -278,7 +278,7 @@ static struct sp_sockbase *sp_req_create (int fd)
 {
     struct sp_req *self;
 
-    self = sp_alloc (sizeof (struct sp_req));
+    self = sp_alloc (sizeof (struct sp_req), "socket (req)");
     alloc_assert (self);
     sp_req_init (self, &sp_req_sockbase_vfptr, fd);
     return &self->xreq.sockbase;

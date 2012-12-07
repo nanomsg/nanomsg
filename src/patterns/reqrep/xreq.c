@@ -103,7 +103,7 @@ static struct sp_sockbase *sp_xreq_create (int fd)
 {
     struct sp_xreq *self;
 
-    self = sp_alloc (sizeof (struct sp_xreq));
+    self = sp_alloc (sizeof (struct sp_xreq), "socket (xreq)");
     alloc_assert (self);
     sp_xreq_init (self, &sp_xreq_sockbase_vfptr, fd);
     return &self->sockbase;

@@ -125,7 +125,7 @@ struct sp_sockbase *sp_xpull_create (int fd)
 {
     struct sp_xpull *self;
 
-    self = sp_alloc (sizeof (struct sp_xpull));
+    self = sp_alloc (sizeof (struct sp_xpull), "socket (pull)");
     alloc_assert (self);
     sp_xpull_init (self, &sp_xpull_sockbase_vfptr, fd);
     return &self->sockbase;

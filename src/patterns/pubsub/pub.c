@@ -86,7 +86,7 @@ static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 {
     struct sp_pub_data *data;
 
-    data = sp_alloc (sizeof (struct sp_pub_data));
+    data = sp_alloc (sizeof (struct sp_pub_data), "pipe data (pub)");
     alloc_assert (data);
     data->pipe = pipe;
     sp_pipe_setdata (pipe, data);
@@ -173,7 +173,7 @@ static struct sp_sockbase *sp_pub_create (int fd)
 {
     struct sp_pub *self;
 
-    self = sp_alloc (sizeof (struct sp_pub));
+    self = sp_alloc (sizeof (struct sp_pub), "socket (pub)");
     alloc_assert (self);
     sp_pub_init (self, &sp_pub_sockbase_vfptr, fd);
     return &self->sockbase;

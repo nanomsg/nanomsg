@@ -99,7 +99,7 @@ static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len)
         drop it silently. */
     /*  TODO: Do this using iovecs. */
     replylen = rep->backtracelen + len;
-    reply = sp_alloc (replylen);
+    reply = sp_alloc (replylen, "reply");
     alloc_assert (reply);
     memcpy (reply, rep->backtrace, rep->backtracelen);
     memcpy (reply + rep->backtracelen, buf, len);
@@ -137,7 +137,7 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
 
     /*  Receive the request. */
     requestlen = sizeof (uint32_t) * SP_REP_MAXBACKTRACELEN + *len;
-    request = sp_alloc (requestlen);
+    request = sp_alloc (requestlen, "request");
     alloc_assert (request);
     rc = sp_xrep_recv (&rep->xrep.sockbase, request, &requestlen);
     if (sp_slow (rc == -EAGAIN)) {
@@ -169,7 +169,7 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
     }
     ++i;
     rep->backtracelen = i * sizeof (uint32_t);
-    rep->backtrace = sp_alloc (rep->backtracelen);
+    rep->backtrace = sp_alloc (rep->backtracelen, "backtrace");
     alloc_assert (rep->backtrace);
     memcpy (rep->backtrace, request, rep->backtracelen);
 
@@ -189,7 +189,7 @@ static struct sp_sockbase *sp_rep_create (int fd)
 {
     struct sp_rep *self;
 
-    self = sp_alloc (sizeof (struct sp_rep));
+    self = sp_alloc (sizeof (struct sp_rep), "socket (rep)");
     alloc_assert (self);
     sp_rep_init (self, &sp_rep_sockbase_vfptr, fd);
     return &self->xrep.sockbase;

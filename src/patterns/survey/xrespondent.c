@@ -115,7 +115,7 @@ static struct sp_sockbase *sp_xrespondent_create (int fd)
 {
     struct sp_xrespondent *self;
 
-    self = sp_alloc (sizeof (struct sp_xrespondent));
+    self = sp_alloc (sizeof (struct sp_xrespondent), "socket (xrespondent)");
     alloc_assert (self);
     sp_xrespondent_init (self, &sp_xrespondent_sockbase_vfptr, fd);
     return &self->sockbase;

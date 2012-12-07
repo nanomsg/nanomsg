@@ -31,6 +31,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
+struct sp_alloc_hdr {
+    size_t size;
+    const char *name;
+};
+
 static struct sp_mutex sp_alloc_sync;
 static size_t sp_alloc_bytes;
 static size_t sp_alloc_blocks;
@@ -47,44 +52,47 @@ void sp_alloc_term (void)
     sp_mutex_term (&sp_alloc_sync);
 }
 
-void *sp_alloc (size_t size)
+void *sp_alloc_ (size_t size, const char *name)
 {
     uint8_t *chunk;
 
-    chunk = malloc (size + sizeof (size_t));
+    chunk = malloc (sizeof (struct sp_alloc_hdr) + size);
     if (!chunk)
         return NULL;
 
     sp_mutex_lock (&sp_alloc_sync);
-    *(size_t*) chunk = size;
+    ((struct sp_alloc_hdr*) chunk)->size = size;
+    ((struct sp_alloc_hdr*) chunk)->name = name;
     sp_alloc_bytes += size;
     ++sp_alloc_blocks;
-    printf ("alloc %zu bytes (now there are %zu bytes allocated in %zu "
-        "blocks)\n", size, sp_alloc_bytes, sp_alloc_blocks);
+    printf ("Allocating %s (%zu bytes)\n", name, size);
+    printf ("Current memory usage: %zu bytes in %zu blocks\n",
+        sp_alloc_bytes, sp_alloc_blocks);
     sp_mutex_unlock (&sp_alloc_sync);
 
-    return chunk + sizeof (size_t);
+    return chunk + sizeof (struct sp_alloc_hdr);
 }
 
 void *sp_realloc (void *ptr, size_t size)
 {
-    uint8_t *oldchunk;
-    uint8_t *newchunk;
+    struct sp_alloc_hdr *oldchunk;
+    struct sp_alloc_hdr *newchunk;
     size_t oldsize;
 
-    oldchunk = (uint8_t*) (((size_t*) ptr) - 1);
-    oldsize = *(size_t*) oldchunk;
-    newchunk = realloc (oldchunk, size + sizeof (size_t));
+    oldchunk = ((struct sp_alloc_hdr*) ptr) - 1;
+    oldsize = oldchunk->size;
+    newchunk = realloc (oldchunk, sizeof (struct sp_alloc_hdr) + size);
     if (!newchunk)
         return NULL;
-    *(size_t*) newchunk = size;
+    newchunk->size = size;
 
     sp_mutex_lock (&sp_alloc_sync);
     sp_alloc_bytes -= oldsize;
     sp_alloc_bytes += size;
-    printf ("realloc %zu bytes to %zu bytes (now there are %zu bytes "
-        "allocated in %zu blocks)\n", oldsize, size, sp_alloc_bytes,
-        sp_alloc_blocks);
+    printf ("Reallocating %s (%zu bytes to %zu bytes)\n",
+        newchunk->name, oldsize, size);
+    printf ("Current memory usage: %zu bytes in %zu blocks\n",
+        sp_alloc_bytes, sp_alloc_blocks);
     sp_mutex_unlock (&sp_alloc_sync);
 
     return newchunk + sizeof (size_t);
@@ -92,17 +100,18 @@ void *sp_realloc (void *ptr, size_t size)
 
 void sp_free (void *ptr)
 {
-    uint8_t *chunk;
+    struct sp_alloc_hdr *chunk;
     
     if (!ptr)
         return;
-    chunk = (uint8_t*) (((size_t*) ptr) - 1);
+    chunk = ((struct sp_alloc_hdr*) ptr) - 1;
 
     sp_mutex_lock (&sp_alloc_sync);
-    sp_alloc_bytes -= *(size_t*) chunk;
+    sp_alloc_bytes -= chunk->size;
     --sp_alloc_blocks;
-    printf ("free %zu bytes (now there are %zu bytes allocated in %zu "
-        "blocks)\n", *(size_t*) chunk, sp_alloc_bytes, sp_alloc_blocks);
+    printf ("Deallocating %s (%zu bytes)\n", chunk->name, chunk->size);
+    printf ("Current memory usage: %zu bytes in %zu blocks\n",
+        sp_alloc_bytes, sp_alloc_blocks);
     sp_mutex_unlock (&sp_alloc_sync);
 
     free (chunk);
@@ -120,7 +129,7 @@ void sp_alloc_term (void)
 {
 }
 
-void *sp_alloc (size_t size)
+void *sp_alloc_ (size_t size)
 {
     return malloc (size);
 }

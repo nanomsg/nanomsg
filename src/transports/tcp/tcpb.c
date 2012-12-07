@@ -118,7 +118,7 @@ static void sp_tcpb_accepted (const struct sp_cp_sink **self,
 
     tcpb = sp_cont (self, struct sp_tcpb, sink);
 
-    tcpa = sp_alloc (sizeof (struct sp_tcpa));
+    tcpa = sp_alloc (sizeof (struct sp_tcpa), "tcpa");
     alloc_assert (tcpa);
     sp_tcpa_init (tcpa, &tcpb->epbase, s, usock);
     sp_list_insert (&tcpb->tcpas, &tcpa->item, sp_list_end (&tcpb->tcpas));

@@ -54,6 +54,16 @@ void sp_sock_term (struct sp_sock *self)
     sp_cp_term (&sockbase->cp);
 }
 
+void sp_sockbase_unblock_recv (struct sp_sockbase *self)
+{
+    sp_cond_post (&self->cond);
+}
+
+void sp_sockbase_unblock_send (struct sp_sockbase *self)
+{
+    sp_cond_post (&self->cond);
+}
+
 struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self)
 {
     return &self->cp;

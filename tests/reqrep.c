@@ -103,9 +103,9 @@ int main ()
     errno_assert (rc >= 0);
 
     rc = sp_send (rep, "ABC", 3, 0);
-    sp_assert (rc == -1 && errno == EFSM);
+    sp_assert (rc == -1 && sp_errno () == EFSM);
     rc = sp_recv (req1, buf, sizeof (buf), 0);
-    sp_assert (rc == -1 && errno == EFSM);
+    sp_assert (rc == -1 && sp_errno () == EFSM);
 
     rc = sp_send (req2, "ABC", 3, 0);
     errno_assert (rc >= 0);

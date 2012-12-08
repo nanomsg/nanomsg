@@ -165,6 +165,7 @@ SP_EXPORT int sp_term (void);
 #define SP_SUBSCRIBE 1
 #define SP_UNSUBSCRIBE 2
 #define SP_RESEND_IVL 3
+#define SP_DEADLINE 4
 
 /*  Send/recv options.                                                        */
 #define SP_DONTWAIT 1

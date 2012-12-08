@@ -96,6 +96,10 @@ static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
     memcpy (tmpbuf + 4, buf, len);
     rc = sp_xrespondent_send (&respondent->xrespondent.sockbase,
         tmpbuf, len + 4);
+    if (sp_slow (rc == -EAGAIN)) {
+        sp_free (tmpbuf);
+        return -EAGAIN;
+    }
     errnum_assert (rc == 0, -rc);
     sp_free (tmpbuf);
 
@@ -123,6 +127,10 @@ static int sp_respondent_recv (struct sp_sockbase *self, void *buf, size_t *len)
     alloc_assert (tmpbuf);
     rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase,
         tmpbuf, &tmplen);
+    if (sp_slow (rc == -EAGAIN)) {
+        sp_free (tmpbuf);
+        return -EAGAIN;
+    }
     errnum_assert (rc == 0, -rc);
     respondent->surveyid = sp_getl (tmpbuf);
     memcpy (buf, tmpbuf + 4, tmplen - 4);

@@ -84,6 +84,12 @@ struct sp_sockbase
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
 
+/*  If recv is blocking at the moment, this function will unblock it. */
+void sp_sockbase_unblock_recv (struct sp_sockbase *self);
+
+/*  If send is blocking at the moment, this function will unblock it. */
+void sp_sockbase_unblock_send (struct sp_sockbase *self);
+
 /*  Returns completion port associated with the socket. */
 struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
 

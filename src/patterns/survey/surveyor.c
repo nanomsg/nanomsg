@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SP_SURVEYOR_DEFAULT_DEADLINE_IVL 1000
+#define SP_SURVEYOR_DEFAULT_DEADLINE 1000
 
 #define SP_SURVEYOR_INPROGRESS 1
 
@@ -40,7 +40,7 @@ struct sp_surveyor {
     const struct sp_cp_sink *sink;
     uint32_t flags;
     uint32_t surveyid;
-    int deadline_ivl;
+    int deadline;
     struct sp_timer deadline_timer;
 };
 
@@ -49,6 +49,10 @@ static void sp_surveyor_term (struct sp_sockbase *self);
 static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_surveyor_setopt (struct sp_sockbase *self, int option,
+    const void *optval, size_t optvallen);
+static int sp_surveyor_getopt (struct sp_sockbase *self, int option,
+    void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
     sp_surveyor_term,
     sp_xsurveyor_add,
@@ -57,8 +61,8 @@ static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
     sp_xsurveyor_out,
     sp_surveyor_send,
     sp_surveyor_recv,
-    sp_xsurveyor_setopt,
-    sp_xsurveyor_getopt
+    sp_surveyor_setopt,
+    sp_surveyor_getopt
 };
 
 /*  Event sink. */
@@ -84,7 +88,7 @@ static void sp_surveyor_init (struct sp_surveyor *self,
         there should be no key clashes even if the executable is re-started. */
     sp_random_generate (&self->surveyid, sizeof (self->surveyid));
 
-    self->deadline_ivl = SP_SURVEYOR_DEFAULT_DEADLINE_IVL;
+    self->deadline = SP_SURVEYOR_DEFAULT_DEADLINE;
     sp_timer_init (&self->deadline_timer, &self->sink,
         sp_sockbase_getcp (&self->xsurveyor.sockbase));
 }
@@ -128,13 +132,17 @@ static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
 
     /*  Send the survey. */
     rc = sp_xsurveyor_send (&surveyor->xsurveyor.sockbase, survey, surveylen);
+    if (sp_slow (rc == -EAGAIN)) {
+        sp_free (survey);
+        return -EAGAIN;
+    }
     errnum_assert (rc == 0, -rc);
     sp_free (survey);
 
     surveyor->flags |= SP_SURVEYOR_INPROGRESS;
 
     /*  Set up the re-send timer. */
-    sp_timer_start (&surveyor->deadline_timer, surveyor->deadline_ivl);
+    sp_timer_start (&surveyor->deadline_timer, surveyor->deadline);
 
     return 0;
 }
@@ -189,7 +197,46 @@ static void sp_surveyor_timeout (const struct sp_cp_sink **self,
 
     surveyor = sp_cont (self, struct sp_surveyor, sink);
 
-    sp_assert (0);
+    /*  Cancel the survey. */
+    surveyor->flags &= ~SP_SURVEYOR_INPROGRESS;
+
+    /*  If there's a blocked recv() operation, unblock it. */
+    sp_sockbase_unblock_recv (&surveyor->xsurveyor.sockbase);
+}
+
+static int sp_surveyor_setopt (struct sp_sockbase *self, int option,
+    const void *optval, size_t optvallen)
+{
+    struct sp_surveyor *surveyor;
+
+    surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
+
+    if (option == SP_DEADLINE) {
+        if (sp_slow (optvallen != sizeof (int)))
+            return -EINVAL;
+        surveyor->deadline = *(int*) optval;
+        return 0;
+    }
+
+    return -ENOPROTOOPT;
+}
+
+static int sp_surveyor_getopt (struct sp_sockbase *self, int option,
+    void *optval, size_t *optvallen)
+{
+    struct sp_surveyor *surveyor;
+
+    surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
+
+    if (option == SP_DEADLINE) {
+        if (sp_slow (*optvallen < sizeof (int)))
+            return -EINVAL;
+        *(int*) optval = surveyor->deadline;
+        *optvallen = sizeof (int);
+        return 0;
+    }
+
+    return -ENOPROTOOPT;
 }
 
 static struct sp_sockbase *sp_surveyor_create (int fd)

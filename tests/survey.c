@@ -30,13 +30,19 @@ int main ()
     int surveyor;
     int respondent1;
     int respondent2;
-    int resend_ivl;
+    int deadline;
     char buf [7];
+
+    /*  Test a simple survey with two respondents. */
 
     rc = sp_init ();
     errno_assert (rc == 0);
     surveyor = sp_socket (AF_SP, SP_SURVEYOR);
     errno_assert (surveyor != -1);
+    deadline = 100;
+    rc = sp_setsockopt (surveyor, SP_SOL_SOCKET, SP_DEADLINE,
+        &deadline, sizeof (deadline));
+    errno_assert (rc == 0);
     rc = sp_bind (surveyor, "inproc://a");
     errno_assert (rc >= 0);
     respondent1 = sp_socket (AF_SP, SP_RESPONDENT);
@@ -72,6 +78,9 @@ int main ()
     rc = sp_recv (surveyor, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     sp_assert (rc == 3);
+
+    rc = sp_recv (surveyor, buf, sizeof (buf), 0);
+    errno_assert (rc == -1 && sp_errno () == EFSM);
 
     rc = sp_close (surveyor);
     errno_assert (rc == 0);

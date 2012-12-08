@@ -27,6 +27,9 @@ struct sp_sock;
 struct sp_pipe;
 struct sp_cp;
 
+/*  Called by sp_term() to let the socket know about the process shutdown. */
+void sp_sock_zombify (struct sp_sock *self);
+
 /*  Deallocate the socket. */
 void sp_sock_term (struct sp_sock *self);
 

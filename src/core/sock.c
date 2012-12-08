@@ -35,9 +35,21 @@ void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     self->vfptr = vfptr;
+    self->zombie = 0;
     sp_cp_init (&self->cp);
     sp_cond_init (&self->cond);
     self->fd = fd;
+}
+
+void sp_sock_zombify (struct sp_sock *self)
+{
+    struct sp_sockbase *sockbase;
+
+    sockbase = (struct sp_sockbase*) self;
+    sp_cp_lock (&sockbase->cp);
+    sockbase->zombie = 1;
+    sp_cond_post (&sockbase->cond);
+    sp_cp_unlock (&sockbase->cp);
 }
 
 void sp_sock_term (struct sp_sock *self)
@@ -84,6 +96,12 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 
     sp_cp_lock (&sockbase->cp);
 
+    /*  If sp_term() was already called, return ETERM. */
+    if (sp_slow (sockbase->zombie)) {
+        sp_cp_unlock (&sockbase->cp);
+        return -ETERM;
+    }
+
     /*  TODO: Handle socket-level options here. */
 
     /*  Unknown options may be pattern-specific. */
@@ -111,6 +129,12 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
     sockbase = (struct sp_sockbase*) self;
 
     sp_cp_lock (&sockbase->cp);
+
+    /*  If sp_term() was already called, return ETERM. */
+    if (sp_slow (sockbase->zombie)) {
+        sp_cp_unlock (&sockbase->cp);
+        return -ETERM;
+    }
 
     /*  TODO: Handle socket-level options here. */
 
@@ -141,6 +165,12 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 
     while (1) {
 
+        /*  If sp_term() was already called, return ETERM. */
+        if (sp_slow (sockbase->zombie)) {
+            sp_cp_unlock (&sockbase->cp);
+            return -ETERM;
+        }
+
         /*  Try to send the message in a non-blocking way. */
         rc = sockbase->vfptr->send (sockbase, buf, len);
         if (sp_fast (rc == 0)) {
@@ -163,7 +193,7 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 
         /*  With blocking send, wait while there are new pipes available
             for sending. */
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp, -1);
+        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync, -1);
         errnum_assert (rc == 0, rc);
     }   
 }
@@ -178,6 +208,12 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
     sp_cp_lock (&sockbase->cp);
 
     while (1) {
+
+        /*  If sp_term() was already called, return ETERM. */
+        if (sp_slow (sockbase->zombie)) {
+            sp_cp_unlock (&sockbase->cp);
+            return -ETERM;
+        }
 
         /*  Try to receive the message in a non-blocking way. */
         rc = sockbase->vfptr->recv (sockbase, buf, len);
@@ -201,7 +237,7 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
 
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp, -1);
+        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync, -1);
         errnum_assert (rc == 0, rc);
     }  
 }

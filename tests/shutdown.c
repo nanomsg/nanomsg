@@ -20,37 +20,51 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_COND_INCLUDED
-#define SP_COND_INCLUDED
+#include "../src/sp.h"
 
-#include "mutex.h"
+#include "../src/utils/err.c"
+#include "../src/utils/thread.h"
+#include "../src/utils/sleep.h"
 
-/*  Platform-independent condition variable. */
+void worker (void *arg)
+{
+    int rc;
+    int s;
+    char buf [3];
 
-#ifdef SP_HAVE_WINDOWS
+    s = sp_socket (AF_SP, SP_PAIR);
+    errno_assert (s != -1);
+    rc = sp_recv (s, buf, sizeof (buf), 0);
+    sp_assert (rc == -1 && sp_errno () == ETERM);
+    rc = sp_close (s);
+    errno_assert (rc == 0);
+}
 
-#include "win.h"
+int main ()
+{
+    int rc;
+    int s;
+    struct sp_thread thread;
 
-struct sp_cond {
-    CONDITION_VARIABLE cond;
-};
+    /*  Close the socket with no associated endpoints. */
+    rc = sp_init ();
+    errno_assert (rc == 0);
+    s = sp_socket (AF_SP, SP_PAIR);
+    errno_assert (s != -1);
+    rc = sp_close (s);
+    errno_assert (rc == 0);
+    rc = sp_term ();
+    errno_assert (rc == 0);
 
-#else
+    /*  Test sp_term() before sp_close(). */
+    rc = sp_init ();
+    errno_assert (rc == 0);
+    sp_thread_init (&thread, worker, NULL);
+    sp_sleep (10);
+    rc = sp_term ();
+    errno_assert (rc == 0);
+    sp_thread_term (&thread);
 
-#include <pthread.h>
-
-struct sp_cond {
-    pthread_cond_t cond;
-};
-
-#endif
-
-void sp_cond_init (struct sp_cond *self);
-void sp_cond_term (struct sp_cond *self);
-
-int sp_cond_wait (struct sp_cond *self,
-    struct sp_mutex *mutex, int timeout);
-void sp_cond_post (struct sp_cond *self);
-
-#endif
+    return 0;
+}
 

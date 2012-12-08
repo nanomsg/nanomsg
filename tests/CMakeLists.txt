@@ -42,4 +42,5 @@ add_libnanomsg_test (survey)
 
 #  Feature tests.
 add_libnanomsg_test (block)
+add_libnanomsg_test (shutdown)
 

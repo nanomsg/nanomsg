@@ -33,6 +33,7 @@
 #include "../utils/mutex.h"
 #include "../utils/list.h"
 #include "../utils/cont.h"
+#include "../utils/cond.h"
 #include "../utils/random.h"
 #include "../utils/glock.h"
 
@@ -95,6 +96,12 @@ struct sp_ctx {
     struct sp_sock **socks;
     size_t max_socks;
 
+    /*  Number of actual open sockets in the socket table. */
+    size_t nsocks;
+
+    /*  1, if sp_term() was already called, 0 otherwise. */
+    int zombie;
+
     /*  Synchronisation of endpoint-related global state of the library.
         (following members, the endpoints themselves, any global state in
         transports). */
@@ -115,6 +122,9 @@ struct sp_ctx {
     /*  Next endpoint ID to use. */
     int next_eid;
 
+    /*  Condition variable used by sp_term() to wait till all the sockets are
+        closed. */
+    struct sp_cond termcond;
 };
 
 /*  Number of times sp_init() was called without corresponding sp_term().
@@ -193,6 +203,8 @@ int sp_init (void)
     alloc_assert (self.socks);
     for (i = 0; i != self.max_socks; ++i)
         self.socks [i] = NULL;
+    self.nsocks = 0;
+    self.zombie = 0;
 
     /*  Allocate the global table of SP endpoints. */
     self.max_eps = SP_MAX_EPS;
@@ -208,6 +220,7 @@ int sp_init (void)
     sp_list_init (&self.transports);
     sp_list_init (&self.socktypes);
     self.next_eid = 1;
+    sp_cond_init (&self.termcond);
 
     /*  Plug in individual transports. */
     sp_ctx_add_transport (sp_inproc);
@@ -231,7 +244,7 @@ int sp_init (void)
     sp_ctx_add_socktype (sp_xpull_socktype);
     sp_ctx_add_socktype (sp_respondent_socktype);
     sp_ctx_add_socktype (sp_surveyor_socktype);
-//    sp_ctx_add_socktype (sp_xrespondent_socktype);
+    sp_ctx_add_socktype (sp_xrespondent_socktype);
     sp_ctx_add_socktype (sp_xsurveyor_socktype);
 
     sp_glock_unlock ();
@@ -244,6 +257,7 @@ int sp_term (void)
 #if defined SP_HAVE_WINDOWS
     int rc;
 #endif
+    int i;
 
     sp_glock_lock ();
 
@@ -255,10 +269,22 @@ int sp_term (void)
         return 0;
     }
 
-    /*  TODO:  Wait for all sockets to be closed. */
+    /*  Notify all the open sockets about the process shutdown and wait till
+        all of them are closed. */
+    sp_mutex_lock (&self.ssync);
+    if (self.nsocks) {
+        for (i = 0; i != self.max_socks; ++i)
+            if (self.socks [i])
+                sp_sock_zombify (self.socks [i]);
+        self.zombie = 1;
+        sp_cond_wait (&self.termcond, &self.ssync, -1);
+    }
+    sp_mutex_unlock (&self.ssync);
+
     /*  TODO:  Wait for all endpoints to be closed. */
 
     /*  Final deallocation of the global resources. */
+    sp_cond_term (&self.termcond);
     sp_list_term (&self.socktypes);
     sp_list_term (&self.transports);
     sp_mutex_term (&self.esync);
@@ -322,6 +348,7 @@ int sp_socket (int domain, int protocol)
         socktype = sp_cont (it, struct sp_socktype, list);
         if (socktype->domain == domain && socktype->protocol == protocol) {
             self.socks [s] = (struct sp_sock*) socktype->create (s);
+            ++self.nsocks;
             sp_mutex_unlock (&self.ssync);
             return s;
         }
@@ -367,6 +394,9 @@ int sp_close (int s)
     sp_sock_term (self.socks [s]);
     sp_free (self.socks [s]);
     self.socks [s] = NULL;
+    --self.nsocks;
+    if (self.zombie && self.nsocks == 0)
+        sp_cond_post (&self.termcond);
     sp_mutex_unlock (&self.ssync);
 
     return 0;

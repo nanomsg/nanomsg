@@ -69,6 +69,9 @@ struct sp_sockbase
     /*  Table of virtual functions supplied by the socket type. */
     const struct sp_sockbase_vfptr *vfptr;
 
+    /*  Set to 1 when sp_term() was already called, otherwise 0. */
+    int zombie;
+
     /*  Completion port to handle file descriptors, timers and locking. */
     struct sp_cp cp;
 

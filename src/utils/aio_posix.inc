@@ -312,6 +312,7 @@ static void sp_cp_worker (void *arg)
     int rc;
     struct sp_cp *self;
     int timeout;
+    struct sp_queue_item *qit;
     struct sp_cp_op_hndl *ophndl;
     struct sp_timeout_hndl *tohndl;
     struct sp_timer *timer;
@@ -349,8 +350,8 @@ if (rc == -EINTR) goto again;
         /*  Process the events in the opqueue. */
         while (1) {
 
-            ophndl = sp_cont (sp_queue_pop (&self->opqueue),
-                struct sp_cp_op_hndl, item);
+            qit = sp_queue_pop (&self->opqueue);
+            ophndl = sp_cont (qit, struct sp_cp_op_hndl, item);
             if (!ophndl)
                 break;
 

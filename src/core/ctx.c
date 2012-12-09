@@ -87,9 +87,8 @@
 
 struct sp_ctx {
 
-    /*  Synchronisation of socket-related global state of the library.
-        (following members). */
-    struct sp_mutex ssync;
+    /*  Synchronisation of global state of the library. */
+    struct sp_mutex sync;
 
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. */
@@ -101,11 +100,6 @@ struct sp_ctx {
 
     /*  1, if sp_term() was already called, 0 otherwise. */
     int zombie;
-
-    /*  Synchronisation of endpoint-related global state of the library.
-        (following members, the endpoints themselves, any global state in
-        transports). */
-    struct sp_mutex esync;
 
     /*  List of all existing endpoints including orphan endpoints. */
     struct sp_ep **eps;
@@ -215,8 +209,7 @@ int sp_init (void)
         self.eps [i] = NULL;
 
     /*  Initialise other parts of the global state. */
-    sp_mutex_init (&self.ssync);
-    sp_mutex_init (&self.esync);
+    sp_mutex_init (&self.sync);
     sp_list_init (&self.transports);
     sp_list_init (&self.socktypes);
     self.next_eid = 1;
@@ -271,15 +264,15 @@ int sp_term (void)
 
     /*  Notify all the open sockets about the process shutdown and wait till
         all of them are closed. */
-    sp_mutex_lock (&self.ssync);
+    sp_mutex_lock (&self.sync);
     if (self.nsocks) {
         for (i = 0; i != self.max_socks; ++i)
             if (self.socks [i])
                 sp_sock_zombify (self.socks [i]);
         self.zombie = 1;
-        sp_cond_wait (&self.termcond, &self.ssync, -1);
+        sp_cond_wait (&self.termcond, &self.sync, -1);
     }
-    sp_mutex_unlock (&self.ssync);
+    sp_mutex_unlock (&self.sync);
 
     /*  TODO:  Wait for all endpoints to be closed. */
 
@@ -287,8 +280,7 @@ int sp_term (void)
     sp_cond_term (&self.termcond);
     sp_list_term (&self.socktypes);
     sp_list_term (&self.transports);
-    sp_mutex_term (&self.esync);
-    sp_mutex_term (&self.ssync);
+    sp_mutex_term (&self.sync);
     sp_free (self.eps);
     self.eps = NULL;
     sp_free (self.socks);
@@ -326,7 +318,7 @@ int sp_socket (int domain, int protocol)
         return -1;
     }
 
-    sp_mutex_lock (&self.ssync);
+    sp_mutex_lock (&self.sync);
 
     /*  Find an empty socket slot. */
     /*  TODO: This is O(n) operation! Linked list of empty slots should be
@@ -337,7 +329,7 @@ int sp_socket (int domain, int protocol)
 
     /*  TODO: Auto-resize the array here! */
     if (sp_slow (s == self.max_socks)) {
-        sp_mutex_unlock (&self.ssync);
+        sp_mutex_unlock (&self.sync);
         errno = EMFILE;
         return -1;
     }
@@ -349,13 +341,13 @@ int sp_socket (int domain, int protocol)
         if (socktype->domain == domain && socktype->protocol == protocol) {
             self.socks [s] = (struct sp_sock*) socktype->create (s);
             ++self.nsocks;
-            sp_mutex_unlock (&self.ssync);
+            sp_mutex_unlock (&self.sync);
             return s;
         }
     }
 
     /*  Specified socket type wasn't found. */
-    sp_mutex_unlock (&self.ssync);
+    sp_mutex_unlock (&self.sync);
     errno = EINVAL;
     return -1;
 }
@@ -368,7 +360,7 @@ int sp_close (int s)
 
     SP_BASIC_CHECKS;
 
-    sp_mutex_lock (&self.esync);
+    sp_mutex_lock (&self.sync);
 
     /*  Ask all the endpoints associated with the socket to shut down. */
     /*  TODO:  This is O(n) algorithm. */
@@ -387,17 +379,14 @@ int sp_close (int s)
         }
     }
 
-    sp_mutex_unlock (&self.esync);
-
     /*  Deallocate the socket object itself. */
-    sp_mutex_lock (&self.ssync);
     sp_sock_term (self.socks [s]);
     sp_free (self.socks [s]);
     self.socks [s] = NULL;
     --self.nsocks;
     if (self.zombie && self.nsocks == 0)
         sp_cond_post (&self.termcond);
-    sp_mutex_unlock (&self.ssync);
+    sp_mutex_unlock (&self.sync);
 
     return 0;
 }
@@ -483,19 +472,19 @@ int sp_shutdown (int s, int how)
 
     SP_BASIC_CHECKS;
 
-    sp_mutex_lock (&self.esync);
+    sp_mutex_lock (&self.sync);
 
     /*  Check whether the endpoint exists. */
     ep = self.eps [how];
     if (sp_slow (!ep)) {
-        sp_mutex_unlock (&self.esync);
+        sp_mutex_unlock (&self.sync);
         errno = -EINVAL;
         return -1;
     }
 
     /*  Check whether the endpoint is associated with the socket in question. */
     if (sp_slow (sp_ep_fd (ep) != s)) {
-        sp_mutex_unlock (&self.esync);
+        sp_mutex_unlock (&self.sync);
         errno = -EINVAL;
         return -1;
     }
@@ -508,13 +497,13 @@ int sp_shutdown (int s, int how)
         be distinguished from the case where the shut down is processed
         asynchronously. */
     if (rc == -EINPROGRESS) {
-        sp_mutex_unlock (&self.esync);
+        sp_mutex_unlock (&self.sync);
         return 0;
     }
     errnum_assert (rc == 0, -rc);
     self.eps [how] = NULL;
 
-    sp_mutex_unlock (&self.esync);
+    sp_mutex_unlock (&self.sync);
 
     return 0;
 }
@@ -622,7 +611,7 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
     if (!tp)
         return -EPROTONOSUPPORT;
 
-    sp_mutex_lock (&self.esync);
+    sp_mutex_lock (&self.sync);
 
     /*  Ask transport to create appropriate endpoint object. */
     if (bind)
@@ -632,7 +621,7 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
         rc = tp->connect (addr, (void*) self.socks [fd],
             (struct sp_epbase**) &ep);
     if (sp_slow (rc != 0)) {
-        sp_mutex_unlock (&self.esync);
+        sp_mutex_unlock (&self.sync);
         return rc;
     }
     sp_assert (ep);
@@ -646,14 +635,14 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
 
     /*  TODO: Auto-resize the array here! */
     if (sp_slow (eid == self.max_eps)) {
-        sp_mutex_unlock (&self.esync);
+        sp_mutex_unlock (&self.sync);
         return -EMFILE;
     }
 
     /*  Store the reference to the endpoint. */
     self.eps [eid] = ep;
 
-    sp_mutex_unlock (&self.esync);
+    sp_mutex_unlock (&self.sync);
 
     return eid;
 }

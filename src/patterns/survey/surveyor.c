@@ -26,7 +26,9 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
+#include "../../utils/wire.h"
 #include "../../utils/alloc.h"
+#include "../../utils/random.h"
 
 #include <stdint.h>
 #include <string.h>

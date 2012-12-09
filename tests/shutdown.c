@@ -23,8 +23,8 @@
 #include "../src/sp.h"
 
 #include "../src/utils/err.c"
-#include "../src/utils/thread.h"
-#include "../src/utils/sleep.h"
+#include "../src/utils/thread.c"
+#include "../src/utils/sleep.c"
 
 void worker (void *arg)
 {

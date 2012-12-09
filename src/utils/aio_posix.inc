@@ -130,6 +130,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
+    self->protocol = 0;
 
     /*  If the operating system allows to directly open the socket with CLOEXEC
         flag, do so. That way there are no race conditions. */
@@ -184,12 +185,14 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->domain = parent->domain;
     self->type = parent->type;
     self->protocol = parent->protocol;
+    self->flags = 0;
 
     sp_usock_tune (self);
 
     /*  Register the new socket with the suplied completion port. 
         If the function is called from the worker thread, modify the pollset
         straight away. Otherwise send an event to the worker thread. */
+    self->flags |= SP_USOCK_FLAG_REGISTERED;
     if (sp_thread_current (&self->cp->worker))
         sp_poller_add (&self->cp->poller, self->s, &self->hndl);
     else {
@@ -515,28 +518,21 @@ void sp_usock_term (struct sp_usock *self)
 {
     int rc;
 
-    /*  TODO:  What happens if listen or connect wasn't called yet? Then the
-        socket is not registered with the poller and we can't remove it. */
-
-    /*  If the function is called from the worker thread remove the socket
-        from the pollset straight away. */
-    if (sp_thread_current (&self->cp->worker)) {
-        sp_poller_rm (&self->cp->poller, &self->hndl);
-        rc = close (self->s);
-        errno_assert (rc == 0);
-        if (self->in.batch)
-            sp_free (self->in.batch);
-        return;
+    if (self->flags & SP_USOCK_FLAG_REGISTERED) {
+        if (sp_thread_current (&self->cp->worker)) {
+            sp_poller_rm (&self->cp->poller, &self->hndl);
+        }
+        else {
+            sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
+            sp_efd_signal (&self->cp->efd);
+sp_assert (0);
+        }
     }
-
-    /*  Otherwise, send an event to the worker thread. */
-    /*  TODO: Possible race condition. */
-    sp_assert (0);
-    sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
-    sp_efd_signal (&self->cp->efd);
 
     if (self->in.batch)
         sp_free (self->in.batch);
+    rc = close (self->s);
+    errno_assert (rc == 0);
 }
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
@@ -609,6 +605,7 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
+    self->flags |= SP_USOCK_FLAG_REGISTERED;
     if (sp_thread_current (&self->cp->worker)) {
         sp_poller_add (&self->cp->poller, self->s, &self->hndl);
         sp_poller_set_out (&self->cp->poller, &self->hndl);

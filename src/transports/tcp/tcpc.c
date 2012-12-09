@@ -59,6 +59,16 @@ static const struct sp_cp_sink sp_tcpc_state_connecting = {
     NULL
 };
 
+/*  CONNECTED state. */
+static const struct sp_cp_sink sp_tcpc_state_connected = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
 {
     int rc;
@@ -92,7 +102,21 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     struct sp_tcpc *tcpc;
 
     tcpc = sp_cont (self, struct sp_tcpc, epbase);
+
+    /*  While we are still connecting, we can terminate the endpoint straight
+        away. */
+    if (tcpc->sink != &sp_tcpc_state_connected)
+        goto done;
+
     sp_assert (0);
+
+done:
+    sp_timer_term (&tcpc->retry_timer);
+    sp_usock_term (&tcpc->usock);
+    sp_epbase_term (&tcpc->epbase);
+    sp_free (tcpc);
+
+    return 0;
 }
 
 static void sp_tcpc_connected (const struct sp_cp_sink **self,
@@ -103,6 +127,7 @@ static void sp_tcpc_connected (const struct sp_cp_sink **self,
     tcpc = sp_cont (self, struct sp_tcpc, sink);
 
     /*  Connect succeeded. Switch to the session state machine. */
+    tcpc->sink = &sp_tcpc_state_connected;
     sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
 }
 

@@ -189,6 +189,8 @@ struct sp_cp_op_hndl {
 #define SP_USOCK_OUTOP_SEND 1
 #define SP_USOCK_OUTOP_CONNECT 2
 
+#define SP_USOCK_FLAG_REGISTERED 1
+
 #define SP_USOCK_BATCH_SIZE 2048
 
 struct sp_usock {
@@ -216,6 +218,7 @@ struct sp_usock {
     int domain;
     int type;
     int protocol;
+    int flags;
 };
 
 struct sp_cp {

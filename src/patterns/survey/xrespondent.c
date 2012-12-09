@@ -91,7 +91,6 @@ int sp_xrespondent_send (struct sp_sockbase *self, const void *buf,
 int sp_xrespondent_recv (struct sp_sockbase *self, void *buf,
     size_t *len)
 {
-    int rc;
     struct sp_xrespondent *xrespondent;
 
     xrespondent = sp_cont (self, struct sp_xrespondent, sockbase);

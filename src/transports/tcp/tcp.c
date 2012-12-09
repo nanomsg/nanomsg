@@ -73,6 +73,7 @@ static int sp_tcp_bind (const char *addr, void *hint,
         sp_free (tcpb);
         return rc;
     }
+    *epbase = &tcpb->epbase;
 
     return 0;
 }
@@ -90,6 +91,7 @@ static int sp_tcp_connect (const char *addr, void *hint,
         sp_free (tcpc);
         return rc;
     }
+    *epbase = &tcpc->epbase;
 
     return 0;
 }

@@ -25,6 +25,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/addr.h"
+#include "../../utils/alloc.h"
 
 #include <string.h>
 

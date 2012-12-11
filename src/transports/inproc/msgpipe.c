@@ -50,25 +50,25 @@ static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
 static void sp_msgpipe_inevent0 (const struct sp_cp_sink **self,
     struct sp_event *event);
 static const struct sp_cp_sink sp_msgpipe_inevent0_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent0};
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent0};
 static const struct sp_cp_sink *sp_msgpipe_inevent0_sinkptr =
     &sp_msgpipe_inevent0_sink;
 static void sp_msgpipe_inevent1 (const struct sp_cp_sink **self,
     struct sp_event *event);
 static const struct sp_cp_sink sp_msgpipe_inevent1_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent1};
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_inevent1};
 static const struct sp_cp_sink *sp_msgpipe_inevent1_sinkptr =
     &sp_msgpipe_inevent1_sink;
 static void sp_msgpipe_outevent0 (const struct sp_cp_sink **self,
     struct sp_event *event);
 static const struct sp_cp_sink sp_msgpipe_outevent0_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent0};
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent0};
 static const struct sp_cp_sink *sp_msgpipe_outevent0_sinkptr =
     &sp_msgpipe_outevent0_sink;
 static void sp_msgpipe_outevent1 (const struct sp_cp_sink **self,
     struct sp_event *event);
 static const struct sp_cp_sink sp_msgpipe_outevent1_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent1};
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, sp_msgpipe_outevent1};
 static const struct sp_cp_sink *sp_msgpipe_outevent1_sinkptr =
     &sp_msgpipe_outevent1_sink;
 

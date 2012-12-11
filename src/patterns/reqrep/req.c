@@ -77,6 +77,7 @@ static const struct sp_cp_sink sp_req_sink = {
     NULL,
     NULL,
     NULL,
+    NULL,
     sp_req_timeout
 };
 

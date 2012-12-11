@@ -76,6 +76,7 @@ static const struct sp_cp_sink sp_surveyor_sink = {
     NULL,
     NULL,
     NULL,
+    NULL,
     sp_surveyor_timeout
 };
 

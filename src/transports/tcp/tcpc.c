@@ -28,13 +28,22 @@
 
 #include <string.h>
 
+/*  States. */
+static const struct sp_cp_sink sp_tcpc_state_waiting;
+static const struct sp_cp_sink sp_tcpc_state_connecting;
+static const struct sp_cp_sink sp_tcpc_state_connected;
+static const struct sp_cp_sink sp_tcpc_state_closing;
+
 /*  Implementation of sp_epbase interface. */
 static int sp_tcpc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
     {sp_tcpc_close};
 
-/*  WAITING state. */
-static void sp_tcpc_timeout (const struct sp_cp_sink **self,
+/******************************************************************************/
+/*  State: WAITING                                                            */
+/******************************************************************************/
+
+static void sp_tcpc_waiting_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
 static const struct sp_cp_sink sp_tcpc_state_waiting = {
     NULL,
@@ -42,31 +51,8 @@ static const struct sp_cp_sink sp_tcpc_state_waiting = {
     NULL,
     NULL,
     NULL,
-    sp_tcpc_timeout
-};
-
-/*  CONNECTING state. */
-static void sp_tcpc_connected (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static void sp_tcpc_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum);
-static const struct sp_cp_sink sp_tcpc_state_connecting = {
     NULL,
-    NULL,
-    sp_tcpc_connected,
-    NULL,
-    sp_tcpc_err,
-    NULL
-};
-
-/*  CONNECTED state. */
-static const struct sp_cp_sink sp_tcpc_state_connected = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+    sp_tcpc_waiting_timeout
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
@@ -92,66 +78,12 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
     /*  Pretend we were waiting for the re-connect timer and that the timer
         have expired. */
     self->sink = &sp_tcpc_state_waiting;
-    sp_tcpc_timeout (&self->sink, &self->retry_timer);
+    sp_tcpc_waiting_timeout (&self->sink, &self->retry_timer);
 
     return 0;
 }
 
-static int sp_tcpc_close (struct sp_epbase *self, int linger)
-{
-    struct sp_tcpc *tcpc;
-
-    tcpc = sp_cont (self, struct sp_tcpc, epbase);
-
-    /*  While we are still connecting, we can terminate the endpoint straight
-        away. */
-    if (tcpc->sink != &sp_tcpc_state_connected)
-        goto done;
-
-    sp_assert (0);
-
-done:
-    sp_timer_term (&tcpc->retry_timer);
-    sp_usock_term (&tcpc->usock);
-    sp_epbase_term (&tcpc->epbase);
-    sp_free (tcpc);
-
-    return 0;
-}
-
-static void sp_tcpc_connected (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
-{
-    struct sp_tcpc *tcpc;
-
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
-
-    /*  Connect succeeded. Switch to the session state machine. */
-    tcpc->sink = &sp_tcpc_state_connected;
-    sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
-}
-
-static void sp_tcpc_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum)
-{
-    int rc;
-    struct sp_tcpc *tcpc;
-
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
-
-    /*  Connect failed. Close the old socket and create a new one. */
-    sp_usock_term (&tcpc->usock);
-    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
-    errnum_assert (rc == 0, -rc);
-
-    /*  Switch to the WAITING state. */
-    tcpc->sink = &sp_tcpc_state_waiting;
-    /*  TODO: Get the retry interval from the socket option. */
-    sp_timer_start (&tcpc->retry_timer, 100);
-}
-
-static void sp_tcpc_timeout (const struct sp_cp_sink **self,
+static void sp_tcpc_waiting_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
     int rc;
@@ -202,5 +134,115 @@ static void sp_tcpc_timeout (const struct sp_cp_sink **self,
     /*  Open the socket and start connecting. */
     tcpc->sink = &sp_tcpc_state_connecting;
     sp_usock_connect (&tcpc->usock, (struct sockaddr*) &ss, sslen);
+}
+
+/******************************************************************************/
+/*  State: CONNECTING                                                         */
+/******************************************************************************/
+
+static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
+    struct sp_usock *usock);
+static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum);
+static const struct sp_cp_sink sp_tcpc_state_connecting = {
+    NULL,
+    NULL,
+    sp_tcpc_connecting_connected,
+    NULL,
+    sp_tcpc_connecting_err,
+    NULL
+};
+
+static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
+    struct sp_usock *usock)
+{
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  Connect succeeded. Switch to the session state machine. */
+    tcpc->sink = &sp_tcpc_state_connected;
+    sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
+}
+
+static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum)
+{
+    int rc;
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  Connect failed. Close the old socket and create a new one. */
+    sp_usock_close (&tcpc->usock);
+    /*  TODO:  Wait for closed event here. */
+sp_assert (0);
+    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
+        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
+    errnum_assert (rc == 0, -rc);
+
+    /*  Switch to the WAITING state. */
+    tcpc->sink = &sp_tcpc_state_waiting;
+    /*  TODO: Get the retry interval from the socket option. */
+    sp_timer_start (&tcpc->retry_timer, 100);
+}
+
+/******************************************************************************/
+/*  State: CONNECTED                                                          */
+/******************************************************************************/
+
+/*  In this state control is yielded to the tcps state machine. */
+
+static const struct sp_cp_sink sp_tcpc_state_connected = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+/******************************************************************************/
+/*  State: CLOSING                                                            */
+/******************************************************************************/
+
+static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock);
+static const struct sp_cp_sink sp_tcpc_state_closing = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_tcpc_closing_closed,
+    NULL,
+    NULL
+};
+
+static int sp_tcpc_close (struct sp_epbase *self, int linger)
+{
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, epbase);
+
+    /*  TODO: Close session here? */
+    sp_timer_term (&tcpc->retry_timer);
+    sp_epbase_term (&tcpc->epbase);
+
+    /*  Switch to the CLOSING state. */
+    tcpc->sink = &sp_tcpc_state_closing;
+    sp_usock_close (&tcpc->usock);
+
+    return 0;
+}
+
+static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock)
+{
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    sp_free (tcpc);
 }
 

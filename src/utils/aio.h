@@ -47,6 +47,8 @@ struct sp_cp_sink {
         struct sp_usock *usock, int s);
     void (*err) (const struct sp_cp_sink **self,
         struct sp_usock *usock, int errnum);
+    void (*closed) (const struct sp_cp_sink **self,
+        struct sp_usock *usock);
     void (*timeout) (const struct sp_cp_sink **self,
         struct sp_timer *timer);
     void (*event) (const struct sp_cp_sink **self,
@@ -70,7 +72,7 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     int s, const struct sp_cp_sink **sink, struct sp_cp *cp);
 const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
     const struct sp_cp_sink **sink);
-void sp_usock_term (struct sp_usock *self);
+void sp_usock_close (struct sp_usock *self);
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);

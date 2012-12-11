@@ -52,7 +52,9 @@ static const struct sp_cp_sink sp_tcps_state_start = {
     NULL,
     NULL,
     sp_tcps_err,
-    sp_tcps_hdr_timeout
+    NULL,
+    sp_tcps_hdr_timeout,
+    NULL
 };
 
 /*  SENT state. */
@@ -62,7 +64,9 @@ static const struct sp_cp_sink sp_tcps_state_sent = {
     NULL,
     NULL,
     sp_tcps_err,
-    sp_tcps_hdr_timeout
+    NULL,
+    sp_tcps_hdr_timeout,
+    NULL
 };
 
 /*  RECEIVED state. */
@@ -72,7 +76,9 @@ static const struct sp_cp_sink sp_tcps_state_received = {
     NULL,
     NULL,
     sp_tcps_err,
-    sp_tcps_hdr_timeout
+    NULL,
+    sp_tcps_hdr_timeout,
+    NULL
 };
 
 /*  ACTIVE state. */
@@ -82,6 +88,8 @@ static const struct sp_cp_sink sp_tcps_state_active = {
     NULL,
     NULL,
     sp_tcps_err,
+    NULL,
+    NULL,
     NULL
 };
 

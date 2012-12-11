@@ -338,7 +338,7 @@ printf ("accepted olpd=%p\n", (void*) &op->olpd);
     }
 }
 
-void sp_usock_term (struct sp_usock *self)
+void sp_usock_close (struct sp_usock *self)
 {
     int rc;
 

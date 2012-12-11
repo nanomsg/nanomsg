@@ -42,6 +42,7 @@ static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
     size_t *len);
 static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
 static int sp_usock_geterr (struct sp_usock *self);
+static void sp_uscok_term (struct sp_usock *self);
 
 void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
     struct sp_cp *cp)
@@ -256,6 +257,18 @@ static void sp_usock_tune (struct sp_usock *self)
 #endif
 }
 
+static void sp_usock_term (struct sp_usock *self)
+{
+    int rc;
+
+    if (self->in.batch)
+        sp_free (self->in.batch);
+    rc = close (self->s);
+    errno_assert (rc == 0);
+    sp_assert ((*self->sink)->closed);
+    (*self->sink)->closed (self->sink, self);
+}
+
 void sp_cp_init (struct sp_cp *self)
 {
     sp_mutex_init (&self->sync);
@@ -372,11 +385,9 @@ if (rc == -EINTR) goto again;
                 sp_poller_add (&self->poller, usock->s, &usock->hndl);
                 break;
             case SP_USOCK_OP_RM:
-                /*  TODO: Race condition here! usock may not exist at this point. */
                 usock = sp_cont (ophndl, struct sp_usock, rm_hndl);
                 sp_poller_rm (&self->poller, &usock->hndl);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                sp_usock_term (usock);
                 break;
             default:
                 sp_assert (0);
@@ -514,25 +525,28 @@ err:
     }
 }
 
-void sp_usock_term (struct sp_usock *self)
+void sp_usock_close (struct sp_usock *self)
 {
     int rc;
 
-    if (self->flags & SP_USOCK_FLAG_REGISTERED) {
-        if (sp_thread_current (&self->cp->worker)) {
-            sp_poller_rm (&self->cp->poller, &self->hndl);
-        }
-        else {
-            sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
-            sp_efd_signal (&self->cp->efd);
-sp_assert (0);
-        }
+    /*  If the underlying fd was not yet reigstered with the poller we can
+        close the usock straight away. */
+    if (!(self->flags & SP_USOCK_FLAG_REGISTERED)) {
+        sp_usock_term (self);
+        return;
     }
 
-    if (self->in.batch)
-        sp_free (self->in.batch);
-    rc = close (self->s);
-    errno_assert (rc == 0);
+    /*  In the worker thread we can remove the fd from the pollset
+        in a synchronous way. */
+    if (sp_thread_current (&self->cp->worker)) {
+        sp_poller_rm (&self->cp->poller, &self->hndl);
+        sp_usock_term (self);
+        return;
+    }
+
+    /*  Start asynchronous closing of the underlying socket. */
+    sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
+    sp_efd_signal (&self->cp->efd);
 }
 
 int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,

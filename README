@@ -1,7 +1,7 @@
-Welcome to nanomessaging
-------------------------
+Welcome to nanomsg
+------------------
 
-Nanomessaging is a project to help with building scalable and high performance
+Nanomsg is a project to help with building scalable and high performance
 distributed applications.
 
 'nanomsg' library extends the standard socket interfaces with features

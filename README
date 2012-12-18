@@ -4,7 +4,7 @@ Welcome to nanomsg
 Nanomsg is a project to help with building scalable and high performance
 distributed applications.
 
-'nanomsg' library extends the standard socket interfaces with features
+Nanomsg extends the standard socket interfaces with features
 traditionally provided by specialised messaging middleware products,
 providing multiple messaging patterns, seamless access to multiple
 transport protocols, message filtering (subscriptions) and more.
@@ -25,7 +25,15 @@ Building
 8.  make test
 9.  sudo make install
 10. On Linux or other platforms which use ld.so for dynamic linking, run
-    ldconfig or equivalent as root to update your system’s shared library cache. 
+    ldconfig or equivalent as root to update your system’s shared library cache.
+
+Resources
+---------
+
+Mailing list: nanomsg@freelists.org
+Subscribe to the list here: http://www.freelists.org/list/nanomsg
+
+IRC chatroom: channel #nanomsg at irc.freenode.net/8001 
 
 Copying
 -------

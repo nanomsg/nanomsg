@@ -172,7 +172,6 @@ static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
 static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    int rc;
     struct sp_tcpc *tcpc;
 
     tcpc = sp_cont (self, struct sp_tcpc, sink);

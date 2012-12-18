@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/alloc.h"
 
 /******************************************************************************/
 /*  State: CONNECTED                                                          */

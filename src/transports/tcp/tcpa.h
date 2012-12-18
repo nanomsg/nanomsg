@@ -32,6 +32,9 @@
 
 struct sp_tcpa {
 
+    /*  Event sink. */
+    const struct sp_cp_sink *sink;
+
     /*  The undelying TCP socket. */
     struct sp_usock usock;
 
@@ -44,7 +47,7 @@ struct sp_tcpa {
 
 void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
     int s, struct sp_usock *usock);
-void sp_tcpa_term (struct sp_tcpa *self);
+int sp_tcpa_close (struct sp_tcpa *self);
 
 #endif
 

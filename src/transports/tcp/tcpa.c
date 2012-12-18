@@ -23,16 +23,70 @@
 #include "tcpa.h"
 
 #include "../../utils/err.h"
+#include "../../utils/cont.h"
+
+/******************************************************************************/
+/*  State: CONNECTED                                                          */
+/******************************************************************************/
+
+/*  In this state control is yielded to the tcps state machine. */
+
+static const struct sp_cp_sink sp_tcpa_state_connected = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
 
 void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
     int s, struct sp_usock *usock)
 {
-    sp_usock_init_child (&self->usock, usock, s, NULL, usock->cp);
+    self->sink = &sp_tcpa_state_connected;
+    sp_usock_init_child (&self->usock, usock, s, &self->sink, usock->cp);
     sp_tcps_init (&self->session, epbase, &self->usock);
 }
 
-void sp_tcpa_term (struct sp_tcpa *self)
+/******************************************************************************/
+/*  State: TERMINATING                                                        */
+/******************************************************************************/
+
+static void sp_tcpa_terminating_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock);
+static const struct sp_cp_sink sp_tcpa_state_terminating = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_tcpa_terminating_closed,
+    NULL,
+    NULL
+};
+
+int sp_tcpa_close (struct sp_tcpa *self)
 {
-    sp_assert (0);
+    /*  Terminate the associated session. */
+    sp_assert (self->sink == &sp_tcpa_state_connected);
+    sp_tcps_term (&self->session);
+
+    /*  Ask the underlying socket to terminate. */
+    self->sink = &sp_tcpa_state_terminating;
+    sp_usock_close (&self->usock);
+
+    return 0;
+}
+
+static void sp_tcpa_terminating_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock)
+{
+    struct sp_tcpa *tcpa;
+
+    tcpa = sp_cont (self, struct sp_tcpa, sink);
+
+    sp_free (tcpa);
 }
 

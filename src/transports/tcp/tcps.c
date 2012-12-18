@@ -128,9 +128,14 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
     sp_usock_recv (usock, self->hdr, 8);
 }
 
-void sp_tcps_term ()
+void sp_tcps_term (struct sp_tcps *self)
 {
-    sp_assert (0);
+    /*  TODO:  Close the messages in progress. */
+    sp_timer_term (&self->hdr_timeout);
+    sp_pipebase_term (&self->pipebase);
+
+    /*  Return control to the parent state machine. */
+    sp_usock_setsink (self->usock, self->original_sink);
 }
 
 static void sp_tcps_hdr_received (const struct sp_cp_sink **self,

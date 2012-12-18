@@ -35,14 +35,17 @@ static int sp_tcpb_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_tcpb_epbase_vfptr =
     {sp_tcpb_close};
 
-/*  Sink for aio events. */
-static void sp_tcpb_accepted (const struct sp_cp_sink **self,
+/******************************************************************************/
+/*  State: LISTENING                                                          */
+/******************************************************************************/
+
+static void sp_tcpb_listening_accepted (const struct sp_cp_sink **self,
     struct sp_usock *usock, int s);
-static const struct sp_cp_sink sp_tcpb_sink = {
+static const struct sp_cp_sink sp_tcpb_state_listening = {
     NULL,
     NULL,
     NULL,
-    sp_tcpb_accepted,
+    sp_tcpb_listening_accepted,
     NULL,
     NULL
 };
@@ -55,7 +58,9 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     struct sockaddr_storage ss;
     socklen_t sslen;
 
-    self->sink = &sp_tcpb_sink;
+    /*  Start in LISTENING state. */
+    self->sink = &sp_tcpb_state_listening;
+
     sp_list_init (&self->tcpas);
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
@@ -101,16 +106,7 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     return 0;
 }
 
-static int sp_tcpb_close (struct sp_epbase *self, int linger)
-{
-    struct sp_tcpb *tcpb;
-
-    tcpb = sp_cont (self, struct sp_tcpb, epbase);
-
-    sp_assert (0);
-}
-
-static void sp_tcpb_accepted (const struct sp_cp_sink **self,
+static void sp_tcpb_listening_accepted (const struct sp_cp_sink **self,
     struct sp_usock *usock, int s)
 {
     struct sp_tcpb *tcpb;
@@ -124,4 +120,50 @@ static void sp_tcpb_accepted (const struct sp_cp_sink **self,
     sp_list_insert (&tcpb->tcpas, &tcpa->item, sp_list_end (&tcpb->tcpas));
 }
 
+/******************************************************************************/
+/*  State: TERMINATING                                                        */
+/******************************************************************************/
+
+static void sp_tcpb_terminating_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock);
+static const struct sp_cp_sink sp_tcpb_state_terminating = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_tcpb_terminating_closed,
+    NULL,
+    NULL
+};
+
+static int sp_tcpb_close (struct sp_epbase *self, int linger)
+{
+    struct sp_tcpb *tcpb;
+    struct sp_list_item *it;
+
+    tcpb = sp_cont (self, struct sp_tcpb, epbase);
+
+    /*  First, ask all the associated sessions to close. */
+    for (it = sp_list_begin (&tcpb->tcpas); it != sp_list_end (&tcpb->tcpas);
+          it = sp_list_next (&tcpb->tcpas, it))
+        sp_tcpa_close (sp_cont (it, struct sp_tcpa, item));
+
+    /*  Close the listening socket itself. */
+    tcpb->sink = &sp_tcpb_state_terminating;
+    sp_usock_close (&tcpb->usock);
+
+    return 0;
+}
+
+static void sp_tcpb_terminating_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock)
+{
+    struct sp_tcpb *tcpb;
+
+    tcpb = sp_cont (self, struct sp_tcpb, sink);
+
+    sp_epbase_term (&tcpb->epbase);
+    sp_free (tcpb);
+}
 

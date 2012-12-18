@@ -132,6 +132,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     self->type = type;
     self->protocol = protocol;
     self->protocol = 0;
+    self->flags = 0;
 
     /*  If the operating system allows to directly open the socket with CLOEXEC
         flag, do so. That way there are no race conditions. */

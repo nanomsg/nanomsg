@@ -53,7 +53,8 @@ static const struct sp_cp_sink sp_tcpc_state_waiting = {
     NULL,
     NULL,
     NULL,
-    sp_tcpc_waiting_timeout
+    sp_tcpc_waiting_timeout,
+    NULL
 };
 
 int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
@@ -151,6 +152,8 @@ static const struct sp_cp_sink sp_tcpc_state_connecting = {
     sp_tcpc_connecting_connected,
     NULL,
     sp_tcpc_connecting_err,
+    NULL,
+    NULL,
     NULL
 };
 
@@ -174,18 +177,9 @@ static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
 
     tcpc = sp_cont (self, struct sp_tcpc, sink);
 
-    /*  Connect failed. Close the old socket and create a new one. */
+    /*  Connect failed. Close the underlying socket. */
+    tcpc->sink = &sp_tcpc_state_closing;
     sp_usock_close (&tcpc->usock);
-    /*  TODO:  Wait for closed event here. */
-sp_assert (0);
-    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
-    errnum_assert (rc == 0, -rc);
-
-    /*  Switch to the WAITING state. */
-    tcpc->sink = &sp_tcpc_state_waiting;
-    /*  TODO: Get the retry interval from the socket option. */
-    sp_timer_start (&tcpc->retry_timer, 100);
 }
 
 /******************************************************************************/
@@ -195,6 +189,8 @@ sp_assert (0);
 /*  In this state control is yielded to the tcps state machine. */
 
 static const struct sp_cp_sink sp_tcpc_state_connected = {
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -220,30 +216,71 @@ static const struct sp_cp_sink sp_tcpc_state_closing = {
     NULL
 };
 
+static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock)
+{
+    int rc;
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  Create new socket. */
+    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
+        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
+    errnum_assert (rc == 0, -rc);
+
+    /*  Wait for the specified period. */
+    tcpc->sink = &sp_tcpc_state_waiting;
+    /*  TODO: Get the retry interval from the socket option. */
+    sp_timer_start (&tcpc->retry_timer, 100);
+}
+
+/******************************************************************************/
+/*  State: TERMINATING                                                        */
+/******************************************************************************/
+
+static void sp_tcpc_terminating_closed (const struct sp_cp_sink **self,
+    struct sp_usock *usock);
+static const struct sp_cp_sink sp_tcpc_state_terminating = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    sp_tcpc_terminating_closed,
+    NULL,
+    NULL
+};
+
 static int sp_tcpc_close (struct sp_epbase *self, int linger)
 {
     struct sp_tcpc *tcpc;
 
     tcpc = sp_cont (self, struct sp_tcpc, epbase);
 
-    /*  TODO: Close session here? */
-    sp_timer_term (&tcpc->retry_timer);
-    sp_epbase_term (&tcpc->epbase);
+    /*  If the connection exists, stop the session state machine. */
+    if (tcpc->sink == &sp_tcpc_state_connected)
+        sp_tcps_term (&tcpc->session);
 
-    /*  Switch to the CLOSING state. */
-    tcpc->sink = &sp_tcpc_state_closing;
-    sp_usock_close (&tcpc->usock);
+    /*  Deallocate resources. */
+    sp_timer_term (&tcpc->retry_timer);
+
+    /*  Close the socket, if needed. */
+    if (tcpc->sink != &sp_tcpc_state_closing)
+        sp_usock_close (&tcpc->usock);
+    tcpc->sink = &sp_tcpc_state_terminating;
 
     return 0;
 }
 
-static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+static void sp_tcpc_terminating_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_tcpc *tcpc;
 
     tcpc = sp_cont (self, struct sp_tcpc, sink);
 
+    sp_epbase_term (&tcpc->epbase);
     sp_free (tcpc);
 }
 

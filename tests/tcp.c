@@ -48,6 +48,7 @@ int main ()
     rc = sp_close (sc);
     errno_assert (rc == 0);
 
+    /*  Open the socket anew. */
     sc = sp_socket (AF_SP, SP_PAIR);
     errno_assert (sc != -1);
     rc = sp_connect (sc, "tcp://127.0.0.1:5555");
@@ -97,7 +98,6 @@ int main ()
     errno_assert (rc == 0);
     rc = sp_close (sb);
     errno_assert (rc == 0);
-
     rc = sp_term ();
     errno_assert (rc == 0);
 

@@ -1,0 +1,60 @@
+/*
+    Copyright (c) 2012 250bpm s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom
+    the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+*/
+
+#ifndef SP_IPCC_INCLUDED
+#define SP_IPCC_INCLUDED
+
+#if !defined SP_HAVE_WINDOWS
+
+/*  Let's re-use TCP session. On POSIX platforms, once created, there should
+    be no difference between TCP and UNIX domain sockets. */
+#include "../tcp/tcps.h"
+
+#include "../../transport.h"
+
+#include "../../utils/aio.h"
+
+struct sp_ipcc {
+
+    /*  Event sink. */
+    const struct sp_cp_sink *sink;
+
+    /*  This object is an endpoint. */
+    struct sp_epbase epbase;
+
+    /*  The underlying IPC socket. */
+    struct sp_usock usock;
+
+    /*  There's at most one session per connecting endpoint, thus we can
+        embed the session object directly into the connecter class. */
+    struct sp_tcps session;
+
+    /*  Timer to wait before retrying to connect. */
+    struct sp_timer retry_timer;
+};
+
+int sp_ipcc_init (struct sp_ipcc *self, const char *addr, void *hint);
+
+#endif
+
+#endif
+

@@ -38,6 +38,7 @@
 #include "../utils/glock.h"
 
 #include "../transports/inproc/inproc.h"
+#include "../transports/ipc/ipc.h"
 #include "../transports/tcp/tcp.h"
 
 #include "../patterns/pair/pair.h"
@@ -217,6 +218,9 @@ int sp_init (void)
 
     /*  Plug in individual transports. */
     sp_ctx_add_transport (sp_inproc);
+#if !defined SP_HAVE_WINDOWS
+    sp_ctx_add_transport (sp_ipc);
+#endif
     sp_ctx_add_transport (sp_tcp);
 
     /*  Plug in individual socktypes. */

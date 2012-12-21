@@ -26,10 +26,10 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
-#include "../../utils/addr.h"
 #include "../../utils/alloc.h"
 
 #include <string.h>
+#include <sys/un.h>
 
 /*  States. */
 static const struct sp_cp_sink sp_ipcc_state_waiting;
@@ -62,17 +62,18 @@ static const struct sp_cp_sink sp_ipcc_state_waiting = {
 int sp_ipcc_init (struct sp_ipcc *self, const char *addr, void *hint)
 {
     int rc;
+    struct sockaddr_un *un;
 
-    /*  TODO: Check the syntax of the address and return error if it is
-        not a valid address string. Don't do any blocking DNS operations
-        though! */
+    /*  Check the syntax of the address. */
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
 
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_ipcc_epbase_vfptr, addr, hint);
 
     /*  Open a socket. */
     rc = sp_usock_init (&self->usock, &self->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
+        AF_UNIX, SOCK_STREAM, 0, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
 
     /*  Initialise the retry timer. */
@@ -93,10 +94,9 @@ static void sp_ipcc_waiting_timeout (const struct sp_cp_sink **self,
     int rc;
     struct sp_ipcc *ipcc;
     const char *addr;
-    int port;
-    const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
+    struct sockaddr_un *un;
 
     ipcc = sp_cont (self, struct sp_ipcc, sink);
 
@@ -105,37 +105,12 @@ static void sp_ipcc_waiting_timeout (const struct sp_cp_sink **self,
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
-
-    /*  Parse the port. */
-    port = sp_addr_parse_port (addr, &colon);
-    errnum_assert (port > 0, -port);
-
-    /*  TODO: Parse the local address, if any. */
-
-    /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = sp_addr_parse_remote (addr, colon - addr, SP_ADDR_IPV4ONLY,
-        &ss, &sslen);
-
-    /*  If the address resolution have failed, wait and re-try. */
-    if (rc < 0) {
-        ipcc->sink = &sp_ipcc_state_waiting;
-        /*  TODO: Get the retry interval from the socket option. */
-        sp_timer_start (&ipcc->retry_timer, 100);
-        return;
-    }
-
-    /*  Combine the port and the address. */
-    if (ss.ss_family == AF_INET)
-        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
-    else if (ss.ss_family == AF_INET6)
-        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
-    else
-        sp_assert (0);
-
-    /*  TODO: New RESOLVING state should be added here to deal with
-        asynchronous DNS queries. */
-
+    un = (struct sockaddr_un*) &ss;
+    sp_assert (strlen (addr) < sizeof (un->sun_path));
+    ss.ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    sslen = sizeof (struct sockaddr_un);
+    
     /*  Open the socket and start connecting. */
     ipcc->sink = &sp_ipcc_state_connecting;
     sp_usock_connect (&ipcc->usock, (struct sockaddr*) &ss, sslen);

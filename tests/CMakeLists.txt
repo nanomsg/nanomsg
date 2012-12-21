@@ -30,6 +30,7 @@ endmacro (add_libnanomsg_test)
 
 #  Transport tests.
 add_libnanomsg_test (inproc)
+add_libnanomsg_test (ipc)
 add_libnanomsg_test (tcp)
 
 #  Pattern tests.

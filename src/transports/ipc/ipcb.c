@@ -27,10 +27,10 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
-#include "../../utils/addr.h"
 #include "../../utils/alloc.h"
 
 #include <string.h>
+#include <sys/un.h>
 
 /*  Implementation of sp_epbase interface. */
 static int sp_ipcb_close (struct sp_epbase *self, int linger);
@@ -55,46 +55,30 @@ static const struct sp_cp_sink sp_ipcb_state_listening = {
 int sp_ipcb_init (struct sp_ipcb *self, const char *addr, void *hint)
 {
     int rc;
-    int port;
-    const char *colon;
     struct sockaddr_storage ss;
     socklen_t sslen;
+    struct sockaddr_un *un;
 
     /*  Start in LISTENING state. */
     self->sink = &sp_ipcb_state_listening;
 
-    sp_list_init (&self->ipcas);
-
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    /*  Create the AF_UNIX address. */
     memset (&ss, 0, sizeof (ss));
+    un = (struct sockaddr_un*) &ss;
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
+    ss.ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    sslen = sizeof (struct sockaddr_un);
 
-    /*  Parse the port. */
-    rc = sp_addr_parse_port (addr, &colon);
-    if (rc < 0)
-        return rc;
-    port = rc;
-
-    /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = sp_addr_parse_local (addr, colon - addr, SP_ADDR_IPV4ONLY,
-        &ss, &sslen);
-    if (rc < 0)
-        return rc;
-
-    /*  Combine the port and the address. */
-    if (ss.ss_family == AF_INET)
-        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
-    else if (ss.ss_family == AF_INET6)
-        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
-    else
-        sp_assert (0);
+    sp_list_init (&self->ipcas);
 
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_ipcb_epbase_vfptr, addr, hint);
 
     /*  Open the listening socket. */
     rc = sp_usock_init (&self->usock, &self->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
+        AF_UNIX, SOCK_STREAM, 0, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);

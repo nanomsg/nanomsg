@@ -61,8 +61,6 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
     /*  Start in LISTENING state. */
     self->sink = &sp_tcpb_state_listening;
 
-    sp_list_init (&self->tcpas);
-
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (&ss, 0, sizeof (ss));
 
@@ -86,6 +84,8 @@ int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint)
         ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
     else
         sp_assert (0);
+
+    sp_list_init (&self->tcpas);
 
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_tcpb_epbase_vfptr, addr, hint);

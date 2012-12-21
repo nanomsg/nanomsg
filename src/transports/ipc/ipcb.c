@@ -31,6 +31,7 @@
 
 #include <string.h>
 #include <sys/un.h>
+#include <unistd.h>
 
 /*  Implementation of sp_epbase interface. */
 static int sp_ipcb_close (struct sp_epbase *self, int linger);
@@ -61,6 +62,11 @@ int sp_ipcb_init (struct sp_ipcb *self, const char *addr, void *hint)
 
     /*  Start in LISTENING state. */
     self->sink = &sp_ipcb_state_listening;
+
+    /*  Delete the ipc file left over by the previous runs of
+        the application. */
+    rc = unlink (addr);
+    errno_assert (rc == 0 || errno == ENOENT);
 
     /*  Create the AF_UNIX address. */
     memset (&ss, 0, sizeof (ss));

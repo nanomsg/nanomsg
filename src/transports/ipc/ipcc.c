@@ -203,7 +203,7 @@ static void sp_ipcc_closing_closed (const struct sp_cp_sink **self,
 
     /*  Create new socket. */
     rc = sp_usock_init (&ipcc->usock, &ipcc->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&ipcc->epbase));
+        AF_UNIX, SOCK_STREAM, 0, sp_epbase_getcp (&ipcc->epbase));
     errnum_assert (rc == 0, -rc);
 
     /*  Wait for the specified period. */

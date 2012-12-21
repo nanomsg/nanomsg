@@ -598,18 +598,18 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
-    /*  Adjust the handle. */
-    self->out.op = SP_USOCK_OUTOP_CONNECT;
-
     /*  Do the connect itself. */
     rc = connect (self->s, addr, addrlen);
 
     /*  Immediate success. */
-    if (sp_fast (rc == 0)) { 
+    if (sp_fast (rc == 0)) {
         sp_assert ((*self->sink)->connected);
         (*self->sink)->connected (self->sink, self);
         return;
     }
+
+    /*  Adjust the handle. */
+    self->out.op = SP_USOCK_OUTOP_CONNECT;
 
     /*  Return unexpected errors to the caller. */
     if (sp_slow (errno != EINPROGRESS)) {

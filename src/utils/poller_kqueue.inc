@@ -108,7 +108,7 @@ void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
     /*  Invalidate any subsequent IN events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].ident == hndl->fd &&
-              self->events [i].filter == EV_READ)
+              self->events [i].filter == EVFILT_READ)
             self->events [i].udata = NULL;
 }
 
@@ -142,12 +142,13 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
     /*  Invalidate any subsequent OUT events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].ident == hndl->fd &&
-              self->events [i].filter == EV_WRITE)
+              self->events [i].filter == EVFILT_WRITE)
             self->events [i].udata = NULL;
 }
 
 int sp_poller_wait (struct sp_poller *self, int timeout)
 {
+    struct timespec ts;
     int nevents;
 
     /*  Clear all existing events. */
@@ -158,16 +159,17 @@ int sp_poller_wait (struct sp_poller *self, int timeout)
 #if defined SP_IGNORE_EINTR
 again:
 #endif
-    timespec ts = {timeout / 1000, (timeout % 1000) * 1000000};
+    ts.tv_sec = timeout / 1000;
+    ts.tv_nsec = (timeout % 1000) * 1000000;
     nevents = kevent (self->kq, NULL, 0, &self->events [0],
-        SP_POLLER_MAX_EVENTS, timeout ? &ts : NULL);
-    if (n == -1 && errno == EINTR)
+        SP_POLLER_MAX_EVENTS, timeout >= 0 ? &ts : NULL);
+    if (nevents == -1 && errno == EINTR)
 #if defined SP_IGNORE_EINTR
         goto again;
 #else
         return -EINTR;
 #endif
-    errno_assert (n != -1);
+    errno_assert (nevents != -1);
 
     self->nevents = nevents;
     return 0;

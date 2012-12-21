@@ -603,6 +603,14 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 
     /*  Immediate success. */
     if (sp_fast (rc == 0)) {
+        self->flags |= SP_USOCK_FLAG_REGISTERED;
+        if (sp_thread_current (&self->cp->worker)) {
+            sp_poller_add (&self->cp->poller, self->s, &self->hndl);
+        }
+        else {
+            sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+            sp_efd_signal (&self->cp->efd);
+        }
         sp_assert ((*self->sink)->connected);
         (*self->sink)->connected (self->sink, self);
         return;

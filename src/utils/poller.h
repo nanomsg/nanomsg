@@ -114,6 +114,39 @@ struct sp_poller {
 
 #endif
 
+#if defined SP_USE_KQUEUE
+
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/event.h>
+
+#define SP_POLLER_MAX_EVENTS 32
+
+#define SP_POLLER_EVENT_IN 1
+#define SP_POLLER_EVENT_OUT 2
+
+struct sp_poller_hndl {
+    int fd;
+    int events;
+};
+
+struct sp_poller {
+
+    /*  Current pollset. */
+    int kq;
+
+    /*  Number of events being processed at the moment. */
+    int nevents;
+
+    /*  Index of the event being processed at the moment. */
+    int index;
+
+    /*  Cached events. */
+    struct kevent events [SP_POLLER_MAX_EVENTS];
+};
+
+#endif
+
 #endif
 
 #endif

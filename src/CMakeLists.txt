@@ -70,6 +70,7 @@ add_library (nanomsg SHARED
     utils/poller.h
     utils/poller.c
     utils/poller_epoll.inc
+    utils/poller_kqueue.inc
     utils/poller_poll.inc
     utils/queue.h
     utils/queue.c

@@ -26,5 +26,7 @@
 #include "poller_poll.inc"
 #elif defined SP_USE_EPOLL
 #include "poller_epoll.inc"
+#elif defined SP_USE_KQUEUE
+#include "poller_kqueue.inc"
 #endif
 

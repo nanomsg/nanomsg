@@ -106,6 +106,7 @@ static void sp_tcpc_waiting_timeout (const struct sp_cp_sink **self,
 
     /*  Parse the port. */
     port = sp_addr_parse_port (addr, &colon);
+    errnum_assert (port > 0, -port);
 
     /*  TODO: Parse the local address, if any. */
 

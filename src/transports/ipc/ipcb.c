@@ -108,7 +108,7 @@ static void sp_ipcb_listening_accepted (const struct sp_cp_sink **self,
 
     ipca = sp_alloc (sizeof (struct sp_ipca), "ipca");
     alloc_assert (ipca);
-    sp_ipca_init (ipca, &ipcb->epbase, s, usock);
+    sp_ipca_init (ipca, &ipcb->epbase, s, usock, ipcb);
     sp_list_insert (&ipcb->ipcas, &ipca->item, sp_list_end (&ipcb->ipcas));
 }
 

@@ -183,8 +183,19 @@ static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
 static void sp_tcps_hdr_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
-    /*  TODO: Header timeout. Drop the connection here. */
-    sp_assert (0);
+    struct sp_tcps *tcps;
+    const struct sp_cp_sink **original_sink;
+
+    /*  The initial protocol header exchange have timed out. */
+    tcps = sp_cont (self, struct sp_tcps, sink);
+    original_sink = tcps->original_sink;
+
+    /*  Terminate the session object. */
+    sp_tcps_term (tcps);
+
+    /*  Notify the parent state machine about the failure. */
+    sp_assert ((*original_sink)->err);
+    (*original_sink)->err (original_sink, tcps->usock, ETIMEDOUT);
 }
 
 static void sp_tcps_activate (struct sp_tcps *self)
@@ -262,7 +273,18 @@ static void sp_tcps_sent (const struct sp_cp_sink **self,
 static void sp_tcps_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    sp_assert (0);
+    struct sp_tcps *tcps;
+    const struct sp_cp_sink **original_sink;
+
+    tcps = sp_cont (self, struct sp_tcps, sink);
+    original_sink = tcps->original_sink;
+
+    /*  Terminate the session object. */
+    sp_tcps_term (tcps);
+
+    /*  Notify the parent state machine about the failure. */
+    sp_assert ((*original_sink)->err);
+    (*original_sink)->err (original_sink, usock, errnum);
 }
 
 static void sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)

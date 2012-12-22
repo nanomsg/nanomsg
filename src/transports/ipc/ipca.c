@@ -28,29 +28,47 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 
+static const struct sp_cp_sink sp_ipca_state_connected;
+static const struct sp_cp_sink sp_ipca_state_terminating;
+
 /******************************************************************************/
 /*  State: CONNECTED                                                          */
 /******************************************************************************/
 
 /*  In this state control is yielded to the tcps state machine. */
 
+static void sp_ipca_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum);
 static const struct sp_cp_sink sp_ipca_state_connected = {
     NULL,
     NULL,
     NULL,
     NULL,
-    NULL,
+    sp_ipca_connected_err,
     NULL,
     NULL,
     NULL
 };
 
 void sp_ipca_init (struct sp_ipca *self, struct sp_epbase *epbase,
-    int s, struct sp_usock *usock)
+    int s, struct sp_usock *usock, struct sp_ipcb *ipcb)
 {
     self->sink = &sp_ipca_state_connected;
+    self->ipcb = ipcb;
     sp_usock_init_child (&self->usock, usock, s, &self->sink, usock->cp);
     sp_tcps_init (&self->session, epbase, &self->usock);
+}
+
+static void sp_ipca_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum)
+{
+    struct sp_ipca *ipca;
+
+    ipca = sp_cont (self, struct sp_ipca, sink);
+
+    /*  Ask the underlying socket to terminate. */
+    ipca->sink = &sp_ipca_state_terminating;
+    sp_usock_close (&ipca->usock);
 }
 
 /******************************************************************************/
@@ -90,6 +108,7 @@ static void sp_ipca_terminating_closed (const struct sp_cp_sink **self,
 
     ipca = sp_cont (self, struct sp_ipca, sink);
 
+    sp_list_erase (&ipca->ipcb->ipcas, &ipca->item);
     sp_free (ipca);
 }
 

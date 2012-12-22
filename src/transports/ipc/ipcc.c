@@ -165,16 +165,30 @@ static void sp_ipcc_connecting_err (const struct sp_cp_sink **self,
 
 /*  In this state control is yielded to the tcps state machine. */
 
+static void sp_ipcc_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum);
 static const struct sp_cp_sink sp_ipcc_state_connected = {
     NULL,
     NULL,
     NULL,
     NULL,
-    NULL,
+    sp_ipcc_connected_err,
     NULL,
     NULL,
     NULL
 };
+
+static void sp_ipcc_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum)
+{
+    struct sp_ipcc *ipcc;
+
+    ipcc = sp_cont (self, struct sp_ipcc, sink);
+
+    /*  The connection is broken. Reconnect. */
+    ipcc->sink = &sp_ipcc_state_waiting;
+    sp_ipcc_waiting_timeout (&ipcc->sink, &ipcc->retry_timer);
+}
 
 /******************************************************************************/
 /*  State: CLOSING                                                            */

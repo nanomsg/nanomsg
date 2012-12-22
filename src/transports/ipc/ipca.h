@@ -25,6 +25,8 @@
 
 #if !defined SP_HAVE_WINDOWS
 
+#include "ipcb.h"
+
 /*  Let's re-use TCP session. On POSIX platforms, once created, there should
     be no difference between TCP and UNIX domain sockets. */
 #include "../tcp/tcps.h"
@@ -45,12 +47,15 @@ struct sp_ipca {
     /*  IPC session state machine. */
     struct sp_tcps session;
 
+    /*  ipcb object that created this connection. */
+    struct sp_ipcb *ipcb;
+
     /*  The object is part of sp_ipcb's list of accepted sockets. */
     struct sp_list_item item;
 };
 
 void sp_ipca_init (struct sp_ipca *self, struct sp_epbase *epbase,
-    int s, struct sp_usock *usock);
+    int s, struct sp_usock *usock, struct sp_ipcb *ipcb);
 int sp_ipca_close (struct sp_ipca *self);
 
 #endif

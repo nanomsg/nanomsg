@@ -243,9 +243,8 @@ static int sp_ipcc_close (struct sp_epbase *self, int linger)
     sp_timer_term (&ipcc->retry_timer);
 
     /*  Close the socket, if needed. */
-    if (ipcc->sink != &sp_ipcc_state_closing)
-        sp_usock_close (&ipcc->usock);
     ipcc->sink = &sp_ipcc_state_terminating;
+    sp_usock_close (&ipcc->usock);
 
     return 0;
 }

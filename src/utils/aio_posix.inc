@@ -266,8 +266,8 @@ static void sp_usock_term (struct sp_usock *self)
         sp_free (self->in.batch);
     rc = close (self->s);
     errno_assert (rc == 0);
-    if ((*self->sink)->closed)
-        (*self->sink)->closed (self->sink, self);
+    sp_assert ((*self->sink)->closed);
+    (*self->sink)->closed (self->sink, self);
 }
 
 void sp_cp_init (struct sp_cp *self)

@@ -266,9 +266,8 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
     sp_timer_term (&tcpc->retry_timer);
 
     /*  Close the socket, if needed. */
-    if (tcpc->sink != &sp_tcpc_state_closing)
-        sp_usock_close (&tcpc->usock);
     tcpc->sink = &sp_tcpc_state_terminating;
+    sp_usock_close (&tcpc->usock);
 
     return 0;
 }

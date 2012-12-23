@@ -45,6 +45,10 @@ add_library (nanomsg SHARED
     utils/aio_win.inc
     utils/alloc.h
     utils/alloc.c
+    utils/astream.h
+    utils/astream.c
+    utils/bstream.h
+    utils/bstream.c
     utils/clock.h
     utils/clock.c
     utils/cond.h
@@ -149,19 +153,11 @@ add_library (nanomsg SHARED
 
     transports/ipc/ipc.h
     transports/ipc/ipc.c
-    transports/ipc/ipca.h
-    transports/ipc/ipca.c
-    transports/ipc/ipcb.h
-    transports/ipc/ipcb.c
     transports/ipc/ipcc.h
     transports/ipc/ipcc.c
 
     transports/tcp/tcp.h
     transports/tcp/tcp.c
-    transports/tcp/tcpa.h
-    transports/tcp/tcpa.c
-    transports/tcp/tcpb.h
-    transports/tcp/tcpb.c
     transports/tcp/tcpc.h
     transports/tcp/tcpc.c
     )

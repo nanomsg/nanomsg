@@ -21,12 +21,57 @@
 */
 
 #include "tcp.h"
-#include "tcpb.h"
 #include "tcpc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
+#include "../../utils/bstream.h"
+
+#define SP_TCP_BACKLOG 100
+
+/*  Private functions. */
+static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
+    struct sp_cp *cp, int backlog)
+{
+    int rc;
+    int port;
+    const char *colon;
+    struct sockaddr_storage ss;
+    socklen_t sslen;
+
+    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    memset (&ss, 0, sizeof (ss));
+
+    /*  Parse the port. */
+    rc = sp_addr_parse_port (addr, &colon);
+    if (rc < 0)
+        return rc;
+    port = rc;
+
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = sp_addr_parse_local (addr, colon - addr, SP_ADDR_IPV4ONLY,
+        &ss, &sslen);
+    if (rc < 0)
+        return rc;
+
+    /*  Combine the port and the address. */
+    if (ss.ss_family == AF_INET)
+        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
+    else if (ss.ss_family == AF_INET6)
+        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
+    else
+        sp_assert (0);
+
+    /*  Open the listening socket. */
+    rc = sp_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP, cp);
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, SP_TCP_BACKLOG);
+    errnum_assert (rc == 0, -rc);
+
+    return 0;
+}
 
 /*  sp_transport interface. */
 static const char *sp_tcp_name (void);
@@ -64,16 +109,16 @@ static int sp_tcp_bind (const char *addr, void *hint,
     struct sp_epbase **epbase)
 {
     int rc;
-    struct sp_tcpb *tcpb;
+    struct sp_bstream *bstream;
 
-    tcpb = sp_alloc (sizeof (struct sp_tcpb), "tcpb");
-    alloc_assert (tcpb);
-    rc = sp_tcpb_init (tcpb, addr, hint);
+    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (tcp)");
+    alloc_assert (bstream);
+    rc = sp_bstream_init (bstream, addr, hint, sp_tcp_binit, SP_TCP_BACKLOG);
     if (sp_slow (rc != 0)) {
-        sp_free (tcpb);
+        sp_free (bstream);
         return rc;
     }
-    *epbase = &tcpb->epbase;
+    *epbase = &bstream->epbase;
 
     return 0;
 }

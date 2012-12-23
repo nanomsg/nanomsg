@@ -23,12 +23,50 @@
 #if !defined SP_HAVE_WINDOWS
 
 #include "ipc.h"
-#include "ipcb.h"
 #include "ipcc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
+#include "../../utils/bstream.h"
+
+#include <string.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+#define SP_IPC_BACKLOG 10
+
+/*  Private functions. */
+static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
+    struct sp_cp *cp, int backlog)
+{
+    int rc;
+    struct sockaddr_storage ss;
+    socklen_t sslen;
+    struct sockaddr_un *un;
+
+    /*  Create the AF_UNIX address. */
+    memset (&ss, 0, sizeof (ss));
+    un = (struct sockaddr_un*) &ss;
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
+    ss.ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    sslen = sizeof (struct sockaddr_un);
+
+    /*  Delete the ipc file left over by eventual previous runs of
+        the application. */
+    rc = unlink (addr);
+    errno_assert (rc == 0 || errno == ENOENT);
+
+    /*  Open the listening socket. */
+    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
+    errnum_assert (rc == 0, -rc);
+
+    return 0;
+}
 
 /*  sp_transport interface. */
 static const char *sp_ipc_name (void);
@@ -66,16 +104,16 @@ static int sp_ipc_bind (const char *addr, void *hint,
     struct sp_epbase **epbase)
 {
     int rc;
-    struct sp_ipcb *ipcb;
+    struct sp_bstream *bstream;
 
-    ipcb = sp_alloc (sizeof (struct sp_ipcb), "ipcb");
-    alloc_assert (ipcb);
-    rc = sp_ipcb_init (ipcb, addr, hint);
+    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (ipc)");
+    alloc_assert (bstream);
+    rc = sp_bstream_init (bstream, addr, hint, sp_ipc_binit, SP_IPC_BACKLOG);
     if (sp_slow (rc != 0)) {
-        sp_free (ipcb);
+        sp_free (bstream);
         return rc;
     }
-    *epbase = &ipcb->epbase;
+    *epbase = &bstream->epbase;
 
     return 0;
 }

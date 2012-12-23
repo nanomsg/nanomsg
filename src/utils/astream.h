@@ -20,30 +20,37 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPB_INCLUDED
-#define SP_TCPB_INCLUDED
+#ifndef SP_ASTREAM_INCLUDED
+#define SP_ASTREAM_INCLUDED
 
-#include "../../transport.h"
+#include "aio.h"
+#include "bstream.h"
+#include "stream.h"
+#include "list.h"
 
-#include "../../utils/aio.h"
+/*  Accepted stream socket. */
 
-/*  Bound TCP endpoint, i.e. TCP listening socket. */
-
-struct sp_tcpb {
+struct sp_astream {
 
     /*  Event sink. */
     const struct sp_cp_sink *sink;
 
-    /*  This object is an endpoint. */
-    struct sp_epbase epbase;
-
-    /*  The listening socket. */
+    /*  The undelying TCP socket. */
     struct sp_usock usock;
 
-    /*  List of all sockets accepted via this endpoint. */
-    struct sp_list tcpas;
+    /*  TCP session state machine. */
+    struct sp_stream stream;
+
+    /*  Bound socket that created this connection. */
+    struct sp_bstream *bstream;
+
+    /*  The object is part of sp_tcpb's list of accepted sockets. */
+    struct sp_list_item item;
 };
 
-int sp_tcpb_init (struct sp_tcpb *self, const char *addr, void *hint);
+void sp_astream_init (struct sp_astream *self, struct sp_epbase *epbase,
+    int s, struct sp_usock *usock, struct sp_bstream *bstream);
+int sp_astream_close (struct sp_astream *self);
 
 #endif
+

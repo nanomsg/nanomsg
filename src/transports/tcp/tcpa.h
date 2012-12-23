@@ -24,9 +24,9 @@
 #define SP_TCPA_INCLUDED
 
 #include "tcpb.h"
-#include "tcps.h"
 
 #include "../../utils/aio.h"
+#include "../../utils/stream.h"
 #include "../../utils/list.h"
 
 /*  Represents TCP accepted socket. */
@@ -40,7 +40,7 @@ struct sp_tcpa {
     struct sp_usock usock;
 
     /*  TCP session state machine. */
-    struct sp_tcps session;
+    struct sp_stream stream;
 
     /*  tcpb object that created this connection. */
     struct sp_tcpb *tcpb;

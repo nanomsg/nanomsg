@@ -33,7 +33,7 @@ static const struct sp_cp_sink sp_tcpa_state_terminating;
 /*  State: CONNECTED                                                          */
 /******************************************************************************/
 
-/*  In this state control is yielded to the tcps state machine. */
+/*  In this state control is yielded to the 'stream' state machine. */
 
 static void sp_tcpa_connected_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
@@ -54,7 +54,7 @@ void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
     self->sink = &sp_tcpa_state_connected;
     self->tcpb = tcpb;
     sp_usock_init_child (&self->usock, usock, s, &self->sink, usock->cp);
-    sp_tcps_init (&self->session, epbase, &self->usock);
+    sp_stream_init (&self->stream, epbase, &self->usock);
 }
 
 static void sp_tcpa_connected_err (const struct sp_cp_sink **self,
@@ -90,7 +90,7 @@ int sp_tcpa_close (struct sp_tcpa *self)
 {
     /*  Terminate the associated session. */
     sp_assert (self->sink == &sp_tcpa_state_connected);
-    sp_tcps_term (&self->session);
+    sp_stream_term (&self->stream);
 
     /*  Ask the underlying socket to terminate. */
     self->sink = &sp_tcpa_state_terminating;

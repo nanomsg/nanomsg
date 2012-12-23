@@ -20,23 +20,25 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPS_INCLUDED
-#define SP_TCPS_INCLUDED
+#ifndef SP_STREAM_INCLUDED
+#define SP_STREAM_INCLUDED
 
-#include "../../transport.h"
+#include "../transport.h"
 
-#include "../../utils/aio.h"
-#include "../../utils/msg.h"
+#include "aio.h"
+#include "msg.h"
 
 #include <stdint.h>
 
-#define SP_TCPS_INSTATE_HDR 1
-#define SP_TCPS_INSTATE_BODY 2
+/*  Session object for stream-oriented transports (e.g. TCP or IPC). */
 
-#define SP_TCPS_OUTSTATE_HDR 1
-#define SP_TCPS_OUTSTATE_BODY 2
+#define SP_STREAM_INSTATE_HDR 1
+#define SP_STREAM_INSTATE_BODY 2
 
-struct sp_tcps {
+#define SP_STREAM_OUTSTATE_HDR 1
+#define SP_STREAM_OUTSTATE_BODY 2
+
+struct sp_stream {
 
     /*  Event sink. */
     const struct sp_cp_sink *sink;
@@ -44,7 +46,7 @@ struct sp_tcps {
     /*  Pipe to exchange messages with the user of the library. */
     struct sp_pipebase pipebase;
 
-    /*  The underlying TCP socket. */
+    /*  The underlying socket. */
     struct sp_usock *usock;
 
     /*  Protocol header received from the peer. */
@@ -79,8 +81,8 @@ struct sp_tcps {
     const struct sp_cp_sink **original_sink;
 };
 
-void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
+void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     struct sp_usock *usock);
-void sp_tcps_term ();
+void sp_stream_term ();
 
 #endif

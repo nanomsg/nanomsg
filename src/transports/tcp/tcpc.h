@@ -23,11 +23,10 @@
 #ifndef SP_TCPC_INCLUDED
 #define SP_TCPC_INCLUDED
 
-#include "tcps.h"
-
 #include "../../transport.h"
 
 #include "../../utils/aio.h"
+#include "../../utils/stream.h"
 
 struct sp_tcpc {
 
@@ -42,7 +41,7 @@ struct sp_tcpc {
 
     /*  There's at most one session per connecting endpoint, thus we can
         embed the session object directly into the connecter class. */
-    struct sp_tcps session;
+    struct sp_stream stream;
 
     /*  Timer to wait before retrying to connect. */
     struct sp_timer retry_timer;

@@ -167,7 +167,7 @@ static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
 
     /*  Connect succeeded. Switch to the session state machine. */
     tcpc->sink = &sp_tcpc_state_connected;
-    sp_tcps_init (&tcpc->session, &tcpc->epbase, &tcpc->usock);
+    sp_stream_init (&tcpc->stream, &tcpc->epbase, &tcpc->usock);
 }
 
 static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
@@ -186,7 +186,7 @@ static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
 /*  State: CONNECTED                                                          */
 /******************************************************************************/
 
-/*  In this state control is yielded to the tcps state machine. */
+/*  In this state control is yielded to the 'stream' state machine. */
 
 static void sp_tcpc_connected_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
@@ -274,7 +274,7 @@ static int sp_tcpc_close (struct sp_epbase *self, int linger)
 
     /*  If the connection exists, stop the session state machine. */
     if (tcpc->sink == &sp_tcpc_state_connected)
-        sp_tcps_term (&tcpc->session);
+        sp_stream_term (&tcpc->stream);
 
     /*  Deallocate resources. */
     sp_timer_term (&tcpc->retry_timer);

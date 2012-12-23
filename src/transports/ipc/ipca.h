@@ -27,11 +27,8 @@
 
 #include "ipcb.h"
 
-/*  Let's re-use TCP session. On POSIX platforms, once created, there should
-    be no difference between TCP and UNIX domain sockets. */
-#include "../tcp/tcps.h"
-
 #include "../../utils/aio.h"
+#include "../../utils/stream.h"
 #include "../../utils/list.h"
 
 /*  Represents IPC accepted socket. */
@@ -45,7 +42,7 @@ struct sp_ipca {
     struct sp_usock usock;
 
     /*  IPC session state machine. */
-    struct sp_tcps session;
+    struct sp_stream stream;
 
     /*  ipcb object that created this connection. */
     struct sp_ipcb *ipcb;

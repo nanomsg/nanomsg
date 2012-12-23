@@ -142,9 +142,9 @@ static void sp_ipcc_connecting_connected (const struct sp_cp_sink **self,
 
     ipcc = sp_cont (self, struct sp_ipcc, sink);
 
-    /*  Connect succeeded. Switch to the session state machine. */
+    /*  Connect succeeded. Switch to the 'stream' state machine. */
     ipcc->sink = &sp_ipcc_state_connected;
-    sp_tcps_init (&ipcc->session, &ipcc->epbase, &ipcc->usock);
+    sp_stream_init (&ipcc->stream, &ipcc->epbase, &ipcc->usock);
 }
 
 static void sp_ipcc_connecting_err (const struct sp_cp_sink **self,
@@ -163,7 +163,7 @@ static void sp_ipcc_connecting_err (const struct sp_cp_sink **self,
 /*  State: CONNECTED                                                          */
 /******************************************************************************/
 
-/*  In this state control is yielded to the tcps state machine. */
+/*  In this state control is yielded to the 'stream' state machine. */
 
 static void sp_ipcc_connected_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
@@ -249,9 +249,9 @@ static int sp_ipcc_close (struct sp_epbase *self, int linger)
 
     ipcc = sp_cont (self, struct sp_ipcc, epbase);
 
-    /*  If the connection exists, stop the session state machine. */
+    /*  If the connection exists, stop the 'stream' state machine. */
     if (ipcc->sink == &sp_ipcc_state_connected)
-        sp_tcps_term (&ipcc->session);
+        sp_stream_term (&ipcc->stream);
 
     /*  Deallocate resources. */
     sp_timer_term (&ipcc->retry_timer);

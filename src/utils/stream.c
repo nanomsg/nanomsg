@@ -20,101 +20,101 @@
     IN THE SOFTWARE.
 */
 
-#include "tcps.h"
+#include "stream.h"
 
-#include "../../utils/err.h"
-#include "../../utils/cont.h"
-#include "../../utils/wire.h"
-#include "../../utils/fast.h"
+#include "err.h"
+#include "cont.h"
+#include "wire.h"
+#include "fast.h"
 
 #include <string.h>
 #include <stdint.h>
 
 /*   Private functions. */
-static void sp_tcps_hdr_received (const struct sp_cp_sink **self,
+static void sp_stream_hdr_received (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
+static void sp_stream_hdr_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_hdr_timeout (const struct sp_cp_sink **self,
+static void sp_stream_hdr_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
-static void sp_tcps_activate (struct sp_tcps *self);
-static void sp_tcps_received (const struct sp_cp_sink **self,
+static void sp_stream_activate (struct sp_stream *self);
+static void sp_stream_received (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_sent (const struct sp_cp_sink **self,
+static void sp_stream_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcps_err (const struct sp_cp_sink **self,
+static void sp_stream_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
 
 /*  START state. */
-static const struct sp_cp_sink sp_tcps_state_start = {
-    sp_tcps_hdr_received,
-    sp_tcps_hdr_sent,
+static const struct sp_cp_sink sp_stream_state_start = {
+    sp_stream_hdr_received,
+    sp_stream_hdr_sent,
     NULL,
     NULL,
-    sp_tcps_err,
+    sp_stream_err,
     NULL,
-    sp_tcps_hdr_timeout,
+    sp_stream_hdr_timeout,
     NULL
 };
 
 /*  SENT state. */
-static const struct sp_cp_sink sp_tcps_state_sent = {
-    sp_tcps_hdr_received,
+static const struct sp_cp_sink sp_stream_state_sent = {
+    sp_stream_hdr_received,
     NULL,
     NULL,
     NULL,
-    sp_tcps_err,
+    sp_stream_err,
     NULL,
-    sp_tcps_hdr_timeout,
+    sp_stream_hdr_timeout,
     NULL
 };
 
 /*  RECEIVED state. */
-static const struct sp_cp_sink sp_tcps_state_received = {
+static const struct sp_cp_sink sp_stream_state_received = {
     NULL,
-    sp_tcps_hdr_sent,
+    sp_stream_hdr_sent,
     NULL,
     NULL,
-    sp_tcps_err,
+    sp_stream_err,
     NULL,
-    sp_tcps_hdr_timeout,
+    sp_stream_hdr_timeout,
     NULL
 };
 
 /*  ACTIVE state. */
-static const struct sp_cp_sink sp_tcps_state_active = {
-    sp_tcps_received,
-    sp_tcps_sent,
+static const struct sp_cp_sink sp_stream_state_active = {
+    sp_stream_received,
+    sp_stream_sent,
     NULL,
     NULL,
-    sp_tcps_err,
+    sp_stream_err,
     NULL,
     NULL,
     NULL
 };
 
 /*  Pipe interface. */
-static void sp_tcps_send (struct sp_pipebase *self, const void *buf,
+static void sp_stream_send (struct sp_pipebase *self, const void *buf,
     size_t len);
-static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len);
-const struct sp_pipebase_vfptr sp_tcps_pipebase_vfptr = {
-    sp_tcps_send,
-    sp_tcps_recv
+static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len);
+const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
+    sp_stream_send,
+    sp_stream_recv
 };
 
-void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
+void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     struct sp_usock *usock)
 {
     int rc;
 
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
-    self->sink = &sp_tcps_state_start;
+    self->sink = &sp_stream_state_start;
     self->original_sink = sp_usock_setsink (usock, &self->sink);
 
     /*  Initialise the pipe to communicate with the user. */
     /*  TODO: Socket type may reject the pipe. What then? */
-    rc = sp_pipebase_init (&self->pipebase, &sp_tcps_pipebase_vfptr, epbase);
+    rc = sp_pipebase_init (&self->pipebase, &sp_stream_pipebase_vfptr, epbase);
     sp_assert (rc == 0);
 
     /*  Start the header timeout timer. */
@@ -128,7 +128,7 @@ void sp_tcps_init (struct sp_tcps *self, struct sp_epbase *epbase,
     sp_usock_recv (usock, self->hdr, 8);
 }
 
-void sp_tcps_term (struct sp_tcps *self)
+void sp_stream_term (struct sp_stream *self)
 {
     /*  TODO:  Close the messages in progress. */
     sp_timer_term (&self->hdr_timeout);
@@ -138,20 +138,20 @@ void sp_tcps_term (struct sp_tcps *self)
     sp_usock_setsink (self->usock, self->original_sink);
 }
 
-static void sp_tcps_hdr_received (const struct sp_cp_sink **self,
+static void sp_stream_hdr_received (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
 
-    tcps = sp_cont (self, struct sp_tcps, sink);
+    stream = sp_cont (self, struct sp_stream, sink);
 
-    if (tcps->sink == &sp_tcps_state_sent) {
-        sp_tcps_activate (tcps);
+    if (stream->sink == &sp_stream_state_sent) {
+        sp_stream_activate (stream);
         return;
     }
 
-    if (tcps->sink == &sp_tcps_state_start) {
-        tcps->sink = &sp_tcps_state_received;
+    if (stream->sink == &sp_stream_state_start) {
+        stream->sink = &sp_stream_state_received;
         return;
     }
 
@@ -159,20 +159,20 @@ static void sp_tcps_hdr_received (const struct sp_cp_sink **self,
     sp_assert (0);
 }
 
-static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
+static void sp_stream_hdr_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
 
-    tcps = sp_cont (self, struct sp_tcps, sink);
+    stream = sp_cont (self, struct sp_stream, sink);
 
-    if (tcps->sink == &sp_tcps_state_received) {
-        sp_tcps_activate (tcps);
+    if (stream->sink == &sp_stream_state_received) {
+        sp_stream_activate (stream);
         return;
     }
 
-    if (tcps->sink == &sp_tcps_state_start) {
-        tcps->sink = &sp_tcps_state_sent;
+    if (stream->sink == &sp_stream_state_start) {
+        stream->sink = &sp_stream_state_sent;
         return;
     }
 
@@ -180,27 +180,27 @@ static void sp_tcps_hdr_sent (const struct sp_cp_sink **self,
     sp_assert (0);
 }
 
-static void sp_tcps_hdr_timeout (const struct sp_cp_sink **self,
+static void sp_stream_hdr_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
     const struct sp_cp_sink **original_sink;
 
     /*  The initial protocol header exchange have timed out. */
-    tcps = sp_cont (self, struct sp_tcps, sink);
-    original_sink = tcps->original_sink;
+    stream = sp_cont (self, struct sp_stream, sink);
+    original_sink = stream->original_sink;
 
     /*  Terminate the session object. */
-    sp_tcps_term (tcps);
+    sp_stream_term (stream);
 
     /*  Notify the parent state machine about the failure. */
     sp_assert ((*original_sink)->err);
-    (*original_sink)->err (original_sink, tcps->usock, ETIMEDOUT);
+    (*original_sink)->err (original_sink, stream->usock, ETIMEDOUT);
 }
 
-static void sp_tcps_activate (struct sp_tcps *self)
+static void sp_stream_activate (struct sp_stream *self)
 {
-    self->sink = &sp_tcps_state_active;
+    self->sink = &sp_stream_state_active;
     sp_timer_stop (&self->hdr_timeout);
 
     /*  Check the header. */
@@ -213,115 +213,117 @@ static void sp_tcps_activate (struct sp_tcps *self)
     sp_pipebase_activate (&self->pipebase);
 
     /*  Start waiting for incoming messages. First, read the 8-byte size. */
-    self->instate = SP_TCPS_INSTATE_HDR;
+    self->instate = SP_STREAM_INSTATE_HDR;
     sp_usock_recv (self->usock, self->inhdr, 8);
 }
 
-static void sp_tcps_received (const struct sp_cp_sink **self,
+static void sp_stream_received (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     int rc;
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
     uint64_t size;
 
-    tcps = sp_cont (self, struct sp_tcps, sink);
-    switch (tcps->instate) {
-    case SP_TCPS_INSTATE_HDR:
-        size = sp_getll (tcps->inhdr);
-        rc = sp_msg_init (&tcps->inmsg, (size_t) size);
+    stream = sp_cont (self, struct sp_stream, sink);
+    switch (stream->instate) {
+    case SP_STREAM_INSTATE_HDR:
+        size = sp_getll (stream->inhdr);
+        rc = sp_msg_init (&stream->inmsg, (size_t) size);
         errnum_assert (rc == 0, -rc);
         if (!size) {
-            sp_pipebase_received (&tcps->pipebase);
+            sp_pipebase_received (&stream->pipebase);
             break;
         }
-        tcps->instate = SP_TCPS_INSTATE_BODY;
-        sp_usock_recv (tcps->usock, sp_msg_data (&tcps->inmsg), (size_t) size);
+        stream->instate = SP_STREAM_INSTATE_BODY;
+        sp_usock_recv (stream->usock, sp_msg_data (&stream->inmsg),
+            (size_t) size);
         break;
-    case SP_TCPS_INSTATE_BODY:
-        sp_pipebase_received (&tcps->pipebase);
+    case SP_STREAM_INSTATE_BODY:
+        sp_pipebase_received (&stream->pipebase);
         break;
     default:
         sp_assert (0);
     }
 }
 
-static void sp_tcps_sent (const struct sp_cp_sink **self,
+static void sp_stream_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
     size_t size;
 
-    tcps = sp_cont (self, struct sp_tcps, sink);
-    switch (tcps->outstate) {
-    case SP_TCPS_OUTSTATE_HDR:
-        size = sp_msg_size (&tcps->outmsg);
-        tcps->outstate = SP_TCPS_OUTSTATE_BODY;
+    stream = sp_cont (self, struct sp_stream, sink);
+    switch (stream->outstate) {
+    case SP_STREAM_OUTSTATE_HDR:
+        size = sp_msg_size (&stream->outmsg);
+        stream->outstate = SP_STREAM_OUTSTATE_BODY;
         if (!size) {
-            sp_pipebase_sent (&tcps->pipebase);
+            sp_pipebase_sent (&stream->pipebase);
             break;
         }
-        sp_usock_send (tcps->usock, sp_msg_data (&tcps->outmsg), size);
+        sp_usock_send (stream->usock, sp_msg_data (&stream->outmsg), size);
         break;
-    case SP_TCPS_OUTSTATE_BODY:
-        sp_pipebase_sent (&tcps->pipebase);
+    case SP_STREAM_OUTSTATE_BODY:
+        sp_pipebase_sent (&stream->pipebase);
         break;
     default:
         sp_assert (0);
     }
 }
 
-static void sp_tcps_err (const struct sp_cp_sink **self,
+static void sp_stream_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
     const struct sp_cp_sink **original_sink;
 
-    tcps = sp_cont (self, struct sp_tcps, sink);
-    original_sink = tcps->original_sink;
+    stream = sp_cont (self, struct sp_stream, sink);
+    original_sink = stream->original_sink;
 
     /*  Terminate the session object. */
-    sp_tcps_term (tcps);
+    sp_stream_term (stream);
 
     /*  Notify the parent state machine about the failure. */
     sp_assert ((*original_sink)->err);
     (*original_sink)->err (original_sink, usock, errnum);
 }
 
-static void sp_tcps_send (struct sp_pipebase *self, const void *buf, size_t len)
+static void sp_stream_send (struct sp_pipebase *self, const void *buf,
+    size_t len)
 {
     int rc;
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
 
-    tcps = sp_cont (self, struct sp_tcps, pipebase);
+    stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Make a local copy of the message. */
-    rc = sp_msg_init (&tcps->outmsg, len);
+    rc = sp_msg_init (&stream->outmsg, len);
     errnum_assert (rc == 0, -rc);
-    memcpy (sp_msg_data (&tcps->outmsg), buf, len);
+    memcpy (sp_msg_data (&stream->outmsg), buf, len);
 
     /*  Serialise the message header. */
-    sp_putll (tcps->outhdr, len);
+    sp_putll (stream->outhdr, len);
 
     /*  Start the outbound state machine. */
-    tcps->outstate = SP_TCPS_OUTSTATE_HDR;
-    sp_usock_send (tcps->usock, tcps->outhdr, 8);
+    stream->outstate = SP_STREAM_OUTSTATE_HDR;
+    sp_usock_send (stream->usock, stream->outhdr, 8);
 }
 
-static void sp_tcps_recv (struct sp_pipebase *self, void *buf, size_t *len)
+static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)
 {
-    struct sp_tcps *tcps;
+    struct sp_stream *stream;
     size_t sz;
 
-    tcps = sp_cont (self, struct sp_tcps, pipebase);
+    stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Copy the data to the supplied buffer. */
-    sz = sp_msg_size (&tcps->inmsg);
+    sz = sp_msg_size (&stream->inmsg);
     if (*len < sz)
         *len = sz;
-    memcpy (buf, sp_msg_data (&tcps->inmsg), sz);
+    memcpy (buf, sp_msg_data (&stream->inmsg), sz);
 
     /* Start receiving new message. */ 
-    tcps->instate = SP_TCPS_INSTATE_HDR;
-    sp_usock_recv (tcps->usock, tcps->inhdr, 8);
+    stream->instate = SP_STREAM_INSTATE_HDR;
+    sp_usock_recv (stream->usock, stream->inhdr, 8);
 }
 

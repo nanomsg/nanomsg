@@ -25,13 +25,10 @@
 
 #if !defined SP_HAVE_WINDOWS
 
-/*  Let's re-use TCP session. On POSIX platforms, once created, there should
-    be no difference between TCP and UNIX domain sockets. */
-#include "../tcp/tcps.h"
-
 #include "../../transport.h"
 
 #include "../../utils/aio.h"
+#include "../../utils/stream.h"
 
 struct sp_ipcc {
 
@@ -45,8 +42,8 @@ struct sp_ipcc {
     struct sp_usock usock;
 
     /*  There's at most one session per connecting endpoint, thus we can
-        embed the session object directly into the connecter class. */
-    struct sp_tcps session;
+        embed the stream object directly into the connecter class. */
+    struct sp_stream stream;
 
     /*  Timer to wait before retrying to connect. */
     struct sp_timer retry_timer;

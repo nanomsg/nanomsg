@@ -78,6 +78,8 @@ add_library (nanomsg SHARED
     utils/random.c
     utils/sleep.h
     utils/sleep.c
+    utils/stream.h
+    utils/stream.c
     utils/thread.h
     utils/thread.c
     utils/timeout.h
@@ -162,8 +164,6 @@ add_library (nanomsg SHARED
     transports/tcp/tcpb.c
     transports/tcp/tcpc.h
     transports/tcp/tcpc.c
-    transports/tcp/tcps.h
-    transports/tcp/tcps.c
     )
 
 add_definitions (-DSP_EXPORTS)

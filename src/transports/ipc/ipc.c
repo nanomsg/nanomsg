@@ -38,59 +38,10 @@
 
 /*  Private functions. */
 static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
-    struct sp_cp *cp, int backlog)
-{
-    int rc;
-    struct sockaddr_storage ss;
-    socklen_t sslen;
-    struct sockaddr_un *un;
-
-    /*  Create the AF_UNIX address. */
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    if (strlen (addr) >= sizeof (un->sun_path))
-        return -ENAMETOOLONG;
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
-    sslen = sizeof (struct sockaddr_un);
-
-    /*  Delete the ipc file left over by eventual previous runs of
-        the application. */
-    rc = unlink (addr);
-    errno_assert (rc == 0 || errno == ENOENT);
-
-    /*  Open the listening socket. */
-    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
-    errnum_assert (rc == 0, -rc);
-    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
-    errnum_assert (rc == 0, -rc);
-
-    return 0;
-}
-
-static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp)
-{
-    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
-}
-
+    struct sp_cp *cp, int backlog);
+static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp);
 static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen)
-{
-    struct sockaddr_un *un;
-
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (ss, 0, sizeof (struct sockaddr_storage));
-
-    /*  Fill in the address. */
-    un = (struct sockaddr_un*) ss;
-    if (strlen (addr) >= sizeof (un->sun_path))
-        return -ENAMETOOLONG;
-    ss->ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
-    *sslen = sizeof (struct sockaddr_un);
-
-    return 0;
-}
+    socklen_t *sslen);
 
 /*  sp_transport interface. */
 static const char *sp_ipc_name (void);
@@ -159,6 +110,61 @@ static int sp_ipc_connect (const char *addr, void *hint,
         return rc;
     }
     *epbase = &cstream->epbase;
+
+    return 0;
+}
+
+static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
+    struct sp_cp *cp, int backlog)
+{
+    int rc;
+    struct sockaddr_storage ss;
+    socklen_t sslen;
+    struct sockaddr_un *un;
+
+    /*  Create the AF_UNIX address. */
+    memset (&ss, 0, sizeof (ss));
+    un = (struct sockaddr_un*) &ss;
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
+    ss.ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    sslen = sizeof (struct sockaddr_un);
+
+    /*  Delete the ipc file left over by eventual previous runs of
+        the application. */
+    rc = unlink (addr);
+    errno_assert (rc == 0 || errno == ENOENT);
+
+    /*  Open the listening socket. */
+    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+    errnum_assert (rc == 0, -rc);
+    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
+    errnum_assert (rc == 0, -rc);
+
+    return 0;
+}
+
+static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp)
+{
+    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+}
+
+static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
+    socklen_t *sslen)
+{
+    struct sockaddr_un *un;
+
+    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    memset (ss, 0, sizeof (struct sockaddr_storage));
+
+    /*  Fill in the address. */
+    un = (struct sockaddr_un*) ss;
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
+    ss->ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    *sslen = sizeof (struct sockaddr_un);
 
     return 0;
 }

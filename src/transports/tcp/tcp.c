@@ -33,6 +33,83 @@
 
 /*  Private functions. */
 static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
+    struct sp_cp *cp, int backlog);
+static int sp_tcp_csockinit (struct sp_usock *usock, struct sp_cp *cp);
+static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
+    socklen_t *sslen);
+
+/*  sp_transport interface. */
+static const char *sp_tcp_name (void);
+static void sp_tcp_init (void);
+static void sp_tcp_term (void);
+static int sp_tcp_bind (const char *addr, void *hint,
+    struct sp_epbase **epbase);
+static int sp_tcp_connect (const char *addr, void *hint,
+    struct sp_epbase **epbase);
+
+static struct sp_transport sp_tcp_vfptr = {
+    sp_tcp_name,
+    sp_tcp_init,
+    sp_tcp_term,
+    sp_tcp_bind,
+    sp_tcp_connect
+};
+
+struct sp_transport *sp_tcp = &sp_tcp_vfptr;
+
+static const char *sp_tcp_name (void)
+{
+    return "tcp";
+}
+
+static void sp_tcp_init (void)
+{
+}
+
+static void sp_tcp_term (void)
+{
+}
+
+static int sp_tcp_bind (const char *addr, void *hint,
+    struct sp_epbase **epbase)
+{
+    int rc;
+    struct sp_bstream *bstream;
+
+    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (tcp)");
+    alloc_assert (bstream);
+    rc = sp_bstream_init (bstream, addr, hint, sp_tcp_binit, SP_TCP_BACKLOG);
+    if (sp_slow (rc != 0)) {
+        sp_free (bstream);
+        return rc;
+    }
+    *epbase = &bstream->epbase;
+
+    return 0;
+}
+
+static int sp_tcp_connect (const char *addr, void *hint,
+    struct sp_epbase **epbase)
+{
+    int rc;
+    struct sp_cstream *cstream;
+
+    /*  TODO: Check the syntax of the address here! */
+
+    cstream = sp_alloc (sizeof (struct sp_cstream), "cstream (tcp)");
+    alloc_assert (cstream);
+    rc = sp_cstream_init (cstream, addr, hint, sp_tcp_csockinit,
+        sp_tcp_cresolve);
+    if (sp_slow (rc != 0)) {
+        sp_free (cstream);
+        return rc;
+    }
+    *epbase = &cstream->epbase;
+
+    return 0;
+}
+
+static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
     struct sp_cp *cp, int backlog)
 {
     int rc;
@@ -112,76 +189,4 @@ static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
 
     return 0;
 }
-
-/*  sp_transport interface. */
-static const char *sp_tcp_name (void);
-static void sp_tcp_init (void);
-static void sp_tcp_term (void);
-static int sp_tcp_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase);
-static int sp_tcp_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase);
-
-static struct sp_transport sp_tcp_vfptr = {
-    sp_tcp_name,
-    sp_tcp_init,
-    sp_tcp_term,
-    sp_tcp_bind,
-    sp_tcp_connect
-};
-
-struct sp_transport *sp_tcp = &sp_tcp_vfptr;
-
-static const char *sp_tcp_name (void)
-{
-    return "tcp";
-}
-
-static void sp_tcp_init (void)
-{
-}
-
-static void sp_tcp_term (void)
-{
-}
-
-static int sp_tcp_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase)
-{
-    int rc;
-    struct sp_bstream *bstream;
-
-    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (tcp)");
-    alloc_assert (bstream);
-    rc = sp_bstream_init (bstream, addr, hint, sp_tcp_binit, SP_TCP_BACKLOG);
-    if (sp_slow (rc != 0)) {
-        sp_free (bstream);
-        return rc;
-    }
-    *epbase = &bstream->epbase;
-
-    return 0;
-}
-
-static int sp_tcp_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase)
-{
-    int rc;
-    struct sp_cstream *cstream;
-
-    /*  TODO: Check the syntax of the address here! */
-
-    cstream = sp_alloc (sizeof (struct sp_cstream), "cstream (tcp)");
-    alloc_assert (cstream);
-    rc = sp_cstream_init (cstream, addr, hint, sp_tcp_csockinit,
-        sp_tcp_cresolve);
-    if (sp_slow (rc != 0)) {
-        sp_free (cstream);
-        return rc;
-    }
-    *epbase = &cstream->epbase;
-
-    return 0;
-}
-
 

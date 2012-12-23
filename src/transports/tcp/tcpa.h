@@ -23,6 +23,7 @@
 #ifndef SP_TCPA_INCLUDED
 #define SP_TCPA_INCLUDED
 
+#include "tcpb.h"
 #include "tcps.h"
 
 #include "../../utils/aio.h"
@@ -41,12 +42,15 @@ struct sp_tcpa {
     /*  TCP session state machine. */
     struct sp_tcps session;
 
+    /*  tcpb object that created this connection. */
+    struct sp_tcpb *tcpb;
+
     /*  The object is part of sp_tcpb's list of accepted sockets. */
     struct sp_list_item item;
 };
 
 void sp_tcpa_init (struct sp_tcpa *self, struct sp_epbase *epbase,
-    int s, struct sp_usock *usock);
+    int s, struct sp_usock *usock, struct sp_tcpb *tcpb);
 int sp_tcpa_close (struct sp_tcpa *self);
 
 #endif

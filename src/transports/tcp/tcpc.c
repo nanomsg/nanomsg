@@ -188,16 +188,30 @@ static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
 
 /*  In this state control is yielded to the tcps state machine. */
 
+static void sp_tcpc_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum);
 static const struct sp_cp_sink sp_tcpc_state_connected = {
     NULL,
     NULL,
     NULL,
     NULL,
-    NULL,
+    sp_tcpc_connected_err,
     NULL,
     NULL,
     NULL
 };
+
+static void sp_tcpc_connected_err (const struct sp_cp_sink **self,
+    struct sp_usock *usock, int errnum)
+{
+    struct sp_tcpc *tcpc;
+
+    tcpc = sp_cont (self, struct sp_tcpc, sink);
+
+    /*  The connection is broken. Reconnect. */
+    tcpc->sink = &sp_tcpc_state_waiting;
+    sp_tcpc_waiting_timeout (&tcpc->sink, &tcpc->retry_timer);
+}
 
 /******************************************************************************/
 /*  State: CLOSING                                                            */

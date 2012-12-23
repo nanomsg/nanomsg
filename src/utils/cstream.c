@@ -20,58 +20,63 @@
     IN THE SOFTWARE.
 */
 
-#include "tcpc.h"
-
-#include "../../utils/err.h"
-#include "../../utils/cont.h"
-#include "../../utils/addr.h"
-#include "../../utils/alloc.h"
+#include "cstream.h"
+#include "err.h"
+#include "cont.h"
+#include "addr.h"
+#include "alloc.h"
 
 #include <string.h>
 
 /*  States. */
-static const struct sp_cp_sink sp_tcpc_state_waiting;
-static const struct sp_cp_sink sp_tcpc_state_connecting;
-static const struct sp_cp_sink sp_tcpc_state_connected;
-static const struct sp_cp_sink sp_tcpc_state_closing;
+static const struct sp_cp_sink sp_cstream_state_waiting;
+static const struct sp_cp_sink sp_cstream_state_connecting;
+static const struct sp_cp_sink sp_cstream_state_connected;
+static const struct sp_cp_sink sp_cstream_state_closing;
 
 /*  Implementation of sp_epbase interface. */
-static int sp_tcpc_close (struct sp_epbase *self, int linger);
-static const struct sp_epbase_vfptr sp_tcpc_epbase_vfptr =
-    {sp_tcpc_close};
+static int sp_cstream_close (struct sp_epbase *self, int linger);
+static const struct sp_epbase_vfptr sp_cstream_epbase_vfptr =
+    {sp_cstream_close};
 
 /******************************************************************************/
 /*  State: WAITING                                                            */
 /******************************************************************************/
 
-static void sp_tcpc_waiting_timeout (const struct sp_cp_sink **self,
+static void sp_cstream_waiting_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer);
-static const struct sp_cp_sink sp_tcpc_state_waiting = {
+static const struct sp_cp_sink sp_cstream_state_waiting = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_tcpc_waiting_timeout,
+    sp_cstream_waiting_timeout,
     NULL
 };
 
-int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
+int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
+    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp),
+    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
+    socklen_t *sslen))
 {
     int rc;
+
+    self->initsockfn = initsockfn;
+    self->resolvefn = resolvefn;
 
     /*  TODO: Check the syntax of the address and return error if it is
         not a valid address string. Don't do any blocking DNS operations
         though! */
 
     /*  Initialise the base class. */
-    sp_epbase_init (&self->epbase, &sp_tcpc_epbase_vfptr, addr, hint);
+    sp_epbase_init (&self->epbase, &sp_cstream_epbase_vfptr, addr, hint);
 
     /*  Open a socket. */
-    rc = sp_usock_init (&self->usock, &self->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&self->epbase));
+    rc = self->initsockfn (&self->usock, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
+    sp_usock_setsink (&self->usock, &self->sink);
 
     /*  Initialise the retry timer. */
     sp_timer_init (&self->retry_timer, &self->sink,
@@ -79,107 +84,79 @@ int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint)
 
     /*  Pretend we were waiting for the re-connect timer and that the timer
         have expired. */
-    self->sink = &sp_tcpc_state_waiting;
-    sp_tcpc_waiting_timeout (&self->sink, &self->retry_timer);
+    self->sink = &sp_cstream_state_waiting;
+    sp_cstream_waiting_timeout (&self->sink, &self->retry_timer);
 
     return 0;
 }
 
-static void sp_tcpc_waiting_timeout (const struct sp_cp_sink **self,
+static void sp_cstream_waiting_timeout (const struct sp_cp_sink **self,
     struct sp_timer *timer)
 {
     int rc;
-    struct sp_tcpc *tcpc;
-    const char *addr;
-    int port;
-    const char *colon;
+    struct sp_cstream *cstream;
     struct sockaddr_storage ss;
     socklen_t sslen;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
     /*  Retry timer expired. Now we'll try to resolve the address. */
-    addr = sp_epbase_getaddr (&tcpc->epbase);
-
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (&ss, 0, sizeof (ss));
-
-    /*  Parse the port. */
-    port = sp_addr_parse_port (addr, &colon);
-    errnum_assert (port > 0, -port);
-
-    /*  TODO: Parse the local address, if any. */
-
-    /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = sp_addr_parse_remote (addr, colon - addr, SP_ADDR_IPV4ONLY,
-        &ss, &sslen);
+    rc = cstream->resolvefn (sp_epbase_getaddr (&cstream->epbase), &ss, &sslen);
 
     /*  If the address resolution have failed, wait and re-try. */
     if (rc < 0) {
-        tcpc->sink = &sp_tcpc_state_waiting;
+        cstream->sink = &sp_cstream_state_waiting;
         /*  TODO: Get the retry interval from the socket option. */
-        sp_timer_start (&tcpc->retry_timer, 100);
+        sp_timer_start (&cstream->retry_timer, 100);
         return;
     }
 
-    /*  Combine the port and the address. */
-    if (ss.ss_family == AF_INET)
-        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
-    else if (ss.ss_family == AF_INET6)
-        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
-    else
-        sp_assert (0);
-
-    /*  TODO: New RESOLVING state should be added here to deal with
-        asynchronous DNS queries. */
-
     /*  Open the socket and start connecting. */
-    tcpc->sink = &sp_tcpc_state_connecting;
-    sp_usock_connect (&tcpc->usock, (struct sockaddr*) &ss, sslen);
+    cstream->sink = &sp_cstream_state_connecting;
+    sp_usock_connect (&cstream->usock, (struct sockaddr*) &ss, sslen);
 }
 
 /******************************************************************************/
 /*  State: CONNECTING                                                         */
 /******************************************************************************/
 
-static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
+static void sp_cstream_connecting_connected (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
+static void sp_cstream_connecting_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
-static const struct sp_cp_sink sp_tcpc_state_connecting = {
+static const struct sp_cp_sink sp_cstream_state_connecting = {
     NULL,
     NULL,
-    sp_tcpc_connecting_connected,
+    sp_cstream_connecting_connected,
     NULL,
-    sp_tcpc_connecting_err,
+    sp_cstream_connecting_err,
     NULL,
     NULL,
     NULL
 };
 
-static void sp_tcpc_connecting_connected (const struct sp_cp_sink **self,
+static void sp_cstream_connecting_connected (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
     /*  Connect succeeded. Switch to the session state machine. */
-    tcpc->sink = &sp_tcpc_state_connected;
-    sp_stream_init (&tcpc->stream, &tcpc->epbase, &tcpc->usock);
+    cstream->sink = &sp_cstream_state_connected;
+    sp_stream_init (&cstream->stream, &cstream->epbase, &cstream->usock);
 }
 
-static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
+static void sp_cstream_connecting_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
     /*  Connect failed. Close the underlying socket. */
-    tcpc->sink = &sp_tcpc_state_closing;
-    sp_usock_close (&tcpc->usock);
+    cstream->sink = &sp_cstream_state_closing;
+    sp_usock_close (&cstream->usock);
 }
 
 /******************************************************************************/
@@ -188,112 +165,113 @@ static void sp_tcpc_connecting_err (const struct sp_cp_sink **self,
 
 /*  In this state control is yielded to the 'stream' state machine. */
 
-static void sp_tcpc_connected_err (const struct sp_cp_sink **self,
+static void sp_cstream_connected_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum);
-static const struct sp_cp_sink sp_tcpc_state_connected = {
+static const struct sp_cp_sink sp_cstream_state_connected = {
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_tcpc_connected_err,
+    sp_cstream_connected_err,
     NULL,
     NULL,
     NULL
 };
 
-static void sp_tcpc_connected_err (const struct sp_cp_sink **self,
+static void sp_cstream_connected_err (const struct sp_cp_sink **self,
     struct sp_usock *usock, int errnum)
 {
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
     /*  The connection is broken. Reconnect. */
-    tcpc->sink = &sp_tcpc_state_waiting;
-    sp_tcpc_waiting_timeout (&tcpc->sink, &tcpc->retry_timer);
+    cstream->sink = &sp_cstream_state_waiting;
+    sp_cstream_waiting_timeout (&cstream->sink, &cstream->retry_timer);
 }
 
 /******************************************************************************/
 /*  State: CLOSING                                                            */
 /******************************************************************************/
 
-static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+static void sp_cstream_closing_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static const struct sp_cp_sink sp_tcpc_state_closing = {
+static const struct sp_cp_sink sp_cstream_state_closing = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_tcpc_closing_closed,
+    sp_cstream_closing_closed,
     NULL,
     NULL
 };
 
-static void sp_tcpc_closing_closed (const struct sp_cp_sink **self,
+static void sp_cstream_closing_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     int rc;
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
     /*  Create new socket. */
-    rc = sp_usock_init (&tcpc->usock, &tcpc->sink,
-        AF_INET, SOCK_STREAM, IPPROTO_TCP, sp_epbase_getcp (&tcpc->epbase));
+    rc = cstream->initsockfn (&cstream->usock,
+        sp_epbase_getcp (&cstream->epbase));
     errnum_assert (rc == 0, -rc);
+    sp_usock_setsink (&cstream->usock, &cstream->sink);
 
     /*  Wait for the specified period. */
-    tcpc->sink = &sp_tcpc_state_waiting;
+    cstream->sink = &sp_cstream_state_waiting;
     /*  TODO: Get the retry interval from the socket option. */
-    sp_timer_start (&tcpc->retry_timer, 100);
+    sp_timer_start (&cstream->retry_timer, 100);
 }
 
 /******************************************************************************/
 /*  State: TERMINATING                                                        */
 /******************************************************************************/
 
-static void sp_tcpc_terminating_closed (const struct sp_cp_sink **self,
+static void sp_cstream_terminating_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static const struct sp_cp_sink sp_tcpc_state_terminating = {
+static const struct sp_cp_sink sp_cstream_state_terminating = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_tcpc_terminating_closed,
+    sp_cstream_terminating_closed,
     NULL,
     NULL
 };
 
-static int sp_tcpc_close (struct sp_epbase *self, int linger)
+static int sp_cstream_close (struct sp_epbase *self, int linger)
 {
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, epbase);
+    cstream = sp_cont (self, struct sp_cstream, epbase);
 
     /*  If the connection exists, stop the session state machine. */
-    if (tcpc->sink == &sp_tcpc_state_connected)
-        sp_stream_term (&tcpc->stream);
+    if (cstream->sink == &sp_cstream_state_connected)
+        sp_stream_term (&cstream->stream);
 
     /*  Deallocate resources. */
-    sp_timer_term (&tcpc->retry_timer);
+    sp_timer_term (&cstream->retry_timer);
 
     /*  Close the socket, if needed. */
-    tcpc->sink = &sp_tcpc_state_terminating;
-    sp_usock_close (&tcpc->usock);
+    cstream->sink = &sp_cstream_state_terminating;
+    sp_usock_close (&cstream->usock);
 
     return 0;
 }
 
-static void sp_tcpc_terminating_closed (const struct sp_cp_sink **self,
+static void sp_cstream_terminating_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
-    struct sp_tcpc *tcpc;
+    struct sp_cstream *cstream;
 
-    tcpc = sp_cont (self, struct sp_tcpc, sink);
+    cstream = sp_cont (self, struct sp_cstream, sink);
 
-    sp_epbase_term (&tcpc->epbase);
-    sp_free (tcpc);
+    sp_epbase_term (&cstream->epbase);
+    sp_free (cstream);
 }
 

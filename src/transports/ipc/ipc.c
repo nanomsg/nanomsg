@@ -23,12 +23,12 @@
 #if !defined SP_HAVE_WINDOWS
 
 #include "ipc.h"
-#include "ipcc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
 #include "../../utils/bstream.h"
+#include "../../utils/cstream.h"
 
 #include <string.h>
 #include <sys/un.h>
@@ -64,6 +64,30 @@ static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
     errnum_assert (rc == 0, -rc);
+
+    return 0;
+}
+
+static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp)
+{
+    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+}
+
+static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
+    socklen_t *sslen)
+{
+    struct sockaddr_un *un;
+
+    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    memset (ss, 0, sizeof (struct sockaddr_storage));
+
+    /*  Fill in the address. */
+    un = (struct sockaddr_un*) ss;
+    if (strlen (addr) >= sizeof (un->sun_path))
+        return -ENAMETOOLONG;
+    ss->ss_family = AF_UNIX;
+    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    *sslen = sizeof (struct sockaddr_un);
 
     return 0;
 }
@@ -122,16 +146,19 @@ static int sp_ipc_connect (const char *addr, void *hint,
     struct sp_epbase **epbase)
 {
     int rc;
-    struct sp_ipcc *ipcc;
+    struct sp_cstream *cstream;
 
-    ipcc = sp_alloc (sizeof (struct sp_ipcc), "ipcc");
-    alloc_assert (ipcc);
-    rc = sp_ipcc_init (ipcc, addr, hint);
+    /*  TODO: Check the syntax of the address here! */
+
+    cstream = sp_alloc (sizeof (struct sp_cstream), "cstream (ipc)");
+    alloc_assert (cstream);
+    rc = sp_cstream_init (cstream, addr, hint, sp_ipc_csockinit,
+        sp_ipc_cresolve);
     if (sp_slow (rc != 0)) {
-        sp_free (ipcc);
+        sp_free (cstream);
         return rc;
     }
-    *epbase = &ipcc->epbase;
+    *epbase = &cstream->epbase;
 
     return 0;
 }

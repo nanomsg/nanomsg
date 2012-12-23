@@ -20,15 +20,16 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TCPC_INCLUDED
-#define SP_TCPC_INCLUDED
+#ifndef SP_BSTREAM_INCLUDED
+#define SP_BSTREAM_INCLUDED
 
-#include "../../transport.h"
+#include "../transport.h"
 
-#include "../../utils/aio.h"
-#include "../../utils/stream.h"
+#include "aio.h"
 
-struct sp_tcpc {
+/*  Bound stream socket. */
+
+struct sp_bstream {
 
     /*  Event sink. */
     const struct sp_cp_sink *sink;
@@ -36,18 +37,15 @@ struct sp_tcpc {
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
 
-    /*  The underlying TCP socket. */
+    /*  The listening socket. */
     struct sp_usock usock;
 
-    /*  There's at most one session per connecting endpoint, thus we can
-        embed the session object directly into the connecter class. */
-    struct sp_stream stream;
-
-    /*  Timer to wait before retrying to connect. */
-    struct sp_timer retry_timer;
+    /*  List of all sockets accepted via this endpoint. */
+    struct sp_list astreams;
 };
 
-int sp_tcpc_init (struct sp_tcpc *self, const char *addr, void *hint);
+int sp_bstream_init (struct sp_bstream *self, const char *addr, void *hint,
+    int (*initfn) (const char *addr, struct sp_usock *usock, struct sp_cp *cp,
+    int backlog), int backlog);
 
 #endif
-

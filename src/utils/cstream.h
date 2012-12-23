@@ -20,17 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_IPCC_INCLUDED
-#define SP_IPCC_INCLUDED
+#ifndef SP_CSTREAM_INCLUDED
+#define SP_CSTREAM_INCLUDED
 
-#if !defined SP_HAVE_WINDOWS
+#include "../transport.h"
 
-#include "../../transport.h"
+#include "aio.h"
+#include "stream.h"
 
-#include "../../utils/aio.h"
-#include "../../utils/stream.h"
-
-struct sp_ipcc {
+struct sp_cstream {
 
     /*  Event sink. */
     const struct sp_cp_sink *sink;
@@ -38,20 +36,26 @@ struct sp_ipcc {
     /*  This object is an endpoint. */
     struct sp_epbase epbase;
 
-    /*  The underlying IPC socket. */
+    /*  The underlying socket. */
     struct sp_usock usock;
 
     /*  There's at most one session per connecting endpoint, thus we can
-        embed the stream object directly into the connecter class. */
+        embed the session object directly into the connecter class. */
     struct sp_stream stream;
 
     /*  Timer to wait before retrying to connect. */
     struct sp_timer retry_timer;
+
+    /*  Virtual functions supplied by the specific transport type. */
+    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp);
+    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
+        socklen_t *sslen);
 };
 
-int sp_ipcc_init (struct sp_ipcc *self, const char *addr, void *hint);
-
-#endif
+int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
+    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp),
+    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
+    socklen_t *sslen));
 
 #endif
 

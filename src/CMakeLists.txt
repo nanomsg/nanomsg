@@ -54,6 +54,8 @@ add_library (nanomsg SHARED
     utils/cond.h
     utils/cond.c
     utils/cont.h
+    utils/cstream.h
+    utils/cstream.c
     utils/efd.h
     utils/efd.c
     utils/err.h 
@@ -153,13 +155,9 @@ add_library (nanomsg SHARED
 
     transports/ipc/ipc.h
     transports/ipc/ipc.c
-    transports/ipc/ipcc.h
-    transports/ipc/ipcc.c
 
     transports/tcp/tcp.h
     transports/tcp/tcp.c
-    transports/tcp/tcpc.h
-    transports/tcp/tcpc.c
     )
 
 add_definitions (-DSP_EXPORTS)

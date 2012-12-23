@@ -346,19 +346,8 @@ void sp_usock_close (struct sp_usock *self)
     wsa_assert (rc != SOCKET_ERROR);
 }
 
-int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen)
-{
-    int rc;
-
-    rc = bind (self->s, addr, addrlen);
-    if (sp_slow (rc == SOCKET_ERROR))
-       return -sp_err_wsa_to_posix (WSAGetLastError ());
-
-    return 0;
-}
-
-int sp_usock_listen (struct sp_usock *self, int backlog)
+int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, int backlog)
 {
     int rc;
     int opt;
@@ -369,6 +358,10 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
         (const char*) &opt, sizeof (opt));
     wsa_assert (rc != SOCKET_ERROR);
+
+    rc = bind (self->s, addr, addrlen);
+    if (sp_slow (rc == SOCKET_ERROR))
+       return -sp_err_wsa_to_posix (WSAGetLastError ());
 
     rc = listen (self->s, backlog);
     wsa_assert (rc != SOCKET_ERROR);

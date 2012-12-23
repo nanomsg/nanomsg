@@ -550,19 +550,8 @@ void sp_usock_close (struct sp_usock *self)
     sp_efd_signal (&self->cp->efd);
 }
 
-int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen)
-{
-    int rc;
-
-    rc = bind (self->s, addr, addrlen);
-    if (sp_slow (rc < 0))
-       return -errno;
-
-    return 0;
-}
-
-int sp_usock_listen (struct sp_usock *self, int backlog)
+int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, int backlog)
 {
     int rc;
     int opt;
@@ -574,6 +563,12 @@ int sp_usock_listen (struct sp_usock *self, int backlog)
     rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
     errno_assert (rc == 0);
 
+    /*  Bind the local end of the connections. */
+    rc = bind (self->s, addr, addrlen);
+    if (sp_slow (rc < 0))
+       return -errno;
+
+    /*  Start waiting for incoming connections. */
     rc = listen (self->s, backlog);
     if (sp_slow (rc < 0))
        return -errno;

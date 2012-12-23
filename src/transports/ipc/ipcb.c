@@ -86,10 +86,8 @@ int sp_ipcb_init (struct sp_ipcb *self, const char *addr, void *hint)
     rc = sp_usock_init (&self->usock, &self->sink,
         AF_UNIX, SOCK_STREAM, 0, sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
-    rc = sp_usock_bind (&self->usock, (struct sockaddr*) &ss, sslen);
-    errnum_assert (rc == 0, -rc);
     /*  TODO:  Get the backlog value from the socket option! */
-    rc = sp_usock_listen (&self->usock, 100);
+    rc = sp_usock_listen (&self->usock, (struct sockaddr*) &ss, sslen, 100);
     errnum_assert (rc == 0, -rc);
 
     /*  Start waiting for incoming connection. */

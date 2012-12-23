@@ -74,10 +74,8 @@ const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
     const struct sp_cp_sink **sink);
 void sp_usock_close (struct sp_usock *self);
 
-int sp_usock_bind (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen);
-int sp_usock_listen (struct sp_usock *self, int backlog);
-
+int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
+    sp_socklen addrlen, int backlog);
 void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 void sp_usock_accept (struct sp_usock *self);

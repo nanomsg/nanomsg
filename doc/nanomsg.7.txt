@@ -1,0 +1,17 @@
+nanomsg(7)
+==========
+
+
+NAME
+----
+nanomsg - messaging patterns library
+
+
+SYNOPSIS
+--------
+*cc* ['flags'] 'files' *-lnanomsg* ['libraries']
+
+
+DESCRIPTION
+-----------
+Blah-blah.

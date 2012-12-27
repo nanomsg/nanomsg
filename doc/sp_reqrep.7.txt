@@ -1,0 +1,16 @@
+sp_reqrep(7)
+============
+
+NAME
+----
+sp_reqrep - Request/Reply messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/reprep.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

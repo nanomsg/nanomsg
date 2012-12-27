@@ -1,0 +1,16 @@
+sp_pair(7)
+==========
+
+NAME
+----
+sp_pair - one-to-one messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/pair.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

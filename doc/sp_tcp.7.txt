@@ -1,0 +1,16 @@
+sp_tcp(7)
+=========
+
+NAME
+----
+sp_tcp - TCP transport mechanism
+
+
+SYNOPSIS
+--------
+#include <sp/tcp.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

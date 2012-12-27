@@ -1,0 +1,16 @@
+sp_ipc(7)
+=========
+
+NAME
+----
+sp_ipc - Inter-process transport mechanism
+
+
+SYNOPSIS
+--------
+#include <sp/ipc.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

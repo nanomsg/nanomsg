@@ -1,0 +1,16 @@
+sp_fanout(7)
+============
+
+NAME
+----
+sp_fanout - Fan-out messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/fanout.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

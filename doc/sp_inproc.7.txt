@@ -1,0 +1,16 @@
+sp_inproc(7)
+============
+
+NAME
+----
+sp_inproc - In-process transport mechanism
+
+
+SYNOPSIS
+--------
+#include <sp/inproc.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

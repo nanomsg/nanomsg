@@ -14,4 +14,35 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Blah-blah.
+
+Following messaging patterns are provided by nanomsg:
+
+One-to-one communication pattern::
+    linknanomsg:sp_pair[7]
+
+Request/reply pattern::
+    linknanomsg:sp_reqrep[7]
+
+Publish/subscribe pattern::
+    linknanomsg:sp_pubsub[7]
+
+Survey pattern::
+    linknanomsg:sp_survey[7]
+
+Fan-in (data aggregation) pattern::
+    linknanomsg:sp_fanin[7]
+
+Fan-out (load balancing) pattern::
+    linknanomsg:sp_fanout[7]
+
+Following transport mechanisms are provided by nanomsg:
+
+In-process transport::
+    linknanomsg:sp_inproc[7]
+
+Inter-process transport::
+    linknanomsg:sp_ipc[7]
+
+TCP transport::
+    linknanomsg:sp_tcp[7]
+

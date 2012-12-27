@@ -1,0 +1,16 @@
+sp_pubsub(7)
+============
+
+NAME
+----
+sp_pubsub - Publish/Subscribe messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/pubsub.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

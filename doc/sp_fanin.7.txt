@@ -1,0 +1,16 @@
+sp_fanin(7)
+===========
+
+NAME
+----
+sp_fanin - Fan-in messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/fanin.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

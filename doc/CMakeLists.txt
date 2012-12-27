@@ -25,7 +25,24 @@ if (NOT WIN32)
 
     #  Documentation topics to generate.
     set (topics
-        nanomsg.7)
+
+        #  Main page.
+        nanomsg.7
+
+        #  Patterns.
+        sp_pair.7
+        sp_reqrep.7
+        sp_pubsub.7
+        sp_survey.7
+        sp_fanin.7
+        sp_fanout.7
+
+        #  Transports.
+        sp_inproc.7
+        sp_ipc.7
+        sp_tcp.7
+
+        )
 
     #  Generate the rules to build the documentation.
     #  During the process collect the names of resulting documentation files.

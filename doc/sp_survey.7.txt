@@ -1,0 +1,16 @@
+sp_survey(7)
+============
+
+NAME
+----
+sp_survey - Survey messaging pattern
+
+
+SYNOPSIS
+--------
+#include <sp/survey.h>
+
+
+DESCRIPTION
+-----------
+Blah-blah.

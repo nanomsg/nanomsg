@@ -8,8 +8,42 @@ sp_version - report the version of nanomsg library
 
 SYNOPSIS
 --------
-void sp_version (int *major, int *minor, int *patch);
+*#include <sp/sp.h>*
+
+*void sp_version (int *major, int *minor, int *patch);*
 
 DESCRIPTION
 -----------
-Blah-blah.
+This function allows applications to determine exact version of nanomsg library.
+Integers pointed to 'major', 'minor' and 'patch' are filled in by components
+of the nanomsg library version.
+
+
+RETURN VALUE
+------------
+There is no return value.
+
+
+ERRORS
+------
+No errors are defined.
+
+
+EXAMPLE
+-------
+
+----
+int major, minor, patch;
+sp_version (&major, &minor, &patch);
+printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

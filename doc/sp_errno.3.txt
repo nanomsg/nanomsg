@@ -8,9 +8,50 @@ sp_errno - retreive the current errno
 
 SYNOPSIS
 --------
-int sp_errno (void);
+*#include <sp/sp.h>*
+
+*int sp_errno (void);*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Returns value of 'errno' for the current thread.
+
+On most systems, 'errno' can be accessed directly and this function is not
+needed. However, on Windows, there are multiple implementations of the CRT
+library (single-threaded, multi-threaded, release, dubug) and each of them
+has its own instance of 'errno'. Thus, if nanomsg library and the application
+that uses it link with different versions of CRT library, they don't share
+same instance of 'errno'. Consequently, error codes set by nanomsg cannot be
+accessed by the application. To overcome this problem, application can use
+_sp_errno()_ function to retrieve the nanomsg's value of 'errno'.
+
+RETURN VALUE
+------------
+Returns value of 'errno' for the current thread.
+
+
+ERRORS
+------
+No errors are defined.
+
+
+EXAMPLE
+-------
+
+----
+rc = sp_init ();
+if (rc != 0)
+    printf ("sp_init failed with error code %d\n", sp_errno ());
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_strerror[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

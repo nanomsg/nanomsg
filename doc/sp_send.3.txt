@@ -1,0 +1,15 @@
+sp_send(3)
+==========
+
+NAME
+----
+sp_send - send a message
+
+
+SYNOPSIS
+--------
+int sp_send (int s, const void *buf, size_t len, int flags);
+
+DESCRIPTION
+-----------
+Blah-blah.

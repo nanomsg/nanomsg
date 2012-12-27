@@ -1,0 +1,15 @@
+sp_version(3)
+=============
+
+NAME
+----
+sp_version - report the version of nanomsg library
+
+
+SYNOPSIS
+--------
+void sp_version (int *major, int *minor, int *patch);
+
+DESCRIPTION
+-----------
+Blah-blah.

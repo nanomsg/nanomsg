@@ -1,0 +1,16 @@
+sp_strerror(3)
+==============
+
+NAME
+----
+sp_strerror - convert an error number into human-readable string
+
+
+SYNOPSIS
+--------
+const char *sp_strerror (int errnum);
+
+
+DESCRIPTION
+-----------
+Blah-blah.

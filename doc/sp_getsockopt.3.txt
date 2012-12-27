@@ -1,0 +1,15 @@
+sp_getsockopt(3)
+================
+
+NAME
+----
+sp_getsockopt - retreive a socket option
+
+
+SYNOPSIS
+--------
+int sp_getsockopt (int s, int level, int option, void *optval, size_t *optvallen);
+
+DESCRIPTION
+-----------
+Blah-blah.

@@ -1,0 +1,16 @@
+sp_setsockopt(3)
+================
+
+NAME
+----
+sp_setsockopt - set a socket option
+
+
+SYNOPSIS
+--------
+int sp_setsockopt (int s, int level, int option, const void *optval, size_t optvallen);
+
+
+DESCRIPTION
+-----------
+Blah-blah.

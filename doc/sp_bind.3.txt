@@ -1,0 +1,15 @@
+sp_bind(3)
+==========
+
+NAME
+----
+sp_bind - add a local endpoint to the socket
+
+
+SYNOPSIS
+--------
+int sp_bind (int s, const char *addr);
+
+DESCRIPTION
+-----------
+Blah-blah.

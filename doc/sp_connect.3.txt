@@ -1,0 +1,15 @@
+sp_connect(3)
+=============
+
+NAME
+----
+sp_connect - add a remote endpoint to the socket
+
+
+SYNOPSIS
+--------
+int sp_connect (int s, const char *addr);
+
+DESCRIPTION
+-----------
+Blah-blah.

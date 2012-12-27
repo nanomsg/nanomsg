@@ -1,0 +1,16 @@
+sp_term(3)
+==========
+
+NAME
+----
+sp_term - uninitialise the nanomsg library
+
+
+SYNOPSIS
+--------
+int sp_term (void);
+
+
+DESCRIPTION
+-----------
+Blah-blah.

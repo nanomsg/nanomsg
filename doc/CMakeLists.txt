@@ -42,6 +42,20 @@ if (NOT WIN32)
         sp_ipc.7
         sp_tcp.7
 
+        #  Functions.
+        sp_version.3
+        sp_errno.3
+        sp_strerror.3
+        sp_init.3
+        sp_term.3
+        sp_socket.3
+        sp_close.3
+        sp_bind.3
+        sp_connect.3
+        sp_shutdown.3
+        sp_send.3
+        sp_recv.3
+
         )
 
     #  Generate the rules to build the documentation.

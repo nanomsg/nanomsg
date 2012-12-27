@@ -1,0 +1,16 @@
+sp_socket(3)
+============
+
+NAME
+----
+sp_socket - create an SP socket
+
+
+SYNOPSIS
+--------
+int sp_socket (int domain, int protocol);
+
+
+DESCRIPTION
+-----------
+Blah-blah.

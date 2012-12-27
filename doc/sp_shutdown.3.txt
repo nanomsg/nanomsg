@@ -1,0 +1,15 @@
+sp_shutdown(3)
+==============
+
+NAME
+----
+sp_shutdown - remove an endpoint from a socket
+
+
+SYNOPSIS
+--------
+int sp_shutdown (int s, int how);
+
+DESCRIPTION
+-----------
+Blah-blah.

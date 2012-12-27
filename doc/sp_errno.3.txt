@@ -1,0 +1,16 @@
+sp_errno(3)
+===========
+
+NAME
+----
+sp_errno - retreive the current errno
+
+
+SYNOPSIS
+--------
+int sp_errno (void);
+
+
+DESCRIPTION
+-----------
+Blah-blah.

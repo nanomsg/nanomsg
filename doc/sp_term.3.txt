@@ -8,9 +8,41 @@ sp_term - uninitialise the nanomsg library
 
 SYNOPSIS
 --------
-int sp_term (void);
+*#include <sp/sp.h>*
+
+*int sp_term (void);*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Uninitialises the nanomsg library. If the library was initialised multiple
+times, it is uninitialised only when corresponding _sp_term()_ call is executed
+for each _sp_init()_ call.
+
+Calling _sp_term()_ without prior call to _sp_init()_ results in undefined
+behaviour.
+
+Library initialisation and uninitialisation is thread-safe.
+
+
+RETURN VALUE
+------------
+Returns zero in case of success. Returns negative value in case of error and
+sets 'errno' to to one of the values defined below.
+
+
+ERRORS
+------
+No errors are defined.
+
+
+SEE ALSO
+--------
+linknanomsg:sp_init[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

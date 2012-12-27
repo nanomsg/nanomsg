@@ -8,9 +8,38 @@ sp_init - initialise the nanomsg library
 
 SYNOPSIS
 --------
-int sp_init (void);
+*#include <sp/sp.h>*
+
+*int sp_init (void);*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+This function initialises the nanomsg library. If the library was already
+initialised it does nothing. The global state of the library is deallocated only
+when each _sp_init()_ is matched by a corresponding _sp_term()_.
+
+Library initialisation and uninitialisation is thread-safe.
+
+
+RETURN VALUE
+------------
+Returns zero in case of success. Returns negative value in case of error and
+sets 'errno' to to one of the values defined below.
+
+
+ERRORS
+------
+No errors are defined.
+
+
+SEE ALSO
+--------
+linknanomsg:sp_term[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

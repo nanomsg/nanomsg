@@ -416,8 +416,10 @@ h1,h2,h3,h4,h5,h6 {color:#808080;}
 a {color:#000000;}
 a:visited {color:#000000;}
 dt {color:#000000; font-style: italic;}
-em {color: #000000; font-style: italic;}
+tt {color: #000000;}
+em {color: #000000;}
 strong {color: #000000; font-weight: bold;}
+
 
 
 </style>
@@ -571,20 +573,65 @@ sp_errno(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>int sp_errno (void);</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int sp_errno (void);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Blah-blah.</p></div>
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+<div class="paragraph"><p>On most systems, <em>errno</em> can be accessed directly and this function is not
+needed. However, on Windows, there are multiple implementations of the CRT
+library (single-threaded, multi-threaded, release, dubug) and each of them
+has its own instance of <em>errno</em>. Thus, if nanomsg library and the application
+that uses it link with different versions of CRT library, they don&#8217;t share
+same instance of <em>errno</em>. Consequently, error codes set by nanomsg cannot be
+accessed by the application. To overcome this problem, application can use
+<em>sp_errno()</em> function to retrieve the nanomsg&#8217;s value of <em>errno</em>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>rc = sp_init ();
+if (rc != 0)
+    printf ("sp_init failed with error code %d\n", sp_errno ());</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="sp_strerror.3.html">sp_strerror(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2012-12-27 12:06:15 CET
+Last updated 2012-12-27 22:39:22 CET
 </div>
 </div>
 </body>

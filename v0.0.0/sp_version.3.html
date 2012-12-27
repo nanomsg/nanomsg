@@ -416,8 +416,10 @@ h1,h2,h3,h4,h5,h6 {color:#808080;}
 a {color:#000000;}
 a:visited {color:#000000;}
 dt {color:#000000; font-style: italic;}
-em {color: #000000; font-style: italic;}
+tt {color: #000000;}
+em {color: #000000;}
 strong {color: #000000; font-weight: bold;}
+
 
 
 </style>
@@ -571,20 +573,58 @@ sp_version(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>void sp_version (int *major, int *minor, int *patch);</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>void sp_version (int *major, int *minor, int *patch);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Blah-blah.</p></div>
+<div class="paragraph"><p>This function allows applications to determine exact version of nanomsg library.
+Integers pointed to <em>major</em>, <em>minor</em> and <em>patch</em> are filled in by components
+of the nanomsg library version.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>There is no return value.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int major, minor, patch;
+sp_version (&amp;major, &amp;minor, &amp;patch);
+printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2012-12-27 12:01:06 CET
+Last updated 2012-12-27 22:40:02 CET
 </div>
 </div>
 </body>

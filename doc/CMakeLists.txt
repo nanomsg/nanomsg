@@ -85,7 +85,9 @@ if (NOT WIN32)
             DEPENDS
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt
                 ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf
+                ${CMAKE_CURRENT_SOURCE_DIR}/htmldoc.css
             COMMAND asciidoc -d manpage -b xhtml11
+                -a stylesheet=${CMAKE_CURRENT_SOURCE_DIR}/htmldoc.css
                 -f ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf
                 -o ${CMAKE_BINARY_DIR}/${topic}.html
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>nanomsg(7)</title>
+<title>sp_reqrep(7)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -550,12 +550,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-nanomsg(7) Manual Page
+sp_reqrep(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nanomsg -
-   messaging patterns library
+<p>sp_reqrep -
+   Request/Reply messaging pattern
 </p>
 </div>
 </div>
@@ -563,212 +563,20 @@ nanomsg(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>cc</strong> [<em>flags</em>] <em>files</em> <strong>-lnanomsg</strong> [<em>libraries</em>]</p></div>
+<div class="paragraph"><p>#include &lt;sp/reprep.h&gt;</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Following functions are exported by nanomsg library:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-Initialise the library
-</dt>
-<dd>
-<p>
-    <a href="sp_init.3.html">sp_init(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Uninitialise the library
-</dt>
-<dd>
-<p>
-    <a href="sp_term.3.html">sp_term(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Create an SP socket
-</dt>
-<dd>
-<p>
-    <a href="sp_socket.3.html">sp_socket(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Close an SP socket
-</dt>
-<dd>
-<p>
-    <a href="sp_close.3.html">sp_close(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Set a socket option
-</dt>
-<dd>
-<p>
-    <a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Retreive a socket option
-</dt>
-<dd>
-<p>
-    <a href="sp_getsockopt.3.html">sp_getsockopt(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Add a local endpoint to the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_bind.3.html">sp_bind(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Add a remote endpoint to the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_connect.3.html">sp_connect(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Remove an endpoint from the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_shutdown.3.html">sp_shutdown(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Send a message
-</dt>
-<dd>
-<p>
-    <a href="sp_send.3.html">sp_send(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Receive a message
-</dt>
-<dd>
-<p>
-    <a href="sp_recv.3.html">sp_recv(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Retreive the current errno
-</dt>
-<dd>
-<p>
-    <a href="sp_errno.3.html">sp_errno(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Convert an error number into human-readable string
-</dt>
-<dd>
-<p>
-    <a href="sp_strerror.3.html">sp_strerror(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Report the version of nanomsg library
-</dt>
-<dd>
-<p>
-    <a href="sp_version.3.html">sp_version(3)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following messaging patterns are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-One-to-one communication pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_pair.7.html">sp_pair(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Request/reply pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Publish/subscribe pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Survey pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_survey.7.html">sp_survey(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Fan-in (data aggregation) pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_fanin.7.html">sp_fanin(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Fan-out (load balancing) pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_fanout.7.html">sp_fanout(7)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following transport mechanisms are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-In-process transport
-</dt>
-<dd>
-<p>
-    <a href="sp_inproc.7.html">sp_inproc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Inter-process transport
-</dt>
-<dd>
-<p>
-    <a href="sp_ipc.7.html">sp_ipc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-TCP transport
-</dt>
-<dd>
-<p>
-    <a href="sp_tcp.7.html">sp_tcp(7)</a>
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>Blah-blah.</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2012-12-27 12:21:17 CET
+Last updated 2012-12-27 11:16:20 CET
 </div>
 </div>
 </body>

@@ -19,20 +19,20 @@
 <p>Arbitrary number of protocols (also known as "messaging patterns") live at scalability layer, however, <i>nanomsg</i> library at the moment implements the following:</p>
 
 <ul>
-<li>PAIR
-<li>REQREP
-<li>PUBSUB
-<li>FANIN
-<li>FANOUT
-<li>SURVEY
+<li>PAIR - simple one-to-one communication pattern
+<li>REQREP - allows to build clusters of stateless services to process user requests
+<li>PUBSUB - distributes messages to large sets of interested subscribers
+<li>FANIN - aggregates messages from multiple sources
+<li>FANOUT - load balances messages among many destinations
+<li>SURVEY - allows to query state of multiple applications in one go
 </ul>
 
 <p>Scalability layer is layered on top of transport layer. At the moment, <i>nanomsg</i> library supports using scalability protocols on top of following transport protocols:</p>
 
 <ul>
-<li>INPROC
-<li>IPC
-<li>TCP
+<li>INPROC - in-process, inter-thread or inter-module transport
+<li>IPC - transport via UNIX domain sockets (or equivalent)
+<li>TCP - network transport via TCP
 </ul>
 
 <p>While <i>nanomsg</i> performance strongly depends on the actual hardware and software stack, the end-to-end latency on modern systems is in order of microseconds and throughput is in order of millions of messages per second.</p>

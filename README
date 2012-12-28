@@ -1,45 +1,11 @@
 Welcome to nanomsg
 ------------------
 
-nanomsg library is a simple high-performance implementation of scalability 
-layer ("scalability protocols" or "SP" for short) in the network stack.
+nanomsg library is a simple high-performance implementation of several 
+"scalability protocols". Scalability protocol's job is to define how multiple 
+applications communicate to form a single distributed application.
 
-Scalability protocol's job is to define how multiple applications communicate 
-to form a single distributed application.
-
-Arbitrary number of protocols (also known as "messaging patterns") live 
-at scalability layer, however, nanomsg library at the moment implements 
-the following:
-
-* PAIR -   simple one-to-one communication pattern
-* REQREP - allows to build clusters of stateless services to process 
-           user requests
-* PUBSUB - distributes messages to large sets of interested subscribers
-* FANIN -  aggregates messages from multiple sources
-* FANOUT - load balances messages among many destinations
-* SURVEY - allows to query state of multiple applications in one go
-
-Scalability layer is layered on top of transport layer. At the moment, 
-nanomsg library supports using scalability protocols on top of following 
-transport protocols:
-
-* INPROC - in-process, inter-thread or inter-module transport
-* IPC - transport via UNIX domain sockets (or equivalent)
-* TCP - network transport via TCP
-
-While nanomsg performance strongly depends on the actual hardware and software 
-stack, the end-to-end latency on modern systems is in order of microseconds 
-and throughput is in order of millions of messages per second.
-
-nanomsg library is implemented in C and has no extra dependencies 
-except for functionality natively provided by the operating system.
-
-It provides the applications with a BSD-socket-like C API.
-
-nanomsg library can be used in both free and commercial applications. 
-It is licensed under MIT/X11 license.
-
-nanomsg is fully supported by 250bpm.
+For more info check the web site: http://nanomsg.org
 
 Build it
 --------

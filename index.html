@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <title>nanomsg</title>
   <style>
+  #toplist {
+    padding-left: 0px;
+  }
+  #toplist li {
+    display: inline;
+    list-style-type: none;
+    padding-right: 15px;
+  }
   a {color:#000000;}
   </style>
 </head>
@@ -12,49 +20,42 @@
 
 <img src="logo.png">
 
-<p><i>nanomsg</i> library is a simple high-performance implementation of scalability layer ("scalability protocols" or "SP" for short) in the network stack.</p>
+<b>
+<ul id='toplist'>
+<li>Download</li>
+<li><a href="http://nanomsg.org/v0.0.0/nanomsg.7.html">Documentation</a></li>
+<li><a href="https://github.com/250bpm/nanomsg">Source</a></li>
+<li><a href="https://github.com/250bpm/nanomsg/issues">Bugs</a></li>
+<li><a href="http://www.freelists.org/list/nanomsg">Mailing list</a></li>
+<li><a href="http://webchat.freenode.net/?channels=#nanomsg">Chatroom</li>
+<li><a href="http://www.250bpm.com/services">Support</a></li>
+</ul>
+</b>
 
-<p>Scalability protocol's job is to define how multiple applications communicate to form a single distributed application.</p>
-
-<p>Arbitrary number of protocols (also known as "messaging patterns") live at scalability layer, however, <i>nanomsg</i> library at the moment implements the following:</p>
+<p><i>nanomsg</i> library is a simple high-performance implementation of several "scalability protocols" (or "SPs" for short). Scalability protocol's job is to define how multiple applications communicate to form a single distributed application. Implementation of following SPs is available at the moment:</p>
 
 <ul>
-<li>PAIR - simple one-to-one communication pattern
+<li>PAIR - simple one-to-one communication
 <li>REQREP - allows to build clusters of stateless services to process user requests
 <li>PUBSUB - distributes messages to large sets of interested subscribers
 <li>FANIN - aggregates messages from multiple sources
 <li>FANOUT - load balances messages among many destinations
-<li>SURVEY - allows to query state of multiple applications in one go
+<li>SURVEY - allows to query state of multiple applications in a single go
 </ul>
 
-<p>Scalability layer is layered on top of transport layer. At the moment, <i>nanomsg</i> library supports using scalability protocols on top of following transport protocols:</p>
+<p>Scalability protocols are layered on top of transport layer in the network stack. At the moment, <i>nanomsg</i> library supports using SPs on top of following transport protocols:</p>
 
 <ul>
-<li>INPROC - in-process, inter-thread or inter-module transport
-<li>IPC - transport via UNIX domain sockets (or equivalent)
+<li>INPROC - transport within a process (between threads, modules etc.)
+<li>IPC - transport between processes on a single machine
 <li>TCP - network transport via TCP
 </ul>
 
-<p>While <i>nanomsg</i> performance strongly depends on the actual hardware and software stack, the end-to-end latency on modern systems is in order of microseconds and throughput is in order of millions of messages per second.</p>
+<p><i>nanomsg</i> library works with wide range of operating systems. It is implemented in C and has no extra dependencies except for functionality natively provided by the OS.</p>
 
-<p><i>nanomsg</i> library is implemented in C and has no extra dependencies except for functionality natively provided by the operating system.</p>
+<p>The library exposes a BSD-socket-like C API to the applications.</p>
 
-<p>It provides the applications with a BSD-socket-like C API.</p>
-
-<p><i>nanomsg</i> library can be used in both free and commercial applications. It is licensed under MIT/X11 license.</p>
-
-<p><i>nanomsg</i> is fully supported by <a href="http://www.250bpm.com">250bpm</a>.</p>
-
-<p>Resources:</p>
-
-<ul>
-<li><a href="https://github.com/250bpm/nanomsg">source code</a>
-<li><a href="http://nanomsg.org/v0.0.0/nanomsg.7.html">documentation</a>
-<li><a href="https://github.com/250bpm/nanomsg/issues">bug tracker</a>
-<li>mailing list: nanomsg@freelists.org (subscribe <a href="http://www.freelists.org/list/nanomsg">here</a>)
-<li>IRC chatroom: channel #nanomsg at irc.freenode.net/8001
-<li><a href="http://www.250bpm.com/services">support</a>
-</ul>
+<p>It is licensed under MIT/X11 license.</p>
 
 </div>
 </body>

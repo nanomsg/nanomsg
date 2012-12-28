@@ -8,8 +8,73 @@ sp_connect - add a remote endpoint to the socket
 
 SYNOPSIS
 --------
-int sp_connect (int s, const char *addr);
+*#include <sp/sp.h>*
+
+*int sp_connect (int 's', const char '*addr');*
+
 
 DESCRIPTION
 -----------
-Blah-blah.
+Adds a remote endpoint to the socket 's'. The library would then try to connect
+to the specified remote endpoint.
+
+The 'addr' argument consists of two parts as follows: 'transport'`://`'address'.
+The 'transport' specifies the underlying transport protocol to use. The meaning
+of the 'address' part is specific to the underlying transport protocol.
+
+For the list of available transport protocols check the list on
+linknanomsg:nanomsg[7] manual page.
+
+RETURN VALUE
+------------
+If the function succeeds positive endpoint ID is returned. Endpoint ID can be
+later used to remove the endpoint from the socket via _sp_shutdown()_ function.
+
+If the function fails negtive value is returned and 'errno' is set to to one of
+the values defined below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*EMFILE*::
+Maximum number of active endpoints was reached.
+*EINVAL*::
+The syntax of the supplied address is invalid.
+*ENAMETOOLONG*::
+The supplied address is too long.
+*EPROTONOSUPPORT*::
+The requested transport protocol is not supported.
+*ENODEV*::
+Address specifies a nonexistent interface.
+*ETERM*::
+The library is terminating.
+
+
+EXAMPLE
+-------
+
+----
+s = sp_socket (AF_SP, SP_PUB);
+eid1 = sp_connect (s, "ipc:///tmp/test.ipc");
+eid2 = sp_connect (s, "tcp://server001:5560");
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_inproc[7]
+linknanomsg:sp_ipc[7]
+linknanomsg:sp_tcp[7]
+linknanomsg:sp_socket[3]
+linknanomsg:sp_bind[3]
+linknanomsg:sp_shutdown[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

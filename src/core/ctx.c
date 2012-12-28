@@ -595,9 +595,9 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
 
     /*  Check whether address is valid. */
     if (!addr)
-        return -EFAULT;
-    if (strlen (addr) >= SP_SOCKADDR_MAX)
         return -EINVAL;
+    if (strlen (addr) >= SP_SOCKADDR_MAX)
+        return -ENAMETOOLONG;
 
     /*  Separate the protocol and the actual address. */
     proto = addr;

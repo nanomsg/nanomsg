@@ -8,20 +8,54 @@
   </style>
 </head>
 <body>
+<div style="width:50em">
+
 <img src="logo.png">
 
-<p>nanomsg is a project to help with building scalable and high performance distributed applications</p>
+<p><i>nanomsg</i> library is a simple high-performance implementation of scalability layer ("scalability protocols" or "SP" for short) in the network stack.</p>
 
-<p>nanomsg extends the standard socket interfaces with features traditionally provided by specialised messaging middleware products, providing multiple messaging patterns, seamless access to multiple transport protocols, message filtering (subscriptions) and more</p>
+<p>Scalability layer's job is to define how multiple applications communicate to form a single distributed application.</p>
 
-<p>nanomsg library provides a native C API for applications</p>
+<p>Arbitrary number of protocols (also know as "messaging patterns") live at scalability layer, however, <i>nanomsg</i> library at the moment implements the following:</p>
 
-<p><a href="https://github.com/250bpm/nanomsg">source code</a></p>
-<p><a href="http://nanomsg.org/v0.0.0/nanomsg.7.html">documentation</a></p>
-<p><a href="https://github.com/250bpm/nanomsg/issues">bug tracker</a></p>
-<p>mailing list: nanomsg@freelists.org (subscribe <a href="http://www.freelists.org/list/nanomsg">here</a>)</p>
-<p>IRC chatroom: channel #nanomsg at irc.freenode.net/8001</p>
-<p><a href="http://www.250bpm.com/services">support</a></p>
+<ul>
+<li>PAIR
+<li>REQREP
+<li>PUBSUB
+<li>FANIN
+<li>FANOUT
+<li>SURVEY
+</ul>
 
+<p>Scalability layer is layered on top of transport layer. At the moment, <i>nanomsg</i> library supports using scalability protocols on top of following transport protocols:</p>
+
+<ul>
+<li>INPROC
+<li>IPC
+<li>TCP
+</ul>
+
+<p>While <i>nanomsg</i> performance strongly depends on the actual hardware and software stack, the end-to-end latency on modern systems is in order of microseconds and throughput is in order of millions of messages per second.</p>
+
+<p><i>nanomsg</i> library is implemented in C and has no extra dependencies except for functionality natively provided by the operating system.</p>
+
+<p>It provides the applications with a BSD-socket-like C API.</p>
+
+<p><i>nanomsg</i> library can be used in both free and commercial applications. It is licensed under MIT/X11 license.</p>
+
+<p><i>nanomsg</i> is fully supported by <a href="http://www.250bpm.com">250bpm</a>.</p>
+
+<p>Resources:</p>
+
+<ul>
+<li><a href="https://github.com/250bpm/nanomsg">source code</a>
+<li><a href="http://nanomsg.org/v0.0.0/nanomsg.7.html">documentation</a>
+<li><a href="https://github.com/250bpm/nanomsg/issues">bug tracker</a>
+<li>mailing list: nanomsg@freelists.org (subscribe <a href="http://www.freelists.org/list/nanomsg">here</a>)
+<li>IRC chatroom: channel #nanomsg at irc.freenode.net/8001
+<li><a href="http://www.250bpm.com/services">support</a>
+</ul>
+
+</div>
 </body>
 </html>

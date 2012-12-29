@@ -8,8 +8,53 @@ sp_shutdown - remove an endpoint from a socket
 
 SYNOPSIS
 --------
-int sp_shutdown (int s, int how);
+*#include <sp/sp.h>*
+
+*int sp_shutdown (int 's', int 'how');*
+
 
 DESCRIPTION
 -----------
-Blah-blah.
+Removes an endpoint from socket 's'. 'how' parameter specifies the ID of the
+endpoint to remove as returned by prior call to _sp_bind()_ or _sp_connect()_.
+
+
+RETURN VALUE
+------------
+If the function succeeds zero is returned. Otherwise, negative number is
+returned and 'errno' is set to to one of the values defined below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*EINVAL*::
+The 'how' parameter doesn't correspond to an active endpoint.
+*ETERM*::
+The library is terminating.
+
+
+EXAMPLE
+-------
+
+----
+s = sp_socket (AF_SP, SP_PUB);
+eid = sp_bind (s, "inproc://test");
+sp_shutdown (s, eid);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_socket[3]
+linknanomsg:sp_bind[3]
+linknanomsg:sp_connect[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

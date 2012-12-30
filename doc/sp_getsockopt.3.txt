@@ -45,9 +45,9 @@ EXAMPLE
 -------
 
 ----
-size_t sndhwm_size = sizeof (sndhwm);
-rc = xs_getsockopt (socket, XS_SNDHWM, &sndhwm, &sndhwm_size);
-assert (rc == 0);
+int linger;
+size_t sz = sizeof (linger);
+sp_getsockopt (s, SOL_SP, SP_LINGER, &linger, &sz);
 ----
 
 

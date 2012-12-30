@@ -8,9 +8,55 @@ sp_setsockopt - set a socket option
 
 SYNOPSIS
 --------
-int sp_setsockopt (int s, int level, int option, const void *optval, size_t optvallen);
+*#include <sp/sp.h>*
+
+*int sp_setsockopt (int 's', int 'level', int 'option', const void '*optval', size_t 'optvallen');*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Sets the value of the 'option'. The 'level' argument specifies the protocol
+level at which the option resides.
+
+The new value is poited to by 'optval' argument. Size of the option is specified
+by the 'optvallen' argument.
+
+
+RETURN VALUE
+------------
+If the function succeeds zero is returned. Otherwise, negative number is
+returned and 'errno' is set to to one of the values defined below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*ENOPROTOOPT*::
+The option is not supported by the protocol.
+*EINVAL*::
+The specified value is invalid.
+*ETERM*::
+The library is terminating.
+
+EXAMPLE
+-------
+
+----
+int linger = 1000;
+sp_setsockopt (s, SOL_SP, SP_LINGER, &linger, sizeof (linger));
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_socket[3]
+linknanomsg:sp_getsockopt[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

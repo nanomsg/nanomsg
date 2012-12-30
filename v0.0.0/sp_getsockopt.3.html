@@ -641,9 +641,9 @@ The library is terminating.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>size_t sndhwm_size = sizeof (sndhwm);
-rc = xs_getsockopt (socket, XS_SNDHWM, &amp;sndhwm, &amp;sndhwm_size);
-assert (rc == 0);</tt></pre>
+<pre><tt>int linger;
+size_t sz = sizeof (linger);
+sp_getsockopt (s, SOL_SP, SP_LINGER, &amp;linger, &amp;sz);</tt></pre>
 </div></div>
 </div>
 </div>
@@ -665,7 +665,7 @@ assert (rc == 0);</tt></pre>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2012-12-30 08:00:33 CET
+Last updated 2012-12-30 20:53:27 CET
 </div>
 </div>
 </body>

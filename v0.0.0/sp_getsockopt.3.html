@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>nanomsg(7)</title>
+<title>sp_getsockopt(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-nanomsg(7) Manual Page
+sp_getsockopt(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nanomsg -
-   messaging patterns library
+<p>sp_getsockopt -
+   retreive a socket option
 </p>
 </div>
 </div>
@@ -574,212 +574,98 @@ nanomsg(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>cc</strong> [<em>flags</em>] <em>files</em> <strong>-lnanomsg</strong> [<em>libraries</em>]</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int sp_getsockopt (int <em>s</em>, int <em>level</em>, int <em>option</em>, void <em>*optval</em>, size_t <em>*optvallen</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Following functions are exported by nanomsg library:</p></div>
+<div class="paragraph"><p>Retrieves the value for the <em>option</em>. The <em>level</em> argument specifies
+the protocol level at which the option resides.</p></div>
+<div class="paragraph"><p>The value is stored in the buffer pointed to by <em>optval</em> argument. Size of the
+buffer is specified by the <em>optvallen</em> argument. If the size of the option is
+greater than size of the buffer, the value will be silently truncated.
+Otherwise, the <em>optvallen</em> will be modified to indicate the actual length of
+the option.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Initialise the library
+<strong>EFAULT</strong>
 </dt>
 <dd>
 <p>
-    <a href="sp_init.3.html">sp_init(3)</a>
+The library is not initialised.
 </p>
 </dd>
 <dt class="hdlist1">
-Uninitialise the library
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-    <a href="sp_term.3.html">sp_term(3)</a>
+The provided socket is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
-Create an SP socket
+<strong>ENOPROTOOPT</strong>
 </dt>
 <dd>
 <p>
-    <a href="sp_socket.3.html">sp_socket(3)</a>
+The option is not supported by the protocol.
 </p>
 </dd>
 <dt class="hdlist1">
-Close an SP socket
+<strong>ETERM</strong>
 </dt>
 <dd>
 <p>
-    <a href="sp_close.3.html">sp_close(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Set a socket option
-</dt>
-<dd>
-<p>
-    <a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Retreive a socket option
-</dt>
-<dd>
-<p>
-    <a href="sp_getsockopt.3.html">sp_getsockopt(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Add a local endpoint to the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_bind.3.html">sp_bind(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Add a remote endpoint to the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_connect.3.html">sp_connect(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Remove an endpoint from the socket
-</dt>
-<dd>
-<p>
-    <a href="sp_shutdown.3.html">sp_shutdown(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Send a message
-</dt>
-<dd>
-<p>
-    <a href="sp_send.3.html">sp_send(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Receive a message
-</dt>
-<dd>
-<p>
-    <a href="sp_recv.3.html">sp_recv(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Retreive the current errno
-</dt>
-<dd>
-<p>
-    <a href="sp_errno.3.html">sp_errno(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Convert an error number into human-readable string
-</dt>
-<dd>
-<p>
-    <a href="sp_strerror.3.html">sp_strerror(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Report the version of nanomsg library
-</dt>
-<dd>
-<p>
-    <a href="sp_version.3.html">sp_version(3)</a>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
-<div class="paragraph"><p>Following messaging patterns are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-One-to-one communication pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_pair.7.html">sp_pair(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Request/reply pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Publish/subscribe pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Survey pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_survey.7.html">sp_survey(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Fan-in (data aggregation) pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_fanin.7.html">sp_fanin(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Fan-out (load balancing) pattern
-</dt>
-<dd>
-<p>
-    <a href="sp_fanout.7.html">sp_fanout(7)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following transport mechanisms are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-In-process transport
-</dt>
-<dd>
-<p>
-    <a href="sp_inproc.7.html">sp_inproc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Inter-process transport
-</dt>
-<dd>
-<p>
-    <a href="sp_ipc.7.html">sp_ipc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-TCP transport
-</dt>
-<dd>
-<p>
-    <a href="sp_tcp.7.html">sp_tcp(7)</a>
-</p>
-</dd>
-</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>size_t sndhwm_size = sizeof (sndhwm);
+rc = xs_getsockopt (socket, XS_SNDHWM, &amp;sndhwm, &amp;sndhwm_size);
+assert (rc == 0);</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="sp_socket.3.html">sp_socket(3)</a>
+<a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2012-12-27 12:21:17 CET
+Last updated 2012-12-30 08:00:33 CET
 </div>
 </div>
 </body>

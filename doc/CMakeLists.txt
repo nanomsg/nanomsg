@@ -50,6 +50,8 @@ if (NOT WIN32)
         sp_term.3
         sp_socket.3
         sp_close.3
+        sp_getsockopt.3
+        sp_setsockopt.3
         sp_bind.3
         sp_connect.3
         sp_shutdown.3

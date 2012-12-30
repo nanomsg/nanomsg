@@ -8,8 +8,56 @@ sp_getsockopt - retreive a socket option
 
 SYNOPSIS
 --------
-int sp_getsockopt (int s, int level, int option, void *optval, size_t *optvallen);
+*#include <sp/sp.h>*
+
+*int sp_getsockopt (int 's', int 'level', int 'option', void '*optval', size_t '*optvallen');*
 
 DESCRIPTION
 -----------
-Blah-blah.
+Retrieves the value for the 'option'. The 'level' argument specifies
+the protocol level at which the option resides.
+
+The value is stored in the buffer pointed to by 'optval' argument. Size of the
+buffer is specified by the 'optvallen' argument. If the size of the option is
+greater than size of the buffer, the value will be silently truncated.
+Otherwise, the 'optvallen' will be modified to indicate the actual length of
+the option.
+
+
+RETURN VALUE
+------------
+If the function succeeds zero is returned. Otherwise, negative number is
+returned and 'errno' is set to to one of the values defined below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*ENOPROTOOPT*::
+The option is not supported by the protocol.
+*ETERM*::
+The library is terminating.
+
+EXAMPLE
+-------
+
+----
+size_t sndhwm_size = sizeof (sndhwm);
+rc = xs_getsockopt (socket, XS_SNDHWM, &sndhwm, &sndhwm_size);
+assert (rc == 0);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_socket[3]
+linknanomsg:sp_setsockopt[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

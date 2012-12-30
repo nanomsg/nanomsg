@@ -60,6 +60,15 @@ if (NOT WIN32)
 
         )
 
+    #  Build the genconf program.
+    add_executable (genconf genconf.c)
+
+    #  Generate asciidoc.conf file.
+    add_custom_command (
+        DEPENDS genconf
+        COMMAND genconf
+        OUTPUT asciidoc.conf)
+
     #  Generate the rules to build the documentation.
     #  During the process collect the names of resulting documentation files.
     set (docs)
@@ -69,9 +78,9 @@ if (NOT WIN32)
         add_custom_command (
             DEPENDS
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt
-                ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf
+                asciidoc.conf
             COMMAND asciidoc -d manpage -b docbook
-                -f ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf -o ${topic}.xml
+                -f asciidoc.conf -o ${topic}.xml
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt
             OUTPUT ${topic}.xml)
 
@@ -86,11 +95,11 @@ if (NOT WIN32)
         add_custom_command (
             DEPENDS
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt
-                ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf
+                asciidoc.conf
                 ${CMAKE_CURRENT_SOURCE_DIR}/htmldoc.css
             COMMAND asciidoc -d manpage -b xhtml11
                 -a stylesheet=${CMAKE_CURRENT_SOURCE_DIR}/htmldoc.css
-                -f ${CMAKE_CURRENT_SOURCE_DIR}/asciidoc.conf
+                -f asciidoc.conf
                 -o ${CMAKE_BINARY_DIR}/${topic}.html
                 ${CMAKE_CURRENT_SOURCE_DIR}/${topic}.txt
             OUTPUT ${CMAKE_BINARY_DIR}/${topic}.html)

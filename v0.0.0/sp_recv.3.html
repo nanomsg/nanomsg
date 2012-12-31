@@ -574,13 +574,136 @@ sp_send(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>int sp_recv (int s, void *buf, size_t len, int flags);</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p>*int sp_recv (int <em>s</em>, void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Blah-blah.</p></div>
+<div class="paragraph"><p>Receive a message from the socket <em>s</em> and store it in the buffer referenced by
+the <em>buf</em> argument. Any bytes exceeding the length specified by the <em>len</em>
+argument will be truncated.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>SP_DONTWAIT</strong>
+</dt>
+<dd>
+<p>
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+received.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specfic timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>char buf [100];
+nbytes = sp_recv (s, buf, sizeof (buf), 0);</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="sp_send.3.html">sp_send(3)</a>
+<a href="sp_socket.3.html">sp_socket(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -588,7 +711,7 @@ sp_send(3) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-27 11:54:57 CET
+Last updated 2012-12-31 11:02:06 CET
 </div>
 </div>
 </body>

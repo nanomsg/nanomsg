@@ -574,13 +574,132 @@ sp_socket(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>int sp_socket (int domain, int protocol);</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p>*int sp_socket (int <em>domain</em>, int <em>protocol</em>);</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Blah-blah.</p></div>
+<div class="paragraph"><p>Creates an SP socket with specified <em>domain</em> and <em>protocol</em>. Returns a file
+descriptor for the newly created socket.</p></div>
+<div class="paragraph"><p>Following domains are defined at the moment:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>AF_SP</strong>
+</dt>
+<dd>
+<p>
+Standard full-blown SP socket.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>AF_SP_RAW</strong>
+</dt>
+<dd>
+<p>
+Raw SP socket. Raw sockets omit the end-to-end functionality found in AF_SP
+sockets and thus can be used to implement intermediary devices in SP topologies.
+</p>
+</dd>
+</dl></div>
+<div class="paragraph"><p><em>protocol</em> parameter defines the type of the socket, which in turn determines
+the exact semantics of the socket. Check manual pages for individual SP
+protocols to get the list of available socket types.</p></div>
+<div class="paragraph"><p>The newly created socket is initially not associated with any endpoints.
+In order to establish a message flow at least one endpoint has to be added
+to the socket using <em>sp_bind()</em> or <em>sp_connect()</em> function.</p></div>
+<div class="paragraph"><p>Note that <em>type</em> argument as found in standard <em>socket(2)</em> function is omitted
+from <em>sp_socket</em>. All the SP sockets are message-based and thus of
+<em>SOCK_SEQPACKET</em> type.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds file descriptor of the new socket is returned.
+Otherwise, negative number is returned and <em>errno</em> is set to to one of
+the values defined below.</p></div>
+<div class="paragraph"><p>Note that nanomsg file descriptors are distinct from operating system file
+descriptors. For example, it is possible to have system file descriptor 3 and
+nanomsg file descriptor 3, each pointing at a different object.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAFNOSUPPORT</strong>
+</dt>
+<dd>
+<p>
+Specified address family is not supported.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+Unknown protocol.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EMFILE</strong>
+</dt>
+<dd>
+<p>
+The limit on the total number of open SP sockets has been reached.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int s = sp_socket (AF_SP, SP_PUB);
+assert (s &gt;= 0);</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="sp_pubsub.3.html">sp_pubsub(3)</a>
+<a href="sp_reqrep.3.html">sp_reqrep(3)</a>
+<a href="sp_fanin.3.html">sp_fanin(3)</a>
+<a href="sp_fanout.3.html">sp_fanout(3)</a>
+<a href="sp_survey.3.html">sp_survey(3)</a>
+<a href="sp_bind.3.html">sp_bind(3)</a>
+<a href="sp_connect.3.html">sp_connect(3)</a>
+<a href="sp_close.3.html">sp_close(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -588,7 +707,7 @@ sp_socket(3) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-27 11:47:46 CET
+Last updated 2012-12-31 11:47:50 CET
 </div>
 </div>
 </body>

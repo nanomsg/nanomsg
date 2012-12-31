@@ -582,11 +582,17 @@ sp_term(3) Manual Page
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Uninitialises the nanomsg library. If the library was initialised multiple
-times, it is uninitialised only when corresponding <em>sp_term()</em> call is executed
-for each <em>sp_init()</em> call.</p></div>
+times, it is uninitialised only when <em>sp_term()</em> call is executed
+for each corresponding <em>sp_init()</em> call.</p></div>
 <div class="paragraph"><p>Calling <em>sp_term()</em> without prior call to <em>sp_init()</em> results in undefined
 behaviour.</p></div>
-<div class="paragraph"><p>Library initialisation and uninitialisation is thread-safe.</p></div>
+<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg permits to call
+<em>sp_term()</em> while some are sockets still open. In such case <em>sp_term()</em> call
+blocks and waits while all the sockets are closed.</p></div>
+<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as <em>sp_recv()</em>,
+it will be unclocked once <em>sp_term()</em> is called and ETERM error will be returned
+to the user. Similarly, any attempt to invoke a socket function after
+<em>sp_term()</em> was called will result in ETERM error.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -620,7 +626,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-27 23:33:15 CET
+Last updated 2012-12-30 23:34:50 CET
 </div>
 </div>
 </body>

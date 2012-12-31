@@ -574,13 +574,74 @@ sp_close(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>int sp_close (int s);</p></div>
+<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int sp_close (int <em>s</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Blah-blah.</p></div>
+<div class="paragraph"><p>Closes the socket <em>s</em>. Any buffered inbound messages that were not yet received
+by the application will be discarded. The library will try to deliver any
+outstanding outbound messages for the time specified by <em>SP_LINGER</em> socket
+option. Such delayed sending will happen in the background and won&#8217;t block
+the thread calling <em>sp_close()</em>.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int s = sp_socket (AF_SP, SP_PUB);
+assert (s &gt;= 0);
+int rc = sp_close (s);
+assert (rc == 0);</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="sp_socket.3.html">sp_socket(3)</a>
+<a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -588,7 +649,7 @@ sp_close(3) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-27 11:48:52 CET
+Last updated 2012-12-31 11:14:50 CET
 </div>
 </div>
 </body>

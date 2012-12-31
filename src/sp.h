@@ -150,7 +150,13 @@ SP_EXPORT int sp_term (void);
 #define SP_SOL_SOCKET 0
 
 /*  Generic socket options (SP_SOL_SOCKET level).                             */
-/*  TODO */
+#define SP_LINGER 1
+#define SP_SNDBUF 2
+#define SP_RCVBUF 3
+#define SP_SNDTIMEO 4
+#define SP_RCVTIMEO 5
+#define SP_RECONNECT_IVL 6
+#define SP_RECONNECT_IVL_MAX 7
 
 /*  Send/recv options.                                                        */
 #define SP_DONTWAIT 1

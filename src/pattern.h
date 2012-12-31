@@ -81,6 +81,15 @@ struct sp_sockbase
 
     /*  File descriptor for this socket. */
     int fd;
+
+    /*  SP_SOL_SOCKET level options. */
+    int linger;
+    int sndbuf;
+    int rcvbuf;
+    int sndtimeo;
+    int rcvtimeo;
+    int reconnect_ivl;
+    int reconnect_ivl_max;
 };
 
 /*  Initialise the socket. */

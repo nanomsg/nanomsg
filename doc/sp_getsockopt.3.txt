@@ -15,13 +15,34 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Retrieves the value for the 'option'. The 'level' argument specifies
-the protocol level at which the option resides.
+the protocol level at which the option resides. For generic socket-level options
+use _SP_SOL_SOCKET_ level. For socket-type-specific options use socket type
+for 'level' argument (e.g. _SP_SUB_). For transport-specific options use ID of
+the transport as the 'level' argument (e.g. _SP_TCP_).
 
 The value is stored in the buffer pointed to by 'optval' argument. Size of the
 buffer is specified by the 'optvallen' argument. If the size of the option is
 greater than size of the buffer, the value will be silently truncated.
 Otherwise, the 'optvallen' will be modified to indicate the actual length of
 the option.
+
+_<sp/sp.h>_ header defines generic socket-level options. The options are as
+follows:
+
+*SP_LINGER*::
+    Option type is int. Default is 1000.
+*SP_SNDBUF*::
+    Option type is int. Default is 128kB.
+*SP_RCVBUF*::
+    Option type is int. Default is 128kB.
+*SP_SNDTIMEO*::
+    Option type is int. Default is 0 (no timeout).
+*SP_RCVTIMEO*::
+    Option type is int. Default is 0 (no timeout).
+*SP_RECONNECT_IVL*::
+    Option type is int. Default is 100.
+*SP_RECONNECT_IVL_MAX*::
+    Option type is int. Default is 0.
 
 
 RETURN VALUE
@@ -37,7 +58,7 @@ The library is not initialised.
 *EBADF*::
 The provided socket is invalid.
 *ENOPROTOOPT*::
-The option is not supported by the protocol.
+The option is unknown at the level indicated.
 *ETERM*::
 The library is terminating.
 

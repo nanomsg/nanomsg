@@ -39,6 +39,14 @@ void sp_sockbase_init (struct sp_sockbase *self,
     sp_cp_init (&self->cp);
     sp_cond_init (&self->cond);
     self->fd = fd;
+
+    /*  Default values for SP_SOL_SOCKET options. */
+    self->linger = 1000;
+    self->sndbuf = 128 * 1024;
+    self->rcvbuf = 128 * 1024;
+    self->sndtimeo = 0;
+    self->rcvtimeo = 0;
+    self->reconnect_ivl = 100;
 }
 
 void sp_sock_zombify (struct sp_sock *self)
@@ -91,6 +99,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 {
     int rc;
     struct sp_sockbase *sockbase;
+    int *dst;
 
     sockbase = (struct sp_sockbase*) self;
 
@@ -104,8 +113,39 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 
     /*  Generic socket-level options. */
     if (level == SP_SOL_SOCKET) {
+        switch (option) {
+        case SP_LINGER:
+            dst = &sockbase->linger;
+            break;
+        case SP_SNDBUF:
+            dst = &sockbase->sndbuf;
+            break;
+        case SP_RCVBUF:
+            dst = &sockbase->rcvbuf;
+            break;
+        case SP_SNDTIMEO:
+            dst = &sockbase->sndtimeo;
+            break;
+        case SP_RCVTIMEO:
+            dst = &sockbase->rcvtimeo;
+            break;
+        case SP_RECONNECT_IVL:
+            dst = &sockbase->reconnect_ivl;
+            break;
+        case SP_RECONNECT_IVL_MAX:
+            dst = &sockbase->reconnect_ivl_max;
+            break;
+        default:
+            sp_cp_unlock (&sockbase->cp);
+            return -ENOPROTOOPT;
+        }
+        if (optvallen != sizeof (int)) {
+            sp_cp_unlock (&sockbase->cp);
+            return -EINVAL;
+        }
+        *dst = *(int*) optval;
         sp_cp_unlock (&sockbase->cp);
-        return -ENOPROTOOPT;
+        return 0;
     }
 
     /*  Pattern-specific socket options. */
@@ -130,6 +170,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
 {
     int rc;
     struct sp_sockbase *sockbase;
+    int *src;
 
     sockbase = (struct sp_sockbase*) self;
 
@@ -143,8 +184,37 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
 
     /*  Generic socket-level options. */
     if (level == SP_SOL_SOCKET) {
+        switch (option) {
+        case SP_LINGER:
+            src = &sockbase->linger;
+            break;
+        case SP_SNDBUF:
+            src = &sockbase->sndbuf;
+            break;
+        case SP_RCVBUF:
+            src = &sockbase->rcvbuf;
+            break;
+        case SP_SNDTIMEO:
+            src = &sockbase->sndtimeo;
+            break;
+        case SP_RCVTIMEO:
+            src = &sockbase->rcvtimeo;
+            break;
+        case SP_RECONNECT_IVL:
+            src = &sockbase->reconnect_ivl;
+            break;
+        case SP_RECONNECT_IVL_MAX:
+            src = &sockbase->reconnect_ivl_max;
+            break;
+        default:
+            sp_cp_unlock (&sockbase->cp);
+            return -ENOPROTOOPT;
+        }
+        memcpy (optval, src,
+            *optvallen < sizeof (int) ? *optvallen : sizeof (int));
+        *optvallen = sizeof (int);
         sp_cp_unlock (&sockbase->cp);
-        return -ENOPROTOOPT;
+        return 0;
     }
 
     /*  Pattern-specific socket options. */

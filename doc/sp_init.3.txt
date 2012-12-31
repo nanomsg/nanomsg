@@ -19,8 +19,6 @@ This function initialises the nanomsg library. If the library was already
 initialised it does nothing. The global state of the library is deallocated only
 when each _sp_init()_ is matched by a corresponding _sp_term()_.
 
-Library initialisation and uninitialisation is thread-safe.
-
 
 RETURN VALUE
 ------------

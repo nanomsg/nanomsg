@@ -582,9 +582,72 @@ sp_setsockopt(3) Manual Page
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Sets the value of the <em>option</em>. The <em>level</em> argument specifies the protocol
-level at which the option resides.</p></div>
+level at which the option resides. For generic socket-level options use
+<em>SP_SOL_SOCKET</em> level. For socket-type-specific options use socket type
+for <em>level</em> argument (e.g. <em>SP_SUB</em>). For transport-specific options use ID of
+the transport as the <em>level</em> argument (e.g. <em>SP_TCP</em>).</p></div>
 <div class="paragraph"><p>The new value is poited to by <em>optval</em> argument. Size of the option is specified
 by the <em>optvallen</em> argument.</p></div>
+<div class="paragraph"><p><em>&lt;sp/sp.h&gt;</em> header defines generic socket-level options. The options are as
+follows:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>SP_LINGER</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 1000.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_SNDBUF</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_RCVBUF</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_SNDTIMEO</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 0 (no timeout).
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_RCVTIMEO</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 0 (no timeout).
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_RECONNECT_IVL</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 100.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>SP_RECONNECT_IVL_MAX</strong>
+</dt>
+<dd>
+<p>
+    Option type is int. Default is 0.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -619,7 +682,7 @@ The provided socket is invalid.
 </dt>
 <dd>
 <p>
-The option is not supported by the protocol.
+The option is unknown at the level indicated.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -627,7 +690,7 @@ The option is not supported by the protocol.
 </dt>
 <dd>
 <p>
-The specified value is invalid.
+The specified option value is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -647,7 +710,8 @@ The library is terminating.
 <div class="listingblock">
 <div class="content">
 <pre><tt>int linger = 1000;
-sp_setsockopt (s, SOL_SP, SP_LINGER, &amp;linger, sizeof (linger));</tt></pre>
+sp_setsockopt (s, SOL_SP, SP_LINGER, &amp;linger, sizeof (linger));
+sp_setsockopt (s, SP_SUB, SP_SUBSCRIBE, "ABC", 3);</tt></pre>
 </div></div>
 </div>
 </div>
@@ -670,7 +734,7 @@ sp_setsockopt (s, SOL_SP, SP_LINGER, &amp;linger, sizeof (linger));</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-30 20:57:45 CET
+Last updated 2012-12-31 22:00:33 CET
 </div>
 </div>
 </body>

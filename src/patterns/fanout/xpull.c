@@ -23,6 +23,7 @@
 #include "xpull.h"
 
 #include "../../sp.h"
+#include "../../fanout.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -44,9 +45,9 @@ static int sp_xpull_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpull_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_xpull_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_xpull_setopt (struct sp_sockbase *self, int option,
+static int sp_xpull_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_xpull_getopt (struct sp_sockbase *self, int option,
+static int sp_xpull_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpull_sockbase_vfptr = {
     sp_xpull_term,
@@ -109,13 +110,13 @@ static int sp_xpull_recv (struct sp_sockbase *self, void *buf, size_t *len)
         buf, len);
 }
 
-static int sp_xpull_setopt (struct sp_sockbase *self, int option,
+static int sp_xpull_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpull_getopt (struct sp_sockbase *self, int option,
+static int sp_xpull_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

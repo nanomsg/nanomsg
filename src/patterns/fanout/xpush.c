@@ -21,6 +21,10 @@
 */
 
 #include "xpush.h"
+
+#include "../../sp.h"
+#include "../../fanout.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -53,9 +57,9 @@ static int sp_xpush_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpush_send (struct sp_sockbase *self, const void *buf,
    size_t len);
 static int sp_xpush_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_xpush_setopt (struct sp_sockbase *self, int option,
+static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_xpush_getopt (struct sp_sockbase *self, int option,
+static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
     sp_xpush_term,
@@ -166,13 +170,13 @@ static int sp_xpush_recv (struct sp_sockbase *self, void *buf, size_t *len)
     return -EAGAIN;
 }
 
-static int sp_xpush_setopt (struct sp_sockbase *self, int option,
+static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpush_getopt (struct sp_sockbase *self, int option,
+static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

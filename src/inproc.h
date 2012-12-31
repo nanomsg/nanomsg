@@ -20,17 +20,18 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef INPROC_H_INCLUDED
+#define INPROC_H_INCLUDED
 
-#include "../../sp.h"
-#include "../../fanout.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+#define SP_INPROC -1
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 

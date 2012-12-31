@@ -25,9 +25,18 @@ set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_library (nanomsg SHARED
-    pattern.h
     sp.h
     transport.h
+    pattern.h
+    inproc.h
+    ipc.h
+    tcp.h
+    pair.h
+    pubsub.h
+    reqrep.h
+    fanin.h
+    fanout.h
+    survey.h
 
     core/ctx.h
     core/ctx.c

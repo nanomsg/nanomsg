@@ -102,22 +102,27 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
         return -ETERM;
     }
 
-    /*  TODO: Handle socket-level options here. */
-
-    /*  Unknown options may be pattern-specific. */
+    /*  Generic socket-level options. */
     if (level == SP_SOL_SOCKET) {
-        rc = sockbase->vfptr->setopt (sockbase, option, optval, optvallen);
-        if (rc != -ENOPROTOOPT) {
-            sp_cp_unlock (&sockbase->cp);
-            return rc;
-        }
+        sp_cp_unlock (&sockbase->cp);
+        return -ENOPROTOOPT;
     }
 
-    /*   TODO: Check transport-specific options here. */
+    /*  Pattern-specific socket options. */
+    if (level > SP_SOL_SOCKET) {
+        rc = sockbase->vfptr->setopt (sockbase, level, option,
+            optval, optvallen);
+        sp_cp_unlock (&sockbase->cp);
+        return rc;
+    }
 
-    /*  Socket option not found. */
-    sp_cp_unlock (&sockbase->cp);
-    return -ENOPROTOOPT;
+    /*  Transport-specific options. */
+    if (level < SP_SOL_SOCKET) {
+        sp_cp_unlock (&sockbase->cp);
+        return -ENOPROTOOPT;
+    }
+
+    sp_assert (0);
 }
 
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
@@ -136,22 +141,27 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
         return -ETERM;
     }
 
-    /*  TODO: Handle socket-level options here. */
-
-    /*  Unknown options may be pattern-specific. */
+    /*  Generic socket-level options. */
     if (level == SP_SOL_SOCKET) {
-        rc = sockbase->vfptr->getopt (sockbase, option, optval, optvallen);
-        if (rc != -ENOPROTOOPT) {
-            sp_cp_unlock (&sockbase->cp);
-            return rc;
-        }
+        sp_cp_unlock (&sockbase->cp);
+        return -ENOPROTOOPT;
     }
 
-    /*  TODO: Check transport-specific options here. */
+    /*  Pattern-specific socket options. */
+    if (level > SP_SOL_SOCKET) {
+        rc = sockbase->vfptr->getopt (sockbase, level, option,
+            optval, optvallen);
+        sp_cp_unlock (&sockbase->cp);
+        return rc;
+    }
 
-    /*  Socket option not found. */
-    sp_cp_unlock (&sockbase->cp);
-    return -ENOPROTOOPT;
+    /*  Transport-specific options. */
+    if (level < SP_SOL_SOCKET) {
+        sp_cp_unlock (&sockbase->cp);
+        return -ENOPROTOOPT;
+    }
+
+    sp_assert (0);
 }
 
 int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)

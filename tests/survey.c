@@ -21,6 +21,7 @@
 */
 
 #include "../src/sp.h"
+#include "../src/survey.h"
 
 #include "../src/utils/err.c"
 
@@ -40,7 +41,7 @@ int main ()
     surveyor = sp_socket (AF_SP, SP_SURVEYOR);
     errno_assert (surveyor != -1);
     deadline = 100;
-    rc = sp_setsockopt (surveyor, SP_SOL_SOCKET, SP_DEADLINE,
+    rc = sp_setsockopt (surveyor, SP_SURVEYOR, SP_DEADLINE,
         &deadline, sizeof (deadline));
     errno_assert (rc == 0);
     rc = sp_bind (surveyor, "inproc://a");

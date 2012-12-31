@@ -24,6 +24,7 @@
 #include "trie.h"
 
 #include "../../sp.h"
+#include "../../pubsub.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -45,9 +46,9 @@ static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_sub_setopt (struct sp_sockbase *self, int option,
+static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_sub_getopt (struct sp_sockbase *self, int option,
+static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_term,
@@ -128,13 +129,16 @@ static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len)
     }
 }
 
-static int sp_sub_setopt (struct sp_sockbase *self, int option,
+static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     int rc;
     struct sp_sub *sub;
 
     sub = sp_cont (self, struct sp_sub, sockbase);
+
+    if (level != SP_SUB)
+        return -ENOPROTOOPT;
 
     if (option == SP_SUBSCRIBE) {
         rc = sp_trie_subscribe (&sub->trie, optval, optvallen);
@@ -153,7 +157,7 @@ static int sp_sub_setopt (struct sp_sockbase *self, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_sub_getopt (struct sp_sockbase *self, int option,
+static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

@@ -149,4 +149,13 @@ add_subdirectory (doc)
 #  Installation.
 
 install (FILES src/sp.h DESTINATION include/sp)
+install (FILES src/inproc.h DESTINATION include/sp)
+install (FILES src/ipc.h DESTINATION include/sp)
+install (FILES src/tcp.h DESTINATION include/sp)
+install (FILES src/pair.h DESTINATION include/sp)
+install (FILES src/pubsub.h DESTINATION include/sp)
+install (FILES src/reqrep.h DESTINATION include/sp)
+install (FILES src/fanin.h DESTINATION include/sp)
+install (FILES src/fanout.h DESTINATION include/sp)
+install (FILES src/survey.h DESTINATION include/sp)
 

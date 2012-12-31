@@ -21,6 +21,7 @@
 */
 
 #include "../src/sp.h"
+#include "../src/pair.h"
 
 #include <stdio.h>
 #include <stdlib.h>

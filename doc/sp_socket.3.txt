@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <sp/sp.h>*
 
-*int sp_socket (int 'domain', int 'protocol');
+*int sp_socket (int 'domain', int 'protocol');*
 
 
 DESCRIPTION
@@ -33,7 +33,8 @@ protocols to get the list of available socket types.
 
 The newly created socket is initially not associated with any endpoints.
 In order to establish a message flow at least one endpoint has to be added
-to the socket using _sp_bind()_ or _sp_connect()_ function.
+to the socket using linknanomsg:sp_bind[3] or linknanomsg:sp_connect[3]
+function.
 
 Note that 'type' argument as found in standard _socket(2)_ function is omitted
 from _sp_socket_. All the SP sockets are message-based and thus of

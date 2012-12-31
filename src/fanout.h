@@ -20,17 +20,21 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef FANOUT_H_INCLUDED
+#define FANOUT_H_INCLUDED
 
-#include "../../sp.h"
-#include "../../fanout.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+#define SP_FANOUT_ID 5
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+#define SP_PUSH (SP_FANOUT_ID * 16 + 0)
+#define SP_PULL (SP_FANOUT_ID * 16 + 1)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 

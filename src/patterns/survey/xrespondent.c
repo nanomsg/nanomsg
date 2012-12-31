@@ -23,6 +23,7 @@
 #include "xrespondent.h"
 
 #include "../../sp.h"
+#include "../../survey.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -98,13 +99,13 @@ int sp_xrespondent_recv (struct sp_sockbase *self, void *buf,
     return sp_excl_recv (&xrespondent->excl, buf, len);
 }
 
-int sp_xrespondent_setopt (struct sp_sockbase *self, int option,
+int sp_xrespondent_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrespondent_getopt (struct sp_sockbase *self, int option,
+int sp_xrespondent_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

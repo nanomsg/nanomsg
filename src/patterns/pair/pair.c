@@ -24,6 +24,7 @@
 #include "xpair.h"
 
 #include "../../sp.h"
+#include "../../pair.h"
 
 static struct sp_socktype sp_pair_socktype_struct = {
     AF_SP,

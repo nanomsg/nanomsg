@@ -24,6 +24,7 @@
 #include "xrespondent.h"
 
 #include "../../sp.h"
+#include "../../survey.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"

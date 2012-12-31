@@ -58,9 +58,9 @@ struct sp_sockbase_vfptr {
     int (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*send) (struct sp_sockbase *self, const void *buf, size_t len);
     int (*recv) (struct sp_sockbase *self, void *buf, size_t *len);
-    int (*setopt) (struct sp_sockbase *self, int option,
+    int (*setopt) (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
-    int (*getopt) (struct sp_sockbase *self, int option,
+    int (*getopt) (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 };
 

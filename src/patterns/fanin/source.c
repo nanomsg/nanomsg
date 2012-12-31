@@ -24,6 +24,7 @@
 #include "xsource.h"
 
 #include "../../sp.h"
+#include "../../fanin.h"
 
 static struct sp_socktype sp_source_socktype_struct = {
     AF_SP,

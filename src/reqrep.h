@@ -20,17 +20,23 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef REQREP_H_INCLUDED
+#define REQREP_H_INCLUDED
 
-#include "../../sp.h"
-#include "../../fanout.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+#define SP_REQREP_ID 3
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+#define SP_REQ (SP_REQREP_ID * 16 + 0)
+#define SP_REP (SP_REQREP_ID * 16 + 1)
+
+#define SP_RESEND_IVL 1
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 

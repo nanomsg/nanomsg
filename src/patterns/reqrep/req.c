@@ -23,6 +23,9 @@
 #include "req.h"
 #include "xreq.h"
 
+#include "../../sp.h"
+#include "../../reqrep.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -52,9 +55,9 @@ struct sp_req {
 static void sp_req_term (struct sp_sockbase *self);
 static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_req_setopt (struct sp_sockbase *self, int option,
+static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_req_getopt (struct sp_sockbase *self, int option,
+static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_term,
@@ -223,12 +226,15 @@ static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
     return 0;
 }
 
-static int sp_req_setopt (struct sp_sockbase *self, int option,
+static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     struct sp_req *req;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);
+
+    if (level != SP_REQ)
+        return -ENOPROTOOPT;
 
     if (option == SP_RESEND_IVL) {
         if (sp_slow (optvallen != sizeof (int)))
@@ -240,12 +246,15 @@ static int sp_req_setopt (struct sp_sockbase *self, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_req_getopt (struct sp_sockbase *self, int option,
+static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     struct sp_req *req;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);
+
+    if (level != SP_REQ)
+        return -ENOPROTOOPT;
 
     if (option == SP_RESEND_IVL) {
         if (sp_slow (*optvallen < sizeof (int)))

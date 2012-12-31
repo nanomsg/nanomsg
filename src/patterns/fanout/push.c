@@ -24,6 +24,7 @@
 #include "xpush.h"
 
 #include "../../sp.h"
+#include "../../fanout.h"
 
 static struct sp_socktype sp_push_socktype_struct = {
     AF_SP,

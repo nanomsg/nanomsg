@@ -24,6 +24,7 @@
 #include "xsink.h"
 
 #include "../../sp.h"
+#include "../../fanin.h"
 
 static struct sp_socktype sp_sink_socktype_struct = {
     AF_SP,

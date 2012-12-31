@@ -21,6 +21,10 @@
 */
 
 #include "xpair.h"
+
+#include "../../sp.h"
+#include "../../pair.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -41,9 +45,9 @@ static int sp_xpair_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpair_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_xpair_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_xpair_setopt (struct sp_sockbase *self, int option,
+static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
-static int sp_xpair_getopt (struct sp_sockbase *self, int option,
+static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
     sp_xpair_term,
@@ -105,13 +109,13 @@ static int sp_xpair_recv (struct sp_sockbase *self, void *buf, size_t *len)
         buf, len);
 }
 
-static int sp_xpair_setopt (struct sp_sockbase *self, int option,
+static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpair_getopt (struct sp_sockbase *self, int option,
+static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

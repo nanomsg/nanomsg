@@ -23,6 +23,9 @@
 #include "surveyor.h"
 #include "xsurveyor.h"
 
+#include "../../sp.h"
+#include "../../survey.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -51,9 +54,9 @@ static void sp_surveyor_term (struct sp_sockbase *self);
 static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len);
-static int sp_surveyor_setopt (struct sp_sockbase *self, int option,
+static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_surveyor_getopt (struct sp_sockbase *self, int option,
+static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
     sp_surveyor_term,
@@ -207,12 +210,15 @@ static void sp_surveyor_timeout (const struct sp_cp_sink **self,
     sp_sockbase_unblock_recv (&surveyor->xsurveyor.sockbase);
 }
 
-static int sp_surveyor_setopt (struct sp_sockbase *self, int option,
+static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     struct sp_surveyor *surveyor;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
+
+    if (level != SP_SURVEYOR)
+        return -ENOPROTOOPT;
 
     if (option == SP_DEADLINE) {
         if (sp_slow (optvallen != sizeof (int)))
@@ -224,12 +230,15 @@ static int sp_surveyor_setopt (struct sp_sockbase *self, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_surveyor_getopt (struct sp_sockbase *self, int option,
+static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     struct sp_surveyor *surveyor;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
+
+    if (level != SP_SURVEYOR)
+        return -ENOPROTOOPT;
 
     if (option == SP_DEADLINE) {
         if (sp_slow (*optvallen < sizeof (int)))

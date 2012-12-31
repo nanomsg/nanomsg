@@ -23,6 +23,9 @@
 #include "rep.h"
 #include "xrep.h"
 
+#include "../../sp.h"
+#include "../../reqrep.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"

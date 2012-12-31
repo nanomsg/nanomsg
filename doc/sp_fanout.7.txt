@@ -8,9 +8,25 @@ sp_fanout - Fan-out messaging pattern
 
 SYNOPSIS
 --------
-#include <sp/fanout.h>
+*#include <sp/sp.h>*
+
+*#include <sp/fanout.h>*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+FANOUT pattern.
+
+
+SEE ALSO
+--------
+linknanomsg:sp_socket[3]
+linknanomsg:sp_getsockopt[3]
+linknanomsg:sp_setsockopt[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

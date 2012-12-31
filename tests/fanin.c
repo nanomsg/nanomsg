@@ -21,6 +21,7 @@
 */
 
 #include "../src/sp.h"
+#include "../src/fanin.h"
 #include "../src/utils/err.c"
 
 int main ()

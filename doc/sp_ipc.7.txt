@@ -8,9 +8,25 @@ sp_ipc - Inter-process transport mechanism
 
 SYNOPSIS
 --------
-#include <sp/ipc.h>
+*#include <sp/sp.h>*
+
+*#include <sp/ipc.h>*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Inter-process transport.
+
+
+SEE ALSO
+--------
+linknanomsg:sp_inproc[7]
+linknanomsg:sp_tcp[7]
+linknanomsg:sp_bind[3]
+linknanomsg:sp_connect[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>

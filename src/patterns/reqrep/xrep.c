@@ -21,6 +21,10 @@
 */
 
 #include "xrep.h"
+
+#include "../../sp.h"
+#include "../../reqrep.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -198,13 +202,13 @@ int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
     return 0;
 }
 
-int sp_xrep_setopt (struct sp_sockbase *self, int option,
+int sp_xrep_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrep_getopt (struct sp_sockbase *self, int option,
+int sp_xrep_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

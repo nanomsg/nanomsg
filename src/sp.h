@@ -145,27 +145,12 @@ SP_EXPORT int sp_term (void);
 /*  Max size of an SP address.                                                */
 #define SP_SOCKADDR_MAX 128
 
-/*  Socket protocols.                                                         */
-#define SP_PAIR 1
-#define SP_PUB 2
-#define SP_SUB 3
-#define SP_REP 4
-#define SP_REQ 5
-#define SP_SINK 6
-#define SP_SOURCE 7
-#define SP_PUSH 8
-#define SP_PULL 9
-#define SP_SURVEYOR 10
-#define SP_RESPONDENT 11
+/*  Socket option levels: Negative numbers are reserved for transports,
+    positive for socket types. */
+#define SP_SOL_SOCKET 0
 
-/*  Socket option levels.                                                     */
-#define SP_SOL_SOCKET 1
-
-/*  Socket options.                                                           */
-#define SP_SUBSCRIBE 1
-#define SP_UNSUBSCRIBE 2
-#define SP_RESEND_IVL 3
-#define SP_DEADLINE 4
+/*  Generic socket options (SP_SOL_SOCKET level).                             */
+/*  TODO */
 
 /*  Send/recv options.                                                        */
 #define SP_DONTWAIT 1

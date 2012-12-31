@@ -21,6 +21,8 @@
 */
 
 #include "../src/sp.h"
+#include "../src/pair.h"
+#include "../src/inproc.h"
 
 #include "../src/utils/err.c"
 

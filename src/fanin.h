@@ -20,17 +20,21 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef FANIN_H_INCLUDED
+#define FANIN_H_INCLUDED
 
-#include "../../sp.h"
-#include "../../fanout.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+#define SP_FANIN_ID 4
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+#define SP_SOURCE (SP_FANIN_ID * 16 + 0)
+#define SP_SINK (SP_FANIN_ID * 16 + 1)
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 

@@ -22,6 +22,9 @@
 
 #include "xreq.h"
 
+#include "../../sp.h"
+#include "../../reqrep.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -87,13 +90,13 @@ int sp_xreq_recv (struct sp_sockbase *self, void *buf, size_t *len)
         buf, len);
 }
 
-int sp_xreq_setopt (struct sp_sockbase *self, int option,
+int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xreq_getopt (struct sp_sockbase *self, int option,
+int sp_xreq_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

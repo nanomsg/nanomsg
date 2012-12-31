@@ -21,6 +21,7 @@
 */
 
 #include "../src/sp.h"
+#include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
 
@@ -155,7 +156,7 @@ int main ()
     rc = sp_connect (req1, "inproc://a");
     errno_assert (rc >= 0);
     resend_ivl = 100;
-    rc = sp_setsockopt (req1, SP_SOL_SOCKET, SP_RESEND_IVL,
+    rc = sp_setsockopt (req1, SP_REQ, SP_RESEND_IVL,
         &resend_ivl, sizeof (resend_ivl));
     errno_assert (rc == 0);
 

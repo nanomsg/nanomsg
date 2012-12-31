@@ -20,17 +20,24 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
-#include "xpull.h"
+#ifndef PUBSUB_H_INCLUDED
+#define PUBSUB_H_INCLUDED
 
-#include "../../sp.h"
-#include "../../fanout.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-static struct sp_socktype sp_pull_socktype_struct = {
-    AF_SP,
-    SP_PULL,
-    sp_xpull_create
-};
+#define SP_PUBSUB_ID 2
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+#define SP_PUB (SP_PUBSUB_ID * 16 + 0)
+#define SP_SUB (SP_PUBSUB_ID * 16 + 1)
+
+#define SP_SUBSCRIBE 1
+#define SP_UNSUBSCRIBE 2
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
 

@@ -8,9 +8,26 @@ sp_tcp - TCP transport mechanism
 
 SYNOPSIS
 --------
-#include <sp/tcp.h>
+*#include <sp/sp.h>*
+
+*#include <sp/tcp.h>*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+TCP transport.
+
+
+SEE ALSO
+--------
+linknanomsg:sp_inproc[7]
+linknanomsg:sp_ipc[7]
+linknanomsg:sp_bind[3]
+linknanomsg:sp_connect[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

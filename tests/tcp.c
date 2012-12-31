@@ -21,6 +21,8 @@
 */
 
 #include "../src/sp.h"
+#include "../src/pair.h"
+#include "../src/tcp.h"
 
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"

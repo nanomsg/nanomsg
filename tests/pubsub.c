@@ -21,6 +21,8 @@
 */
 
 #include "../src/sp.h"
+#include "../src/pubsub.h"
+
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
@@ -40,13 +42,13 @@ int main ()
     errno_assert (rc >= 0);
     sub1 = sp_socket (AF_SP, SP_SUB);
     errno_assert (sub1 != -1);
-    rc = sp_setsockopt (sub1, SP_SOL_SOCKET, SP_SUBSCRIBE, "", 0);
+    rc = sp_setsockopt (sub1, SP_SUB, SP_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
     rc = sp_connect (sub1, "inproc://a");
     errno_assert (rc >= 0);
     sub2 = sp_socket (AF_SP, SP_SUB);
     errno_assert (sub2 != -1);
-    rc = sp_setsockopt (sub2, SP_SOL_SOCKET, SP_SUBSCRIBE, "", 0);
+    rc = sp_setsockopt (sub2, SP_SUB, SP_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
     rc = sp_connect (sub2, "inproc://a");
     errno_assert (rc >= 0);

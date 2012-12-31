@@ -21,6 +21,7 @@
 */
 
 #include "../src/sp.h"
+#include "../src/fanout.h"
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 

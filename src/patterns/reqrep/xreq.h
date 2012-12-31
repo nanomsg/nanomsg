@@ -42,9 +42,9 @@ int sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xreq_send (struct sp_sockbase *self, const void *buf, size_t len);
 int sp_xreq_recv (struct sp_sockbase *self, void *buf, size_t *len);
-int sp_xreq_setopt (struct sp_sockbase *self, int option,
+int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-int sp_xreq_getopt (struct sp_sockbase *self, int option,
+int sp_xreq_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 
 extern struct sp_socktype *sp_xreq_socktype;

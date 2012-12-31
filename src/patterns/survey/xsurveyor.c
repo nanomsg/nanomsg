@@ -21,6 +21,10 @@
 */
 
 #include "xsurveyor.h"
+
+#include "../../sp.h"
+#include "../../survey.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -170,13 +174,13 @@ int sp_xsurveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
     return 0;
 }
 
-int sp_xsurveyor_setopt (struct sp_sockbase *self, int option,
+int sp_xsurveyor_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xsurveyor_getopt (struct sp_sockbase *self, int option,
+int sp_xsurveyor_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;

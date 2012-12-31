@@ -8,8 +8,71 @@ sp_recv - receive a message
 
 SYNOPSIS
 --------
-int sp_recv (int s, void *buf, size_t len, int flags);
+*#include <sp/sp.h>*
+
+*int sp_recv (int 's', void '*buf', size_t 'len', int 'flags');
+
 
 DESCRIPTION
 -----------
-Blah-blah.
+Receive a message from the socket 's' and store it in the buffer referenced by
+the 'buf' argument. Any bytes exceeding the length specified by the 'len'
+argument will be truncated. 
+
+The 'flags' argument is a combination of the flags defined below:
+
+*SP_DONTWAIT*::
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with 'errno'
+set to EAGAIN.
+
+
+RETURN VALUE
+------------
+If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and 'errno' is set to to one of the values defined
+below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*ENOTSUP*::
+The operation is not supported by this socket type.
+*EFSM*::
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+*EAGAIN*::
+Non-blocking mode was requested and there's no message to receive at the moment.
+*EINTR*::
+The operation was interrupted by delivery of a signal before the message was
+received.
+*ETIMEDOUT*::
+Individual socket types may define their own specfic timeouts. If such timeout
+is hit this error will be returned.
+*ETERM*::
+The library is terminating.
+
+EXAMPLE
+-------
+
+----
+char buf [100];
+nbytes = sp_recv (s, buf, sizeof (buf), 0);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_send[3]
+linknanomsg:sp_socket[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

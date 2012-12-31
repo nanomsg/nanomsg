@@ -8,8 +8,72 @@ sp_send - send a message
 
 SYNOPSIS
 --------
-int sp_send (int s, const void *buf, size_t len, int flags);
+*#include <sp/sp.h>*
+
+*int sp_send (int 's', const void '*buf', size_t 'len', int 'flags');*
 
 DESCRIPTION
 -----------
-Blah-blah.
+The function will send a message containing the data from buffer pointed to
+by 'buf' parameter to the socket 's'. The message will be 'len' bytes long.
+
+To which of the peers will the message be sent to is determined by
+the particular socket type.
+
+The 'flags' argument is a combination of the flags defined below:
+
+*SP_DONTWAIT*::
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be sent straight away, the function will fail with 'errno' set
+to EAGAIN.
+
+
+RETURN VALUE
+------------
+If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and 'errno' is set to to one of the values defined
+below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+*ENOTSUP*::
+The operation is not supported by this socket type.
+*EFSM*::
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+*EAGAIN*::
+Non-blocking mode was requested and the message cannot be sent at the moment.
+*EINTR*::
+The operation was interrupted by delivery of a signal before the message was
+sent.
+*ETIMEDOUT*::
+Individual socket types may define their own specfic timeouts. If such timeout
+is hit this error will be returned.
+*ETERM*::
+The library is terminating.
+
+EXAMPLE
+-------
+
+----
+nbytes = sp_send (s, "ABC", 3, 0);
+assert (nbytes == 3);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_recv[3]
+linknanomsg:sp_socket[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

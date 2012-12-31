@@ -8,9 +8,84 @@ sp_socket - create an SP socket
 
 SYNOPSIS
 --------
-int sp_socket (int domain, int protocol);
+*#include <sp/sp.h>*
+
+*int sp_socket (int 'domain', int 'protocol');
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Creates an SP socket with specified 'domain' and 'protocol'. Returns a file
+descriptor for the newly created socket.
+
+Following domains are defined at the moment:
+
+*AF_SP*::
+Standard full-blown SP socket.
+
+*AF_SP_RAW*::
+Raw SP socket. Raw sockets omit the end-to-end functionality found in AF_SP
+sockets and thus can be used to implement intermediary devices in SP topologies.
+
+'protocol' parameter defines the type of the socket, which in turn determines
+the exact semantics of the socket. Check manual pages for individual SP
+protocols to get the list of available socket types.
+
+The newly created socket is initially not associated with any endpoints.
+In order to establish a message flow at least one endpoint has to be added
+to the socket using _sp_bind()_ or _sp_connect()_ function.
+
+Note that 'type' argument as found in standard _socket(2)_ function is omitted
+from _sp_socket_. All the SP sockets are message-based and thus of
+_SOCK_SEQPACKET_ type.
+
+
+RETURN VALUE
+------------
+If the function succeeds file descriptor of the new socket is returned.
+Otherwise, negative number is returned and 'errno' is set to to one of
+the values defined below.
+
+Note that nanomsg file descriptors are distinct from operating system file
+descriptors. For example, it is possible to have system file descriptor 3 and
+nanomsg file descriptor 3, each pointing at a different object.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EAFNOSUPPORT*::
+Specified address family is not supported.
+*EINVAL*::
+Unknown protocol.
+*EMFILE*::
+The limit on the total number of open SP sockets has been reached.
+*ETERM*::
+The library is terminating.
+
+EXAMPLE
+-------
+
+----
+int s = sp_socket (AF_SP, SP_PUB);
+assert (s >= 0);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_pubsub[3]
+linknanomsg:sp_reqrep[3]
+linknanomsg:sp_fanin[3]
+linknanomsg:sp_fanout[3]
+linknanomsg:sp_survey[3]
+linknanomsg:sp_bind[3]
+linknanomsg:sp_connect[3]
+linknanomsg:sp_close[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

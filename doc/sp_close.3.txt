@@ -8,9 +8,52 @@ sp_close - close an SP socket
 
 SYNOPSIS
 --------
-int sp_close (int s);
+*#include <sp/sp.h>*
+
+*int sp_close (int 's');*
 
 
 DESCRIPTION
 -----------
-Blah-blah.
+Closes the socket 's'. Any buffered inbound messages that were not yet received
+by the application will be discarded. The library will try to deliver any
+outstanding outbound messages for the time specified by _SP_LINGER_ socket
+option. Such delayed sending will happen in the background and won't block
+the thread calling _sp_close()_.
+
+
+RETURN VALUE
+------------
+If the function succeeds zero is returned. Otherwise, negative number is
+returned and 'errno' is set to to one of the values defined below.
+
+
+ERRORS
+------
+*EFAULT*::
+The library is not initialised.
+*EBADF*::
+The provided socket is invalid.
+
+
+EXAMPLE
+-------
+
+----
+int s = sp_socket (AF_SP, SP_PUB);
+assert (s >= 0);
+int rc = sp_close (s);
+assert (rc == 0);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_socket[3]
+linknanomsg:sp_setsockopt[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

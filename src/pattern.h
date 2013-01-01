@@ -26,6 +26,7 @@
 #include "utils/aio.h"
 #include "utils/cond.h"
 #include "utils/list.h"
+#include "utils/clock.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -78,6 +79,9 @@ struct sp_sockbase
     /*  Condition variable to implement sleeping in blocking socket
         operations. */
     struct sp_cond cond;
+
+    /*  Clock used to measure send & recv timeouts. */
+    struct sp_clock clock;
 
     /*  File descriptor for this socket. */
     int fd;

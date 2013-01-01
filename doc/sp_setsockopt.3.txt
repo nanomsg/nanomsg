@@ -24,8 +24,8 @@ the transport as the 'level' argument (e.g. _SP_TCP_).
 The new value is poited to by 'optval' argument. Size of the option is specified
 by the 'optvallen' argument.
 
-_<sp/sp.h>_ header defines generic socket-level options. The options are as
-follows:
+_<sp/sp.h>_ header defines generic socket-level options (_SP_SOL_SOCKET_ level).
+The options are as follows:
 
 *SP_LINGER*::
     Option type is int. Default is 1000.
@@ -34,9 +34,15 @@ follows:
 *SP_RCVBUF*::
     Option type is int. Default is 128kB.
 *SP_SNDTIMEO*::
-    Option type is int. Default is 0 (no timeout).
+    The timeout for send operation on the socket, in milliseconds. If message
+    cannot be sent within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
 *SP_RCVTIMEO*::
-    Option type is int. Default is 0 (no timeout).
+    The timeout for recv operation on the socket, in milliseconds. If message
+    cannot be received within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
 *SP_RECONNECT_IVL*::
     Option type is int. Default is 100.
 *SP_RECONNECT_IVL_MAX*::

@@ -38,14 +38,15 @@ void sp_sockbase_init (struct sp_sockbase *self,
     self->zombie = 0;
     sp_cp_init (&self->cp);
     sp_cond_init (&self->cond);
+    sp_clock_init (&self->clock);
     self->fd = fd;
 
     /*  Default values for SP_SOL_SOCKET options. */
     self->linger = 1000;
     self->sndbuf = 128 * 1024;
     self->rcvbuf = 128 * 1024;
-    self->sndtimeo = 0;
-    self->rcvtimeo = 0;
+    self->sndtimeo = -1;
+    self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
 }
 
@@ -70,6 +71,7 @@ void sp_sock_term (struct sp_sock *self)
     sockbase->vfptr->term (sockbase);
 
     /*  Terminate the sp_sockbase itself. */
+    sp_clock_term (&sockbase->clock);
     sp_cond_term (&sockbase->cond);
     sp_cp_term (&sockbase->cp);
 }
@@ -238,10 +240,19 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
+    uint64_t deadline;
+    int timeout;
 
     sockbase = (struct sp_sockbase*) self;
 
     sp_cp_lock (&sockbase->cp);
+
+    if (sockbase->sndtimeo < 0)
+        timeout = -1;
+    else {
+        deadline = sp_clock_now (&sockbase->clock) + sockbase->sndtimeo;
+        timeout = sockbase->sndtimeo;
+    } 
 
     while (1) {
 
@@ -271,10 +282,22 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
             return -EAGAIN;
         }
 
+        /*  If required, re-compute the timeout. */
+        if (timeout == -2) {
+            timeout = deadline - sp_clock_now (&sockbase->clock);
+            if (timeout < 0)
+                timeout = 0;
+        }
+
         /*  With blocking send, wait while there are new pipes available
             for sending. */
         rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync, -1);
         errnum_assert (rc == 0, rc);
+
+        /*  Timeout of -2 means it is stale and should be re-computed.
+            -1 (infinite) never gets stale. */
+        if (timeout != -1)
+            timeout = -2;
     }   
 }
 
@@ -282,10 +305,19 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
+    uint64_t deadline;
+    int timeout;
 
     sockbase = (struct sp_sockbase*) self;
 
     sp_cp_lock (&sockbase->cp);
+
+    if (sockbase->rcvtimeo < 0)
+        timeout = -1;
+    else {
+        deadline = sp_clock_now (&sockbase->clock) + sockbase->rcvtimeo;
+        timeout = sockbase->rcvtimeo;
+    }   
 
     while (1) {
 
@@ -315,10 +347,22 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
             return -EAGAIN;
         }
 
+        /*  If required, re-compute the timeout. */
+        if (timeout == -2) {
+            timeout = deadline - sp_clock_now (&sockbase->clock);
+            if (timeout < 0)
+                timeout = 0;
+        }
+
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync, -1);
+        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync, timeout);
         errnum_assert (rc == 0, rc);
+
+        /*  Timeout of -2 means it is stale and should be re-computed.
+            -1 (infinite) never gets stale. */
+        if (timeout != -1)
+            timeout = -2;
     }  
 }
 

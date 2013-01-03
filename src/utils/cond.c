@@ -60,12 +60,22 @@ void sp_cond_post (struct sp_cond *self)
 
 #else
 
+#include <stdint.h>
+
 void sp_cond_init (struct sp_cond *self)
 {
     int rc;
+    pthread_condattr_t attr;
 
-    rc = pthread_cond_init (&self->cond, NULL);
+    rc = pthread_condattr_init (&attr);
     errnum_assert (rc == 0, rc);
+    rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
+    errnum_assert (rc == 0, rc);
+    rc = pthread_cond_init (&self->cond, &attr);
+    errnum_assert (rc == 0, rc);
+    rc = pthread_condattr_destroy (&attr);
+    errnum_assert (rc == 0, rc);
+    self->infinite = 1;
 }
 
 void sp_cond_term (struct sp_cond *self)
@@ -76,19 +86,41 @@ void sp_cond_term (struct sp_cond *self)
     errnum_assert (rc == 0, rc);
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
+void sp_cond_set_timeout (struct sp_cond *self, int timeout)
+{
+    int rc;
+    uint64_t tm;
+
+    /*  Infinite timeout. */
+    if (timeout < 0) {
+        self->infinite = 1;
+        return;
+    }
+
+    /*  Finite timeout. Get current time and add the specified interval. */
+    self->infinite = 0;
+    rc = clock_gettime (CLOCK_MONOTONIC, &self->timeout);
+    errno_assert (rc == 0);
+    self->timeout.tv_sec += timeout / 1000;
+    self->timeout.tv_nsec += (timeout % 1000) * 1000000;
+    if (self->timeout.tv_nsec >= 1000000000) {
+        ++self->timeout.tv_sec;
+        self->timeout.tv_nsec -= 1000000000;
+    }
+}
+
+int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
 {
     int rc;
     struct timespec ts;
 
-    if (timeout < 0) {
+    if (self->infinite) {
         rc = pthread_cond_wait (&self->cond, &mutex->mutex);
         errnum_assert (rc == 0, rc);
     }
     else {
-        ts.tv_sec = timeout / 1000;
-        ts.tv_nsec = timeout % 1000 * 1000000;
-        rc = pthread_cond_timedwait (&self->cond, &mutex->mutex, &ts);
+        rc = pthread_cond_timedwait (&self->cond, &mutex->mutex,
+            &self->timeout);
         if (rc == ETIMEDOUT)
             return -ETIMEDOUT;
         errnum_assert (rc == 0, rc);

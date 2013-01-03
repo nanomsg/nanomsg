@@ -274,7 +274,7 @@ int sp_term (void)
             if (self.socks [i])
                 sp_sock_zombify (self.socks [i]);
         self.zombie = 1;
-        sp_cond_wait (&self.termcond, &self.sync, -1);
+        sp_cond_wait (&self.termcond, &self.sync);
     }
     sp_mutex_unlock (&self.sync);
 

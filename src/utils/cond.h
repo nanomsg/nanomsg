@@ -38,18 +38,34 @@ struct sp_cond {
 #else
 
 #include <pthread.h>
+#include <time.h>
 
 struct sp_cond {
     pthread_cond_t cond;
+    int infinite;
+    struct timespec timeout;
 };
 
 #endif
 
+/*  Initialises the condition variable. Timeout is set to -1 (infinite). */
 void sp_cond_init (struct sp_cond *self);
+
+/*  Destroys the condition variable. */
 void sp_cond_term (struct sp_cond *self);
 
-int sp_cond_wait (struct sp_cond *self,
-    struct sp_mutex *mutex, int timeout);
+/*  Set timeout in milliseconds. The timeout interval starts at this moment.
+    Multiple invocations sp_cond_wait can be done afterwards -- the timeout
+    doesn't start anew with each sp_cond_wait call. Timeout of -1 means never
+    time out. */
+void sp_cond_set_timeout (struct sp_cond *self, int timeout);
+
+/*  Wait for the condition. The mutex should be locked when this function is
+    invoked. It will be locked on exit as well, except when -ETIMEDOUT is
+    returned (timeout expired). */
+int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex);
+
+/*  Signal the conditon variable. */
 void sp_cond_post (struct sp_cond *self);
 
 #endif

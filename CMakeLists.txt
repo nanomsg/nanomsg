@@ -110,6 +110,11 @@ if (SP_HAVE_SIOCGIFADDR)
     add_definitions (-DSP_HAVE_SIOCGIFADDR)
 endif ()
 
+check_symbol_exists (pthread_condattr_setclock "pthread.h" SP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (SP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    add_definitions (-DSP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif ()
+
 list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists (accept4 sys/socket.h SP_HAVE_ACCEPT4)
 list (REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)

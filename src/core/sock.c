@@ -240,8 +240,6 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
-    uint64_t deadline;
-    int timeout;
 
     sockbase = (struct sp_sockbase*) self;
 

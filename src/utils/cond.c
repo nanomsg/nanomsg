@@ -30,20 +30,48 @@
 void sp_cond_init (struct sp_cond *self)
 {
     InitializeConditionVariable (&self->cond);
+    self->infinite = 1;
+    sp_clock_init (&self->clock);
 }
 
 void sp_cond_term (struct sp_cond *self)
 {
+    sp_clock_term (&self->clock);
+
     /*  It seems that on Windows there's no need to terminate
         the condition variable. */
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex, int timeout)
+void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 {
+    /*  Infinite timeout. */
+    if (timeout < 0) {
+        self->infinite = 1;
+        return;
+    }
+
+    /*  Finite timeout. */
+    self->infinite = 0;
+    self->timeout = sp_clock_now (&self->clock) + timeout;
+}
+
+int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
+{
+    uint64_t timeout;
     BOOL brc;
 
+    if (self->infinite)
+        timeout = INFINITE;
+    else {
+        timeout = sp_clock_now (&self->clock);
+        if (timeout >= self->timeout)
+            timeout = 0;
+        else
+            timeout = self->timeout - timeout;
+    }
+
     brc = SleepConditionVariableCS (&self->cond, &mutex->mutex,
-        timeout < 0 ? INFINITE : timeout);
+        (DWORD) timeout);
     if (sp_slow (!brc)) {
         if (GetLastError () == ERROR_TIMEOUT)
             return -ETIMEDOUT;

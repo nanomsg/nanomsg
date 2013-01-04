@@ -30,9 +30,13 @@
 #ifdef SP_HAVE_WINDOWS
 
 #include "win.h"
+#include "clock.h"
 
 struct sp_cond {
     CONDITION_VARIABLE cond;
+    int infinite;
+    uint64_t timeout;
+    struct sp_clock clock;
 };
 
 #else

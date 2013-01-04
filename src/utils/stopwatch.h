@@ -23,13 +23,15 @@
 #ifndef SP_STOPWATCH_INCLUDED
 #define SP_STOPWATCH_INCLUDED
 
+#include "err.h"
+
 #include <stdint.h>
 
 /*  Check whether measured time is the expected time (in microseconds).
     The upper tolerance is 50ms so that the test doesn't fail even on
     very slow or very loaded systems. */
 #define time_assert(actual,expected) \
-    assert (actual > ((expected) - 5000) && actual < ((expected) + 50000)); 
+    sp_assert (actual > ((expected) - 5000) && actual < ((expected) + 50000)); 
 
 /*  Measures time interval in microseconds. */
 

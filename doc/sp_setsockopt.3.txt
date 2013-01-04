@@ -28,11 +28,18 @@ _<sp/sp.h>_ header defines generic socket-level options (_SP_SOL_SOCKET_ level).
 The options are as follows:
 
 *SP_LINGER*::
-    Option type is int. Default is 1000.
+    Specifies how long should the socket try to send pending outbound messages
+    after _sp_close()_ have been called, in milliseconds. The type of the option
+    is int. Default value is 1000 (1 second).
 *SP_SNDBUF*::
-    Option type is int. Default is 128kB.
+    Size of the send buffer, in bytes. To prevent blocking for messages larger
+    than the buffer, exactly one message may be buffered in addition to the data
+    in the send buffer. The type of this option is int. Default value is 128kB.
 *SP_RCVBUF*::
-    Option type is int. Default is 128kB.
+    Size of the receive buffer, in bytes. To prevent blocking for messages
+    larger than the buffer, exactly one message may be buffered in addition
+    to the data in the receive buffer. The type of this option is int. Default
+    value is 128kB.
 *SP_SNDTIMEO*::
     The timeout for send operation on the socket, in milliseconds. If message
     cannot be sent within the specified timeout, EAGAIN error is returned.
@@ -44,9 +51,18 @@ The options are as follows:
     Value of -1 means infinite timeout. The type of the option is int.
     Default value is -1.
 *SP_RECONNECT_IVL*::
-    Option type is int. Default is 100.
+    For connection-based transports such as TCP, this option specifies how
+    long to wait, in milliseconds, when connection is broken before trying
+    to re-establish it. Note that actual reconnect inteval may be randomised
+    to some extent to prevent severe reconnection storms. The type of the option
+    is int. Default value is 100 (0.1 second).
 *SP_RECONNECT_IVL_MAX*::
-    Option type is int. Default is 0.
+    This option is to be used only in addition to _SP_RECONNECT_IVL_ option.
+    It specifies maximum reconnection interval. On each reconnect attempt,
+    the previous interval is doubled untill _SP_RECONNECT_IVL_MAX_ is reached.
+    Value of zero means that no exponential backoff is performed and reconnect
+    interval is based only on _SP_RECONNECT_IVL_. The type of the option is int.
+    Default value is 0.
 
 
 RETURN VALUE

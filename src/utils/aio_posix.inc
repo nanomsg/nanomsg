@@ -680,7 +680,7 @@ void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
 
     /*  There are still data to send in the background. */ 
     self->out.op = SP_USOCK_OUTOP_SEND;
-    self->out.buf = ((char*) buf) + nbytes;
+    self->out.buf = ((uint8_t*) buf) + nbytes;
     self->out.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for out.
@@ -720,7 +720,7 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
 
     /*  There are still data to receive in the background. */ 
     self->in.op = SP_USOCK_INOP_RECV;
-    self->in.buf = ((char*) buf) + nbytes;
+    self->in.buf = ((uint8_t*) buf) + nbytes;
     self->in.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for in.

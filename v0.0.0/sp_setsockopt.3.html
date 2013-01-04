@@ -586,10 +586,10 @@ level at which the option resides. For generic socket-level options use
 <em>SP_SOL_SOCKET</em> level. For socket-type-specific options use socket type
 for <em>level</em> argument (e.g. <em>SP_SUB</em>). For transport-specific options use ID of
 the transport as the <em>level</em> argument (e.g. <em>SP_TCP</em>).</p></div>
-<div class="paragraph"><p>The new value is poited to by <em>optval</em> argument. Size of the option is specified
-by the <em>optvallen</em> argument.</p></div>
-<div class="paragraph"><p><em>&lt;sp/sp.h&gt;</em> header defines generic socket-level options. The options are as
-follows:</p></div>
+<div class="paragraph"><p>The new value is pointed to by <em>optval</em> argument. Size of the option is
+specified by the <em>optvallen</em> argument.</p></div>
+<div class="paragraph"><p><em>&lt;sp/sp.h&gt;</em> header defines generic socket-level options (<em>SP_SOL_SOCKET</em> level).
+The options are as follows:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
 <strong>SP_LINGER</strong>
@@ -620,7 +620,10 @@ follows:</p></div>
 </dt>
 <dd>
 <p>
-    Option type is int. Default is 0 (no timeout).
+    The timeout for send operation on the socket, in milliseconds. If message
+    cannot be sent within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -628,7 +631,10 @@ follows:</p></div>
 </dt>
 <dd>
 <p>
-    Option type is int. Default is 0 (no timeout).
+    The timeout for recv operation on the socket, in milliseconds. If message
+    cannot be received within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -734,7 +740,7 @@ sp_setsockopt (s, SP_SUB, SP_SUBSCRIBE, "ABC", 3);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-31 22:00:33 CET
+Last updated 2013-01-04 12:07:02 CET
 </div>
 </div>
 </body>

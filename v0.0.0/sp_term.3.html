@@ -590,7 +590,7 @@ behaviour.</p></div>
 <em>sp_term()</em> while some are sockets still open. In such case <em>sp_term()</em> call
 blocks and waits while all the sockets are closed.</p></div>
 <div class="paragraph"><p>If a thread is blocked inside a blocking function, such as <em>sp_recv()</em>,
-it will be unclocked once <em>sp_term()</em> is called and ETERM error will be returned
+it will be unblocked once <em>sp_term()</em> is called and ETERM error will be returned
 to the user. Similarly, any attempt to invoke a socket function after
 <em>sp_term()</em> was called will result in ETERM error.</p></div>
 </div>
@@ -626,7 +626,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-30 23:34:50 CET
+Last updated 2013-01-04 12:07:22 CET
 </div>
 </div>
 </body>

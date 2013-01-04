@@ -566,7 +566,7 @@ sp_errno(3) Manual Page
 <h2>NAME</h2>
 <div class="sectionbody">
 <p>sp_errno -
-   retreive the current errno
+   retrieve the current errno
 </p>
 </div>
 </div>
@@ -584,7 +584,7 @@ sp_errno(3) Manual Page
 <div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
 <div class="paragraph"><p>On most systems, <em>errno</em> can be accessed directly and this function is not
 needed. However, on Windows, there are multiple implementations of the CRT
-library (single-threaded, multi-threaded, release, dubug) and each of them
+library (single-threaded, multi-threaded, release, debug) and each of them
 has its own instance of <em>errno</em>. Thus, if nanomsg library and the application
 that uses it link with different versions of CRT library, they don&#8217;t share
 same instance of <em>errno</em>. Consequently, error codes set by nanomsg cannot be
@@ -633,7 +633,7 @@ if (rc != 0)
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2012-12-27 22:39:22 CET
+Last updated 2013-01-04 12:04:03 CET
 </div>
 </div>
 </body>

@@ -23,6 +23,8 @@
 #include "fast.h"
 #include "err.h"
 
+#include <unistd.h>
+
 /*  NetBSD has different definition of udata. */
 #if defined SP_HAVE_NETBSD
 #define sp_poller_udata intptr_t

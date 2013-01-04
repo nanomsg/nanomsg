@@ -3,7 +3,7 @@ sp_errno(3)
 
 NAME
 ----
-sp_errno - retreive the current errno
+sp_errno - retrieve the current errno
 
 
 SYNOPSIS
@@ -19,7 +19,7 @@ Returns value of 'errno' for the current thread.
 
 On most systems, 'errno' can be accessed directly and this function is not
 needed. However, on Windows, there are multiple implementations of the CRT
-library (single-threaded, multi-threaded, release, dubug) and each of them
+library (single-threaded, multi-threaded, release, debug) and each of them
 has its own instance of 'errno'. Thus, if nanomsg library and the application
 that uses it link with different versions of CRT library, they don't share
 same instance of 'errno'. Consequently, error codes set by nanomsg cannot be

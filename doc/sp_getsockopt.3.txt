@@ -3,7 +3,7 @@ sp_getsockopt(3)
 
 NAME
 ----
-sp_getsockopt - retreive a socket option
+sp_getsockopt - retrieve a socket option
 
 
 SYNOPSIS

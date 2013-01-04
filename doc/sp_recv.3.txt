@@ -52,7 +52,7 @@ Non-blocking mode was requested and there's no message to receive at the moment.
 The operation was interrupted by delivery of a signal before the message was
 received.
 *ETIMEDOUT*::
-Individual socket types may define their own specfic timeouts. If such timeout
+Individual socket types may define their own specific timeouts. If such timeout
 is hit this error will be returned.
 *ETERM*::
 The library is terminating.

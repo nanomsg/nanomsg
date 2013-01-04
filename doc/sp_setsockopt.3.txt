@@ -21,7 +21,7 @@ _SP_SOL_SOCKET_ level. For socket-type-specific options use socket type
 for 'level' argument (e.g. _SP_SUB_). For transport-specific options use ID of
 the transport as the 'level' argument (e.g. _SP_TCP_).
 
-The new value is poited to by 'optval' argument. Size of the option is specified
+The new value is pointed to by 'optval' argument. Size of the option is specified
 by the 'optvallen' argument.
 
 _<sp/sp.h>_ header defines generic socket-level options (_SP_SOL_SOCKET_ level).

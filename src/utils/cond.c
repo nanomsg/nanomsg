@@ -21,6 +21,7 @@
 */
 
 #include "cond.h"
+#include "clock.h"
 #include "fast.h"
 #include "aio.h"
 #include "err.h"

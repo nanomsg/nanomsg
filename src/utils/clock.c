@@ -25,6 +25,7 @@
 #include "win.h"
 #elif defined SP_HAVE_OSX
 #include <mach/mach_time.h>
+#include <sys/time.h>
 #elif defined SP_HAVE_CLOCK_MONOTONIC || defined SP_HAVE_GETHRTIME
 #include <time.h>
 #else
@@ -66,6 +67,24 @@ static uint64_t sp_clock_rdtsc ()
     return 0;
 #endif
 }
+
+
+#if defined SP_HAVE_OSX
+/*
+    Mac OS X does not have clock_gettime, this should do the trick for
+    development environments (more tests should be made for production if
+    Mac OS X is ever considered for this).
+*/
+int clock_gettime(int foo, struct timespec *ts) 
+{ 
+    struct timeval tv; 
+ 
+    gettimeofday(&tv, NULL); 
+    ts->tv_sec = tv.tv_sec; 
+    ts->tv_nsec = tv.tv_usec * 1000; 
+    return (0); 
+}
+#endif /* SP_HAVE_OSX */
 
 static uint64_t sp_clock_time ()
 {

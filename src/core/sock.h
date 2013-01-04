@@ -40,9 +40,10 @@ struct sp_cp *sp_sock_getcp (struct sp_sock *self);
 int sp_sock_setopt (struct sp_sock *self, int level, int option,
     const void *optval, size_t optvallen); 
 
-/*  Retrieve a socket option. */
+/*  Retrieve a socket option. If 'ignoreeterm' is set to 1 the option value
+    can be retrieved even though sp_term() was already called. */
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
-    void *optval, size_t *optvallen);
+    void *optval, size_t *optvallen, int ignoreeterm);
 
 /*  Send a message to the socket. */
 int sp_sock_send (struct sp_sock *self, const void *buf,

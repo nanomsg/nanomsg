@@ -168,7 +168,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 }
 
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
-    void *optval, size_t *optvallen)
+    void *optval, size_t *optvallen, int ignoreeterm)
 {
     int rc;
     struct sp_sockbase *sockbase;
@@ -179,7 +179,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
     sp_cp_lock (&sockbase->cp);
 
     /*  If sp_term() was already called, return ETERM. */
-    if (sp_slow (sockbase->zombie)) {
+    if (!ignoreeterm && sp_slow (sockbase->zombie)) {
         sp_cp_unlock (&sockbase->cp);
         return -ETERM;
     }

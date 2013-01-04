@@ -359,10 +359,19 @@ int sp_socket (int domain, int protocol)
 int sp_close (int s)
 {
     int rc;
+    int linger;
+    size_t lingersz;
     int i;
     struct sp_ep *ep;
 
     SP_BASIC_CHECKS;
+
+    /*  Get the current value of the linger option. */
+    lingersz = sizeof (linger);
+    rc = sp_sock_getopt (self.socks [s], SP_SOL_SOCKET, SP_LINGER,
+        &linger, &lingersz, 1);
+    errnum_assert (rc == 0, -rc);
+    sp_assert (lingersz == sizeof (linger));
 
     sp_mutex_lock (&self.sync);
 
@@ -371,7 +380,7 @@ int sp_close (int s)
     for (i = 0; i != self.max_eps; ++i) {
         ep = self.eps [i];
         if (ep && sp_ep_fd (ep) == s) {
-            rc = sp_ep_close (ep, 0); /*  TODO: linger */
+            rc = sp_ep_close (ep, linger);
 
             /*  TODO: The case where endpoint was already asked to shut down
                 should be distinguished from the case where the shut down is
@@ -387,9 +396,13 @@ int sp_close (int s)
     sp_sock_term (self.socks [s]);
     sp_free (self.socks [s]);
     self.socks [s] = NULL;
+
+    /*  If there's sp_term() waiting for all sockets being closed and this is
+        the last open socket let library termination proceed. */
     --self.nsocks;
     if (self.zombie && self.nsocks == 0)
         sp_cond_post (&self.termcond);
+
     sp_mutex_unlock (&self.sync);
 
     return 0;
@@ -429,7 +442,7 @@ int sp_getsockopt (int s, int level, int option, void *optval,
         return -1;
     }
 
-    rc = sp_sock_getopt (self.socks [s], level, option, optval, optvallen);
+    rc = sp_sock_getopt (self.socks [s], level, option, optval, optvallen, 0);
     if (sp_slow (rc < 0)) {
         errno = -rc;
         return -1;

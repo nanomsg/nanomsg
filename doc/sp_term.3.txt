@@ -23,13 +23,13 @@ Calling _sp_term()_ without prior call to _sp_init()_ results in undefined
 behaviour.
 
 To help with shutdown of multi-threaded programs nanomsg permits to call
-_sp_term()_ while some are sockets still open. In such case _sp_term()_ call
-blocks and waits while all the sockets are closed.
+_sp_term()_ while some of the sockets are still open. In such case _sp_term()_
+call blocks and waits while all the sockets are closed.
 
 If a thread is blocked inside a blocking function, such as _sp_recv()_,
 it will be unblocked once _sp_term()_ is called and ETERM error will be returned
-to the user. Similarly, any attempt to invoke a socket function after
-_sp_term()_ was called will result in ETERM error.
+to the user. Similarly, any attempt to invoke a socket function other than
+_sp_close()_ after _sp_term()_ was called will result in ETERM error.
 
 
 RETURN VALUE

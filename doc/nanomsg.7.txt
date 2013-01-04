@@ -90,3 +90,8 @@ Inter-process transport::
 TCP transport::
     linknanomsg:sp_tcp[7]
 
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

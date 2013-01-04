@@ -20,6 +20,7 @@
     IN THE SOFTWARE.
 */
 
+#include <unistd.h>
 #include "fast.h"
 #include "err.h"
 

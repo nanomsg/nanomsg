@@ -29,12 +29,29 @@ enable_testing ()
 
 #  Platform checks.
 
-if (WIN32)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set (SP_HAVE_LINUX)
+    add_definitions (-DSP_HAVE_LINUX)
+endif ()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set (SP_HAVE_WINDOWS)
     add_definitions (-DSP_HAVE_WINDOWS)
 endif ()
 
-if (APPLE)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set (SP_HAVE_OSX)
     add_definitions (-DSP_HAVE_OSX)
+endif ()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    set (SP_HAVE_FREEBSD)
+    add_definitions (-DSP_HAVE_FREEBSD)
+endif ()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
+    set (SP_HAVE_SOLARIS)
+    add_definitions (-DSP_HAVE_SOLARIS)
 endif ()
 
 #  Feature checks.
@@ -46,7 +63,7 @@ if (SP_HAVE_EVENTFD)
     add_definitions (-DSP_HAVE_EVENTFD)
 endif()
 
-check_symbol_exists (socketpair sys/socket.h SP_HAVE_SOCKETPAIR)
+check_symbol_exists (socketpair "sys/types.h;sys/socket.h" SP_HAVE_SOCKETPAIR)
 if (SP_HAVE_SOCKETPAIR)
     add_definitions (-DSP_HAVE_SOCKETPAIR)
 endif()

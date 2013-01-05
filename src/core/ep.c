@@ -64,6 +64,15 @@ const char *sp_epbase_getaddr (struct sp_epbase *self)
     return self->addr;
 }
 
+void sp_epbase_getopt (struct sp_epbase *self, int level, int option,
+    void *optval, size_t *optvallen)
+{
+    int rc;
+
+    rc = sp_sock_getopt (self->sock, level, option, optval, optvallen, 1);
+    errnum_assert (rc == 0, -rc);
+}
+
 int sp_ep_fd (struct sp_ep *self)
 {
     return sp_sock_fd (((struct sp_epbase*) self)->sock);

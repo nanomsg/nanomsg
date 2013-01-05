@@ -72,6 +72,10 @@ struct sp_cp *sp_epbase_getcp (struct sp_epbase *self);
 /*  Returns the address associated with this endpoint. */
 const char *sp_epbase_getaddr (struct sp_epbase *self);
 
+/*  Retrieve value of a socket option. */
+void sp_epbase_getopt (struct sp_epbase *self, int level, int option,
+    void *optval, size_t *optvallen);
+
 /******************************************************************************/
 /*  The base class for pipes.                                                 */
 /******************************************************************************/

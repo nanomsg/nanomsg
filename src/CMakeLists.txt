@@ -171,13 +171,18 @@ add_library (nanomsg SHARED
 
 add_definitions (-DSP_EXPORTS)
 
-if (UNIX AND NOT APPLE)
+if (UNIX AND NOT SP_HAVE_OSX)
     target_link_libraries (nanomsg rt)
 endif ()
 
-if (WIN32)
+if (SP_HAVE_WINDOWS)
     target_link_libraries (nanomsg ws2_32)
     target_link_libraries (nanomsg Mswsock.lib)
+endif ()
+
+if (SP_HAVE_SOLARIS)
+    target_link_libraries (nanomsg socket)
+    target_link_libraries (nanomsg nsl)
 endif ()
 
 target_link_libraries (nanomsg ${CMAKE_THREAD_LIBS_INIT})

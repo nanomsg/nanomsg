@@ -30,28 +30,30 @@ enable_testing ()
 #  Platform checks.
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    set (SP_HAVE_LINUX)
+    set (SP_HAVE_LINUX 1)
     add_definitions (-DSP_HAVE_LINUX)
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (SP_HAVE_WINDOWS)
+    set (SP_HAVE_WINDOWS 1)
     add_definitions (-DSP_HAVE_WINDOWS)
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set (SP_HAVE_OSX)
+    set (SP_HAVE_OSX 1)
     add_definitions (-DSP_HAVE_OSX)
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-    set (SP_HAVE_FREEBSD)
+    set (SP_HAVE_FREEBSD 1)
     add_definitions (-DSP_HAVE_FREEBSD)
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
-    set (SP_HAVE_SOLARIS)
+    set (SP_HAVE_SOLARIS 1)
     add_definitions (-DSP_HAVE_SOLARIS)
+    list (APPEND CMAKE_REQUIRED_LIBRARIES socket)
+    list (APPEND CMAKE_REQUIRED_LIBRARIES nsl)
 endif ()
 
 #  Feature checks.

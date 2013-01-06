@@ -21,6 +21,7 @@
 */
 
 #include "cond.h"
+#include "clock.h"
 #include "fast.h"
 #include "aio.h"
 #include "err.h"
@@ -97,8 +98,10 @@ void sp_cond_init (struct sp_cond *self)
 
     rc = pthread_condattr_init (&attr);
     errnum_assert (rc == 0, rc);
+#if defined SP_HAVE_PTHREAD_CONDATTR_SETCLOCK
     rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
     errnum_assert (rc == 0, rc);
+#endif
     rc = pthread_cond_init (&self->cond, &attr);
     errnum_assert (rc == 0, rc);
     rc = pthread_condattr_destroy (&attr);

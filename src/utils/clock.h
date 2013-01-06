@@ -34,6 +34,12 @@ struct sp_clock
     uint64_t last_time;
 };
 
+#ifdef SP_HAVE_OSX
+#include <time.h>
+#define CLOCK_MONOTONIC 0
+int clock_gettime(int clk_id, struct timespec *tp);
+#endif
+
 /*  Initialise the clock object. */
 void sp_clock_init (struct sp_clock *self);
 

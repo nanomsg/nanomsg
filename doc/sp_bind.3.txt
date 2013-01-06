@@ -25,6 +25,9 @@ of the 'address' part is specific to the underlying transport protocol.
 For the list of available transport protocols check the list on
 linknanomsg:nanomsg[7] manual page.
 
+Maximum length of the 'addr' parameter is specified by _SP_SOCKADDR_MAX_
+defined in '<sp/sp.h>' header file.
+
 RETURN VALUE
 ------------
 If the function succeeds positive endpoint ID is returned. Endpoint ID can be

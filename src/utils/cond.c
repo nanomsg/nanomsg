@@ -97,8 +97,10 @@ void sp_cond_init (struct sp_cond *self)
 
     rc = pthread_condattr_init (&attr);
     errnum_assert (rc == 0, rc);
+#ifdef SP_HAVE_CLOCK_MONOTONIC
     rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
     errnum_assert (rc == 0, rc);
+#endif
     rc = pthread_cond_init (&self->cond, &attr);
     errnum_assert (rc == 0, rc);
     rc = pthread_condattr_destroy (&attr);
@@ -127,8 +129,14 @@ void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 
     /*  Finite timeout. Get current time and add the specified interval. */
     self->infinite = 0;
+#ifdef SP_HAVE_CLOCK_MONOTONIC
     rc = clock_gettime (CLOCK_MONOTONIC, &self->timeout);
     errno_assert (rc == 0);
+#elif defined(SP_HAVE_OSX)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    TIMEVAL_TO_TIMESPEC(&tv, &self->timeout);
+#endif
     self->timeout.tv_sec += timeout / 1000;
     self->timeout.tv_nsec += (timeout % 1000) * 1000000;
     if (self->timeout.tv_nsec >= 1000000000) {

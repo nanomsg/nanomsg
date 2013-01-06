@@ -583,16 +583,17 @@ sp_term(3) Manual Page
 <div class="sectionbody">
 <div class="paragraph"><p>Uninitialises the nanomsg library. If the library was initialised multiple
 times, it is uninitialised only when <em>sp_term()</em> call is executed
-for each corresponding <em>sp_init()</em> call.</p></div>
-<div class="paragraph"><p>Calling <em>sp_term()</em> without prior call to <em>sp_init()</em> results in undefined
-behaviour.</p></div>
+for each corresponding <a href="sp_init.3.html">sp_init(3)</a> call.</p></div>
+<div class="paragraph"><p>Calling <em>sp_term()</em> without prior call to <a href="sp_init.3.html">sp_init(3)</a> results in
+undefined behaviour.</p></div>
 <div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg permits to call
 <em>sp_term()</em> while some of the sockets are still open. In such case <em>sp_term()</em>
 call blocks and waits while all the sockets are closed.</p></div>
-<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as <em>sp_recv()</em>,
-it will be unblocked once <em>sp_term()</em> is called and ETERM error will be returned
-to the user. Similarly, any attempt to invoke a socket function other than
-<em>sp_close()</em> after <em>sp_term()</em> was called will result in ETERM error.</p></div>
+<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as
+<a href="sp_recv.3.html">sp_recv(3)</a>, it will be unblocked once <em>sp_term()</em> is called and
+ETERM error will be returned to the user. Similarly, any attempt to invoke
+a socket function other than <a href="sp_close.3.html">sp_close(3)</a> after <em>sp_term()</em> was
+called will result in ETERM error.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -612,6 +613,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><a href="sp_init.3.html">sp_init(3)</a>
+<a href="sp_close.3.html">sp_close(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -626,7 +628,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-04 12:56:35 CET
+Last updated 2013-01-06 18:07:10 CET
 </div>
 </div>
 </body>

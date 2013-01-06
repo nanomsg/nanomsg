@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_send(3)</title>
+<title>sp_recv(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,7 +561,7 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_send(3) Manual Page
+sp_recv(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
@@ -575,7 +575,7 @@ sp_send(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p>*int sp_recv (int <em>s</em>, void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</p></div>
+<div class="paragraph"><p><strong>int sp_recv (int <em>s</em>, void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
@@ -711,7 +711,7 @@ nbytes = sp_recv (s, buf, sizeof (buf), 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-04 12:05:30 CET
+Last updated 2013-01-06 18:15:04 CET
 </div>
 </div>
 </body>

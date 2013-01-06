@@ -1,4 +1,4 @@
-sp_send(3)
+sp_recv(3)
 ==========
 
 NAME
@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <sp/sp.h>*
 
-*int sp_recv (int 's', void '*buf', size_t 'len', int 'flags');
+*int sp_recv (int 's', void '*buf', size_t 'len', int 'flags');*
 
 
 DESCRIPTION

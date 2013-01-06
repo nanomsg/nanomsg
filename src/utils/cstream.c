@@ -35,7 +35,7 @@ static const struct sp_cp_sink sp_cstream_state_connected;
 static const struct sp_cp_sink sp_cstream_state_closing;
 
 /*  Implementation of sp_epbase interface. */
-static int sp_cstream_close (struct sp_epbase *self, int linger);
+static void sp_cstream_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_cstream_epbase_vfptr =
     {sp_cstream_close};
 
@@ -244,7 +244,7 @@ static const struct sp_cp_sink sp_cstream_state_terminating = {
     NULL
 };
 
-static int sp_cstream_close (struct sp_epbase *self, int linger)
+static void sp_cstream_close (struct sp_epbase *self, int linger)
 {
     struct sp_cstream *cstream;
 
@@ -260,8 +260,6 @@ static int sp_cstream_close (struct sp_epbase *self, int linger)
     /*  Close the socket, if needed. */
     cstream->sink = &sp_cstream_state_terminating;
     sp_usock_close (&cstream->usock);
-
-    return 0;
 }
 
 static void sp_cstream_terminating_closed (const struct sp_cp_sink **self,

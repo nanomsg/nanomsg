@@ -31,7 +31,7 @@
 #include <string.h>
 
 /*  Implementation of sp_epbase interface. */
-static int sp_bstream_close (struct sp_epbase *self, int linger);
+static void sp_bstream_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_bstream_epbase_vfptr =
     {sp_bstream_close};
 
@@ -108,7 +108,7 @@ static const struct sp_cp_sink sp_bstream_state_terminating = {
     NULL
 };
 
-static int sp_bstream_close (struct sp_epbase *self, int linger)
+static void sp_bstream_close (struct sp_epbase *self, int linger)
 {
     struct sp_bstream *bstream;
     struct sp_list_item *it;
@@ -124,8 +124,6 @@ static int sp_bstream_close (struct sp_epbase *self, int linger)
     /*  Close the listening socket itself. */
     bstream->sink = &sp_bstream_state_terminating;
     sp_usock_close (&bstream->usock);
-
-    return 0;
 }
 
 static void sp_bstream_terminating_closed (const struct sp_cp_sink **self,

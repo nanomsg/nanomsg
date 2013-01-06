@@ -32,7 +32,7 @@
 #include <stddef.h>
 
 /*  Implementation of sp_epbase callback interface. */
-static int sp_inprocc_close (struct sp_epbase *self, int linger);
+static void sp_inprocc_close (struct sp_epbase *self, int linger);
 static const struct sp_epbase_vfptr sp_inprocc_epbase_vfptr =
     {sp_inprocc_close};
 
@@ -68,7 +68,7 @@ void sp_inprocc_add_pipe (struct sp_inprocc *self, struct sp_msgpipe *pipe)
     self->pipe = pipe;
 }
 
-static int sp_inprocc_close (struct sp_epbase *self, int linger)
+static void sp_inprocc_close (struct sp_epbase *self, int linger)
 {
     struct sp_inprocc *inprocc;
 
@@ -87,7 +87,5 @@ static int sp_inprocc_close (struct sp_epbase *self, int linger)
     /*  We can deallocate the endpoint straight away. There is no delayed
         termination for inproc endpoints. */
     sp_free (inprocc);
-
-    return 0;
 }
 

@@ -380,14 +380,7 @@ int sp_close (int s)
     for (i = 0; i != self.max_eps; ++i) {
         ep = self.eps [i];
         if (ep && sp_ep_fd (ep) == s) {
-            rc = sp_ep_close (ep, linger);
-
-            /*  TODO: The case where endpoint was already asked to shut down
-                should be distinguished from the case where the shut down is
-                processed asynchronously. */
-            if (rc == -EINPROGRESS)
-                continue;
-            errnum_assert (rc == 0, -rc);
+            sp_ep_close (ep, linger);
             self.eps [i] = NULL;
         }
     }
@@ -507,17 +500,7 @@ int sp_shutdown (int s, int how)
     }
 
     /*  Ask all the endpoint to shut down. */
-    rc = sp_ep_close (ep, 0); /*  TODO: linger */
-
-    /*  If the endpoint haven't deallocated itself immediately, do nothing. */
-    /*  TODO: The case where endpoint was already asked to shut down should
-        be distinguished from the case where the shut down is processed
-        asynchronously. */
-    if (rc == -EINPROGRESS) {
-        sp_mutex_unlock (&self.sync);
-        return 0;
-    }
-    errnum_assert (rc == 0, -rc);
+    sp_ep_close (ep, 0); /*  TODO: linger */
     self.eps [how] = NULL;
 
     sp_mutex_unlock (&self.sync);

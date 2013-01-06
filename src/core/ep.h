@@ -28,8 +28,7 @@ struct sp_ep;
 /*  Returns fd of the socket the endpoint belongs to. */
 int sp_ep_fd (struct sp_ep *self);
 
-/*  Asks endpoint to terminate. If the termination is not carried out
-    immediately, the function returns -EINPROGRESS. */
-int sp_ep_close (struct sp_ep *self, int linger);
+/*  Asks endpoint to terminate. */
+void sp_ep_close (struct sp_ep *self, int linger);
 
 #endif

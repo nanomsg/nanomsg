@@ -45,10 +45,10 @@ struct sp_epbase;
 struct sp_epbase_vfptr {
 
     /*  Ask the endpoint to terminate itself. The endpoint is allowed to linger
-        on sending unsent data for 'linger' milliseconds. The function returns
-        zero if endpoint was successfully terminated or -EINPROGRESS in case
-        the termination is delayed. In the latter case ... TODO */
-    int (*close) (struct sp_epbase *self, int linger);
+        to send the pending outbound data. Once it's ready, it will close itself
+        using sp_epbase_term() which, in turn, will unregister the endpoint from
+        the socket. */
+    void (*close) (struct sp_epbase *self, int linger);
 };
 
 /*  The member of this structure are used internally by the core. Never use

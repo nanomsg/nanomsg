@@ -358,20 +358,10 @@ int sp_socket (int domain, int protocol)
 
 int sp_close (int s)
 {
-    int rc;
-    int linger;
-    size_t lingersz;
     int i;
     struct sp_ep *ep;
 
     SP_BASIC_CHECKS;
-
-    /*  Get the current value of the linger option. */
-    lingersz = sizeof (linger);
-    rc = sp_sock_getopt (self.socks [s], SP_SOL_SOCKET, SP_LINGER,
-        &linger, &lingersz, 1);
-    errnum_assert (rc == 0, -rc);
-    sp_assert (lingersz == sizeof (linger));
 
     sp_mutex_lock (&self.sync);
 
@@ -380,7 +370,7 @@ int sp_close (int s)
     for (i = 0; i != self.max_eps; ++i) {
         ep = self.eps [i];
         if (ep && sp_ep_fd (ep) == s) {
-            sp_ep_close (ep, linger);
+            sp_ep_close (ep);
             self.eps [i] = NULL;
         }
     }
@@ -500,7 +490,7 @@ int sp_shutdown (int s, int how)
     }
 
     /*  Ask all the endpoint to shut down. */
-    sp_ep_close (ep, 0); /*  TODO: linger */
+    sp_ep_close (ep); /*  TODO: linger */
     self.eps [how] = NULL;
 
     sp_mutex_unlock (&self.sync);

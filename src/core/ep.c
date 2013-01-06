@@ -78,11 +78,11 @@ int sp_ep_fd (struct sp_ep *self)
     return sp_sock_fd (((struct sp_epbase*) self)->sock);
 }
 
-void sp_ep_close (struct sp_ep *self, int linger)
+void sp_ep_close (struct sp_ep *self)
 {
     struct sp_epbase *epbase;
 
     epbase = (struct sp_epbase*) self;
-    epbase->vfptr->close (epbase, linger);
+    epbase->vfptr->close (epbase);
 }
 

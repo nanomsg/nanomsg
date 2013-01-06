@@ -32,7 +32,7 @@
 #include <string.h>
 
 /*  Implementation of sp_epbase interface. */
-static void sp_inprocb_close (struct sp_epbase *self, int linger);
+static void sp_inprocb_close (struct sp_epbase *self);
 static const struct sp_epbase_vfptr sp_inprocb_epbase_vfptr =
     {sp_inprocb_close};
 
@@ -61,7 +61,7 @@ void sp_inprocb_add_pipe (struct sp_inprocb *self, struct sp_msgpipe *pipe)
     sp_list_insert (&self->pipes, &pipe->inprocb, sp_list_end (&self->pipes));
 }
 
-static void sp_inprocb_close (struct sp_epbase *self, int linger)
+static void sp_inprocb_close (struct sp_epbase *self)
 {
     struct sp_inprocb *inprocb;
     struct sp_list_item *it;

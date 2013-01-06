@@ -31,7 +31,7 @@
 #include <string.h>
 
 /*  Implementation of sp_epbase interface. */
-static void sp_bstream_close (struct sp_epbase *self, int linger);
+static void sp_bstream_close (struct sp_epbase *self);
 static const struct sp_epbase_vfptr sp_bstream_epbase_vfptr =
     {sp_bstream_close};
 
@@ -108,7 +108,7 @@ static const struct sp_cp_sink sp_bstream_state_terminating = {
     NULL
 };
 
-static void sp_bstream_close (struct sp_epbase *self, int linger)
+static void sp_bstream_close (struct sp_epbase *self)
 {
     struct sp_bstream *bstream;
     struct sp_list_item *it;

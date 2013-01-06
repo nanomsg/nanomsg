@@ -29,6 +29,6 @@ struct sp_ep;
 int sp_ep_fd (struct sp_ep *self);
 
 /*  Asks endpoint to terminate. */
-void sp_ep_close (struct sp_ep *self, int linger);
+void sp_ep_close (struct sp_ep *self);
 
 #endif

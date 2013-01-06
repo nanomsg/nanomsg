@@ -48,7 +48,7 @@ struct sp_epbase_vfptr {
         to send the pending outbound data. Once it's ready, it will close itself
         using sp_epbase_term() which, in turn, will unregister the endpoint from
         the socket. */
-    void (*close) (struct sp_epbase *self, int linger);
+    void (*close) (struct sp_epbase *self);
 };
 
 /*  The member of this structure are used internally by the core. Never use

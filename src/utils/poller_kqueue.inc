@@ -124,7 +124,7 @@ void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
             (sp_poller_udata) hndl);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
-        hndl->events |= SP_POLLER_EVENT_IN;
+        hndl->events |= SP_POLLER_EVENT_OUT;
     }
 }
 

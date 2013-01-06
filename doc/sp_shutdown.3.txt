@@ -16,7 +16,8 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Removes an endpoint from socket 's'. 'how' parameter specifies the ID of the
-endpoint to remove as returned by prior call to _sp_bind()_ or _sp_connect()_.
+endpoint to remove as returned by prior call to linknanomsg:sp_bind[3] or
+linknanomsg:sp_connect[3].
 
 
 RETURN VALUE

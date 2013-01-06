@@ -17,19 +17,20 @@ DESCRIPTION
 -----------
 Uninitialises the nanomsg library. If the library was initialised multiple
 times, it is uninitialised only when _sp_term()_ call is executed
-for each corresponding _sp_init()_ call.
+for each corresponding linknanomsg:sp_init[3] call.
 
-Calling _sp_term()_ without prior call to _sp_init()_ results in undefined
-behaviour.
+Calling _sp_term()_ without prior call to linknanomsg:sp_init[3] results in
+undefined behaviour.
 
 To help with shutdown of multi-threaded programs nanomsg permits to call
 _sp_term()_ while some of the sockets are still open. In such case _sp_term()_
 call blocks and waits while all the sockets are closed.
 
-If a thread is blocked inside a blocking function, such as _sp_recv()_,
-it will be unblocked once _sp_term()_ is called and ETERM error will be returned
-to the user. Similarly, any attempt to invoke a socket function other than
-_sp_close()_ after _sp_term()_ was called will result in ETERM error.
+If a thread is blocked inside a blocking function, such as
+linknanomsg:sp_recv[3], it will be unblocked once _sp_term()_ is called and
+ETERM error will be returned to the user. Similarly, any attempt to invoke
+a socket function other than linknanomsg:sp_close[3] after _sp_term()_ was
+called will result in ETERM error.
 
 
 RETURN VALUE
@@ -46,6 +47,7 @@ No errors are defined.
 SEE ALSO
 --------
 linknanomsg:sp_init[3]
+linknanomsg:sp_close[3]
 linknanomsg:nanomsg[7]
 
 

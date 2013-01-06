@@ -31,7 +31,8 @@ defined in '<sp/sp.h>' header file.
 RETURN VALUE
 ------------
 If the function succeeds positive endpoint ID is returned. Endpoint ID can be
-later used to remove the endpoint from the socket via _sp_shutdown()_ function.
+later used to remove the endpoint from the socket via linknanomsg:sp_shutdown[3]
+function.
 
 If the function fails negtive value is returned and 'errno' is set to to one of
 the values defined below.

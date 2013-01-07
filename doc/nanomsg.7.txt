@@ -32,7 +32,7 @@ Close an SP socket::
 Set a socket option::
     linknanomsg:sp_setsockopt[3]
 
-Retreive a socket option::
+Retrieve a socket option::
     linknanomsg:sp_getsockopt[3]
 
 Add a local endpoint to the socket::
@@ -50,7 +50,7 @@ Send a message::
 Receive a message::
     linknanomsg:sp_recv[3]
 
-Retreive the current errno::
+Retrieve the current errno::
     linknanomsg:sp_errno[3]
 
 Convert an error number into human-readable string::

@@ -55,13 +55,13 @@ The options are as follows:
 *SP_RECONNECT_IVL*::
     For connection-based transports such as TCP, this option specifies how
     long to wait, in milliseconds, when connection is broken before trying
-    to re-establish it. Note that actual reconnect inteval may be randomised
+    to re-establish it. Note that actual reconnect interval may be randomised
     to some extent to prevent severe reconnection storms. The type of the option
     is int. Default value is 100 (0.1 second).
 *SP_RECONNECT_IVL_MAX*::
     This option is to be used only in addition to _SP_RECONNECT_IVL_ option.
     It specifies maximum reconnection interval. On each reconnect attempt,
-    the previous interval is doubled untill _SP_RECONNECT_IVL_MAX_ is reached.
+    the previous interval is doubled until _SP_RECONNECT_IVL_MAX_ is reached.
     Value of zero means that no exponential backoff is performed and reconnect
     interval is based only on _SP_RECONNECT_IVL_. The type of the option is int.
     Default value is 0.

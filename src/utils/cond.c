@@ -97,8 +97,12 @@ void sp_cond_init (struct sp_cond *self)
 
     rc = pthread_condattr_init (&attr);
     errnum_assert (rc == 0, rc);
-#ifdef SP_HAVE_CLOCK_MONOTONIC
+#if defined SP_HAVE_OSX
+#elif defined SP_HAVE_CLOCK_MONOTONIC
     rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
+    errnum_assert (rc == 0, rc);
+#else
+    rc = pthread_condattr_setclock (&attr, CLOCK_REALTIME);
     errnum_assert (rc == 0, rc);
 #endif
     rc = pthread_cond_init (&self->cond, &attr);
@@ -119,7 +123,9 @@ void sp_cond_term (struct sp_cond *self)
 void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 {
     int rc;
-    uint64_t tm;
+#if defined SP_HAVE_OSX
+    struct timeval tv;
+#endif
 
     /*  Infinite timeout. */
     if (timeout < 0) {
@@ -129,13 +135,24 @@ void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 
     /*  Finite timeout. Get current time and add the specified interval. */
     self->infinite = 0;
-#ifdef SP_HAVE_CLOCK_MONOTONIC
-    rc = clock_gettime (CLOCK_MONOTONIC, &self->timeout);
-    errno_assert (rc == 0);
-#elif defined(SP_HAVE_OSX)
-    struct timeval tv;
+
+    /*  On OSX the gettimeofday-based clock is hard-wired to the condition
+        variable. There's no way to use different clock. */
+#if defined SP_HAVE_OSX
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &self->timeout);
+
+    /*  On platforms that provide monotonic clock, use it. That way we avoid
+        problems when system time is adjusted. */
+#elif defined SP_HAVE_CLOCK_MONOTONIC
+    rc = clock_gettime (CLOCK_MONOTONIC, &self->timeout);
+    errno_assert (rc == 0);
+
+    /*  As a last resort use CLOCK_REALTIME. POSIX requires that this realtime
+        clock should be available on any system. */
+#else
+    rc = clock_gettime (CLOCK_REALTIME, &self->timeout);
+    errno_assert (rc == 0);
 #endif
     self->timeout.tv_sec += timeout / 1000;
     self->timeout.tv_nsec += (timeout % 1000) * 1000000;

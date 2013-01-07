@@ -141,12 +141,17 @@ struct sp_cp *sp_pipebase_getcp (struct sp_pipebase *self);
 /*  The transport class.                                                      */
 /******************************************************************************/
 
-/*  The methods in sp_transport interface are guarded by a global critical
-    section. Two of these function will never be invoked in parallel. */
 struct sp_transport {
+
+    /*  Following methods are guarded by a global critical section. Two of these
+        function will never be invoked in parallel. */
     const char *(*name) (void);
     void (*init) (void);
     void (*term) (void);
+
+    /*  Following methods are guarded by a socket-wide critical section.
+        Two of these function will never be invoked in parallel on the same
+        socket. */
     int (*bind) (const char *addr, void *hint, struct sp_epbase **epbase);
     int (*connect) (const char *addr, void *hint, struct sp_epbase **epbase);
 

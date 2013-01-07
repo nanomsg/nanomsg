@@ -132,8 +132,6 @@ static struct sp_ctx self = {0};
 /*  Transport-related private functions. */
 static void sp_ctx_add_transport (struct sp_transport *transport);
 static void sp_ctx_add_socktype (struct sp_socktype *socktype);
-static struct sp_transport *sp_ctx_find_transport (const char *name,
-    size_t len);
 
 /*  Private function that unifies sp_bind and sp_connect functionality.
     It returns the ID of the newly created endpoint. */
@@ -547,22 +545,6 @@ static void sp_ctx_add_transport (struct sp_transport *transport)
         sp_list_end (&self.transports));
 }
 
-static struct sp_transport *sp_ctx_find_transport (const char *name, size_t len)
-{
-    struct sp_list_item *it;
-    struct sp_transport *tp;
-
-    for (it = sp_list_begin (&self.transports);
-          it != sp_list_end (&self.transports);
-          it = sp_list_next (&self.transports, it)) {
-        tp = sp_cont (it, struct sp_transport, list);
-        if (strlen (tp->name ()) == len &&
-              memcmp (tp->name (), name, len) == 0)
-            return tp;
-    }
-    return NULL;
-}
-
 static void sp_ctx_add_socktype (struct sp_socktype *socktype)
 {
     sp_list_insert (&self.socktypes, &socktype->list,
@@ -578,6 +560,7 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
     size_t protosz;
     struct sp_transport *tp;
     struct sp_ep *ep;
+    struct sp_list_item *it;
 
     /*  Check whether address is valid. */
     if (!addr)
@@ -595,7 +578,16 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
     protosz = delim - addr;
     addr += protosz + 3;
 
-    tp = sp_ctx_find_transport (proto, protosz);
+    /*  Find the specified protocol. */
+    tp = NULL;
+    for (it = sp_list_begin (&self.transports);
+          it != sp_list_end (&self.transports);
+          it = sp_list_next (&self.transports, it)) {
+        tp = sp_cont (it, struct sp_transport, list);
+        if (strlen (tp->name ()) == protosz &&
+              memcmp (tp->name (), proto, protosz) == 0)
+            break;
+    }
 
     /*  The protocol specified doesn't match any known protocol. */
     if (!tp)

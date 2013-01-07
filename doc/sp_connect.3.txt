@@ -34,7 +34,7 @@ If the function succeeds positive endpoint ID is returned. Endpoint ID can be
 later used to remove the endpoint from the socket via linknanomsg:sp_shutdown[3]
 function.
 
-If the function fails negtive value is returned and 'errno' is set to to one of
+If the function fails negative value is returned and 'errno' is set to to one of
 the values defined below.
 
 

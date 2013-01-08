@@ -30,6 +30,14 @@
 
 #include <string.h>
 
+/*  Private functions. */
+static void sp_bstream_term (struct sp_bstream *self);
+
+/*  States. */
+static const struct sp_cp_sink sp_bstream_state_listening;
+static const struct sp_cp_sink sp_bstream_state_terminating1;
+static const struct sp_cp_sink sp_bstream_state_terminating2;
+
 /*  Implementation of sp_epbase interface. */
 static void sp_bstream_close (struct sp_epbase *self);
 static const struct sp_epbase_vfptr sp_bstream_epbase_vfptr =
@@ -92,18 +100,18 @@ static void sp_bstream_listening_accepted (const struct sp_cp_sink **self,
 }
 
 /******************************************************************************/
-/*  State: TERMINATING                                                        */
+/*  State: TERMINATING1                                                       */
 /******************************************************************************/
 
-static void sp_bstream_terminating_closed (const struct sp_cp_sink **self,
+static void sp_bstream_terminating1_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock);
-static const struct sp_cp_sink sp_bstream_state_terminating = {
+static const struct sp_cp_sink sp_bstream_state_terminating1 = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_bstream_terminating_closed,
+    sp_bstream_terminating1_closed,
     NULL,
     NULL
 };
@@ -111,29 +119,77 @@ static const struct sp_cp_sink sp_bstream_state_terminating = {
 static void sp_bstream_close (struct sp_epbase *self)
 {
     struct sp_bstream *bstream;
-    struct sp_list_item *it;
 
     bstream = sp_cont (self, struct sp_bstream, epbase);
 
-    /*  First, ask all the associated sessions to close. */
-    for (it = sp_list_begin (&bstream->astreams);
-          it != sp_list_end (&bstream->astreams);
-          it = sp_list_next (&bstream->astreams, it))
-        sp_astream_close (sp_cont (it, struct sp_astream, item));
-
     /*  Close the listening socket itself. */
-    bstream->sink = &sp_bstream_state_terminating;
+    bstream->sink = &sp_bstream_state_terminating1;
     sp_usock_close (&bstream->usock);
 }
 
-static void sp_bstream_terminating_closed (const struct sp_cp_sink **self,
+static void sp_bstream_terminating1_closed (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_bstream *bstream;
+    struct sp_list_item *it;
+    struct sp_astream *astream;
 
     bstream = sp_cont (self, struct sp_bstream, sink);
 
-    sp_epbase_term (&bstream->epbase);
-    sp_free (bstream);
+    /*  Listening socket is closed. Switch from TERMINATING1 to TERMINATING2
+        state and start closing individual sessions. */
+    sp_assert (bstream->sink == &sp_bstream_state_terminating1);
+    bstream->sink = &sp_bstream_state_terminating2;
+
+    /*  Ask all the associated sessions to close. */
+    it = sp_list_begin (&bstream->astreams);
+    while (it != sp_list_end (&bstream->astreams)) {
+        astream = sp_cont (it, struct sp_astream, item);
+        it = sp_list_next (&bstream->astreams, it);
+        sp_astream_close (astream);
+    }
+
+    /*  If there are no sessions left, we can terminate straight away. */
+    if (sp_list_empty (&bstream->astreams)) {
+        sp_bstream_term (bstream);
+        sp_free (bstream);
+        return;
+    }
+}
+
+/******************************************************************************/
+/*  State: TERMINATING2                                                       */
+/******************************************************************************/
+
+static const struct sp_cp_sink sp_bstream_state_terminating2 = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+void sp_bstream_astream_closed (struct sp_bstream *self,
+    struct sp_astream *astream)
+{
+    /*  One of the associated astreams was closed. */
+    sp_list_erase (&self->astreams, &astream->item);
+
+    /*  In TERMINATING state this may be the last astream left.
+        If so, we can move on with the deallocation. */
+    if (self->sink == &sp_bstream_state_terminating2 &&
+          sp_list_empty (&self->astreams)) {
+        sp_bstream_term (self);
+        sp_free (self);
+        return;
+    }
+}
+
+static void sp_bstream_term (struct sp_bstream *self)
+{
+    sp_epbase_term (&self->epbase);
 }
 

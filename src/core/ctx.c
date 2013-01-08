@@ -257,8 +257,6 @@ int sp_term (void)
     }
     sp_mutex_unlock (&self.sync);
 
-    /*  TODO:  Wait for all endpoints to be closed. */
-
     /*  Final deallocation of the global resources. */
     sp_cond_term (&self.termcond);
     sp_list_term (&self.socktypes);

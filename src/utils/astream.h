@@ -50,7 +50,7 @@ struct sp_astream {
 
 void sp_astream_init (struct sp_astream *self, struct sp_epbase *epbase,
     int s, struct sp_usock *usock, struct sp_bstream *bstream);
-int sp_astream_close (struct sp_astream *self);
+void sp_astream_close (struct sp_astream *self);
 
 #endif
 

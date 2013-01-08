@@ -27,6 +27,8 @@
 
 #include "aio.h"
 
+struct sp_astream;
+
 /*  Bound stream socket. */
 
 struct sp_bstream {
@@ -47,5 +49,8 @@ struct sp_bstream {
 int sp_bstream_init (struct sp_bstream *self, const char *addr, void *hint,
     int (*initfn) (const char *addr, struct sp_usock *usock, struct sp_cp *cp,
     int backlog), int backlog);
+
+void sp_bstream_astream_closed (struct sp_bstream *self,
+    struct sp_astream *astream);
 
 #endif

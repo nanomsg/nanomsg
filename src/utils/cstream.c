@@ -252,6 +252,10 @@ static void sp_cstream_close (struct sp_epbase *self)
 
     cstream = sp_cont (self, struct sp_cstream, epbase);
 
+    /*  If termination is already underway, do nothing and let it continue. */
+    if (cstream->sink == &sp_cstream_state_terminating)
+        return;
+
     /*  Get the current value of the linger option. */
     lingersz = sizeof (linger);
     sp_epbase_getopt (&cstream->epbase, SP_SOL_SOCKET, SP_LINGER,

@@ -85,17 +85,18 @@ static const struct sp_cp_sink sp_astream_state_terminating = {
     NULL
 };
 
-int sp_astream_close (struct sp_astream *self)
+void sp_astream_close (struct sp_astream *self)
 {
+    /*  If termination is already underway, do nothing and let it continue. */
+    if (self->sink == &sp_astream_state_terminating)
+        return;
+
     /*  Terminate the associated session. */
-    sp_assert (self->sink == &sp_astream_state_connected);
     sp_stream_term (&self->stream);
 
     /*  Ask the underlying socket to terminate. */
     self->sink = &sp_astream_state_terminating;
     sp_usock_close (&self->usock);
-
-    return 0;
 }
 
 static void sp_astream_terminating_closed (const struct sp_cp_sink **self,
@@ -105,7 +106,7 @@ static void sp_astream_terminating_closed (const struct sp_cp_sink **self,
 
     astream = sp_cont (self, struct sp_astream, sink);
 
-    sp_list_erase (&astream->bstream->astreams, &astream->item);
+    sp_bstream_astream_closed (astream->bstream, astream);
     sp_free (astream);
 }
 

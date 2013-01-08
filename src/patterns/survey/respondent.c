@@ -43,14 +43,19 @@ struct sp_respondent {
     uint32_t flags;
 };
 
+/*  Private functions. */
+static void sp_respondent_init (struct sp_respondent *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_respondent_term (struct sp_respondent *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_respondent_term (struct sp_sockbase *self);
+static void sp_respondent_destroy (struct sp_sockbase *self);
 static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_respondent_recv (struct sp_sockbase *self, void *buf,
     size_t *len);
 static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
-    sp_respondent_term,
+    sp_respondent_destroy,
     sp_xrespondent_add,
     sp_xrespondent_rm,
     sp_xrespondent_in,
@@ -68,13 +73,19 @@ static void sp_respondent_init (struct sp_respondent *self,
     self->flags = 0;
 }
 
-void sp_respondent_term (struct sp_sockbase *self)
+static void sp_respondent_term (struct sp_respondent *self)
+{
+    sp_xrespondent_term (&self->xrespondent);
+}
+
+void sp_respondent_destroy (struct sp_sockbase *self)
 {
     struct sp_respondent *respondent;
 
     respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
 
-    sp_xrespondent_term (self);
+    sp_respondent_term (respondent);
+    sp_free (respondent);
 }
 
 static int sp_respondent_send (struct sp_sockbase *self, const void *buf,

@@ -33,9 +33,12 @@
 
 #include <stddef.h>
 
+/*  Private functions. */
+static void sp_xsurveyor_destroy (struct sp_sockbase *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
 static const struct sp_sockbase_vfptr sp_xsurveyor_sockbase_vfptr = {
-    sp_xsurveyor_term,
+    sp_xsurveyor_destroy,
     sp_xsurveyor_add,
     sp_xsurveyor_rm,
     sp_xsurveyor_in,
@@ -55,14 +58,20 @@ void sp_xsurveyor_init (struct sp_xsurveyor *self,
     self->current = NULL;
 }
 
-void sp_xsurveyor_term (struct sp_sockbase *self)
+void sp_xsurveyor_term (struct sp_xsurveyor *self)
+{
+    sp_list_term (&self->inpipes);
+    sp_list_term (&self->outpipes);
+}
+
+static void sp_xsurveyor_destroy (struct sp_sockbase *self)
 {
     struct sp_xsurveyor *xsurveyor;
 
     xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
 
-    sp_list_term (&xsurveyor->inpipes);
-    sp_list_term (&xsurveyor->outpipes);
+    sp_xsurveyor_term (xsurveyor);
+    sp_free (xsurveyor);
 }
 
 int sp_xsurveyor_add (struct sp_sockbase *self, struct sp_pipe *pipe)

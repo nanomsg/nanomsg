@@ -36,8 +36,8 @@ struct sp_xrespondent {
 
 void sp_xrespondent_init (struct sp_xrespondent *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
+void sp_xrespondent_term (struct sp_xrespondent *self);
 
-void sp_xrespondent_term (struct sp_sockbase *self);
 int sp_xrespondent_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 void sp_xrespondent_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrespondent_in (struct sp_sockbase *self, struct sp_pipe *pipe);

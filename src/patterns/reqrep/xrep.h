@@ -60,8 +60,8 @@ struct sp_xrep {
 
 void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
     int fd);
+void sp_xrep_term (struct sp_xrep *self);
 
-void sp_xrep_term (struct sp_sockbase *self);
 int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe);

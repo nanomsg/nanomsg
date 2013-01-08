@@ -30,9 +30,12 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 
+/*  Private functions. */
+static void sp_xrespondent_destroy (struct sp_sockbase *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
 static const struct sp_sockbase_vfptr sp_xrespondent_sockbase_vfptr = {
-    sp_xrespondent_term,
+    sp_xrespondent_destroy,
     sp_xrespondent_add,
     sp_xrespondent_rm,
     sp_xrespondent_in,
@@ -50,13 +53,19 @@ void sp_xrespondent_init (struct sp_xrespondent *self,
     sp_excl_init (&self->excl);
 }
 
-void sp_xrespondent_term (struct sp_sockbase *self)
+void sp_xrespondent_term (struct sp_xrespondent *self)
+{
+    sp_excl_term (&self->excl);
+}
+
+static void sp_xrespondent_destroy (struct sp_sockbase *self)
 {
     struct sp_xrespondent *xrespondent;
 
     xrespondent = sp_cont (self, struct sp_xrespondent, sockbase);
 
-    sp_excl_term (&xrespondent->excl);
+    sp_xrespondent_term (xrespondent);
+    sp_free (xrespondent);
 }
 
 int sp_xrespondent_add (struct sp_sockbase *self, struct sp_pipe *pipe)

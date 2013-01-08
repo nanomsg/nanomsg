@@ -36,8 +36,13 @@ struct sp_xsource {
     struct sp_excl excl;
 };
 
+/*  Private functions. */
+static void sp_xsource_init (struct sp_xsource *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_xsource_term (struct sp_xsource *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xsource_term (struct sp_sockbase *self);
+static void sp_xsource_destroy (struct sp_sockbase *self);
 static int sp_xsource_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xsource_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsource_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -50,7 +55,7 @@ static int sp_xsource_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_xsource_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xsource_sockbase_vfptr = {
-    sp_xsource_term,
+    sp_xsource_destroy,
     sp_xsource_add,
     sp_xsource_rm,
     sp_xsource_in,
@@ -61,20 +66,26 @@ static const struct sp_sockbase_vfptr sp_xsource_sockbase_vfptr = {
     sp_xsource_getopt
 };
 
-void sp_xsource_init (struct sp_xsource *self,
+static void sp_xsource_init (struct sp_xsource *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
     sp_excl_init (&self->excl);
 }
 
-void sp_xsource_term (struct sp_sockbase *self)
+static void sp_xsource_term (struct sp_xsource *self)
+{
+    sp_excl_term (&self->excl);
+}
+
+void sp_xsource_destroy (struct sp_sockbase *self)
 {
     struct sp_xsource *xsource;
 
     xsource = sp_cont (self, struct sp_xsource, sockbase);
 
-    sp_excl_term (&xsource->excl);
+    sp_xsource_term (xsource);
+    sp_free (xsource);
 }
 
 static int sp_xsource_add (struct sp_sockbase *self, struct sp_pipe *pipe)

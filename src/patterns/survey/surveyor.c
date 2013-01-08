@@ -49,8 +49,13 @@ struct sp_surveyor {
     struct sp_timer deadline_timer;
 };
 
+/*  Private functions. */
+static void sp_surveyor_init (struct sp_surveyor *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_surveyor_term (struct sp_surveyor *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_surveyor_term (struct sp_sockbase *self);
+static void sp_surveyor_destroy (struct sp_sockbase *self);
 static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
     size_t len);
 static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len);
@@ -59,7 +64,7 @@ static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
-    sp_surveyor_term,
+    sp_surveyor_destroy,
     sp_xsurveyor_add,
     sp_xsurveyor_rm,
     sp_xsurveyor_in,
@@ -99,14 +104,20 @@ static void sp_surveyor_init (struct sp_surveyor *self,
         sp_sockbase_getcp (&self->xsurveyor.sockbase));
 }
 
-void sp_surveyor_term (struct sp_sockbase *self)
+static void sp_surveyor_term (struct sp_surveyor *self)
+{
+    sp_timer_term (&self->deadline_timer);
+    sp_xsurveyor_term (&self->xsurveyor);
+}
+
+void sp_surveyor_destroy (struct sp_sockbase *self)
 {
     struct sp_surveyor *surveyor;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
 
-    sp_timer_term (&surveyor->deadline_timer);
-    sp_xsurveyor_term (&surveyor->xsurveyor.sockbase);
+    sp_surveyor_term (surveyor);
+    sp_free (surveyor);
 }
 
 static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,

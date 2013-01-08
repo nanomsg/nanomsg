@@ -36,8 +36,13 @@ struct sp_xpair {
     struct sp_excl excl;
 };
 
+/*  Private functions. */
+static void sp_xpair_init (struct sp_xpair *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_xpair_term (struct sp_xpair *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xpair_term (struct sp_sockbase *self);
+static void sp_xpair_destroy (struct sp_sockbase *self);
 static int sp_xpair_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpair_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpair_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -50,7 +55,7 @@ static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
-    sp_xpair_term,
+    sp_xpair_destroy,
     sp_xpair_add,
     sp_xpair_rm,
     sp_xpair_in,
@@ -61,20 +66,26 @@ static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
     sp_xpair_getopt
 };
 
-void sp_xpair_init (struct sp_xpair *self,
+static void sp_xpair_init (struct sp_xpair *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
     sp_excl_init (&self->excl);
 }
 
-void sp_xpair_term (struct sp_sockbase *self)
+static void sp_xpair_term (struct sp_xpair *self)
+{
+    sp_excl_term (&self->excl);
+}
+
+void sp_xpair_destroy (struct sp_sockbase *self)
 {
     struct sp_xpair *xpair;
 
     xpair = sp_cont (self, struct sp_xpair, sockbase);
 
-    sp_excl_term (&xpair->excl);
+    sp_xpair_term (xpair);
+    sp_free (xpair);
 }
 
 static int sp_xpair_add (struct sp_sockbase *self, struct sp_pipe *pipe)

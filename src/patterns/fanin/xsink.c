@@ -48,8 +48,13 @@ struct sp_xsink {
     struct sp_xsink_data *current;
 };
 
+/*  Private functions. */
+static void sp_xsink_init (struct sp_xsink *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_xsink_term (struct sp_xsink *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xsink_term (struct sp_sockbase *self);
+static void sp_xsink_destroy (struct sp_sockbase *self);
 static int sp_xsink_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xsink_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsink_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -62,7 +67,7 @@ static int sp_xsink_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xsink_sockbase_vfptr = {
-    sp_xsink_term,
+    sp_xsink_destroy,
     sp_xsink_add,
     sp_xsink_rm,
     sp_xsink_in,
@@ -73,7 +78,7 @@ static const struct sp_sockbase_vfptr sp_xsink_sockbase_vfptr = {
     sp_xsink_getopt
 };
 
-void sp_xsink_init (struct sp_xsink *self,
+static void sp_xsink_init (struct sp_xsink *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
@@ -81,13 +86,19 @@ void sp_xsink_init (struct sp_xsink *self,
     self->current = NULL;
 }
 
-void sp_xsink_term (struct sp_sockbase *self)
+static void sp_xsink_term (struct sp_xsink *self)
+{
+    sp_list_term (&self->pipes);
+}
+
+void sp_xsink_destroy (struct sp_sockbase *self)
 {
     struct sp_xsink *xsink;
 
     xsink = sp_cont (self, struct sp_xsink, sockbase);
 
-    sp_list_term (&xsink->pipes);
+    sp_xsink_term (xsink);
+    sp_free (xsink);
 }
 
 static int sp_xsink_add (struct sp_sockbase *self, struct sp_pipe *pipe)

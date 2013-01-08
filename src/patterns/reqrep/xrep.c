@@ -32,8 +32,11 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 
+/*  Private functions. */
+static void sp_xrep_destroy (struct sp_sockbase *self);
+
 static const struct sp_sockbase_vfptr sp_xrep_sockbase_vfptr = {
-    sp_xrep_term,
+    sp_xrep_destroy,
     sp_xrep_add,
     sp_xrep_rm,
     sp_xrep_in,
@@ -60,14 +63,20 @@ void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
     self->current = NULL;
 }
 
-void sp_xrep_term (struct sp_sockbase *self)
+void sp_xrep_term (struct sp_xrep *self)
+{
+    sp_list_term (&self->inpipes);
+    sp_hash_term (&self->pipes);
+}
+
+static void sp_xrep_destroy (struct sp_sockbase *self)
 {
     struct sp_xrep *xrep;
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
 
-    sp_list_term (&xrep->inpipes);
-    sp_hash_term (&xrep->pipes);
+    sp_xrep_term (xrep);
+    sp_free (xrep);
 }
 
 int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe)

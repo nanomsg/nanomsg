@@ -30,8 +30,11 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 
+/*  Private functions. */
+static void sp_xreq_destroy (struct sp_sockbase *self);
+
 static const struct sp_sockbase_vfptr sp_xreq_sockbase_vfptr = {
-    sp_xreq_term,
+    sp_xreq_destroy,
     sp_xreq_add,
     sp_xreq_rm,
     sp_xreq_in,
@@ -49,13 +52,19 @@ void sp_xreq_init (struct sp_xreq *self, const struct sp_sockbase_vfptr *vfptr,
     sp_excl_init (&self->excl);
 }
 
-void sp_xreq_term (struct sp_sockbase *self)
+void sp_xreq_term (struct sp_xreq *self)
+{
+    sp_excl_term (&self->excl);
+}
+
+static void sp_xreq_destroy (struct sp_sockbase *self)
 {
     struct sp_xreq *xreq;
 
     xreq = sp_cont (self, struct sp_xreq, sockbase);
 
-    sp_excl_term (&xreq->excl);
+    sp_xreq_term (xreq);
+    sp_free (xreq);
 }
 
 int sp_xreq_add (struct sp_sockbase *self, struct sp_pipe *pipe)

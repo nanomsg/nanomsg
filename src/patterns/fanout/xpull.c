@@ -36,8 +36,13 @@ struct sp_xpull {
     struct sp_excl excl;
 };
 
+/*  Private functions. */
+static void sp_xpull_init (struct sp_xpull *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_xpull_term (struct sp_xpull *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xpull_term (struct sp_sockbase *self);
+static void sp_xpull_destroy (struct sp_sockbase *self);
 static int sp_xpull_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpull_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpull_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -50,7 +55,7 @@ static int sp_xpull_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_xpull_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpull_sockbase_vfptr = {
-    sp_xpull_term,
+    sp_xpull_destroy,
     sp_xpull_add,
     sp_xpull_rm,
     sp_xpull_in,
@@ -61,20 +66,26 @@ static const struct sp_sockbase_vfptr sp_xpull_sockbase_vfptr = {
     sp_xpull_getopt
 };
 
-void sp_xpull_init (struct sp_xpull *self,
+static void sp_xpull_init (struct sp_xpull *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
     sp_excl_init (&self->excl);
 }
 
-void sp_xpull_term (struct sp_sockbase *self)
+static void sp_xpull_term (struct sp_xpull *self)
+{
+    sp_excl_term (&self->excl);
+}
+
+void sp_xpull_destroy (struct sp_sockbase *self)
 {
     struct sp_xpull *xpull;
 
     xpull = sp_cont (self, struct sp_xpull, sockbase);
 
-    sp_excl_term (&xpull->excl);
+    sp_xpull_term (xpull);
+    sp_free (xpull);
 }
 
 static int sp_xpull_add (struct sp_sockbase *self, struct sp_pipe *pipe)

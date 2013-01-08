@@ -51,8 +51,8 @@ struct sp_xsurveyor {
 
 void sp_xsurveyor_init (struct sp_xsurveyor *self,
     const struct sp_sockbase_vfptr *vfptr, int fd);
+void sp_xsurveyor_term (struct sp_xsurveyor *self);
 
-void sp_xsurveyor_term (struct sp_sockbase *self);
 int sp_xsurveyor_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 void sp_xsurveyor_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xsurveyor_in (struct sp_sockbase *self, struct sp_pipe *pipe);

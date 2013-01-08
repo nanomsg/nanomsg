@@ -46,13 +46,18 @@ struct sp_rep {
     void *backtrace;
 };
 
+/*  Private functions. */
+static void sp_rep_init (struct sp_rep *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_rep_term (struct sp_rep *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_rep_term (struct sp_sockbase *self);
+static void sp_rep_destroy (struct sp_sockbase *self);
 static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len);
 
 static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
-    sp_rep_term,
+    sp_rep_destroy,
     sp_xrep_add,
     sp_xrep_rm,
     sp_xrep_in,
@@ -63,8 +68,8 @@ static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
     sp_xrep_getopt
 };
 
-void sp_rep_init (struct sp_rep *self, const struct sp_sockbase_vfptr *vfptr,
-    int fd)
+static void sp_rep_init (struct sp_rep *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_xrep_init (&self->xrep, vfptr, fd);
 
@@ -73,16 +78,21 @@ void sp_rep_init (struct sp_rep *self, const struct sp_sockbase_vfptr *vfptr,
     self->backtrace = NULL;
 }
 
-static void sp_rep_term (struct sp_sockbase *self)
+static void sp_rep_term (struct sp_rep *self)
+{
+    if (self->backtrace)
+        sp_free (self->backtrace);
+    sp_xrep_term (&self->xrep);
+}
+
+static void sp_rep_destroy (struct sp_sockbase *self)
 {
     struct sp_rep *rep;
 
     rep = sp_cont (self, struct sp_rep, xrep.sockbase);
 
-    if (rep->backtrace)
-        sp_free (rep->backtrace);
-
-    sp_xrep_term (&rep->xrep.sockbase);
+    sp_rep_term (rep);
+    sp_free (rep);
 }
 
 static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len)

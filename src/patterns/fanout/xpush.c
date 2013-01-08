@@ -48,8 +48,13 @@ struct sp_xpush {
     struct sp_xpush_data *current;
 };
 
+/*  Private functions. */
+static void sp_xpush_init (struct sp_xpush *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_xpush_term (struct sp_xpush *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xpush_term (struct sp_sockbase *self);
+static void sp_xpush_destroy (struct sp_sockbase *self);
 static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpush_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpush_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -62,7 +67,7 @@ static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
-    sp_xpush_term,
+    sp_xpush_destroy,
     sp_xpush_add,
     sp_xpush_rm,
     sp_xpush_in,
@@ -73,7 +78,7 @@ static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
     sp_xpush_getopt
 };
 
-void sp_xpush_init (struct sp_xpush *self,
+static void sp_xpush_init (struct sp_xpush *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
@@ -81,13 +86,19 @@ void sp_xpush_init (struct sp_xpush *self,
     self->current = NULL;
 }
 
-void sp_xpush_term (struct sp_sockbase *self)
+static void sp_xpush_term (struct sp_xpush *self)
+{
+    sp_list_term (&self->pipes);
+}
+
+void sp_xpush_destroy (struct sp_sockbase *self)
 {
     struct sp_xpush *xpush;
 
     xpush = sp_cont (self, struct sp_xpush, sockbase);
 
-    sp_list_term (&xpush->pipes);
+    sp_xpush_term (xpush);
+    sp_free (xpush);
 }
 
 static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe)

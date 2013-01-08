@@ -43,11 +43,15 @@ struct sp_pub {
 
     /*  List of pipes ready to accept messages. */
     struct sp_list pipes;
-
 };
 
+/*  Private functions. */
+static void sp_pub_init (struct sp_pub *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_pub_term (struct sp_pub *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_pub_term (struct sp_sockbase *self);
+static void sp_pub_destroy (struct sp_sockbase *self);
 static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -59,7 +63,7 @@ static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_pub_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
-    sp_pub_term,
+    sp_pub_destroy,
     sp_pub_add,
     sp_pub_rm,
     sp_pub_in,
@@ -70,20 +74,26 @@ static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
     sp_pub_getopt
 };
 
-void sp_pub_init (struct sp_pub *self, const struct sp_sockbase_vfptr *vfptr,
-    int fd)
+static void sp_pub_init (struct sp_pub *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
     sp_list_init (&self->pipes);
 }
 
-void sp_pub_term (struct sp_sockbase *self)
+static void sp_pub_term (struct sp_pub *self)
+{
+    sp_list_term (&self->pipes);
+}
+
+void sp_pub_destroy (struct sp_sockbase *self)
 {
     struct sp_pub *pub;
 
     pub = sp_cont (self, struct sp_pub, sockbase);
 
-    sp_list_term (&pub->pipes);
+    sp_pub_term (pub);
+    sp_free (pub);
 }
 
 static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe)

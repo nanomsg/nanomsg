@@ -52,7 +52,7 @@ struct sp_sockbase;
 
 /*  To be implemented by individual socket types. */
 struct sp_sockbase_vfptr {
-    void (*term) (struct sp_sockbase *self);
+    void (*destroy) (struct sp_sockbase *self);
     int (*add) (struct sp_sockbase *self, struct sp_pipe *pipe);
     void (*rm) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);

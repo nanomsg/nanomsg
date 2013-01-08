@@ -32,7 +32,7 @@
 #define SP_SOCK_EVENT_OUT 2
 
 /*  Private functions. */
-static void sp_sockbase_term (struct sp_sockbase *self);
+static void sp_sockbase_destroy (struct sp_sockbase *self);
 
 void sp_sockbase_init (struct sp_sockbase *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
@@ -87,7 +87,7 @@ void sp_sock_close (struct sp_sock *self)
     /*  If there are no active endpoints we can deallocate the socket
         straight away. */
     if (sp_list_empty (&sockbase->eps)) {
-        sp_sockbase_term (sockbase);
+        sp_sockbase_destroy (sockbase);
         return;
     }
 
@@ -95,16 +95,16 @@ void sp_sock_close (struct sp_sock *self)
     sockbase->flags |= SP_SOCK_FLAG_CLOSED;
 }
 
-static void sp_sockbase_term (struct sp_sockbase *self)
+static void sp_sockbase_destroy (struct sp_sockbase *self)
 {
-    /*  Terminate the derived class. */
-    self->vfptr->term (self);
-
     /*  Terminate the sp_sockbase itself. */
     sp_list_term (&self->eps);
     sp_clock_term (&self->clock);
     sp_cond_term (&self->cond);
     sp_cp_term (&self->cp);
+
+    /*  Deallocate the derived class. */
+    self->vfptr->destroy (self);
 }
 
 void sp_sockbase_unblock_recv (struct sp_sockbase *self)
@@ -347,7 +347,7 @@ void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep)
     /*  When last endpoint terminates, socket can be deallocated as well. */
     if ((sockbase->flags & SP_SOCK_FLAG_CLOSED) &&
           sp_list_empty (&sockbase->eps))
-        sp_sockbase_term (sockbase);
+        sp_sockbase_destroy (sockbase);
 }
 
 int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)

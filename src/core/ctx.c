@@ -343,7 +343,9 @@ int sp_close (int s)
 
     /*  Deallocate the socket object. */
     sp_sock_close (self.socks [s]);
-    sp_free (self.socks [s]);
+
+    /*  sp_sock_close may actually deallocate the socket. Do not use the
+        pointer anymore. */
     self.socks [s] = NULL;
 
     /*  If there's sp_term() waiting for all sockets being closed and this is

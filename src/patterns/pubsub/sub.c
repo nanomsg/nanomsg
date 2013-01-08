@@ -38,8 +38,13 @@ struct sp_sub {
     struct sp_trie trie;
 };
 
+/*  Private functions. */
+static void sp_sub_init (struct sp_sub *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_sub_term (struct sp_sub *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_sub_term (struct sp_sockbase *self);
+static void sp_sub_destroy (struct sp_sockbase *self);
 static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
@@ -51,7 +56,7 @@ static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
-    sp_sub_term,
+    sp_sub_destroy,
     sp_sub_add,
     sp_sub_rm,
     sp_sub_in,
@@ -62,22 +67,28 @@ static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_getopt
 };
 
-void sp_sub_init (struct sp_sub *self, const struct sp_sockbase_vfptr *vfptr,
-    int fd)
+static void sp_sub_init (struct sp_sub *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_sockbase_init (&self->sockbase, vfptr, fd);
     sp_excl_init (&self->excl);
     sp_trie_init (&self->trie);
 }
 
-void sp_sub_term (struct sp_sockbase *self)
+static void sp_sub_term (struct sp_sub *self)
+{
+    sp_trie_term (&self->trie);
+    sp_excl_term (&self->excl); 
+}
+
+void sp_sub_destroy (struct sp_sockbase *self)
 {
     struct sp_sub *sub;
 
     sub = sp_cont (self, struct sp_sub, sockbase);
 
-    sp_trie_term (&sub->trie);
-    sp_excl_term (&sub->excl);
+    sp_sub_term (sub);
+    sp_free (sub);
 }
 
 static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe)

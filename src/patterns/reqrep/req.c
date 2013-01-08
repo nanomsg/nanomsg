@@ -51,8 +51,13 @@ struct sp_req {
     struct sp_timer resend_timer;
 };
 
+/*  Private functions. */
+static void sp_req_init (struct sp_req *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd);
+static void sp_req_term (struct sp_req *self);
+
 /*  Implementation of sp_sockbase's virtual functions. */
-static void sp_req_term (struct sp_sockbase *self);
+static void sp_req_destroy (struct sp_sockbase *self);
 static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len);
 static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
@@ -60,7 +65,7 @@ static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
 static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
-    sp_req_term,
+    sp_req_destroy,
     sp_xreq_add,
     sp_xreq_rm,
     sp_xreq_in,
@@ -84,8 +89,8 @@ static const struct sp_cp_sink sp_req_sink = {
     sp_req_timeout
 };
 
-void sp_req_init (struct sp_req *self, const struct sp_sockbase_vfptr *vfptr,
-    int fd)
+static void sp_req_init (struct sp_req *self,
+    const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_xreq_init (&self->xreq, vfptr, fd);
 
@@ -105,17 +110,22 @@ void sp_req_init (struct sp_req *self, const struct sp_sockbase_vfptr *vfptr,
         sp_sockbase_getcp (&self->xreq.sockbase));
 }
 
-static void sp_req_term (struct sp_sockbase *self)
+static void sp_req_term (struct sp_req *self)
+{
+    if (self->flags & SP_REQ_INPROGRESS)
+        sp_free (self->request);
+    sp_timer_term (&self->resend_timer);
+    sp_xreq_term (&self->xreq);
+}
+
+static void sp_req_destroy (struct sp_sockbase *self)
 {
     struct sp_req *req;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);
 
-    if (req->flags & SP_REQ_INPROGRESS)
-        sp_free (req->request);
-
-    sp_timer_term (&req->resend_timer);
-    sp_xreq_term (&req->xreq.sockbase);
+    sp_req_term (req);
+    sp_free (req);
 }
 
 static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)

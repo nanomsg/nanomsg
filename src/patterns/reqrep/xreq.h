@@ -34,8 +34,8 @@ struct sp_xreq {
 
 void sp_xreq_init (struct sp_xreq *self, const struct sp_sockbase_vfptr *vfptr,
     int fd);
+void sp_xreq_term (struct sp_xreq *self);
 
-void sp_xreq_term (struct sp_sockbase *self);
 int sp_xreq_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 void sp_xreq_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe);

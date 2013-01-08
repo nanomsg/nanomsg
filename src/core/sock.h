@@ -30,8 +30,8 @@ struct sp_cp;
 /*  Called by sp_term() to let the socket know about the process shutdown. */
 void sp_sock_zombify (struct sp_sock *self);
 
-/*  Deallocate the socket. */
-void sp_sock_term (struct sp_sock *self);
+/*  Called by sp_close(). */
+void sp_sock_close (struct sp_sock *self);
 
 /*  Returns default completion port associated with the socket. */
 struct sp_cp *sp_sock_getcp (struct sp_sock *self);
@@ -44,6 +44,16 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
     can be retrieved even though sp_term() was already called. */
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
     void *optval, size_t *optvallen, int ignoreeterm);
+
+/*  Add new endpoint to the socket. */
+int sp_sock_create_ep (struct sp_sock *self, const char *addr,
+    int (*factory) (const char *addr, void *hint, struct sp_epbase **ep));
+
+/*  Remove the endpoint with the specified ID from the socket. */
+int sp_sock_shutdown (struct sp_sock *self, int eid);
+
+/*  used by endpoint to notify the socket that it has terminated. */
+void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep);
 
 /*  Send a message to the socket. */
 int sp_sock_send (struct sp_sock *self, const void *buf,

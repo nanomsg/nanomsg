@@ -65,13 +65,16 @@ struct sp_sockbase_vfptr {
         void *optval, size_t *optvallen);
 };
 
+#define SP_SOCK_FLAG_ZOMBIE 1
+#define SP_SOCK_FLAG_CLOSED 2
+
 struct sp_sockbase
 {
     /*  Table of virtual functions supplied by the socket type. */
     const struct sp_sockbase_vfptr *vfptr;
 
-    /*  Set to 1 when sp_term() was already called, otherwise 0. */
-    int zombie;
+    /*  Combination so SP_SOCK_FLAG_* flags. */
+    int flags;
 
     /*  Completion port to handle file descriptors, timers and locking. */
     struct sp_cp cp;
@@ -85,6 +88,12 @@ struct sp_sockbase
 
     /*  File descriptor for this socket. */
     int fd;
+
+    /*  List of all active endpoints. */
+    struct sp_list eps;
+
+    /*  Endpoint ID to assign to the next endpoint. */
+    int eid;
 
     /*  SP_SOL_SOCKET level options. */
     int linger;

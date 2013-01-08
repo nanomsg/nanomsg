@@ -56,6 +56,8 @@ struct sp_epbase_vfptr {
 struct sp_epbase {
     const struct sp_epbase_vfptr *vfptr;
     struct sp_sock *sock;
+    int eid;
+    struct sp_list_item item;
     char addr [SP_SOCKADDR_MAX + 1];
 };
 

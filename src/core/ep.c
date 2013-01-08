@@ -52,6 +52,7 @@ void sp_epbase_init (struct sp_epbase *self,
 
 void sp_epbase_term (struct sp_epbase *self)
 {
+    sp_sock_ep_closed (self->sock, self);
 }
 
 struct sp_cp *sp_epbase_getcp (struct sp_epbase *self)

@@ -71,9 +71,6 @@
 /*  Max number of concurrent SP sockets. */
 #define SP_MAX_SOCKETS 512
 
-/*  Max number of concurrent SP endpoints. */
-#define SP_MAX_EPS 512
-
 /*  This check is performed at the beginning of each socket operation to make
     sure that the library was initialised and the socket actually exists. */
 #define SP_BASIC_CHECKS \
@@ -102,10 +99,6 @@ struct sp_ctx {
     /*  1, if sp_term() was already called, 0 otherwise. */
     int zombie;
 
-    /*  List of all existing endpoints including orphan endpoints. */
-    struct sp_ep **eps;
-    size_t max_eps;
-
     /*  List of all available transports. The access to this list is not
         synchronised. We assume that it never changes after the library was
         initialised. */
@@ -113,9 +106,6 @@ struct sp_ctx {
 
     /*  List of all available socket types. */
     struct sp_list socktypes;
-
-    /*  Next endpoint ID to use. */
-    int next_eid;
 
     /*  Condition variable used by sp_term() to wait till all the sockets are
         closed. */
@@ -135,7 +125,7 @@ static void sp_ctx_add_socktype (struct sp_socktype *socktype);
 
 /*  Private function that unifies sp_bind and sp_connect functionality.
     It returns the ID of the newly created endpoint. */
-static int sp_ctx_create_endpoint (int fd, const char *addr, int bind);
+static int sp_ctx_create_ep (int fd, const char *addr, int bind);
 
 void sp_version (int *major, int *minor, int *patch)
 {
@@ -199,19 +189,10 @@ int sp_init (void)
     self.nsocks = 0;
     self.zombie = 0;
 
-    /*  Allocate the global table of SP endpoints. */
-    self.max_eps = SP_MAX_EPS;
-    self.eps = sp_alloc (sizeof (struct sp_ep*) * self.max_eps,
-        "endpoint table");
-    alloc_assert (self.eps);
-    for (i = 0; i != self.max_eps; ++i)
-        self.eps [i] = NULL;
-
     /*  Initialise other parts of the global state. */
     sp_mutex_init (&self.sync);
     sp_list_init (&self.transports);
     sp_list_init (&self.socktypes);
-    self.next_eid = 1;
     sp_cond_init (&self.termcond);
 
     /*  Plug in individual transports. */
@@ -283,8 +264,6 @@ int sp_term (void)
     sp_list_term (&self.socktypes);
     sp_list_term (&self.transports);
     sp_mutex_term (&self.sync);
-    sp_free (self.eps);
-    self.eps = NULL;
     sp_free (self.socks);
     self.socks = NULL;
 
@@ -357,24 +336,13 @@ int sp_socket (int domain, int protocol)
 int sp_close (int s)
 {
     int i;
-    struct sp_ep *ep;
 
     SP_BASIC_CHECKS;
 
     sp_mutex_lock (&self.sync);
 
-    /*  Ask all the endpoints associated with the socket to shut down. */
-    /*  TODO:  This is O(n) algorithm. */
-    for (i = 0; i != self.max_eps; ++i) {
-        ep = self.eps [i];
-        if (ep && sp_ep_fd (ep) == s) {
-            sp_ep_close (ep);
-            self.eps [i] = NULL;
-        }
-    }
-
-    /*  Deallocate the socket object itself. */
-    sp_sock_term (self.socks [s]);
+    /*  Deallocate the socket object. */
+    sp_sock_close (self.socks [s]);
     sp_free (self.socks [s]);
     self.socks [s] = NULL;
 
@@ -439,7 +407,7 @@ int sp_bind (int s, const char *addr)
 
     SP_BASIC_CHECKS;
 
-    rc = sp_ctx_create_endpoint (s, addr, 1);
+    rc = sp_ctx_create_ep (s, addr, 1);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -454,7 +422,7 @@ int sp_connect (int s, const char *addr)
 
     SP_BASIC_CHECKS;
 
-    rc = sp_ctx_create_endpoint (s, addr, 0);
+    rc = sp_ctx_create_ep (s, addr, 0);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -466,32 +434,15 @@ int sp_connect (int s, const char *addr)
 int sp_shutdown (int s, int how)
 {
     int rc;
-    struct sp_ep *ep;
 
     SP_BASIC_CHECKS;
 
-    sp_mutex_lock (&self.sync);
-
-    /*  Check whether the endpoint exists. */
-    ep = self.eps [how];
-    if (sp_slow (!ep)) {
-        sp_mutex_unlock (&self.sync);
-        errno = -EINVAL;
+    rc = sp_sock_shutdown (self.socks [s], how);
+    if (sp_slow (rc < 0)) {
+        errno = -rc;
         return -1;
     }
-
-    /*  Check whether the endpoint is associated with the socket in question. */
-    if (sp_slow (sp_ep_fd (ep) != s)) {
-        sp_mutex_unlock (&self.sync);
-        errno = -EINVAL;
-        return -1;
-    }
-
-    /*  Ask all the endpoint to shut down. */
-    sp_ep_close (ep); /*  TODO: linger */
-    self.eps [how] = NULL;
-
-    sp_mutex_unlock (&self.sync);
+    sp_assert (rc == 0);
 
     return 0;
 }
@@ -551,7 +502,7 @@ static void sp_ctx_add_socktype (struct sp_socktype *socktype)
         sp_list_end (&self.socktypes));
 }
 
-static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
+static int sp_ctx_create_ep (int fd, const char *addr, int bind)
 {
     int rc;
     int eid;
@@ -580,6 +531,7 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
 
     /*  Find the specified protocol. */
     tp = NULL;
+    sp_mutex_lock (&self.sync);
     for (it = sp_list_begin (&self.transports);
           it != sp_list_end (&self.transports);
           it = sp_list_next (&self.transports, it)) {
@@ -587,45 +539,17 @@ static int sp_ctx_create_endpoint (int fd, const char *addr, int bind)
         if (strlen (tp->name ()) == protosz &&
               memcmp (tp->name (), proto, protosz) == 0)
             break;
+        tp = NULL;
     }
+    sp_mutex_unlock (&self.sync);
 
     /*  The protocol specified doesn't match any known protocol. */
     if (!tp)
         return -EPROTONOSUPPORT;
 
-    sp_mutex_lock (&self.sync);
-
-    /*  Ask transport to create appropriate endpoint object. */
-    if (bind)
-        rc = tp->bind (addr, (void*) self.socks [fd],
-            (struct sp_epbase**) &ep);
-    else
-        rc = tp->connect (addr, (void*) self.socks [fd],
-            (struct sp_epbase**) &ep);
-    if (sp_slow (rc != 0)) {
-        sp_mutex_unlock (&self.sync);
-        return rc;
-    }
-    sp_assert (ep);
-
-    /*  Find an unused endpoint ID. */
-    /*  TODO: This is O(n) operation! Linked list of empty endpoint IDs
-        should be implemented. */
-    for (eid = 0; eid != self.max_eps; ++eid)
-        if (!self.eps [eid])
-            break;
-
-    /*  TODO: Auto-resize the array here! */
-    if (sp_slow (eid == self.max_eps)) {
-        sp_mutex_unlock (&self.sync);
-        return -EMFILE;
-    }
-
-    /*  Store the reference to the endpoint. */
-    self.eps [eid] = ep;
-
-    sp_mutex_unlock (&self.sync);
-
-    return eid;
+    /*  Ask socket to create the endpoint. Pass it the class factory
+        function. */
+    return sp_sock_create_ep (self.socks [fd], addr,
+        bind ? tp->bind : tp->connect);
 }
 

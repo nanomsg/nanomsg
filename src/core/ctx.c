@@ -333,8 +333,6 @@ int sp_socket (int domain, int protocol)
 
 int sp_close (int s)
 {
-    int i;
-
     SP_BASIC_CHECKS;
 
     sp_mutex_lock (&self.sync);
@@ -504,13 +502,10 @@ static void sp_ctx_add_socktype (struct sp_socktype *socktype)
 
 static int sp_ctx_create_ep (int fd, const char *addr, int bind)
 {
-    int rc;
-    int eid;
     const char *proto;
     const char *delim;
     size_t protosz;
     struct sp_transport *tp;
-    struct sp_ep *ep;
     struct sp_list_item *it;
 
     /*  Check whether address is valid. */

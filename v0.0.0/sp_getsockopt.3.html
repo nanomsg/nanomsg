@@ -668,7 +668,8 @@ The options are as follows:</p></div>
     It specifies maximum reconnection interval. On each reconnect attempt,
     the previous interval is doubled until <em>SP_RECONNECT_IVL_MAX</em> is reached.
     Value of zero means that no exponential backoff is performed and reconnect
-    interval is based only on <em>SP_RECONNECT_IVL</em>. The type of the option is int.
+    interval is based only on <em>SP_RECONNECT_IVL</em>. If <em>SP_RECONNECT_IVL_MAX</em> is
+    less than <em>SP_RECONNECT_IVL</em>, it is ignored. The type of the option is int.
     Default value is 0.
 </p>
 </dd>
@@ -751,7 +752,7 @@ sp_getsockopt (s, SOL_SP, SP_LINGER, &amp;linger, &amp;sz);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-09 08:34:51 CET
 </div>
 </div>
 </body>

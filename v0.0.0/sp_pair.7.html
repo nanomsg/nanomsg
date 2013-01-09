@@ -581,15 +581,46 @@ sp_pair(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>PAIR pattern.</p></div>
+<div class="paragraph"><p>Pair pattern is the simplest and least scalable messaging pattern. It allows
+scaling by breaking the application in exactly two pieces. For example,
+if a monolithic application handles both accounting and agenda of HR department,
+it can be split into two applications (accounting vs. HR) that are run on two
+separate servers. These applications can then communicate via PAIR sockets.</p></div>
+<div class="paragraph"><p>The downside of this pattern is that its scaling properties are very limited.
+Splitting the application into two pieces allows to scale to two servers.
+To add the third server to the cluster, application has to be split once more,
+say be separating HR functionality into hiring module and salary computation
+module. Whenever possible, try to use one of the more scalable patterns instead.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+SP_PAIR
+</dt>
+<dd>
+<p>
+    Socket for communication with exactly one peer. Each party can send messages
+    at any time. If the peer is not available or send buffer is full subsequent
+    calls to <a href="sp_send.3.html">sp_send(3)</a> will block until it&#8217;s possible to send the
+    message.
+</p>
+</dd>
+</dl></div>
+</div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="paragraph"><p>No protocol-specific socket options are degined at the moment.</p></div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_socket.3.html">sp_socket(3)</a>
-<a href="sp_getsockopt.3.html">sp_getsockopt(3)</a>
-<a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
+<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
+<a href="sp_reqrep.7.html">sp_reqrep(7)</a>
+<a href="sp_fanin.7.html">sp_fanin(7)</a>
+<a href="sp_fanout.7.html">sp_fanout(7)</a>
+<a href="sp_survey.7.html">sp_survey(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -604,7 +635,7 @@ sp_pair(7) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-09 10:33:59 CET
 </div>
 </div>
 </body>

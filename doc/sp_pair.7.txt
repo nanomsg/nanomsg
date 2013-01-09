@@ -15,14 +15,36 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-PAIR pattern.
+Pair pattern is the simplest and least scalable messaging pattern. It allows
+scaling by breaking the application in exactly two pieces. For example,
+if a monolithic application handles both accounting and agenda of HR department,
+it can be split into two applications (accounting vs. HR) that are run on two
+separate servers. These applications can then communicate via PAIR sockets.
 
+The downside of this pattern is that its scaling properties are very limited.
+Splitting the application into two pieces allows to scale to two servers.
+To add the third server to the cluster, application has to be split once more,
+say be separating HR functionality into hiring module and salary computation
+module. Whenever possible, try to use one of the more scalable patterns instead.
+
+Socket Types
+~~~~~~~~~~~~
+
+SP_PAIR::
+    Socket for communication with exactly one peer.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+No protocol-specific socket options are degined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_pubsub[7]
+linknanomsg:sp_reqrep[7]
+linknanomsg:sp_fanin[7]
+linknanomsg:sp_fanout[7]
+linknanomsg:sp_survey[7]
 linknanomsg:nanomsg[7]
 
 

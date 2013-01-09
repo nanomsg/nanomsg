@@ -31,7 +31,10 @@ Socket Types
 ~~~~~~~~~~~~
 
 SP_PAIR::
-    Socket for communication with exactly one peer.
+    Socket for communication with exactly one peer. Each party can send messages
+    at any time. If the peer is not available or send buffer is full subsequent
+    calls to linknanomsg:sp_send[3] will block until it's possible to send the
+    message.
 
 Socket Options
 ~~~~~~~~~~~~~~

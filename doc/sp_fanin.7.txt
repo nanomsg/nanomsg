@@ -3,7 +3,7 @@ sp_fanin(7)
 
 NAME
 ----
-sp_fanin - Fan-in messaging pattern
+sp_fanin - fan-in (data aggregation) scalability protocol
 
 
 SYNOPSIS
@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-FANIN pattern.
+FANIN protocol.
 
 
 SEE ALSO

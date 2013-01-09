@@ -27,7 +27,7 @@ set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 add_library (nanomsg SHARED
     sp.h
     transport.h
-    pattern.h
+    protocol.h
     inproc.h
     ipc.h
     tcp.h
@@ -102,53 +102,53 @@ add_library (nanomsg SHARED
     utils/wire.h
     utils/wire.c
 
-    patterns/fanin/sink.h
-    patterns/fanin/sink.c
-    patterns/fanin/source.h
-    patterns/fanin/source.c
-    patterns/fanin/xsink.h
-    patterns/fanin/xsink.c
-    patterns/fanin/xsource.h
-    patterns/fanin/xsource.c
+    protocols/fanin/sink.h
+    protocols/fanin/sink.c
+    protocols/fanin/source.h
+    protocols/fanin/source.c
+    protocols/fanin/xsink.h
+    protocols/fanin/xsink.c
+    protocols/fanin/xsource.h
+    protocols/fanin/xsource.c
 
-    patterns/fanout/push.h
-    patterns/fanout/push.c
-    patterns/fanout/pull.h
-    patterns/fanout/pull.c
-    patterns/fanout/xpull.h
-    patterns/fanout/xpull.c
-    patterns/fanout/xpush.h
-    patterns/fanout/xpush.c
+    protocols/fanout/push.h
+    protocols/fanout/push.c
+    protocols/fanout/pull.h
+    protocols/fanout/pull.c
+    protocols/fanout/xpull.h
+    protocols/fanout/xpull.c
+    protocols/fanout/xpush.h
+    protocols/fanout/xpush.c
 
-    patterns/pair/pair.h
-    patterns/pair/pair.c
-    patterns/pair/xpair.h
-    patterns/pair/xpair.c
+    protocols/pair/pair.h
+    protocols/pair/pair.c
+    protocols/pair/xpair.h
+    protocols/pair/xpair.c
 
-    patterns/pubsub/pub.h
-    patterns/pubsub/pub.c
-    patterns/pubsub/sub.h
-    patterns/pubsub/sub.c
-    patterns/pubsub/trie.h
-    patterns/pubsub/trie.c
+    protocols/pubsub/pub.h
+    protocols/pubsub/pub.c
+    protocols/pubsub/sub.h
+    protocols/pubsub/sub.c
+    protocols/pubsub/trie.h
+    protocols/pubsub/trie.c
 
-    patterns/reqrep/req.h
-    patterns/reqrep/req.c
-    patterns/reqrep/rep.h
-    patterns/reqrep/rep.c
-    patterns/reqrep/xrep.h
-    patterns/reqrep/xrep.c
-    patterns/reqrep/xreq.h
-    patterns/reqrep/xreq.c
+    protocols/reqrep/req.h
+    protocols/reqrep/req.c
+    protocols/reqrep/rep.h
+    protocols/reqrep/rep.c
+    protocols/reqrep/xrep.h
+    protocols/reqrep/xrep.c
+    protocols/reqrep/xreq.h
+    protocols/reqrep/xreq.c
 
-    patterns/survey/respondent.h
-    patterns/survey/respondent.c
-    patterns/survey/surveyor.h
-    patterns/survey/surveyor.c
-    patterns/survey/xrespondent.h
-    patterns/survey/xrespondent.c
-    patterns/survey/xsurveyor.h
-    patterns/survey/xsurveyor.c
+    protocols/survey/respondent.h
+    protocols/survey/respondent.c
+    protocols/survey/surveyor.h
+    protocols/survey/surveyor.c
+    protocols/survey/xrespondent.h
+    protocols/survey/xrespondent.c
+    protocols/survey/xsurveyor.h
+    protocols/survey/xsurveyor.c
 
     transports/inproc/inproc.h
     transports/inproc/inproc_ctx.h

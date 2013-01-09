@@ -23,7 +23,7 @@
 #ifndef SP_EXCL_INCLUDED
 #define SP_EXCL_INCLUDED
 
-#include "../pattern.h"
+#include "../protocol.h"
 
 #include <stddef.h>
 

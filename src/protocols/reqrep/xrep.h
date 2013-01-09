@@ -23,7 +23,7 @@
 #ifndef SP_XREP_INCLUDED
 #define SP_XREP_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
 #include "../../utils/list.h"
 #include "../../utils/hash.h"

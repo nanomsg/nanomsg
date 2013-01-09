@@ -23,7 +23,7 @@
 #ifndef SP_XSURVEYOR_INCLUDED
 #define SP_XSURVEYOR_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
 extern struct sp_socktype *sp_xsurveyor_socktype;
 

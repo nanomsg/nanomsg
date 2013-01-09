@@ -20,11 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SUB_INCLUDED
-#define SP_SUB_INCLUDED
+#ifndef SP_XPUSH_INCLUDED
+#define SP_XPUSH_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
-extern struct sp_socktype *sp_sub_socktype;
+extern struct sp_socktype *sp_xpush_socktype;
+
+struct sp_sockbase *sp_xpush_create (int fd);
 
 #endif
+

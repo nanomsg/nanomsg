@@ -3,7 +3,7 @@ sp_reqrep(7)
 
 NAME
 ----
-sp_reqrep - Request/Reply messaging pattern
+sp_reqrep - request/reply scalability protocol
 
 
 SYNOPSIS
@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-REQREP pattern.
+REQREP protocol.
 
 
 SEE ALSO

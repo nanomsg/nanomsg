@@ -1,5 +1,5 @@
 #
-#   Copyright (c) 2012 250bpm s.r.o.
+#   Copyright (c) 2012-2013 250bpm s.r.o.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -29,7 +29,7 @@ if (NOT WIN32)
         #  Main page.
         nanomsg.7
 
-        #  Patterns.
+        #  Protocols.
         sp_pair.7
         sp_reqrep.7
         sp_pubsub.7

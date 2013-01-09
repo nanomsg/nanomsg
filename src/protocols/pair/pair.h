@@ -20,11 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_RESPONDENT_INCLUDED
-#define SP_RESPONDENT_INCLUDED
+#ifndef SP_PAIR_INCLUDED
+#define SP_PAIR_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
-extern struct sp_socktype *sp_respondent_socktype;
+extern struct sp_socktype *sp_pair_socktype;
 
 #endif

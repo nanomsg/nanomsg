@@ -3,7 +3,7 @@ sp_fanout(7)
 
 NAME
 ----
-sp_fanout - Fan-out messaging pattern
+sp_fanout - fan-out (load balancing) scalability protocol
 
 
 SYNOPSIS
@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-FANOUT pattern.
+FANOUT protocol.
 
 
 SEE ALSO

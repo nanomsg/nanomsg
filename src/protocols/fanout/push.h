@@ -23,7 +23,7 @@
 #ifndef SP_PUSH_INCLUDED
 #define SP_PUSH_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
 extern struct sp_socktype *sp_push_socktype;
 

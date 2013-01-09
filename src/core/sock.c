@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../pattern.h"
+#include "../protocol.h"
 #include "../transport.h"
 
 #include "sock.h"
@@ -181,7 +181,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
         return 0;
     }
 
-    /*  Pattern-specific socket options. */
+    /*  Protocol-specific socket options. */
     if (level > SP_SOL_SOCKET) {
         rc = sockbase->vfptr->setopt (sockbase, level, option,
             optval, optvallen);
@@ -253,7 +253,7 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
         return 0;
     }
 
-    /*  Pattern-specific socket options. */
+    /*  Protocol-specific socket options. */
     if (level > SP_SOL_SOCKET) {
         rc = sockbase->vfptr->getopt (sockbase, level, option,
             optval, optvallen);

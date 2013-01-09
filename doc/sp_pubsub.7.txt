@@ -3,7 +3,7 @@ sp_pubsub(7)
 
 NAME
 ----
-sp_pubsub - Publish/Subscribe messaging pattern
+sp_pubsub - publish/subscribe scalability protocol
 
 
 SYNOPSIS
@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-PUBSUB pattern.
+PUBSUB protocol.
 
 
 SEE ALSO

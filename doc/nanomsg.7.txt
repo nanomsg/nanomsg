@@ -4,7 +4,7 @@ nanomsg(7)
 
 NAME
 ----
-nanomsg - messaging patterns library
+nanomsg - scalability protocols library
 
 
 SYNOPSIS
@@ -59,24 +59,24 @@ Convert an error number into human-readable string::
 Report the version of nanomsg library::
     linknanomsg:sp_version[3]
 
-Following messaging patterns are provided by nanomsg:
+Following scalability protocols are provided by nanomsg:
 
-One-to-one communication pattern::
+One-to-one protocol::
     linknanomsg:sp_pair[7]
 
-Request/reply pattern::
+Request/reply protocol::
     linknanomsg:sp_reqrep[7]
 
-Publish/subscribe pattern::
+Publish/subscribe protocol::
     linknanomsg:sp_pubsub[7]
 
-Survey pattern::
+Survey protocol::
     linknanomsg:sp_survey[7]
 
-Fan-in (data aggregation) pattern::
+Fan-in (data aggregation) protocol::
     linknanomsg:sp_fanin[7]
 
-Fan-out (load balancing) pattern::
+Fan-out (load balancing) protocol::
     linknanomsg:sp_fanout[7]
 
 Following transport mechanisms are provided by nanomsg:

@@ -23,7 +23,7 @@
 #ifndef SP_SINK_INCLUDED
 #define SP_SINK_INCLUDED
 
-#include "../../pattern.h"
+#include "../../protocol.h"
 
 extern struct sp_socktype *sp_sink_socktype;
 

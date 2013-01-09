@@ -3,7 +3,7 @@ sp_survey(7)
 
 NAME
 ----
-sp_survey - Survey messaging pattern
+sp_survey - survey scalability protocol
 
 
 SYNOPSIS
@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-SURVEY pattern.
+SURVEY protocol.
 
 
 SEE ALSO

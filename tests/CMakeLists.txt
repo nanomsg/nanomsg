@@ -1,5 +1,5 @@
 #
-#   Copyright (c) 2012 250bpm s.r.o.
+#   Copyright (c) 2012-2013 250bpm s.r.o.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@ add_libnanomsg_test (inproc)
 add_libnanomsg_test (ipc)
 add_libnanomsg_test (tcp)
 
-#  Pattern tests.
+#  Protocol tests.
 add_libnanomsg_test (pair)
 add_libnanomsg_test (pubsub)
 add_libnanomsg_test (reqrep)

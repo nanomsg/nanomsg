@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_PATTERN_INCLUDED
-#define SP_PATTERN_INCLUDED
+#ifndef SP_PROTOCOL_INCLUDED
+#define SP_PROTOCOL_INCLUDED
 
 #include "utils/aio.h"
 #include "utils/cond.h"
@@ -129,8 +129,8 @@ struct sp_socktype {
     int protocol;
     struct sp_sockbase *(*create) (int fd);
 
-    /*  This member is owned by the core. Never touch it directly from
-        the pattern. */
+    /*  This member is owned by the core. Never touch it directly from inside
+        the protocol implementation. */
     struct sp_list_item list;
 };
 

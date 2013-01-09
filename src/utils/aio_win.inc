@@ -27,7 +27,7 @@
 #include "err.h"
 
 /*  Private functions. */
-static void sp_usock_tune (struct sp_usock *self);
+static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf);
 static void sp_cp_worker (void *arg);
 
 void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
@@ -104,7 +104,8 @@ void sp_event_signal (struct sp_event *self)
 }
 
 int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
-    int domain, int type, int protocol, struct sp_cp *cp)
+    int domain, int type, int protocol, int sndbuf, int rcvbuf,
+    struct sp_cp *cp)
 {
     HANDLE wcp;
 
@@ -119,7 +120,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     if (self->s == INVALID_SOCKET)
        return -sp_err_wsa_to_posix (WSAGetLastError ());
 
-    sp_usock_tune (self);
+    sp_usock_tune (self, sndbuf, rcvbuf);
 
     /*  On Windows platform, socket is assocaited with a completion port
         immediately after creation. */
@@ -141,7 +142,8 @@ const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
 }
 
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_cp_sink **sink, struct sp_cp *cp)
+    int s, const struct sp_cp_sink **sink, int sndbuf, int rcvbuf,
+    struct sp_cp *cp)
 {
     self->sink = sink;
     self->s = s;
@@ -150,12 +152,12 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->type = parent->type;
     self->protocol = parent->protocol;
 
-    sp_usock_tune (self);
+    sp_usock_tune (self, sndbuf, rcvbuf);
 
     return 0;
 }
 
-static void sp_usock_tune (struct sp_usock *self)
+static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf)
 {
     int rc;
     int opt;
@@ -163,6 +165,18 @@ static void sp_usock_tune (struct sp_usock *self)
 #if defined HANDLE_FLAG_INHERIT
     BOOL brc;
 #endif
+
+    /*  Set the size of tx and rc buffers. */
+    if (sndbuf >= 0) {
+        rc = setsockopt (self->s, SOL_SOCKET, SO_SNDBUF,
+            (char*) &sndbuf, sizeof (sndbuf));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
+    if (rcvbuf >= 0) {
+        rc = setsockopt (self->s, SOL_SOCKET, SO_RCVBUF,
+            (char*) &rcvbuf, sizeof (rcvbuf));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
 
     /*  On TCP sockets switch off the Nagle's algorithm to get
         the best possible latency. */

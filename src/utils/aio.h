@@ -67,9 +67,11 @@ void sp_event_term (struct sp_event *self);
 void sp_event_signal (struct sp_event *self);
 
 int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
-    int domain, int type, int protocol, struct sp_cp *cp);
+    int domain, int type, int protocol, int sndbuf, int rcvbuf,
+    struct sp_cp *cp);
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_cp_sink **sink, struct sp_cp *cp);
+    int s, const struct sp_cp_sink **sink, int sndbuf, int rcvbuf,
+    struct sp_cp *cp);
 const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
     const struct sp_cp_sink **sink);
 void sp_usock_close (struct sp_usock *self);

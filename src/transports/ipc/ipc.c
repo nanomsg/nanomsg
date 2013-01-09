@@ -39,7 +39,8 @@
 /*  Private functions. */
 static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
     struct sp_cp *cp, int backlog);
-static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp);
+static int sp_ipc_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
+    struct sp_cp *cp);
 static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen);
 
@@ -137,7 +138,7 @@ static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
     errno_assert (rc == 0 || errno == ENOENT);
 
     /*  Open the listening socket. */
-    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
     errnum_assert (rc == 0, -rc);
     rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
     errnum_assert (rc == 0, -rc);
@@ -145,9 +146,11 @@ static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
     return 0;
 }
 
-static int sp_ipc_csockinit (struct sp_usock *usock, struct sp_cp *cp)
+static int sp_ipc_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
+    struct sp_cp *cp)
 {
-    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, cp);
+    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
+        sndbuf, rcvbuf, cp);
 }
 
 static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,

@@ -50,9 +50,27 @@ static const struct sp_cp_sink sp_astream_state_connected = {
 void sp_astream_init (struct sp_astream *self, struct sp_epbase *epbase,
     int s, struct sp_usock *usock, struct sp_bstream *bstream)
 {
+    int sndbuf;
+    int rcvbuf;
+    size_t sz;
+
+    /*  Switch the state. */
     self->sink = &sp_astream_state_connected;
     self->bstream = bstream;
-    sp_usock_init_child (&self->usock, usock, s, &self->sink, usock->cp);
+
+    /*  Get the current values of SP_SNDBUF and SP_RCVBUF options. */    
+    sz = sizeof (sndbuf);
+    sp_epbase_getopt (&self->bstream->epbase, SP_SOL_SOCKET, SP_SNDBUF,
+        &sndbuf, &sz);
+    sp_assert (sz == sizeof (sndbuf));
+    sz = sizeof (rcvbuf);
+    sp_epbase_getopt (&self->bstream->epbase, SP_SOL_SOCKET, SP_RCVBUF,
+        &rcvbuf, &sz);
+    sp_assert (sz == sizeof (rcvbuf));
+
+    /*  Start the stream state machine. */
+    sp_usock_init_child (&self->usock, usock, s, &self->sink, sndbuf, rcvbuf,
+        usock->cp);
     sp_stream_init (&self->stream, epbase, &self->usock);
 }
 

@@ -37,7 +37,7 @@
 
 /*  Private functions. */
 static void sp_cp_worker (void *arg);
-static void sp_usock_tune (struct sp_usock *self);
+static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf);
 static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
     size_t *len);
 static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
@@ -111,7 +111,8 @@ void sp_event_signal (struct sp_event *self)
 }
 
 int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
-    int domain, int type, int protocol, struct sp_cp *cp)
+    int domain, int type, int protocol, int sndbuf, int rcvbuf,
+    struct sp_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     int rc;
@@ -154,7 +155,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     errno_assert (rc != -1);
 #endif
 
-    sp_usock_tune (self);
+    sp_usock_tune (self, sndbuf, rcvbuf);
 
     return 0;
 }
@@ -170,7 +171,8 @@ const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
 }
 
 int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_cp_sink **sink, struct sp_cp *cp)
+    int s, const struct sp_cp_sink **sink, int sndbuf, int rcvbuf,
+    struct sp_cp *cp)
 {
     self->sink = sink;
     self->s = s;
@@ -189,7 +191,7 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->protocol = parent->protocol;
     self->flags = 0;
 
-    sp_usock_tune (self);
+    sp_usock_tune (self, sndbuf, rcvbuf);
 
     /*  Register the new socket with the suplied completion port. 
         If the function is called from the worker thread, modify the pollset
@@ -205,12 +207,24 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     return 0;
 }
 
-static void sp_usock_tune (struct sp_usock *self)
+static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf)
 {
     int rc;
     int opt;
     int flags;
     int only;
+
+    /*  Set the size of tx and rc buffers. */
+    if (sndbuf >= 0) {
+        rc = setsockopt (self->s, SOL_SOCKET, SO_SNDBUF,
+            &sndbuf, sizeof (sndbuf));
+        errno_assert (rc == 0);
+    }
+    if (rcvbuf >= 0) {
+        rc = setsockopt (self->s, SOL_SOCKET, SO_RCVBUF,
+            &rcvbuf, sizeof (rcvbuf));
+        errno_assert (rc == 0);
+    }
 
     /*  If applicable, prevent SIGPIPE signal when writing to the connection
         already closed by the peer. */

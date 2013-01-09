@@ -73,9 +73,7 @@ static int sp_cstream_compute_retry_ivl (struct sp_cstream *self)
         and/or server goes down and then up again. This may rise
         the reconnection interval at most twice and at most by one second. */
     sp_random_generate (&random, sizeof (random));
-printf ("delay=%d\n", result);
     result += (random % result % 1000);
-printf ("delay+random=%d\n", result);
     return result;
 }
 
@@ -102,11 +100,14 @@ static const struct sp_cp_sink sp_cstream_state_waiting = {
 };
 
 int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp),
-    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen))
+    int (*initsockfn) (struct sp_usock *sock, int sndbuf, int rcvbuf,
+    struct sp_cp *cp), int (*resolvefn) (const char *addr,
+    struct sockaddr_storage *ss, socklen_t *sslen))
 {
     int rc;
+    int sndbuf;
+    int rcvbuf;
+    size_t sz;
 
     self->initsockfn = initsockfn;
     self->resolvefn = resolvefn;
@@ -118,8 +119,17 @@ int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
     /*  Initialise the base class. */
     sp_epbase_init (&self->epbase, &sp_cstream_epbase_vfptr, addr, hint);
 
+    /*  Get the current values of SP_SNDBUF and SP_RCVBUF options. */    
+    sz = sizeof (sndbuf);
+    sp_epbase_getopt (&self->epbase, SP_SOL_SOCKET, SP_SNDBUF, &sndbuf, &sz);
+    sp_assert (sz == sizeof (sndbuf));
+    sz = sizeof (rcvbuf);
+    sp_epbase_getopt (&self->epbase, SP_SOL_SOCKET, SP_RCVBUF, &rcvbuf, &sz);
+    sp_assert (sz == sizeof (rcvbuf));
+
     /*  Open a socket. */
-    rc = self->initsockfn (&self->usock, sp_epbase_getcp (&self->epbase));
+    rc = self->initsockfn (&self->usock, sndbuf, rcvbuf,
+        sp_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
     sp_usock_setsink (&self->usock, &self->sink);
 
@@ -260,11 +270,22 @@ static void sp_cstream_closing_closed (const struct sp_cp_sink **self,
 {
     int rc;
     struct sp_cstream *cstream;
+    int sndbuf;
+    int rcvbuf;
+    size_t sz;
 
     cstream = sp_cont (self, struct sp_cstream, sink);
 
+    /*  Get the current values of SP_SNDBUF and SP_RCVBUF options. */    
+    sz = sizeof (sndbuf);
+    sp_epbase_getopt (&cstream->epbase, SP_SOL_SOCKET, SP_SNDBUF, &sndbuf, &sz);
+    sp_assert (sz == sizeof (sndbuf));
+    sz = sizeof (rcvbuf);
+    sp_epbase_getopt (&cstream->epbase, SP_SOL_SOCKET, SP_RCVBUF, &rcvbuf, &sz);
+    sp_assert (sz == sizeof (rcvbuf));
+
     /*  Create new socket. */
-    rc = cstream->initsockfn (&cstream->usock,
+    rc = cstream->initsockfn (&cstream->usock, sndbuf, rcvbuf,
         sp_epbase_getcp (&cstream->epbase));
     errnum_assert (rc == 0, -rc);
     sp_usock_setsink (&cstream->usock, &cstream->sink);

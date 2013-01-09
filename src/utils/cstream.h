@@ -51,15 +51,16 @@ struct sp_cstream {
     struct sp_timer retry_timer;
 
     /*  Virtual functions supplied by the specific transport type. */
-    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp);
+    int (*initsockfn) (struct sp_usock *sock, int sndbuf, int rcvbuf,
+        struct sp_cp *cp);
     int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
         socklen_t *sslen);
 };
 
 int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct sp_usock *sock, struct sp_cp *cp),
-    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen));
+    int (*initsockfn) (struct sp_usock *sock, int sndbuf, int rcvbuf,
+    struct sp_cp *cp), int (*resolvefn) (const char *addr,
+    struct sockaddr_storage *ss, socklen_t *sslen));
 
 #endif
 

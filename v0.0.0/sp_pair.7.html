@@ -566,7 +566,7 @@ sp_pair(7) Manual Page
 <h2>NAME</h2>
 <div class="sectionbody">
 <p>sp_pair -
-   one-to-one messaging pattern
+   one-to-one scalability protocol
 </p>
 </div>
 </div>
@@ -581,16 +581,17 @@ sp_pair(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Pair pattern is the simplest and least scalable messaging pattern. It allows
+<div class="paragraph"><p>Pair protocol is the simplest and least scalable scalability protocol. It allows
 scaling by breaking the application in exactly two pieces. For example,
 if a monolithic application handles both accounting and agenda of HR department,
 it can be split into two applications (accounting vs. HR) that are run on two
 separate servers. These applications can then communicate via PAIR sockets.</p></div>
-<div class="paragraph"><p>The downside of this pattern is that its scaling properties are very limited.
+<div class="paragraph"><p>The downside of this protocol is that its scaling properties are very limited.
 Splitting the application into two pieces allows to scale to two servers.
 To add the third server to the cluster, application has to be split once more,
 say be separating HR functionality into hiring module and salary computation
-module. Whenever possible, try to use one of the more scalable patterns instead.</p></div>
+module. Whenever possible, try to use one of the more scalable protocols
+instead.</p></div>
 <div class="sect2">
 <h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
@@ -635,7 +636,7 @@ SP_PAIR
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-09 10:33:59 CET
+Last updated 2013-01-09 11:53:53 CET
 </div>
 </div>
 </body>

@@ -25,6 +25,7 @@
 #include "cont.h"
 #include "addr.h"
 #include "alloc.h"
+#include "random.h"
 
 #include <string.h>
 
@@ -33,6 +34,50 @@ static const struct sp_cp_sink sp_cstream_state_waiting;
 static const struct sp_cp_sink sp_cstream_state_connecting;
 static const struct sp_cp_sink sp_cstream_state_connected;
 static const struct sp_cp_sink sp_cstream_state_closing;
+
+/*  Private functions. */
+static int sp_cstream_compute_retry_ivl (struct sp_cstream *self)
+{
+    int reconnect_ivl;
+    int reconnect_ivl_max;
+    size_t sz;
+    int result;
+    unsigned int random;
+
+    /*  Get relevant options' values. */
+    sz = sizeof (reconnect_ivl);
+    sp_epbase_getopt (&self->epbase, SP_SOL_SOCKET, SP_RECONNECT_IVL,
+        &reconnect_ivl, &sz);
+    sp_assert (sz == sizeof (reconnect_ivl));
+    sz = sizeof (reconnect_ivl_max);
+    sp_epbase_getopt (&self->epbase, SP_SOL_SOCKET, SP_RECONNECT_IVL_MAX,
+        &reconnect_ivl_max, &sz);
+    sp_assert (sz == sizeof (reconnect_ivl_max));
+
+    /*  Negative number means that reconnect sequence is starting.
+        The reconnect interval in this case is SP_RECONNECT_IVL. */
+    if (self->retry_ivl < 0)
+        self->retry_ivl = reconnect_ivl;
+
+    /*  Current retry_ivl will be returned to the caller. */
+    result = self->retry_ivl;
+
+    /*  Re-compute new retry interval. */
+    if (reconnect_ivl_max > 0 && reconnect_ivl_max > reconnect_ivl) {
+        self->retry_ivl *= 2;
+        if (self->retry_ivl > reconnect_ivl_max)
+            self->retry_ivl = reconnect_ivl_max;
+    }
+
+    /*  Randomise the result to prevent re-connection storms when network
+        and/or server goes down and then up again. This may rise
+        the reconnection interval at most twice and at most by one second. */
+    sp_random_generate (&random, sizeof (random));
+printf ("delay=%d\n", result);
+    result += (random % result % 1000);
+printf ("delay+random=%d\n", result);
+    return result;
+}
 
 /*  Implementation of sp_epbase interface. */
 static void sp_cstream_close (struct sp_epbase *self);
@@ -79,6 +124,7 @@ int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
     sp_usock_setsink (&self->usock, &self->sink);
 
     /*  Initialise the retry timer. */
+    self->retry_ivl = -1;
     sp_timer_init (&self->retry_timer, &self->sink,
         sp_epbase_getcp (&self->epbase));
 
@@ -106,8 +152,8 @@ static void sp_cstream_waiting_timeout (const struct sp_cp_sink **self,
     /*  If the address resolution have failed, wait and re-try. */
     if (rc < 0) {
         cstream->sink = &sp_cstream_state_waiting;
-        /*  TODO: Get the retry interval from the socket option. */
-        sp_timer_start (&cstream->retry_timer, 100);
+        sp_timer_start (&cstream->retry_timer,
+            sp_cstream_compute_retry_ivl (cstream));
         return;
     }
 
@@ -141,6 +187,8 @@ static void sp_cstream_connecting_connected (const struct sp_cp_sink **self,
     struct sp_cstream *cstream;
 
     cstream = sp_cont (self, struct sp_cstream, sink);
+
+    /*  Set current reconnect interval to the value of SP_RECONNECT_IVL. */
 
     /*  Connect succeeded. Switch to the session state machine. */
     cstream->sink = &sp_cstream_state_connected;
@@ -223,8 +271,8 @@ static void sp_cstream_closing_closed (const struct sp_cp_sink **self,
 
     /*  Wait for the specified period. */
     cstream->sink = &sp_cstream_state_waiting;
-    /*  TODO: Get the retry interval from the socket option. */
-    sp_timer_start (&cstream->retry_timer, 100);
+    sp_timer_start (&cstream->retry_timer,
+        sp_cstream_compute_retry_ivl (cstream));
 }
 
 /******************************************************************************/

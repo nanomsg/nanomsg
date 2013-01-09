@@ -43,6 +43,10 @@ struct sp_cstream {
         embed the session object directly into the connecter class. */
     struct sp_stream stream;
 
+    /*  Current value of rety interval, in milliseconds. -1 means that
+        value of SP_RECONNECT_IVL option should be used. */
+    int retry_ivl;
+
     /*  Timer to wait before retrying to connect. */
     struct sp_timer retry_timer;
 

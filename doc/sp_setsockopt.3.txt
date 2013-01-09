@@ -61,7 +61,8 @@ The options are as follows:
     It specifies maximum reconnection interval. On each reconnect attempt,
     the previous interval is doubled until _SP_RECONNECT_IVL_MAX_ is reached.
     Value of zero means that no exponential backoff is performed and reconnect
-    interval is based only on _SP_RECONNECT_IVL_. The type of the option is int.
+    interval is based only on _SP_RECONNECT_IVL_. If _SP_RECONNECT_IVL_MAX_ is
+    less than _SP_RECONNECT_IVL_, it is ignored. The type of the option is int.
     Default value is 0.
 
 

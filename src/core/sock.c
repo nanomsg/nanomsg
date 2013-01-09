@@ -199,7 +199,7 @@ int sp_sock_setopt (struct sp_sock *self, int level, int option,
 }
 
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
-    void *optval, size_t *optvallen, int ignoreeterm)
+    void *optval, size_t *optvallen, int internal)
 {
     int rc;
     struct sp_sockbase *sockbase;
@@ -207,10 +207,11 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
 
     sockbase = (struct sp_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    if (!internal)
+        sp_cp_lock (&sockbase->cp);
 
     /*  If sp_term() was already called, return ETERM. */
-    if (!ignoreeterm && sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
+    if (!internal && sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
         sp_cp_unlock (&sockbase->cp);
         return -ETERM;
     }
@@ -240,13 +241,15 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
             src = &sockbase->reconnect_ivl_max;
             break;
         default:
-            sp_cp_unlock (&sockbase->cp);
+            if (!internal)
+                sp_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
         }
         memcpy (optval, src,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
-        sp_cp_unlock (&sockbase->cp);
+        if (!internal)
+            sp_cp_unlock (&sockbase->cp);
         return 0;
     }
 
@@ -254,13 +257,15 @@ int sp_sock_getopt (struct sp_sock *self, int level, int option,
     if (level > SP_SOL_SOCKET) {
         rc = sockbase->vfptr->getopt (sockbase, level, option,
             optval, optvallen);
-        sp_cp_unlock (&sockbase->cp);
+        if (!internal)
+            sp_cp_unlock (&sockbase->cp);
         return rc;
     }
 
     /*  Transport-specific options. */
     if (level < SP_SOL_SOCKET) {
-        sp_cp_unlock (&sockbase->cp);
+        if (!internal)
+            sp_cp_unlock (&sockbase->cp);
         return -ENOPROTOOPT;
     }
 

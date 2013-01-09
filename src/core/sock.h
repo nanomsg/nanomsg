@@ -40,10 +40,10 @@ struct sp_cp *sp_sock_getcp (struct sp_sock *self);
 int sp_sock_setopt (struct sp_sock *self, int level, int option,
     const void *optval, size_t optvallen); 
 
-/*  Retrieve a socket option. If 'ignoreeterm' is set to 1 the option value
-    can be retrieved even though sp_term() was already called. */
+/*  Retrieve a socket option. 'internal' is set to 1 when called from within
+    nanomsg rather than from the API (sp_getsockopt). */
 int sp_sock_getopt (struct sp_sock *self, int level, int option,
-    void *optval, size_t *optvallen, int ignoreeterm);
+    void *optval, size_t *optvallen, int internal);
 
 /*  Add new endpoint to the socket. */
 int sp_sock_create_ep (struct sp_sock *self, const char *addr,

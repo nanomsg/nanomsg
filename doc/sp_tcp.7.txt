@@ -15,8 +15,44 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-TCP transport.
+TCP transport allows for passing message over the network using simple reliable
+one-to-one connections. TCP is the most widely used transport protocol, it is
+virtually ubiquitous and thus the transport of choice for communication over
+the network.
 
+When binding a TCP socket address of the form tcp://interface:port should be
+used. Port is the TCP port number to use. Interface is one of the following
+(optionally placed within square brackets):
+
+*  Asterisk character (*) meaning all local network interfaces.
+*  IPv4 address of a local network interface in numeric form (192.168.0.111).
+*  IPv6 address of a local network interface in numeric form (::1).
+*  Interface name, as defined by operating system.
+
+When connecting a TCP socket address of the form tcp://interface;address:port
+should be used. Port is the TCP port number to use. Interface is optional and
+specifies which local network interface to use. If not specified, OS will select
+an appropriate interface itself. If specified it can be one of the following
+(optionally placed within square brackets):
+
+*  IPv4 address of a local network interface in numeric form (192.168.0.111).
+*  IPv6 address of a local network interface in numeric form (::1).
+*  Interface name, as defined by operating system.
+
+Finally, address specifies the remote address to connect to. It can be one of
+the following (optionally placed within square brackets):
+
+*  IPv4 address of a remote network interface in numeric form (192.168.0.111).
+*  IPv6 address of a remote network interface in numeric form (::1).
+*  The DNS name of the remote box.
+
+EXAMPLE
+-------
+
+----
+sp_bind (s1, "tcp://*:5555");
+sp_connect (s2, "tcp://myserver:5555");
+----
 
 SEE ALSO
 --------

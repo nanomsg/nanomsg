@@ -28,6 +28,10 @@ linknanomsg:nanomsg[7] manual page.
 Maximum length of the 'addr' parameter is specified by _SP_SOCKADDR_MAX_
 defined in '<sp/sp.h>' header file.
 
+Note that sp_bind and linknanomsg:sp_connect[3] may be called multiple times
+on the same socket thus allowing the socket to communicate with multiple
+heterogenous endpoints.
+
 RETURN VALUE
 ------------
 If the function succeeds positive endpoint ID is returned. Endpoint ID can be

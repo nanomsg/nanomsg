@@ -80,8 +80,8 @@ void sp_sock_close (struct sp_sock *self)
     it = sp_list_begin (&sockbase->eps);
     while (it != sp_list_end (&sockbase->eps)) {
         ep = sp_cont (it, struct sp_epbase, item);
-        it = sp_list_next (&sockbase->eps, it);        
-        ep->vfptr->close (ep);
+        it = sp_list_next (&sockbase->eps, it);
+        sp_ep_close ((void*) ep);       
     }
 
     /*  If there are no active endpoints we can deallocate the socket
@@ -333,7 +333,7 @@ int sp_sock_shutdown (struct sp_sock *self, int eid)
     
     /*  Ask the endpoint to shutdown. Actual terminatation may be delayed
         by the transport. */
-    ep->vfptr->close (ep);
+    sp_ep_close ((void*) ep);
 
     sp_cp_unlock (&sockbase->cp);
 

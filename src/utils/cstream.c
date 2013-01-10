@@ -316,21 +316,12 @@ static const struct sp_cp_sink sp_cstream_state_terminating = {
 static void sp_cstream_close (struct sp_epbase *self)
 {
     struct sp_cstream *cstream;
-    int linger;
-    size_t lingersz;
 
     cstream = sp_cont (self, struct sp_cstream, epbase);
 
     /*  If termination is already underway, do nothing and let it continue. */
     if (cstream->sink == &sp_cstream_state_terminating)
         return;
-
-    /*  Get the current value of the linger option. */
-    lingersz = sizeof (linger);
-    sp_epbase_getopt (&cstream->epbase, SP_SOL_SOCKET, SP_LINGER,
-        &linger, &lingersz);
-    sp_assert (lingersz == sizeof (linger));
-    /*  TODO: Use the linger value to set the linger timer. */
 
     /*  If the connection exists, stop the session state machine. */
     if (cstream->sink == &sp_cstream_state_connected)

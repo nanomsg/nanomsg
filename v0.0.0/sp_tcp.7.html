@@ -581,7 +581,86 @@ sp_tcp(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TCP transport.</p></div>
+<div class="paragraph"><p>TCP transport allows for passing message over the network using simple reliable
+one-to-one connections. TCP is the most widely used transport protocol, it is
+virtually ubiquitous and thus the transport of choice for communication over
+the network.</p></div>
+<div class="paragraph"><p>When binding a TCP socket address of the form tcp://interface:port should be
+used. Port is the TCP port number to use. Interface is one of the following
+(optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Asterisk character (*) meaning all local network interfaces.
+</p>
+</li>
+<li>
+<p>
+IPv4 address of a local network interface in numeric form (192.168.0.111).
+</p>
+</li>
+<li>
+<p>
+IPv6 address of a local network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+Interface name, as defined by operating system.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>When connecting a TCP socket address of the form tcp://interface;address:port
+should be used. Port is the TCP port number to use. Interface is optional and
+specifies which local network interface to use. If not specified, OS will select
+an appropriate interface itself. If specified it can be one of the following
+(optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+IPv4 address of a local network interface in numeric form (192.168.0.111).
+</p>
+</li>
+<li>
+<p>
+IPv6 address of a local network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+Interface name, as defined by operating system.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Finally, address specifies the remote address to connect to. It can be one of
+the following (optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+IPv4 address of a remote network interface in numeric form (192.168.0.111).
+</p>
+</li>
+<li>
+<p>
+IPv6 address of a remote network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+The DNS name of the remote box.
+</p>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>sp_bind (s1, "tcp://*:5555");
+sp_connect (s2, "tcp://myserver:5555");</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
@@ -605,7 +684,7 @@ sp_tcp(7) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-10 08:50:02 CET
 </div>
 </div>
 </body>

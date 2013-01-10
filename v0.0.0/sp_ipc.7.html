@@ -566,7 +566,7 @@ sp_ipc(7) Manual Page
 <h2>NAME</h2>
 <div class="sectionbody">
 <p>sp_ipc -
-   Inter-process transport mechanism
+   inter-process transport mechanism
 </p>
 </div>
 </div>
@@ -581,7 +581,27 @@ sp_ipc(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Inter-process transport.</p></div>
+<div class="paragraph"><p>Inter-process transport allows for sending messages between processes within
+a single box. The implementation uses native IPC mechanism provided by the local
+operating system and the IPC addresses are thus OS-specific.</p></div>
+<div class="paragraph"><p>On POSIX-compliant systems, UNIX domain sockets are used and IPC addresses are
+file references. Note that both relative (ipc://test.ipc) and absolute
+(ipc:///tmp/test.ipc) paths may be used. Also note that access rights on the IPC
+files must be set in such a way that the appropriate applications can actually
+use them.</p></div>
+<div class="paragraph"><p>On Windows, named pipes are used for IPC. IPC address is an arbitrary
+case-insensitive string containing any character except for backslash.
+Internally, address ipc://test means that named pipe \\.\pipe\test will be used.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>sp_bind (s1, "ipc:///tmp/test.ipc");
+sp_connect (s2, "ipc:///tmp/test.ipc");</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
@@ -605,7 +625,7 @@ sp_ipc(7) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-10 08:23:35 CET
 </div>
 </div>
 </body>

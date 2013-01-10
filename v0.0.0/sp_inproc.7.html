@@ -566,7 +566,7 @@ sp_inproc(7) Manual Page
 <h2>NAME</h2>
 <div class="sectionbody">
 <p>sp_inproc -
-   In-process transport mechanism
+   in-process transport mechanism
 </p>
 </div>
 </div>
@@ -581,7 +581,27 @@ sp_inproc(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>In-process transport.</p></div>
+<div class="paragraph"><p>In-process transport allows to send messages between threads or modules inside a
+process. In-process address is an arbitrary case-sensitive string preceded by
+<em>inproc://</em> protocol specifier. All in-process addresses are visible from any
+module within the process. They are not visible from outside of the process.</p></div>
+<div class="paragraph"><p>The nature of in-process transport makes it easy to pass pointers between
+threads instead of actual data. This is, however, considered a bad application
+design and violates the scalable share-nothing architecture. If you do pass
+pointers among threads, synchronising thread access to shared data becomes
+your responsibility. Such design also prevents moving the thread into different
+process or machine once the need arises. As a rule of the thumb, don&#8217;t pass
+pointers among threads unless you know what you are doing.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>sp_bind (s1, "inproc://test");
+sp_connect (s2, "inproc://test);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
@@ -605,7 +625,7 @@ sp_inproc(7) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-10 08:06:20 CET
 </div>
 </div>
 </body>

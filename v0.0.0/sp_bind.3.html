@@ -590,6 +590,9 @@ of the <em>address</em> part is specific to the underlying transport protocol.</
 <a href="nanomsg.7.html">nanomsg(7)</a> manual page.</p></div>
 <div class="paragraph"><p>Maximum length of the <em>addr</em> parameter is specified by <em>SP_SOCKADDR_MAX</em>
 defined in <em>&lt;sp/sp.h&gt;</em> header file.</p></div>
+<div class="paragraph"><p>Note that sp_bind and <a href="sp_connect.3.html">sp_connect(3)</a> may be called multiple times
+on the same socket thus allowing the socket to communicate with multiple
+heterogenous endpoints.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -723,7 +726,7 @@ eid2 = sp_bind (s, "tcp://eth0:5560");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-10 08:30:15 CET
 </div>
 </div>
 </body>

@@ -15,14 +15,31 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-FANOUT protocol.
+Load balances messages among multiple destinations.
 
+Socket Types
+~~~~~~~~~~~~
+
+SP_PUSH::
+    This socket is used to send messages to the cluster of load-balanced
+    nodes. Receive operation is not implemented on this socket type.
+SP_PULL::
+    This socket is used to implement a node within a load-balanced cluster.
+    It can be used to receive messages. Send operation is not implemented
+    on this socket type. This socket can be connected to at most one peer.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_pubsub[7]
+linknanomsg:sp_reqrep[7]
+linknanomsg:sp_fanin[7]
+linknanomsg:sp_survey[7]
+linknanomsg:sp_pair[7]
 linknanomsg:nanomsg[7]
 
 

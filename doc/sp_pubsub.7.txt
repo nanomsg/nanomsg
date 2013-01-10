@@ -15,16 +15,39 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-PUBSUB protocol.
+Broadcasts messages to multiple destinations.
+
+Socket Types
+~~~~~~~~~~~~
+
+SP_PUB::
+    This socket is used to distribute messages to multiple destinations.
+    Receive operation is not defined.
+SP_SUB::
+    Receives messages from the publisher. Only messages that the socket is
+    subscribed to are received. When the socket is created there are no
+    subscriptions and thus no messages will be received. Send operation is
+    not defined on this socket. The socket can be connected to at most one peer.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+SP_SUBSCRIBE::
+    Defined on full SUB socket. Subscribes for a particular topic. Type of the
+    option is string.
+SP_UNSUBSCRIBE::
+    Defined on full SUB socket. Unsubscribes from a particular topic. Type of
+    the option is string.
 
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_reqrep[7]
+linknanomsg:sp_fanin[7]
+linknanomsg:sp_fanout[7]
+linknanomsg:sp_survey[7]
+linknanomsg:sp_pair[7]
 linknanomsg:nanomsg[7]
-
 
 AUTHORS
 -------

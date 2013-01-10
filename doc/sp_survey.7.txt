@@ -15,15 +15,40 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-SURVEY protocol.
+Allows to broadcast a survey to multiple locations and gather the responses.
+
+Socket Types
+~~~~~~~~~~~~
+
+SP_SURVEYOR::
+    Used to send the survey. The survey is delivered to all the connected
+    respondents. Once the query is sent, the socket can be used to receive
+    the responses. When the survey deadline expires, receive will return
+    ETIMEDOUT error.
+SP_RESPONDENT::
+    Use to respond to the survey. Survey is received using receive function,
+    response is sent using send function. This socket can be connected to
+    at most one peer.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+SP_DEADLINE::
+    Specifies how long to wait for responses to the survey. Once the deadline
+    expires, receive function will return ETIMEDOUT error and all subsequent
+    responses to the survey will be silently dropped. The deadline is measured
+    in milliseconds. Option type is int. Default value is 1000 (1 second).
 
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_pubsub[7]
+linknanomsg:sp_reqrep[7]
+linknanomsg:sp_fanin[7]
+linknanomsg:sp_fanout[7]
+linknanomsg:sp_pair[7]
 linknanomsg:nanomsg[7]
+
 
 
 AUTHORS

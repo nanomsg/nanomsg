@@ -40,7 +40,7 @@ SP_PAIR::
 Socket Options
 ~~~~~~~~~~~~~~
 
-No protocol-specific socket options are degined at the moment.
+No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------

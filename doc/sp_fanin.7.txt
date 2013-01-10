@@ -15,14 +15,31 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-FANIN protocol.
+Collects messages from multiple sources.
 
+Socket Types
+~~~~~~~~~~~~
+
+SP_SOURCE::
+    Allows to send messages to the central sink. Receive operation is not
+    implemented on this socket type. This socket can be connected to at most
+    one peer.
+SP_SINK::
+    Receives the messages from multiple sources. Send operation is not defined
+    on this socket type.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_pubsub[7]
+linknanomsg:sp_reqrep[7]
+linknanomsg:sp_fanout[7]
+linknanomsg:sp_survey[7]
+linknanomsg:sp_pair[7]
 linknanomsg:nanomsg[7]
 
 

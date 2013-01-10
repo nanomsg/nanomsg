@@ -15,14 +15,35 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-REQREP protocol.
+This protocol is used to distribute the workload among multiple stateless
+workers.
+
+Socket Types
+~~~~~~~~~~~~
+
+SP_REQ::
+    Used to implement the client application that sends requests and
+    receives replies.
+SP_REP::
+    Used to implement the stateless worker that receives requests and sends
+    replies.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+SP_RESEND_IVL::
+    This option is defined on the full REQ socket. If reply is not received
+    in specified amount of milliseconds, the request will be automatically
+    resent. The type of this option is int. Default value is 60000 (1 minute).
 
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_getsockopt[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:sp_pubsub[7]
+linknanomsg:sp_fanin[7]
+linknanomsg:sp_fanout[7]
+linknanomsg:sp_survey[7]
+linknanomsg:sp_pair[7]
 linknanomsg:nanomsg[7]
 
 

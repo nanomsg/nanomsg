@@ -24,6 +24,7 @@
 #include "../transport.h"
 
 #include "sock.h"
+#include "ep.h"
 
 #include "../utils/err.h"
 #include "../utils/cont.h"

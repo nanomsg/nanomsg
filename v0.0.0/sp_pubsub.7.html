@@ -581,15 +581,65 @@ sp_pubsub(7) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>PUBSUB protocol.</p></div>
+<div class="paragraph"><p>Broadcasts messages to multiple destinations.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+SP_PUB
+</dt>
+<dd>
+<p>
+    This socket is used to distribute messages to multiple destinations.
+    Receive operation is not defined.
+</p>
+</dd>
+<dt class="hdlist1">
+SP_SUB
+</dt>
+<dd>
+<p>
+    Receives messages from the publisher. Only messages that the socket is
+    subscribed to are received. When the socket is created there are no
+    subscriptions and thus no messages will be received. Send operation is
+    not defined on this socket. The socket can be connected to at most one peer.
+</p>
+</dd>
+</dl></div>
+</div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+SP_SUBSCRIBE
+</dt>
+<dd>
+<p>
+    Defined on full SUB socket. Subscribes for a particular topic. Type of the
+    option is string.
+</p>
+</dd>
+<dt class="hdlist1">
+SP_UNSUBSCRIBE
+</dt>
+<dd>
+<p>
+    Defined on full SUB socket. Unsubscribes from a particular topic. Type of
+    the option is string.
+</p>
+</dd>
+</dl></div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_socket.3.html">sp_socket(3)</a>
-<a href="sp_getsockopt.3.html">sp_getsockopt(3)</a>
-<a href="sp_setsockopt.3.html">sp_setsockopt(3)</a>
+<div class="paragraph"><p><a href="sp_reqrep.7.html">sp_reqrep(7)</a>
+<a href="sp_fanin.7.html">sp_fanin(7)</a>
+<a href="sp_fanout.7.html">sp_fanout(7)</a>
+<a href="sp_survey.7.html">sp_survey(7)</a>
+<a href="sp_pair.7.html">sp_pair(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -604,7 +654,7 @@ sp_pubsub(7) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-09 11:55:29 CET
+Last updated 2013-01-10 09:56:32 CET
 </div>
 </div>
 </body>

@@ -31,7 +31,7 @@ struct sp_cp;
 void sp_sock_zombify (struct sp_sock *self);
 
 /*  Called by sp_close(). */
-void sp_sock_close (struct sp_sock *self);
+void sp_sock_term (struct sp_sock *self);
 
 /*  Returns default completion port associated with the socket. */
 struct sp_cp *sp_sock_getcp (struct sp_sock *self);

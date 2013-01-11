@@ -335,21 +335,16 @@ int sp_close (int s)
 {
     SP_BASIC_CHECKS;
 
-    sp_mutex_lock (&self.sync);
-
     /*  Deallocate the socket object. */
-    sp_sock_close (self.socks [s]);
-
-    /*  sp_sock_close may actually deallocate the socket. Do not use the
-        pointer anymore. */
-    self.socks [s] = NULL;
+    sp_sock_term (self.socks [s]);
 
     /*  If there's sp_term() waiting for all sockets being closed and this is
         the last open socket let library termination proceed. */
+    sp_mutex_lock (&self.sync);
+    self.socks [s] = NULL;
     --self.nsocks;
     if (self.zombie && self.nsocks == 0)
         sp_cond_post (&self.termcond);
-
     sp_mutex_unlock (&self.sync);
 
     return 0;

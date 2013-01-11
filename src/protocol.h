@@ -66,7 +66,6 @@ struct sp_sockbase_vfptr {
 };
 
 #define SP_SOCK_FLAG_ZOMBIE 1
-#define SP_SOCK_FLAG_CLOSED 2
 
 struct sp_sockbase
 {

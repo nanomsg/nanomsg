@@ -279,6 +279,16 @@ int sp_term (void)
     return 0;
 }
 
+void *sp_allocmsg (size_t size, int type)
+{
+    sp_assert (0);
+}
+
+int sp_freemsg (void *msg)
+{
+    sp_assert (0);
+}
+
 int sp_socket (int domain, int protocol)
 {
     int s;
@@ -480,6 +490,16 @@ int sp_recv (int s, void *buf, size_t len, int flags)
     sp_assert (rc == 0);
 
     return (int) len;
+}
+
+int sp_sendmsg (int s, void *msg, int flags)
+{
+    sp_assert (0);
+}
+
+int sp_recvmsg (int s, void **msg, int flags)
+{
+    sp_assert (0);
 }
 
 static void sp_ctx_add_transport (struct sp_transport *transport)

@@ -48,6 +48,8 @@ if (NOT WIN32)
         sp_strerror.3
         sp_init.3
         sp_term.3
+        sp_allocmsg.3
+        sp_freemsg.3
         sp_socket.3
         sp_close.3
         sp_getsockopt.3
@@ -57,6 +59,8 @@ if (NOT WIN32)
         sp_shutdown.3
         sp_send.3
         sp_recv.3
+        sp_sendmsg.3
+        sp_recvmsg.3
 
         )
 

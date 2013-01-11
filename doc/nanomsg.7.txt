@@ -50,6 +50,18 @@ Send a message::
 Receive a message::
     linknanomsg:sp_recv[3]
 
+Allocate a message::
+    linknanomsg:sp_allocmsg[3]
+
+Deallocate a message::
+    linknanomsg:sp_freemsg[3]
+
+Send a message allocated by sp_allocmsg::
+    linknanomsg:sp_sendmsg[3]
+
+Receive a pre-allocated message::
+    linknanomsg:sp_recvmsg[3]
+
 Retrieve the current errno::
     linknanomsg:sp_errno[3]
 

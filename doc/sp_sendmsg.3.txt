@@ -1,0 +1,89 @@
+sp_sendmsg(3)
+=============
+
+NAME
+----
+sp_sendmsg - send a message allocated by sp_allocmsg
+
+
+SYNOPSIS
+--------
+*#include <sp/sp.h>*
+
+*int sp_sendmsg (int 's', void '*msg', int 'flags');*
+
+DESCRIPTION
+-----------
+The function will send a message containing the data from message 'msg' to
+the socket 's'. The message must be allocated using linknanomsg:sp_allocmsg[3]
+function.
+
+To which of the peers will the message be sent to is determined by
+the particular socket type.
+
+When the function succeeds, message pointer 'msg' becomes invalid and should
+not be used any more or deallocated by the user. It will be deallocated
+automatically by the library.
+
+The 'flags' argument is a combination of the flags defined below:
+
+*SP_DONTWAIT*::
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be sent straight away, the function will fail with 'errno' set
+to EAGAIN.
+
+
+RETURN VALUE
+------------
+If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and 'errno' is set to to one of the values defined
+below.
+
+
+ERRORS
+------
+*EFAULT*::
+Either the library is not initialised or 'msg' is not a valid message.
+*EBADF*::
+The provided socket is invalid.
+*ENOTSUP*::
+The operation is not supported by this socket type.
+*EFSM*::
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+*EAGAIN*::
+Non-blocking mode was requested and the message cannot be sent at the moment.
+*EINTR*::
+The operation was interrupted by delivery of a signal before the message was
+sent.
+*ETIMEDOUT*::
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+*ETERM*::
+The library is terminating.
+
+
+EXAMPLE
+-------
+
+----
+void *msg = sp_allocmsg (12, 0);
+memcpy (msg, "Hello world!", 12);
+sp_sendmsg (s, msg, 0);
+----
+
+
+SEE ALSO
+--------
+linknanomsg:sp_send[3]
+linknanomsg:sp_allocmsg[3]
+linknanomsg:sp_freemsg[3]
+linknanomsg:sp_recvmsg[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

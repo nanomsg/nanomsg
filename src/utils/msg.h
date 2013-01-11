@@ -34,8 +34,8 @@
 struct sp_content
 {
     size_t size;
-    /* Actual message data follow the 'size' field. */
 
+    /* Actual message data follow the sp_content structure. */
 };
 
 /*  This class represents an SP message. */

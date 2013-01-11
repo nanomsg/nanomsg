@@ -135,6 +135,13 @@ SP_EXPORT int sp_init (void);
 SP_EXPORT int sp_term (void);
 
 /******************************************************************************/
+/*  Message allocation.                                                       */
+/******************************************************************************/
+
+SP_EXPORT void *sp_allocmsg (size_t size, int type);
+SP_EXPORT int sp_freemsg (void *msg);
+
+/******************************************************************************/
 /*  SP socket definition.                                                     */
 /******************************************************************************/
 
@@ -172,6 +179,8 @@ SP_EXPORT int sp_connect (int s, const char *addr);
 SP_EXPORT int sp_shutdown (int s, int how);
 SP_EXPORT int sp_send (int s, const void *buf, size_t len, int flags);
 SP_EXPORT int sp_recv (int s, void *buf, size_t len, int flags);
+SP_EXPORT int sp_sendmsg (int s, void *msg, int flags);
+SP_EXPORT int sp_recvmsg (int s, void **msg, int flags);
 
 #undef SP_EXPORT
 

@@ -18,8 +18,7 @@ DESCRIPTION
 Closes the socket 's'. Any buffered inbound messages that were not yet received
 by the application will be discarded. The library will try to deliver any
 outstanding outbound messages for the time specified by _SP_LINGER_ socket
-option. Such delayed sending will happen in the background and won't block
-the thread calling _sp_close()_.
+option.
 
 
 RETURN VALUE

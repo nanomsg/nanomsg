@@ -584,8 +584,7 @@ sp_close(3) Manual Page
 <div class="paragraph"><p>Closes the socket <em>s</em>. Any buffered inbound messages that were not yet received
 by the application will be discarded. The library will try to deliver any
 outstanding outbound messages for the time specified by <em>SP_LINGER</em> socket
-option. Such delayed sending will happen in the background and won&#8217;t block
-the thread calling <em>sp_close()</em>.</p></div>
+option.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -649,7 +648,7 @@ assert (rc == 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-07 16:21:33 CET
+Last updated 2013-01-11 02:19:35 CET
 </div>
 </div>
 </body>

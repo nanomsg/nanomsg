@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_fanin(7)</title>
+<title>sp_recvmsg(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_fanin(7) Manual Page
+sp_recvmsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_fanin -
-   fan-in (data aggregation) scalability protocol
+<p>sp_recvmsg -
+   receive a pre-allocated message
 </p>
 </div>
 </div>
@@ -575,51 +575,131 @@ sp_fanin(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/fanin.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int sp_recvmsg (int <em>s</em>, void **msg, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Collects messages from multiple sources.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Receive a message from the socket <em>s</em> and store the pointer to the buffer into
+<em>msg</em> argument. If successful, the returned buffer has to be later deallocated
+using <a href="sp_freemsg.3.html">sp_freemsg(3)</a> function.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-SP_SOURCE
+<strong>SP_DONTWAIT</strong>
 </dt>
 <dd>
 <p>
-    Allows to send messages to the central sink. Receive operation is not
-    implemented on this socket type. This socket can be connected to at most
-    one peer.
-</p>
-</dd>
-<dt class="hdlist1">
-SP_SINK
-</dt>
-<dd>
-<p>
-    Receives the messages from multiple sources. Send operation is not defined
-    on this socket type.
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="paragraph"><p>No protocol-specific socket options are defined at the moment.</p></div>
 </div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+received.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>void *msg;
+sp_recvmsg (s, &amp;msg, 0);
+sp_freemsg (msg);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-<a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-<a href="sp_fanout.7.html">sp_fanout(7)</a>
-<a href="sp_survey.7.html">sp_survey(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
+<div class="paragraph"><p><a href="sp_recv.3.html">sp_recv(3)</a>
+<a href="sp_allocmsg.3.html">sp_allocmsg(3)</a>
+<a href="sp_freemsg.3.html">sp_freemsg(3)</a>
+<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -634,7 +714,7 @@ SP_SINK
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-11 01:42:58 CET
+Last updated 2013-01-11 09:25:24 CET
 </div>
 </div>
 </body>

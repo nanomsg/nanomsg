@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_fanin(7)</title>
+<title>sp_allocmsg(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_fanin(7) Manual Page
+sp_allocmsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_fanin -
-   fan-in (data aggregation) scalability protocol
+<p>sp_allocmsg -
+   allocate a message
 </p>
 </div>
 </div>
@@ -575,51 +575,74 @@ sp_fanin(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/fanin.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>void *sp_allocmsg (size_t <em>size</em>, int <em>type</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Collects messages from multiple sources.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Allocate a message of the specified <em>size</em> to be sent via
+<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a> function. The content of the message is undefined
+after allocation and is supposed to be filled in by the user. While
+<a href="sp_send.3.html">sp_send(3)</a> allows to send arbitrary buffer, buffers allocated using
+<em>sp_allocmsg()</em> may be more efficient for large messages as they allow for
+using zero-copy techniques.</p></div>
+<div class="paragraph"><p><em>type</em> parameter specifies type of allocation mechanism to use. Zero is the
+default one, however, individual transport mechanisms may define their
+own allocation mechanisms, such as allocating in shared memory or allocating
+a memory block pinned down to a physical memory address. Such allocation,
+when used with the transport that defines them, should be more efficient
+than the default allocation mechanism.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds pointer to newly allocated buffer is returned.
+Otherwise, NULL is returned and <em>errno</em> is set to to one of the values
+defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-SP_SOURCE
+<strong>EINVAL</strong>
 </dt>
 <dd>
 <p>
-    Allows to send messages to the central sink. Receive operation is not
-    implemented on this socket type. This socket can be connected to at most
-    one peer.
+Supplied allocation <em>type</em> is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
-SP_SINK
+<strong>ENOMEM</strong>
 </dt>
 <dd>
 <p>
-    Receives the messages from multiple sources. Send operation is not defined
-    on this socket type.
+Not enough memory to allocate the message.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="paragraph"><p>No protocol-specific socket options are defined at the moment.</p></div>
 </div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>void *msg = sp_allocmsg (12, 0);
+memcpy (msg, "Hello world!", 12);
+sp_sendmsg (s, msg, 0);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-<a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-<a href="sp_fanout.7.html">sp_fanout(7)</a>
-<a href="sp_survey.7.html">sp_survey(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
+<div class="paragraph"><p><a href="sp_freemsg.3.html">sp_freemsg(3)</a>
+<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a>
+<a href="sp_recvmsg.3.html">sp_recvmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -634,7 +657,7 @@ SP_SINK
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-11 01:42:58 CET
+Last updated 2013-01-11 09:11:07 CET
 </div>
 </div>
 </body>

@@ -51,6 +51,7 @@ void sp_sockbase_init (struct sp_sockbase *self,
     self->sndtimeo = -1;
     self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
+    self->reconnect_ivl_max = 0;
 }
 
 void sp_sock_zombify (struct sp_sock *self)

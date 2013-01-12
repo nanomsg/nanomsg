@@ -30,7 +30,7 @@ defined in '<sp/sp.h>' header file.
 
 Note that sp_connect and linknanomsg:sp_bind[3] may be called multiple times
 on the same socket thus allowing the socket to communicate with multiple
-heterogenous endpoints.
+heterogeneous endpoints.
 
 RETURN VALUE
 ------------

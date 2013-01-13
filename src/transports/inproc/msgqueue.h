@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -43,7 +43,7 @@
 #define SP_MSGQUEUE_GRANULARITY 127
 
 struct sp_msgqueue_chunk {
-    struct sp_msg msgs [SP_MSGQUEUE_GRANULARITY];
+    struct sp_msgref msgs [SP_MSGQUEUE_GRANULARITY];
     struct sp_msgqueue_chunk *next;
 };
 

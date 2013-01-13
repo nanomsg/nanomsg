@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -228,14 +228,14 @@ static void sp_stream_received (const struct sp_cp_sink **self,
     switch (stream->instate) {
     case SP_STREAM_INSTATE_HDR:
         size = sp_getll (stream->inhdr);
-        rc = sp_msg_init (&stream->inmsg, (size_t) size);
+        rc = sp_msgref_init (&stream->inmsg, (size_t) size);
         errnum_assert (rc == 0, -rc);
         if (!size) {
             sp_pipebase_received (&stream->pipebase);
             break;
         }
         stream->instate = SP_STREAM_INSTATE_BODY;
-        sp_usock_recv (stream->usock, sp_msg_data (&stream->inmsg),
+        sp_usock_recv (stream->usock, sp_msgref_data (&stream->inmsg),
             (size_t) size);
         break;
     case SP_STREAM_INSTATE_BODY:
@@ -255,13 +255,13 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
     stream = sp_cont (self, struct sp_stream, sink);
     switch (stream->outstate) {
     case SP_STREAM_OUTSTATE_HDR:
-        size = sp_msg_size (&stream->outmsg);
+        size = sp_msgref_size (&stream->outmsg);
         stream->outstate = SP_STREAM_OUTSTATE_BODY;
         if (!size) {
             sp_pipebase_sent (&stream->pipebase);
             break;
         }
-        sp_usock_send (stream->usock, sp_msg_data (&stream->outmsg), size);
+        sp_usock_send (stream->usock, sp_msgref_data (&stream->outmsg), size);
         break;
     case SP_STREAM_OUTSTATE_BODY:
         sp_pipebase_sent (&stream->pipebase);
@@ -297,9 +297,9 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf,
     stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Make a local copy of the message. */
-    rc = sp_msg_init (&stream->outmsg, len);
+    rc = sp_msgref_init (&stream->outmsg, len);
     errnum_assert (rc == 0, -rc);
-    memcpy (sp_msg_data (&stream->outmsg), buf, len);
+    memcpy (sp_msgref_data (&stream->outmsg), buf, len);
 
     /*  Serialise the message header. */
     sp_putll (stream->outhdr, len);
@@ -317,10 +317,10 @@ static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)
     stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Copy the data to the supplied buffer. */
-    sz = sp_msg_size (&stream->inmsg);
+    sz = sp_msgref_size (&stream->inmsg);
     if (*len < sz)
         *len = sz;
-    memcpy (buf, sp_msg_data (&stream->inmsg), sz);
+    memcpy (buf, sp_msgref_data (&stream->inmsg), sz);
 
     /* Start receiving new message. */ 
     stream->instate = SP_STREAM_INSTATE_HDR;

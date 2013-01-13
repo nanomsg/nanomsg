@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -78,7 +78,7 @@ void sp_msgqueue_term (struct sp_msgqueue *self)
 int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len)
 {
     int result;
-    struct sp_msg *msg;
+    struct sp_msgref *msgref;
 
     sp_mutex_lock (&self->sync);
 
@@ -98,10 +98,10 @@ int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len)
         result |= SP_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
-    msg = &self->out.chunk->msgs [self->out.pos];
-    sp_msg_init (msg, len);
+    msgref = &self->out.chunk->msgs [self->out.pos];
+    sp_msgref_init (msgref, len);
     if (len)
-        memcpy (sp_msg_data (msg), buf, len);
+        memcpy (sp_msgref_data (msgref), buf, len);
     ++self->out.pos;
 
     /*  If there's no space for a new message in the pipe, either re-use
@@ -127,7 +127,7 @@ int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len)
 int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
 {
     int result;
-    struct sp_msg *msg;
+    struct sp_msgref *msgref;
     size_t msgsz;
     size_t to_copy;
     struct sp_msgqueue_chunk *o;
@@ -141,12 +141,12 @@ int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
     }
 
     /*  Move the message from the pipe to the user. */
-    msg = &self->in.chunk->msgs [self->in.pos];
-    msgsz = sp_msg_size (msg);
+    msgref = &self->in.chunk->msgs [self->in.pos];
+    msgsz = sp_msgref_size (msgref);
     to_copy = msgsz < *len ? msgsz : *len;
     if (to_copy)
-        memcpy (buf, sp_msg_data (msg), to_copy);
-    sp_msg_term (msg);
+        memcpy (buf, sp_msgref_data (msgref), to_copy);
+    sp_msgref_term (msgref);
 
     /*  Move to the next position. */
     ++self->in.pos;

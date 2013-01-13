@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -65,7 +65,7 @@ struct sp_stream {
     uint8_t inhdr [8];
 
     /*  Message being received at the moment. */
-    struct sp_msg inmsg;
+    struct sp_msgref inmsg;
 
     /*  State of the outbound state machine. */
     int outstate;
@@ -74,7 +74,7 @@ struct sp_stream {
     uint8_t outhdr [8];
 
     /*  Message being sent at the moment. */
-    struct sp_msg outmsg;
+    struct sp_msgref outmsg;
 
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */

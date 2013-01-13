@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,16 +31,15 @@
 #define SP_MSGTYPE_VSM 101
 #define SP_MSGTYPE_LMSG 102
 
-struct sp_content
+struct sp_msghdr
 {
     size_t size;
-
-    /* Actual message data follow the sp_content structure. */
+    /* Actual message data follow the sp_msghdr structure. */
 };
 
 /*  This class represents an SP message. */
 
-struct sp_msg {
+struct sp_msgref {
     union
     {
         struct {
@@ -53,7 +52,7 @@ struct sp_msg {
             uint8_t type;
         } vsm;
         struct {
-            struct sp_content *content;
+            struct sp_msghdr *hdr;
             uint8_t unused [SP_MAX_VSM_SIZE + 1 - sizeof (struct sp_content*)];
             uint8_t type;
         } lmsg;
@@ -62,20 +61,20 @@ struct sp_msg {
 
 /*  Initialise the message of the specified size. The content of the message
     is undefined. */
-int sp_msg_init (struct sp_msg *self, size_t size);
+int sp_msgref_init (struct sp_msgref *self, size_t size);
 
 /*  Initialise the message by taking over the content of the specified message.
     After the call the source message is deallocated. */
-void sp_msg_init_move (struct sp_msg *self, struct sp_msg *src);
+void sp_msgref_init_move (struct sp_msgref *self, struct sp_msgref *src);
 
 /*  Terminate the message. */
-void sp_msg_term (struct sp_msg *self);
+void sp_msgref_term (struct sp_msgref *self);
 
 /*  Returns pointer to the message data. */
-uint8_t *sp_msg_data (struct sp_msg *self);
+uint8_t *sp_msgref_data (struct sp_msgref *self);
 
 /*  Returns size of the message data in bytes. */
-size_t sp_msg_size (struct sp_msg *self);
+size_t sp_msgref_size (struct sp_msgref *self);
 
 #endif
 

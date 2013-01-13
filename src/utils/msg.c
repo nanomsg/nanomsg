@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -24,7 +24,7 @@
 #include "err.h"
 #include "alloc.h"
 
-int sp_msg_init (struct sp_msg *self, size_t size)
+int sp_msgref_init (struct sp_msgref *self, size_t size)
 {
     /*  Small message. */
     if (size <= SP_MAX_VSM_SIZE) {
@@ -35,22 +35,22 @@ int sp_msg_init (struct sp_msg *self, size_t size)
 
     /*  Large message. */
     self->lmsg.type = SP_MSGTYPE_LMSG;
-    self->lmsg.content = sp_alloc (sizeof (struct sp_content) + size,
+    self->lmsg.hdr = sp_alloc (sizeof (struct sp_msghdr) + size,
         "message body");
-    if (!self->lmsg.content)
+    if (!self->lmsg.hdr)
         return -ENOMEM;
-    self->lmsg.content->size = size;
+    self->lmsg.hdr->size = size;
 
     return 0;
 }
 
-void sp_msg_init_move (struct sp_msg *self, struct sp_msg *src)
+void sp_msgref_init_move (struct sp_msgref *self, struct sp_msgref *src)
 {
     *self = *src;
     src->base.type = 0;
 }
 
-void sp_msg_term (struct sp_msg *self)
+void sp_msgref_term (struct sp_msgref *self)
 {
     /*  Small message. */
     if (self->base.type == SP_MSGTYPE_VSM) {
@@ -59,27 +59,27 @@ void sp_msg_term (struct sp_msg *self)
     }
 
     /*  Large message. */
-    sp_free (self->lmsg.content);
+    sp_free (self->lmsg.hdr);
     self->base.type = 0;
 }
 
-uint8_t *sp_msg_data (struct sp_msg *self)
+uint8_t *sp_msgref_data (struct sp_msgref *self)
 {
     /*  Small message. */
     if (self->base.type == SP_MSGTYPE_VSM)
         return self->vsm.data;
 
     /*  Large message. */
-    return (uint8_t*) ((&self->lmsg.content->size) + 1);
+    return (uint8_t*) ((&self->lmsg.hdr->size) + 1);
 }
 
-size_t sp_msg_size (struct sp_msg *self)
+size_t sp_msgref_size (struct sp_msgref *self)
 {
     /*  Small message. */
     if (self->base.type == SP_MSGTYPE_VSM)
         return self->vsm.size;
 
     /*  Large message. */
-    return self->lmsg.content->size;
+    return self->lmsg.hdr->size;
 }
 

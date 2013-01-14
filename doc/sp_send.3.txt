@@ -70,6 +70,7 @@ assert (nbytes == 3);
 SEE ALSO
 --------
 linknanomsg:sp_recv[3]
+linknanomsg:sp_sendmsg[3]
 linknanomsg:sp_socket[3]
 linknanomsg:nanomsg[7]
 

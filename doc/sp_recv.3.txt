@@ -68,6 +68,7 @@ nbytes = sp_recv (s, buf, sizeof (buf), 0);
 
 SEE ALSO
 --------
+linknanomsg:sp_recvmsg[3]
 linknanomsg:sp_send[3]
 linknanomsg:sp_socket[3]
 linknanomsg:nanomsg[7]

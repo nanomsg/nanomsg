@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -38,8 +38,7 @@
 /*  Private functions. */
 static void sp_cp_worker (void *arg);
 static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf);
-static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
-    size_t *len);
+static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr);
 static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
 static int sp_usock_geterr (struct sp_usock *self);
 static void sp_uscok_term (struct sp_usock *self);
@@ -128,6 +127,7 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     self->add_hndl.op = SP_USOCK_OP_ADD;
     self->rm_hndl.op = SP_USOCK_OP_RM;
     self->in.hndl.op = SP_USOCK_OP_IN;
+    memset (&self->out.hdr, 0, sizeof (struct msghdr));
     self->out.hndl.op = SP_USOCK_OP_OUT;
     self->domain = domain;
     self->type = type;
@@ -185,6 +185,7 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->add_hndl.op = SP_USOCK_OP_ADD;
     self->rm_hndl.op = SP_USOCK_OP_RM;
     self->in.hndl.op = SP_USOCK_OP_IN;
+    memset (&self->out.hdr, 0, sizeof (struct msghdr));
     self->out.hndl.op = SP_USOCK_OP_OUT;
     self->domain = parent->domain;
     self->type = parent->type;
@@ -488,19 +489,17 @@ if (rc == -EINTR) goto again;
             case SP_POLLER_OUT:
                 switch (usock->out.op) {
                 case SP_USOCK_OUTOP_SEND:
-                    sz = usock->out.len;
-                    rc = sp_usock_send_raw (usock, usock->out.buf, &sz);
-                    if (rc < 0)
-                        goto err;
-                    usock->out.buf += sz;
-                    usock->out.len -= sz;
-                    if (!usock->out.len) {
+                    rc = sp_usock_send_raw (usock, &usock->out.hdr);
+                    if (sp_fast (rc == 0)) {
                         usock->out.op = SP_USOCK_OUTOP_NONE;
                         sp_poller_reset_out (&self->poller, &usock->hndl);
                         sp_assert ((*usock->sink)->sent);
                         (*usock->sink)->sent (usock->sink, usock);
+                        break;
                     }
-                    break;
+                    if (sp_fast (rc == -EAGAIN))
+                        break;
+                    goto err;
                 case SP_USOCK_OUTOP_CONNECT:
                     usock->out.op = SP_USOCK_OUTOP_NONE;
                     sp_poller_reset_out (&self->poller, &usock->hndl);
@@ -667,35 +666,44 @@ void sp_usock_accept (struct sp_usock *self)
     }
 }
 
-void sp_usock_send (struct sp_usock *self, const void *buf, size_t len)
+void sp_usock_send (struct sp_usock *self,
+    const struct sp_iovec *iov, int iovcnt)
 {
     int rc;
-    size_t nbytes;
+    int i;
 
     /*  Make sure that there's no outbound operation already in progress. */
     sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
 
+    /*  Copy the iovecs to the socket. */
+    sp_assert (iovcnt <= SP_AIO_MAX_IOVCNT);
+    self->out.hdr.msg_iov = self->out.iov;
+    self->out.hdr.msg_iovlen = iovcnt;
+    for (i = 0; i != iovcnt; ++i) {
+        self->out.iov [i].iov_base = iov [i].iov_base;
+        self->out.iov [i].iov_len = iov [i].iov_len;
+    }
+    
     /*  Try to send the data immediately. */
-    nbytes = len;
-    rc = sp_usock_send_raw (self, buf, &nbytes);
-    if (sp_slow (rc < 0)) {
+    rc = sp_usock_send_raw (self, &self->out.hdr);
+
+    /*  Success. */
+    if (sp_fast (rc == 0)) {
+        sp_assert ((*self->sink)->sent);
+        (*self->sink)->sent (self->sink, self);
+        return;
+    }
+
+    /*  Errors. */
+    if (sp_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         sp_assert ((*self->sink)->err);
         (*self->sink)->err (self->sink, self, -rc);
         return;
     }
 
-    /*  Success. */
-    if (sp_fast (nbytes == len)) {
-        sp_assert ((*self->sink)->sent);
-        (*self->sink)->sent (self->sink, self);
-        return;
-    }
-
     /*  There are still data to send in the background. */ 
     self->out.op = SP_USOCK_OUTOP_SEND;
-    self->out.buf = ((uint8_t*) buf) + nbytes;
-    self->out.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
@@ -747,32 +755,49 @@ void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
     }
 }
 
-static int sp_usock_send_raw (struct sp_usock *self, const void *buf,
-    size_t *len)
+static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
 {
     ssize_t nbytes;
 
+    /*  Try to send the data. */
 #if defined MSG_NOSIGNAL
-    nbytes = send (self->s, buf, *len, MSG_NOSIGNAL);
+    nbytes = sendmsg (self->s, hdr, MSG_NOSIGNAL);
 #else
-    nbytes = send (self->s, buf, *len, 0);
+    nbytes = sendmsg (self->s, hdr, 0);
 #endif
 
-    /*  Success. */
-    if (sp_fast (nbytes >= 0)) {
-        *len = (size_t) nbytes;
-        return 0;
+    /*  Handle errors. */
+    if (sp_slow (nbytes < 0)) {
+        if (sp_fast (errno == EAGAIN || errno == EWOULDBLOCK))
+            nbytes = 0;
+        else {
+
+            /*  If the connection fails, return ECONNRESET. */
+            sp_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
+                errno == EPIPE);
+            return -ECONNRESET;
+        }
     }
 
-    /*  Zero bytes sent. */
-    if (nbytes == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-        *len = 0;
-        return 0;
+    /*  Some bytes were sent. Adjust the iovecs accordingly. */
+    while (nbytes) {
+        if (nbytes >= hdr->msg_iov->iov_len) {
+            --hdr->msg_iovlen;
+            if (!hdr->msg_iovlen) {
+                sp_assert (nbytes == hdr->msg_iov->iov_len);
+                return 0;
+            }
+            ++hdr->msg_iov;
+            nbytes -= hdr->msg_iov->iov_len;
+        }
+        else {
+            hdr->msg_iov->iov_base += nbytes;
+            hdr->msg_iov->iov_len -= nbytes;
+            return -EAGAIN;
+        }
     }
 
-    /*  If the connection fails, return ECONNRESET. */
-    sp_assert (errno == ECONNRESET || errno == ETIMEDOUT || errno == EPIPE);
-    return -ECONNRESET;
+    return 0;
 }
 
 static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)

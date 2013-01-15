@@ -106,6 +106,7 @@ void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     struct sp_usock *usock)
 {
     int rc;
+    struct sp_iovec iov;
 
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
@@ -122,7 +123,9 @@ void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     sp_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
-    sp_usock_send (usock, "\0\0SP\0\0\0\0", 8);
+    iov.iov_base = "\0\0SP\0\0\0\0";
+    iov.iov_len = 8;
+    sp_usock_send (usock, &iov, 1);
 
     /*  Receive the protocol header from the peer. */
     sp_usock_recv (usock, self->hdr, 8);
@@ -251,6 +254,7 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
 {
     struct sp_stream *stream;
     size_t size;
+    struct sp_iovec iov;
 
     stream = sp_cont (self, struct sp_stream, sink);
     switch (stream->outstate) {
@@ -261,7 +265,9 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
             sp_pipebase_sent (&stream->pipebase);
             break;
         }
-        sp_usock_send (stream->usock, sp_msgref_data (&stream->outmsg), size);
+        iov.iov_base = sp_msgref_data (&stream->outmsg);
+        iov.iov_len = size;
+        sp_usock_send (stream->usock, &iov, 1);
         break;
     case SP_STREAM_OUTSTATE_BODY:
         sp_pipebase_sent (&stream->pipebase);
@@ -293,6 +299,7 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf,
 {
     int rc;
     struct sp_stream *stream;
+    struct sp_iovec iov;
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 
@@ -306,7 +313,9 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf,
 
     /*  Start the outbound state machine. */
     stream->outstate = SP_STREAM_OUTSTATE_HDR;
-    sp_usock_send (stream->usock, stream->outhdr, 8);
+    iov.iov_base = stream->outhdr;
+    iov.iov_len = 8;
+    sp_usock_send (stream->usock, &iov, 1);
 }
 
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)

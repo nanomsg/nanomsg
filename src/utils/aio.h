@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -35,6 +35,13 @@ struct sp_cp;
 struct sp_timer;
 struct sp_usock;
 struct sp_event;
+
+#define SP_AIO_MAX_IOVCNT 3
+
+struct sp_iovec {
+    void *iov_base;
+    size_t iov_len;
+};
 
 struct sp_cp_sink {
     void (*received) (const struct sp_cp_sink **self,
@@ -82,7 +89,8 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
     sp_socklen addrlen);
 void sp_usock_accept (struct sp_usock *self);
 
-void sp_usock_send (struct sp_usock *self, const void *buf, size_t len);
+void sp_usock_send (struct sp_usock *self,
+    const struct sp_iovec *iov, int iovcnt);
 void sp_usock_recv (struct sp_usock *self, void *buf, size_t len);
 
 void sp_cp_init (struct sp_cp *self);
@@ -158,6 +166,7 @@ struct sp_cp {
 #include "mutex.h"
 
 #include <stdint.h>
+#include <sys/socket.h>
 
 struct sp_timer {
     const struct sp_cp_sink **sink;
@@ -213,8 +222,8 @@ struct sp_usock {
     } in;
     struct {
         int op;
-        const uint8_t *buf;
-        size_t len;
+        struct msghdr hdr;
+        struct iovec iov [SP_AIO_MAX_IOVCNT];
         struct sp_cp_op_hndl hndl;
     } out;
     int domain;

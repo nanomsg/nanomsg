@@ -33,6 +33,7 @@
 
 int main ()
 {
+#if !defined SP_HAVE_WINDOWS
     int rc;
     int sb;
     int sc;
@@ -102,6 +103,7 @@ int main ()
     errno_assert (rc == 0);
     rc = sp_term ();
     errno_assert (rc == 0);
+#endif
 
     return 0;
 }

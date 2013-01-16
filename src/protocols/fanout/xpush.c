@@ -159,7 +159,7 @@ static int sp_xpush_send (struct sp_sockbase *self, const void *buf, size_t len)
         return -EAGAIN;
 
     /*  Send the messsage. */
-    rc = sp_pipe_send (xpush->current->pipe, buf, len);
+    rc = sp_pipe_send (xpush->current->pipe, buf, len, NULL, 0);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */
@@ -177,8 +177,7 @@ static int sp_xpush_send (struct sp_sockbase *self, const void *buf, size_t len)
 
 static int sp_xpush_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
-    /*  Push socket can't receive messages. */
-    return -EAGAIN;
+    return -ENOTSUP;
 }
 
 static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,

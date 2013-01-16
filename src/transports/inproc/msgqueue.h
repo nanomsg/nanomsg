@@ -90,18 +90,17 @@ void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem);
 /*  Terminate the message pipe. */
 void sp_msgqueue_term (struct sp_msgqueue *self);
 
-/*  Writes a message to the pipe. After the call msg contains an initialised
-    zero bytes long message. -EAGAIN is returned if the message cannot be sent
-    because the queue is full. 0 is returned in case of success. If,
+/*  Writes a message to the pipe. -EAGAIN is returned if the message cannot
+    be sent because the queue is full. 0 is returned in case of success. If,
     additionally, this makes the queue readable, the return value is 1. */
+int sp_msgqueue_send (struct sp_msgqueue *self,
+        const void *buf1, size_t len1, const void *buf2, size_t len2);
 
-int sp_msgqueue_send (struct sp_msgqueue *self, const void *buf, size_t len);
-
-/*  Reads a message from the pipe. Any content already in msg is deallocated.
-    -EAGAIN is returned if there's no message to receive. 0 is returned in case
-    of success. If, additionally, this makes the queue writeable, the
-    return value is 1. 'len' is inout parameter -- it contains the size
-    of the buffer on input and actual size of the message on output. */
+/*  Reads a message from the pipe. -EAGAIN is returned if there's no message
+    to receive. 0 is returned in case of success. If, additionally, this makes
+    the queue writeable, the return value is 1. 'len' is inout parameter --
+    it contains the size of the buffer on input and actual size of the message
+    on output. */
 int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len);
 
 #endif

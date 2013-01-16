@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -34,11 +34,11 @@ static void sp_msgpipe_term (struct sp_msgpipe *self);
 
 /*  Implementation of both sp_pipe interfaces. */
 static void sp_msgpipe_send0 (struct sp_pipebase *self,
-    const void *buf, size_t len);
+    const void *buf1, size_t len1, const void *buf2, size_t len2);
 static void sp_msgpipe_recv0 (struct sp_pipebase *self,
     void *buf, size_t *len);
 static void sp_msgpipe_send1 (struct sp_pipebase *self,
-    const void *buf, size_t len);
+    const void *buf1, size_t len1, const void *buf2, size_t len2);
 static void sp_msgpipe_recv1 (struct sp_pipebase *self,
     void *buf, size_t *len);
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr0 =
@@ -147,13 +147,13 @@ static void sp_msgpipe_term (struct sp_msgpipe *self)
 }
 
 static void sp_msgpipe_send0 (struct sp_pipebase *self,
-    const void *buf, size_t len)
+    const void *buf1, size_t len1, const void *buf2, size_t len2)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (self, struct sp_msgpipe, pipes [0]);
-    rc = sp_msgqueue_send (&msgpipe->queues [0], buf, len);
+    rc = sp_msgqueue_send (&msgpipe->queues [0], buf1, len1, buf2, len2);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_MSGQUEUE_SIGNAL)
@@ -181,13 +181,13 @@ static void sp_msgpipe_recv0 (struct sp_pipebase *self,
 }
 
 static void sp_msgpipe_send1 (struct sp_pipebase *self,
-    const void *buf, size_t len)
+    const void *buf1, size_t len1, const void *buf2, size_t len2)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (self, struct sp_msgpipe, pipes [1]);
-    rc = sp_msgqueue_send (&msgpipe->queues [1], buf, len);
+    rc = sp_msgqueue_send (&msgpipe->queues [1], buf1, len1, buf2, len2);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_MSGQUEUE_SIGNAL)

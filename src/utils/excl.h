@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -50,7 +50,8 @@ int sp_excl_add (struct sp_excl *self, struct sp_pipe *pipe);
 void sp_excl_rm (struct sp_excl *self, struct sp_pipe *pipe);
 int sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe);
 int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe);
-int sp_excl_send (struct sp_excl *self, const void *buf, size_t len);
+int sp_excl_send (struct sp_excl *self, const void *buf1, size_t len1,
+    const void *buf2, size_t len2);
 int sp_excl_recv (struct sp_excl *self, void *buf, size_t *len);
 
 #endif

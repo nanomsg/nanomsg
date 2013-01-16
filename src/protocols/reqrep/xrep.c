@@ -170,7 +170,7 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
         return 0;
 
     /*  Send the message. */
-    rc = sp_pipe_send (data->pipe, buf, len);
+    rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
     errnum_assert (rc >= 0, -rc);
     if (rc & SP_PIPE_RELEASE)
         data->flags &= ~SP_XREP_OUT;

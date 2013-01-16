@@ -111,8 +111,7 @@ static int sp_xpull_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 
 static int sp_xpull_send (struct sp_sockbase *self, const void *buf, size_t len)
 {
-    /*  Pull socket cannot be used for sending. */
-    return -EAGAIN;
+    return -ENOTSUP;
 }
 
 static int sp_xpull_recv (struct sp_sockbase *self, void *buf, size_t *len)

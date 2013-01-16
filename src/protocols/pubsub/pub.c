@@ -153,7 +153,7 @@ static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)
     it = sp_list_begin (&pub->pipes);
     while (it != sp_list_end (&pub->pipes)) {
        data = sp_cont (it, struct sp_pub_data, out);
-       rc = sp_pipe_send (data->pipe, buf, len);
+       rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
        errnum_assert (rc >= 0, -rc);
        if (rc & SP_PIPE_RELEASE) {
            it = sp_list_erase (&pub->pipes, it);
@@ -167,8 +167,7 @@ static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)
 
 static int sp_pub_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
-    /*  Cannot receive messages from PUB socket. */
-    return -EAGAIN;
+    return -ENOTSUP;
 }
 
 static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,

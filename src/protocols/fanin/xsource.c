@@ -115,13 +115,12 @@ static int sp_xsource_send (struct sp_sockbase *self, const void *buf,
     size_t len)
 {
     return sp_excl_send (&sp_cont (self, struct sp_xsource, sockbase)->excl,
-        buf, len);
+        buf, len, NULL, 0);
 }
 
 static int sp_xsource_recv (struct sp_sockbase *self, void *buf, size_t *len)
 {
-    /*  No messages can be received from xsource socket. */
-    return -EAGAIN;
+    return -ENOTSUP;
 }
 
 static int sp_xsource_setopt (struct sp_sockbase *self, int level, int option,

@@ -113,8 +113,7 @@ static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 
 static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len)
 {
-    return sp_excl_send (&sp_cont (self, struct sp_sub, sockbase)->excl,
-        buf, len);
+    return -ENOTSUP;
 }
 
 static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len)

@@ -148,8 +148,7 @@ static int sp_xsink_out (struct sp_sockbase *self, struct sp_pipe *pipe)
 
 static int sp_xsink_send (struct sp_sockbase *self, const void *buf, size_t len)
 {
-    /*  Sink can't send messages. */
-    return -EAGAIN;
+    return -ENOTSUP;
 }
 
 static int sp_xsink_recv (struct sp_sockbase *self, void *buf, size_t *len)

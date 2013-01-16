@@ -143,7 +143,7 @@ int sp_xsurveyor_send (struct sp_sockbase *self, const void *buf,
     it = sp_list_begin (&xsurveyor->outpipes);
     while (it != sp_list_end (&xsurveyor->outpipes)) {
        data = sp_cont (it, struct sp_xsurveyor_data, outitem);
-       rc = sp_pipe_send (data->pipe, buf, len);
+       rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
        errnum_assert (rc >= 0, -rc);
        if (rc & SP_PIPE_RELEASE) {
            it = sp_list_erase (&xsurveyor->outpipes, it);

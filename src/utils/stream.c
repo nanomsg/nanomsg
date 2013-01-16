@@ -94,8 +94,8 @@ static const struct sp_cp_sink sp_stream_state_active = {
 };
 
 /*  Pipe interface. */
-static void sp_stream_send (struct sp_pipebase *self, const void *buf,
-    size_t len);
+static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
+    size_t len1, const void *buf2, size_t len2);
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len);
 const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
     sp_stream_send,
@@ -256,6 +256,8 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
 
     stream = sp_cont (self, struct sp_stream, sink);
     sp_pipebase_sent (&stream->pipebase);
+    sp_msgref_term (&stream->outmsg1);
+    sp_msgref_term (&stream->outmsg2);
 }
 
 static void sp_stream_err (const struct sp_cp_sink **self,
@@ -275,29 +277,37 @@ static void sp_stream_err (const struct sp_cp_sink **self,
     (*original_sink)->err (original_sink, usock, errnum);
 }
 
-static void sp_stream_send (struct sp_pipebase *self, const void *buf,
-    size_t len)
+static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
+    size_t len1, const void *buf2, size_t len2)
 {
     int rc;
     struct sp_stream *stream;
-    struct sp_iovec iov [2];
+    struct sp_iovec iov [3];
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 
-    /*  Make a local copy of the message. */
-    rc = sp_msgref_init (&stream->outmsg, len);
+    /*  Make a local copy of the buffer(s). */
+    rc = sp_msgref_init (&stream->outmsg1, len1);
     errnum_assert (rc == 0, -rc);
-    memcpy (sp_msgref_data (&stream->outmsg), buf, len);
+    memcpy (sp_msgref_data (&stream->outmsg1), buf1, len1);
+    rc = sp_msgref_init (&stream->outmsg1, buf2 ? len2 : 0);
+    errnum_assert (rc == 0, -rc);
+    if (buf2)
+        memcpy (sp_msgref_data (&stream->outmsg2), buf2, len2);
 
     /*  Serialise the message header. */
-    sp_putll (stream->outhdr, len);
+    sp_putll (stream->outhdr, len1 + (buf2 ? len2 : 0));
 
-    /*  Start the outbound state machine. */
+    /*  Start async sending. */
     iov [0].iov_base = stream->outhdr;
     iov [0].iov_len = sizeof (stream->outhdr);
-    iov [1].iov_base = sp_msgref_data (&stream->outmsg);
-    iov [1].iov_len = len;
-    sp_usock_send (stream->usock, iov, 2);
+    iov [1].iov_base = sp_msgref_data (&stream->outmsg1);
+    iov [1].iov_len = len1;
+    if (buf2) {
+        iov [2].iov_base = sp_msgref_data (&stream->outmsg2);
+        iov [2].iov_len = len2;
+    }
+    sp_usock_send (stream->usock, iov, buf2 ? 3 : 2);
 }
 
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)

@@ -71,7 +71,8 @@ struct sp_stream {
     uint8_t outhdr [8];
 
     /*  Message being sent at the moment. */
-    struct sp_msgref outmsg;
+    struct sp_msgref outmsg1;
+    struct sp_msgref outmsg2;
 
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */

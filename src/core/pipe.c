@@ -94,14 +94,15 @@ void *sp_pipe_getdata (struct sp_pipe *self)
     return ((struct sp_pipebase*) self)->data;
 }
 
-int sp_pipe_send (struct sp_pipe *self, const void *buf, size_t len)
+int sp_pipe_send (struct sp_pipe *self, const void *buf1, size_t len1,
+    const void *buf2, size_t len2)
 {
     struct sp_pipebase *pipebase;
 
     pipebase = (struct sp_pipebase*) self;
     sp_assert (pipebase->outstate == SP_PIPEBASE_OUTSTATE_IDLE);
     pipebase->outstate = SP_PIPEBASE_OUTSTATE_SENDING;
-    pipebase->vfptr->send (pipebase, buf, len);
+    pipebase->vfptr->send (pipebase, buf1, len1, buf2, len2);
     if (sp_fast (pipebase->outstate == SP_PIPEBASE_OUTSTATE_SENT)) {
         pipebase->outstate = SP_PIPEBASE_OUTSTATE_IDLE;
         return 0;

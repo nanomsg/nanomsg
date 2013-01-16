@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -75,14 +75,15 @@ int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe)
     return 1;
 }
 
-int sp_excl_send (struct sp_excl *self, const void *buf, size_t len)
+int sp_excl_send (struct sp_excl *self, const void *buf1, size_t len1,
+    const void *buf2, size_t len2)
 {
     int rc;
 
     if (sp_slow (!self->outpipe))
         return -EAGAIN;
 
-    rc = sp_pipe_send (self->outpipe, buf, len);
+    rc = sp_pipe_send (self->outpipe, buf1, len1, buf2, len2);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_PIPE_RELEASE)

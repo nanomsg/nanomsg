@@ -95,7 +95,7 @@ int sp_xrespondent_send (struct sp_sockbase *self, const void *buf,
     size_t len)
 {
     return sp_excl_send (&sp_cont (self, struct sp_xrespondent, sockbase)->excl,
-        buf, len);
+        buf, len, NULL, 0);
 }
 
 int sp_xrespondent_recv (struct sp_sockbase *self, void *buf,

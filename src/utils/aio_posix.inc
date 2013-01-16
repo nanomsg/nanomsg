@@ -787,8 +787,8 @@ static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
                 sp_assert (nbytes == hdr->msg_iov->iov_len);
                 return 0;
             }
-            ++hdr->msg_iov;
             nbytes -= hdr->msg_iov->iov_len;
+            ++hdr->msg_iov;
         }
         else {
             hdr->msg_iov->iov_base += nbytes;

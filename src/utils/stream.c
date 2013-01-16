@@ -253,28 +253,9 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
     struct sp_usock *usock)
 {
     struct sp_stream *stream;
-    size_t size;
-    struct sp_iovec iov;
 
     stream = sp_cont (self, struct sp_stream, sink);
-    switch (stream->outstate) {
-    case SP_STREAM_OUTSTATE_HDR:
-        size = sp_msgref_size (&stream->outmsg);
-        stream->outstate = SP_STREAM_OUTSTATE_BODY;
-        if (!size) {
-            sp_pipebase_sent (&stream->pipebase);
-            break;
-        }
-        iov.iov_base = sp_msgref_data (&stream->outmsg);
-        iov.iov_len = size;
-        sp_usock_send (stream->usock, &iov, 1);
-        break;
-    case SP_STREAM_OUTSTATE_BODY:
-        sp_pipebase_sent (&stream->pipebase);
-        break;
-    default:
-        sp_assert (0);
-    }
+    sp_pipebase_sent (&stream->pipebase);
 }
 
 static void sp_stream_err (const struct sp_cp_sink **self,
@@ -299,7 +280,7 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf,
 {
     int rc;
     struct sp_stream *stream;
-    struct sp_iovec iov;
+    struct sp_iovec iov [2];
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 
@@ -312,10 +293,11 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf,
     sp_putll (stream->outhdr, len);
 
     /*  Start the outbound state machine. */
-    stream->outstate = SP_STREAM_OUTSTATE_HDR;
-    iov.iov_base = stream->outhdr;
-    iov.iov_len = 8;
-    sp_usock_send (stream->usock, &iov, 1);
+    iov [0].iov_base = stream->outhdr;
+    iov [0].iov_len = sizeof (stream->outhdr);
+    iov [1].iov_base = sp_msgref_data (&stream->outmsg);
+    iov [1].iov_len = len;
+    sp_usock_send (stream->usock, iov, 2);
 }
 
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)

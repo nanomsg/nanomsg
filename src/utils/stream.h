@@ -35,9 +35,6 @@
 #define SP_STREAM_INSTATE_HDR 1
 #define SP_STREAM_INSTATE_BODY 2
 
-#define SP_STREAM_OUTSTATE_HDR 1
-#define SP_STREAM_OUTSTATE_BODY 2
-
 struct sp_stream {
 
     /*  Event sink. */

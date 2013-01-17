@@ -105,6 +105,17 @@
         }\
     } while (0)
 
+/*  Compile-time assert. */
+#define CT_ASSERT_HELPER2(prefix, line) prefix##line
+#define CT_ASSERT_HELPER1(prefix, line) CT_ASSERT_HELPER2(prefix, line)
+#if defined __COUNTER__
+#define CT_ASSERT(x) \
+    typedef int CT_ASSERT_HELPER1(ct_assert_,__COUNTER__) [(x) ? 1 : -1]
+#else
+#define CT_ASSERT(x) \
+    typedef int CT_ASSERT_HELPER1(ct_assert_,__LINE__) [(x) ? 1 : -1]
+#endif
+
 SP_NORETURN void sp_err_abort (void);
 int sp_err_errno (void);
 const char *sp_err_strerror (int errnum);

@@ -32,14 +32,12 @@ struct sp_chunkref_chunk {
     struct sp_chunk *chunk;
 };
 
-/*  Compile time check whether VSM are small enough for size to fit into the
-    first byte of the structure. */
-typedef int sp_chunkref_vsm_size_test [SP_CHUNKREF_MAX < 255 ? 1 : -1] ;
+/*  Check whether VSM are small enough for size to fit into the first byte
+    of the structure. */
+CT_ASSERT (SP_CHUNKREF_MAX < 255);
 
-/*  Compile time check to determine whether sp_chunkref_chunk fits
-    into sp_chunkref. */
-typedef int sp_chunkref_chunk_size_test [sizeof (struct sp_chunkref) >=
-    sizeof (struct sp_chunkref_chunk) ? 1 : -1];
+/*  Check whether sp_chunkref_chunk fits into sp_chunkref. */
+CT_ASSERT (sizeof (struct sp_chunkref) >= sizeof (struct sp_chunkref_chunk));
 
 void sp_chunkref_init (struct sp_chunkref *self, size_t size)
 {

@@ -23,7 +23,7 @@
 #ifndef SP_CHUNKREF_INCLUDED
 #define SP_CHUNKREF_INCLUDED
 
-#define SP_CHUNKREF_MAX 64
+#define SP_CHUNKREF_MAX 32
 
 #include "chunk.h"
 

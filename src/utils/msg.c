@@ -21,65 +21,26 @@
 */
 
 #include "msg.h"
-#include "err.h"
-#include "alloc.h"
 
-int sp_msgref_init (struct sp_msgref *self, size_t size)
+#include <string.h>
+
+void sp_msg_init (struct sp_msg *self, size_t size)
 {
-    /*  Small message. */
-    if (size <= SP_MAX_VSM_SIZE) {
-        self->vsm.type = SP_MSGTYPE_VSM;
-        self->vsm.size = (uint8_t) size;
-        return 0;
-    }
-
-    /*  Large message. */
-    self->lmsg.type = SP_MSGTYPE_LMSG;
-    self->lmsg.hdr = sp_alloc (sizeof (struct sp_msghdr) + size,
-        "message body");
-    if (!self->lmsg.hdr)
-        return -ENOMEM;
-    self->lmsg.hdr->size = size;
-
-    return 0;
+    sp_chunkref_init (&self->hdr, 0);
+    sp_chunkref_init (&self->body, size);
 }
 
-void sp_msgref_init_move (struct sp_msgref *self, struct sp_msgref *src)
+void sp_msg_init_data (struct sp_msg *self, const void *hdr, size_t hdrlen,
+    const void *body, size_t bodylen)
 {
-    *self = *src;
-    src->base.type = 0;
+    sp_chunkref_init (&self->hdr, hdrlen);
+    memcpy (sp_chunkref_data (&self->hdr), hdr, hdrlen);
+    sp_chunkref_init (&self->body, bodylen);
+    memcpy (sp_chunkref_data (&self->body), body, bodylen);
 }
 
-void sp_msgref_term (struct sp_msgref *self)
+void sp_msg_term (struct sp_msg *self)
 {
-    /*  Small message. */
-    if (self->base.type == SP_MSGTYPE_VSM) {
-        self->base.type = 0;
-        return;
-    }
-
-    /*  Large message. */
-    sp_free (self->lmsg.hdr);
-    self->base.type = 0;
+    sp_chunkref_term (&self->hdr);
+    sp_chunkref_term (&self->body);
 }
-
-uint8_t *sp_msgref_data (struct sp_msgref *self)
-{
-    /*  Small message. */
-    if (self->base.type == SP_MSGTYPE_VSM)
-        return self->vsm.data;
-
-    /*  Large message. */
-    return (uint8_t*) ((&self->lmsg.hdr->size) + 1);
-}
-
-size_t sp_msgref_size (struct sp_msgref *self)
-{
-    /*  Small message. */
-    if (self->base.type == SP_MSGTYPE_VSM)
-        return self->vsm.size;
-
-    /*  Large message. */
-    return self->lmsg.hdr->size;
-}
-

@@ -43,7 +43,7 @@
 #define SP_MSGQUEUE_GRANULARITY 127
 
 struct sp_msgqueue_chunk {
-    struct sp_msgref msgs [SP_MSGQUEUE_GRANULARITY];
+    struct sp_msg msgs [SP_MSGQUEUE_GRANULARITY];
     struct sp_msgqueue_chunk *next;
 };
 

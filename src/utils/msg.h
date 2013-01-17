@@ -23,58 +23,29 @@
 #ifndef SP_MSG_INCLUDED
 #define SP_MSG_INCLUDED
 
+#include "chunkref.h"
+
 #include <stddef.h>
-#include <stdint.h>
 
-#define SP_MAX_VSM_SIZE 30
+struct sp_msg {
 
-#define SP_MSGTYPE_VSM 101
-#define SP_MSGTYPE_LMSG 102
+    /*  Contains SP protocol message header. */
+    struct sp_chunkref hdr;
 
-struct sp_msghdr
-{
-    size_t size;
-    /* Actual message data follow the sp_msghdr structure. */
+    /*  Contains application level message payload. */
+    struct sp_chunkref body;
 };
 
-/*  This class represents an SP message. */
+/*  Initialises a message with body 'size' bytes long and empty header. */
+void sp_msg_init (struct sp_msg *self, size_t size);
 
-struct sp_msgref {
-    union
-    {
-        struct {
-            uint8_t unused [SP_MAX_VSM_SIZE + 1];
-            uint8_t type;
-        } base;
-        struct {
-            uint8_t data [SP_MAX_VSM_SIZE];
-            uint8_t size;
-            uint8_t type;
-        } vsm;
-        struct {
-            struct sp_msghdr *hdr;
-            uint8_t unused [SP_MAX_VSM_SIZE + 1 - sizeof (struct sp_content*)];
-            uint8_t type;
-        } lmsg;
-    };
-};
+/*  TODO: This function is a termporary scaffolding.
+    Should be removed later on. */
+void sp_msg_init_data (struct sp_msg *self, const void *hdr, size_t hdrlen,
+    const void *body, size_t bodylen);
 
-/*  Initialise the message of the specified size. The content of the message
-    is undefined. */
-int sp_msgref_init (struct sp_msgref *self, size_t size);
-
-/*  Initialise the message by taking over the content of the specified message.
-    After the call the source message is deallocated. */
-void sp_msgref_init_move (struct sp_msgref *self, struct sp_msgref *src);
-
-/*  Terminate the message. */
-void sp_msgref_term (struct sp_msgref *self);
-
-/*  Returns pointer to the message data. */
-uint8_t *sp_msgref_data (struct sp_msgref *self);
-
-/*  Returns size of the message data in bytes. */
-size_t sp_msgref_size (struct sp_msgref *self);
+/*  Frees resources allocate with the message. */
+void sp_msg_term (struct sp_msg *self);
 
 #endif
 

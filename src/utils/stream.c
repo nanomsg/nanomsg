@@ -231,14 +231,13 @@ static void sp_stream_received (const struct sp_cp_sink **self,
     switch (stream->instate) {
     case SP_STREAM_INSTATE_HDR:
         size = sp_getll (stream->inhdr);
-        rc = sp_msgref_init (&stream->inmsg, (size_t) size);
-        errnum_assert (rc == 0, -rc);
+        sp_msg_init (&stream->inmsg, (size_t) size);
         if (!size) {
             sp_pipebase_received (&stream->pipebase);
             break;
         }
         stream->instate = SP_STREAM_INSTATE_BODY;
-        sp_usock_recv (stream->usock, sp_msgref_data (&stream->inmsg),
+        sp_usock_recv (stream->usock, sp_chunkref_data (&stream->inmsg.body),
             (size_t) size);
         break;
     case SP_STREAM_INSTATE_BODY:
@@ -256,8 +255,7 @@ static void sp_stream_sent (const struct sp_cp_sink **self,
 
     stream = sp_cont (self, struct sp_stream, sink);
     sp_pipebase_sent (&stream->pipebase);
-    sp_msgref_term (&stream->outmsg1);
-    sp_msgref_term (&stream->outmsg2);
+    sp_msg_term (&stream->outmsg);
 }
 
 static void sp_stream_err (const struct sp_cp_sink **self,
@@ -287,27 +285,19 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
     stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Make a local copy of the buffer(s). */
-    rc = sp_msgref_init (&stream->outmsg1, len1);
-    errnum_assert (rc == 0, -rc);
-    memcpy (sp_msgref_data (&stream->outmsg1), buf1, len1);
-    rc = sp_msgref_init (&stream->outmsg1, buf2 ? len2 : 0);
-    errnum_assert (rc == 0, -rc);
-    if (buf2)
-        memcpy (sp_msgref_data (&stream->outmsg2), buf2, len2);
+    sp_msg_init_data (&stream->outmsg, buf1, len1, buf2, len2);
 
     /*  Serialise the message header. */
-    sp_putll (stream->outhdr, len1 + (buf2 ? len2 : 0));
+    sp_putll (stream->outhdr, len1 + len2);
 
     /*  Start async sending. */
     iov [0].iov_base = stream->outhdr;
     iov [0].iov_len = sizeof (stream->outhdr);
-    iov [1].iov_base = sp_msgref_data (&stream->outmsg1);
-    iov [1].iov_len = len1;
-    if (buf2) {
-        iov [2].iov_base = sp_msgref_data (&stream->outmsg2);
-        iov [2].iov_len = len2;
-    }
-    sp_usock_send (stream->usock, iov, buf2 ? 3 : 2);
+    iov [1].iov_base = sp_chunkref_data (&stream->outmsg.hdr);
+    iov [1].iov_len = sp_chunkref_size (&stream->outmsg.hdr);
+    iov [2].iov_base = sp_chunkref_data (&stream->outmsg.body);
+    iov [2].iov_len = sp_chunkref_size (&stream->outmsg.body);;
+    sp_usock_send (stream->usock, iov, 3);
 }
 
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)
@@ -318,10 +308,10 @@ static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)
     stream = sp_cont (self, struct sp_stream, pipebase);
 
     /*  Copy the data to the supplied buffer. */
-    sz = sp_msgref_size (&stream->inmsg);
+    sz = sp_chunkref_size (&stream->inmsg.body);
     if (*len < sz)
         *len = sz;
-    memcpy (buf, sp_msgref_data (&stream->inmsg), sz);
+    memcpy (buf, sp_chunkref_data (&stream->inmsg.body), sz);
 
     /* Start receiving new message. */ 
     stream->instate = SP_STREAM_INSTATE_HDR;

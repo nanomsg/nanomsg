@@ -58,6 +58,10 @@ add_library (nanomsg SHARED
     utils/astream.c
     utils/bstream.h
     utils/bstream.c
+    utils/chunk.h
+    utils/chunk.c
+    utils/chunkref.h
+    utils/chunkref.c
     utils/clock.h
     utils/clock.c
     utils/cond.h

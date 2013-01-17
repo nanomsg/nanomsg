@@ -93,8 +93,7 @@ void sp_msgqueue_term (struct sp_msgqueue *self);
 /*  Writes a message to the pipe. -EAGAIN is returned if the message cannot
     be sent because the queue is full. 0 is returned in case of success. If,
     additionally, this makes the queue readable, the return value is 1. */
-int sp_msgqueue_send (struct sp_msgqueue *self,
-        const void *buf1, size_t len1, const void *buf2, size_t len2);
+int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg);
 
 /*  Reads a message from the pipe. -EAGAIN is returned if there's no message
     to receive. 0 is returned in case of success. If, additionally, this makes

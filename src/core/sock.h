@@ -25,6 +25,7 @@
 
 struct sp_sock;
 struct sp_pipe;
+struct sp_msg;
 struct sp_cp;
 
 /*  Called by sp_term() to let the socket know about the process shutdown. */
@@ -56,8 +57,7 @@ int sp_sock_shutdown (struct sp_sock *self, int eid);
 void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep);
 
 /*  Send a message to the socket. */
-int sp_sock_send (struct sp_sock *self, const void *buf,
-    size_t len, int flags);
+int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags);
 
 /*  Receive a message from the socket. */
 int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags);

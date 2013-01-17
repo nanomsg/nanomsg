@@ -91,11 +91,10 @@ int sp_xrespondent_out (struct sp_sockbase *self, struct sp_pipe *pipe)
         pipe);
 }
 
-int sp_xrespondent_send (struct sp_sockbase *self, const void *buf,
-    size_t len)
+int sp_xrespondent_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     return sp_excl_send (&sp_cont (self, struct sp_xrespondent, sockbase)->excl,
-        buf, len, NULL, 0);
+        msg);
 }
 
 int sp_xrespondent_recv (struct sp_sockbase *self, void *buf,

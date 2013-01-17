@@ -29,21 +29,21 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
+#include "../../utils/chunkref.h"
 #include "../../utils/wire.h"
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
-#define SP_REP_INPROGRESS 1
-
 #define SP_REP_MAXBACKTRACELEN 32
+
+#define SP_REP_INPROGRESS 1
 
 struct sp_rep {
     struct sp_xrep xrep;
     uint32_t flags;
-    size_t backtracelen;
-    void *backtrace;
+    struct sp_chunkref backtrace;
 };
 
 /*  Private functions. */
@@ -53,7 +53,7 @@ static void sp_rep_term (struct sp_rep *self);
 
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_rep_destroy (struct sp_sockbase *self);
-static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len);
+static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len);
 
 static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
@@ -72,16 +72,13 @@ static void sp_rep_init (struct sp_rep *self,
     const struct sp_sockbase_vfptr *vfptr, int fd)
 {
     sp_xrep_init (&self->xrep, vfptr, fd);
-
     self->flags = 0;
-    self->backtracelen = 0;
-    self->backtrace = NULL;
 }
 
 static void sp_rep_term (struct sp_rep *self)
 {
-    if (self->backtrace)
-        sp_free (self->backtrace);
+    if (self->flags & SP_REP_INPROGRESS)
+        sp_chunkref_term (&self->backtrace);
     sp_xrep_term (&self->xrep);
 }
 
@@ -95,7 +92,7 @@ static void sp_rep_destroy (struct sp_sockbase *self)
     sp_free (rep);
 }
 
-static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_rep *rep;
@@ -108,23 +105,16 @@ static int sp_rep_send (struct sp_sockbase *self, const void *buf, size_t len)
     if (sp_slow (!(rep->flags & SP_REP_INPROGRESS)))
         return -EFSM;
 
+    /*  Move the stored backtrace into the message header. */
+    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_mv (&msg->hdr, &rep->backtrace);
+    rep->flags &= ~SP_REP_INPROGRESS;
+
     /*  Send the reply. If it cannot be sent because of pushback,
         drop it silently. */
-    /*  TODO: Do this using iovecs. */
-    replylen = rep->backtracelen + len;
-    reply = sp_alloc (replylen, "reply");
-    alloc_assert (reply);
-    memcpy (reply, rep->backtrace, rep->backtracelen);
-    memcpy (reply + rep->backtracelen, buf, len);
-    rc = sp_xrep_send (&rep->xrep.sockbase, reply, replylen);
+    rc = sp_xrep_send (&rep->xrep.sockbase, msg);
     errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
-    sp_free (reply);
-
-    /*  Clean up. */
-    sp_free (rep->backtrace);
-    rep->backtracelen = 0;
-    rep->backtrace = NULL;
-    rep->flags &= ~SP_REP_INPROGRESS;
 
     return 0;
 }
@@ -142,9 +132,7 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
 
     /*  If a request is already being processed, cancel it. */
     if (sp_slow (rep->flags & SP_REP_INPROGRESS)) {
-        sp_free (rep->backtrace);
-        rep->backtracelen = 0;
-        rep->backtrace = NULL;
+        sp_chunkref_term (&rep->backtrace);
         rep->flags &= ~SP_REP_INPROGRESS;
     }
 
@@ -181,16 +169,15 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
         }
     }
     ++i;
-    rep->backtracelen = i * sizeof (uint32_t);
-    rep->backtrace = sp_alloc (rep->backtracelen, "backtrace");
-    alloc_assert (rep->backtrace);
-    memcpy (rep->backtrace, request, rep->backtracelen);
 
+    /*  Store the backtrace. */
+    sp_chunkref_init (&rep->backtrace, i * sizeof (uint32_t));
+    memcpy (sp_chunkref_data (&rep->backtrace), request, i * sizeof (uint32_t));
     rep->flags |= SP_REP_INPROGRESS;
 
     /*  Return the raw request to the caller. */
-    rawlen = requestlen - rep->backtracelen;
-    memcpy (buf, ((uint8_t*) request) + rep->backtracelen,
+    rawlen = requestlen - i * sizeof (uint32_t);
+    memcpy (buf, ((uint8_t*) request) + (i * sizeof (uint32_t)),
         rawlen < *len ? rawlen : *len);
     *len = rawlen;
     sp_free (request);

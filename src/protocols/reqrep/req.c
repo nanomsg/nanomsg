@@ -45,8 +45,7 @@ struct sp_req {
     const struct sp_cp_sink *sink;
     uint32_t reqid;
     uint32_t flags;
-    size_t requestlen;
-    void *request;
+    struct sp_msg request;
     int resend_ivl;
     struct sp_timer resend_timer;
 };
@@ -58,7 +57,7 @@ static void sp_req_term (struct sp_req *self);
 
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_req_destroy (struct sp_sockbase *self);
-static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len);
+static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -97,14 +96,10 @@ static void sp_req_init (struct sp_req *self,
     self->sink = &sp_req_sink;
 
     /*  Start assigning request IDs beginning with a random number. This way
-        there should be no key clashes even if the executable is re-started.
-        Keys are 31 bit unsigned integers. */
+        there should be no key clashes even if the executable is re-started. */
     sp_random_generate (&self->reqid, sizeof (self->reqid));
-    self->reqid &= 0x7fffffff;
 
     self->flags = 0;
-    self->requestlen = 0;
-    self->request = NULL;
     self->resend_ivl = SP_REQ_DEFAULT_RESEND_IVL;
     sp_timer_init (&self->resend_timer, &self->sink,
         sp_sockbase_getcp (&self->xreq.sockbase));
@@ -113,7 +108,7 @@ static void sp_req_init (struct sp_req *self,
 static void sp_req_term (struct sp_req *self)
 {
     if (self->flags & SP_REQ_INPROGRESS)
-        sp_free (self->request);
+        sp_msg_term (&self->request);
     sp_timer_term (&self->resend_timer);
     sp_xreq_term (&self->xreq);
 }
@@ -128,7 +123,7 @@ static void sp_req_destroy (struct sp_sockbase *self)
     sp_free (req);
 }
 
-static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_req *req;
@@ -137,30 +132,26 @@ static int sp_req_send (struct sp_sockbase *self, const void *buf, size_t len)
 
     /*  If there's a request in progress, cancel it. */
     if (sp_slow (req->flags & SP_REQ_INPROGRESS)) {
-        sp_free (req->request);
-        req->requestlen = 0;
-        req->request = NULL;
+        sp_msg_term (&req->request);
         req->flags &= ~SP_REQ_INPROGRESS;
     }
 
-    /*  Generate new request ID for the new request. */
+    /*  Generate new request ID for the new request and put it into message
+        header. The most important bit is set to 1 to indicate that this is
+        the bottom of the backtrace stack. */
     ++req->reqid;
-    req->reqid &= 0x7fffffff;
+    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, 4);
+    sp_putl (sp_chunkref_data (&msg->hdr), req->reqid | 0x80000000);
 
-    /*  Store the message so that it can be re-send if there's no reply.
-        Tag it with the request ID. */
-    req->requestlen = sizeof (uint32_t) + len;
-    req->request = sp_alloc (req->requestlen, "request");
-    alloc_assert (req->request);
-    sp_putl (req->request, req->reqid | 0x80000000);
-    memcpy (((uint32_t*) (req->request)) + 1, buf, len);
+    /*  Store the message so that it can be re-sent if there's no reply. */
+    sp_msg_cp (&req->request, msg);
 
     /*  Send the message. If it cannot be sent because of the pushback we'll
         pretend it was sent anyway. Re-send mechanism will take care of the
         rest. */
-    rc = sp_xreq_send (&req->xreq.sockbase, req->request, req->requestlen);
-    if (sp_slow (rc == -EAGAIN))
-        return -EAGAIN;
+    rc = sp_xreq_send (&req->xreq.sockbase, msg);
     errnum_assert (rc == 0, -rc);
 
     /*  Remember that we are processing a request and waiting for the reply
@@ -228,9 +219,7 @@ static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
     /*  Clean-up. */
     sp_timer_stop (&req->resend_timer);
     sp_free (reply);
-    sp_free (req->request);
-    req->requestlen = 0;
-    req->request = NULL;
+    sp_msg_term (&req->request);
     req->flags &= ~SP_REQ_INPROGRESS;
 
     return 0;
@@ -287,7 +276,7 @@ static void sp_req_timeout (const struct sp_cp_sink **self,
     sp_assert (req->flags & SP_REQ_INPROGRESS);
 
     /*  Re-send the request. */
-    rc = sp_xreq_send (&req->xreq.sockbase, req->request, req->requestlen);
+    rc = sp_xreq_send (&req->xreq.sockbase, &req->request);
     errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
 
     /*  Set up the next re-send timer. */

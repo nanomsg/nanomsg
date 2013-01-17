@@ -50,8 +50,7 @@ static void sp_respondent_term (struct sp_respondent *self);
 
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_respondent_destroy (struct sp_sockbase *self);
-static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
-    size_t len);
+static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_respondent_recv (struct sp_sockbase *self, void *buf,
     size_t *len);
 static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
@@ -88,12 +87,10 @@ void sp_respondent_destroy (struct sp_sockbase *self)
     sp_free (respondent);
 }
 
-static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
-    size_t len)
+static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_respondent *respondent;
-    uint8_t *tmpbuf;
 
     respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
 
@@ -102,18 +99,19 @@ static int sp_respondent_send (struct sp_sockbase *self, const void *buf,
         return -EFSM;
 
     /*  Tag the message with survey ID. */
-    tmpbuf = sp_alloc (len + 4, "response");
-    alloc_assert (tmpbuf);
-    sp_putl (tmpbuf, respondent->surveyid);
-    memcpy (tmpbuf + 4, buf, len);
-    rc = sp_xrespondent_send (&respondent->xrespondent.sockbase,
-        tmpbuf, len + 4);
+    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, 4);
+    sp_putl (sp_chunkref_data (&msg->hdr), respondent->surveyid);
+
+    /*  Try to send the message. If it cannot be sent due to pushback, drop it
+        silently. */
+    rc = sp_xrespondent_send (&respondent->xrespondent.sockbase, msg);
     if (sp_slow (rc == -EAGAIN)) {
-        sp_free (tmpbuf);
+        sp_msg_term (msg);
         return -EAGAIN;
     }
     errnum_assert (rc == 0, -rc);
-    sp_free (tmpbuf);
 
     /*  Remember that no survey is being processed. */
     respondent->flags &= ~SP_RESPONDENT_INPROGRESS;

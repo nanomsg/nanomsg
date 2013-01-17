@@ -56,8 +56,7 @@ static void sp_surveyor_term (struct sp_surveyor *self);
 
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_surveyor_destroy (struct sp_sockbase *self);
-static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
-    size_t len);
+static int sp_surveyor_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -120,13 +119,10 @@ void sp_surveyor_destroy (struct sp_sockbase *self)
     sp_free (surveyor);
 }
 
-static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
-    size_t len)
+static int sp_surveyor_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_surveyor *surveyor;
-    size_t surveylen;
-    void *survey;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
 
@@ -140,21 +136,14 @@ static int sp_surveyor_send (struct sp_sockbase *self, const void *buf,
     ++surveyor->surveyid;
 
     /*  Tag the survey body with survey ID. */
-    /*  TODO: Do this using iovecs. */
-    surveylen = sizeof (uint32_t) + len;
-    survey = sp_alloc (surveylen, "survey");
-    alloc_assert (survey);
-    sp_putl (survey, surveyor->surveyid);
-    memcpy (((uint32_t*) survey) + 1, buf, len);
+    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, 4);
+    sp_putl (sp_chunkref_data (&msg->hdr), surveyor->surveyid);
 
     /*  Send the survey. */
-    rc = sp_xsurveyor_send (&surveyor->xsurveyor.sockbase, survey, surveylen);
-    if (sp_slow (rc == -EAGAIN)) {
-        sp_free (survey);
-        return -EAGAIN;
-    }
+    rc = sp_xsurveyor_send (&surveyor->xsurveyor.sockbase, msg);
     errnum_assert (rc == 0, -rc);
-    sp_free (survey);
 
     surveyor->flags |= SP_SURVEYOR_INPROGRESS;
 

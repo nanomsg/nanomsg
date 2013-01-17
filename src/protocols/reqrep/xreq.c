@@ -87,10 +87,17 @@ int sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return sp_excl_out (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
 }
 
-int sp_xreq_send (struct sp_sockbase *self, const void *buf, size_t len)
+int sp_xreq_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
-    return sp_excl_send (&sp_cont (self, struct sp_xreq, sockbase)->excl,
-        buf, len, NULL, 0);
+    int rc;
+
+    /*  If request cannot be sent due to the pushback, drop it silenly. */
+    rc = sp_excl_send (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
+    if (rc == -EAGAIN) {
+        sp_msg_term (msg);
+        return 0;
+    }
+    return rc;
 }
 
 int sp_xreq_recv (struct sp_sockbase *self, void *buf, size_t *len)

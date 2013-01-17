@@ -59,8 +59,7 @@ static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpush_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpush_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpush_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpush_send (struct sp_sockbase *self, const void *buf,
-   size_t len);
+static int sp_xpush_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_xpush_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -146,7 +145,7 @@ static int sp_xpush_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return result;
 }
 
-static int sp_xpush_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_xpush_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_xpush *xpush;
@@ -159,7 +158,7 @@ static int sp_xpush_send (struct sp_sockbase *self, const void *buf, size_t len)
         return -EAGAIN;
 
     /*  Send the messsage. */
-    rc = sp_pipe_send (xpush->current->pipe, buf, len, NULL, 0);
+    rc = sp_pipe_send (xpush->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */

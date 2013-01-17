@@ -65,12 +65,26 @@ void sp_chunkref_init_chunk (struct sp_chunkref *self, struct sp_chunk *chunk)
 
 void sp_chunkref_term (struct sp_chunkref *self)
 {
+    struct sp_chunkref_chunk *ch;
+
+    if (self->ref [0] == 0xff) {
+        ch = (struct sp_chunkref_chunk*) self;
+        sp_chunk_free (ch->chunk);
+    }
 }
 
 void sp_chunkref_mv (struct sp_chunkref *dst, struct sp_chunkref *src)
 {
     memcpy (dst, src, src->ref [0] == 0xff ?
         sizeof (struct sp_chunkref_chunk) : src->ref [0] + 1);
+}
+
+void sp_chunkref_cp (struct sp_chunkref *dst, struct sp_chunkref *src)
+{
+    /*  TODO: At the moment, copy is made. Do it via reference count. */
+    sp_chunkref_init (dst, sp_chunkref_size (src));
+    memcpy (sp_chunkref_data (dst), sp_chunkref_data (src),
+        sp_chunkref_size (src));
 }
 
 void *sp_chunkref_data (struct sp_chunkref *self)

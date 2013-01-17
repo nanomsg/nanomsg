@@ -27,6 +27,7 @@
 
 #include "utils/list.h"
 #include "utils/aio.h"
+#include "utils/msg.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -104,8 +105,7 @@ struct sp_pipebase;
 #define SP_PIPEBASE_OUTSTATE_ASYNC 4
 
 struct sp_pipebase_vfptr {
-    void (*send) (struct sp_pipebase *self, const void *buf1, size_t len1,
-        const void *buf2, size_t len2);
+    void (*send) (struct sp_pipebase *self, struct sp_msg *msg);
     void (*recv) (struct sp_pipebase *self, void *buf, size_t *len);
 };
 

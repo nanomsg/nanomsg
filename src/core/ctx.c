@@ -36,6 +36,7 @@
 #include "../utils/cond.h"
 #include "../utils/random.h"
 #include "../utils/glock.h"
+#include "../utils/msg.h"
 
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
@@ -63,6 +64,7 @@
 #include "../protocols/survey/xsurveyor.h"
 
 #include <stddef.h>
+#include <string.h>
 
 #if defined SP_HAVE_WINDOWS
 #include "../utils/win.h"
@@ -453,6 +455,7 @@ int sp_shutdown (int s, int how)
 int sp_send (int s, const void *buf, size_t len, int flags)
 {
     int rc;
+    struct sp_msg msg;
 
     SP_BASIC_CHECKS;
 
@@ -461,8 +464,14 @@ int sp_send (int s, const void *buf, size_t len, int flags)
         return -1;
     }
 
-    rc = sp_sock_send (self.socks [s], buf, len, flags);
+    /*  Create a message object. */
+    sp_msg_init (&msg, len);
+    memcpy (sp_chunkref_data (&msg.body), buf, len);    
+
+    /*  Send it further down the stack. */
+    rc = sp_sock_send (self.socks [s], &msg, flags);
     if (sp_slow (rc < 0)) {
+        sp_msg_term (&msg);
         errno = -rc;
         return -1;
     }

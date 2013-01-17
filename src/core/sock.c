@@ -28,6 +28,7 @@
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
+#include "../utils/msg.h"
 
 #define SP_SOCK_EVENT_IN 1
 #define SP_SOCK_EVENT_OUT 2
@@ -360,7 +361,7 @@ void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep)
         sp_cond_post (&sockbase->cond);
 }
 
-int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
+int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
@@ -381,7 +382,7 @@ int sp_sock_send (struct sp_sock *self, const void *buf, size_t len, int flags)
         }
 
         /*  Try to send the message in a non-blocking way. */
-        rc = sockbase->vfptr->send (sockbase, buf, len);
+        rc = sockbase->vfptr->send (sockbase, msg);
         if (sp_fast (rc == 0)) {
             sp_cp_unlock (&sockbase->cp);
             return 0;

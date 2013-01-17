@@ -47,5 +47,14 @@ void sp_msg_init_data (struct sp_msg *self, const void *hdr, size_t hdrlen,
 /*  Frees resources allocate with the message. */
 void sp_msg_term (struct sp_msg *self);
 
+/*  Moves the content of the message from src to dst. dst should not be
+    initialised prior to the operation. dst will be uninitialised after the
+    operation. */
+void sp_msg_mv (struct sp_msg *dst, struct sp_msg *src);
+
+/*  Copies a message from src to dst. dst should not be
+    initialised prior to the operation. */
+void sp_msg_cp (struct sp_msg *dst, struct sp_msg *src);
+
 #endif
 

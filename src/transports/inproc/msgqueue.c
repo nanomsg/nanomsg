@@ -75,19 +75,19 @@ void sp_msgqueue_term (struct sp_msgqueue *self)
     sp_mutex_term (&self->sync);
 }
 
-int sp_msgqueue_send (struct sp_msgqueue *self,
-    const void *buf1, size_t len1, const void *buf2, size_t len2)
+int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg)
 {
+    size_t msgsz;
     int result;
-    struct sp_msg *msg;
+
+    msgsz = sp_chunkref_size (&msg->hdr) + sp_chunkref_size (&msg->body);
 
     sp_mutex_lock (&self->sync);
 
     /*  If the message doesn't fit into the queue return error. Note that
         message of any size can be written to an empty queue. This way even
         the messages larger than maximal queue size can be transferred. */
-    if (sp_slow (self->count &&
-          self->mem + len1 + (buf2 ? len2 : 0) > self->maxmem)) {
+    if (sp_slow (self->count && self->mem + msgsz > self->maxmem)) {
         sp_mutex_unlock (&self->sync);
         return -EAGAIN;
     }
@@ -95,13 +95,12 @@ int sp_msgqueue_send (struct sp_msgqueue *self,
     /*  Adjust the statistics. */
     result = self->count ? 0 : SP_MSGQUEUE_SIGNAL;
     ++self->count;
-    self->mem += len1 + (buf2 ? len2 : 0);
+    self->mem += msgsz;
     if (self->mem >= self->maxmem)
         result |= SP_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
-    sp_msg_init_data (&self->out.chunk->msgs [self->out.pos],
-        buf1, len1, buf2, len2);
+    sp_msg_mv (&self->out.chunk->msgs [self->out.pos], msg);
     ++self->out.pos;
 
     /*  If there's no space for a new message in the pipe, either re-use

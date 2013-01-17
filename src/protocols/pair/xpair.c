@@ -47,8 +47,7 @@ static int sp_xpair_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpair_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpair_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpair_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpair_send (struct sp_sockbase *self, const void *buf,
-    size_t len);
+static int sp_xpair_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_xpair_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
@@ -108,10 +107,10 @@ static int sp_xpair_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return sp_excl_out (&sp_cont (self, struct sp_xpair, sockbase)->excl, pipe);
 }
 
-static int sp_xpair_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_xpair_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     return sp_excl_send (&sp_cont (self, struct sp_xpair, sockbase)->excl,
-        buf, len, NULL, 0);
+        msg);
 }
 
 static int sp_xpair_recv (struct sp_sockbase *self, void *buf, size_t *len)

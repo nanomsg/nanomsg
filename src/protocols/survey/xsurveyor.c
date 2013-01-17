@@ -129,13 +129,13 @@ int sp_xsurveyor_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return result;
 }
 
-int sp_xsurveyor_send (struct sp_sockbase *self, const void *buf,
-    size_t len)
+int sp_xsurveyor_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_list_item *it;
     struct sp_xsurveyor_data *data;
     struct sp_xsurveyor *xsurveyor;
+    struct sp_msg copy;
 
     xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
 
@@ -143,7 +143,8 @@ int sp_xsurveyor_send (struct sp_sockbase *self, const void *buf,
     it = sp_list_begin (&xsurveyor->outpipes);
     while (it != sp_list_end (&xsurveyor->outpipes)) {
        data = sp_cont (it, struct sp_xsurveyor_data, outitem);
-       rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
+       sp_msg_cp (&copy, msg);
+       rc = sp_pipe_send (data->pipe, &copy);
        errnum_assert (rc >= 0, -rc);
        if (rc & SP_PIPE_RELEASE) {
            it = sp_list_erase (&xsurveyor->outpipes, it);
@@ -151,6 +152,9 @@ int sp_xsurveyor_send (struct sp_sockbase *self, const void *buf,
        }
        it = sp_list_next (&xsurveyor->outpipes, it);
     }
+
+    /*  Drop the reference to the message. */
+    sp_msg_term (msg);
 
     return 0;
 }

@@ -144,7 +144,7 @@ int sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return 0;
 }
 
-int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
+int sp_xrep_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     uint32_t key;
@@ -154,13 +154,14 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
     xrep = sp_cont (self, struct sp_xrep, sockbase);
 
     /*  We treat invalid peer ID as if the peer was non-existent. */
-    if (len < sizeof (uint32_t))
+    if (sp_slow (sp_chunkref_size (&msg->hdr) < sizeof (uint32_t))) {
+        sp_msg_term (msg);
         return 0;
+    }
 
-    /*  Get the destination peer ID. Remove it from the message. */
-    key = sp_getl (buf);
-    buf = ((uint32_t*) buf) + 1;
-    len -= sizeof (uint32_t);
+    /*  Retrieve the destination peer ID. Trim it from the header. */
+    key = sp_getl (sp_chunkref_data (&msg->hdr));
+    sp_chunkref_trim (&msg->hdr, 4);
 
     /*  Find the appropriate pipe to send the message to. If there's none,
         or if it's not ready for sending, silently drop the message. */
@@ -170,7 +171,7 @@ int sp_xrep_send (struct sp_sockbase *self, const void *buf, size_t len)
         return 0;
 
     /*  Send the message. */
-    rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
+    rc = sp_pipe_send (data->pipe, msg);
     errnum_assert (rc >= 0, -rc);
     if (rc & SP_PIPE_RELEASE)
         data->flags &= ~SP_XREP_OUT;

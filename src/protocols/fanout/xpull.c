@@ -47,8 +47,7 @@ static int sp_xpull_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_xpull_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpull_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xpull_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpull_send (struct sp_sockbase *self, const void *buf,
-    size_t len);
+static int sp_xpull_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_xpull_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_xpull_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -109,7 +108,7 @@ static int sp_xpull_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return sp_excl_out (&sp_cont (self, struct sp_xpull, sockbase)->excl, pipe);
 }
 
-static int sp_xpull_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_xpull_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     return -ENOTSUP;
 }

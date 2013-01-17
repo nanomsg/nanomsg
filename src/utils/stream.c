@@ -94,8 +94,7 @@ static const struct sp_cp_sink sp_stream_state_active = {
 };
 
 /*  Pipe interface. */
-static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
-    size_t len1, const void *buf2, size_t len2);
+static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg);
 static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len);
 const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
     sp_stream_send,
@@ -275,8 +274,7 @@ static void sp_stream_err (const struct sp_cp_sink **self,
     (*original_sink)->err (original_sink, usock, errnum);
 }
 
-static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
-    size_t len1, const void *buf2, size_t len2)
+static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_stream *stream;
@@ -284,11 +282,12 @@ static void sp_stream_send (struct sp_pipebase *self, const void *buf1,
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 
-    /*  Make a local copy of the buffer(s). */
-    sp_msg_init_data (&stream->outmsg, buf1, len1, buf2, len2);
+    /*  Mave the message to the local storage. */
+    sp_msg_mv (&stream->outmsg, msg);
 
     /*  Serialise the message header. */
-    sp_putll (stream->outhdr, len1 + len2);
+    sp_putll (stream->outhdr, sp_chunkref_size (&stream->outmsg.hdr) +
+        sp_chunkref_size (&stream->outmsg.body));
 
     /*  Start async sending. */
     iov [0].iov_base = stream->outhdr;

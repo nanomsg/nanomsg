@@ -75,15 +75,14 @@ int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe)
     return 1;
 }
 
-int sp_excl_send (struct sp_excl *self, const void *buf1, size_t len1,
-    const void *buf2, size_t len2)
+int sp_excl_send (struct sp_excl *self, struct sp_msg *msg)
 {
     int rc;
 
     if (sp_slow (!self->outpipe))
         return -EAGAIN;
 
-    rc = sp_pipe_send (self->outpipe, buf1, len1, buf2, len2);
+    rc = sp_pipe_send (self->outpipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_PIPE_RELEASE)

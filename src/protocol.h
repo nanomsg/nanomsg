@@ -27,6 +27,7 @@
 #include "utils/cond.h"
 #include "utils/list.h"
 #include "utils/clock.h"
+#include "utils/msg.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -41,8 +42,7 @@ struct sp_pipe;
 
 void sp_pipe_setdata (struct sp_pipe *self, void *data);
 void *sp_pipe_getdata (struct sp_pipe *self);
-int sp_pipe_send (struct sp_pipe *self, const void *buf1, size_t len1,
-    const void *buf2, size_t len2);
+int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg);
 int sp_pipe_recv (struct sp_pipe *self, void *buf, size_t *len);
 
 /******************************************************************************/
@@ -58,7 +58,7 @@ struct sp_sockbase_vfptr {
     void (*rm) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    int (*send) (struct sp_sockbase *self, const void *buf, size_t len);
+    int (*send) (struct sp_sockbase *self, struct sp_msg *msg);
     int (*recv) (struct sp_sockbase *self, void *buf, size_t *len);
     int (*setopt) (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);

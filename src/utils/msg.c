@@ -44,3 +44,17 @@ void sp_msg_term (struct sp_msg *self)
     sp_chunkref_term (&self->hdr);
     sp_chunkref_term (&self->body);
 }
+
+void sp_msg_mv (struct sp_msg *dst, struct sp_msg *src)
+{
+    sp_chunkref_mv (&dst->hdr, &src->hdr);
+    sp_chunkref_mv (&dst->body, &src->body);
+}
+
+void sp_msg_cp (struct sp_msg *dst, struct sp_msg *src)
+{
+    sp_chunkref_cp (&dst->hdr, &src->hdr);
+    sp_chunkref_cp (&dst->body, &src->body);
+}
+
+

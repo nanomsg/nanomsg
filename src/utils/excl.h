@@ -50,8 +50,7 @@ int sp_excl_add (struct sp_excl *self, struct sp_pipe *pipe);
 void sp_excl_rm (struct sp_excl *self, struct sp_pipe *pipe);
 int sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe);
 int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe);
-int sp_excl_send (struct sp_excl *self, const void *buf1, size_t len1,
-    const void *buf2, size_t len2);
+int sp_excl_send (struct sp_excl *self, struct sp_msg *msg);
 int sp_excl_recv (struct sp_excl *self, void *buf, size_t *len);
 
 #endif

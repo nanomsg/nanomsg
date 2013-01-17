@@ -56,7 +56,7 @@ static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len);
+static int sp_pub_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_pub_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -140,12 +140,13 @@ static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return result;
 }
 
-static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_pub_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_list_item *it;
     struct sp_pub_data *data;
     struct sp_pub *pub;
+    struct sp_msg copy;
 
     pub = sp_cont (self, struct sp_pub, sockbase);
 
@@ -153,7 +154,8 @@ static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)
     it = sp_list_begin (&pub->pipes);
     while (it != sp_list_end (&pub->pipes)) {
        data = sp_cont (it, struct sp_pub_data, out);
-       rc = sp_pipe_send (data->pipe, buf, len, NULL, 0);
+       sp_msg_cp (&copy, msg);
+       rc = sp_pipe_send (data->pipe, &copy);
        errnum_assert (rc >= 0, -rc);
        if (rc & SP_PIPE_RELEASE) {
            it = sp_list_erase (&pub->pipes, it);
@@ -161,6 +163,9 @@ static int sp_pub_send (struct sp_sockbase *self, const void *buf, size_t len)
        }
        it = sp_list_next (&pub->pipes, it);
     }
+
+    /*  Drop the reference to the message. */
+    sp_msg_term (msg);
 
     return 0;
 }

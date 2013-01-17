@@ -49,7 +49,7 @@ static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
 static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len);
+static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len);
 static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -111,7 +111,7 @@ static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
     return sp_excl_out (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
 }
 
-static int sp_sub_send (struct sp_sockbase *self, const void *buf, size_t len)
+static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg)
 {
     return -ENOTSUP;
 }

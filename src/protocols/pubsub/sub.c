@@ -129,7 +129,7 @@ static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg)
         rc = sp_excl_recv (&sub->excl, msg);
         if (sp_slow (rc == -EAGAIN))
             return -EAGAIN;
-        errnum_assert (rc == 0, -rc);
+        errnum_assert (rc >= 0, -rc);
         rc = sp_trie_match (&sub->trie, sp_chunkref_data (&msg->body),
             sp_chunkref_size (&msg->body));
         if (rc == 0)

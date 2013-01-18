@@ -60,7 +60,7 @@ static void sp_xsink_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsink_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsink_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsink_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsink_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_xsink_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_xsink_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
@@ -150,7 +150,7 @@ static int sp_xsink_send (struct sp_sockbase *self, struct sp_msg *msg)
     return -ENOTSUP;
 }
 
-static int sp_xsink_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_xsink_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_xsink *xsink;
@@ -163,7 +163,7 @@ static int sp_xsink_recv (struct sp_sockbase *self, void *buf, size_t *len)
         return -EAGAIN;
 
     /*  Get the messsage. */
-    rc = sp_pipe_recv (xsink->current->pipe, buf, len);
+    rc = sp_pipe_recv (xsink->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */

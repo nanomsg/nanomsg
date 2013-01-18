@@ -43,7 +43,7 @@ void sp_xrespondent_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrespondent_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrespondent_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrespondent_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrespondent_recv (struct sp_sockbase *self, void *buf, size_t *len);
+int sp_xrespondent_recv (struct sp_sockbase *self, struct sp_msg *msg);
 int sp_xrespondent_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int sp_xrespondent_getopt (struct sp_sockbase *self, int level, int option,

@@ -475,7 +475,6 @@ int sp_send (int s, const void *buf, size_t len, int flags)
         errno = -rc;
         return -1;
     }
-    sp_assert (rc == 0);
 
     return (int) len;
 }
@@ -483,6 +482,8 @@ int sp_send (int s, const void *buf, size_t len, int flags)
 int sp_recv (int s, void *buf, size_t len, int flags)
 {
     int rc;
+    struct sp_msg msg;
+    size_t sz;
 
     SP_BASIC_CHECKS;
 
@@ -491,14 +492,16 @@ int sp_recv (int s, void *buf, size_t len, int flags)
         return -1;
     }
 
-    rc = sp_sock_recv (self.socks [s], buf, &len, flags);
+    rc = sp_sock_recv (self.socks [s], &msg, flags);
     if (sp_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
-    sp_assert (rc == 0);
 
-    return (int) len;
+    sz = sp_chunkref_size (&msg.body);
+    memcpy (buf, sp_chunkref_data (&msg.body), len < sz ? len : sz);
+
+    return (int) sz;
 }
 
 int sp_sendmsg (int s, void *msg, int flags)

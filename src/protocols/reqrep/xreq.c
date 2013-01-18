@@ -100,10 +100,9 @@ int sp_xreq_send (struct sp_sockbase *self, struct sp_msg *msg)
     return rc;
 }
 
-int sp_xreq_recv (struct sp_sockbase *self, void *buf, size_t *len)
+int sp_xreq_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
-    return sp_excl_recv (&sp_cont (self, struct sp_xreq, sockbase)->excl,
-        buf, len);
+    return sp_excl_recv (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
 }
 
 int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,

@@ -48,7 +48,7 @@ static void sp_xsource_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsource_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsource_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_xsource_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsource_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_xsource_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_xsource_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_xsource_getopt (struct sp_sockbase *self, int level, int option,
@@ -116,7 +116,7 @@ static int sp_xsource_send (struct sp_sockbase *self, struct sp_msg *msg)
         msg);
 }
 
-static int sp_xsource_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_xsource_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     return -ENOTSUP;
 }

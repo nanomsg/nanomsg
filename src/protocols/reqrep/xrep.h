@@ -67,7 +67,7 @@ void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 int sp_xrep_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len);
+int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg);
 int sp_xrep_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int sp_xrep_getopt (struct sp_sockbase *self, int level, int option,

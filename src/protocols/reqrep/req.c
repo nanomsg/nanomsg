@@ -58,7 +58,7 @@ static void sp_req_term (struct sp_req *self);
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_req_destroy (struct sp_sockbase *self);
 static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_req_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
@@ -165,12 +165,10 @@ static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg)
     return 0;
 }
 
-static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_req_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_req *req;
-    size_t replylen;
-    void *reply;
     uint32_t reqid;
 
     req = sp_cont (self, struct sp_req, xreq.sockbase);
@@ -182,43 +180,36 @@ static int sp_req_recv (struct sp_sockbase *self, void *buf, size_t *len)
     if (sp_slow (!(req->flags & SP_REQ_INPROGRESS)))
         return -EFSM;
 
-    /*  TODO: Do this using iovecs. */
-    replylen = sizeof (uint32_t) + *len;
-    reply = sp_alloc (replylen, "reply");
-    alloc_assert (reply);
-    rc = sp_xreq_recv (&req->xreq.sockbase, reply, &replylen);
-    if (sp_slow (rc == -EAGAIN)) {
-        sp_free (reply);
+    /*  Get new reply. */
+    rc = sp_xreq_recv (&req->xreq.sockbase, msg);
+    if (sp_slow (rc == -EAGAIN))
         return -EAGAIN;
-    }
     errnum_assert (rc == 0, -rc);
 
     /*  Ignore malformed replies. */
-    if (sp_slow (replylen < sizeof (uint32_t))) {
-        sp_free (reply);
+    if (sp_slow (sp_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
+        sp_msg_term (msg);
         return -EAGAIN;
     }
 
     /*  Ignore replies with incorrect request IDs. */
-    reqid = sp_getl (reply);
+    reqid = sp_getl (sp_chunkref_data (&msg->hdr));
     if (sp_slow (!(reqid & 0x80000000))) {
-        sp_free (reply);
+        sp_msg_term (msg);
         return -EAGAIN;
     }
     reqid &= 0x7fffffff;
     if (sp_slow (reqid != req->reqid)) {
-        sp_free (reply);
+        sp_msg_term (msg);
         return -EAGAIN;
     }
 
-    /*  Correct reply received. Pass it to the caller. */
-    memcpy (buf, ((uint32_t*) reply) + 1, *len < replylen - sizeof (uint32_t) ?
-        *len : replylen - sizeof (uint32_t));
-    *len = replylen - sizeof (uint32_t);
+    /*  Trim the request ID. */
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, 0);
 
     /*  Clean-up. */
     sp_timer_stop (&req->resend_timer);
-    sp_free (reply);
     sp_msg_term (&req->request);
     req->flags &= ~SP_REQ_INPROGRESS;
 

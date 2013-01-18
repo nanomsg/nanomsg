@@ -60,7 +60,7 @@ void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep);
 int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags);
 
 /*  Receive a message from the socket. */
-int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags);
+int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags);
 
 int sp_sock_fd (struct sp_sock *self);
 int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe);

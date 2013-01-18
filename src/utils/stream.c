@@ -95,7 +95,7 @@ static const struct sp_cp_sink sp_stream_state_active = {
 
 /*  Pipe interface. */
 static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len);
+static void sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg);
 const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
     sp_stream_send,
     sp_stream_recv
@@ -133,6 +133,7 @@ void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
 void sp_stream_term (struct sp_stream *self)
 {
     /*  TODO:  Close the messages in progress. */
+
     sp_timer_term (&self->hdr_timeout);
     sp_pipebase_term (&self->pipebase);
 
@@ -299,18 +300,14 @@ static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
     sp_usock_send (stream->usock, iov, 3);
 }
 
-static void sp_stream_recv (struct sp_pipebase *self, void *buf, size_t *len)
+static void sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg)
 {
     struct sp_stream *stream;
-    size_t sz;
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 
-    /*  Copy the data to the supplied buffer. */
-    sz = sp_chunkref_size (&stream->inmsg.body);
-    if (*len < sz)
-        *len = sz;
-    memcpy (buf, sp_chunkref_data (&stream->inmsg.body), sz);
+    /*  Move message content to the user-supplied structure. */
+    sp_msg_mv (msg, &stream->inmsg);
 
     /* Start receiving new message. */ 
     stream->instate = SP_STREAM_INSTATE_HDR;

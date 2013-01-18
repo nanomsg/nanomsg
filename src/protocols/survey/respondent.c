@@ -51,8 +51,7 @@ static void sp_respondent_term (struct sp_respondent *self);
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_respondent_destroy (struct sp_sockbase *self);
 static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_respondent_recv (struct sp_sockbase *self, void *buf,
-    size_t *len);
+static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
     sp_respondent_destroy,
     sp_xrespondent_add,
@@ -119,33 +118,27 @@ static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg)
     return 0;
 }
 
-static int sp_respondent_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_respondent *respondent;
-    size_t tmplen;
-    uint8_t *tmpbuf;
 
     respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
 
     /*  Cancel current survey, if it exists. */
     respondent->flags &= ~SP_RESPONDENT_INPROGRESS;
 
-    /*  Get next survey. Split it into survey ID and the body. */
-    tmplen = *len + 4;
-    tmpbuf = sp_alloc (tmplen, "survey");
-    alloc_assert (tmpbuf);
-    rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase,
-        tmpbuf, &tmplen);
-    if (sp_slow (rc == -EAGAIN)) {
-        sp_free (tmpbuf);
+    /*  Get next survey. */
+    rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase, msg);
+    if (sp_slow (rc == -EAGAIN))
         return -EAGAIN;
-    }
     errnum_assert (rc == 0, -rc);
-    respondent->surveyid = sp_getl (tmpbuf);
-    memcpy (buf, tmpbuf + 4, tmplen - 4);
-    *len = tmplen - 4;
-    sp_free (tmpbuf);
+
+    /*  Remember the survey ID. */
+    sp_assert (sp_chunkref_size (&msg->hdr) == sizeof (uint32_t));
+    respondent->surveyid = sp_getl (sp_chunkref_data (&msg->hdr));
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, 0);
 
     /*  Remember that survey is being processed. */
     respondent->flags |= SP_RESPONDENT_INPROGRESS;

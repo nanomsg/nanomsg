@@ -91,14 +91,14 @@ int sp_excl_send (struct sp_excl *self, struct sp_msg *msg)
     return 0;
 }
 
-int sp_excl_recv (struct sp_excl *self, void *buf, size_t *len)
+int sp_excl_recv (struct sp_excl *self, struct sp_msg *msg)
 {
     int rc;
 
     if (sp_slow (!self->inpipe))
         return -EAGAIN;
 
-    rc = sp_pipe_recv (self->inpipe, buf, len);
+    rc = sp_pipe_recv (self->inpipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_PIPE_RELEASE)

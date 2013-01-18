@@ -43,7 +43,7 @@ struct sp_pipe;
 void sp_pipe_setdata (struct sp_pipe *self, void *data);
 void *sp_pipe_getdata (struct sp_pipe *self);
 int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg);
-int sp_pipe_recv (struct sp_pipe *self, void *buf, size_t *len);
+int sp_pipe_recv (struct sp_pipe *self, struct sp_msg *msg);
 
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
@@ -59,7 +59,7 @@ struct sp_sockbase_vfptr {
     int (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
     int (*send) (struct sp_sockbase *self, struct sp_msg *msg);
-    int (*recv) (struct sp_sockbase *self, void *buf, size_t *len);
+    int (*recv) (struct sp_sockbase *self, struct sp_msg *msg);
     int (*setopt) (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
     int (*getopt) (struct sp_sockbase *self, int level, int option,

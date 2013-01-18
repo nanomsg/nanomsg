@@ -53,14 +53,15 @@ void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem)
 void sp_msgqueue_term (struct sp_msgqueue *self)
 {
     int rc;
-    size_t sz;
+    struct sp_msg msg;
 
     /*  Deallocate messages in the pipe. */
     while (1) {
-        sz = 0;
-        rc = sp_msgqueue_recv (self, NULL, &sz);
+        rc = sp_msgqueue_recv (self, &msg);
         if (rc == -EAGAIN)
             break;
+        errnum_assert (rc >= 0, -rc);
+        sp_msg_term (&msg);
     }
 
     /*  There are no more messages in the pipe so there's at most one chunk
@@ -123,12 +124,9 @@ int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg)
     return result;
 }
 
-int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
+int sp_msgqueue_recv (struct sp_msgqueue *self, struct sp_msg *msg)
 {
     int result;
-    struct sp_msg *msg;
-    size_t msgsz;
-    size_t to_copy;
     struct sp_msgqueue_chunk *o;
 
     sp_mutex_lock (&self->sync);
@@ -140,12 +138,7 @@ int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
     }
 
     /*  Move the message from the pipe to the user. */
-    msg = &self->in.chunk->msgs [self->in.pos];
-    msgsz = sp_chunkref_size (&msg->body);
-    to_copy = msgsz < *len ? msgsz : *len;
-    if (to_copy)
-        memcpy (buf, sp_chunkref_data (&msg->body), to_copy);
-    sp_msg_term (msg);
+    sp_msg_mv (msg, &self->in.chunk->msgs [self->in.pos]);
 
     /*  Move to the next position. */
     ++self->in.pos;
@@ -163,13 +156,12 @@ int sp_msgqueue_recv (struct sp_msgqueue *self, void *buf, size_t *len)
     /*  TODO: Implement a real queue size limit instead of this fake one. */
     result = self->mem >= self->maxmem ? SP_MSGQUEUE_SIGNAL : 0;
     --self->count;
-    self->mem -= msgsz;
+    self->mem -= (sp_chunkref_size (&msg->hdr) + sp_chunkref_size (&msg->body));
     if (!self->count)
         result |= SP_MSGQUEUE_RELEASE;
     
     sp_mutex_unlock (&self->sync);
 
-    *len = msgsz;
     return result;
 }
 

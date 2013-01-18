@@ -35,11 +35,9 @@ static void sp_msgpipe_term (struct sp_msgpipe *self);
 
 /*  Implementation of both sp_pipe interfaces. */
 static void sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_msgpipe_recv0 (struct sp_pipebase *self,
-    void *buf, size_t *len);
+static void sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg);
 static void sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_msgpipe_recv1 (struct sp_pipebase *self,
-    void *buf, size_t *len);
+static void sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg);
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr0 =
     {sp_msgpipe_send0, sp_msgpipe_recv0};
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
@@ -161,14 +159,13 @@ static void sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg)
         sp_pipebase_sent (self);
 }
 
-static void sp_msgpipe_recv0 (struct sp_pipebase *self,
-    void *buf, size_t *len)
+static void sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (self, struct sp_msgpipe, pipes [0]);
-    rc = sp_msgqueue_recv (&msgpipe->queues [1], buf, len);
+    rc = sp_msgqueue_recv (&msgpipe->queues [1], msg);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_MSGQUEUE_SIGNAL)
@@ -194,14 +191,13 @@ static void sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg)
         sp_pipebase_sent (self);
 }
 
-static void sp_msgpipe_recv1 (struct sp_pipebase *self,
-    void *buf, size_t *len)
+static void sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
 
     msgpipe = sp_cont (self, struct sp_msgpipe, pipes [1]);
-    rc = sp_msgqueue_recv (&msgpipe->queues [0], buf, len);
+    rc = sp_msgqueue_recv (&msgpipe->queues [0], msg);
     errnum_assert (rc >= 0, -rc);
 
     if (rc & SP_MSGQUEUE_SIGNAL)

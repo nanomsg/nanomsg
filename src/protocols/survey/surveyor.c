@@ -57,7 +57,7 @@ static void sp_surveyor_term (struct sp_surveyor *self);
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_surveyor_destroy (struct sp_sockbase *self);
 static int sp_surveyor_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_surveyor_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
@@ -153,12 +153,10 @@ static int sp_surveyor_send (struct sp_sockbase *self, struct sp_msg *msg)
     return 0;
 }
 
-static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_surveyor_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_surveyor *surveyor;
-    size_t tmplen;
-    uint8_t *tmpbuf;
     uint32_t surveyid;
 
     surveyor = sp_cont (self, struct sp_surveyor, xsurveyor.sockbase);
@@ -167,31 +165,28 @@ static int sp_surveyor_recv (struct sp_sockbase *self, void *buf, size_t *len)
     if (sp_slow (!(surveyor->flags & SP_SURVEYOR_INPROGRESS)))
        return -EFSM;
 
-    /*  Prepare temporary buffer for incoming messages. */
-    tmpbuf = sp_alloc (*len + 4, "response");
-    alloc_assert (tmpbuf);
-
     while (1) {
 
-        /*  Get next response. Split it into survey ID and the body. */
-        tmplen = *len + 4;
-        rc = sp_xsurveyor_recv (&surveyor->xsurveyor.sockbase,
-            tmpbuf, &tmplen);
-        if (sp_slow (rc == -EAGAIN)) {
-            sp_free (tmpbuf);
+        /*  Get next response. */
+        rc = sp_xsurveyor_recv (&surveyor->xsurveyor.sockbase, msg);
+        if (sp_slow (rc == -EAGAIN))
             return -EAGAIN;
-        }
         errnum_assert (rc == 0, -rc);
-        surveyid = sp_getl (tmpbuf);
 
-        /*  Ignore any stale responses. */
-        if (surveyid == surveyor->surveyid)
-            break;
+        /*  Get the survey ID. Ignore any stale responses. */
+        if (sp_slow (sp_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
+            sp_msg_term (msg);
+            continue;
+        }
+        surveyid = sp_getl (sp_chunkref_data (&msg->hdr));
+        if (sp_slow (surveyid != surveyor->surveyid)) {
+            sp_msg_term (msg);
+            continue;
+        }
+        sp_chunkref_term (&msg->hdr);
+        sp_chunkref_init (&msg->hdr, 0);
+        break;
     }
-
-    memcpy (buf, tmpbuf + 4, tmplen - 4);
-    *len = tmplen - 4;
-    sp_free (tmpbuf);
 
     return 0;
 }

@@ -32,6 +32,8 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 
+#include <string.h>
+
 /*  Private functions. */
 static void sp_xrep_destroy (struct sp_sockbase *self);
 
@@ -53,10 +55,8 @@ void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
     sp_sockbase_init (&self->sockbase, vfptr, fd);
 
     /*  Start assigning keys beginning with a random number. This way there
-        are no key clashes even if the executable is re-started. Keys are
-        31 bit unsigned integers. */
+        are no key clashes even if the executable is re-started. */
     sp_random_generate (&self->next_key, sizeof (self->next_key));
-    self->next_key &= 0x7fffffff;
 
     sp_hash_init (&self->pipes);
     sp_list_init (&self->inpipes);
@@ -93,9 +93,8 @@ int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe)
 
     sp_pipe_setdata (pipe, data);
 
-    sp_hash_insert (&xrep->pipes, xrep->next_key, &data->pipes);
+    sp_hash_insert (&xrep->pipes, xrep->next_key & 0x7fffffff, &data->pipes);
     ++xrep->next_key;
-    xrep->next_key &= 0x7fffffff;
 
     return 0;
 }
@@ -179,10 +178,13 @@ int sp_xrep_send (struct sp_sockbase *self, struct sp_msg *msg)
     return 0;
 }
 
-int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
+int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_xrep *xrep;
+    int i;
+    void *data;
+    size_t sz;
     struct sp_list_item *next;
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
@@ -191,14 +193,9 @@ int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
     if (sp_slow (!xrep->current))
         return -EAGAIN;
 
-    /*  Get a message, tag it with the peer ID. */
-    /*  TODO: Handle the pathological case below. */
-    sp_assert (*len >= sizeof (uint32_t));
-    *len -= sizeof (uint32_t);
-    rc = sp_pipe_recv (xrep->current->pipe, ((uint32_t*) buf) + 1, len);
+    /*  Get a request. */
+    rc = sp_pipe_recv (xrep->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
-    sp_putl (buf, xrep->current->pipes.key);
-    *len += sizeof (uint32_t);
 
     /*  Move the 'current' pointer to the next pipe. */
     if (rc & SP_PIPE_RELEASE)
@@ -208,6 +205,36 @@ int sp_xrep_recv (struct sp_sockbase *self, void *buf, size_t *len)
     if (next == sp_list_end (&xrep->inpipes))
         next = sp_list_begin (&xrep->inpipes);
     xrep->current = sp_cont (next, struct sp_xrep_data, inpipes);
+
+    /*  Determine the size of the message header. */
+    i = 0;
+    data = sp_chunkref_data (&msg->body);
+    sz = sp_chunkref_size (&msg->body);
+    while (1) {
+
+        /*  Ignore the malformed requests without the bottom of the stack. */
+        if (sp_slow (i * sizeof (uint32_t) > sz)) {
+            sp_msg_term (msg);
+            return -EAGAIN;
+        }
+
+        /*  If the bottom of the backtrace stack is reached, proceed. */
+        if (sp_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
+            break;
+
+        ++i;
+    }
+    ++i;
+
+    /*  Split the header and the body. Append new element to the backtrace. */
+    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_init (&msg->hdr, (i + 1) * sizeof (uint32_t));
+    sp_assert (!(xrep->current->pipes.key & 0x80000000));
+    sp_putl (sp_chunkref_data (&msg->hdr), xrep->current->pipes.key);
+    memcpy (((uint32_t*) sp_chunkref_data (&msg->hdr)) + 1, data,
+        i * sizeof (uint32_t));
+    sp_chunkref_trim (&msg->body, i * sizeof (uint32_t));
 
     return 0;
 }

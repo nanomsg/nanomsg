@@ -111,14 +111,14 @@ int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg)
     return SP_PIPEBASE_RELEASE;
 }
 
-int sp_pipe_recv (struct sp_pipe *self, void *buf, size_t *len)
+int sp_pipe_recv (struct sp_pipe *self, struct sp_msg *msg)
 {
     struct sp_pipebase *pipebase;
 
     pipebase = (struct sp_pipebase*) self;
     sp_assert (pipebase->instate == SP_PIPEBASE_INSTATE_IDLE);
     pipebase->instate = SP_PIPEBASE_INSTATE_RECEIVING;
-    pipebase->vfptr->recv (pipebase, buf, len);
+    pipebase->vfptr->recv (pipebase, msg);
     if (sp_fast (pipebase->instate == SP_PIPEBASE_INSTATE_RECEIVED)) {
         pipebase->instate = SP_PIPEBASE_INSTATE_IDLE;
         return 0;

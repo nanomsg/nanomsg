@@ -412,7 +412,7 @@ int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags)
     }   
 }
 
-int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
+int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags)
 {
     int rc;
     struct sp_sockbase *sockbase;
@@ -434,7 +434,7 @@ int sp_sock_recv (struct sp_sock *self, void *buf, size_t *len, int flags)
         }
 
         /*  Try to receive the message in a non-blocking way. */
-        rc = sockbase->vfptr->recv (sockbase, buf, len);
+        rc = sockbase->vfptr->recv (sockbase, msg);
         if (sp_fast (rc == 0)) {
             sp_cp_unlock (&sockbase->cp);
             return 0;

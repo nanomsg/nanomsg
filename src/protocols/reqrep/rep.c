@@ -36,8 +36,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SP_REP_MAXBACKTRACELEN 32
-
 #define SP_REP_INPROGRESS 1
 
 struct sp_rep {
@@ -54,7 +52,7 @@ static void sp_rep_term (struct sp_rep *self);
 /*  Implementation of sp_sockbase's virtual functions. */
 static void sp_rep_destroy (struct sp_sockbase *self);
 static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg);
 
 static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
     sp_rep_destroy,
@@ -119,14 +117,10 @@ static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg)
     return 0;
 }
 
-static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_rep *rep;
-    size_t requestlen;
-    void *request;
-    int i;
-    size_t rawlen;
 
     rep = sp_cont (self, struct sp_rep, xrep.sockbase);
 
@@ -137,50 +131,15 @@ static int sp_rep_recv (struct sp_sockbase *self, void *buf, size_t *len)
     }
 
     /*  Receive the request. */
-    requestlen = sizeof (uint32_t) * SP_REP_MAXBACKTRACELEN + *len;
-    request = sp_alloc (requestlen, "request");
-    alloc_assert (request);
-    rc = sp_xrep_recv (&rep->xrep.sockbase, request, &requestlen);
-    if (sp_slow (rc == -EAGAIN)) {
-        sp_free (request);
+    rc = sp_xrep_recv (&rep->xrep.sockbase, msg);
+    if (sp_slow (rc == -EAGAIN))
         return -EAGAIN;
-    }
     errnum_assert (rc == 0, -rc);
 
     /*  Store the backtrace. */
-    i = 0;
-    while (1) {
-
-        /*  Ignore the malformed requests. */
-        if (sp_slow (i * sizeof (uint32_t) > requestlen)) {
-            sp_free (request);
-            return -EAGAIN;
-        }
-
-        /*  If the bottom of the backtrace stack is reached, proceed. */
-        if (sp_getl ((uint8_t*)(((uint32_t*) request) + i)) & 0x80000000)
-            break;
-
-        /*  If backtrace is too long, ignore the request. */
-        ++i;
-        if (sp_slow (i >= SP_REP_MAXBACKTRACELEN)) {
-            sp_free (request);
-            return -EAGAIN;
-        }
-    }
-    ++i;
-
-    /*  Store the backtrace. */
-    sp_chunkref_init (&rep->backtrace, i * sizeof (uint32_t));
-    memcpy (sp_chunkref_data (&rep->backtrace), request, i * sizeof (uint32_t));
+    sp_chunkref_mv (&rep->backtrace, &msg->hdr);
+    sp_chunkref_init (&msg->hdr, 0);
     rep->flags |= SP_REP_INPROGRESS;
-
-    /*  Return the raw request to the caller. */
-    rawlen = requestlen - i * sizeof (uint32_t);
-    memcpy (buf, ((uint8_t*) request) + (i * sizeof (uint32_t)),
-        rawlen < *len ? rawlen : *len);
-    *len = rawlen;
-    sp_free (request);
 
     return 0;
 }

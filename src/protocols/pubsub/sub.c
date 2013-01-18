@@ -50,7 +50,7 @@ static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
 static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len);
+static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
@@ -116,7 +116,7 @@ static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg)
     return -ENOTSUP;
 }
 
-static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len)
+static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_sub *sub;
@@ -126,11 +126,12 @@ static int sp_sub_recv (struct sp_sockbase *self, void *buf, size_t *len)
     /*  Loop while a matching message is found or when there are no more
         messages to receive. */
     while (1) {
-        rc = sp_excl_recv (&sub->excl, buf, len);
+        rc = sp_excl_recv (&sub->excl, msg);
         if (sp_slow (rc == -EAGAIN))
             return -EAGAIN;
         errnum_assert (rc == 0, -rc);
-        rc = sp_trie_match (&sub->trie, buf, *len);
+        rc = sp_trie_match (&sub->trie, sp_chunkref_data (&msg->body),
+            sp_chunkref_size (&msg->body));
         if (rc == 0)
             continue;
         if (rc == 1)

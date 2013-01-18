@@ -106,7 +106,7 @@ struct sp_pipebase;
 
 struct sp_pipebase_vfptr {
     void (*send) (struct sp_pipebase *self, struct sp_msg *msg);
-    void (*recv) (struct sp_pipebase *self, void *buf, size_t *len);
+    void (*recv) (struct sp_pipebase *self, struct sp_msg *msg);
 };
 
 /*  The member of this structure are used internally by the core. Never use

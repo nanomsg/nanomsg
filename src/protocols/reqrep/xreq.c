@@ -102,7 +102,31 @@ int sp_xreq_send (struct sp_sockbase *self, struct sp_msg *msg)
 
 int sp_xreq_recv (struct sp_sockbase *self, struct sp_msg *msg)
 {
-    return sp_excl_recv (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
+    int rc;
+
+    rc = sp_excl_recv (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
+    if (rc == -EAGAIN)
+        return -EAGAIN;
+    errnum_assert (rc > 0, -rc);
+
+    if (!(rc & SP_PIPE_PARSED)) {
+
+        /*  Ignore malformed replies. */
+        if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            sp_msg_term (msg);
+            return -EAGAIN;
+        }
+
+        /*  Split the message into the header and the body. */
+        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+        sp_chunkref_term (&msg->hdr);
+        sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
+            sizeof (uint32_t));
+        sp_chunkref_trim (&msg->body, sizeof (uint32_t));
+    }
+
+    return 0;
 }
 
 int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,

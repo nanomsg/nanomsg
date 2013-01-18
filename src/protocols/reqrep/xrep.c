@@ -186,6 +186,7 @@ int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
     void *data;
     size_t sz;
     struct sp_list_item *next;
+    struct sp_chunkref ref;
 
     xrep = sp_cont (self, struct sp_xrep, sockbase);
 
@@ -197,6 +198,43 @@ int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
     rc = sp_pipe_recv (xrep->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
+    if (!(rc & SP_PIPE_PARSED)) {
+
+        /*  Determine the size of the message header. */
+        data = sp_chunkref_data (&msg->body);
+        sz = sp_chunkref_size (&msg->body);
+        while (1) {
+
+            /*  Ignore the malformed requests without the bottom of the stack. */
+            if (sp_slow (i * sizeof (uint32_t) > sz)) {
+                sp_msg_term (msg);
+                return -EAGAIN;
+            }
+
+            /*  If the bottom of the backtrace stack is reached, proceed. */
+            if (sp_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
+                break;
+
+            ++i;
+        }
+        ++i;
+
+        /*  Split the header and the body. */
+        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+        sp_chunkref_term (&msg->hdr);
+        sp_chunkref_init (&msg->hdr, i * sizeof (uint32_t));
+        memcpy (sp_chunkref_data (&msg->hdr), data, i * sizeof (uint32_t));
+        sp_chunkref_trim (&msg->body, i * sizeof (uint32_t));
+    }
+
+    /*  Prepend the header by the pipe key. */
+    sp_chunkref_init (&ref, sp_chunkref_size (&msg->hdr) + sizeof (uint32_t));
+    sp_putl (sp_chunkref_data (&ref), xrep->current->pipes.key);
+    memcpy (((uint8_t*) sp_chunkref_data (&ref)) + sizeof (uint32_t),
+        sp_chunkref_data (&msg->hdr), sp_chunkref_size (&msg->hdr));
+    sp_chunkref_term (&msg->hdr);
+    sp_chunkref_mv (&msg->hdr, &ref);
+
     /*  Move the 'current' pointer to the next pipe. */
     if (rc & SP_PIPE_RELEASE)
         next = sp_list_erase (&xrep->inpipes, &xrep->current->inpipes);
@@ -205,36 +243,6 @@ int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
     if (next == sp_list_end (&xrep->inpipes))
         next = sp_list_begin (&xrep->inpipes);
     xrep->current = sp_cont (next, struct sp_xrep_data, inpipes);
-
-    /*  Determine the size of the message header. */
-    i = 0;
-    data = sp_chunkref_data (&msg->body);
-    sz = sp_chunkref_size (&msg->body);
-    while (1) {
-
-        /*  Ignore the malformed requests without the bottom of the stack. */
-        if (sp_slow (i * sizeof (uint32_t) > sz)) {
-            sp_msg_term (msg);
-            return -EAGAIN;
-        }
-
-        /*  If the bottom of the backtrace stack is reached, proceed. */
-        if (sp_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
-            break;
-
-        ++i;
-    }
-    ++i;
-
-    /*  Split the header and the body. Append new element to the backtrace. */
-    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, (i + 1) * sizeof (uint32_t));
-    sp_assert (!(xrep->current->pipes.key & 0x80000000));
-    sp_putl (sp_chunkref_data (&msg->hdr), xrep->current->pipes.key);
-    memcpy (((uint32_t*) sp_chunkref_data (&msg->hdr)) + 1, data,
-        i * sizeof (uint32_t));
-    sp_chunkref_trim (&msg->body, i * sizeof (uint32_t));
 
     return 0;
 }

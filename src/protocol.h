@@ -36,7 +36,10 @@
 /*  Pipe class.                                                               */
 /******************************************************************************/
 
+/*  Any combination of following flags can be returned from successful call
+    to sp_pipe_send or sp_pipe_recv. */
 #define SP_PIPE_RELEASE 1
+#define SP_PIPE_PARSED 2
 
 struct sp_pipe;
 

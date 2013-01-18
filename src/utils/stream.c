@@ -94,8 +94,8 @@ static const struct sp_cp_sink sp_stream_state_active = {
 };
 
 /*  Pipe interface. */
-static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg);
 const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
     sp_stream_send,
     sp_stream_recv
@@ -275,7 +275,7 @@ static void sp_stream_err (const struct sp_cp_sink **self,
     (*original_sink)->err (original_sink, usock, errnum);
 }
 
-static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_stream *stream;
@@ -298,9 +298,11 @@ static void sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
     iov [2].iov_base = sp_chunkref_data (&stream->outmsg.body);
     iov [2].iov_len = sp_chunkref_size (&stream->outmsg.body);;
     sp_usock_send (stream->usock, iov, 3);
+
+    return 0;
 }
 
-static void sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg)
 {
     struct sp_stream *stream;
 
@@ -312,5 +314,7 @@ static void sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg)
     /* Start receiving new message. */ 
     stream->instate = SP_STREAM_INSTATE_HDR;
     sp_usock_recv (stream->usock, stream->inhdr, 8);
+
+    return 0;
 }
 

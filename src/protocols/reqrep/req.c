@@ -198,8 +198,7 @@ static int sp_req_recv (struct sp_sockbase *self, struct sp_msg *msg)
         sp_msg_term (msg);
         return -EAGAIN;
     }
-    reqid &= 0x7fffffff;
-    if (sp_slow (reqid != req->reqid)) {
+    if (sp_slow (reqid != (req->reqid | 0x80000000))) {
         sp_msg_term (msg);
         return -EAGAIN;
     }

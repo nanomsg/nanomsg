@@ -23,6 +23,8 @@
 #include "inprocb.h"
 #include "inprocc.h"
 
+#include "../../protocol.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -34,10 +36,10 @@
 static void sp_msgpipe_term (struct sp_msgpipe *self);
 
 /*  Implementation of both sp_pipe interfaces. */
-static void sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg);
-static void sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg);
+static int sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg);
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr0 =
     {sp_msgpipe_send0, sp_msgpipe_recv0};
 static const struct sp_pipebase_vfptr sp_msgpipe_vfptr1 =
@@ -143,7 +145,7 @@ static void sp_msgpipe_term (struct sp_msgpipe *self)
     sp_free (self);
 }
 
-static void sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
@@ -157,9 +159,11 @@ static void sp_msgpipe_send0 (struct sp_pipebase *self, struct sp_msg *msg)
     
     if (!(rc & SP_MSGQUEUE_RELEASE))
         sp_pipebase_sent (self);
+
+    return 0;
 }
 
-static void sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
@@ -173,9 +177,11 @@ static void sp_msgpipe_recv0 (struct sp_pipebase *self, struct sp_msg *msg)
 
     if (!(rc & SP_MSGQUEUE_RELEASE))
         sp_pipebase_received (self);
+
+    return SP_PIPE_PARSED;
 }
 
-static void sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
@@ -189,9 +195,11 @@ static void sp_msgpipe_send1 (struct sp_pipebase *self, struct sp_msg *msg)
 
     if (!(rc & SP_MSGQUEUE_RELEASE))
         sp_pipebase_sent (self);
+
+    return 0;
 }
 
-static void sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg)
+static int sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_msgpipe *msgpipe;
@@ -205,6 +213,8 @@ static void sp_msgpipe_recv1 (struct sp_pipebase *self, struct sp_msg *msg)
 
     if (!(rc & SP_MSGQUEUE_RELEASE))
         sp_pipebase_received (self);
+
+    return SP_PIPE_PARSED;
 }
 
 static void sp_msgpipe_inevent0 (const struct sp_cp_sink **self,

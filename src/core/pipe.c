@@ -96,35 +96,39 @@ void *sp_pipe_getdata (struct sp_pipe *self)
 
 int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg)
 {
+    int rc;
     struct sp_pipebase *pipebase;
 
     pipebase = (struct sp_pipebase*) self;
     sp_assert (pipebase->outstate == SP_PIPEBASE_OUTSTATE_IDLE);
     pipebase->outstate = SP_PIPEBASE_OUTSTATE_SENDING;
-    pipebase->vfptr->send (pipebase, msg);
+    rc = pipebase->vfptr->send (pipebase, msg);
+    errnum_assert (rc >= 0, -rc);
     if (sp_fast (pipebase->outstate == SP_PIPEBASE_OUTSTATE_SENT)) {
         pipebase->outstate = SP_PIPEBASE_OUTSTATE_IDLE;
-        return 0;
+        return rc;
     }
     sp_assert (pipebase->outstate == SP_PIPEBASE_OUTSTATE_SENDING);
     pipebase->outstate = SP_PIPEBASE_OUTSTATE_ASYNC;
-    return SP_PIPEBASE_RELEASE;
+    return rc | SP_PIPEBASE_RELEASE;
 }
 
 int sp_pipe_recv (struct sp_pipe *self, struct sp_msg *msg)
 {
+    int rc;
     struct sp_pipebase *pipebase;
 
     pipebase = (struct sp_pipebase*) self;
     sp_assert (pipebase->instate == SP_PIPEBASE_INSTATE_IDLE);
     pipebase->instate = SP_PIPEBASE_INSTATE_RECEIVING;
-    pipebase->vfptr->recv (pipebase, msg);
+    rc = pipebase->vfptr->recv (pipebase, msg);
+    errnum_assert (rc >= 0, -rc);
     if (sp_fast (pipebase->instate == SP_PIPEBASE_INSTATE_RECEIVED)) {
         pipebase->instate = SP_PIPEBASE_INSTATE_IDLE;
-        return 0;
+        return rc;
     }
     sp_assert (pipebase->instate == SP_PIPEBASE_INSTATE_RECEIVING);
     pipebase->instate = SP_PIPEBASE_INSTATE_ASYNC;
-    return SP_PIPEBASE_RELEASE;
+    return rc | SP_PIPEBASE_RELEASE;
 }
 

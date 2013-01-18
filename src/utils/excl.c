@@ -88,7 +88,7 @@ int sp_excl_send (struct sp_excl *self, struct sp_msg *msg)
     if (rc & SP_PIPE_RELEASE)
         self->outpipe = NULL;
 
-    return 0;
+    return rc & ~SP_PIPE_RELEASE;
 }
 
 int sp_excl_recv (struct sp_excl *self, struct sp_msg *msg)
@@ -104,6 +104,6 @@ int sp_excl_recv (struct sp_excl *self, struct sp_msg *msg)
     if (rc & SP_PIPE_RELEASE)
         self->inpipe = NULL;
 
-    return 0;
+    return rc & ~SP_PIPE_RELEASE;
 }
 

@@ -105,8 +105,8 @@ struct sp_pipebase;
 #define SP_PIPEBASE_OUTSTATE_ASYNC 4
 
 struct sp_pipebase_vfptr {
-    void (*send) (struct sp_pipebase *self, struct sp_msg *msg);
-    void (*recv) (struct sp_pipebase *self, struct sp_msg *msg);
+    int (*send) (struct sp_pipebase *self, struct sp_msg *msg);
+    int (*recv) (struct sp_pipebase *self, struct sp_msg *msg);
 };
 
 /*  The member of this structure are used internally by the core. Never use

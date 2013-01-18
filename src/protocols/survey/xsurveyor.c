@@ -184,17 +184,19 @@ int sp_xsurveyor_recv (struct sp_sockbase *self, struct sp_msg *msg)
         it = sp_list_begin (&xsurveyor->inpipes);
     xsurveyor->current = sp_cont (it, struct sp_xsurveyor_data, initem);
 
-    /*  Split the header from the body. */
-    if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
-        sp_msg_term (msg);
-        return -EAGAIN;
+    /*  Split the header from the body, if needed. */
+    if (!(rc & SP_PIPE_PARSED)) {
+        if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            sp_msg_term (msg);
+            return -EAGAIN;
+        }
+        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
+        sp_chunkref_term (&msg->hdr);
+        sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
+           sizeof (uint32_t));
+        sp_chunkref_trim (&msg->body, sizeof (uint32_t));
     }
-    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
-    memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
-       sizeof (uint32_t));
-    sp_chunkref_trim (&msg->body, sizeof (uint32_t));
 
     return 0;
 }

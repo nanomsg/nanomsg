@@ -38,7 +38,7 @@ struct sp_event;
 
 #define SP_AIO_MAX_IOVCNT 3
 
-struct sp_iovec {
+struct sp_iobuf {
     void *iov_base;
     size_t iov_len;
 };
@@ -90,7 +90,7 @@ void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
 void sp_usock_accept (struct sp_usock *self);
 
 void sp_usock_send (struct sp_usock *self,
-    const struct sp_iovec *iov, int iovcnt);
+    const struct sp_iobuf *iov, int iovcnt);
 void sp_usock_recv (struct sp_usock *self, void *buf, size_t len);
 
 void sp_cp_init (struct sp_cp *self);

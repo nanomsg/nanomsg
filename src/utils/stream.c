@@ -105,7 +105,7 @@ void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     struct sp_usock *usock)
 {
     int rc;
-    struct sp_iovec iov;
+    struct sp_iobuf iobuf;
 
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
@@ -122,9 +122,9 @@ void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
     sp_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
-    iov.iov_base = "\0\0SP\0\0\0\0";
-    iov.iov_len = 8;
-    sp_usock_send (usock, &iov, 1);
+    iobuf.iov_base = "\0\0SP\0\0\0\0";
+    iobuf.iov_len = 8;
+    sp_usock_send (usock, &iobuf, 1);
 
     /*  Receive the protocol header from the peer. */
     sp_usock_recv (usock, self->hdr, 8);
@@ -279,7 +279,7 @@ static int sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
 {
     int rc;
     struct sp_stream *stream;
-    struct sp_iovec iov [3];
+    struct sp_iobuf iov [3];
 
     stream = sp_cont (self, struct sp_stream, pipebase);
 

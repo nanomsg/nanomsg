@@ -667,7 +667,7 @@ void sp_usock_accept (struct sp_usock *self)
 }
 
 void sp_usock_send (struct sp_usock *self,
-    const struct sp_iovec *iov, int iovcnt)
+    const struct sp_iobuf *iov, int iovcnt)
 {
     int rc;
     int i;

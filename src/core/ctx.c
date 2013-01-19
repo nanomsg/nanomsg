@@ -500,18 +500,112 @@ int sp_recv (int s, void *buf, size_t len, int flags)
 
     sz = sp_chunkref_size (&msg.body);
     memcpy (buf, sp_chunkref_data (&msg.body), len < sz ? len : sz);
+    sp_msg_term (&msg);
 
     return (int) sz;
 }
 
-int sp_sendmsg (int s, void *msg, int flags)
+int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
 {
-    sp_assert (0);
+    int rc;
+    size_t sz;
+    int i;
+    struct sp_iovec *iov;
+    struct sp_msg msg;
+
+    SP_BASIC_CHECKS;
+
+    if (sp_slow (!msghdr)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (sp_slow (msghdr->msg_iovlen < 0)) {
+        errno = EMSGSIZE;
+        return -1;
+    }
+
+    /*  Compute the total size of the message. */
+    sz = 0;
+    for (i = 0; i != msghdr->msg_iovlen; ++i) {
+        iov = &msghdr->msg_iov [i];
+        if (sp_slow (!iov->iov_base && iov->iov_len)) {
+            errno = EFAULT;
+            return -1;
+        }
+        if (sp_slow (sz + iov->iov_len < sz)) {
+            errno = EINVAL;
+            return -1;
+        }
+        sz += iov->iov_len;
+    }
+
+    /*  Create a message object from the supplied scatter array. */
+    sp_msg_init (&msg, sz);
+    sz = 0;
+    for (i = 0; i != msghdr->msg_iovlen; ++i) {
+        iov = &msghdr->msg_iov [i];
+        memcpy (((uint8_t*) sp_chunkref_data (&msg.body)) + sz,
+            iov->iov_base, iov->iov_len);
+        sz += iov->iov_len;
+    }
+
+    /*  Send it further down the stack. */
+    rc = sp_sock_send (self.socks [s], &msg, flags);
+    if (sp_slow (rc < 0)) {
+        sp_msg_term (&msg);
+        errno = -rc;
+        return -1;
+    }
+
+    return (int) sz;
 }
 
-int sp_recvmsg (int s, void **msg, int flags)
+int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
 {
-    sp_assert (0);
+    int rc;
+    struct sp_msg msg;
+    uint8_t *data;
+    size_t sz;
+    int i;
+    struct sp_iovec *iov;
+
+    SP_BASIC_CHECKS;
+
+    if (sp_slow (!msghdr)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (sp_slow (msghdr->msg_iovlen < 0)) {
+        errno = EMSGSIZE;
+        return -1;
+    }
+
+    /*  Get a message. */
+    rc = sp_sock_recv (self.socks [s], &msg, flags);
+    if (sp_slow (rc < 0)) {
+        errno = -rc;
+        return -1;
+    }
+
+    /*  Copy the message content into the supplied gather array. */
+    data = sp_chunkref_data (&msg.body);
+    sz = sp_chunkref_size (&msg.body);
+    for (i = 0; i != msghdr->msg_iovlen; ++i) {
+        iov = &msghdr->msg_iov [i];
+        if (iov->iov_len > sz) {
+            memcpy (iov->iov_base, data, sz);
+            break;
+        }
+        memcpy (iov->iov_base, data, iov->iov_len);
+        data += iov->iov_len;
+        sz -= iov->iov_len;
+    }
+    sz = sp_chunkref_size (&msg.body);
+    sp_msg_term (&msg);
+
+    return (int) sz;
 }
 
 static void sp_ctx_add_transport (struct sp_transport *transport)

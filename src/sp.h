@@ -145,6 +145,16 @@ SP_EXPORT int sp_freemsg (void *msg);
 /*  SP socket definition.                                                     */
 /******************************************************************************/
 
+struct sp_iovec {
+    void *iov_base;
+    size_t iov_len;
+};
+
+struct sp_msghdr {
+    struct sp_iovec *msg_iov;
+    int msg_iovlen;
+};
+
 /*  SP address families.                                                      */
 #define AF_SP 1
 #define AF_SP_RAW 2
@@ -179,8 +189,8 @@ SP_EXPORT int sp_connect (int s, const char *addr);
 SP_EXPORT int sp_shutdown (int s, int how);
 SP_EXPORT int sp_send (int s, const void *buf, size_t len, int flags);
 SP_EXPORT int sp_recv (int s, void *buf, size_t len, int flags);
-SP_EXPORT int sp_sendmsg (int s, void *msg, int flags);
-SP_EXPORT int sp_recvmsg (int s, void **msg, int flags);
+SP_EXPORT int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags);
+SP_EXPORT int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags);
 
 #undef SP_EXPORT
 

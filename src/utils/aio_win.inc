@@ -456,7 +456,7 @@ printf ("accepted immediately olpd=%p\n", (void*) &self->in.olpd);
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
 }
 
-void sp_usock_send (struct sp_usock *self, const struct sp_iovec *iov,
+void sp_usock_send (struct sp_usock *self, const struct sp_iobuf *iov,
     int iovcnt)
 {
     int rc;

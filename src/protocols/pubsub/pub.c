@@ -62,6 +62,9 @@ static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_pub_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_pub_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_pub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
     sp_pub_destroy,
     sp_pub_add,
@@ -71,7 +74,9 @@ static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
     sp_pub_send,
     sp_pub_recv,
     sp_pub_setopt,
-    sp_pub_getopt
+    sp_pub_getopt,
+    sp_pub_sethdr,
+    sp_pub_gethdr
 };
 
 static void sp_pub_init (struct sp_pub *self,
@@ -185,6 +190,20 @@ static int sp_pub_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_pub_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_pub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 static struct sp_sockbase *sp_pub_create (int fd)

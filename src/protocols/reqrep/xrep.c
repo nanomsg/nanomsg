@@ -46,7 +46,9 @@ static const struct sp_sockbase_vfptr sp_xrep_sockbase_vfptr = {
     sp_xrep_send,
     sp_xrep_recv,
     sp_xrep_setopt,
-    sp_xrep_getopt
+    sp_xrep_getopt,
+    sp_xrep_sethdr,
+    sp_xrep_gethdr
 };
 
 void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
@@ -257,6 +259,18 @@ int sp_xrep_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+int sp_xrep_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
+int sp_xrep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
 }
 
 static struct sp_sockbase *sp_xrep_create (int fd)

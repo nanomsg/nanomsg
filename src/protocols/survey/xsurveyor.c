@@ -213,6 +213,18 @@ int sp_xsurveyor_getopt (struct sp_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
+int sp_xsurveyor_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
+int sp_xsurveyor_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
 static struct sp_sockbase *sp_xsurveyor_create (int fd)
 {
     struct sp_xsurveyor *self;

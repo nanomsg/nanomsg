@@ -53,6 +53,9 @@ static int sp_xpull_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_xpull_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_xpull_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_xpull_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_xpull_sockbase_vfptr = {
     sp_xpull_destroy,
     sp_xpull_add,
@@ -62,7 +65,9 @@ static const struct sp_sockbase_vfptr sp_xpull_sockbase_vfptr = {
     sp_xpull_send,
     sp_xpull_recv,
     sp_xpull_setopt,
-    sp_xpull_getopt
+    sp_xpull_getopt,
+    sp_xpull_sethdr,
+    sp_xpull_gethdr
 };
 
 static void sp_xpull_init (struct sp_xpull *self,
@@ -128,6 +133,20 @@ static int sp_xpull_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_xpull_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_xpull_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 struct sp_sockbase *sp_xpull_create (int fd)

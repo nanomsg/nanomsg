@@ -53,6 +53,9 @@ static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
 static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
+static int sp_xpair_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_xpair_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
     sp_xpair_destroy,
     sp_xpair_add,
@@ -62,7 +65,9 @@ static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
     sp_xpair_send,
     sp_xpair_recv,
     sp_xpair_setopt,
-    sp_xpair_getopt
+    sp_xpair_getopt,
+    sp_xpair_sethdr,
+    sp_xpair_gethdr
 };
 
 static void sp_xpair_init (struct sp_xpair *self,
@@ -128,6 +133,20 @@ static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_xpair_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_xpair_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 struct sp_sockbase *sp_xpair_create (int fd)

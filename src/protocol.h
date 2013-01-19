@@ -67,6 +67,8 @@ struct sp_sockbase_vfptr {
         const void *optval, size_t optvallen);
     int (*getopt) (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
+    int (*sethdr) (struct sp_msg *msg, const void *hdr, size_t hdrlen);
+    int (*gethdr) (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 };
 
 #define SP_SOCK_FLAG_ZOMBIE 1

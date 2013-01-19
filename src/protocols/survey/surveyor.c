@@ -62,6 +62,9 @@ static int sp_surveyor_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_surveyor_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_surveyor_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
     sp_surveyor_destroy,
     sp_xsurveyor_add,
@@ -71,7 +74,9 @@ static const struct sp_sockbase_vfptr sp_surveyor_sockbase_vfptr = {
     sp_surveyor_send,
     sp_surveyor_recv,
     sp_surveyor_setopt,
-    sp_surveyor_getopt
+    sp_surveyor_getopt,
+    sp_surveyor_sethdr,
+    sp_surveyor_gethdr
 };
 
 /*  Event sink. */
@@ -244,6 +249,20 @@ static int sp_surveyor_getopt (struct sp_sockbase *self, int level, int option,
     }
 
     return -ENOPROTOOPT;
+}
+
+static int sp_surveyor_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_surveyor_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 static struct sp_sockbase *sp_surveyor_create (int fd)

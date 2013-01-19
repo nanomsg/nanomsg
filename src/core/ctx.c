@@ -149,6 +149,18 @@ const char *sp_strerror (int errnum)
     return sp_err_strerror (errnum);
 }
 
+struct sp_cmsghdr *sp_cmsg_nexthdr (const struct sp_msghdr *mhdr,
+    const struct sp_cmsghdr *cmsg)
+{
+    size_t sz;
+
+    sz = sizeof (struct sp_cmsghdr) + cmsg->cmsg_len;
+    if (((uint8_t*) cmsg) - ((uint8_t*) mhdr->msg_control) + sz >=
+           mhdr->msg_controllen)
+        return NULL;
+    return (struct sp_cmsghdr*) (((uint8_t*) cmsg) + sz);
+}
+
 int sp_init (void)
 {
     int i;
@@ -550,6 +562,17 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
         sz += iov->iov_len;
     }
 
+    /*  Add ancillary data to the message. */
+    if (msghdr->msg_control) {
+        rc = sp_sock_sethdr (self.socks [s], &msg,
+            msghdr->msg_control, msghdr->msg_controllen);
+        if (sp_slow (rc < 0)) {
+            sp_msg_term (&msg);
+            errno = -rc;
+            return -1;
+        }
+    }
+
     /*  Send it further down the stack. */
     rc = sp_sock_send (self.socks [s], &msg, flags);
     if (sp_slow (rc < 0)) {
@@ -604,6 +627,17 @@ int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
     }
     sz = sp_chunkref_size (&msg.body);
     sp_msg_term (&msg);
+
+    /*  Retrieve the ancillary data from the message. */
+    if (msghdr->msg_control) {
+        rc = sp_sock_gethdr (self.socks [s], &msg,
+            msghdr->msg_control, &msghdr->msg_controllen);
+        if (sp_slow (rc < 0)) {
+            sp_msg_term (&msg);
+            errno = -rc;
+            return -1;
+        }
+    }
 
     return (int) sz;
 }

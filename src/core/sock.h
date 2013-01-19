@@ -37,15 +37,6 @@ void sp_sock_term (struct sp_sock *self);
 /*  Returns default completion port associated with the socket. */
 struct sp_cp *sp_sock_getcp (struct sp_sock *self);
 
-/*  Set a socket option. */
-int sp_sock_setopt (struct sp_sock *self, int level, int option,
-    const void *optval, size_t optvallen); 
-
-/*  Retrieve a socket option. 'internal' is set to 1 when called from within
-    nanomsg rather than from the API (sp_getsockopt). */
-int sp_sock_getopt (struct sp_sock *self, int level, int option,
-    void *optval, size_t *optvallen, int internal);
-
 /*  Add new endpoint to the socket. */
 int sp_sock_create_ep (struct sp_sock *self, const char *addr,
     int (*factory) (const char *addr, void *hint, struct sp_epbase **ep));
@@ -61,6 +52,23 @@ int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags);
 
 /*  Receive a message from the socket. */
 int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags);
+
+/*  Set a socket option. */
+int sp_sock_setopt (struct sp_sock *self, int level, int option,
+    const void *optval, size_t optvallen); 
+
+/*  Retrieve a socket option. 'internal' is set to 1 when called from within
+    nanomsg rather than from the API (sp_getsockopt). */
+int sp_sock_getopt (struct sp_sock *self, int level, int option,
+    void *optval, size_t *optvallen, int internal);
+
+/*  Set header of the message. */
+int sp_sock_sethdr (struct sp_sock *self, struct sp_msg *msg,
+    const void *hdr, size_t hdrlen);
+
+/*  Retrieve header of the message. */
+int sp_sock_gethdr (struct sp_sock *self, struct sp_msg *msg,
+    void *hdr, size_t *hdrlen);
 
 int sp_sock_fd (struct sp_sock *self);
 int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe);

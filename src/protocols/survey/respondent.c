@@ -52,6 +52,9 @@ static void sp_respondent_term (struct sp_respondent *self);
 static void sp_respondent_destroy (struct sp_sockbase *self);
 static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg);
+static int sp_respondent_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_respondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
     sp_respondent_destroy,
     sp_xrespondent_add,
@@ -61,7 +64,9 @@ static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
     sp_respondent_send,
     sp_respondent_recv,
     sp_xrespondent_setopt,
-    sp_xrespondent_getopt
+    sp_xrespondent_getopt,
+    sp_respondent_sethdr,
+    sp_respondent_gethdr
 };
 
 static void sp_respondent_init (struct sp_respondent *self,
@@ -143,6 +148,20 @@ static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg)
     /*  Remember that survey is being processed. */
     respondent->flags |= SP_RESPONDENT_INPROGRESS;
 
+    return 0;
+}
+
+static int sp_respondent_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_respondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
     return 0;
 }
 

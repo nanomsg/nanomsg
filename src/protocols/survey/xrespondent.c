@@ -141,6 +141,18 @@ int sp_xrespondent_getopt (struct sp_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
+int sp_xrespondent_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
+int sp_xrespondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    /*  TODO */
+    sp_assert (0);
+}
+
 static struct sp_sockbase *sp_xrespondent_create (int fd)
 {
     struct sp_xrespondent *self;

@@ -153,7 +153,29 @@ struct sp_iovec {
 struct sp_msghdr {
     struct sp_iovec *msg_iov;
     int msg_iovlen;
+    void *msg_control;
+    size_t msg_controllen;
 };
+
+struct sp_cmsghdr {
+    size_t cmsg_len;
+    int cmsg_level;
+    int cmsg_type;
+};
+
+/*  Internal function. Not to be used directly. Use SP_CMSG_NEXTHDR macro
+    instead. */
+SP_EXPORT struct sp_cmsghdr *sp_cmsg_nexthdr (const struct sp_msghdr *mhdr,
+    const struct sp_cmsghdr *cmsg);
+
+#define SP_CMSG_FIRSTHDR(mhdr) \
+    ((struct sp_cmsghdr*) (((struct sp_msghdr*) (mhdr))->msg_control))
+
+#define SP_CMSG_NXTHDR(mhdr,cmsg) \
+    sp_cmsg_nexthdr ((struct sp_msghdr*) (mhdr), (struct sp_cmsghdr*) (cmsg))
+
+#define SP_CMSG_DATA(cmsg) \
+    ((unsigned char*) (((struct sp_cmsghdr*) (cmsg)) + 1))
 
 /*  SP address families.                                                      */
 #define AF_SP 1

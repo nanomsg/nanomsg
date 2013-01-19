@@ -63,6 +63,9 @@ static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_req_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_req_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_destroy,
     sp_xreq_add,
@@ -72,7 +75,9 @@ static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
     sp_req_send,
     sp_req_recv,
     sp_req_setopt,
-    sp_req_getopt
+    sp_req_getopt,
+    sp_req_sethdr,
+    sp_req_gethdr
 };
 
 /*  Event sink. */
@@ -254,6 +259,20 @@ static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
     }
 
     return -ENOPROTOOPT;
+}
+
+static int sp_req_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_req_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 static void sp_req_timeout (const struct sp_cp_sink **self,

@@ -55,6 +55,9 @@ static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_sub_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_sub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_destroy,
     sp_sub_add,
@@ -64,7 +67,9 @@ static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
     sp_sub_send,
     sp_sub_recv,
     sp_sub_setopt,
-    sp_sub_getopt
+    sp_sub_getopt,
+    sp_sub_sethdr,
+    sp_sub_gethdr
 };
 
 static void sp_sub_init (struct sp_sub *self,
@@ -172,6 +177,20 @@ static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_sub_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_sub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 static struct sp_sockbase *sp_sub_create (int fd)

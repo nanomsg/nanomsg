@@ -53,6 +53,9 @@ static void sp_rep_term (struct sp_rep *self);
 static void sp_rep_destroy (struct sp_sockbase *self);
 static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg);
 static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg);
+static int sp_rep_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_rep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 
 static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
     sp_rep_destroy,
@@ -63,7 +66,9 @@ static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
     sp_rep_send,
     sp_rep_recv,
     sp_xrep_setopt,
-    sp_xrep_getopt
+    sp_xrep_getopt,
+    sp_rep_sethdr,
+    sp_rep_gethdr
 };
 
 static void sp_rep_init (struct sp_rep *self,
@@ -141,6 +146,20 @@ static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg)
     sp_chunkref_init (&msg->hdr, 0);
     rep->flags |= SP_REP_INPROGRESS;
 
+    return 0;
+}
+
+static int sp_rep_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_rep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
     return 0;
 }
 

@@ -65,6 +65,9 @@ static int sp_xsink_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_xsink_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_xsink_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_xsink_sockbase_vfptr = {
     sp_xsink_destroy,
     sp_xsink_add,
@@ -74,7 +77,9 @@ static const struct sp_sockbase_vfptr sp_xsink_sockbase_vfptr = {
     sp_xsink_send,
     sp_xsink_recv,
     sp_xsink_setopt,
-    sp_xsink_getopt
+    sp_xsink_getopt,
+    sp_xsink_sethdr,
+    sp_xsink_gethdr
 };
 
 static void sp_xsink_init (struct sp_xsink *self,
@@ -188,6 +193,20 @@ static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_xsink_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_xsink_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 struct sp_sockbase *sp_xsink_create (int fd)

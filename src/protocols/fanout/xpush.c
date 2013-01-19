@@ -65,6 +65,9 @@ static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+static int sp_xpush_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen);
+static int sp_xpush_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
 static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
     sp_xpush_destroy,
     sp_xpush_add,
@@ -74,7 +77,9 @@ static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
     sp_xpush_send,
     sp_xpush_recv,
     sp_xpush_setopt,
-    sp_xpush_getopt
+    sp_xpush_getopt,
+    sp_xpush_sethdr,
+    sp_xpush_gethdr
 };
 
 static void sp_xpush_init (struct sp_xpush *self,
@@ -189,6 +194,20 @@ static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
+}
+
+static int sp_xpush_sethdr (struct sp_msg *msg, const void *hdr,
+    size_t hdrlen)
+{
+    if (sp_slow (hdrlen != 0))
+       return -EINVAL;
+    return 0;
+}
+
+static int sp_xpush_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+{
+    *hdrlen = 0;
+    return 0;
 }
 
 struct sp_sockbase *sp_xpush_create (int fd)

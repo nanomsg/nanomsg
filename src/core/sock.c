@@ -464,6 +464,18 @@ int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags)
     }  
 }
 
+int sp_sock_sethdr (struct sp_sock *self, struct sp_msg *msg,
+    const void *hdr, size_t hdrlen)
+{
+    return ((struct sp_sockbase*) self)->vfptr->sethdr (msg, hdr, hdrlen);
+}
+
+int sp_sock_gethdr (struct sp_sock *self, struct sp_msg *msg,
+    void *hdr, size_t *hdrlen)
+{
+    return ((struct sp_sockbase*) self)->vfptr->gethdr (msg, hdr, hdrlen);
+}
+
 int sp_sock_fd (struct sp_sock *self)
 {
     struct sp_sockbase *sockbase;

@@ -53,6 +53,8 @@ int main ()
     iov [1].iov_len = 4;
     hdr.msg_iov = iov;
     hdr.msg_iovlen = 2;
+    hdr.msg_control = NULL;
+    hdr.msg_controllen = 0;
     rc = sp_sendmsg (sc, &hdr, 0);
     errno_assert (rc >= 0);
     sp_assert (rc == 6);
@@ -63,6 +65,8 @@ int main ()
     iov [1].iov_len = 2;
     hdr.msg_iov = iov;
     hdr.msg_iovlen = 2;
+    hdr.msg_control = NULL;
+    hdr.msg_controllen = 0;
     rc = sp_recvmsg (sb, &hdr, 0);
     errno_assert (rc >= 0);
     sp_assert (rc == 6);

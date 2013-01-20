@@ -73,6 +73,24 @@ void sp_chunkref_term (struct sp_chunkref *self)
     }
 }
 
+struct sp_chunk *sp_chunkref_getchunk (struct sp_chunkref *self)
+{
+    struct sp_chunkref_chunk *ch;
+    struct sp_chunk *chunk;
+
+    if (self->ref [0] == 0xff) {
+        ch = (struct sp_chunkref_chunk*) self;
+        self->ref [0] = 0;
+        return ch->chunk;
+    }
+
+    chunk = sp_chunk_alloc (self->ref [0], 0);
+    alloc_assert (chunk);
+    memcpy (sp_chunk_data (chunk), &self->ref [1], self->ref [0]);
+    self->ref [0] = 0;
+    return chunk;
+}
+
 void sp_chunkref_mv (struct sp_chunkref *dst, struct sp_chunkref *src)
 {
     memcpy (dst, src, src->ref [0] == 0xff ?

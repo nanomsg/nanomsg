@@ -43,6 +43,7 @@ struct sp_chunk *sp_chunk_alloc (size_t size, int type)
     switch (type) {
     case 0:
         self = sp_alloc (sz, "message chunk");
+        break;
     default:
         return NULL;
     }
@@ -59,6 +60,10 @@ struct sp_chunk *sp_chunk_alloc (size_t size, int type)
 
 void sp_chunk_free (struct sp_chunk *self)
 {
+    /*  Mark chunk as deallocated. */
+    sp_assert (self->tag == SP_CHUNK_TAG);
+    self->tag = 0;
+
     /*  Compute the beginning of the allocated block and deallocate it
         according to the allocation mechanism specified. */
     self->vfptr->free (((uint8_t*) self) - self->offset);
@@ -67,6 +72,13 @@ void sp_chunk_free (struct sp_chunk *self)
 static void sp_chunk_default_free (void *p)
 {
     sp_free (p);
+}
+
+int sp_chunk_check (struct sp_chunk *self)
+{
+    if (sp_fast (self->tag == SP_CHUNK_TAG))
+        return 0;
+    return -EFAULT;
 }
 
 void *sp_chunk_data (struct sp_chunk *self)

@@ -56,6 +56,9 @@ struct sp_chunk *sp_chunk_alloc (size_t size, int type);
 /*  Deallocates the chunk. */
 void sp_chunk_free (struct sp_chunk *self);
 
+/*  Checks whether chunk is valid. */
+int sp_chunk_check (struct sp_chunk *self);
+
 /*  Returns pointer to the chunk buffer. */
 void *sp_chunk_data (struct sp_chunk *self);
 

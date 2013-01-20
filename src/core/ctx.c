@@ -36,6 +36,7 @@
 #include "../utils/cond.h"
 #include "../utils/random.h"
 #include "../utils/glock.h"
+#include "../utils/chunk.h"
 #include "../utils/msg.h"
 
 #include "../transports/inproc/inproc.h"
@@ -295,12 +296,18 @@ int sp_term (void)
 
 void *sp_allocmsg (size_t size, int type)
 {
-    sp_assert (0);
+    struct sp_chunk *ch;
+
+    ch = sp_chunk_alloc (size, type);
+    if (sp_slow (!ch))
+        return NULL;
+    return (void*) (ch + 1);
 }
 
 int sp_freemsg (void *msg)
 {
-    sp_assert (0);
+    sp_chunk_free (((struct sp_chunk*) msg) - 1);
+    return 0;
 }
 
 int sp_socket (int domain, int protocol)
@@ -468,6 +475,7 @@ int sp_send (int s, const void *buf, size_t len, int flags)
 {
     int rc;
     struct sp_msg msg;
+    struct sp_chunk *ch;
 
     SP_BASIC_CHECKS;
 
@@ -477,8 +485,20 @@ int sp_send (int s, const void *buf, size_t len, int flags)
     }
 
     /*  Create a message object. */
-    sp_msg_init (&msg, len);
-    memcpy (sp_chunkref_data (&msg.body), buf, len);    
+    if (len == SP_MSG) {
+        ch = ((struct sp_chunk*) buf) - 1;
+        rc = sp_chunk_check (ch);
+        if (sp_slow (rc < 0)) {
+            errno = -rc;
+            return -1;
+        }
+        len = sp_chunk_size (ch);
+        sp_msg_init_chunk (&msg, ch);
+    }
+    else {
+        sp_msg_init (&msg, len);
+        memcpy (sp_chunkref_data (&msg.body), buf, len);
+    }
 
     /*  Send it further down the stack. */
     rc = sp_sock_send (self.socks [s], &msg, flags);
@@ -496,6 +516,7 @@ int sp_recv (int s, void *buf, size_t len, int flags)
     int rc;
     struct sp_msg msg;
     size_t sz;
+    struct sp_chunk *ch;
 
     SP_BASIC_CHECKS;
 
@@ -510,8 +531,15 @@ int sp_recv (int s, void *buf, size_t len, int flags)
         return -1;
     }
 
-    sz = sp_chunkref_size (&msg.body);
-    memcpy (buf, sp_chunkref_data (&msg.body), len < sz ? len : sz);
+    if (len == SP_MSG) {
+        ch = sp_chunkref_getchunk (&msg.body);
+        *(void**) buf = (void*) (ch + 1);
+        sz = sp_chunk_size (ch);
+    }
+    else {
+        sz = sp_chunkref_size (&msg.body);
+        memcpy (buf, sp_chunkref_data (&msg.body), len < sz ? len : sz);
+    }
     sp_msg_term (&msg);
 
     return (int) sz;
@@ -524,6 +552,7 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
     int i;
     struct sp_iovec *iov;
     struct sp_msg msg;
+    struct sp_chunk *ch;
 
     SP_BASIC_CHECKS;
 
@@ -537,29 +566,41 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
         return -1;
     }
 
-    /*  Compute the total size of the message. */
-    sz = 0;
-    for (i = 0; i != msghdr->msg_iovlen; ++i) {
-        iov = &msghdr->msg_iov [i];
-        if (sp_slow (!iov->iov_base && iov->iov_len)) {
-            errno = EFAULT;
-            return -1;
-        }
-        if (sp_slow (sz + iov->iov_len < sz)) {
-            errno = EINVAL;
-            return -1;
-        }
-        sz += iov->iov_len;
+    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == SP_MSG) {
+        ch = ((struct sp_chunk*) msghdr->msg_iov [0].iov_base) - 1;
+        sz = sp_chunk_size (ch);
+        sp_msg_init_chunk (&msg, ch);
     }
+    else {
 
-    /*  Create a message object from the supplied scatter array. */
-    sp_msg_init (&msg, sz);
-    sz = 0;
-    for (i = 0; i != msghdr->msg_iovlen; ++i) {
-        iov = &msghdr->msg_iov [i];
-        memcpy (((uint8_t*) sp_chunkref_data (&msg.body)) + sz,
-            iov->iov_base, iov->iov_len);
-        sz += iov->iov_len;
+        /*  Compute the total size of the message. */
+        sz = 0;
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            if (sp_slow (iov->iov_len == SP_MSG)) {
+               errno = EINVAL;
+               return -1;
+            }
+            if (sp_slow (!iov->iov_base && iov->iov_len)) {
+                errno = EFAULT;
+                return -1;
+            }
+            if (sp_slow (sz + iov->iov_len < sz)) {
+                errno = EINVAL;
+                return -1;
+            }
+            sz += iov->iov_len;
+        }
+
+        /*  Create a message object from the supplied scatter array. */
+        sp_msg_init (&msg, sz);
+        sz = 0;
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            memcpy (((uint8_t*) sp_chunkref_data (&msg.body)) + sz,
+                iov->iov_base, iov->iov_len);
+            sz += iov->iov_len;
+        }
     }
 
     /*  Add ancillary data to the message. */
@@ -592,6 +633,7 @@ int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
     size_t sz;
     int i;
     struct sp_iovec *iov;
+    struct sp_chunk *ch;
 
     SP_BASIC_CHECKS;
 
@@ -612,21 +654,33 @@ int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
         return -1;
     }
 
-    /*  Copy the message content into the supplied gather array. */
-    data = sp_chunkref_data (&msg.body);
-    sz = sp_chunkref_size (&msg.body);
-    for (i = 0; i != msghdr->msg_iovlen; ++i) {
-        iov = &msghdr->msg_iov [i];
-        if (iov->iov_len > sz) {
-            memcpy (iov->iov_base, data, sz);
-            break;
-        }
-        memcpy (iov->iov_base, data, iov->iov_len);
-        data += iov->iov_len;
-        sz -= iov->iov_len;
+    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == SP_MSG) {
+        ch = sp_chunkref_getchunk (&msg.body);
+        *(void**) (msghdr->msg_iov [0].iov_base) = (void*) (ch + 1);
+        sz = sp_chunk_size (ch);
     }
-    sz = sp_chunkref_size (&msg.body);
-    sp_msg_term (&msg);
+    else {
+
+        /*  Copy the message content into the supplied gather array. */
+        data = sp_chunkref_data (&msg.body);
+        sz = sp_chunkref_size (&msg.body);
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            if (sp_slow (iov->iov_len == SP_MSG)) {
+                sp_msg_term (&msg);
+                errno = EINVAL;
+                return -1;
+            }
+            if (iov->iov_len > sz) {
+                memcpy (iov->iov_base, data, sz);
+                break;
+            }
+            memcpy (iov->iov_base, data, iov->iov_len);
+            data += iov->iov_len;
+            sz -= iov->iov_len;
+        }
+        sz = sp_chunkref_size (&msg.body);
+    }
 
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
@@ -638,6 +692,8 @@ int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
             return -1;
         }
     }
+
+    sp_msg_term (&msg);
 
     return (int) sz;
 }

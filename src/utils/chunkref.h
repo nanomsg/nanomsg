@@ -37,6 +37,7 @@ struct sp_chunkref {
 void sp_chunkref_init (struct sp_chunkref *self, size_t size);
 void sp_chunkref_init_chunk (struct sp_chunkref *self, struct sp_chunk *chunk);
 void sp_chunkref_term (struct sp_chunkref *self);
+struct sp_chunk *sp_chunkref_getchunk (struct sp_chunkref *self);
 void sp_chunkref_mv (struct sp_chunkref *dst, struct sp_chunkref *src);
 void sp_chunkref_cp (struct sp_chunkref *dst, struct sp_chunkref *src);
 

@@ -30,13 +30,10 @@ void sp_msg_init (struct sp_msg *self, size_t size)
     sp_chunkref_init (&self->body, size);
 }
 
-void sp_msg_init_data (struct sp_msg *self, const void *hdr, size_t hdrlen,
-    const void *body, size_t bodylen)
+void sp_msg_init_chunk (struct sp_msg *self, struct sp_chunk *chunk)
 {
-    sp_chunkref_init (&self->hdr, hdrlen);
-    memcpy (sp_chunkref_data (&self->hdr), hdr, hdrlen);
-    sp_chunkref_init (&self->body, bodylen);
-    memcpy (sp_chunkref_data (&self->body), body, bodylen);
+    sp_chunkref_init (&self->hdr, 0);
+    sp_chunkref_init_chunk (&self->body, chunk);
 }
 
 void sp_msg_term (struct sp_msg *self)

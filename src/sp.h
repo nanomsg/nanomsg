@@ -135,8 +135,10 @@ SP_EXPORT int sp_init (void);
 SP_EXPORT int sp_term (void);
 
 /******************************************************************************/
-/*  Message allocation.                                                       */
+/*  Zero-copy support.                                                        */
 /******************************************************************************/
+
+#define SP_MSG ((size_t) -1)
 
 SP_EXPORT void *sp_allocmsg (size_t size, int type);
 SP_EXPORT int sp_freemsg (void *msg);

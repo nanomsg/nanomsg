@@ -39,10 +39,8 @@ struct sp_msg {
 /*  Initialises a message with body 'size' bytes long and empty header. */
 void sp_msg_init (struct sp_msg *self, size_t size);
 
-/*  TODO: This function is a termporary scaffolding.
-    Should be removed later on. */
-void sp_msg_init_data (struct sp_msg *self, const void *hdr, size_t hdrlen,
-    const void *body, size_t bodylen);
+/*  Initialise message with body provided in the form of chunk pointer. */
+void sp_msg_init_chunk (struct sp_msg *self, struct sp_chunk *chunk);
 
 /*  Frees resources allocate with the message. */
 void sp_msg_term (struct sp_msg *self);

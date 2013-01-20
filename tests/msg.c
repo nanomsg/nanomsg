@@ -32,9 +32,10 @@ int main ()
     int rc;
     int sb;
     int sc;
-    struct sp_iovec iov [2];
+    unsigned char *buf1, *buf2;
+    int i;
+    struct sp_iovec iov;
     struct sp_msghdr hdr;
-    char buf [6];
 
     rc = sp_init ();
     errno_assert (rc == 0);
@@ -47,28 +48,52 @@ int main ()
     rc = sp_connect (sc, "inproc://a");
     errno_assert (rc >= 0);
 
-    iov [0].iov_base = "AB";
-    iov [0].iov_len = 2;
-    iov [1].iov_base = "CDEF";
-    iov [1].iov_len = 4;
+    buf1 = sp_allocmsg (256, 0);
+    alloc_assert (buf1);
+    for (i = 0; i != 256; ++i)
+        buf1 [i] = (unsigned char) i;
+    rc = sp_send (sc, buf1, SP_MSG, 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 256);
+
+    buf2 = NULL;
+    rc = sp_recv (sb, &buf2, SP_MSG, 0);
+    errno_assert (rc >= 0);
+    sp_assert (rc == 256);
+    sp_assert (buf2);
+    for (i = 0; i != 256; ++i)
+        sp_assert (buf2 [i] == (unsigned char) i);
+    rc = sp_freemsg (buf2);
+    errno_assert (rc == 0);
+
+    buf1 = sp_allocmsg (256, 0);
+    alloc_assert (buf1);
+    for (i = 0; i != 256; ++i)
+        buf1 [i] = (unsigned char) i;
+    iov.iov_base = buf1;
+    iov.iov_len = SP_MSG;
     memset (&hdr, 0, sizeof (hdr));
-    hdr.msg_iov = iov;
-    hdr.msg_iovlen = 2;
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
     rc = sp_sendmsg (sc, &hdr, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 6);
+    sp_assert (rc == 256);
 
-    iov [0].iov_base = buf;
-    iov [0].iov_len = 4;
-    iov [1].iov_base = buf + 4;
-    iov [1].iov_len = 2;
+    buf2 = NULL;
+    iov.iov_base = &buf2;
+    iov.iov_len = SP_MSG;
     memset (&hdr, 0, sizeof (hdr));
-    hdr.msg_iov = iov;
-    hdr.msg_iovlen = 2;
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
     rc = sp_recvmsg (sb, &hdr, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 6);
-    sp_assert (memcmp (buf, "ABCDEF", 6) == 0);
+    sp_assert (rc == 256);
+    sp_assert (buf2);
+    for (i = 0; i != 256; ++i)
+        sp_assert (buf2 [i] == (unsigned char) i);
+    rc = sp_freemsg (buf2);
+    errno_assert (rc == 0);
+
 
     rc = sp_close (sc);
     errno_assert (rc == 0);

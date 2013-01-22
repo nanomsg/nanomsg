@@ -36,11 +36,6 @@ In order to establish a message flow at least one endpoint has to be added
 to the socket using linknanomsg:nn_bind[3] or linknanomsg:nn_connect[3]
 function.
 
-Note that file descriptors returned by _nn_socket_ function are not standard
-file descriptors and will exhibit undefined behaviour when used with system
-functions. Moreover, it may happen that a system file descriptor and file
-descriptor of an SP socket will incidentally collide (be equal).
-
 Also note that 'type' argument as found in standard _socket(2)_ function is
 omitted from _nn_socket_. All the SP sockets are message-based and thus of
 _SOCK_SEQPACKET_ type.
@@ -52,9 +47,10 @@ If the function succeeds file descriptor of the new socket is returned.
 Otherwise, negative number is returned and 'errno' is set to to one of
 the values defined below.
 
-Note that nanomsg file descriptors are distinct from operating system file
-descriptors. For example, it is possible to have system file descriptor 3 and
-nanomsg file descriptor 3, each pointing at a different object.
+Note that file descriptors returned by _nn_socket_ function are not standard
+file descriptors and will exhibit undefined behaviour when used with system
+functions. Moreover, it may happen that a system file descriptor and file
+descriptor of an SP socket will incidentally collide (be equal).
 
 
 ERRORS

@@ -31,128 +31,128 @@
 #include <string.h>
 
 /*  Private functions. */
-static void sp_bstream_term (struct sp_bstream *self);
+static void nn_bstream_term (struct nn_bstream *self);
 
 /*  States. */
-static const struct sp_cp_sink sp_bstream_state_listening;
-static const struct sp_cp_sink sp_bstream_state_terminating1;
-static const struct sp_cp_sink sp_bstream_state_terminating2;
+static const struct nn_cp_sink nn_bstream_state_listening;
+static const struct nn_cp_sink nn_bstream_state_terminating1;
+static const struct nn_cp_sink nn_bstream_state_terminating2;
 
-/*  Implementation of sp_epbase interface. */
-static void sp_bstream_close (struct sp_epbase *self);
-static const struct sp_epbase_vfptr sp_bstream_epbase_vfptr =
-    {sp_bstream_close};
+/*  Implementation of nn_epbase interface. */
+static void nn_bstream_close (struct nn_epbase *self);
+static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr =
+    {nn_bstream_close};
 
 /******************************************************************************/
 /*  State: LISTENING                                                          */
 /******************************************************************************/
 
-static void sp_bstream_listening_accepted (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int s);
-static const struct sp_cp_sink sp_bstream_state_listening = {
+static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int s);
+static const struct nn_cp_sink nn_bstream_state_listening = {
     NULL,
     NULL,
     NULL,
-    sp_bstream_listening_accepted,
+    nn_bstream_listening_accepted,
     NULL,
     NULL
 };
 
-int sp_bstream_init (struct sp_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct sp_usock *usock, struct sp_cp *cp,
+int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
+    int (*initfn) (const char *addr, struct nn_usock *usock, struct nn_cp *cp,
     int backlog), int backlog)
 {
     int rc;
 
     /*  Start in LISTENING state. */
-    self->sink = &sp_bstream_state_listening;
-    sp_list_init (&self->astreams);
-    sp_epbase_init (&self->epbase, &sp_bstream_epbase_vfptr, addr, hint);
+    self->sink = &nn_bstream_state_listening;
+    nn_list_init (&self->astreams);
+    nn_epbase_init (&self->epbase, &nn_bstream_epbase_vfptr, addr, hint);
 
     /*  Open the listening socket. */
-    rc = initfn (addr, &self->usock, sp_epbase_getcp (&self->epbase), backlog);
-    sp_usock_setsink (&self->usock, &self->sink);
-    if (sp_slow (rc < 0)) {
-        sp_epbase_term (&self->epbase);
-        sp_list_term (&self->astreams);
+    rc = initfn (addr, &self->usock, nn_epbase_getcp (&self->epbase), backlog);
+    nn_usock_setsink (&self->usock, &self->sink);
+    if (nn_slow (rc < 0)) {
+        nn_epbase_term (&self->epbase);
+        nn_list_term (&self->astreams);
         return rc;
     }
 
     /*  Start waiting for incoming connection. */
-    sp_usock_accept (&self->usock);
+    nn_usock_accept (&self->usock);
 
     return 0;
 }
 
-static void sp_bstream_listening_accepted (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int s)
+static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int s)
 {
-    struct sp_bstream *bstream;
-    struct sp_astream *astream;
+    struct nn_bstream *bstream;
+    struct nn_astream *astream;
 
-    bstream = sp_cont (self, struct sp_bstream, sink);
+    bstream = nn_cont (self, struct nn_bstream, sink);
 
-    astream = sp_alloc (sizeof (struct sp_astream), "astream");
+    astream = nn_alloc (sizeof (struct nn_astream), "astream");
     alloc_assert (astream);
-    sp_astream_init (astream, &bstream->epbase, s, usock, bstream);
-    sp_list_insert (&bstream->astreams, &astream->item,
-        sp_list_end (&bstream->astreams));
+    nn_astream_init (astream, &bstream->epbase, s, usock, bstream);
+    nn_list_insert (&bstream->astreams, &astream->item,
+        nn_list_end (&bstream->astreams));
 }
 
 /******************************************************************************/
 /*  State: TERMINATING1                                                       */
 /******************************************************************************/
 
-static void sp_bstream_terminating1_closed (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static const struct sp_cp_sink sp_bstream_state_terminating1 = {
+static void nn_bstream_terminating1_closed (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static const struct nn_cp_sink nn_bstream_state_terminating1 = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_bstream_terminating1_closed,
+    nn_bstream_terminating1_closed,
     NULL,
     NULL
 };
 
-static void sp_bstream_close (struct sp_epbase *self)
+static void nn_bstream_close (struct nn_epbase *self)
 {
-    struct sp_bstream *bstream;
+    struct nn_bstream *bstream;
 
-    bstream = sp_cont (self, struct sp_bstream, epbase);
+    bstream = nn_cont (self, struct nn_bstream, epbase);
 
     /*  Close the listening socket itself. */
-    bstream->sink = &sp_bstream_state_terminating1;
-    sp_usock_close (&bstream->usock);
+    bstream->sink = &nn_bstream_state_terminating1;
+    nn_usock_close (&bstream->usock);
 }
 
-static void sp_bstream_terminating1_closed (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_bstream_terminating1_closed (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
-    struct sp_bstream *bstream;
-    struct sp_list_item *it;
-    struct sp_astream *astream;
+    struct nn_bstream *bstream;
+    struct nn_list_item *it;
+    struct nn_astream *astream;
 
-    bstream = sp_cont (self, struct sp_bstream, sink);
+    bstream = nn_cont (self, struct nn_bstream, sink);
 
     /*  Listening socket is closed. Switch from TERMINATING1 to TERMINATING2
         state and start closing individual sessions. */
-    sp_assert (bstream->sink == &sp_bstream_state_terminating1);
-    bstream->sink = &sp_bstream_state_terminating2;
+    nn_assert (bstream->sink == &nn_bstream_state_terminating1);
+    bstream->sink = &nn_bstream_state_terminating2;
 
     /*  Ask all the associated sessions to close. */
-    it = sp_list_begin (&bstream->astreams);
-    while (it != sp_list_end (&bstream->astreams)) {
-        astream = sp_cont (it, struct sp_astream, item);
-        it = sp_list_next (&bstream->astreams, it);
-        sp_astream_close (astream);
+    it = nn_list_begin (&bstream->astreams);
+    while (it != nn_list_end (&bstream->astreams)) {
+        astream = nn_cont (it, struct nn_astream, item);
+        it = nn_list_next (&bstream->astreams, it);
+        nn_astream_close (astream);
     }
 
     /*  If there are no sessions left, we can terminate straight away. */
-    if (sp_list_empty (&bstream->astreams)) {
-        sp_bstream_term (bstream);
-        sp_free (bstream);
+    if (nn_list_empty (&bstream->astreams)) {
+        nn_bstream_term (bstream);
+        nn_free (bstream);
         return;
     }
 }
@@ -161,7 +161,7 @@ static void sp_bstream_terminating1_closed (const struct sp_cp_sink **self,
 /*  State: TERMINATING2                                                       */
 /******************************************************************************/
 
-static const struct sp_cp_sink sp_bstream_state_terminating2 = {
+static const struct nn_cp_sink nn_bstream_state_terminating2 = {
     NULL,
     NULL,
     NULL,
@@ -172,24 +172,24 @@ static const struct sp_cp_sink sp_bstream_state_terminating2 = {
     NULL
 };
 
-void sp_bstream_astream_closed (struct sp_bstream *self,
-    struct sp_astream *astream)
+void nn_bstream_astream_closed (struct nn_bstream *self,
+    struct nn_astream *astream)
 {
     /*  One of the associated astreams was closed. */
-    sp_list_erase (&self->astreams, &astream->item);
+    nn_list_erase (&self->astreams, &astream->item);
 
     /*  In TERMINATING state this may be the last astream left.
         If so, we can move on with the deallocation. */
-    if (self->sink == &sp_bstream_state_terminating2 &&
-          sp_list_empty (&self->astreams)) {
-        sp_bstream_term (self);
-        sp_free (self);
+    if (self->sink == &nn_bstream_state_terminating2 &&
+          nn_list_empty (&self->astreams)) {
+        nn_bstream_term (self);
+        nn_free (self);
         return;
     }
 }
 
-static void sp_bstream_term (struct sp_bstream *self)
+static void nn_bstream_term (struct nn_bstream *self)
 {
-    sp_epbase_term (&self->epbase);
+    nn_epbase_term (&self->epbase);
 }
 

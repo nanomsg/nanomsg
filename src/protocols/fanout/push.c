@@ -23,14 +23,14 @@
 #include "push.h"
 #include "xpush.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanout.h"
 
-static struct sp_socktype sp_push_socktype_struct = {
+static struct nn_socktype nn_push_socktype_struct = {
     AF_SP,
-    SP_PUSH,
-    sp_xpush_create
+    NN_PUSH,
+    nn_xpush_create
 };
 
-struct sp_socktype *sp_push_socktype = &sp_push_socktype_struct;
+struct nn_socktype *nn_push_socktype = &nn_push_socktype_struct;
 

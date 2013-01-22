@@ -27,12 +27,12 @@
 extern "C" {
 #endif
 
-#define SP_SURVEY_ID 6
+#define NN_SURVEY_ID 6
 
-#define SP_SURVEYOR (SP_SURVEY_ID * 16 + 0)
-#define SP_RESPONDENT (SP_SURVEY_ID * 16 + 1)
+#define NN_SURVEYOR (NN_SURVEY_ID * 16 + 0)
+#define NN_RESPONDENT (NN_SURVEY_ID * 16 + 1)
 
-#define SP_DEADLINE 1
+#define NN_DEADLINE 1
 
 #ifdef __cplusplus
 }

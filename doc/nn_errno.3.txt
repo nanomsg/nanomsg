@@ -1,16 +1,16 @@
-sp_errno(3)
+nn_errno(3)
 ===========
 
 NAME
 ----
-sp_errno - retrieve the current errno
+nn_errno - retrieve the current errno
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_errno (void);*
+*int nn_errno (void);*
 
 
 DESCRIPTION
@@ -24,7 +24,7 @@ has its own instance of 'errno'. Thus, if nanomsg library and the application
 that uses it link with different versions of CRT library, they don't share
 same instance of 'errno'. Consequently, error codes set by nanomsg cannot be
 accessed by the application. To overcome this problem, application can use
-_sp_errno()_ function to retrieve the nanomsg's value of 'errno'.
+_nn_errno()_ function to retrieve the nanomsg's value of 'errno'.
 
 RETURN VALUE
 ------------
@@ -40,15 +40,15 @@ EXAMPLE
 -------
 
 ----
-rc = sp_init ();
+rc = nn_init ();
 if (rc != 0)
-    printf ("sp_init failed with error code %d\n", sp_errno ());
+    printf ("nn_init failed with error code %d\n", nn_errno ());
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_strerror[3]
+linknanomsg:nn_strerror[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

@@ -20,11 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_PULL_INCLUDED
-#define SP_PULL_INCLUDED
+#ifndef NN_PULL_INCLUDED
+#define NN_PULL_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_pull_socktype;
+extern struct nn_socktype *nn_pull_socktype;
 
 #endif

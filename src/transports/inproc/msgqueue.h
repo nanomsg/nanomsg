@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_MSGQUEUE_INCLUDED
-#define SP_MSGQUEUE_INCLUDED
+#ifndef NN_MSGQUEUE_INCLUDED
+#define NN_MSGQUEUE_INCLUDED
 
 #include "../../utils/msg.h"
 #include "../../utils/mutex.h"
@@ -33,32 +33,32 @@
 
 /*  This flag is returned from send/recv functions to let the user know that
     more sends/recvs are not possible. */
-#define SP_MSGQUEUE_RELEASE 1
+#define NN_MSGQUEUE_RELEASE 1
 
 /*  This flag is returned from send/recv functions to let the user know that
     other side of the pipe should be re-activated. */
-#define SP_MSGQUEUE_SIGNAL 2
+#define NN_MSGQUEUE_SIGNAL 2
 
 /*  It's not 128 so that chunk including its footer fits into a memory page. */
-#define SP_MSGQUEUE_GRANULARITY 127
+#define NN_MSGQUEUE_GRANULARITY 127
 
-struct sp_msgqueue_chunk {
-    struct sp_msg msgs [SP_MSGQUEUE_GRANULARITY];
-    struct sp_msgqueue_chunk *next;
+struct nn_msgqueue_chunk {
+    struct nn_msg msgs [NN_MSGQUEUE_GRANULARITY];
+    struct nn_msgqueue_chunk *next;
 };
 
-struct sp_msgqueue {
+struct nn_msgqueue {
 
     /*  Pointer to the position where next message should be written into
         the message queue. */
     struct {
-        struct sp_msgqueue_chunk *chunk;
+        struct nn_msgqueue_chunk *chunk;
         int pos;
     } out;
 
     /*  Pointer to the first unread message in the message queue. */
     struct {
-        struct sp_msgqueue_chunk *chunk;
+        struct nn_msgqueue_chunk *chunk;
         int pos;
     } in;
 
@@ -74,30 +74,30 @@ struct sp_msgqueue {
     /*  Synchronise passing messages from the writer thread to the reader
         thread. The 'out' structure is guarded as well as the cached chunk.
         'in' structure is local to the reader thread and is not synchronised. */
-    struct sp_mutex sync;
+    struct nn_mutex sync;
 
     /*  One empty chunk is always cached so that in case of steady stream
         of messages through the pipe there are no memory allocations. The chunk
         is being handed from the reading thread to the writing thread so it
         is guarded by the 'sync' mutex. */
-    struct sp_msgqueue_chunk *cache;
+    struct nn_msgqueue_chunk *cache;
 
 };
 
 /*  Initialise the message pipe. maxmem is the maximal queue size in bytes. */
-void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem);
+void nn_msgqueue_init (struct nn_msgqueue *self, size_t maxmem);
 
 /*  Terminate the message pipe. */
-void sp_msgqueue_term (struct sp_msgqueue *self);
+void nn_msgqueue_term (struct nn_msgqueue *self);
 
 /*  Writes a message to the pipe. -EAGAIN is returned if the message cannot
     be sent because the queue is full. 0 is returned in case of success. If,
     additionally, this makes the queue readable, the return value is 1. */
-int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg);
+int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg);
 
 /*  Reads a message from the pipe. -EAGAIN is returned if there's no message
     to receive. 0 is returned in case of success. If, additionally, this makes
     the queue writeable, the return value is 1. */
-int sp_msgqueue_recv (struct sp_msgqueue *self, struct sp_msg *msg);
+int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg);
 
 #endif

@@ -20,30 +20,30 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_QUEUE_INCLUDED
-#define SP_QUEUE_INCLUDED
+#ifndef NN_QUEUE_INCLUDED
+#define NN_QUEUE_INCLUDED
 
-struct sp_queue_item {
-    struct sp_queue_item *next;
+struct nn_queue_item {
+    struct nn_queue_item *next;
 };
 
-struct sp_queue {
-    struct sp_queue_item *head;
-    struct sp_queue_item *tail;
+struct nn_queue {
+    struct nn_queue_item *head;
+    struct nn_queue_item *tail;
 };
 
 /*  Initialise the queue. */
-void sp_queue_init (struct sp_queue *self);
+void nn_queue_init (struct nn_queue *self);
 
 /*  Terminate the queue. Note that queue must be manually emptied before the
     termination. */
-void sp_queue_term (struct sp_queue *self);
+void nn_queue_term (struct nn_queue *self);
 
 /*  Inserts one element into the queue. */
-void sp_queue_push (struct sp_queue *self, struct sp_queue_item *item);
+void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
 
 /*  Retrieves one element from the queue. The element is removed
     from the queue. Returns NULL if the queue is empty. */
-struct sp_queue_item *sp_queue_pop (struct sp_queue *self);
+struct nn_queue_item *nn_queue_pop (struct nn_queue *self);
 
 #endif

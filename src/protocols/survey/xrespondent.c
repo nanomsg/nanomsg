@@ -22,7 +22,7 @@
 
 #include "xrespondent.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../survey.h"
 
 #include "../../utils/err.h"
@@ -31,143 +31,143 @@
 #include "../../utils/alloc.h"
 
 /*  Private functions. */
-static void sp_xrespondent_destroy (struct sp_sockbase *self);
+static void nn_xrespondent_destroy (struct nn_sockbase *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static const struct sp_sockbase_vfptr sp_xrespondent_sockbase_vfptr = {
-    sp_xrespondent_destroy,
-    sp_xrespondent_add,
-    sp_xrespondent_rm,
-    sp_xrespondent_in,
-    sp_xrespondent_out,
-    sp_xrespondent_send,
-    sp_xrespondent_recv,
-    sp_xrespondent_setopt,
-    sp_xrespondent_getopt
+/*  Implementation of nn_sockbase's virtual functions. */
+static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
+    nn_xrespondent_destroy,
+    nn_xrespondent_add,
+    nn_xrespondent_rm,
+    nn_xrespondent_in,
+    nn_xrespondent_out,
+    nn_xrespondent_send,
+    nn_xrespondent_recv,
+    nn_xrespondent_setopt,
+    nn_xrespondent_getopt
 };
 
-void sp_xrespondent_init (struct sp_xrespondent *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+void nn_xrespondent_init (struct nn_xrespondent *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_excl_init (&self->excl);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_excl_init (&self->excl);
 }
 
-void sp_xrespondent_term (struct sp_xrespondent *self)
+void nn_xrespondent_term (struct nn_xrespondent *self)
 {
-    sp_excl_term (&self->excl);
+    nn_excl_term (&self->excl);
 }
 
-static void sp_xrespondent_destroy (struct sp_sockbase *self)
+static void nn_xrespondent_destroy (struct nn_sockbase *self)
 {
-    struct sp_xrespondent *xrespondent;
+    struct nn_xrespondent *xrespondent;
 
-    xrespondent = sp_cont (self, struct sp_xrespondent, sockbase);
+    xrespondent = nn_cont (self, struct nn_xrespondent, sockbase);
 
-    sp_xrespondent_term (xrespondent);
-    sp_free (xrespondent);
+    nn_xrespondent_term (xrespondent);
+    nn_free (xrespondent);
 }
 
-int sp_xrespondent_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_add (&sp_cont (self, struct sp_xrespondent, sockbase)->excl,
+    return nn_excl_add (&nn_cont (self, struct nn_xrespondent, sockbase)->excl,
         pipe);
 }
 
-void sp_xrespondent_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    sp_excl_rm (&sp_cont (self, struct sp_xrespondent, sockbase)->excl, pipe);
+    nn_excl_rm (&nn_cont (self, struct nn_xrespondent, sockbase)->excl, pipe);
 }
 
-int sp_xrespondent_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_in (&sp_cont (self, struct sp_xrespondent, sockbase)->excl,
+    return nn_excl_in (&nn_cont (self, struct nn_xrespondent, sockbase)->excl,
         pipe);
 }
 
-int sp_xrespondent_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_out (&sp_cont (self, struct sp_xrespondent, sockbase)->excl,
+    return nn_excl_out (&nn_cont (self, struct nn_xrespondent, sockbase)->excl,
         pipe);
 }
 
-int sp_xrespondent_send (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xrespondent_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    struct sp_xrespondent *xrespondent;
+    struct nn_xrespondent *xrespondent;
 
-    xrespondent = sp_cont (self, struct sp_xrespondent, sockbase);
+    xrespondent = nn_cont (self, struct nn_xrespondent, sockbase);
 
-    return sp_excl_send (&xrespondent->excl, msg);
+    return nn_excl_send (&xrespondent->excl, msg);
 }
 
-int sp_xrespondent_recv (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_xrespondent *xrespondent;
+    struct nn_xrespondent *xrespondent;
 
-    xrespondent = sp_cont (self, struct sp_xrespondent, sockbase);
+    xrespondent = nn_cont (self, struct nn_xrespondent, sockbase);
 
     /*  Get the survey. */
-    rc = sp_excl_recv (&xrespondent->excl, msg);
+    rc = nn_excl_recv (&xrespondent->excl, msg);
     if (rc == -EAGAIN)
         return -EAGAIN;
     errnum_assert (rc >= 0, -rc);
 
     /*  Split the survey ID from the body, if needed. */
-    if (!(rc & SP_PIPE_PARSED)) {
-        if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
-            sp_msg_term (msg);
+    if (!(rc & NN_PIPE_PARSED)) {
+        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            nn_msg_term (msg);
             return -EAGAIN;
         }
-        sp_chunkref_term (&msg->hdr);
-        sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
-        memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
             sizeof (uint32_t));
-        sp_chunkref_trim (&msg->body, sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
     }
 
     return 0;
 }
 
-int sp_xrespondent_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrespondent_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrespondent_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+int nn_xrespondent_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-int sp_xrespondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+int nn_xrespondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static struct sp_sockbase *sp_xrespondent_create (int fd)
+static struct nn_sockbase *nn_xrespondent_create (int fd)
 {
-    struct sp_xrespondent *self;
+    struct nn_xrespondent *self;
 
-    self = sp_alloc (sizeof (struct sp_xrespondent), "socket (xrespondent)");
+    self = nn_alloc (sizeof (struct nn_xrespondent), "socket (xrespondent)");
     alloc_assert (self);
-    sp_xrespondent_init (self, &sp_xrespondent_sockbase_vfptr, fd);
+    nn_xrespondent_init (self, &nn_xrespondent_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xrespondent_socktype_struct = {
+static struct nn_socktype nn_xrespondent_socktype_struct = {
     AF_SP_RAW,
-    SP_RESPONDENT,
-    sp_xrespondent_create
+    NN_RESPONDENT,
+    nn_xrespondent_create
 };
 
-struct sp_socktype *sp_xrespondent_socktype = &sp_xrespondent_socktype_struct;
+struct nn_socktype *nn_xrespondent_socktype = &nn_xrespondent_socktype_struct;
 

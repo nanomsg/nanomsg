@@ -26,13 +26,13 @@
 #include <unistd.h>
 
 /*  NetBSD has different definition of udata. */
-#if defined SP_HAVE_NETBSD
-#define sp_poller_udata intptr_t
+#if defined NN_HAVE_NETBSD
+#define nn_poller_udata intptr_t
 #else
-#define sp_poller_udata void*
+#define nn_poller_udata void*
 #endif
 
-void sp_poller_init (struct sp_poller *self)
+void nn_poller_init (struct nn_poller *self)
 {
     self->kq = kqueue ();
     errno_assert (self->kq != -1);
@@ -40,7 +40,7 @@ void sp_poller_init (struct sp_poller *self)
     self->index = 0;
 }
 
-void sp_poller_term (struct sp_poller *self)
+void nn_poller_term (struct nn_poller *self)
 {
     int rc;
 
@@ -48,27 +48,27 @@ void sp_poller_term (struct sp_poller *self)
     errno_assert (rc == 0);
 }
 
-void sp_poller_add (struct sp_poller *self, int fd,
-    struct sp_poller_hndl *hndl)
+void nn_poller_add (struct nn_poller *self, int fd,
+    struct nn_poller_hndl *hndl)
 {
     /*  Initialise the handle. */
     hndl->fd = fd;
     hndl->events = 0;
 }
 
-void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
     int i;
 
-    if (hndl->events & SP_POLLER_EVENT_IN) {
+    if (hndl->events & NN_POLLER_EVENT_IN) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
     }
 
-    if (hndl->events & SP_POLLER_EVENT_OUT) {
+    if (hndl->events & NN_POLLER_EVENT_OUT) {
         EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
@@ -80,31 +80,31 @@ void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].udata = NULL;
 }
 
-void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
 
-    if (!(hndl->events & SP_POLLER_EVENT_IN)) {
+    if (!(hndl->events & NN_POLLER_EVENT_IN)) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_ADD, 0, 0,
-            (sp_poller_udata) hndl);
+            (nn_poller_udata) hndl);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
-        hndl->events |= SP_POLLER_EVENT_IN;
+        hndl->events |= NN_POLLER_EVENT_IN;
     }
 }
 
-void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
     int i;
 
-    if (hndl->events & SP_POLLER_EVENT_IN) {
+    if (hndl->events & NN_POLLER_EVENT_IN) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
-        hndl->events &= ~SP_POLLER_EVENT_IN;
+        hndl->events &= ~NN_POLLER_EVENT_IN;
     }
 
     /*  Invalidate any subsequent IN events on this file descriptor. */
@@ -114,31 +114,31 @@ void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].udata = NULL;
 }
 
-void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
 
-    if (!(hndl->events & SP_POLLER_EVENT_OUT)) {
+    if (!(hndl->events & NN_POLLER_EVENT_OUT)) {
         EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_ADD, 0, 0,
-            (sp_poller_udata) hndl);
+            (nn_poller_udata) hndl);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
-        hndl->events |= SP_POLLER_EVENT_OUT;
+        hndl->events |= NN_POLLER_EVENT_OUT;
     }
 }
 
-void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
     int i;
 
-    if (hndl->events & SP_POLLER_EVENT_OUT) {
+    if (hndl->events & NN_POLLER_EVENT_OUT) {
         EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
         errno_assert (rc != -1);
-        hndl->events &= ~SP_POLLER_EVENT_OUT;
+        hndl->events &= ~NN_POLLER_EVENT_OUT;
     }
 
     /*  Invalidate any subsequent OUT events on this file descriptor. */
@@ -148,7 +148,7 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].udata = NULL;
 }
 
-int sp_poller_wait (struct sp_poller *self, int timeout)
+int nn_poller_wait (struct nn_poller *self, int timeout)
 {
     struct timespec ts;
     int nevents;
@@ -158,15 +158,15 @@ int sp_poller_wait (struct sp_poller *self, int timeout)
     self->index = 0;
 
     /*  Wait for new events. */
-#if defined SP_IGNORE_EINTR
+#if defined NN_IGNORE_EINTR
 again:
 #endif
     ts.tv_sec = timeout / 1000;
     ts.tv_nsec = (timeout % 1000) * 1000000;
     nevents = kevent (self->kq, NULL, 0, &self->events [0],
-        SP_POLLER_MAX_EVENTS, timeout >= 0 ? &ts : NULL);
+        NN_POLLER_MAX_EVENTS, timeout >= 0 ? &ts : NULL);
     if (nevents == -1 && errno == EINTR)
-#if defined SP_IGNORE_EINTR
+#if defined NN_IGNORE_EINTR
         goto again;
 #else
         return -EINTR;
@@ -177,8 +177,8 @@ again:
     return 0;
 }
 
-int sp_poller_event (struct sp_poller *self, int *event,
-    struct sp_poller_hndl **hndl)
+int nn_poller_event (struct nn_poller *self, int *event,
+    struct nn_poller_hndl **hndl)
 {
     /*  Skip over empty events. */
     while (self->index < self->nevents) {
@@ -188,19 +188,19 @@ int sp_poller_event (struct sp_poller *self, int *event,
     }
 
     /*  If there is no stored event, let the caller know. */
-    if (sp_slow (self->index >= self->nevents))
+    if (nn_slow (self->index >= self->nevents))
         return -EAGAIN;
 
     /*  Return next event to the caller. Remove the event from the set. */
-    *hndl = (struct sp_poller_hndl*) self->events [self->index].udata;
+    *hndl = (struct nn_poller_hndl*) self->events [self->index].udata;
     if (self->events [self->index].flags & EV_EOF)
-        *event = SP_POLLER_ERR;
+        *event = NN_POLLER_ERR;
     else if (self->events [self->index].filter == EVFILT_WRITE)
-        *event = SP_POLLER_OUT;
+        *event = NN_POLLER_OUT;
     else if (self->events [self->index].filter == EVFILT_READ)
-        *event = SP_POLLER_IN;
+        *event = NN_POLLER_IN;
     else
-        sp_assert (0);
+        nn_assert (0);
     ++self->index;
 
     return 0;

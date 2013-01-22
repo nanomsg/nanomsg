@@ -29,59 +29,59 @@
 #include "../../utils/bstream.h"
 #include "../../utils/cstream.h"
 
-#define SP_TCP_BACKLOG 100
+#define NN_TCP_BACKLOG 100
 
 /*  Private functions. */
-static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
-    struct sp_cp *cp, int backlog);
-static int sp_tcp_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
-    struct sp_cp *cp);
-static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
+static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
+    struct nn_cp *cp, int backlog);
+static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+    struct nn_cp *cp);
+static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen);
 
-/*  sp_transport interface. */
-static const char *sp_tcp_name (void);
-static void sp_tcp_init (void);
-static void sp_tcp_term (void);
-static int sp_tcp_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase);
-static int sp_tcp_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase);
+/*  nn_transport interface. */
+static const char *nn_tcp_name (void);
+static void nn_tcp_init (void);
+static void nn_tcp_term (void);
+static int nn_tcp_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase);
+static int nn_tcp_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase);
 
-static struct sp_transport sp_tcp_vfptr = {
-    sp_tcp_name,
-    sp_tcp_init,
-    sp_tcp_term,
-    sp_tcp_bind,
-    sp_tcp_connect
+static struct nn_transport nn_tcp_vfptr = {
+    nn_tcp_name,
+    nn_tcp_init,
+    nn_tcp_term,
+    nn_tcp_bind,
+    nn_tcp_connect
 };
 
-struct sp_transport *sp_tcp = &sp_tcp_vfptr;
+struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
-static const char *sp_tcp_name (void)
+static const char *nn_tcp_name (void)
 {
     return "tcp";
 }
 
-static void sp_tcp_init (void)
+static void nn_tcp_init (void)
 {
 }
 
-static void sp_tcp_term (void)
+static void nn_tcp_term (void)
 {
 }
 
-static int sp_tcp_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_tcp_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_bstream *bstream;
+    struct nn_bstream *bstream;
 
-    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (tcp)");
+    bstream = nn_alloc (sizeof (struct nn_bstream), "bstream (tcp)");
     alloc_assert (bstream);
-    rc = sp_bstream_init (bstream, addr, hint, sp_tcp_binit, SP_TCP_BACKLOG);
-    if (sp_slow (rc != 0)) {
-        sp_free (bstream);
+    rc = nn_bstream_init (bstream, addr, hint, nn_tcp_binit, NN_TCP_BACKLOG);
+    if (nn_slow (rc != 0)) {
+        nn_free (bstream);
         return rc;
     }
     *epbase = &bstream->epbase;
@@ -89,20 +89,20 @@ static int sp_tcp_bind (const char *addr, void *hint,
     return 0;
 }
 
-static int sp_tcp_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_tcp_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_cstream *cstream;
+    struct nn_cstream *cstream;
 
     /*  TODO: Check the syntax of the address here! */
 
-    cstream = sp_alloc (sizeof (struct sp_cstream), "cstream (tcp)");
+    cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (tcp)");
     alloc_assert (cstream);
-    rc = sp_cstream_init (cstream, addr, hint, sp_tcp_csockinit,
-        sp_tcp_cresolve);
-    if (sp_slow (rc != 0)) {
-        sp_free (cstream);
+    rc = nn_cstream_init (cstream, addr, hint, nn_tcp_csockinit,
+        nn_tcp_cresolve);
+    if (nn_slow (rc != 0)) {
+        nn_free (cstream);
         return rc;
     }
     *epbase = &cstream->epbase;
@@ -110,8 +110,8 @@ static int sp_tcp_connect (const char *addr, void *hint,
     return 0;
 }
 
-static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
-    struct sp_cp *cp, int backlog)
+static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
+    struct nn_cp *cp, int backlog)
 {
     int rc;
     int port;
@@ -123,14 +123,14 @@ static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
     memset (&ss, 0, sizeof (ss));
 
     /*  Parse the port. */
-    rc = sp_addr_parse_port (addr, &colon);
+    rc = nn_addr_parse_port (addr, &colon);
     if (rc < 0)
         return rc;
     port = rc;
 
     /*  Parse the address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = sp_addr_parse_local (addr, colon - addr, SP_ADDR_IPV4ONLY,
+    rc = nn_addr_parse_local (addr, colon - addr, NN_ADDR_IPV4ONLY,
         &ss, &sslen);
     if (rc < 0)
         return rc;
@@ -141,26 +141,26 @@ static int sp_tcp_binit (const char *addr, struct sp_usock *usock,
     else if (ss.ss_family == AF_INET6)
         ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
     else
-        sp_assert (0);
+        nn_assert (0);
 
     /*  Open the listening socket. */
-    rc = sp_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+    rc = nn_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
         -1, -1, cp);
     errnum_assert (rc == 0, -rc);
-    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, SP_TCP_BACKLOG);
+    rc = nn_usock_listen (usock, (struct sockaddr*) &ss, sslen, NN_TCP_BACKLOG);
     errnum_assert (rc == 0, -rc);
 
     return 0;
 }
 
-static int sp_tcp_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
-    struct sp_cp *cp)
+static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+    struct nn_cp *cp)
 {
-    return sp_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
+    return nn_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
         sndbuf, rcvbuf, cp);
 }
 
-static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
+static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen)
 {
     int rc;
@@ -171,16 +171,16 @@ static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     memset (ss, 0, sizeof (struct sockaddr_storage));
 
     /*  Parse the port. */
-    port = sp_addr_parse_port (addr, &colon);
+    port = nn_addr_parse_port (addr, &colon);
     errnum_assert (port > 0, -port);
 
     /*  TODO: Parse the local address, if any. */
 
     /*  Parse the remote address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = sp_addr_parse_remote (addr, colon - addr, SP_ADDR_IPV4ONLY,
+    rc = nn_addr_parse_remote (addr, colon - addr, NN_ADDR_IPV4ONLY,
         ss, sslen);
-    if (sp_slow (rc < 0))
+    if (nn_slow (rc < 0))
         return rc;
 
     /*  Combine the port and the address. */
@@ -189,7 +189,7 @@ static int sp_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     else if (ss->ss_family == AF_INET6)
         ((struct sockaddr_in6*) ss)->sin6_port = htons (port);
     else
-        sp_assert (0);
+        nn_assert (0);
 
     return 0;
 }

@@ -1,30 +1,36 @@
-sp_recv(3)
-==========
+nn_sendmsg(3)
+=============
 
 NAME
 ----
-sp_recv - receive a message
+nn_sendmsg - send a message allocated by nn_allocmsg
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_recv (int 's', void '*buf', size_t 'len', int 'flags');*
-
+*int nn_sendmsg (int 's', const struct nn_msghdr '*msghdr', int 'flags');*
 
 DESCRIPTION
 -----------
-Receive a message from the socket 's' and store it in the buffer referenced by
-the 'buf' argument. Any bytes exceeding the length specified by the 'len'
-argument will be truncated. 
+The function will send a message containing the data from message 'msg' to
+the socket 's'. The message must be allocated using linknanomsg:nn_allocmsg[3]
+function.
+
+To which of the peers will the message be sent to is determined by
+the particular socket type.
+
+When the function succeeds, message pointer 'msg' becomes invalid and should
+not be used any more or deallocated by the user. It will be deallocated
+automatically by the library.
 
 The 'flags' argument is a combination of the flags defined below:
 
-*SP_DONTWAIT*::
+*NN_DONTWAIT*::
 Specifies that the operation should be performed in non-blocking mode. If the
-message cannot be received straight away, the function will fail with 'errno'
-set to EAGAIN.
+message cannot be sent straight away, the function will fail with 'errno' set
+to EAGAIN.
 
 
 RETURN VALUE
@@ -37,7 +43,7 @@ below.
 ERRORS
 ------
 *EFAULT*::
-The library is not initialised.
+Either the library is not initialised or 'msg' is not a valid message.
 *EBADF*::
 The provided socket is invalid.
 *ENOTSUP*::
@@ -47,31 +53,35 @@ The operation cannot be performed on this socket at the moment because socket is
 not in the appropriate state.  This error may occur with socket types that
 switch between several states.
 *EAGAIN*::
-Non-blocking mode was requested and there's no message to receive at the moment.
+Non-blocking mode was requested and the message cannot be sent at the moment.
 *EINTR*::
 The operation was interrupted by delivery of a signal before the message was
-received.
+sent.
 *ETIMEDOUT*::
 Individual socket types may define their own specific timeouts. If such timeout
 is hit this error will be returned.
 *ETERM*::
 The library is terminating.
 
+
 EXAMPLE
 -------
 
 ----
-char buf [100];
-nbytes = sp_recv (s, buf, sizeof (buf), 0);
+void *msg = nn_allocmsg (12, 0);
+memcpy (msg, "Hello world!", 12);
+nn_sendmsg (s, msg, 0);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_send[3]
-linknanomsg:sp_recvmsg[3]
-linknanomsg:sp_socket[3]
+linknanomsg:nn_send[3]
+linknanomsg:nn_allocmsg[3]
+linknanomsg:nn_freemsg[3]
+linknanomsg:nn_recvmsg[3]
 linknanomsg:nanomsg[7]
+
 
 AUTHORS
 -------

@@ -20,42 +20,42 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_POLLER_INCLUDED
-#define SP_POLLER_INCLUDED
+#ifndef NN_POLLER_INCLUDED
+#define NN_POLLER_INCLUDED
 
-#if !defined SP_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS
 
-#define SP_POLLER_IN 1
-#define SP_POLLER_OUT 2
-#define SP_POLLER_ERR 3
+#define NN_POLLER_IN 1
+#define NN_POLLER_OUT 2
+#define NN_POLLER_ERR 3
 
-struct sp_poller;
-struct sp_poller_hndl;
+struct nn_poller;
+struct nn_poller_hndl;
 
-void sp_poller_init (struct sp_poller *self);
-void sp_poller_term (struct sp_poller *self);
-void sp_poller_add (struct sp_poller *self, int fd,
-    struct sp_poller_hndl *hndl);
-void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl);
-void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
-void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl);
-void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
-void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl);
-int sp_poller_wait (struct sp_poller *self, int timeout);
-int sp_poller_event (struct sp_poller *self, int *event,
-    struct sp_poller_hndl **hndl);
+void nn_poller_init (struct nn_poller *self);
+void nn_poller_term (struct nn_poller *self);
+void nn_poller_add (struct nn_poller *self, int fd,
+    struct nn_poller_hndl *hndl);
+void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl);
+void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl);
+void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl);
+void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl);
+void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl);
+int nn_poller_wait (struct nn_poller *self, int timeout);
+int nn_poller_event (struct nn_poller *self, int *event,
+    struct nn_poller_hndl **hndl);
 
-#if defined SP_USE_POLL
+#if defined NN_USE_POLL
 
 #include <poll.h>
 
-#define SP_POLLER_HAVE_ASYNC_ADD 0
+#define NN_POLLER_HAVE_ASYNC_ADD 0
 
-struct sp_poller_hndl {
+struct nn_poller_hndl {
     int index;
 };
 
-struct sp_poller {
+struct nn_poller {
 
     /*  Actual number of elements in the pollset. */
     int size;
@@ -72,8 +72,8 @@ struct sp_poller {
     /*  List of handles associated with elements in the pollset. Either points
         to the handle associated with the file descriptor (hndl) or is part
         of the list of removed pollitems (removed). */
-    struct sp_hndls_item {
-        struct sp_poller_hndl *hndl;
+    struct nn_hndls_item {
+        struct nn_poller_hndl *hndl;
         int prev;
         int next;
     } *hndls;
@@ -84,20 +84,20 @@ struct sp_poller {
 
 #endif
 
-#if defined SP_USE_EPOLL
+#if defined NN_USE_EPOLL
 
 #include <sys/epoll.h>
 
-#define SP_POLLER_HAVE_ASYNC_ADD 1
+#define NN_POLLER_HAVE_ASYNC_ADD 1
 
-#define SP_POLLER_MAX_EVENTS 32
+#define NN_POLLER_MAX_EVENTS 32
 
-struct sp_poller_hndl {
+struct nn_poller_hndl {
     int fd;
     uint32_t events;
 };
 
-struct sp_poller {
+struct nn_poller {
 
     /*  Current pollset. */
     int ep;
@@ -109,28 +109,28 @@ struct sp_poller {
     int index;
 
     /*  Events being processed at the moment. */
-    struct epoll_event events [SP_POLLER_MAX_EVENTS];
+    struct epoll_event events [NN_POLLER_MAX_EVENTS];
 };
 
 #endif
 
-#if defined SP_USE_KQUEUE
+#if defined NN_USE_KQUEUE
 
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/event.h>
 
-#define SP_POLLER_MAX_EVENTS 32
+#define NN_POLLER_MAX_EVENTS 32
 
-#define SP_POLLER_EVENT_IN 1
-#define SP_POLLER_EVENT_OUT 2
+#define NN_POLLER_EVENT_IN 1
+#define NN_POLLER_EVENT_OUT 2
 
-struct sp_poller_hndl {
+struct nn_poller_hndl {
     int fd;
     int events;
 };
 
-struct sp_poller {
+struct nn_poller {
 
     /*  Current pollset. */
     int kq;
@@ -142,7 +142,7 @@ struct sp_poller {
     int index;
 
     /*  Cached events. */
-    struct kevent events [SP_POLLER_MAX_EVENTS];
+    struct kevent events [NN_POLLER_MAX_EVENTS];
 };
 
 #endif

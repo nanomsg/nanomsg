@@ -20,88 +20,88 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_ERR_INCLUDED
-#define SP_ERR_INCLUDED
+#ifndef NN_ERR_INCLUDED
+#define NN_ERR_INCLUDED
 
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-/*  Include SP header to define SP-specific error codes. */
-#include "../sp.h"
+/*  Include nn.h header to define nanomsg-specific error codes. */
+#include "../nn.h"
 
 #include "fast.h"
 
 #if defined _MSC_VER
-#define SP_NORETURN __declspec(noreturn)
+#define NN_NORETURN __declspec(noreturn)
 #elif defined __GNUC__
-#define SP_NORETURN __attribute__ ((noreturn))
+#define NN_NORETURN __attribute__ ((noreturn))
 #else
-#define SP_NORETURN
+#define NN_NORETURN
 #endif
 
 /*  Same as system assert(). However, under Win32 assert has some deficiencies.
     Thus this macro. */
-#define sp_assert(x) \
+#define nn_assert(x) \
     do {\
-        if (sp_slow (!(x))) {\
+        if (nn_slow (!(x))) {\
             fprintf (stderr, "Assertion failed: %s (%s:%d)\n", #x, \
                 __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
 /*  Checks whether memory allocation was successful. */
 #define alloc_assert(x) \
     do {\
-        if (sp_slow (!x)) {\
+        if (nn_slow (!x)) {\
             fprintf (stderr, "Out of memory (%s:%d)\n",\
                 __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
 /*  Check the condition. If false prints out the errno. */
 #define errno_assert(x) \
     do {\
-        if (sp_slow (!(x))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", sp_err_strerror (errno),\
+        if (nn_slow (!(x))) {\
+            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
                 (int) errno, __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
 /*  Checks whether supplied errno number is an error. */
 #define errnum_assert(cond, err) \
     do {\
-        if (sp_slow (!(cond))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", sp_err_strerror (err),\
+        if (nn_slow (!(cond))) {\
+            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (err),\
                 (int) (err), __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
 /* Checks the condition. If false prints out the GetLastError info. */
 #define win_assert(x) \
     do {\
-        if (sp_slow (!(x))) {\
+        if (nn_slow (!(x))) {\
             char errstr [256];\
-            sp_win_error ((int) GetLastError (), errstr, 256);\
+            nn_win_error ((int) GetLastError (), errstr, 256);\
             fprintf (stderr, "%s [%d] (%s:%d)\n",\
                 errstr, (int) GetLastError (), __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
 /* Checks the condition. If false prints out the WSAGetLastError info. */
 #define wsa_assert(x) \
     do {\
-        if (sp_slow (!(x))) {\
+        if (nn_slow (!(x))) {\
             char errstr [256];\
-            sp_win_error (WSAGetLastError (), errstr, 256);\
+            nn_win_error (WSAGetLastError (), errstr, 256);\
             fprintf (stderr, "%s [%d] (%s:%d)\n",\
                 errstr, (int) WSAGetLastError (), __FILE__, __LINE__);\
-            sp_err_abort ();\
+            nn_err_abort ();\
         }\
     } while (0)
 
@@ -116,13 +116,13 @@
     typedef int CT_ASSERT_HELPER1(ct_assert_,__LINE__) [(x) ? 1 : -1]
 #endif
 
-SP_NORETURN void sp_err_abort (void);
-int sp_err_errno (void);
-const char *sp_err_strerror (int errnum);
+NN_NORETURN void nn_err_abort (void);
+int nn_err_errno (void);
+const char *nn_err_strerror (int errnum);
 
-#ifdef SP_HAVE_WINDOWS
-int sp_err_wsa_to_posix (int wsaerr);
-void sp_win_error (int err, char *buf, size_t bufsize);
+#ifdef NN_HAVE_WINDOWS
+int nn_err_wsa_to_posix (int wsaerr);
+void nn_win_error (int err, char *buf, size_t bufsize);
 #endif
 
 #endif

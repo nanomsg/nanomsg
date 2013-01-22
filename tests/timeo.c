@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 
 #include "../src/utils/err.c"
@@ -32,33 +32,33 @@ int main ()
     int s;
     int timeo;
     char buf [3];
-    struct sp_stopwatch stopwatch;
+    struct nn_stopwatch stopwatch;
     uint64_t elapsed;
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
 
     timeo = 100;
-    rc = sp_setsockopt (s, SP_SOL_SOCKET, SP_RCVTIMEO, &timeo, sizeof (timeo));
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo, sizeof (timeo));
     errno_assert (rc == 0);
-    sp_stopwatch_init (&stopwatch);
-    rc = sp_recv (s, buf, sizeof (buf), 0);
-    elapsed = sp_stopwatch_term (&stopwatch);
-    errno_assert (rc < 0 && sp_errno () == EAGAIN);
+    nn_stopwatch_init (&stopwatch);
+    rc = nn_recv (s, buf, sizeof (buf), 0);
+    elapsed = nn_stopwatch_term (&stopwatch);
+    errno_assert (rc < 0 && nn_errno () == EAGAIN);
     time_assert (elapsed, 100000);
 
     timeo = 100;
-    rc = sp_setsockopt (s, SP_SOL_SOCKET, SP_SNDTIMEO, &timeo, sizeof (timeo));
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_SNDTIMEO, &timeo, sizeof (timeo));
     errno_assert (rc == 0);
-    rc = sp_send (s, "ABC", 3, 0);
-    errno_assert (rc < 0 && sp_errno () == EAGAIN);
+    rc = nn_send (s, "ABC", 3, 0);
+    errno_assert (rc < 0 && nn_errno () == EAGAIN);
     time_assert (elapsed, 100000);
 
-    rc = sp_close (s);
+    rc = nn_close (s);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

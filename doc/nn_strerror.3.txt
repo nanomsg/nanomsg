@@ -1,16 +1,16 @@
-sp_strerror(3)
+nn_strerror(3)
 ==============
 
 NAME
 ----
-sp_strerror - convert an error number into human-readable string
+nn_strerror - convert an error number into human-readable string
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*const char *sp_strerror (int 'errnum');*
+*const char *nn_strerror (int 'errnum');*
 
 
 DESCRIPTION
@@ -34,14 +34,14 @@ EXAMPLE
 -------
 
 ----
-rc = sp_init ();
+rc = nn_init ();
 if (rc != 0)
-    printf ("sp_init failed: %s\n", sp_strerror (errno));
+    printf ("nn_init failed: %s\n", nn_strerror (errno));
 ----
 
 SEE ALSO
 --------
-linknanomsg:sp_errno[3]
+linknanomsg:nn_errno[3]
 linknanomsg:nanomsg[7]
 
 

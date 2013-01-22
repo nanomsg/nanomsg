@@ -1,16 +1,16 @@
-sp_version(3)
+nn_version(3)
 =============
 
 NAME
 ----
-sp_version - report the version of nanomsg library
+nn_version - report the version of nanomsg library
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*void sp_version (int *major, int *minor, int *patch);*
+*void nn_version (int *major, int *minor, int *patch);*
 
 DESCRIPTION
 -----------
@@ -34,7 +34,7 @@ EXAMPLE
 
 ----
 int major, minor, patch;
-sp_version (&major, &minor, &patch);
+nn_version (&major, &minor, &patch);
 printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);
 ----
 

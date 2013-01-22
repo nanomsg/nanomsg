@@ -27,13 +27,13 @@
 extern "C" {
 #endif
 
-#define SP_PUBSUB_ID 2
+#define NN_PUBSUB_ID 2
 
-#define SP_PUB (SP_PUBSUB_ID * 16 + 0)
-#define SP_SUB (SP_PUBSUB_ID * 16 + 1)
+#define NN_PUB (NN_PUBSUB_ID * 16 + 0)
+#define NN_SUB (NN_PUBSUB_ID * 16 + 1)
 
-#define SP_SUBSCRIBE 1
-#define SP_UNSUBSCRIBE 2
+#define NN_SUBSCRIBE 1
+#define NN_UNSUBSCRIBE 2
 
 #ifdef __cplusplus
 }

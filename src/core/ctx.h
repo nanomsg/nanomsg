@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_CTX_INCLUDED
-#define SP_CTX_INCLUDED
+#ifndef NN_CTX_INCLUDED
+#define NN_CTX_INCLUDED
 
 #endif

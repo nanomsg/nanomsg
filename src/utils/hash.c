@@ -26,103 +26,103 @@
 #include "cont.h"
 #include "err.h"
 
-#define SP_HASH_INITIAL_SLOTS 32
+#define NN_HASH_INITIAL_SLOTS 32
 
-static uint32_t sp_hash_key (uint32_t key);
+static uint32_t nn_hash_key (uint32_t key);
 
-void sp_hash_init (struct sp_hash *self)
+void nn_hash_init (struct nn_hash *self)
 {
     int i;
 
-    self->slots = SP_HASH_INITIAL_SLOTS;
+    self->slots = NN_HASH_INITIAL_SLOTS;
     self->items = 0;
-    self->array = sp_alloc (sizeof (struct sp_list) * SP_HASH_INITIAL_SLOTS,
+    self->array = nn_alloc (sizeof (struct nn_list) * NN_HASH_INITIAL_SLOTS,
         "hash map");
     alloc_assert (self->array);
-    for (i = 0; i != SP_HASH_INITIAL_SLOTS; ++i)
-        sp_list_init (&self->array [i]);
+    for (i = 0; i != NN_HASH_INITIAL_SLOTS; ++i)
+        nn_list_init (&self->array [i]);
 }
 
-void sp_hash_term (struct sp_hash *self)
+void nn_hash_term (struct nn_hash *self)
 {
     int i;
 
     for (i = 0; i != self->slots; ++i)
-        sp_list_term (&self->array [i]);
-    sp_free (self->array);
+        nn_list_term (&self->array [i]);
+    nn_free (self->array);
 }
 
-void sp_hash_insert (struct sp_hash *self, uint32_t key,
-    struct sp_hash_item *item)
+void nn_hash_insert (struct nn_hash *self, uint32_t key,
+    struct nn_hash_item *item)
 {
     int slot;
     int newslot;
-    struct sp_list_item *it;
-    struct sp_list_item *newit;
-    struct sp_list *oldarray;
-    struct sp_hash_item *itm;
+    struct nn_list_item *it;
+    struct nn_list_item *newit;
+    struct nn_list *oldarray;
+    struct nn_hash_item *itm;
 
-    slot = sp_hash_key (key) % self->slots;
+    slot = nn_hash_key (key) % self->slots;
 
-    for (it = sp_list_begin (&self->array [slot]);
-          it != sp_list_end (&self->array [slot]);
-          it = sp_list_next (&self->array [slot], it))
-        sp_assert (sp_cont (it, struct sp_hash_item, list)->key != key);
+    for (it = nn_list_begin (&self->array [slot]);
+          it != nn_list_end (&self->array [slot]);
+          it = nn_list_next (&self->array [slot], it))
+        nn_assert (nn_cont (it, struct nn_hash_item, list)->key != key);
 
     item->key = key;
-    sp_list_insert (&self->array [slot], &item->list,
-        sp_list_end (&self->array [slot]));
+    nn_list_insert (&self->array [slot], &item->list,
+        nn_list_end (&self->array [slot]));
     ++self->items;
 
     /*  If the hash is getting full, double the amount of slots and
         re-hash all the items. */
-    if (sp_slow (self->items * 2 > self->slots)) {
+    if (nn_slow (self->items * 2 > self->slots)) {
         oldarray = self->array;
         self->slots *= 2;
-        self->array = sp_alloc (sizeof (struct sp_list) * self->slots,
+        self->array = nn_alloc (sizeof (struct nn_list) * self->slots,
             "hash map");
         alloc_assert (self->array);
         for (slot = 0; slot != self->slots; ++slot) {
-            for (it = sp_list_begin (&oldarray [slot]);
-                  it != sp_list_end (&oldarray [slot]);
-                  it = sp_list_next (&oldarray [slot], it)) {
-                sp_list_erase (&self->array [slot], it);
-                itm = sp_cont (it, struct sp_hash_item, list);
-                newslot = sp_hash_key (itm->key) % self->slots;
-                for (newit = sp_list_begin (&self->array [newslot]);
-                      newit != sp_list_end (&self->array [newslot]);
-                      newit = sp_list_next (&self->array [newslot], newit))
-                    sp_assert (sp_cont (newit, struct sp_hash_item,
+            for (it = nn_list_begin (&oldarray [slot]);
+                  it != nn_list_end (&oldarray [slot]);
+                  it = nn_list_next (&oldarray [slot], it)) {
+                nn_list_erase (&self->array [slot], it);
+                itm = nn_cont (it, struct nn_hash_item, list);
+                newslot = nn_hash_key (itm->key) % self->slots;
+                for (newit = nn_list_begin (&self->array [newslot]);
+                      newit != nn_list_end (&self->array [newslot]);
+                      newit = nn_list_next (&self->array [newslot], newit))
+                    nn_assert (nn_cont (newit, struct nn_hash_item,
                         list)->key != itm->key);
-                sp_list_insert (&self->array [newslot], &itm->list,
-                        sp_list_end (&self->array [newslot]));
+                nn_list_insert (&self->array [newslot], &itm->list,
+                        nn_list_end (&self->array [newslot]));
             }
-            sp_list_term (&self->array [slot]);
+            nn_list_term (&self->array [slot]);
         }
-        sp_free (oldarray);
+        nn_free (oldarray);
     }
 }
 
-void sp_hash_erase (struct sp_hash *self, struct sp_hash_item *item)
+void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item)
 {
     int slot;
 
-    slot = sp_hash_key (item->key) % self->slots;
-    sp_list_erase (&self->array [slot], &item->list);
+    slot = nn_hash_key (item->key) % self->slots;
+    nn_list_erase (&self->array [slot], &item->list);
 }
 
-struct sp_hash_item *sp_hash_get (struct sp_hash *self, uint32_t key)
+struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key)
 {
     int slot;
-    struct sp_list_item *it;
-    struct sp_hash_item *item;
+    struct nn_list_item *it;
+    struct nn_hash_item *item;
 
-    slot = sp_hash_key (key) % self->slots;
+    slot = nn_hash_key (key) % self->slots;
 
-    for (it = sp_list_begin (&self->array [slot]);
-          it != sp_list_end (&self->array [slot]);
-          it = sp_list_next (&self->array [slot], it)) {
-        item = sp_cont (it, struct sp_hash_item, list);
+    for (it = nn_list_begin (&self->array [slot]);
+          it != nn_list_end (&self->array [slot]);
+          it = nn_list_next (&self->array [slot], it)) {
+        item = nn_cont (it, struct nn_hash_item, list);
         if (item->key == key)
             return item;
     }
@@ -130,7 +130,7 @@ struct sp_hash_item *sp_hash_get (struct sp_hash *self, uint32_t key)
     return NULL;
 }
 
-uint32_t sp_hash_key (uint32_t key)
+uint32_t nn_hash_key (uint32_t key)
 {
     /*  TODO: This is a randomly chosen hashing function. Give some thought
         to picking a more fitting one. */

@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#if !defined SP_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS
 
 #include "ipc.h"
 
@@ -34,59 +34,59 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define SP_IPC_BACKLOG 10
+#define NN_IPC_BACKLOG 10
 
 /*  Private functions. */
-static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
-    struct sp_cp *cp, int backlog);
-static int sp_ipc_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
-    struct sp_cp *cp);
-static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
+static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
+    struct nn_cp *cp, int backlog);
+static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+    struct nn_cp *cp);
+static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen);
 
-/*  sp_transport interface. */
-static const char *sp_ipc_name (void);
-static void sp_ipc_init (void);
-static void sp_ipc_term (void);
-static int sp_ipc_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase);
-static int sp_ipc_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase);
+/*  nn_transport interface. */
+static const char *nn_ipc_name (void);
+static void nn_ipc_init (void);
+static void nn_ipc_term (void);
+static int nn_ipc_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase);
+static int nn_ipc_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase);
 
-static struct sp_transport sp_ipc_vfptr = {
-    sp_ipc_name,
-    sp_ipc_init,
-    sp_ipc_term,
-    sp_ipc_bind,
-    sp_ipc_connect
+static struct nn_transport nn_ipc_vfptr = {
+    nn_ipc_name,
+    nn_ipc_init,
+    nn_ipc_term,
+    nn_ipc_bind,
+    nn_ipc_connect
 };
 
-struct sp_transport *sp_ipc = &sp_ipc_vfptr;
+struct nn_transport *nn_ipc = &nn_ipc_vfptr;
 
-static const char *sp_ipc_name (void)
+static const char *nn_ipc_name (void)
 {
     return "ipc";
 }
 
-static void sp_ipc_init (void)
+static void nn_ipc_init (void)
 {
 }
 
-static void sp_ipc_term (void)
+static void nn_ipc_term (void)
 {
 }
 
-static int sp_ipc_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_ipc_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_bstream *bstream;
+    struct nn_bstream *bstream;
 
-    bstream = sp_alloc (sizeof (struct sp_bstream), "bstream (ipc)");
+    bstream = nn_alloc (sizeof (struct nn_bstream), "bstream (ipc)");
     alloc_assert (bstream);
-    rc = sp_bstream_init (bstream, addr, hint, sp_ipc_binit, SP_IPC_BACKLOG);
-    if (sp_slow (rc != 0)) {
-        sp_free (bstream);
+    rc = nn_bstream_init (bstream, addr, hint, nn_ipc_binit, NN_IPC_BACKLOG);
+    if (nn_slow (rc != 0)) {
+        nn_free (bstream);
         return rc;
     }
     *epbase = &bstream->epbase;
@@ -94,20 +94,20 @@ static int sp_ipc_bind (const char *addr, void *hint,
     return 0;
 }
 
-static int sp_ipc_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_ipc_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_cstream *cstream;
+    struct nn_cstream *cstream;
 
     /*  TODO: Check the syntax of the address here! */
 
-    cstream = sp_alloc (sizeof (struct sp_cstream), "cstream (ipc)");
+    cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (ipc)");
     alloc_assert (cstream);
-    rc = sp_cstream_init (cstream, addr, hint, sp_ipc_csockinit,
-        sp_ipc_cresolve);
-    if (sp_slow (rc != 0)) {
-        sp_free (cstream);
+    rc = nn_cstream_init (cstream, addr, hint, nn_ipc_csockinit,
+        nn_ipc_cresolve);
+    if (nn_slow (rc != 0)) {
+        nn_free (cstream);
         return rc;
     }
     *epbase = &cstream->epbase;
@@ -115,8 +115,8 @@ static int sp_ipc_connect (const char *addr, void *hint,
     return 0;
 }
 
-static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
-    struct sp_cp *cp, int backlog)
+static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
+    struct nn_cp *cp, int backlog)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -138,22 +138,22 @@ static int sp_ipc_binit (const char *addr, struct sp_usock *usock,
     errno_assert (rc == 0 || errno == ENOENT);
 
     /*  Open the listening socket. */
-    rc = sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
+    rc = nn_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
     errnum_assert (rc == 0, -rc);
-    rc = sp_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
+    rc = nn_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
     errnum_assert (rc == 0, -rc);
 
     return 0;
 }
 
-static int sp_ipc_csockinit (struct sp_usock *usock, int sndbuf, int rcvbuf,
-    struct sp_cp *cp)
+static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+    struct nn_cp *cp)
 {
-    return sp_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
+    return nn_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
         sndbuf, rcvbuf, cp);
 }
 
-static int sp_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
+static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen)
 {
     struct sockaddr_un *un;

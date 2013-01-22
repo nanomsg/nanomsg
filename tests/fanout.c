@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/fanout.h"
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
@@ -33,47 +33,47 @@ int main ()
     int pull2;
     char buf [3];
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    push = sp_socket (AF_SP, SP_PUSH);
+    push = nn_socket (AF_SP, NN_PUSH);
     errno_assert (push != -1);
-    rc = sp_bind (push, "inproc://a");
+    rc = nn_bind (push, "inproc://a");
     errno_assert (rc >= 0);
-    pull1 = sp_socket (AF_SP, SP_PULL);
+    pull1 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull1 != -1);
-    rc = sp_connect (pull1, "inproc://a");
+    rc = nn_connect (pull1, "inproc://a");
     errno_assert (rc >= 0);
-    pull2 = sp_socket (AF_SP, SP_PULL);
+    pull2 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull2 != -1);
-    rc = sp_connect (pull2, "inproc://a");
+    rc = nn_connect (pull2, "inproc://a");
     errno_assert (rc >= 0);
 
     /*  Wait till both connections are established to get messages spread
         evenly between the two pull sockets. */
-    sp_sleep (10);
+    nn_sleep (10);
 
-    rc = sp_send (push, "ABC", 3, 0);
+    rc = nn_send (push, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_send (push, "DEF", 3, 0);
+    nn_assert (rc == 3);
+    rc = nn_send (push, "DEF", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_recv (pull1, buf, sizeof (buf), 0);
+    rc = nn_recv (pull1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (pull2, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (pull2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (push);
+    rc = nn_close (push);
     errno_assert (rc == 0);
-    rc = sp_close (pull1);
+    rc = nn_close (pull1);
     errno_assert (rc == 0);    
-    rc = sp_close (pull2);
+    rc = nn_close (pull2);
     errno_assert (rc == 0);
 
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

@@ -1,16 +1,16 @@
-sp_pubsub(7)
+nn_pubsub(7)
 ============
 
 NAME
 ----
-sp_pubsub - publish/subscribe scalability protocol
+nn_pubsub - publish/subscribe scalability protocol
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/pubsub.h>*
+*#include <nanomsg/pubsub.h>*
 
 
 DESCRIPTION
@@ -20,10 +20,10 @@ Broadcasts messages to multiple destinations.
 Socket Types
 ~~~~~~~~~~~~
 
-SP_PUB::
+NN_PUB::
     This socket is used to distribute messages to multiple destinations.
     Receive operation is not defined.
-SP_SUB::
+NN_SUB::
     Receives messages from the publisher. Only messages that the socket is
     subscribed to are received. When the socket is created there are no
     subscriptions and thus no messages will be received. Send operation is
@@ -32,21 +32,21 @@ SP_SUB::
 Socket Options
 ~~~~~~~~~~~~~~
 
-SP_SUBSCRIBE::
+NN_SUBSCRIBE::
     Defined on full SUB socket. Subscribes for a particular topic. Type of the
     option is string.
-SP_UNSUBSCRIBE::
+NN_UNSUBSCRIBE::
     Defined on full SUB socket. Unsubscribes from a particular topic. Type of
     the option is string.
 
 
 SEE ALSO
 --------
-linknanomsg:sp_reqrep[7]
-linknanomsg:sp_fanin[7]
-linknanomsg:sp_fanout[7]
-linknanomsg:sp_survey[7]
-linknanomsg:sp_pair[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_fanin[7]
+linknanomsg:nn_fanout[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]
 
 AUTHORS

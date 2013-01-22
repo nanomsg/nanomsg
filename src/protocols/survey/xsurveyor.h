@@ -20,51 +20,51 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XSURVEYOR_INCLUDED
-#define SP_XSURVEYOR_INCLUDED
+#ifndef NN_XSURVEYOR_INCLUDED
+#define NN_XSURVEYOR_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_xsurveyor_socktype;
+extern struct nn_socktype *nn_xsurveyor_socktype;
 
-struct sp_xsurveyor_data {
-    struct sp_pipe *pipe;
-    struct sp_list_item outitem;
-    struct sp_list_item initem;
+struct nn_xsurveyor_data {
+    struct nn_pipe *pipe;
+    struct nn_list_item outitem;
+    struct nn_list_item initem;
 };
 
-struct sp_xsurveyor {
+struct nn_xsurveyor {
 
     /*  The generic socket base class. */
-    struct sp_sockbase sockbase;
+    struct nn_sockbase sockbase;
 
     /*  List of pipes to send messages to. */
-    struct sp_list outpipes;
+    struct nn_list outpipes;
 
     /*  List of pipes that we can get messages from. */
-    struct sp_list inpipes;
+    struct nn_list inpipes;
 
     /*  Next pipe to receive from. */
-    struct sp_xsurveyor_data *current;
+    struct nn_xsurveyor_data *current;
 
 };
 
-void sp_xsurveyor_init (struct sp_xsurveyor *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-void sp_xsurveyor_term (struct sp_xsurveyor *self);
+void nn_xsurveyor_init (struct nn_xsurveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+void nn_xsurveyor_term (struct nn_xsurveyor *self);
 
-int sp_xsurveyor_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-void sp_xsurveyor_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xsurveyor_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xsurveyor_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xsurveyor_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xsurveyor_recv (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xsurveyor_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xsurveyor_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-int sp_xsurveyor_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xsurveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int sp_xsurveyor_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen);
-int sp_xsurveyor_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+int nn_xsurveyor_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+int nn_xsurveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 #endif
 

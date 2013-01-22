@@ -22,7 +22,7 @@
 
 #include "alloc.h"
 
-#if defined SP_ALLOC_MONITOR
+#if defined NN_ALLOC_MONITOR
 
 #include "mutex.h"
 
@@ -31,88 +31,88 @@
 #include <stdint.h>
 #include <stdio.h>
 
-struct sp_alloc_hdr {
+struct nn_alloc_hdr {
     size_t size;
     const char *name;
 };
 
-static struct sp_mutex sp_alloc_sync;
-static size_t sp_alloc_bytes;
-static size_t sp_alloc_blocks;
+static struct nn_mutex nn_alloc_sync;
+static size_t nn_alloc_bytes;
+static size_t nn_alloc_blocks;
 
-void sp_alloc_init (void)
+void nn_alloc_init (void)
 {
-    sp_mutex_init (&sp_alloc_sync);
-    sp_alloc_bytes = 0;
-    sp_alloc_blocks = 0;
+    nn_mutex_init (&nn_alloc_sync);
+    nn_alloc_bytes = 0;
+    nn_alloc_blocks = 0;
 }
 
-void sp_alloc_term (void)
+void nn_alloc_term (void)
 {
-    sp_mutex_term (&sp_alloc_sync);
+    nn_mutex_term (&nn_alloc_sync);
 }
 
-void *sp_alloc_ (size_t size, const char *name)
+void *nn_alloc_ (size_t size, const char *name)
 {
     uint8_t *chunk;
 
-    chunk = malloc (sizeof (struct sp_alloc_hdr) + size);
+    chunk = malloc (sizeof (struct nn_alloc_hdr) + size);
     if (!chunk)
         return NULL;
 
-    sp_mutex_lock (&sp_alloc_sync);
-    ((struct sp_alloc_hdr*) chunk)->size = size;
-    ((struct sp_alloc_hdr*) chunk)->name = name;
-    sp_alloc_bytes += size;
-    ++sp_alloc_blocks;
+    nn_mutex_lock (&nn_alloc_sync);
+    ((struct nn_alloc_hdr*) chunk)->size = size;
+    ((struct nn_alloc_hdr*) chunk)->name = name;
+    nn_alloc_bytes += size;
+    ++nn_alloc_blocks;
     printf ("Allocating %s (%zu bytes)\n", name, size);
     printf ("Current memory usage: %zu bytes in %zu blocks\n",
-        sp_alloc_bytes, sp_alloc_blocks);
-    sp_mutex_unlock (&sp_alloc_sync);
+        nn_alloc_bytes, nn_alloc_blocks);
+    nn_mutex_unlock (&nn_alloc_sync);
 
-    return chunk + sizeof (struct sp_alloc_hdr);
+    return chunk + sizeof (struct nn_alloc_hdr);
 }
 
-void *sp_realloc (void *ptr, size_t size)
+void *nn_realloc (void *ptr, size_t size)
 {
-    struct sp_alloc_hdr *oldchunk;
-    struct sp_alloc_hdr *newchunk;
+    struct nn_alloc_hdr *oldchunk;
+    struct nn_alloc_hdr *newchunk;
     size_t oldsize;
 
-    oldchunk = ((struct sp_alloc_hdr*) ptr) - 1;
+    oldchunk = ((struct nn_alloc_hdr*) ptr) - 1;
     oldsize = oldchunk->size;
-    newchunk = realloc (oldchunk, sizeof (struct sp_alloc_hdr) + size);
+    newchunk = realloc (oldchunk, sizeof (struct nn_alloc_hdr) + size);
     if (!newchunk)
         return NULL;
     newchunk->size = size;
 
-    sp_mutex_lock (&sp_alloc_sync);
-    sp_alloc_bytes -= oldsize;
-    sp_alloc_bytes += size;
+    nn_mutex_lock (&nn_alloc_sync);
+    nn_alloc_bytes -= oldsize;
+    nn_alloc_bytes += size;
     printf ("Reallocating %s (%zu bytes to %zu bytes)\n",
         newchunk->name, oldsize, size);
     printf ("Current memory usage: %zu bytes in %zu blocks\n",
-        sp_alloc_bytes, sp_alloc_blocks);
-    sp_mutex_unlock (&sp_alloc_sync);
+        nn_alloc_bytes, nn_alloc_blocks);
+    nn_mutex_unlock (&nn_alloc_sync);
 
     return newchunk + sizeof (size_t);
 }
 
-void sp_free (void *ptr)
+void nn_free (void *ptr)
 {
-    struct sp_alloc_hdr *chunk;
+    struct nn_alloc_hdr *chunk;
     
     if (!ptr)
         return;
-    chunk = ((struct sp_alloc_hdr*) ptr) - 1;
+    chunk = ((struct nn_alloc_hdr*) ptr) - 1;
 
-    sp_mutex_lock (&sp_alloc_sync);
-    sp_alloc_bytes -= chunk->size;
-    --sp_alloc_blocks;
+    nn_mutex_lock (&nn_alloc_sync);
+    nn_alloc_bytes -= chunk->size;
+    --nn_alloc_blocks;
     printf ("Deallocating %s (%zu bytes)\n", chunk->name, chunk->size);
     printf ("Current memory usage: %zu bytes in %zu blocks\n",
-        sp_alloc_bytes, sp_alloc_blocks);
-    sp_mutex_unlock (&sp_alloc_sync);
+        nn_alloc_bytes, nn_alloc_blocks);
+    nn_mutex_unlock (&nn_alloc_sync);
 
     free (chunk);
 }
@@ -121,25 +121,25 @@ void sp_free (void *ptr)
 
 #include <stdlib.h>
 
-void sp_alloc_init (void)
+void nn_alloc_init (void)
 {
 }
 
-void sp_alloc_term (void)
+void nn_alloc_term (void)
 {
 }
 
-void *sp_alloc_ (size_t size)
+void *nn_alloc_ (size_t size)
 {
     return malloc (size);
 }
 
-void *sp_realloc (void *ptr, size_t size)
+void *nn_realloc (void *ptr, size_t size)
 {
     return realloc (ptr, size);
 }
 
-void sp_free (void *ptr)
+void nn_free (void *ptr)
 {
     free (ptr);
 }

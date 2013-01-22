@@ -18,89 +18,89 @@ DESCRIPTION
 Following functions are exported by nanomsg library:
 
 Initialise the library::
-    linknanomsg:sp_init[3]
+    linknanomsg:nn_init[3]
 
 Uninitialise the library::
-    linknanomsg:sp_term[3]
+    linknanomsg:nn_term[3]
 
 Create an SP socket::
-    linknanomsg:sp_socket[3]
+    linknanomsg:nn_socket[3]
 
 Close an SP socket::
-    linknanomsg:sp_close[3]
+    linknanomsg:nn_close[3]
 
 Set a socket option::
-    linknanomsg:sp_setsockopt[3]
+    linknanomsg:nn_setsockopt[3]
 
 Retrieve a socket option::
-    linknanomsg:sp_getsockopt[3]
+    linknanomsg:nn_getsockopt[3]
 
 Add a local endpoint to the socket::
-    linknanomsg:sp_bind[3]
+    linknanomsg:nn_bind[3]
 
 Add a remote endpoint to the socket::
-    linknanomsg:sp_connect[3]
+    linknanomsg:nn_connect[3]
 
 Remove an endpoint from the socket::
-    linknanomsg:sp_shutdown[3]
+    linknanomsg:nn_shutdown[3]
 
 Send a message::
-    linknanomsg:sp_send[3]
+    linknanomsg:nn_send[3]
 
 Receive a message::
-    linknanomsg:sp_recv[3]
+    linknanomsg:nn_recv[3]
 
 Allocate a message::
-    linknanomsg:sp_allocmsg[3]
+    linknanomsg:nn_allocmsg[3]
 
 Deallocate a message::
-    linknanomsg:sp_freemsg[3]
+    linknanomsg:nn_freemsg[3]
 
-Send a message allocated by sp_allocmsg::
-    linknanomsg:sp_sendmsg[3]
+Send a message allocated by nn_allocmsg::
+    linknanomsg:nn_sendmsg[3]
 
 Receive a pre-allocated message::
-    linknanomsg:sp_recvmsg[3]
+    linknanomsg:nn_recvmsg[3]
 
 Retrieve the current errno::
-    linknanomsg:sp_errno[3]
+    linknanomsg:nn_errno[3]
 
 Convert an error number into human-readable string::
-    linknanomsg:sp_strerror[3]
+    linknanomsg:nn_strerror[3]
 
 Report the version of nanomsg library::
-    linknanomsg:sp_version[3]
+    linknanomsg:nn_version[3]
 
 Following scalability protocols are provided by nanomsg:
 
 One-to-one protocol::
-    linknanomsg:sp_pair[7]
+    linknanomsg:nn_pair[7]
 
 Request/reply protocol::
-    linknanomsg:sp_reqrep[7]
+    linknanomsg:nn_reqrep[7]
 
 Publish/subscribe protocol::
-    linknanomsg:sp_pubsub[7]
+    linknanomsg:nn_pubsub[7]
 
 Survey protocol::
-    linknanomsg:sp_survey[7]
+    linknanomsg:nn_survey[7]
 
 Fan-in (data aggregation) protocol::
-    linknanomsg:sp_fanin[7]
+    linknanomsg:nn_fanin[7]
 
 Fan-out (load balancing) protocol::
-    linknanomsg:sp_fanout[7]
+    linknanomsg:nn_fanout[7]
 
 Following transport mechanisms are provided by nanomsg:
 
 In-process transport::
-    linknanomsg:sp_inproc[7]
+    linknanomsg:nn_inproc[7]
 
 Inter-process transport::
-    linknanomsg:sp_ipc[7]
+    linknanomsg:nn_ipc[7]
 
 TCP transport::
-    linknanomsg:sp_tcp[7]
+    linknanomsg:nn_tcp[7]
 
 
 AUTHORS

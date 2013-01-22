@@ -22,30 +22,30 @@
 
 #include "glock.h"
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 
 #include "win.h"
 #include "err.h"
 
-static LONG sp_glock_initialised = 0;
-static CRITICAL_SECTION sp_glock_cs;
+static LONG nn_glock_initialised = 0;
+static CRITICAL_SECTION nn_glock_cs;
 
-static void sp_glock_init (void)
+static void nn_glock_init (void)
 {
-    if (InterlockedCompareExchange (&sp_glock_initialised, 1, 0) == 0)
-        InitializeCriticalSection (&sp_glock_cs);
+    if (InterlockedCompareExchange (&nn_glock_initialised, 1, 0) == 0)
+        InitializeCriticalSection (&nn_glock_cs);
 }
 
-void sp_glock_lock (void)
+void nn_glock_lock (void)
 {
-    sp_glock_init ();
-    EnterCriticalSection (&sp_glock_cs);
+    nn_glock_init ();
+    EnterCriticalSection (&nn_glock_cs);
 }
 
-void sp_glock_unlock (void)
+void nn_glock_unlock (void)
 {
-    sp_glock_init ();
-    LeaveCriticalSection (&sp_glock_cs);
+    nn_glock_init ();
+    LeaveCriticalSection (&nn_glock_cs);
 }
 
 #else
@@ -54,21 +54,21 @@ void sp_glock_unlock (void)
 
 #include <pthread.h>
 
-static pthread_mutex_t sp_glock_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t nn_glock_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void sp_glock_lock (void)
+void nn_glock_lock (void)
 {
     int rc;
 
-    rc = pthread_mutex_lock (&sp_glock_mutex);
+    rc = pthread_mutex_lock (&nn_glock_mutex);
     errnum_assert (rc == 0, rc);
 }
 
-void sp_glock_unlock (void)
+void nn_glock_unlock (void)
 {
     int rc;
 
-    rc = pthread_mutex_unlock (&sp_glock_mutex);
+    rc = pthread_mutex_unlock (&nn_glock_mutex);
     errnum_assert (rc == 0, rc);
 }
 

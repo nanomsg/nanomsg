@@ -1,23 +1,23 @@
-sp_shutdown(3)
+nn_shutdown(3)
 ==============
 
 NAME
 ----
-sp_shutdown - remove an endpoint from a socket
+nn_shutdown - remove an endpoint from a socket
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_shutdown (int 's', int 'how');*
+*int nn_shutdown (int 's', int 'how');*
 
 
 DESCRIPTION
 -----------
 Removes an endpoint from socket 's'. 'how' parameter specifies the ID of the
-endpoint to remove as returned by prior call to linknanomsg:sp_bind[3] or
-linknanomsg:sp_connect[3].
+endpoint to remove as returned by prior call to linknanomsg:nn_bind[3] or
+linknanomsg:nn_connect[3].
 
 
 RETURN VALUE
@@ -42,17 +42,17 @@ EXAMPLE
 -------
 
 ----
-s = sp_socket (AF_SP, SP_PUB);
-eid = sp_bind (s, "inproc://test");
-sp_shutdown (s, eid);
+s = nn_socket (AF_SP, NN_PUB);
+eid = nn_bind (s, "inproc://test");
+nn_shutdown (s, eid);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_bind[3]
-linknanomsg:sp_connect[3]
+linknanomsg:nn_socket[3]
+linknanomsg:nn_bind[3]
+linknanomsg:nn_connect[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

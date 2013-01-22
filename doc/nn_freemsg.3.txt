@@ -1,22 +1,22 @@
-sp_freemsg(3)
+nn_freemsg(3)
 =============
 
 NAME
 ----
-sp_freemsg - deallocate a message
+nn_freemsg - deallocate a message
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_freemsg (void '*msg');*
+*int nn_freemsg (void '*msg');*
 
 
 DESCRIPTION
 -----------
-Deallocates a message allocated using linknanomsg:sp_allocmsg[3] function or
-received using linknanomsg:sp_recvmsg[3] function.
+Deallocates a message allocated using linknanomsg:nn_allocmsg[3] function or
+received using linknanomsg:nn_recvmsg[3] function.
 
 
 RETURN VALUE
@@ -36,16 +36,16 @@ EXAMPLE
 
 ----
 void *msg;
-sp_recvmsg (s, &msg, 0);
-sp_freemsg (msg);
+nn_recvmsg (s, &msg, 0);
+nn_freemsg (msg);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_allocmsg[3]
-linknanomsg:sp_sendmsg[3]
-linknanomsg:sp_recvmsg[3]
+linknanomsg:nn_allocmsg[3]
+linknanomsg:nn_sendmsg[3]
+linknanomsg:nn_recvmsg[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

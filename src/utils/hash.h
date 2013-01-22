@@ -20,40 +20,40 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_HASH_INCLUDED
-#define SP_HASH_INCLUDED
+#ifndef NN_HASH_INCLUDED
+#define NN_HASH_INCLUDED
 
 #include <stdint.h>
 #include <stddef.h>
 
 #include "list.h"
 
-struct sp_hash_item {
+struct nn_hash_item {
     uint32_t key;
-    struct sp_list_item list;
+    struct nn_list_item list;
 };
 
-struct sp_hash {
+struct nn_hash {
     uint32_t slots;
     uint32_t items;
-    struct sp_list *array;
+    struct nn_list *array;
 };
 
 /*  Initialise the hash table. */
-void sp_hash_init (struct sp_hash *self);
+void nn_hash_init (struct nn_hash *self);
 
 /*  Terminate the hash. Note that hash must be manually emptied before the
     termination. */
-void sp_hash_term (struct sp_hash *self);
+void nn_hash_term (struct nn_hash *self);
 
 /*  Adds an item to the hash. */
-void sp_hash_insert (struct sp_hash *self, uint32_t key,
-    struct sp_hash_item *item);
+void nn_hash_insert (struct nn_hash *self, uint32_t key,
+    struct nn_hash_item *item);
 
 /*  Removes the element from the hash it is in at the moment. */
-void sp_hash_erase (struct sp_hash *self, struct sp_hash_item *item);
+void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item);
 
 /*  Gets an item in the hash based on the key. */
-struct sp_hash_item *sp_hash_get (struct sp_hash *self, uint32_t key);
+struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key);
 
 #endif

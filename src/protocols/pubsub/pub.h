@@ -20,12 +20,12 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_PUB_INCLUDED
-#define SP_PUB_INCLUDED
+#ifndef NN_PUB_INCLUDED
+#define NN_PUB_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_pub_socktype;
+extern struct nn_socktype *nn_pub_socktype;
 
 #endif
 

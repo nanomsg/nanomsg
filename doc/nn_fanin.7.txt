@@ -1,16 +1,16 @@
-sp_fanin(7)
+nn_fanin(7)
 ===========
 
 NAME
 ----
-sp_fanin - fan-in (data aggregation) scalability protocol
+nn_fanin - fan-in (data aggregation) scalability protocol
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/fanin.h>*
+*#include <nanomsg/fanin.h>*
 
 
 DESCRIPTION
@@ -20,11 +20,11 @@ Collects messages from multiple sources.
 Socket Types
 ~~~~~~~~~~~~
 
-SP_SOURCE::
+NN_SOURCE::
     Allows to send messages to the central sink. Receive operation is not
     implemented on this socket type. This socket can be connected to at most
     one peer.
-SP_SINK::
+NN_SINK::
     Receives the messages from multiple sources. Send operation is not defined
     on this socket type.
 
@@ -35,11 +35,11 @@ No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:sp_pubsub[7]
-linknanomsg:sp_reqrep[7]
-linknanomsg:sp_fanout[7]
-linknanomsg:sp_survey[7]
-linknanomsg:sp_pair[7]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_fanout[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]
 
 

@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_GLOCK_INCLUDED
-#define SP_GLOCK_INCLUDED
+#ifndef NN_GLOCK_INCLUDED
+#define NN_GLOCK_INCLUDED
 
 /*  Implementation of a global lock (critical section). The lock is meant to
     be used to synchronise the initialisation/termination of the library. */
 
-void sp_glock_lock (void);
-void sp_glock_unlock (void);
+void nn_glock_lock (void);
+void nn_glock_unlock (void);
 
 #endif
 

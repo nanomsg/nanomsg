@@ -22,7 +22,7 @@
 
 #include "xsource.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanin.h"
 
 #include "../../utils/err.h"
@@ -31,142 +31,142 @@
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
 
-struct sp_xsource {
-    struct sp_sockbase sockbase;
-    struct sp_excl excl;
+struct nn_xsource {
+    struct nn_sockbase sockbase;
+    struct nn_excl excl;
 };
 
 /*  Private functions. */
-static void sp_xsource_init (struct sp_xsource *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_xsource_term (struct sp_xsource *self);
+static void nn_xsource_init (struct nn_xsource *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_xsource_term (struct nn_xsource *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xsource_destroy (struct sp_sockbase *self);
-static int sp_xsource_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_xsource_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsource_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsource_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsource_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsource_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsource_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xsource_destroy (struct nn_sockbase *self);
+static int nn_xsource_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xsource_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_xsource_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_xsource_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xsource_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_xsource_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_xsource_sockbase_vfptr = {
-    sp_xsource_destroy,
-    sp_xsource_add,
-    sp_xsource_rm,
-    sp_xsource_in,
-    sp_xsource_out,
-    sp_xsource_send,
-    sp_xsource_recv,
-    sp_xsource_setopt,
-    sp_xsource_getopt,
-    sp_xsource_sethdr,
-    sp_xsource_gethdr
+static int nn_xsource_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
+    nn_xsource_destroy,
+    nn_xsource_add,
+    nn_xsource_rm,
+    nn_xsource_in,
+    nn_xsource_out,
+    nn_xsource_send,
+    nn_xsource_recv,
+    nn_xsource_setopt,
+    nn_xsource_getopt,
+    nn_xsource_sethdr,
+    nn_xsource_gethdr
 };
 
-static void sp_xsource_init (struct sp_xsource *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_xsource_init (struct nn_xsource *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_excl_init (&self->excl);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_excl_init (&self->excl);
 }
 
-static void sp_xsource_term (struct sp_xsource *self)
+static void nn_xsource_term (struct nn_xsource *self)
 {
-    sp_excl_term (&self->excl);
+    nn_excl_term (&self->excl);
 }
 
-void sp_xsource_destroy (struct sp_sockbase *self)
+void nn_xsource_destroy (struct nn_sockbase *self)
 {
-    struct sp_xsource *xsource;
+    struct nn_xsource *xsource;
 
-    xsource = sp_cont (self, struct sp_xsource, sockbase);
+    xsource = nn_cont (self, struct nn_xsource, sockbase);
 
-    sp_xsource_term (xsource);
-    sp_free (xsource);
+    nn_xsource_term (xsource);
+    nn_free (xsource);
 }
 
-static int sp_xsource_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsource_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_add (&sp_cont (self, struct sp_xsource, sockbase)->excl,
+    return nn_excl_add (&nn_cont (self, struct nn_xsource, sockbase)->excl,
         pipe);
 }
 
-static void sp_xsource_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    sp_excl_rm (&sp_cont (self, struct sp_xsource, sockbase)->excl, pipe);
+    nn_excl_rm (&nn_cont (self, struct nn_xsource, sockbase)->excl, pipe);
 }
 
-static int sp_xsource_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_in (&sp_cont (self, struct sp_xsource, sockbase)->excl,
+    return nn_excl_in (&nn_cont (self, struct nn_xsource, sockbase)->excl,
         pipe);
 }
 
-static int sp_xsource_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_out (&sp_cont (self, struct sp_xsource, sockbase)->excl,
+    return nn_excl_out (&nn_cont (self, struct nn_xsource, sockbase)->excl,
         pipe);
 }
 
-static int sp_xsource_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return sp_excl_send (&sp_cont (self, struct sp_xsource, sockbase)->excl,
+    return nn_excl_send (&nn_cont (self, struct nn_xsource, sockbase)->excl,
         msg);
 }
 
-static int sp_xsource_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xsource_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return -ENOTSUP;
 }
 
-static int sp_xsource_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xsource_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xsource_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xsource_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_xsource_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_xsource_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-struct sp_sockbase *sp_xsource_create (int fd)
+struct nn_sockbase *nn_xsource_create (int fd)
 {
-    struct sp_xsource *self;
+    struct nn_xsource *self;
 
-    self = sp_alloc (sizeof (struct sp_xsource), "socket (source)");
+    self = nn_alloc (sizeof (struct nn_xsource), "socket (source)");
     alloc_assert (self);
-    sp_xsource_init (self, &sp_xsource_sockbase_vfptr, fd);
+    nn_xsource_init (self, &nn_xsource_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xsource_socktype_struct = {
+static struct nn_socktype nn_xsource_socktype_struct = {
     AF_SP_RAW,
-    SP_SOURCE,
-    sp_xsource_create
+    NN_SOURCE,
+    nn_xsource_create
 };
 
-struct sp_socktype *sp_xsource_socktype = &sp_xsource_socktype_struct;
+struct nn_socktype *nn_xsource_socktype = &nn_xsource_socktype_struct;
 

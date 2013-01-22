@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XPUSH_INCLUDED
-#define SP_XPUSH_INCLUDED
+#ifndef NN_XPUSH_INCLUDED
+#define NN_XPUSH_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_xpush_socktype;
+extern struct nn_socktype *nn_xpush_socktype;
 
-struct sp_sockbase *sp_xpush_create (int fd);
+struct nn_sockbase *nn_xpush_create (int fd);
 
 #endif
 

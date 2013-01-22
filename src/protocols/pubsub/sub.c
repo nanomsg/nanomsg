@@ -23,7 +23,7 @@
 #include "sub.h"
 #include "trie.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../pubsub.h"
 
 #include "../../utils/err.h"
@@ -32,111 +32,111 @@
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
 
-struct sp_sub {
-    struct sp_sockbase sockbase;
-    struct sp_excl excl;
-    struct sp_trie trie;
+struct nn_sub {
+    struct nn_sockbase sockbase;
+    struct nn_excl excl;
+    struct nn_trie trie;
 };
 
 /*  Private functions. */
-static void sp_sub_init (struct sp_sub *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_sub_term (struct sp_sub *self);
+static void nn_sub_init (struct nn_sub *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_sub_term (struct nn_sub *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_sub_destroy (struct sp_sockbase *self);
-static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_sub_destroy (struct nn_sockbase *self);
+static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_sub_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_sub_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_sub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_sub_sockbase_vfptr = {
-    sp_sub_destroy,
-    sp_sub_add,
-    sp_sub_rm,
-    sp_sub_in,
-    sp_sub_out,
-    sp_sub_send,
-    sp_sub_recv,
-    sp_sub_setopt,
-    sp_sub_getopt,
-    sp_sub_sethdr,
-    sp_sub_gethdr
+static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
+    nn_sub_destroy,
+    nn_sub_add,
+    nn_sub_rm,
+    nn_sub_in,
+    nn_sub_out,
+    nn_sub_send,
+    nn_sub_recv,
+    nn_sub_setopt,
+    nn_sub_getopt,
+    nn_sub_sethdr,
+    nn_sub_gethdr
 };
 
-static void sp_sub_init (struct sp_sub *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_sub_init (struct nn_sub *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_excl_init (&self->excl);
-    sp_trie_init (&self->trie);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_excl_init (&self->excl);
+    nn_trie_init (&self->trie);
 }
 
-static void sp_sub_term (struct sp_sub *self)
+static void nn_sub_term (struct nn_sub *self)
 {
-    sp_trie_term (&self->trie);
-    sp_excl_term (&self->excl); 
+    nn_trie_term (&self->trie);
+    nn_excl_term (&self->excl); 
 }
 
-void sp_sub_destroy (struct sp_sockbase *self)
+void nn_sub_destroy (struct nn_sockbase *self)
 {
-    struct sp_sub *sub;
+    struct nn_sub *sub;
 
-    sub = sp_cont (self, struct sp_sub, sockbase);
+    sub = nn_cont (self, struct nn_sub, sockbase);
 
-    sp_sub_term (sub);
-    sp_free (sub);
+    nn_sub_term (sub);
+    nn_free (sub);
 }
 
-static int sp_sub_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_add (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    return nn_excl_add (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static void sp_sub_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    sp_excl_rm (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    nn_excl_rm (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static int sp_sub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_in (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    return nn_excl_in (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static int sp_sub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_out (&sp_cont (self, struct sp_sub, sockbase)->excl, pipe);
+    return nn_excl_out (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static int sp_sub_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return -ENOTSUP;
 }
 
-static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_sub *sub;
+    struct nn_sub *sub;
 
-    sub = sp_cont (self, struct sp_sub, sockbase);
+    sub = nn_cont (self, struct nn_sub, sockbase);
 
     /*  Loop while a matching message is found or when there are no more
         messages to receive. */
     while (1) {
-        rc = sp_excl_recv (&sub->excl, msg);
-        if (sp_slow (rc == -EAGAIN))
+        rc = nn_excl_recv (&sub->excl, msg);
+        if (nn_slow (rc == -EAGAIN))
             return -EAGAIN;
         errnum_assert (rc >= 0, -rc);
-        rc = sp_trie_match (&sub->trie, sp_chunkref_data (&msg->body),
-            sp_chunkref_size (&msg->body));
+        rc = nn_trie_match (&sub->trie, nn_chunkref_data (&msg->body),
+            nn_chunkref_size (&msg->body));
         if (rc == 0)
             continue;
         if (rc == 1)
@@ -145,26 +145,26 @@ static int sp_sub_recv (struct sp_sockbase *self, struct sp_msg *msg)
     }
 }
 
-static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     int rc;
-    struct sp_sub *sub;
+    struct nn_sub *sub;
 
-    sub = sp_cont (self, struct sp_sub, sockbase);
+    sub = nn_cont (self, struct nn_sub, sockbase);
 
-    if (level != SP_SUB)
+    if (level != NN_SUB)
         return -ENOPROTOOPT;
 
-    if (option == SP_SUBSCRIBE) {
-        rc = sp_trie_subscribe (&sub->trie, optval, optvallen);
+    if (option == NN_SUBSCRIBE) {
+        rc = nn_trie_subscribe (&sub->trie, optval, optvallen);
         if (rc >= 0)
             return 0;
         return rc;
     }
 
-    if (option == SP_UNSUBSCRIBE) {
-        rc = sp_trie_unsubscribe (&sub->trie, optval, optvallen);
+    if (option == NN_UNSUBSCRIBE) {
+        rc = nn_trie_unsubscribe (&sub->trie, optval, optvallen);
         if (rc >= 0)
             return 0;
         return rc;
@@ -173,41 +173,41 @@ static int sp_sub_setopt (struct sp_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_sub_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_sub_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_sub_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_sub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-static struct sp_sockbase *sp_sub_create (int fd)
+static struct nn_sockbase *nn_sub_create (int fd)
 {
-    struct sp_sub *self;
+    struct nn_sub *self;
 
-    self = sp_alloc (sizeof (struct sp_sub), "socket (sub)");
+    self = nn_alloc (sizeof (struct nn_sub), "socket (sub)");
     alloc_assert (self);
-    sp_sub_init (self, &sp_sub_sockbase_vfptr, fd);
+    nn_sub_init (self, &nn_sub_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_sub_socktype_struct = {
+static struct nn_socktype nn_sub_socktype_struct = {
     AF_SP,
-    SP_SUB,
-    sp_sub_create
+    NN_SUB,
+    nn_sub_create
 };
 
-struct sp_socktype *sp_sub_socktype = &sp_sub_socktype_struct;
+struct nn_socktype *nn_sub_socktype = &nn_sub_socktype_struct;
 

@@ -27,10 +27,10 @@
 extern "C" {
 #endif
 
-#define SP_FANOUT_ID 5
+#define NN_FANOUT_ID 5
 
-#define SP_PUSH (SP_FANOUT_ID * 16 + 0)
-#define SP_PULL (SP_FANOUT_ID * 16 + 1)
+#define NN_PUSH (NN_FANOUT_ID * 16 + 0)
+#define NN_PULL (NN_FANOUT_ID * 16 + 1)
 
 #ifdef __cplusplus
 }

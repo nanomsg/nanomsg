@@ -24,7 +24,7 @@
 #include "clock.h"
 #include "fast.h"
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 #include "win.h"
 #else
 #include <sys/types.h>
@@ -33,13 +33,13 @@
 
 #include <string.h>
 
-static uint64_t sp_random_state = 0xfa9b23e307cc611fULL;
+static uint64_t nn_random_state = 0xfa9b23e307cc611fULL;
 
-void sp_random_seed ()
+void nn_random_seed ()
 {
     uint64_t pid;
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
     pid = (uint64_t) GetCurrentProcessId ();
 #else
     pid = (uint64_t) getpid ();
@@ -47,10 +47,10 @@ void sp_random_seed ()
 
     /*  The initial state for pseudo-random number generator is computer from
         the exact timestamp and process ID. */
-    sp_random_state ^= pid + sp_clock_timestamp ();
+    nn_random_state ^= pid + nn_clock_timestamp ();
 }
 
-void sp_random_generate (void *buf, size_t len)
+void nn_random_generate (void *buf, size_t len)
 {
     uint8_t *pos;
 
@@ -59,11 +59,11 @@ void sp_random_generate (void *buf, size_t len)
     while (1) {
 
         /*  Generate a pseudo-random integer. */
-        sp_random_state = sp_random_state * 1103515245 + 12345;
+        nn_random_state = nn_random_state * 1103515245 + 12345;
 
         /*  Move the bytes to the output buffer. */
-        memcpy (pos, &sp_random_state, len > 8 ? 8 : len);
-        if (sp_fast (len <= 8))
+        memcpy (pos, &nn_random_state, len > 8 ? 8 : len);
+        if (nn_fast (len <= 8))
             return;
         len -= 8;
         pos += 8;

@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TIMEOUT_INCLUDED
-#define SP_TIMEOUT_INCLUDED
+#ifndef NN_TIMEOUT_INCLUDED
+#define NN_TIMEOUT_INCLUDED
 
 #include "clock.h"
 #include "list.h"
@@ -29,23 +29,23 @@
 /*  This class stores a list of timeouts and reports the next one to expire
     along with the time till it happens. */
 
-struct sp_timeout_hndl {
-    struct sp_list_item list;
+struct nn_timeout_hndl {
+    struct nn_list_item list;
     uint64_t timeout;
 };
 
-struct sp_timeout {
-    struct sp_clock clock;
-    struct sp_list timeouts;
+struct nn_timeout {
+    struct nn_clock clock;
+    struct nn_list timeouts;
 };
 
-void sp_timeout_init (struct sp_timeout *self);
-void sp_timeout_term (struct sp_timeout *self);
-int sp_timeout_add (struct sp_timeout *self, int timeout,
-    struct sp_timeout_hndl *hndl);
-int sp_timeout_rm (struct sp_timeout *self, struct sp_timeout_hndl *hndl);
-int sp_timeout_timeout (struct sp_timeout *self);
-int sp_timeout_event (struct sp_timeout *self, struct sp_timeout_hndl **hndl);
+void nn_timeout_init (struct nn_timeout *self);
+void nn_timeout_term (struct nn_timeout *self);
+int nn_timeout_add (struct nn_timeout *self, int timeout,
+    struct nn_timeout_hndl *hndl);
+int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl);
+int nn_timeout_timeout (struct nn_timeout *self);
+int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl);
 
 #endif
 

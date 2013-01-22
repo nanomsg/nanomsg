@@ -22,11 +22,11 @@
 
 #include "stopwatch.h"
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 
 #include "win.h"
 
-void sp_stopwatch_init (struct sp_stopwatch *self)
+void nn_stopwatch_init (struct nn_stopwatch *self)
 {
     LARGE_INTEGER time;
 
@@ -34,7 +34,7 @@ void sp_stopwatch_init (struct sp_stopwatch *self)
     self->start = (uint64_t) (time.QuadPart);
 }
 
-uint64_t sp_stopwatch_term (struct sp_stopwatch *self)
+uint64_t nn_stopwatch_term (struct nn_stopwatch *self)
 {
     LARGE_INTEGER tps;
     LARGE_INTEGER time;
@@ -50,7 +50,7 @@ uint64_t sp_stopwatch_term (struct sp_stopwatch *self)
 #include <assert.h>
 #include <sys/time.h>
 
-void sp_stopwatch_init (struct sp_stopwatch *self)
+void nn_stopwatch_init (struct nn_stopwatch *self)
 {
     int rc;
     struct timeval tv;
@@ -60,7 +60,7 @@ void sp_stopwatch_init (struct sp_stopwatch *self)
     self->start = (uint64_t) (((uint64_t) tv.tv_sec) * 1000000 + tv.tv_usec);
 }
 
-uint64_t sp_stopwatch_term (struct sp_stopwatch *self)
+uint64_t nn_stopwatch_term (struct nn_stopwatch *self)
 {
     int rc;
     struct timeval tv;

@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../sp.h"
+#include "../nn.h"
 #include "../transport.h"
 #include "../protocol.h"
 
@@ -67,136 +67,136 @@
 #include <stddef.h>
 #include <string.h>
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #include "../utils/win.h"
 #endif
 
 /*  Max number of concurrent SP sockets. */
-#define SP_MAX_SOCKETS 512
+#define NN_MAX_SOCKETS 512
 
 /*  This check is performed at the beginning of each socket operation to make
     sure that the library was initialised and the socket actually exists. */
-#define SP_BASIC_CHECKS \
-    if (sp_slow (!self.socks)) {\
+#define NN_BASIC_CHECKS \
+    if (nn_slow (!self.socks)) {\
         errno = EFAULT;\
         return -1;\
     }\
-    if (sp_slow (!self.socks [s])) {\
+    if (nn_slow (!self.socks [s])) {\
         errno = EBADF;\
         return -1;\
     }
 
-struct sp_ctx {
+struct nn_ctx {
 
     /*  Synchronisation of global state of the library. */
-    struct sp_mutex sync;
+    struct nn_mutex sync;
 
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. */
-    struct sp_sock **socks;
+    struct nn_sock **socks;
     size_t max_socks;
 
     /*  Number of actual open sockets in the socket table. */
     size_t nsocks;
 
-    /*  1, if sp_term() was already called, 0 otherwise. */
+    /*  1, if nn_term() was already called, 0 otherwise. */
     int zombie;
 
     /*  List of all available transports. The access to this list is not
         synchronised. We assume that it never changes after the library was
         initialised. */
-    struct sp_list transports;
+    struct nn_list transports;
 
     /*  List of all available socket types. */
-    struct sp_list socktypes;
+    struct nn_list socktypes;
 
-    /*  Condition variable used by sp_term() to wait till all the sockets are
+    /*  Condition variable used by nn_term() to wait till all the sockets are
         closed. */
-    struct sp_cond termcond;
+    struct nn_cond termcond;
 };
 
-/*  Number of times sp_init() was called without corresponding sp_term().
-    This variable is synchronised using the global lock (sp_glock). */
-int sp_ctx_refcount = 0;
+/*  Number of times nn_init() was called without corresponding nn_term().
+    This variable is synchronised using the global lock (nn_glock). */
+int nn_ctx_refcount = 0;
 
 /*  Singleton object containing the global state of the library. */
-static struct sp_ctx self = {0};
+static struct nn_ctx self = {0};
 
 /*  Transport-related private functions. */
-static void sp_ctx_add_transport (struct sp_transport *transport);
-static void sp_ctx_add_socktype (struct sp_socktype *socktype);
+static void nn_ctx_add_transport (struct nn_transport *transport);
+static void nn_ctx_add_socktype (struct nn_socktype *socktype);
 
-/*  Private function that unifies sp_bind and sp_connect functionality.
+/*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
-static int sp_ctx_create_ep (int fd, const char *addr, int bind);
+static int nn_ctx_create_ep (int fd, const char *addr, int bind);
 
-void sp_version (int *major, int *minor, int *patch)
+void nn_version (int *major, int *minor, int *patch)
 {
     if (major)
-        *major = SP_VERSION_MAJOR;
+        *major = NN_VERSION_MAJOR;
     if (minor)
-        *minor = SP_VERSION_MINOR;
+        *minor = NN_VERSION_MINOR;
     if (patch)
-        *patch = SP_VERSION_PATCH;
+        *patch = NN_VERSION_PATCH;
 }
 
-int sp_errno (void)
+int nn_errno (void)
 {
-    return sp_err_errno ();
+    return nn_err_errno ();
 }
 
-const char *sp_strerror (int errnum)
+const char *nn_strerror (int errnum)
 {
-    return sp_err_strerror (errnum);
+    return nn_err_strerror (errnum);
 }
 
-struct sp_cmsghdr *sp_cmsg_nexthdr (const struct sp_msghdr *mhdr,
-    const struct sp_cmsghdr *cmsg)
+struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg)
 {
     size_t sz;
 
-    sz = sizeof (struct sp_cmsghdr) + cmsg->cmsg_len;
+    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
     if (((uint8_t*) cmsg) - ((uint8_t*) mhdr->msg_control) + sz >=
            mhdr->msg_controllen)
         return NULL;
-    return (struct sp_cmsghdr*) (((uint8_t*) cmsg) + sz);
+    return (struct nn_cmsghdr*) (((uint8_t*) cmsg) + sz);
 }
 
-int sp_init (void)
+int nn_init (void)
 {
     int i;
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
     WSADATA data;
     int rc;
 #endif
 
-    sp_glock_lock ();
+    nn_glock_lock ();
 
     /*  If the library is already initialised, do nothing, just increment
         the reference count. */
-    ++sp_ctx_refcount;
-    if (sp_ctx_refcount > 1) {
-        sp_glock_unlock ();
+    ++nn_ctx_refcount;
+    if (nn_ctx_refcount > 1) {
+        nn_glock_unlock ();
         return 0;
     }
 
     /*  On Windows, initialise the socket library. */
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
     rc = WSAStartup (MAKEWORD (2, 2), &data);
-    sp_assert (rc == 0);
-    sp_assert (LOBYTE (data.wVersion) == 2 &&
+    nn_assert (rc == 0);
+    nn_assert (LOBYTE (data.wVersion) == 2 &&
         HIBYTE (data.wVersion) == 2);
 #endif
 
     /*  Initialise the memory allocation subsystem. */
-    sp_alloc_init ();
+    nn_alloc_init ();
 
     /*  Seed the pseudo-random number generator. */
-    sp_random_seed ();
+    nn_random_seed ();
 
     /*  Allocate the global table of SP sockets. */
-    self.max_socks = SP_MAX_SOCKETS;
-    self.socks = sp_alloc (sizeof (struct sp_sock*) * self.max_socks,
+    self.max_socks = NN_MAX_SOCKETS;
+    self.socks = nn_alloc (sizeof (struct nn_sock*) * self.max_socks,
         "socket table");
     alloc_assert (self.socks);
     for (i = 0; i != self.max_socks; ++i)
@@ -205,130 +205,130 @@ int sp_init (void)
     self.zombie = 0;
 
     /*  Initialise other parts of the global state. */
-    sp_mutex_init (&self.sync);
-    sp_list_init (&self.transports);
-    sp_list_init (&self.socktypes);
-    sp_cond_init (&self.termcond);
+    nn_mutex_init (&self.sync);
+    nn_list_init (&self.transports);
+    nn_list_init (&self.socktypes);
+    nn_cond_init (&self.termcond);
 
     /*  Plug in individual transports. */
-    sp_ctx_add_transport (sp_inproc);
-#if !defined SP_HAVE_WINDOWS
-    sp_ctx_add_transport (sp_ipc);
+    nn_ctx_add_transport (nn_inproc);
+#if !defined NN_HAVE_WINDOWS
+    nn_ctx_add_transport (nn_ipc);
 #endif
-    sp_ctx_add_transport (sp_tcp);
+    nn_ctx_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
-    sp_ctx_add_socktype (sp_pair_socktype);
-    sp_ctx_add_socktype (sp_xpair_socktype);
-    sp_ctx_add_socktype (sp_pub_socktype);
-    sp_ctx_add_socktype (sp_sub_socktype);
-    sp_ctx_add_socktype (sp_rep_socktype);
-    sp_ctx_add_socktype (sp_req_socktype);
-    sp_ctx_add_socktype (sp_xrep_socktype);
-    sp_ctx_add_socktype (sp_xreq_socktype);
-    sp_ctx_add_socktype (sp_sink_socktype);
-    sp_ctx_add_socktype (sp_source_socktype);
-    sp_ctx_add_socktype (sp_xsink_socktype);
-    sp_ctx_add_socktype (sp_xsource_socktype);
-    sp_ctx_add_socktype (sp_push_socktype);
-    sp_ctx_add_socktype (sp_pull_socktype);
-    sp_ctx_add_socktype (sp_xpull_socktype);
-    sp_ctx_add_socktype (sp_respondent_socktype);
-    sp_ctx_add_socktype (sp_surveyor_socktype);
-    sp_ctx_add_socktype (sp_xrespondent_socktype);
-    sp_ctx_add_socktype (sp_xsurveyor_socktype);
+    nn_ctx_add_socktype (nn_pair_socktype);
+    nn_ctx_add_socktype (nn_xpair_socktype);
+    nn_ctx_add_socktype (nn_pub_socktype);
+    nn_ctx_add_socktype (nn_sub_socktype);
+    nn_ctx_add_socktype (nn_rep_socktype);
+    nn_ctx_add_socktype (nn_req_socktype);
+    nn_ctx_add_socktype (nn_xrep_socktype);
+    nn_ctx_add_socktype (nn_xreq_socktype);
+    nn_ctx_add_socktype (nn_sink_socktype);
+    nn_ctx_add_socktype (nn_source_socktype);
+    nn_ctx_add_socktype (nn_xsink_socktype);
+    nn_ctx_add_socktype (nn_xsource_socktype);
+    nn_ctx_add_socktype (nn_push_socktype);
+    nn_ctx_add_socktype (nn_pull_socktype);
+    nn_ctx_add_socktype (nn_xpull_socktype);
+    nn_ctx_add_socktype (nn_respondent_socktype);
+    nn_ctx_add_socktype (nn_surveyor_socktype);
+    nn_ctx_add_socktype (nn_xrespondent_socktype);
+    nn_ctx_add_socktype (nn_xsurveyor_socktype);
 
-    sp_glock_unlock ();
+    nn_glock_unlock ();
 
     return 0;
 }
 
-int sp_term (void)
+int nn_term (void)
 {
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
     int rc;
 #endif
     int i;
 
-    sp_glock_lock ();
+    nn_glock_lock ();
 
     /*  If there are still references to the library, do nothing, just
         decrement the reference count. */
-    --sp_ctx_refcount;
-    if (sp_ctx_refcount) {
-        sp_glock_unlock ();
+    --nn_ctx_refcount;
+    if (nn_ctx_refcount) {
+        nn_glock_unlock ();
         return 0;
     }
 
     /*  Notify all the open sockets about the process shutdown and wait till
         all of them are closed. */
-    sp_mutex_lock (&self.sync);
+    nn_mutex_lock (&self.sync);
     if (self.nsocks) {
         for (i = 0; i != self.max_socks; ++i)
             if (self.socks [i])
-                sp_sock_zombify (self.socks [i]);
+                nn_sock_zombify (self.socks [i]);
         self.zombie = 1;
-        sp_cond_wait (&self.termcond, &self.sync);
+        nn_cond_wait (&self.termcond, &self.sync);
     }
-    sp_mutex_unlock (&self.sync);
+    nn_mutex_unlock (&self.sync);
 
     /*  Final deallocation of the global resources. */
-    sp_cond_term (&self.termcond);
-    sp_list_term (&self.socktypes);
-    sp_list_term (&self.transports);
-    sp_mutex_term (&self.sync);
-    sp_free (self.socks);
+    nn_cond_term (&self.termcond);
+    nn_list_term (&self.socktypes);
+    nn_list_term (&self.transports);
+    nn_mutex_term (&self.sync);
+    nn_free (self.socks);
     self.socks = NULL;
 
     /*  Shut down the memory allocation subsystem. */
-    sp_alloc_term ();
+    nn_alloc_term ();
 
     /*  On Windows, uninitialise the socket library. */
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
     rc = WSACleanup ();
-    sp_assert (rc == 0);
+    nn_assert (rc == 0);
 #endif
 
-    sp_glock_unlock ();
+    nn_glock_unlock ();
 
     return 0;
 }
 
-void *sp_allocmsg (size_t size, int type)
+void *nn_allocmsg (size_t size, int type)
 {
-    struct sp_chunk *ch;
+    struct nn_chunk *ch;
 
-    ch = sp_chunk_alloc (size, type);
-    if (sp_slow (!ch))
+    ch = nn_chunk_alloc (size, type);
+    if (nn_slow (!ch))
         return NULL;
     return (void*) (ch + 1);
 }
 
-int sp_freemsg (void *msg)
+int nn_freemsg (void *msg)
 {
-    sp_chunk_free (((struct sp_chunk*) msg) - 1);
+    nn_chunk_free (((struct nn_chunk*) msg) - 1);
     return 0;
 }
 
-int sp_socket (int domain, int protocol)
+int nn_socket (int domain, int protocol)
 {
     int s;
-    struct sp_list_item *it;
-    struct sp_socktype *socktype;
+    struct nn_list_item *it;
+    struct nn_socktype *socktype;
 
     /*  Check whether library was initialised. */
-    if (sp_slow (!self.socks)) {
+    if (nn_slow (!self.socks)) {
         errno = EFAULT;
         return -1;
     }
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
-    if (sp_slow (domain != AF_SP && domain != AF_SP_RAW)) {
+    if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
         errno = -EAFNOSUPPORT;
         return -1;
     }
 
-    sp_mutex_lock (&self.sync);
+    nn_mutex_lock (&self.sync);
 
     /*  Find an empty socket slot. */
     /*  TODO: This is O(n) operation! Linked list of empty slots should be
@@ -338,63 +338,63 @@ int sp_socket (int domain, int protocol)
             break;
 
     /*  TODO: Auto-resize the array here! */
-    if (sp_slow (s == self.max_socks)) {
-        sp_mutex_unlock (&self.sync);
+    if (nn_slow (s == self.max_socks)) {
+        nn_mutex_unlock (&self.sync);
         errno = EMFILE;
         return -1;
     }
 
-    for (it = sp_list_begin (&self.socktypes);
-          it != sp_list_end (&self.socktypes);
-          it = sp_list_next (&self.socktypes, it)) {
-        socktype = sp_cont (it, struct sp_socktype, list);
+    for (it = nn_list_begin (&self.socktypes);
+          it != nn_list_end (&self.socktypes);
+          it = nn_list_next (&self.socktypes, it)) {
+        socktype = nn_cont (it, struct nn_socktype, list);
         if (socktype->domain == domain && socktype->protocol == protocol) {
-            self.socks [s] = (struct sp_sock*) socktype->create (s);
+            self.socks [s] = (struct nn_sock*) socktype->create (s);
             ++self.nsocks;
-            sp_mutex_unlock (&self.sync);
+            nn_mutex_unlock (&self.sync);
             return s;
         }
     }
 
     /*  Specified socket type wasn't found. */
-    sp_mutex_unlock (&self.sync);
+    nn_mutex_unlock (&self.sync);
     errno = EINVAL;
     return -1;
 }
 
-int sp_close (int s)
+int nn_close (int s)
 {
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
     /*  Deallocate the socket object. */
-    sp_sock_term (self.socks [s]);
+    nn_sock_term (self.socks [s]);
 
-    /*  If there's sp_term() waiting for all sockets being closed and this is
+    /*  If there's nn_term() waiting for all sockets being closed and this is
         the last open socket let library termination proceed. */
-    sp_mutex_lock (&self.sync);
+    nn_mutex_lock (&self.sync);
     self.socks [s] = NULL;
     --self.nsocks;
     if (self.zombie && self.nsocks == 0)
-        sp_cond_post (&self.termcond);
-    sp_mutex_unlock (&self.sync);
+        nn_cond_post (&self.termcond);
+    nn_mutex_unlock (&self.sync);
 
     return 0;
 }
 
-int sp_setsockopt (int s, int level, int option, const void *optval,
+int nn_setsockopt (int s, int level, int option, const void *optval,
     size_t optvallen)
 {
     int rc;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!optval && optvallen)) {
+    if (nn_slow (!optval && optvallen)) {
         errno = EFAULT;
         return -1;
     }
 
-    rc = sp_sock_setopt (self.socks [s], level, option, optval, optvallen);
-    if (sp_slow (rc < 0)) {
+    rc = nn_sock_setopt (self.socks [s], level, option, optval, optvallen);
+    if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
@@ -403,20 +403,20 @@ int sp_setsockopt (int s, int level, int option, const void *optval,
     return 0;
 }
  
-int sp_getsockopt (int s, int level, int option, void *optval,
+int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen)
 {
     int rc;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!optval && optvallen)) {
+    if (nn_slow (!optval && optvallen)) {
         errno = EFAULT;
         return -1;
     }
 
-    rc = sp_sock_getopt (self.socks [s], level, option, optval, optvallen, 0);
-    if (sp_slow (rc < 0)) {
+    rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen, 0);
+    if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
@@ -425,13 +425,13 @@ int sp_getsockopt (int s, int level, int option, void *optval,
     return 0;
 }
 
-int sp_bind (int s, const char *addr)
+int nn_bind (int s, const char *addr)
 {
     int rc;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    rc = sp_ctx_create_ep (s, addr, 1);
+    rc = nn_ctx_create_ep (s, addr, 1);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -440,13 +440,13 @@ int sp_bind (int s, const char *addr)
     return rc;
 }
 
-int sp_connect (int s, const char *addr)
+int nn_connect (int s, const char *addr)
 {
     int rc;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    rc = sp_ctx_create_ep (s, addr, 0);
+    rc = nn_ctx_create_ep (s, addr, 0);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -455,55 +455,55 @@ int sp_connect (int s, const char *addr)
     return rc;
 }
 
-int sp_shutdown (int s, int how)
+int nn_shutdown (int s, int how)
 {
     int rc;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    rc = sp_sock_shutdown (self.socks [s], how);
-    if (sp_slow (rc < 0)) {
+    rc = nn_sock_shutdown (self.socks [s], how);
+    if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
-    sp_assert (rc == 0);
+    nn_assert (rc == 0);
 
     return 0;
 }
 
-int sp_send (int s, const void *buf, size_t len, int flags)
+int nn_send (int s, const void *buf, size_t len, int flags)
 {
     int rc;
-    struct sp_msg msg;
-    struct sp_chunk *ch;
+    struct nn_msg msg;
+    struct nn_chunk *ch;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!buf && len)) {
+    if (nn_slow (!buf && len)) {
         errno = EFAULT;
         return -1;
     }
 
     /*  Create a message object. */
-    if (len == SP_MSG) {
-        ch = ((struct sp_chunk*) buf) - 1;
-        rc = sp_chunk_check (ch);
-        if (sp_slow (rc < 0)) {
+    if (len == NN_MSG) {
+        ch = ((struct nn_chunk*) buf) - 1;
+        rc = nn_chunk_check (ch);
+        if (nn_slow (rc < 0)) {
             errno = -rc;
             return -1;
         }
-        len = sp_chunk_size (ch);
-        sp_msg_init_chunk (&msg, ch);
+        len = nn_chunk_size (ch);
+        nn_msg_init_chunk (&msg, ch);
     }
     else {
-        sp_msg_init (&msg, len);
-        memcpy (sp_chunkref_data (&msg.body), buf, len);
+        nn_msg_init (&msg, len);
+        memcpy (nn_chunkref_data (&msg.body), buf, len);
     }
 
     /*  Send it further down the stack. */
-    rc = sp_sock_send (self.socks [s], &msg, flags);
-    if (sp_slow (rc < 0)) {
-        sp_msg_term (&msg);
+    rc = nn_sock_send (self.socks [s], &msg, flags);
+    if (nn_slow (rc < 0)) {
+        nn_msg_term (&msg);
         errno = -rc;
         return -1;
     }
@@ -511,65 +511,65 @@ int sp_send (int s, const void *buf, size_t len, int flags)
     return (int) len;
 }
 
-int sp_recv (int s, void *buf, size_t len, int flags)
+int nn_recv (int s, void *buf, size_t len, int flags)
 {
     int rc;
-    struct sp_msg msg;
+    struct nn_msg msg;
     size_t sz;
-    struct sp_chunk *ch;
+    struct nn_chunk *ch;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!buf && len)) {
+    if (nn_slow (!buf && len)) {
         errno = EFAULT;
         return -1;
     }
 
-    rc = sp_sock_recv (self.socks [s], &msg, flags);
-    if (sp_slow (rc < 0)) {
+    rc = nn_sock_recv (self.socks [s], &msg, flags);
+    if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
 
-    if (len == SP_MSG) {
-        ch = sp_chunkref_getchunk (&msg.body);
+    if (len == NN_MSG) {
+        ch = nn_chunkref_getchunk (&msg.body);
         *(void**) buf = (void*) (ch + 1);
-        sz = sp_chunk_size (ch);
+        sz = nn_chunk_size (ch);
     }
     else {
-        sz = sp_chunkref_size (&msg.body);
-        memcpy (buf, sp_chunkref_data (&msg.body), len < sz ? len : sz);
+        sz = nn_chunkref_size (&msg.body);
+        memcpy (buf, nn_chunkref_data (&msg.body), len < sz ? len : sz);
     }
-    sp_msg_term (&msg);
+    nn_msg_term (&msg);
 
     return (int) sz;
 }
 
-int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
+int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
 {
     int rc;
     size_t sz;
     int i;
-    struct sp_iovec *iov;
-    struct sp_msg msg;
-    struct sp_chunk *ch;
+    struct nn_iovec *iov;
+    struct nn_msg msg;
+    struct nn_chunk *ch;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!msghdr)) {
+    if (nn_slow (!msghdr)) {
         errno = EINVAL;
         return -1;
     }
 
-    if (sp_slow (msghdr->msg_iovlen < 0)) {
+    if (nn_slow (msghdr->msg_iovlen < 0)) {
         errno = EMSGSIZE;
         return -1;
     }
 
-    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == SP_MSG) {
-        ch = ((struct sp_chunk*) msghdr->msg_iov [0].iov_base) - 1;
-        sz = sp_chunk_size (ch);
-        sp_msg_init_chunk (&msg, ch);
+    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
+        ch = ((struct nn_chunk*) msghdr->msg_iov [0].iov_base) - 1;
+        sz = nn_chunk_size (ch);
+        nn_msg_init_chunk (&msg, ch);
     }
     else {
 
@@ -577,15 +577,15 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
         sz = 0;
         for (i = 0; i != msghdr->msg_iovlen; ++i) {
             iov = &msghdr->msg_iov [i];
-            if (sp_slow (iov->iov_len == SP_MSG)) {
+            if (nn_slow (iov->iov_len == NN_MSG)) {
                errno = EINVAL;
                return -1;
             }
-            if (sp_slow (!iov->iov_base && iov->iov_len)) {
+            if (nn_slow (!iov->iov_base && iov->iov_len)) {
                 errno = EFAULT;
                 return -1;
             }
-            if (sp_slow (sz + iov->iov_len < sz)) {
+            if (nn_slow (sz + iov->iov_len < sz)) {
                 errno = EINVAL;
                 return -1;
             }
@@ -593,11 +593,11 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
         }
 
         /*  Create a message object from the supplied scatter array. */
-        sp_msg_init (&msg, sz);
+        nn_msg_init (&msg, sz);
         sz = 0;
         for (i = 0; i != msghdr->msg_iovlen; ++i) {
             iov = &msghdr->msg_iov [i];
-            memcpy (((uint8_t*) sp_chunkref_data (&msg.body)) + sz,
+            memcpy (((uint8_t*) nn_chunkref_data (&msg.body)) + sz,
                 iov->iov_base, iov->iov_len);
             sz += iov->iov_len;
         }
@@ -605,19 +605,19 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
 
     /*  Add ancillary data to the message. */
     if (msghdr->msg_control) {
-        rc = sp_sock_sethdr (self.socks [s], &msg,
+        rc = nn_sock_sethdr (self.socks [s], &msg,
             msghdr->msg_control, msghdr->msg_controllen);
-        if (sp_slow (rc < 0)) {
-            sp_msg_term (&msg);
+        if (nn_slow (rc < 0)) {
+            nn_msg_term (&msg);
             errno = -rc;
             return -1;
         }
     }
 
     /*  Send it further down the stack. */
-    rc = sp_sock_send (self.socks [s], &msg, flags);
-    if (sp_slow (rc < 0)) {
-        sp_msg_term (&msg);
+    rc = nn_sock_send (self.socks [s], &msg, flags);
+    if (nn_slow (rc < 0)) {
+        nn_msg_term (&msg);
         errno = -rc;
         return -1;
     }
@@ -625,49 +625,49 @@ int sp_sendmsg (int s, const struct sp_msghdr *msghdr, int flags)
     return (int) sz;
 }
 
-int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
+int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 {
     int rc;
-    struct sp_msg msg;
+    struct nn_msg msg;
     uint8_t *data;
     size_t sz;
     int i;
-    struct sp_iovec *iov;
-    struct sp_chunk *ch;
+    struct nn_iovec *iov;
+    struct nn_chunk *ch;
 
-    SP_BASIC_CHECKS;
+    NN_BASIC_CHECKS;
 
-    if (sp_slow (!msghdr)) {
+    if (nn_slow (!msghdr)) {
         errno = EINVAL;
         return -1;
     }
 
-    if (sp_slow (msghdr->msg_iovlen < 0)) {
+    if (nn_slow (msghdr->msg_iovlen < 0)) {
         errno = EMSGSIZE;
         return -1;
     }
 
     /*  Get a message. */
-    rc = sp_sock_recv (self.socks [s], &msg, flags);
-    if (sp_slow (rc < 0)) {
+    rc = nn_sock_recv (self.socks [s], &msg, flags);
+    if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
     }
 
-    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == SP_MSG) {
-        ch = sp_chunkref_getchunk (&msg.body);
+    if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
+        ch = nn_chunkref_getchunk (&msg.body);
         *(void**) (msghdr->msg_iov [0].iov_base) = (void*) (ch + 1);
-        sz = sp_chunk_size (ch);
+        sz = nn_chunk_size (ch);
     }
     else {
 
         /*  Copy the message content into the supplied gather array. */
-        data = sp_chunkref_data (&msg.body);
-        sz = sp_chunkref_size (&msg.body);
+        data = nn_chunkref_data (&msg.body);
+        sz = nn_chunkref_size (&msg.body);
         for (i = 0; i != msghdr->msg_iovlen; ++i) {
             iov = &msghdr->msg_iov [i];
-            if (sp_slow (iov->iov_len == SP_MSG)) {
-                sp_msg_term (&msg);
+            if (nn_slow (iov->iov_len == NN_MSG)) {
+                nn_msg_term (&msg);
                 errno = EINVAL;
                 return -1;
             }
@@ -679,50 +679,50 @@ int sp_recvmsg (int s, struct sp_msghdr *msghdr, int flags)
             data += iov->iov_len;
             sz -= iov->iov_len;
         }
-        sz = sp_chunkref_size (&msg.body);
+        sz = nn_chunkref_size (&msg.body);
     }
 
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
-        rc = sp_sock_gethdr (self.socks [s], &msg,
+        rc = nn_sock_gethdr (self.socks [s], &msg,
             msghdr->msg_control, &msghdr->msg_controllen);
-        if (sp_slow (rc < 0)) {
-            sp_msg_term (&msg);
+        if (nn_slow (rc < 0)) {
+            nn_msg_term (&msg);
             errno = -rc;
             return -1;
         }
     }
 
-    sp_msg_term (&msg);
+    nn_msg_term (&msg);
 
     return (int) sz;
 }
 
-static void sp_ctx_add_transport (struct sp_transport *transport)
+static void nn_ctx_add_transport (struct nn_transport *transport)
 {
     transport->init ();
-    sp_list_insert (&self.transports, &transport->list,
-        sp_list_end (&self.transports));
+    nn_list_insert (&self.transports, &transport->list,
+        nn_list_end (&self.transports));
 }
 
-static void sp_ctx_add_socktype (struct sp_socktype *socktype)
+static void nn_ctx_add_socktype (struct nn_socktype *socktype)
 {
-    sp_list_insert (&self.socktypes, &socktype->list,
-        sp_list_end (&self.socktypes));
+    nn_list_insert (&self.socktypes, &socktype->list,
+        nn_list_end (&self.socktypes));
 }
 
-static int sp_ctx_create_ep (int fd, const char *addr, int bind)
+static int nn_ctx_create_ep (int fd, const char *addr, int bind)
 {
     const char *proto;
     const char *delim;
     size_t protosz;
-    struct sp_transport *tp;
-    struct sp_list_item *it;
+    struct nn_transport *tp;
+    struct nn_list_item *it;
 
     /*  Check whether address is valid. */
     if (!addr)
         return -EINVAL;
-    if (strlen (addr) >= SP_SOCKADDR_MAX)
+    if (strlen (addr) >= NN_SOCKADDR_MAX)
         return -ENAMETOOLONG;
 
     /*  Separate the protocol and the actual address. */
@@ -737,17 +737,17 @@ static int sp_ctx_create_ep (int fd, const char *addr, int bind)
 
     /*  Find the specified protocol. */
     tp = NULL;
-    sp_mutex_lock (&self.sync);
-    for (it = sp_list_begin (&self.transports);
-          it != sp_list_end (&self.transports);
-          it = sp_list_next (&self.transports, it)) {
-        tp = sp_cont (it, struct sp_transport, list);
+    nn_mutex_lock (&self.sync);
+    for (it = nn_list_begin (&self.transports);
+          it != nn_list_end (&self.transports);
+          it = nn_list_next (&self.transports, it)) {
+        tp = nn_cont (it, struct nn_transport, list);
         if (strlen (tp->name ()) == protosz &&
               memcmp (tp->name (), proto, protosz) == 0)
             break;
         tp = NULL;
     }
-    sp_mutex_unlock (&self.sync);
+    nn_mutex_unlock (&self.sync);
 
     /*  The protocol specified doesn't match any known protocol. */
     if (!tp)
@@ -755,7 +755,7 @@ static int sp_ctx_create_ep (int fd, const char *addr, int bind)
 
     /*  Ask socket to create the endpoint. Pass it the class factory
         function. */
-    return sp_sock_create_ep (self.socks [fd], addr,
+    return nn_sock_create_ep (self.socks [fd], addr,
         bind ? tp->bind : tp->connect);
 }
 

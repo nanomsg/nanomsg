@@ -23,31 +23,31 @@
 #include "mutex.h"
 #include "err.h"
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 
-void sp_mutex_init (struct sp_mutex *self)
+void nn_mutex_init (struct nn_mutex *self)
 {
     InitializeCriticalSection (&self->mutex);
 }
 
-void sp_mutex_term (struct sp_mutex *self)
+void nn_mutex_term (struct nn_mutex *self)
 {
     DeleteCriticalSection (&self->mutex);
 }
 
-void sp_mutex_lock (struct sp_mutex *self)
+void nn_mutex_lock (struct nn_mutex *self)
 {
     EnterCriticalSection (&self->mutex);
 }
 
-void sp_mutex_unlock (struct sp_mutex *self)
+void nn_mutex_unlock (struct nn_mutex *self)
 {
     LeaveCriticalSection (&self->mutex);
 }
 
 #else
 
-void sp_mutex_init (struct sp_mutex *self)
+void nn_mutex_init (struct nn_mutex *self)
 {
     int rc;
 
@@ -55,7 +55,7 @@ void sp_mutex_init (struct sp_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void sp_mutex_term (struct sp_mutex *self)
+void nn_mutex_term (struct nn_mutex *self)
 {
     int rc;
 
@@ -63,7 +63,7 @@ void sp_mutex_term (struct sp_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void sp_mutex_lock (struct sp_mutex *self)
+void nn_mutex_lock (struct nn_mutex *self)
 {
     int rc;
 
@@ -71,7 +71,7 @@ void sp_mutex_lock (struct sp_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void sp_mutex_unlock (struct sp_mutex *self)
+void nn_mutex_unlock (struct nn_mutex *self)
 {
     int rc;
 

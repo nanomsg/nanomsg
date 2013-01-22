@@ -23,7 +23,7 @@
 /*  Asynchronous I/O subsystem is a lot of code that is very different
     on POSIX platforms and on Windows platform. Thus, to maintian readability
     the two implementations are placed into two separate .inc files. */
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #include "aio_win.inc"
 #else
 #include "aio_posix.inc"

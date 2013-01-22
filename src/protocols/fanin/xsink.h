@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XSINK_INCLUDED
-#define SP_XSINK_INCLUDED
+#ifndef NN_XSINK_INCLUDED
+#define NN_XSINK_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_xsink_socktype;
+extern struct nn_socktype *nn_xsink_socktype;
 
-struct sp_sockbase *sp_xsink_create (int fd);
+struct nn_sockbase *nn_xsink_create (int fd);
 
 #endif
 

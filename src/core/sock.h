@@ -20,60 +20,60 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SOCK_INCLUDED
-#define SP_SOCK_INCLUDED
+#ifndef NN_SOCK_INCLUDED
+#define NN_SOCK_INCLUDED
 
-struct sp_sock;
-struct sp_pipe;
-struct sp_msg;
-struct sp_cp;
+struct nn_sock;
+struct nn_pipe;
+struct nn_msg;
+struct nn_cp;
 
-/*  Called by sp_term() to let the socket know about the process shutdown. */
-void sp_sock_zombify (struct sp_sock *self);
+/*  Called by nn_term() to let the socket know about the process shutdown. */
+void nn_sock_zombify (struct nn_sock *self);
 
-/*  Called by sp_close(). */
-void sp_sock_term (struct sp_sock *self);
+/*  Called by nn_close(). */
+void nn_sock_term (struct nn_sock *self);
 
 /*  Returns default completion port associated with the socket. */
-struct sp_cp *sp_sock_getcp (struct sp_sock *self);
+struct nn_cp *nn_sock_getcp (struct nn_sock *self);
 
 /*  Add new endpoint to the socket. */
-int sp_sock_create_ep (struct sp_sock *self, const char *addr,
-    int (*factory) (const char *addr, void *hint, struct sp_epbase **ep));
+int nn_sock_create_ep (struct nn_sock *self, const char *addr,
+    int (*factory) (const char *addr, void *hint, struct nn_epbase **ep));
 
 /*  Remove the endpoint with the specified ID from the socket. */
-int sp_sock_shutdown (struct sp_sock *self, int eid);
+int nn_sock_shutdown (struct nn_sock *self, int eid);
 
 /*  used by endpoint to notify the socket that it has terminated. */
-void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep);
+void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep);
 
 /*  Send a message to the socket. */
-int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags);
+int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags);
 
 /*  Receive a message from the socket. */
-int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags);
+int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags);
 
 /*  Set a socket option. */
-int sp_sock_setopt (struct sp_sock *self, int level, int option,
+int nn_sock_setopt (struct nn_sock *self, int level, int option,
     const void *optval, size_t optvallen); 
 
 /*  Retrieve a socket option. 'internal' is set to 1 when called from within
-    nanomsg rather than from the API (sp_getsockopt). */
-int sp_sock_getopt (struct sp_sock *self, int level, int option,
+    nanomsg rather than from the API (nn_getsockopt). */
+int nn_sock_getopt (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen, int internal);
 
 /*  Set header of the message. */
-int sp_sock_sethdr (struct sp_sock *self, struct sp_msg *msg,
+int nn_sock_sethdr (struct nn_sock *self, struct nn_msg *msg,
     const void *hdr, size_t hdrlen);
 
 /*  Retrieve header of the message. */
-int sp_sock_gethdr (struct sp_sock *self, struct sp_msg *msg,
+int nn_sock_gethdr (struct nn_sock *self, struct nn_msg *msg,
     void *hdr, size_t *hdrlen);
 
-int sp_sock_fd (struct sp_sock *self);
-int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe);
-void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe);
-void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe);
-void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe);
+int nn_sock_fd (struct nn_sock *self);
+int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
+void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
+void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe);
+void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe);
 
 #endif

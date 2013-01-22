@@ -21,11 +21,11 @@
     IN THE SOFTWARE.
 */
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #include "win.h"
-#elif defined SP_HAVE_OSX
+#elif defined NN_HAVE_OSX
 #include <mach/mach_time.h>
-#elif defined SP_HAVE_CLOCK_MONOTONIC || defined SP_HAVE_GETHRTIME
+#elif defined NN_HAVE_CLOCK_MONOTONIC || defined NN_HAVE_GETHRTIME
 #include <time.h>
 #else
 #include <sys/time.h>
@@ -37,13 +37,13 @@
 
 /* 1 millisecond expressed in CPU ticks. The value is chosen is such a way that
    it works pretty well for CPU frequencies above 500MHz. */
-#define SP_CLOCK_PRECISION 1000000
+#define NN_CLOCK_PRECISION 1000000
 
-#if defined SP_HAVE_OSX
-static mach_timebase_info_data_t sp_clock_timebase_info = {0};
+#if defined NN_HAVE_OSX
+static mach_timebase_info_data_t nn_clock_timebase_info = {0};
 #endif
 
-static uint64_t sp_clock_rdtsc ()
+static uint64_t nn_clock_rdtsc ()
 {
 #if (defined _MSC_VER && (defined _M_IX86 || defined _M_X64))
     return __rdtsc ();
@@ -67,9 +67,9 @@ static uint64_t sp_clock_rdtsc ()
 #endif
 }
 
-static uint64_t sp_clock_time ()
+static uint64_t nn_clock_time ()
 {
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 
     LARGE_INTEGER tps;
     LARGE_INTEGER time;
@@ -80,19 +80,19 @@ static uint64_t sp_clock_time ()
     tpms = (double) (tps.QuadPart / 1000);     
     return (uint64_t) (time.QuadPart / tpms);
 
-#elif defined SP_HAVE_OSX
+#elif defined NN_HAVE_OSX
 
     uint64_t ticks;
 
     /*  If the global timebase info is not initialised yet, init it. */
-    if (sp_slow (!sp_clock_timebase_info.denom))
-        mach_timebase_info (&sp_clock_timebase_info);
+    if (nn_slow (!nn_clock_timebase_info.denom))
+        mach_timebase_info (&nn_clock_timebase_info);
 
     ticks = mach_absolute_time ();
-    return ticks * sp_clock_timebase_info.numer /
-        sp_clock_timebase_info.denom / 1000000;
+    return ticks * nn_clock_timebase_info.numer /
+        nn_clock_timebase_info.denom / 1000000;
  
-#elif defined SP_HAVE_CLOCK_MONOTONIC
+#elif defined NN_HAVE_CLOCK_MONOTONIC
 
     int rc;
     struct timespec tv;
@@ -101,7 +101,7 @@ static uint64_t sp_clock_time ()
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_nsec / 1000000;
 
-#elif defined SP_HAVE_GETHRTIME
+#elif defined NN_HAVE_GETHRTIME
 
     return gethrtime () / 1000000;
 
@@ -119,38 +119,38 @@ static uint64_t sp_clock_time ()
 #endif
 }
 
-void sp_clock_init (struct sp_clock *self)
+void nn_clock_init (struct nn_clock *self)
 {
-    self->last_tsc = sp_clock_rdtsc ();
-    self->last_time = sp_clock_time ();
+    self->last_tsc = nn_clock_rdtsc ();
+    self->last_time = nn_clock_time ();
 }
 
-void sp_clock_term (struct sp_clock *self)
+void nn_clock_term (struct nn_clock *self)
 {
 }
 
-uint64_t sp_clock_now (struct sp_clock *self)
+uint64_t nn_clock_now (struct nn_clock *self)
 {
     /*  If TSC is not supported, use the non-optimised time measurement. */
-    uint64_t tsc = sp_clock_rdtsc ();
+    uint64_t tsc = nn_clock_rdtsc ();
     if (!tsc)
-        return sp_clock_time ();
+        return nn_clock_time ();
 
     /*  If tsc haven't jumped back or run away too far, we can use the cached
         time value. */
-    if (sp_fast (tsc - self->last_tsc <= (SP_CLOCK_PRECISION / 2) &&
+    if (nn_fast (tsc - self->last_tsc <= (NN_CLOCK_PRECISION / 2) &&
           tsc >= self->last_tsc))
         return self->last_time;
 
     /*  It's a long time since we've last measured the time. We'll do a new
         measurement now. */
     self->last_tsc = tsc;
-    self->last_time = sp_clock_time ();
+    self->last_time = nn_clock_time ();
     return self->last_time;
 }
 
-uint64_t sp_clock_timestamp ()
+uint64_t nn_clock_timestamp ()
 {
-    return sp_clock_rdtsc ();
+    return nn_clock_rdtsc ();
 }
 

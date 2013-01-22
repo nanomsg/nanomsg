@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/utils/err.c"
 
 #include <stdio.h>
@@ -67,7 +67,7 @@ int main ()
         "<refentrytitle>{mantitle}</refentrytitle>\n"
         "<manvolnum>{manvolnum}</manvolnum>\n"
         "<refmiscinfo class=\"source\">nanomsg</refmiscinfo>\n"
-        "<refmiscinfo class=\"version\">" STR(SP_VERSION_MAJOR) "." STR(SP_VERSION_MINOR) "." STR(SP_VERSION_PATCH) "</refmiscinfo>\n"
+        "<refmiscinfo class=\"version\">" STR(NN_VERSION_MAJOR) "." STR(NN_VERSION_MINOR) "." STR(NN_VERSION_PATCH) "</refmiscinfo>\n"
         "<refmiscinfo class=\"manual\">nanomsg manual</refmiscinfo>\n"
         "</refmeta>\n"
         "<refnamediv>\n"
@@ -83,7 +83,7 @@ int main ()
         "{disable-javascript%<div id=\"footnotes\"><hr /></div>}\n"
         "<div id=\"footer\">\n"
         "<div id=\"footer-text\">\n"
-        "nanomsg " STR(SP_VERSION_MAJOR) "." STR(SP_VERSION_MINOR) "." STR(SP_VERSION_PATCH) "<br />\n"
+        "nanomsg " STR(NN_VERSION_MAJOR) "." STR(NN_VERSION_MINOR) "." STR(NN_VERSION_PATCH) "<br />\n"
         "Last updated {docdate} {doctime}\n"
         "</div>\n"
         "</div>\n"
@@ -95,7 +95,7 @@ int main ()
     errno_assert (f);
     sz1 = strlen (conf);
     sz2 = fwrite (conf, 1, sz1, f);
-    sp_assert (sz1 == sz2);
+    nn_assert (sz1 == sz2);
     rc = fclose (f);
     errno_assert (rc == 0);
 

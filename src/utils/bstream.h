@@ -20,37 +20,37 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_BSTREAM_INCLUDED
-#define SP_BSTREAM_INCLUDED
+#ifndef NN_BSTREAM_INCLUDED
+#define NN_BSTREAM_INCLUDED
 
 #include "../transport.h"
 
 #include "aio.h"
 
-struct sp_astream;
+struct nn_astream;
 
 /*  Bound stream socket. */
 
-struct sp_bstream {
+struct nn_bstream {
 
     /*  Event sink. */
-    const struct sp_cp_sink *sink;
+    const struct nn_cp_sink *sink;
 
     /*  This object is an endpoint. */
-    struct sp_epbase epbase;
+    struct nn_epbase epbase;
 
     /*  The listening socket. */
-    struct sp_usock usock;
+    struct nn_usock usock;
 
     /*  List of all sockets accepted via this endpoint. */
-    struct sp_list astreams;
+    struct nn_list astreams;
 };
 
-int sp_bstream_init (struct sp_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct sp_usock *usock, struct sp_cp *cp,
+int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
+    int (*initfn) (const char *addr, struct nn_usock *usock, struct nn_cp *cp,
     int backlog), int backlog);
 
-void sp_bstream_astream_closed (struct sp_bstream *self,
-    struct sp_astream *astream);
+void nn_bstream_astream_closed (struct nn_bstream *self,
+    struct nn_astream *astream);
 
 #endif

@@ -27,9 +27,9 @@
 extern "C" {
 #endif
 
-#define SP_PAIR_ID 1
+#define NN_PAIR_ID 1
 
-#define SP_PAIR (SP_PAIR_ID * 16 + 0)
+#define NN_PAIR (NN_PAIR_ID * 16 + 0)
 
 #ifdef __cplusplus
 }

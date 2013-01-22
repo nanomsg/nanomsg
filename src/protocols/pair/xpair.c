@@ -22,7 +22,7 @@
 
 #include "xpair.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../pair.h"
 
 #include "../../utils/err.h"
@@ -31,139 +31,139 @@
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
 
-struct sp_xpair {
-    struct sp_sockbase sockbase;
-    struct sp_excl excl;
+struct nn_xpair {
+    struct nn_sockbase sockbase;
+    struct nn_excl excl;
 };
 
 /*  Private functions. */
-static void sp_xpair_init (struct sp_xpair *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_xpair_term (struct sp_xpair *self);
+static void nn_xpair_init (struct nn_xpair *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_xpair_term (struct nn_xpair *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xpair_destroy (struct sp_sockbase *self);
-static int sp_xpair_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_xpair_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpair_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpair_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpair_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xpair_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xpair_destroy (struct nn_sockbase *self);
+static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpair_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xpair_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
-static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
-static int sp_xpair_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xpair_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_xpair_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_xpair_sockbase_vfptr = {
-    sp_xpair_destroy,
-    sp_xpair_add,
-    sp_xpair_rm,
-    sp_xpair_in,
-    sp_xpair_out,
-    sp_xpair_send,
-    sp_xpair_recv,
-    sp_xpair_setopt,
-    sp_xpair_getopt,
-    sp_xpair_sethdr,
-    sp_xpair_gethdr
+static int nn_xpair_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
+    nn_xpair_destroy,
+    nn_xpair_add,
+    nn_xpair_rm,
+    nn_xpair_in,
+    nn_xpair_out,
+    nn_xpair_send,
+    nn_xpair_recv,
+    nn_xpair_setopt,
+    nn_xpair_getopt,
+    nn_xpair_sethdr,
+    nn_xpair_gethdr
 };
 
-static void sp_xpair_init (struct sp_xpair *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_xpair_init (struct nn_xpair *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_excl_init (&self->excl);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_excl_init (&self->excl);
 }
 
-static void sp_xpair_term (struct sp_xpair *self)
+static void nn_xpair_term (struct nn_xpair *self)
 {
-    sp_excl_term (&self->excl);
+    nn_excl_term (&self->excl);
 }
 
-void sp_xpair_destroy (struct sp_sockbase *self)
+void nn_xpair_destroy (struct nn_sockbase *self)
 {
-    struct sp_xpair *xpair;
+    struct nn_xpair *xpair;
 
-    xpair = sp_cont (self, struct sp_xpair, sockbase);
+    xpair = nn_cont (self, struct nn_xpair, sockbase);
 
-    sp_xpair_term (xpair);
-    sp_free (xpair);
+    nn_xpair_term (xpair);
+    nn_free (xpair);
 }
 
-static int sp_xpair_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_add (&sp_cont (self, struct sp_xpair, sockbase)->excl, pipe);
+    return nn_excl_add (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static void sp_xpair_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    sp_excl_rm (&sp_cont (self, struct sp_xpair, sockbase)->excl, pipe);
+    nn_excl_rm (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static int sp_xpair_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_in (&sp_cont (self, struct sp_xpair, sockbase)->excl, pipe);
+    return nn_excl_in (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static int sp_xpair_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_out (&sp_cont (self, struct sp_xpair, sockbase)->excl, pipe);
+    return nn_excl_out (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static int sp_xpair_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xpair_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return sp_excl_send (&sp_cont (self, struct sp_xpair, sockbase)->excl,
+    return nn_excl_send (&nn_cont (self, struct nn_xpair, sockbase)->excl,
         msg);
 }
 
-static int sp_xpair_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xpair_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return sp_excl_recv (&sp_cont (self, struct sp_xpair, sockbase)->excl, msg);
+    return nn_excl_recv (&nn_cont (self, struct nn_xpair, sockbase)->excl, msg);
 }
 
-static int sp_xpair_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpair_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpair_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xpair_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_xpair_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_xpair_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-struct sp_sockbase *sp_xpair_create (int fd)
+struct nn_sockbase *nn_xpair_create (int fd)
 {
-    struct sp_xpair *self;
+    struct nn_xpair *self;
 
-    self = sp_alloc (sizeof (struct sp_xpair), "socket (pair)");
+    self = nn_alloc (sizeof (struct nn_xpair), "socket (pair)");
     alloc_assert (self);
-    sp_xpair_init (self, &sp_xpair_sockbase_vfptr, fd);
+    nn_xpair_init (self, &nn_xpair_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xpair_socktype_struct = {
+static struct nn_socktype nn_xpair_socktype_struct = {
     AF_SP_RAW,
-    SP_PAIR,
-    sp_xpair_create
+    NN_PAIR,
+    nn_xpair_create
 };
 
-struct sp_socktype *sp_xpair_socktype = &sp_xpair_socktype_struct;
+struct nn_socktype *nn_xpair_socktype = &nn_xpair_socktype_struct;
 

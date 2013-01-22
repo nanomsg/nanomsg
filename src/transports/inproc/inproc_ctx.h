@@ -20,13 +20,13 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_INPROC_CTX_INCLUDED
-#define SP_INPROC_CTX_INCLUDED
+#ifndef NN_INPROC_CTX_INCLUDED
+#define NN_INPROC_CTX_INCLUDED
 
 #include "inprocb.h"
 #include "inprocc.h"
 
-void sp_inproc_ctx_unbind (struct sp_inprocb *inprocb);
-void sp_inproc_ctx_disconnect (struct sp_inprocc *inprocc);
+void nn_inproc_ctx_unbind (struct nn_inprocb *inprocb);
+void nn_inproc_ctx_disconnect (struct nn_inprocc *inprocc);
 
 #endif

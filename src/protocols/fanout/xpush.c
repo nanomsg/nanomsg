@@ -22,7 +22,7 @@
 
 #include "xpush.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanout.h"
 
 #include "../../utils/err.h"
@@ -31,200 +31,200 @@
 #include "../../utils/list.h"
 #include "../../utils/alloc.h"
 
-struct sp_xpush_data {
-    struct sp_pipe *pipe;
-    struct sp_list_item item;
+struct nn_xpush_data {
+    struct nn_pipe *pipe;
+    struct nn_list_item item;
 };
 
-struct sp_xpush {
+struct nn_xpush {
 
     /*  The generic socket base class. */
-    struct sp_sockbase sockbase;
+    struct nn_sockbase sockbase;
 
     /*  List of pipes that we can get messages from. */
-    struct sp_list pipes;
+    struct nn_list pipes;
 
     /*  Next pipe to receive from. */
-    struct sp_xpush_data *current;
+    struct nn_xpush_data *current;
 };
 
 /*  Private functions. */
-static void sp_xpush_init (struct sp_xpush *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_xpush_term (struct sp_xpush *self);
+static void nn_xpush_init (struct nn_xpush *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_xpush_term (struct nn_xpush *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xpush_destroy (struct sp_sockbase *self);
-static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_xpush_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpush_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpush_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xpush_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xpush_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xpush_destroy (struct nn_sockbase *self);
+static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_xpush_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xpush_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_xpush_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_xpush_sockbase_vfptr = {
-    sp_xpush_destroy,
-    sp_xpush_add,
-    sp_xpush_rm,
-    sp_xpush_in,
-    sp_xpush_out,
-    sp_xpush_send,
-    sp_xpush_recv,
-    sp_xpush_setopt,
-    sp_xpush_getopt,
-    sp_xpush_sethdr,
-    sp_xpush_gethdr
+static int nn_xpush_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
+    nn_xpush_destroy,
+    nn_xpush_add,
+    nn_xpush_rm,
+    nn_xpush_in,
+    nn_xpush_out,
+    nn_xpush_send,
+    nn_xpush_recv,
+    nn_xpush_setopt,
+    nn_xpush_getopt,
+    nn_xpush_sethdr,
+    nn_xpush_gethdr
 };
 
-static void sp_xpush_init (struct sp_xpush *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_xpush_init (struct nn_xpush *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_list_init (&self->pipes);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_list_init (&self->pipes);
     self->current = NULL;
 }
 
-static void sp_xpush_term (struct sp_xpush *self)
+static void nn_xpush_term (struct nn_xpush *self)
 {
-    sp_list_term (&self->pipes);
+    nn_list_term (&self->pipes);
 }
 
-void sp_xpush_destroy (struct sp_sockbase *self)
+void nn_xpush_destroy (struct nn_sockbase *self)
 {
-    struct sp_xpush *xpush;
+    struct nn_xpush *xpush;
 
-    xpush = sp_cont (self, struct sp_xpush, sockbase);
+    xpush = nn_cont (self, struct nn_xpush, sockbase);
 
-    sp_xpush_term (xpush);
-    sp_free (xpush);
+    nn_xpush_term (xpush);
+    nn_free (xpush);
 }
 
-static int sp_xpush_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xpush_data *data;
+    struct nn_xpush_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xpush_data), "pipe data (push)");
+    data = nn_alloc (sizeof (struct nn_xpush_data), "pipe data (push)");
     alloc_assert (data);
     data->pipe = pipe;
-    sp_pipe_setdata (pipe, data);
+    nn_pipe_setdata (pipe, data);
 
     return 0;
 }
 
-static void sp_xpush_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xpush_data *data;
+    struct nn_xpush_data *data;
 
-    data = sp_pipe_getdata (pipe);
+    data = nn_pipe_getdata (pipe);
 
     /*  TODO: If pipe is in inbound pipe list, remove it. */
 
-    sp_free (data);
+    nn_free (data);
 }
 
-static int sp_xpush_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     /*  We are not going to receive any messages, so there's no need to store
         the list of inbound pipes. */
     return 0;
 }
 
-static int sp_xpush_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xpush *xpush;
-    struct sp_xpush_data *data;
+    struct nn_xpush *xpush;
+    struct nn_xpush_data *data;
     int result;
 
-    xpush = sp_cont (self, struct sp_xpush, sockbase);
-    data = sp_pipe_getdata (pipe);
-    result = sp_list_empty (&xpush->pipes) ? 1 : 0;
+    xpush = nn_cont (self, struct nn_xpush, sockbase);
+    data = nn_pipe_getdata (pipe);
+    result = nn_list_empty (&xpush->pipes) ? 1 : 0;
     if (result)
         xpush->current = data;
-    sp_list_insert (&xpush->pipes, &data->item, sp_list_end (&xpush->pipes));
+    nn_list_insert (&xpush->pipes, &data->item, nn_list_end (&xpush->pipes));
     return result;
 }
 
-static int sp_xpush_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_xpush *xpush;
-    struct sp_list_item *it;
+    struct nn_xpush *xpush;
+    struct nn_list_item *it;
 
-    xpush = sp_cont (self, struct sp_xpush, sockbase);
+    xpush = nn_cont (self, struct nn_xpush, sockbase);
 
     /*  Current is NULL only when there are no avialable outbound pipes. */
-    if (sp_slow (!xpush->current))
+    if (nn_slow (!xpush->current))
         return -EAGAIN;
 
     /*  Send the messsage. */
-    rc = sp_pipe_send (xpush->current->pipe, msg);
+    rc = nn_pipe_send (xpush->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */
-    if (rc & SP_PIPE_RELEASE)
-        it = sp_list_erase (&xpush->pipes, &xpush->current->item);
+    if (rc & NN_PIPE_RELEASE)
+        it = nn_list_erase (&xpush->pipes, &xpush->current->item);
     else
-        it = sp_list_next (&xpush->pipes, &xpush->current->item);
+        it = nn_list_next (&xpush->pipes, &xpush->current->item);
     if (!it)
-        it = sp_list_begin (&xpush->pipes);
-    xpush->current = sp_cont (it, struct sp_xpush_data, item);
+        it = nn_list_begin (&xpush->pipes);
+    xpush->current = nn_cont (it, struct nn_xpush_data, item);
 
     return 0;
 
 }
 
-static int sp_xpush_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return -ENOTSUP;
 }
 
-static int sp_xpush_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpush_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xpush_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xpush_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_xpush_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_xpush_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-struct sp_sockbase *sp_xpush_create (int fd)
+struct nn_sockbase *nn_xpush_create (int fd)
 {
-    struct sp_xpush *self;
+    struct nn_xpush *self;
 
-    self = sp_alloc (sizeof (struct sp_xpush), "socket (push)");
+    self = nn_alloc (sizeof (struct nn_xpush), "socket (push)");
     alloc_assert (self);
-    sp_xpush_init (self, &sp_xpush_sockbase_vfptr, fd);
+    nn_xpush_init (self, &nn_xpush_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xpush_socktype_struct = {
+static struct nn_socktype nn_xpush_socktype_struct = {
     AF_SP_RAW,
-    SP_PUSH,
-    sp_xpush_create
+    NN_PUSH,
+    nn_xpush_create
 };
 
-struct sp_socktype *sp_xpush_socktype = &sp_xpush_socktype_struct;
+struct nn_socktype *nn_xpush_socktype = &nn_xpush_socktype_struct;
 

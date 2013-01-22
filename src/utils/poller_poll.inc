@@ -23,43 +23,43 @@
 #include "alloc.h"
 #include "err.h"
 
-#define SP_POLLER_GRANULARITY 16
+#define NN_POLLER_GRANULARITY 16
 
-void sp_poller_init (struct sp_poller *self)
+void nn_poller_init (struct nn_poller *self)
 {
     self->size = 0;
     self->index = 0;
-    self->capacity = SP_POLLER_GRANULARITY;
+    self->capacity = NN_POLLER_GRANULARITY;
     self->pollset =
-        sp_alloc (sizeof (struct pollfd*) * SP_POLLER_GRANULARITY,
+        nn_alloc (sizeof (struct pollfd*) * NN_POLLER_GRANULARITY,
             "pollset");
     alloc_assert (self->pollset);
     self->hndls =
-        sp_alloc (sizeof (struct sp_hndls_item) * SP_POLLER_GRANULARITY,
+        nn_alloc (sizeof (struct nn_hndls_item) * NN_POLLER_GRANULARITY,
             "hndlset");
     alloc_assert (self->hndls);
     self->removed = -1;
 }
 
-void sp_poller_term (struct sp_poller *self)
+void nn_poller_term (struct nn_poller *self)
 {
-    sp_free (self->pollset);
-    sp_free (self->hndls);
+    nn_free (self->pollset);
+    nn_free (self->hndls);
 }
 
-void sp_poller_add (struct sp_poller *self, int fd,
-    struct sp_poller_hndl *hndl)
+void nn_poller_add (struct nn_poller *self, int fd,
+    struct nn_poller_hndl *hndl)
 {
     int rc;
 
     /*  If the capacity is too low to accommodate the next item, resize it. */
-    if (sp_slow (self->size >= self->capacity)) {
+    if (nn_slow (self->size >= self->capacity)) {
         self->capacity *= 2;
-        self->pollset = sp_realloc (self->pollset,
+        self->pollset = nn_realloc (self->pollset,
             sizeof (struct pollfd*) * self->capacity);
         alloc_assert (self->pollset);
-        self->hndls = sp_realloc (self->hndls,
-            sizeof (struct sp_hndls_item) * self->capacity);
+        self->hndls = nn_realloc (self->hndls,
+            sizeof (struct nn_hndls_item) * self->capacity);
         alloc_assert (self->hndls);
     }
 
@@ -72,7 +72,7 @@ void sp_poller_add (struct sp_poller *self, int fd,
     ++self->size;
 }
 
-void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     /*  No more events will be reported on this fd. */
     self->pollset [hndl->index].revents = 0;
@@ -86,29 +86,29 @@ void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
     self->removed = hndl->index;
 }
 
-void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     self->pollset [hndl->index].events |= POLLIN;
 }
 
-void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     self->pollset [hndl->index].events &= ~POLLIN;
     self->pollset [hndl->index].revents &= ~POLLIN;
 }
 
-void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     self->pollset [hndl->index].events |= POLLOUT;
 }
 
-void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     self->pollset [hndl->index].events &= ~POLLOUT;
     self->pollset [hndl->index].revents &= ~POLLOUT;
 }
 
-int sp_poller_wait (struct sp_poller *self, int timeout)
+int nn_poller_wait (struct nn_poller *self, int timeout)
 {
     int rc;
     int i;
@@ -130,7 +130,7 @@ int sp_poller_wait (struct sp_poller *self, int timeout)
 
         /*  The fd from the end of the pollset may have been on removed fds
             list itself. If so, adjust the list. */
-        if (sp_slow (!self->hndls [i].hndl)) {
+        if (nn_slow (!self->hndls [i].hndl)) {
             if (self->hndls [i].prev != -1)
                self->hndls [self->hndls [i].prev].next = i;
             if (self->hndls [i].next != -1)
@@ -141,12 +141,12 @@ int sp_poller_wait (struct sp_poller *self, int timeout)
     }
 
     /*  Wait for new events. */
-#if defined SP_IGNORE_EINTR
+#if defined NN_IGNORE_EINTR
 again:
 #endif
     rc = poll (self->pollset, self->size, timeout);
-    if (sp_slow (rc < 0 && errno == EINTR))
-#if defined SP_IGNORE_EINTR
+    if (nn_slow (rc < 0 && errno == EINTR))
+#if defined NN_IGNORE_EINTR
         goto again;
 #else
         return -EINTR;
@@ -155,8 +155,8 @@ again:
     return 0;
 }
 
-int sp_poller_event (struct sp_poller *self, int *event,
-    struct sp_poller_hndl **hndl)
+int nn_poller_event (struct nn_poller *self, int *event,
+    struct nn_poller_hndl **hndl)
 {
     int rc;
 
@@ -169,23 +169,23 @@ int sp_poller_event (struct sp_poller *self, int *event,
     }
 
     /*  If there is no available event, let the caller know. */
-    if (sp_slow (self->index >= self->size))
+    if (nn_slow (self->index >= self->size))
         return -EAGAIN;
 
     /*  Return next event to the caller. Remove the event from revents. */
     *hndl = self->hndls [self->index].hndl;
-    if (sp_fast (self->pollset [self->index].revents & POLLIN)) {
-        *event = SP_POLLER_IN;
+    if (nn_fast (self->pollset [self->index].revents & POLLIN)) {
+        *event = NN_POLLER_IN;
         self->pollset [self->index].revents &= ~POLLIN;
         return 0;
     }
-    else if (sp_fast (self->pollset [self->index].revents & POLLOUT)) {
-        *event = SP_POLLER_OUT;
+    else if (nn_fast (self->pollset [self->index].revents & POLLOUT)) {
+        *event = NN_POLLER_OUT;
         self->pollset [self->index].revents &= ~POLLOUT;
         return 0;
     }
     else {
-        *event = SP_POLLER_ERR;
+        *event = NN_POLLER_ERR;
         ++self->index;
         return 0;
     }

@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_STREAM_INCLUDED
-#define SP_STREAM_INCLUDED
+#ifndef NN_STREAM_INCLUDED
+#define NN_STREAM_INCLUDED
 
 #include "../transport.h"
 
@@ -32,19 +32,19 @@
 
 /*  Session object for stream-oriented transports (e.g. TCP or IPC). */
 
-#define SP_STREAM_INSTATE_HDR 1
-#define SP_STREAM_INSTATE_BODY 2
+#define NN_STREAM_INSTATE_HDR 1
+#define NN_STREAM_INSTATE_BODY 2
 
-struct sp_stream {
+struct nn_stream {
 
     /*  Event sink. */
-    const struct sp_cp_sink *sink;
+    const struct nn_cp_sink *sink;
 
     /*  Pipe to exchange messages with the user of the library. */
-    struct sp_pipebase pipebase;
+    struct nn_pipebase pipebase;
 
     /*  The underlying socket. */
-    struct sp_usock *usock;
+    struct nn_usock *usock;
 
     /*  Protocol header received from the peer. */
     uint8_t hdr [8];
@@ -53,7 +53,7 @@ struct sp_stream {
         closed. This solves a rare race condition in TCP. It also minimises
         the usage of resources in case of erroneous connections. Also, it
         prevents a simple DoS attack. */
-    struct sp_timer hdr_timeout;
+    struct nn_timer hdr_timeout;
 
     /*  State of the inbound state machine. */
     int instate;
@@ -62,7 +62,7 @@ struct sp_stream {
     uint8_t inhdr [8];
 
     /*  Message being received at the moment. */
-    struct sp_msg inmsg;
+    struct nn_msg inmsg;
 
     /*  State of the outbound state machine. */
     int outstate;
@@ -71,15 +71,15 @@ struct sp_stream {
     uint8_t outhdr [8];
 
     /*  Message being sent at the moment. */
-    struct sp_msg outmsg;
+    struct nn_msg outmsg;
 
     /*  Stores the sink of the parent state machine while this state machine
         does its job. */
-    const struct sp_cp_sink **original_sink;
+    const struct nn_cp_sink **original_sink;
 };
 
-void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
-    struct sp_usock *usock);
-void sp_stream_term ();
+void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
+    struct nn_usock *usock);
+void nn_stream_term ();
 
 #endif

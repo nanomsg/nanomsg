@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 
 #include <stdio.h>
@@ -47,31 +47,31 @@ int main (int argc, char *argv [])
     sz = atoi (argv [2]);
     count = atoi (argv [3]);
 
-    rc = sp_init ();
+    rc = nn_init ();
     assert (rc == 0);
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
-    rc = sp_connect (s, connect_to);
+    rc = nn_connect (s, connect_to);
     assert (rc >= 0);
 
     buf = malloc (sz);
     assert (buf);
     memset (buf, 111, sz);
 
-    nbytes = sp_send (s, buf, 0, 0);
+    nbytes = nn_send (s, buf, 0, 0);
     assert (nbytes == 0);
 
     for (i = 0; i != count; i++) {
-        nbytes = sp_send (s, buf, sz, 0);
+        nbytes = nn_send (s, buf, sz, 0);
         assert (nbytes == sz);
     }
 
     free (buf);
 
-    rc = sp_close (s);
+    rc = nn_close (s);
     assert (rc == 0);
 
-    rc = sp_term ();
+    rc = nn_term ();
     assert (rc == 0);
 
     return 0;

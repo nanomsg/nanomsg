@@ -20,12 +20,12 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SINK_INCLUDED
-#define SP_SINK_INCLUDED
+#ifndef NN_SINK_INCLUDED
+#define NN_SINK_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_sink_socktype;
+extern struct nn_socktype *nn_sink_socktype;
 
 #endif
 

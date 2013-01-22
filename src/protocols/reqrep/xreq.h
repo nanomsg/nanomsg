@@ -20,35 +20,35 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XREQ_INCLUDED
-#define SP_XREQ_INCLUDED
+#ifndef NN_XREQ_INCLUDED
+#define NN_XREQ_INCLUDED
 
 #include "../../protocol.h"
 
 #include "../../utils/excl.h"
 
-struct sp_xreq {
-    struct sp_sockbase sockbase;
-    struct sp_excl excl;
+struct nn_xreq {
+    struct nn_sockbase sockbase;
+    struct nn_excl excl;
 };
 
-void sp_xreq_init (struct sp_xreq *self, const struct sp_sockbase_vfptr *vfptr,
+void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
     int fd);
-void sp_xreq_term (struct sp_xreq *self);
+void nn_xreq_term (struct nn_xreq *self);
 
-int sp_xreq_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-void sp_xreq_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xreq_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xreq_recv (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xreq_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-int sp_xreq_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int sp_xreq_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen);
-int sp_xreq_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+int nn_xreq_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+int nn_xreq_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
-extern struct sp_socktype *sp_xreq_socktype;
+extern struct nn_socktype *nn_xreq_socktype;
 
 #endif

@@ -24,47 +24,47 @@
 
 #include "list.h"
 
-void sp_list_init (struct sp_list *self)
+void nn_list_init (struct nn_list *self)
 {
     self->first = NULL;
     self->last = NULL;
 }
 
-void sp_list_term (struct sp_list *self)
+void nn_list_term (struct nn_list *self)
 {
     self->first = NULL;
     self->last = NULL;
 }
 
-int sp_list_empty (struct sp_list *self)
+int nn_list_empty (struct nn_list *self)
 {
     return self->first ? 0 : 1;
 }
 
-struct sp_list_item *sp_list_begin (struct sp_list *self)
+struct nn_list_item *nn_list_begin (struct nn_list *self)
 {
     return self->first;
 }
 
-struct sp_list_item *sp_list_end (struct sp_list *self)
+struct nn_list_item *nn_list_end (struct nn_list *self)
 {
     return NULL;
 }
 
-struct sp_list_item *sp_list_prev (struct sp_list *self,
-    struct sp_list_item *it)
+struct nn_list_item *nn_list_prev (struct nn_list *self,
+    struct nn_list_item *it)
 {
     return it ? it->prev : self->last;
 }
 
-struct sp_list_item *sp_list_next (struct sp_list *self,
-    struct sp_list_item *it)
+struct nn_list_item *nn_list_next (struct nn_list *self,
+    struct nn_list_item *it)
 {
     return it->next;
 }
 
-void sp_list_insert (struct sp_list *self, struct sp_list_item *item,
-    struct sp_list_item *it)
+void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
+    struct nn_list_item *it)
 {    
     item->prev = it ? it->prev : self->last;
     item->next = it;
@@ -78,8 +78,8 @@ void sp_list_insert (struct sp_list *self, struct sp_list_item *item,
         self->last = item;   
 }
 
-struct sp_list_item *sp_list_erase (struct sp_list *self,
-    struct sp_list_item *item)
+struct nn_list_item *nn_list_erase (struct nn_list *self,
+    struct nn_list_item *item)
 {
     if (item->prev)
         item->prev->next = item->next;

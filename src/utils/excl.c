@@ -25,21 +25,21 @@
 #include "fast.h"
 #include "err.h"
 
-void sp_excl_init (struct sp_excl *self)
+void nn_excl_init (struct nn_excl *self)
 {
     self->pipe = NULL;
     self->inpipe = NULL;
     self->outpipe = NULL;
 }
 
-void sp_excl_term (struct sp_excl *self)
+void nn_excl_term (struct nn_excl *self)
 {
-    sp_assert (!self->pipe);
-    sp_assert (!self->inpipe);
-    sp_assert (!self->outpipe);
+    nn_assert (!self->pipe);
+    nn_assert (!self->inpipe);
+    nn_assert (!self->outpipe);
 }
 
-int sp_excl_add (struct sp_excl *self, struct sp_pipe *pipe)
+int nn_excl_add (struct nn_excl *self, struct nn_pipe *pipe)
 {
     /*  If there's a connection being used, reject any new connection. */
     if (self->pipe)
@@ -51,59 +51,59 @@ int sp_excl_add (struct sp_excl *self, struct sp_pipe *pipe)
     return 0;
 }
 
-void sp_excl_rm (struct sp_excl *self, struct sp_pipe *pipe)
+void nn_excl_rm (struct nn_excl *self, struct nn_pipe *pipe)
 {
-   sp_assert (self->pipe);
+   nn_assert (self->pipe);
    self->pipe = NULL;
    self->inpipe = NULL;
    self->outpipe = NULL;
 }
 
-int sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe)
+int nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe)
 {
-    sp_assert (!self->inpipe);
-    sp_assert (pipe == self->pipe);
+    nn_assert (!self->inpipe);
+    nn_assert (pipe == self->pipe);
     self->inpipe = pipe;
     return 1;
 }
 
-int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe)
+int nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
 {
-    sp_assert (!self->outpipe);
-    sp_assert (pipe == self->pipe);
+    nn_assert (!self->outpipe);
+    nn_assert (pipe == self->pipe);
     self->outpipe = pipe;
     return 1;
 }
 
-int sp_excl_send (struct sp_excl *self, struct sp_msg *msg)
+int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
 {
     int rc;
 
-    if (sp_slow (!self->outpipe))
+    if (nn_slow (!self->outpipe))
         return -EAGAIN;
 
-    rc = sp_pipe_send (self->outpipe, msg);
+    rc = nn_pipe_send (self->outpipe, msg);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc & SP_PIPE_RELEASE)
+    if (rc & NN_PIPE_RELEASE)
         self->outpipe = NULL;
 
-    return rc & ~SP_PIPE_RELEASE;
+    return rc & ~NN_PIPE_RELEASE;
 }
 
-int sp_excl_recv (struct sp_excl *self, struct sp_msg *msg)
+int nn_excl_recv (struct nn_excl *self, struct nn_msg *msg)
 {
     int rc;
 
-    if (sp_slow (!self->inpipe))
+    if (nn_slow (!self->inpipe))
         return -EAGAIN;
 
-    rc = sp_pipe_recv (self->inpipe, msg);
+    rc = nn_pipe_recv (self->inpipe, msg);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc & SP_PIPE_RELEASE)
+    if (rc & NN_PIPE_RELEASE)
         self->inpipe = NULL;
 
-    return rc & ~SP_PIPE_RELEASE;
+    return rc & ~NN_PIPE_RELEASE;
 }
 

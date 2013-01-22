@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-void sp_poller_init (struct sp_poller *self)
+void nn_poller_init (struct nn_poller *self)
 {
     int rc;
 
@@ -35,7 +35,7 @@ void sp_poller_init (struct sp_poller *self)
     self->index = 0;
 }
 
-void sp_poller_term (struct sp_poller *self)
+void nn_poller_term (struct nn_poller *self)
 {
     int rc;
 
@@ -43,8 +43,8 @@ void sp_poller_term (struct sp_poller *self)
     errno_assert (rc == 0);
 }
 
-void sp_poller_add (struct sp_poller *self, int fd,
-    struct sp_poller_hndl *hndl)
+void nn_poller_add (struct nn_poller *self, int fd,
+    struct nn_poller_hndl *hndl)
 {
     int rc;
     struct epoll_event ev;
@@ -59,7 +59,7 @@ void sp_poller_add (struct sp_poller *self, int fd,
     errno_assert (rc == 0);
 }
 
-void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     int i;
@@ -74,13 +74,13 @@ void sp_poller_rm (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].events = 0;
 }
 
-void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct epoll_event ev;
 
     /*  If already polling for IN, do nothing. */
-    if (sp_slow (hndl->events & EPOLLIN))
+    if (nn_slow (hndl->events & EPOLLIN))
         return;
 
     /*  Start polling for IN. */
@@ -92,14 +92,14 @@ void sp_poller_set_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
     errno_assert (rc == 0);
 }
 
-void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     int i;
     struct epoll_event ev;
 
     /*  If not polling for IN, do nothing. */
-    if (sp_slow (!(hndl->events & EPOLLIN)))
+    if (nn_slow (!(hndl->events & EPOLLIN)))
         return;
 
     /*  Stop polling for IN. */
@@ -116,13 +116,13 @@ void sp_poller_reset_in (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].events &= ~EPOLLIN;
 }
 
-void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct epoll_event ev;
 
     /*  If already polling for OUT, do nothing. */
-    if (sp_slow (hndl->events & EPOLLOUT))
+    if (nn_slow (hndl->events & EPOLLOUT))
         return;
 
     /*  Start polling for OUT. */
@@ -134,14 +134,14 @@ void sp_poller_set_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
     errno_assert (rc == 0);
 }
 
-void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
+void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     int i;
     struct epoll_event ev;
 
     /*  If not polling for OUT, do nothing. */
-    if (sp_slow (!(hndl->events & EPOLLOUT)))
+    if (nn_slow (!(hndl->events & EPOLLOUT)))
         return;
 
     /*  Stop polling for OUT. */
@@ -158,7 +158,7 @@ void sp_poller_reset_out (struct sp_poller *self, struct sp_poller_hndl *hndl)
             self->events [i].events &= ~EPOLLOUT;
 }
 
-int sp_poller_wait (struct sp_poller *self, int timeout)
+int nn_poller_wait (struct nn_poller *self, int timeout)
 {
     int nevents;
 
@@ -167,13 +167,13 @@ int sp_poller_wait (struct sp_poller *self, int timeout)
     self->index = 0;
 
     /*  Wait for new events. */
-#if defined SP_IGNORE_EINTR
+#if defined NN_IGNORE_EINTR
 again:
 #endif
     nevents = epoll_wait (self->ep, self->events,
-        SP_POLLER_MAX_EVENTS, timeout);
-    if (sp_slow (nevents == -1 && errno == EINTR))
-#if defined SP_IGNORE_EINTR
+        NN_POLLER_MAX_EVENTS, timeout);
+    if (nn_slow (nevents == -1 && errno == EINTR))
+#if defined NN_IGNORE_EINTR
         goto again;
 #else
         return -EINTR;
@@ -183,8 +183,8 @@ again:
     return 0;
 }
 
-int sp_poller_event (struct sp_poller *self, int *event,
-    struct sp_poller_hndl **hndl)
+int nn_poller_event (struct nn_poller *self, int *event,
+    struct nn_poller_hndl **hndl)
 {
     /*  Skip over empty events. */
     while (self->index < self->nevents) {
@@ -194,23 +194,23 @@ int sp_poller_event (struct sp_poller *self, int *event,
     }
 
     /*  If there is no stored event, let the caller know. */
-    if (sp_slow (self->index >= self->nevents))
+    if (nn_slow (self->index >= self->nevents))
         return -EAGAIN;
 
     /*  Return next event to the caller. Remove the event from the set. */
-    *hndl = (struct sp_poller_hndl*) self->events [self->index].data.ptr;
-    if (sp_fast (self->events [self->index].events & EPOLLIN)) {
-        *event = SP_POLLER_IN;
+    *hndl = (struct nn_poller_hndl*) self->events [self->index].data.ptr;
+    if (nn_fast (self->events [self->index].events & EPOLLIN)) {
+        *event = NN_POLLER_IN;
         self->events [self->index].events &= ~EPOLLIN;
         return 0;
     }
-    else if (sp_fast (self->events [self->index].events & EPOLLOUT)) {
-        *event = SP_POLLER_OUT;
+    else if (nn_fast (self->events [self->index].events & EPOLLOUT)) {
+        *event = NN_POLLER_OUT;
         self->events [self->index].events &= ~EPOLLOUT;
         return 0;
     }
     else {
-        *event = SP_POLLER_ERR;
+        *event = NN_POLLER_ERR;
         ++self->index;
         return 0;
     }

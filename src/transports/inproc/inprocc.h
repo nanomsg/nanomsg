@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_INPROCC_INCLUDED
-#define SP_INPROCC_INCLUDED
+#ifndef NN_INPROCC_INCLUDED
+#define NN_INPROCC_INCLUDED
 
 #include "../../transport.h"
 
@@ -29,27 +29,27 @@
 
 #include "msgpipe.h"
 
-#define SP_INPROCC_NAMELEN_MAX 64
+#define NN_INPROCC_NAMELEN_MAX 64
 
-struct sp_inprocc {
+struct nn_inprocc {
 
     /*  This object is an endpoint. */
-    struct sp_epbase epbase;
+    struct nn_epbase epbase;
 
     /*  Name of the connected endpoint. */
-    char addr [SP_INPROCC_NAMELEN_MAX];
+    char addr [NN_INPROCC_NAMELEN_MAX];
 
     /*  This object is an element in the list of all connected endpoints managed
-        by sp_inproc_ctx object. */
-    struct sp_list_item list;
+        by nn_inproc_ctx object. */
+    struct nn_list_item list;
 
     /*  If the endpoint is connected this is the pointer to the associated
         message pipe. If it's not, the field is set to NULL. */
-    struct sp_msgpipe *pipe;
+    struct nn_msgpipe *pipe;
 
 };
 
-int sp_inprocc_init (struct sp_inprocc *self, const char *addr, void *hint);
-void sp_inprocc_add_pipe (struct sp_inprocc *self, struct sp_msgpipe *pipe);
+int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint);
+void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
 
 #endif

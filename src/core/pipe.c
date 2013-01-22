@@ -28,107 +28,107 @@
 #include "../utils/err.h"
 #include "../utils/fast.h"
 
-int sp_pipebase_init (struct sp_pipebase *self,
-    const struct sp_pipebase_vfptr *vfptr, struct sp_epbase *epbase)
+int nn_pipebase_init (struct nn_pipebase *self,
+    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
 {
-    sp_assert (epbase->sock);
+    nn_assert (epbase->sock);
     self->vfptr = vfptr;
-    self->instate = SP_PIPEBASE_INSTATE_DEACTIVATED;
-    self->outstate = SP_PIPEBASE_OUTSTATE_DEACTIVATED;
+    self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
+    self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
     self->epbase = epbase;
-    return sp_sock_add (self->epbase->sock, (struct sp_pipe*) self);
+    return nn_sock_add (self->epbase->sock, (struct nn_pipe*) self);
 }
 
-void sp_pipebase_term (struct sp_pipebase *self)
+void nn_pipebase_term (struct nn_pipebase *self)
 {
     if (self->epbase->sock)
-        sp_sock_rm (self->epbase->sock, (struct sp_pipe*) self);
+        nn_sock_rm (self->epbase->sock, (struct nn_pipe*) self);
 }
 
-void sp_pipebase_activate (struct sp_pipebase *self)
+void nn_pipebase_activate (struct nn_pipebase *self)
 {
-    self->instate = SP_PIPEBASE_INSTATE_ASYNC;
-    self->outstate = SP_PIPEBASE_OUTSTATE_IDLE;
+    self->instate = NN_PIPEBASE_INSTATE_ASYNC;
+    self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
 
     /*  Provide the outgoing pipe to the SP socket. */
     if (self->epbase->sock)
-        sp_sock_out (self->epbase->sock, (struct sp_pipe*) self);
+        nn_sock_out (self->epbase->sock, (struct nn_pipe*) self);
 }
 
-void sp_pipebase_received (struct sp_pipebase *self)
+void nn_pipebase_received (struct nn_pipebase *self)
 {
-    if (sp_fast (self->instate == SP_PIPEBASE_INSTATE_RECEIVING)) {
-        self->instate = SP_PIPEBASE_INSTATE_RECEIVED;
+    if (nn_fast (self->instate == NN_PIPEBASE_INSTATE_RECEIVING)) {
+        self->instate = NN_PIPEBASE_INSTATE_RECEIVED;
         return;
     }
-    sp_assert (self->instate == SP_PIPEBASE_INSTATE_ASYNC);
-    self->instate = SP_PIPEBASE_INSTATE_IDLE;
+    nn_assert (self->instate == NN_PIPEBASE_INSTATE_ASYNC);
+    self->instate = NN_PIPEBASE_INSTATE_IDLE;
     if (self->epbase->sock)
-        sp_sock_in (self->epbase->sock, (struct sp_pipe*) self);
+        nn_sock_in (self->epbase->sock, (struct nn_pipe*) self);
 }
 
-void sp_pipebase_sent (struct sp_pipebase *self)
+void nn_pipebase_sent (struct nn_pipebase *self)
 {
-    if (sp_fast (self->outstate == SP_PIPEBASE_OUTSTATE_SENDING)) {
-        self->outstate = SP_PIPEBASE_OUTSTATE_SENT;
+    if (nn_fast (self->outstate == NN_PIPEBASE_OUTSTATE_SENDING)) {
+        self->outstate = NN_PIPEBASE_OUTSTATE_SENT;
         return;
     }
-    sp_assert (self->outstate == SP_PIPEBASE_OUTSTATE_ASYNC);
-    self->outstate = SP_PIPEBASE_OUTSTATE_IDLE;
+    nn_assert (self->outstate == NN_PIPEBASE_OUTSTATE_ASYNC);
+    self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
     if (self->epbase->sock)
-        sp_sock_out (self->epbase->sock, (struct sp_pipe*) self);
+        nn_sock_out (self->epbase->sock, (struct nn_pipe*) self);
 }
 
-struct sp_cp *sp_pipebase_getcp (struct sp_pipebase *self)
+struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self)
 {
-    return sp_epbase_getcp (self->epbase);
+    return nn_epbase_getcp (self->epbase);
 }
 
-void sp_pipe_setdata (struct sp_pipe *self, void *data)
+void nn_pipe_setdata (struct nn_pipe *self, void *data)
 {
-    ((struct sp_pipebase*) self)->data = data;
+    ((struct nn_pipebase*) self)->data = data;
 }
 
-void *sp_pipe_getdata (struct sp_pipe *self)
+void *nn_pipe_getdata (struct nn_pipe *self)
 {
-    return ((struct sp_pipebase*) self)->data;
+    return ((struct nn_pipebase*) self)->data;
 }
 
-int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg)
+int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_pipebase *pipebase;
+    struct nn_pipebase *pipebase;
 
-    pipebase = (struct sp_pipebase*) self;
-    sp_assert (pipebase->outstate == SP_PIPEBASE_OUTSTATE_IDLE);
-    pipebase->outstate = SP_PIPEBASE_OUTSTATE_SENDING;
+    pipebase = (struct nn_pipebase*) self;
+    nn_assert (pipebase->outstate == NN_PIPEBASE_OUTSTATE_IDLE);
+    pipebase->outstate = NN_PIPEBASE_OUTSTATE_SENDING;
     rc = pipebase->vfptr->send (pipebase, msg);
     errnum_assert (rc >= 0, -rc);
-    if (sp_fast (pipebase->outstate == SP_PIPEBASE_OUTSTATE_SENT)) {
-        pipebase->outstate = SP_PIPEBASE_OUTSTATE_IDLE;
+    if (nn_fast (pipebase->outstate == NN_PIPEBASE_OUTSTATE_SENT)) {
+        pipebase->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
         return rc;
     }
-    sp_assert (pipebase->outstate == SP_PIPEBASE_OUTSTATE_SENDING);
-    pipebase->outstate = SP_PIPEBASE_OUTSTATE_ASYNC;
-    return rc | SP_PIPEBASE_RELEASE;
+    nn_assert (pipebase->outstate == NN_PIPEBASE_OUTSTATE_SENDING);
+    pipebase->outstate = NN_PIPEBASE_OUTSTATE_ASYNC;
+    return rc | NN_PIPEBASE_RELEASE;
 }
 
-int sp_pipe_recv (struct sp_pipe *self, struct sp_msg *msg)
+int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_pipebase *pipebase;
+    struct nn_pipebase *pipebase;
 
-    pipebase = (struct sp_pipebase*) self;
-    sp_assert (pipebase->instate == SP_PIPEBASE_INSTATE_IDLE);
-    pipebase->instate = SP_PIPEBASE_INSTATE_RECEIVING;
+    pipebase = (struct nn_pipebase*) self;
+    nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_IDLE);
+    pipebase->instate = NN_PIPEBASE_INSTATE_RECEIVING;
     rc = pipebase->vfptr->recv (pipebase, msg);
     errnum_assert (rc >= 0, -rc);
-    if (sp_fast (pipebase->instate == SP_PIPEBASE_INSTATE_RECEIVED)) {
-        pipebase->instate = SP_PIPEBASE_INSTATE_IDLE;
+    if (nn_fast (pipebase->instate == NN_PIPEBASE_INSTATE_RECEIVED)) {
+        pipebase->instate = NN_PIPEBASE_INSTATE_IDLE;
         return rc;
     }
-    sp_assert (pipebase->instate == SP_PIPEBASE_INSTATE_RECEIVING);
-    pipebase->instate = SP_PIPEBASE_INSTATE_ASYNC;
-    return rc | SP_PIPEBASE_RELEASE;
+    nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_RECEIVING);
+    pipebase->instate = NN_PIPEBASE_INSTATE_ASYNC;
+    return rc | NN_PIPEBASE_RELEASE;
 }
 

@@ -25,7 +25,7 @@ set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_library (nanomsg SHARED
-    sp.h
+    nn.h
     transport.h
     protocol.h
     inproc.h
@@ -173,18 +173,18 @@ add_library (nanomsg SHARED
     transports/tcp/tcp.c
     )
 
-add_definitions (-DSP_EXPORTS)
+add_definitions (-DNN_EXPORTS)
 
-if (UNIX AND NOT SP_HAVE_OSX)
+if (UNIX AND NOT NN_HAVE_OSX)
     target_link_libraries (nanomsg rt)
 endif ()
 
-if (SP_HAVE_WINDOWS)
+if (NN_HAVE_WINDOWS)
     target_link_libraries (nanomsg ws2_32)
     target_link_libraries (nanomsg Mswsock.lib)
 endif ()
 
-if (SP_HAVE_SOLARIS)
+if (NN_HAVE_SOLARIS)
     target_link_libraries (nanomsg socket)
     target_link_libraries (nanomsg nsl)
 endif ()

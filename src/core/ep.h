@@ -20,15 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_EP_INCLUDED
-#define SP_EP_INCLUDED
+#ifndef NN_EP_INCLUDED
+#define NN_EP_INCLUDED
 
-struct sp_ep;
+struct nn_ep;
 
 /*  Returns fd of the socket the endpoint belongs to. */
-int sp_ep_fd (struct sp_ep *self);
+int nn_ep_fd (struct nn_ep *self);
 
 /*  Asks endpoint to terminate. */
-void sp_ep_close (struct sp_ep *self);
+void nn_ep_close (struct nn_ep *self);
 
 #endif

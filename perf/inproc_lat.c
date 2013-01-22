@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 
 #include "../src/utils/err.c"
@@ -43,23 +43,23 @@ void worker (void *arg)
     int i;
     char *buf;
 
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
-    rc = sp_connect (s, "inproc://inproc_lat");
+    rc = nn_connect (s, "inproc://inproc_lat");
     assert (rc >= 0);
 
     buf = malloc (message_size);
     assert (buf);
 
     for (i = 0; i != roundtrip_count; i++) {
-        rc = sp_recv (s, buf, message_size, 0);
+        rc = nn_recv (s, buf, message_size, 0);
         assert (rc == message_size);
-        rc = sp_send (s, buf, message_size, 0);
+        rc = nn_send (s, buf, message_size, 0);
         assert (rc == message_size);
     }
 
     free (buf);
-    rc = sp_close (s);
+    rc = nn_close (s);
     assert (rc == 0);
 }
 
@@ -69,8 +69,8 @@ int main (int argc, char *argv [])
     int s;
     int i;
     char *buf;
-    struct sp_thread thread;
-    struct sp_stopwatch stopwatch;
+    struct nn_thread thread;
+    struct nn_stopwatch stopwatch;
     uint64_t elapsed;
     double latency;
 
@@ -82,43 +82,43 @@ int main (int argc, char *argv [])
     message_size = atoi (argv [1]);
     roundtrip_count = atoi (argv [2]);
 
-    rc = sp_init ();
+    rc = nn_init ();
     assert (rc == 0);
 
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
-    rc = sp_bind (s, "inproc://inproc_lat");
+    rc = nn_bind (s, "inproc://inproc_lat");
     assert (rc >= 0);
 
     buf = malloc (message_size);
     assert (buf);
     memset (buf, 111, message_size);
 
-    /*  Wait a bit till the worker thread blocks in sp_recv(). */
-    sp_thread_init (&thread, worker, NULL);
-    sp_sleep (100);
+    /*  Wait a bit till the worker thread blocks in nn_recv(). */
+    nn_thread_init (&thread, worker, NULL);
+    nn_sleep (100);
 
-    sp_stopwatch_init (&stopwatch);
+    nn_stopwatch_init (&stopwatch);
 
     for (i = 0; i != roundtrip_count; i++) {
-        rc = sp_send (s, buf, message_size, 0);
+        rc = nn_send (s, buf, message_size, 0);
         assert (rc == message_size);
-        rc = sp_recv (s, buf, message_size, 0);
+        rc = nn_recv (s, buf, message_size, 0);
         assert (rc == message_size);
     }
 
-    elapsed = sp_stopwatch_term (&stopwatch);
+    elapsed = nn_stopwatch_term (&stopwatch);
 
     latency = (double) elapsed / (roundtrip_count * 2);
     printf ("message size: %d [B]\n", (int) message_size);
     printf ("roundtrip count: %d\n", (int) roundtrip_count);
     printf ("average latency: %.3f [us]\n", (double) latency);
 
-    sp_thread_term (&thread);
+    nn_thread_term (&thread);
     free (buf);
-    rc = sp_close (s);
+    rc = nn_close (s);
     assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     assert (rc == 0);
 
     return 0;

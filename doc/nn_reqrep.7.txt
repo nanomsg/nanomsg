@@ -1,16 +1,16 @@
-sp_reqrep(7)
+nn_reqrep(7)
 ============
 
 NAME
 ----
-sp_reqrep - request/reply scalability protocol
+nn_reqrep - request/reply scalability protocol
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/reprep.h>*
+*#include <nanomsg/reprep.h>*
 
 
 DESCRIPTION
@@ -21,17 +21,17 @@ workers.
 Socket Types
 ~~~~~~~~~~~~
 
-SP_REQ::
+NN_REQ::
     Used to implement the client application that sends requests and
     receives replies.
-SP_REP::
+NN_REP::
     Used to implement the stateless worker that receives requests and sends
     replies.
 
 Socket Options
 ~~~~~~~~~~~~~~
 
-SP_RESEND_IVL::
+NN_RESEND_IVL::
     This option is defined on the full REQ socket. If reply is not received
     in specified amount of milliseconds, the request will be automatically
     resent. The type of this option is int. Default value is 60000 (1 minute).
@@ -39,11 +39,11 @@ SP_RESEND_IVL::
 
 SEE ALSO
 --------
-linknanomsg:sp_pubsub[7]
-linknanomsg:sp_fanin[7]
-linknanomsg:sp_fanout[7]
-linknanomsg:sp_survey[7]
-linknanomsg:sp_pair[7]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_fanin[7]
+linknanomsg:nn_fanout[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]
 
 

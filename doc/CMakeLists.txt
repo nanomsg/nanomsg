@@ -30,37 +30,37 @@ if (NOT WIN32)
         nanomsg.7
 
         #  Protocols.
-        sp_pair.7
-        sp_reqrep.7
-        sp_pubsub.7
-        sp_survey.7
-        sp_fanin.7
-        sp_fanout.7
+        nn_pair.7
+        nn_reqrep.7
+        nn_pubsub.7
+        nn_survey.7
+        nn_fanin.7
+        nn_fanout.7
 
         #  Transports.
-        sp_inproc.7
-        sp_ipc.7
-        sp_tcp.7
+        nn_inproc.7
+        nn_ipc.7
+        nn_tcp.7
 
         #  Functions.
-        sp_version.3
-        sp_errno.3
-        sp_strerror.3
-        sp_init.3
-        sp_term.3
-        sp_allocmsg.3
-        sp_freemsg.3
-        sp_socket.3
-        sp_close.3
-        sp_getsockopt.3
-        sp_setsockopt.3
-        sp_bind.3
-        sp_connect.3
-        sp_shutdown.3
-        sp_send.3
-        sp_recv.3
-        sp_sendmsg.3
-        sp_recvmsg.3
+        nn_version.3
+        nn_errno.3
+        nn_strerror.3
+        nn_init.3
+        nn_term.3
+        nn_allocmsg.3
+        nn_freemsg.3
+        nn_socket.3
+        nn_close.3
+        nn_getsockopt.3
+        nn_setsockopt.3
+        nn_bind.3
+        nn_connect.3
+        nn_shutdown.3
+        nn_send.3
+        nn_recv.3
+        nn_sendmsg.3
+        nn_recvmsg.3
 
         )
 

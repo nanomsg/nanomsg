@@ -25,111 +25,111 @@
 
 #include <string.h>
 
-/*  sp_chunkref should be reinterpreted as this structure in case the first
+/*  nn_chunkref should be reinterpreted as this structure in case the first
     byte ('tag') is 0xff. */
-struct sp_chunkref_chunk {
+struct nn_chunkref_chunk {
     uint8_t tag;
-    struct sp_chunk *chunk;
+    struct nn_chunk *chunk;
 };
 
 /*  Check whether VSM are small enough for size to fit into the first byte
     of the structure. */
-CT_ASSERT (SP_CHUNKREF_MAX < 255);
+CT_ASSERT (NN_CHUNKREF_MAX < 255);
 
-/*  Check whether sp_chunkref_chunk fits into sp_chunkref. */
-CT_ASSERT (sizeof (struct sp_chunkref) >= sizeof (struct sp_chunkref_chunk));
+/*  Check whether nn_chunkref_chunk fits into nn_chunkref. */
+CT_ASSERT (sizeof (struct nn_chunkref) >= sizeof (struct nn_chunkref_chunk));
 
-void sp_chunkref_init (struct sp_chunkref *self, size_t size)
+void nn_chunkref_init (struct nn_chunkref *self, size_t size)
 {
-    struct sp_chunkref_chunk *ch;
+    struct nn_chunkref_chunk *ch;
 
-    if (size < SP_CHUNKREF_MAX) {
+    if (size < NN_CHUNKREF_MAX) {
         self->ref [0] = (uint8_t) size;
         return;
     }
 
-    ch = (struct sp_chunkref_chunk*) self;
+    ch = (struct nn_chunkref_chunk*) self;
     ch->tag = 0xff;
-    ch->chunk = sp_chunk_alloc (size, 0);
+    ch->chunk = nn_chunk_alloc (size, 0);
     alloc_assert (ch->chunk);
 }
 
-void sp_chunkref_init_chunk (struct sp_chunkref *self, struct sp_chunk *chunk)
+void nn_chunkref_init_chunk (struct nn_chunkref *self, struct nn_chunk *chunk)
 {
-    struct sp_chunkref_chunk *ch;
+    struct nn_chunkref_chunk *ch;
 
-    ch = (struct sp_chunkref_chunk*) self;
+    ch = (struct nn_chunkref_chunk*) self;
     ch->tag = 0xff;
     ch->chunk = chunk;
 }
 
-void sp_chunkref_term (struct sp_chunkref *self)
+void nn_chunkref_term (struct nn_chunkref *self)
 {
-    struct sp_chunkref_chunk *ch;
+    struct nn_chunkref_chunk *ch;
 
     if (self->ref [0] == 0xff) {
-        ch = (struct sp_chunkref_chunk*) self;
-        sp_chunk_free (ch->chunk);
+        ch = (struct nn_chunkref_chunk*) self;
+        nn_chunk_free (ch->chunk);
     }
 }
 
-struct sp_chunk *sp_chunkref_getchunk (struct sp_chunkref *self)
+struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self)
 {
-    struct sp_chunkref_chunk *ch;
-    struct sp_chunk *chunk;
+    struct nn_chunkref_chunk *ch;
+    struct nn_chunk *chunk;
 
     if (self->ref [0] == 0xff) {
-        ch = (struct sp_chunkref_chunk*) self;
+        ch = (struct nn_chunkref_chunk*) self;
         self->ref [0] = 0;
         return ch->chunk;
     }
 
-    chunk = sp_chunk_alloc (self->ref [0], 0);
+    chunk = nn_chunk_alloc (self->ref [0], 0);
     alloc_assert (chunk);
-    memcpy (sp_chunk_data (chunk), &self->ref [1], self->ref [0]);
+    memcpy (nn_chunk_data (chunk), &self->ref [1], self->ref [0]);
     self->ref [0] = 0;
     return chunk;
 }
 
-void sp_chunkref_mv (struct sp_chunkref *dst, struct sp_chunkref *src)
+void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src)
 {
     memcpy (dst, src, src->ref [0] == 0xff ?
-        sizeof (struct sp_chunkref_chunk) : src->ref [0] + 1);
+        sizeof (struct nn_chunkref_chunk) : src->ref [0] + 1);
 }
 
-void sp_chunkref_cp (struct sp_chunkref *dst, struct sp_chunkref *src)
+void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
 {
     /*  TODO: At the moment, copy is made. Do it via reference count. */
-    sp_chunkref_init (dst, sp_chunkref_size (src));
-    memcpy (sp_chunkref_data (dst), sp_chunkref_data (src),
-        sp_chunkref_size (src));
+    nn_chunkref_init (dst, nn_chunkref_size (src));
+    memcpy (nn_chunkref_data (dst), nn_chunkref_data (src),
+        nn_chunkref_size (src));
 }
 
-void *sp_chunkref_data (struct sp_chunkref *self)
+void *nn_chunkref_data (struct nn_chunkref *self)
 {
     return self->ref [0] == 0xff ?
-        sp_chunk_data (((struct sp_chunkref_chunk*) self)->chunk) :
+        nn_chunk_data (((struct nn_chunkref_chunk*) self)->chunk) :
         &self->ref [1];
 }
 
-size_t sp_chunkref_size (struct sp_chunkref *self)
+size_t nn_chunkref_size (struct nn_chunkref *self)
 {
     return self->ref [0] == 0xff ?
-        sp_chunk_size (((struct sp_chunkref_chunk*) self)->chunk) :
+        nn_chunk_size (((struct nn_chunkref_chunk*) self)->chunk) :
         self->ref [0];
 }
 
-void sp_chunkref_trim (struct sp_chunkref *self, size_t n)
+void nn_chunkref_trim (struct nn_chunkref *self, size_t n)
 {
-    struct sp_chunkref_chunk *ch;
+    struct nn_chunkref_chunk *ch;
 
     if (self->ref [0] == 0xff) {
-        ch = (struct sp_chunkref_chunk*) self;
-        ch->chunk = sp_chunk_trim (ch->chunk, n);
+        ch = (struct nn_chunkref_chunk*) self;
+        ch->chunk = nn_chunk_trim (ch->chunk, n);
         return;
     }
 
-    sp_assert (self->ref [0] >= n);
+    nn_assert (self->ref [0] >= n);
     memmove (&self->ref [1], &self->ref [1 + n], self->ref [0] - n);
     self->ref [0] -= n;
 }

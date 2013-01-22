@@ -29,17 +29,17 @@
 
 #include <string.h>
 
-void sp_epbase_init (struct sp_epbase *self,
-    const struct sp_epbase_vfptr *vfptr, const char *addr, void *hint)
+void nn_epbase_init (struct nn_epbase *self,
+    const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint)
 {
     /*  Set up the virtual functions table. */
     self->vfptr = vfptr;
 
     /*  Remember which socket the endpoint belongs to. */
-    self->sock = (struct sp_sock*) hint;
+    self->sock = (struct nn_sock*) hint;
 
     /*  Store the textual for of the address. */
-    sp_assert (strlen (addr) <= SP_SOCKADDR_MAX);
+    nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
 #if defined _MSC_VER
 #pragma warning (push)
 #pragma warning (disable:4996)
@@ -50,40 +50,40 @@ void sp_epbase_init (struct sp_epbase *self,
 #endif
 }
 
-void sp_epbase_term (struct sp_epbase *self)
+void nn_epbase_term (struct nn_epbase *self)
 {
-    sp_sock_ep_closed (self->sock, self);
+    nn_sock_ep_closed (self->sock, self);
 }
 
-struct sp_cp *sp_epbase_getcp (struct sp_epbase *self)
+struct nn_cp *nn_epbase_getcp (struct nn_epbase *self)
 {
-    return sp_sock_getcp (self->sock);
+    return nn_sock_getcp (self->sock);
 }
 
-const char *sp_epbase_getaddr (struct sp_epbase *self)
+const char *nn_epbase_getaddr (struct nn_epbase *self)
 {
     return self->addr;
 }
 
-void sp_epbase_getopt (struct sp_epbase *self, int level, int option,
+void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     int rc;
 
-    rc = sp_sock_getopt (self->sock, level, option, optval, optvallen, 1);
+    rc = nn_sock_getopt (self->sock, level, option, optval, optvallen, 1);
     errnum_assert (rc == 0, -rc);
 }
 
-int sp_ep_fd (struct sp_ep *self)
+int nn_ep_fd (struct nn_ep *self)
 {
-    return sp_sock_fd (((struct sp_epbase*) self)->sock);
+    return nn_sock_fd (((struct nn_epbase*) self)->sock);
 }
 
-void sp_ep_close (struct sp_ep *self)
+void nn_ep_close (struct nn_ep *self)
 {
-    struct sp_epbase *epbase;
+    struct nn_epbase *epbase;
 
-    epbase = (struct sp_epbase*) self;
+    epbase = (struct nn_epbase*) self;
     epbase->vfptr->close (epbase);
 }
 

@@ -20,17 +20,17 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_MUTEX_INCLUDED
-#define SP_MUTEX_INCLUDED
+#ifndef NN_MUTEX_INCLUDED
+#define NN_MUTEX_INCLUDED
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 #include "win.h"
 #else
 #include <pthread.h>
 #endif
 
-struct sp_mutex {
-#ifdef SP_HAVE_WINDOWS
+struct nn_mutex {
+#ifdef NN_HAVE_WINDOWS
     CRITICAL_SECTION mutex;
 #else
     pthread_mutex_t mutex;
@@ -38,17 +38,17 @@ struct sp_mutex {
 };
 
 /*  Initialise the mutex. */
-void sp_mutex_init (struct sp_mutex *self);
+void nn_mutex_init (struct nn_mutex *self);
 
 /*  Terminate the mutex. */
-void sp_mutex_term (struct sp_mutex *self);
+void nn_mutex_term (struct nn_mutex *self);
 
 /*  Lock the mutex. Behaviour of multiple locks from the same thread is
     undefined. */
-void sp_mutex_lock (struct sp_mutex *self);
+void nn_mutex_lock (struct nn_mutex *self);
 
 /*  Unlock the mutex. Behaviour of unlocking an unlocked mutex is undefined */
-void sp_mutex_unlock (struct sp_mutex *self);
+void nn_mutex_unlock (struct nn_mutex *self);
 
 #endif
 

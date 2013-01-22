@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef SP_HAVE_WINDOWS
+#ifndef NN_HAVE_WINDOWS
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -35,12 +35,12 @@
 #endif
 
 /*  Private functions. */
-int sp_addr_parse_literal (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen);
-void sp_addr_any (int flags, struct sockaddr_storage *result,
-    sp_socklen *resultlen);
+int nn_addr_parse_literal (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen);
+void nn_addr_any (int flags, struct sockaddr_storage *result,
+    nn_socklen *resultlen);
 
-int sp_addr_parse_port (const char *addr, const char **colon)
+int nn_addr_parse_port (const char *addr, const char **colon)
 {
     size_t pos;
     int port;
@@ -64,18 +64,18 @@ int sp_addr_parse_port (const char *addr, const char **colon)
 
     /*  Return the numeric value of the port. */
     port = atoi (addr + pos + 1);
-    sp_assert (port >= 0);
+    nn_assert (port >= 0);
     if (port > 0xffff)
         return -EINVAL;
     return port;
 }
 
-#if defined SP_USE_IFADDRS
+#if defined NN_USE_IFADDRS
 
 #include <ifaddrs.h>
 
-int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
+int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen)
 {
     int rc;
     struct ifaddrs *ifaces;
@@ -86,12 +86,12 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
     /*  Asterisk is a special name meaning "all interfaces". */
     if (addrlen == 1 && addr [0] == '*') {
-        sp_addr_any (flags, result, resultlen);
+        nn_addr_any (flags, result, resultlen);
         return 0;
     }
 
     /*  Try to resolve the supplied string as a literal address. */
-    rc = sp_addr_parse_literal (addr, addrlen, flags, result, resultlen);
+    rc = nn_addr_parse_literal (addr, addrlen, flags, result, resultlen);
     if (rc == 0)
         return 0;
     errnum_assert (rc == -EINVAL, -rc);
@@ -100,7 +100,7 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
     ifaces = NULL;
     rc = getifaddrs (&ifaces);
     errno_assert (rc == 0);
-    sp_assert (ifaces);
+    nn_assert (ifaces);
 
     /*  Find the NIC with the specified name. */
     ipv4 = NULL;
@@ -114,18 +114,18 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
         switch (it->ifa_addr->sa_family) {
         case AF_INET:
-            sp_assert (!ipv4);
+            nn_assert (!ipv4);
             ipv4 = it;
             break;
         case AF_INET6:
-            sp_assert (!ipv6);
+            nn_assert (!ipv6);
             ipv6 = it;
             break;
         }
     }
 
     /*  IPv6 address is preferable. */
-    if (ipv6 && !(flags & SP_ADDR_IPV4ONLY)) {
+    if (ipv6 && !(flags & NN_ADDR_IPV4ONLY)) {
         result->ss_family = AF_INET;
         memcpy (result, ipv6->ifa_addr, sizeof (struct sockaddr_in6));
         *resultlen = sizeof (struct sockaddr_in6);
@@ -149,14 +149,14 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
 #endif
 
-#if defined SP_USE_SIOCGIFADDR
+#if defined NN_USE_SIOCGIFADDR
 
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 
-int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
+int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen)
 {
     int rc;
     int s;
@@ -189,7 +189,7 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
     /*  Interface name resolution succeeded. Return the address to the user. */
     /*  TODO: What about IPv6 addresses? */
-    sp_assert (req.ifr_addr.sa_family == AF_INET);
+    nn_assert (req.ifr_addr.sa_family == AF_INET);
     memcpy (result, (struct sockaddr_in*) &req.ifr_addr,
         sizeof (struct sockaddr_in));
     *resultlen = sizeof (struct sockaddr_in);
@@ -200,45 +200,45 @@ int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
 #endif
 
-#if defined SP_USE_LITERAL_IFADDR
+#if defined NN_USE_LITERAL_IFADDR
 
 /*  The last resort case. If we haven't found any mechanism for turning
     NIC names into addresses, we'll try to resolve the string as an address
     literal. */
-int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
+int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen)
 {
     /*  Asterisk is a special name meaning "all interfaces". */
     if (addrlen == 1 && addr [0] == '*') {
-        sp_addr_any (flags, result, resultlen);
+        nn_addr_any (flags, result, resultlen);
         return 0;
     }
 
     /*  On Windows there are no sane network interface names. We'll treat the
         name as a IP address literal. */
-    return sp_addr_parse_literal (addr, addrlen, flags, result, resultlen);
+    return nn_addr_parse_literal (addr, addrlen, flags, result, resultlen);
 }
 
 #endif
 
-int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
+int nn_addr_parse_remote (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen)
 {
     int rc;
     struct addrinfo query;
     struct addrinfo *reply;
-    char hostname [SP_SOCKADDR_MAX];
+    char hostname [NN_SOCKADDR_MAX];
 
     /*  Try to resolve the supplied string as a literal address. Note that
         in this case, there's no DNS lookup involved. */
-    rc = sp_addr_parse_literal (addr, addrlen, flags, result, resultlen);
+    rc = nn_addr_parse_literal (addr, addrlen, flags, result, resultlen);
     if (rc == 0)
         return 0;
     errnum_assert (rc == -EINVAL, -rc);
 
     /*  The name is not a literal.*/
     memset (&query, 0, sizeof (query));
-    if (flags & SP_ADDR_IPV4ONLY)
+    if (flags & NN_ADDR_IPV4ONLY)
         query.ai_family = AF_INET;
     else {
         query.ai_family = AF_INET6;
@@ -246,7 +246,7 @@ int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
         query.ai_flags = AI_V4MAPPED;
 #endif
     }
-    sp_assert (sizeof (hostname) > addrlen);
+    nn_assert (sizeof (hostname) > addrlen);
     query.ai_socktype = SOCK_STREAM;
     memcpy (hostname, addr, addrlen);
     hostname [addrlen] = 0;
@@ -258,7 +258,7 @@ int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
 
     /*  Check that exactly one address is returned and return it to
         the caller. */
-    sp_assert (reply && !reply->ai_next);
+    nn_assert (reply && !reply->ai_next);
     memcpy (result, reply->ai_addr, reply->ai_addrlen);
     *resultlen = reply->ai_addrlen;
 
@@ -267,8 +267,8 @@ int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
     return 0;
 }
 
-int sp_addr_parse_literal (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen)
+int nn_addr_parse_literal (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen)
 {
     int rc;
     char addrz [INET6_ADDRSTRLEN > INET_ADDRSTRLEN ?
@@ -293,7 +293,7 @@ int sp_addr_parse_literal (const char *addr, size_t addrlen, int flags,
     }
 
     /*  Try to interpret the literal as an IPv6 address. */
-    if (!(flags & SP_ADDR_IPV4ONLY)) {
+    if (!(flags & NN_ADDR_IPV4ONLY)) {
         rc = inet_pton (AF_INET6, addrz,
             &(((struct sockaddr_in6*) result)->sin6_addr));
         if (rc == 1) {
@@ -318,10 +318,10 @@ int sp_addr_parse_literal (const char *addr, size_t addrlen, int flags,
     return -EINVAL;
 }
 
-void sp_addr_any (int flags, struct sockaddr_storage *result,
-    sp_socklen *resultlen)
+void nn_addr_any (int flags, struct sockaddr_storage *result,
+    nn_socklen *resultlen)
 {
-    if (flags & SP_ADDR_IPV4ONLY) {
+    if (flags & NN_ADDR_IPV4ONLY) {
         result->ss_family = AF_INET;
 
         ((struct sockaddr_in*) result)->sin_addr.s_addr =

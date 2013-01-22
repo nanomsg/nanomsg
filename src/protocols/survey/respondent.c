@@ -23,7 +23,7 @@
 #include "respondent.h"
 #include "xrespondent.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../survey.h"
 
 #include "../../utils/err.h"
@@ -35,151 +35,151 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SP_RESPONDENT_INPROGRESS 1
+#define NN_RESPONDENT_INPROGRESS 1
 
-struct sp_respondent {
-    struct sp_xrespondent xrespondent;
+struct nn_respondent {
+    struct nn_xrespondent xrespondent;
     uint32_t surveyid;
     uint32_t flags;
 };
 
 /*  Private functions. */
-static void sp_respondent_init (struct sp_respondent *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_respondent_term (struct sp_respondent *self);
+static void nn_respondent_init (struct nn_respondent *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_respondent_term (struct nn_respondent *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_respondent_destroy (struct sp_sockbase *self);
-static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_respondent_sethdr (struct sp_msg *msg, const void *hdr,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_respondent_destroy (struct nn_sockbase *self);
+static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_respondent_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_respondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_respondent_sockbase_vfptr = {
-    sp_respondent_destroy,
-    sp_xrespondent_add,
-    sp_xrespondent_rm,
-    sp_xrespondent_in,
-    sp_xrespondent_out,
-    sp_respondent_send,
-    sp_respondent_recv,
-    sp_xrespondent_setopt,
-    sp_xrespondent_getopt,
-    sp_respondent_sethdr,
-    sp_respondent_gethdr
+static int nn_respondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
+    nn_respondent_destroy,
+    nn_xrespondent_add,
+    nn_xrespondent_rm,
+    nn_xrespondent_in,
+    nn_xrespondent_out,
+    nn_respondent_send,
+    nn_respondent_recv,
+    nn_xrespondent_setopt,
+    nn_xrespondent_getopt,
+    nn_respondent_sethdr,
+    nn_respondent_gethdr
 };
 
-static void sp_respondent_init (struct sp_respondent *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_respondent_init (struct nn_respondent *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_xrespondent_init (&self->xrespondent, vfptr, fd);
+    nn_xrespondent_init (&self->xrespondent, vfptr, fd);
     self->flags = 0;
 }
 
-static void sp_respondent_term (struct sp_respondent *self)
+static void nn_respondent_term (struct nn_respondent *self)
 {
-    sp_xrespondent_term (&self->xrespondent);
+    nn_xrespondent_term (&self->xrespondent);
 }
 
-void sp_respondent_destroy (struct sp_sockbase *self)
+void nn_respondent_destroy (struct nn_sockbase *self)
 {
-    struct sp_respondent *respondent;
+    struct nn_respondent *respondent;
 
-    respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
+    respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
 
-    sp_respondent_term (respondent);
-    sp_free (respondent);
+    nn_respondent_term (respondent);
+    nn_free (respondent);
 }
 
-static int sp_respondent_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_respondent *respondent;
+    struct nn_respondent *respondent;
 
-    respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
+    respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
 
     /*  If there's no survey going on, report EFSM error. */
-    if (sp_slow (!(respondent->flags & SP_RESPONDENT_INPROGRESS)))
+    if (nn_slow (!(respondent->flags & NN_RESPONDENT_INPROGRESS)))
         return -EFSM;
 
     /*  Tag the message with survey ID. */
-    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, 4);
-    sp_putl (sp_chunkref_data (&msg->hdr), respondent->surveyid);
+    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, 4);
+    nn_putl (nn_chunkref_data (&msg->hdr), respondent->surveyid);
 
     /*  Try to send the message. If it cannot be sent due to pushback, drop it
         silently. */
-    rc = sp_xrespondent_send (&respondent->xrespondent.sockbase, msg);
-    if (sp_slow (rc == -EAGAIN)) {
-        sp_msg_term (msg);
+    rc = nn_xrespondent_send (&respondent->xrespondent.sockbase, msg);
+    if (nn_slow (rc == -EAGAIN)) {
+        nn_msg_term (msg);
         return -EAGAIN;
     }
     errnum_assert (rc == 0, -rc);
 
     /*  Remember that no survey is being processed. */
-    respondent->flags &= ~SP_RESPONDENT_INPROGRESS;
+    respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
 
     return 0;
 }
 
-static int sp_respondent_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_respondent *respondent;
+    struct nn_respondent *respondent;
 
-    respondent = sp_cont (self, struct sp_respondent, xrespondent.sockbase);
+    respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
 
     /*  Cancel current survey, if it exists. */
-    respondent->flags &= ~SP_RESPONDENT_INPROGRESS;
+    respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
 
     /*  Get next survey. */
-    rc = sp_xrespondent_recv (&respondent->xrespondent.sockbase, msg);
-    if (sp_slow (rc == -EAGAIN))
+    rc = nn_xrespondent_recv (&respondent->xrespondent.sockbase, msg);
+    if (nn_slow (rc == -EAGAIN))
         return -EAGAIN;
     errnum_assert (rc == 0, -rc);
 
     /*  Remember the survey ID. */
-    sp_assert (sp_chunkref_size (&msg->hdr) == sizeof (uint32_t));
-    respondent->surveyid = sp_getl (sp_chunkref_data (&msg->hdr));
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, 0);
+    nn_assert (nn_chunkref_size (&msg->hdr) == sizeof (uint32_t));
+    respondent->surveyid = nn_getl (nn_chunkref_data (&msg->hdr));
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, 0);
 
     /*  Remember that survey is being processed. */
-    respondent->flags |= SP_RESPONDENT_INPROGRESS;
+    respondent->flags |= NN_RESPONDENT_INPROGRESS;
 
     return 0;
 }
 
-static int sp_respondent_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_respondent_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_respondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_respondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-static struct sp_sockbase *sp_respondent_create (int fd)
+static struct nn_sockbase *nn_respondent_create (int fd)
 {
-    struct sp_respondent *self;
+    struct nn_respondent *self;
 
-    self = sp_alloc (sizeof (struct sp_respondent), "socket (respondent)");
+    self = nn_alloc (sizeof (struct nn_respondent), "socket (respondent)");
     alloc_assert (self);
-    sp_respondent_init (self, &sp_respondent_sockbase_vfptr, fd);
+    nn_respondent_init (self, &nn_respondent_sockbase_vfptr, fd);
     return &self->xrespondent.sockbase;
 }
 
-static struct sp_socktype sp_respondent_socktype_struct = {
+static struct nn_socktype nn_respondent_socktype_struct = {
     AF_SP,
-    SP_RESPONDENT,
-    sp_respondent_create
+    NN_RESPONDENT,
+    nn_respondent_create
 };
 
-struct sp_socktype *sp_respondent_socktype = &sp_respondent_socktype_struct;
+struct nn_socktype *nn_respondent_socktype = &nn_respondent_socktype_struct;
 

@@ -31,17 +31,17 @@
 #include <string.h>
 #include <stddef.h>
 
-/*  Implementation of sp_epbase callback interface. */
-static void sp_inprocc_close (struct sp_epbase *self);
-static const struct sp_epbase_vfptr sp_inprocc_epbase_vfptr =
-    {sp_inprocc_close};
+/*  Implementation of nn_epbase callback interface. */
+static void nn_inprocc_close (struct nn_epbase *self);
+static const struct nn_epbase_vfptr nn_inprocc_epbase_vfptr =
+    {nn_inprocc_close};
 
-int sp_inprocc_init (struct sp_inprocc *self, const char *addr, void *hint)
+int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint)
 {
-    sp_epbase_init (&self->epbase, &sp_inprocc_epbase_vfptr, addr, hint);
+    nn_epbase_init (&self->epbase, &nn_inprocc_epbase_vfptr, addr, hint);
 
     /*  Store the name of the endpoint. */
-    if (sp_slow (strlen (addr) + 1 > SP_INPROCC_NAMELEN_MAX))
+    if (nn_slow (strlen (addr) + 1 > NN_INPROCC_NAMELEN_MAX))
         return -ENAMETOOLONG;
 #if defined _MSC_VER
 #pragma warning(push)
@@ -58,34 +58,34 @@ int sp_inprocc_init (struct sp_inprocc *self, const char *addr, void *hint)
     return 0;
 }
 
-void sp_inprocc_add_pipe (struct sp_inprocc *self, struct sp_msgpipe *pipe)
+void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)
 {
     /*  This should never happen. If the endpoint is already connected it
         shouldn't get connected anew. */
-    sp_assert (!self->pipe);
+    nn_assert (!self->pipe);
 
     /*  Store the reference to the pipe. */
     self->pipe = pipe;
 }
 
-static void sp_inprocc_close (struct sp_epbase *self)
+static void nn_inprocc_close (struct nn_epbase *self)
 {
-    struct sp_inprocc *inprocc;
+    struct nn_inprocc *inprocc;
 
-    inprocc = sp_cont (self, struct sp_inprocc, epbase);
+    inprocc = nn_cont (self, struct nn_inprocc, epbase);
 
     /*  If the endpoint is connected, detach the pipe from the connect-side
         socket. */
     if (inprocc->pipe)
-        sp_msgpipe_detachc (inprocc->pipe);
+        nn_msgpipe_detachc (inprocc->pipe);
 
     /*  Remove the endpoint from the repository of all inproc endpoints. */
-    sp_inproc_ctx_disconnect (inprocc);
+    nn_inproc_ctx_disconnect (inprocc);
 
-    sp_epbase_term (&inprocc->epbase);
+    nn_epbase_term (&inprocc->epbase);
 
     /*  We can deallocate the endpoint straight away. There is no delayed
         termination for inproc endpoints. */
-    sp_free (inprocc);
+    nn_free (inprocc);
 }
 

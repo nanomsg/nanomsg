@@ -20,39 +20,39 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_MSG_INCLUDED
-#define SP_MSG_INCLUDED
+#ifndef NN_MSG_INCLUDED
+#define NN_MSG_INCLUDED
 
 #include "chunkref.h"
 
 #include <stddef.h>
 
-struct sp_msg {
+struct nn_msg {
 
     /*  Contains SP protocol message header. */
-    struct sp_chunkref hdr;
+    struct nn_chunkref hdr;
 
     /*  Contains application level message payload. */
-    struct sp_chunkref body;
+    struct nn_chunkref body;
 };
 
 /*  Initialises a message with body 'size' bytes long and empty header. */
-void sp_msg_init (struct sp_msg *self, size_t size);
+void nn_msg_init (struct nn_msg *self, size_t size);
 
 /*  Initialise message with body provided in the form of chunk pointer. */
-void sp_msg_init_chunk (struct sp_msg *self, struct sp_chunk *chunk);
+void nn_msg_init_chunk (struct nn_msg *self, struct nn_chunk *chunk);
 
 /*  Frees resources allocate with the message. */
-void sp_msg_term (struct sp_msg *self);
+void nn_msg_term (struct nn_msg *self);
 
 /*  Moves the content of the message from src to dst. dst should not be
     initialised prior to the operation. dst will be uninitialised after the
     operation. */
-void sp_msg_mv (struct sp_msg *dst, struct sp_msg *src);
+void nn_msg_mv (struct nn_msg *dst, struct nn_msg *src);
 
 /*  Copies a message from src to dst. dst should not be
     initialised prior to the operation. */
-void sp_msg_cp (struct sp_msg *dst, struct sp_msg *src);
+void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src);
 
 #endif
 

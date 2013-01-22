@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 #include "../src/tcp.h"
 
@@ -39,68 +39,68 @@ int main ()
     int i;
     char buf [3];
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
 
     /*  Try closing a TCP socket while it not connected. */
-    sc = sp_socket (AF_SP, SP_PAIR);
+    sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = sp_connect (sc, "tcp://127.0.0.1:5555");
+    rc = nn_connect (sc, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
-    rc = sp_close (sc);
+    rc = nn_close (sc);
     errno_assert (rc == 0);
 
     /*  Open the socket anew. */
-    sc = sp_socket (AF_SP, SP_PAIR);
+    sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = sp_connect (sc, "tcp://127.0.0.1:5555");
+    rc = nn_connect (sc, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
 
     /*  Leave enough time for at least on re-connect attempt. */
-    sp_sleep (200);
+    nn_sleep (200);
 
-    sb = sp_socket (AF_SP, SP_PAIR);
+    sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = sp_bind (sb, "tcp://127.0.0.1:5555");
+    rc = nn_bind (sb, "tcp://127.0.0.1:5555");
     errno_assert (rc >= 0);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
 
-        rc = sp_send (sc, "ABC", 3, 0);
+        rc = nn_send (sc, "ABC", 3, 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
 
-        rc = sp_recv (sb, buf, sizeof (buf), 0);
+        rc = nn_recv (sb, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
 
-        rc = sp_send (sb, "DEF", 3, 0);
+        rc = nn_send (sb, "DEF", 3, 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
 
-        rc = sp_recv (sc, buf, sizeof (buf), 0);
+        rc = nn_recv (sc, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
     }
 
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
 
-        rc = sp_send (sc, "XYZ", 3, 0);
+        rc = nn_send (sc, "XYZ", 3, 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
 
-        rc = sp_recv (sb, buf, sizeof (buf), 0);
+        rc = nn_recv (sb, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        sp_assert (rc == 3);
+        nn_assert (rc == 3);
     }
 
-    rc = sp_close (sc);
+    rc = nn_close (sc);
     errno_assert (rc == 0);
-    rc = sp_close (sb);
+    rc = nn_close (sb);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

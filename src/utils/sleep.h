@@ -20,11 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SLEEP_INCLUDED
-#define SP_SLEEP_INCLUDED
+#ifndef NN_SLEEP_INCLUDED
+#define NN_SLEEP_INCLUDED
 
 /*  Platform independent implementation of sleeping. */
 
-void sp_sleep (int milliseconds);
+void nn_sleep (int milliseconds);
 
 #endif

@@ -20,12 +20,12 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_SURVEYOR_INCLUDED
-#define SP_SURVEYOR_INCLUDED
+#ifndef NN_SURVEYOR_INCLUDED
+#define NN_SURVEYOR_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct sp_socktype *sp_surveyor_socktype;
+extern struct nn_socktype *nn_surveyor_socktype;
 
 #endif
 

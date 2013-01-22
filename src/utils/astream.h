@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_ASTREAM_INCLUDED
-#define SP_ASTREAM_INCLUDED
+#ifndef NN_ASTREAM_INCLUDED
+#define NN_ASTREAM_INCLUDED
 
 #include "aio.h"
 #include "bstream.h"
@@ -30,27 +30,27 @@
 
 /*  Accepted stream socket. */
 
-struct sp_astream {
+struct nn_astream {
 
     /*  Event sink. */
-    const struct sp_cp_sink *sink;
+    const struct nn_cp_sink *sink;
 
     /*  The undelying TCP socket. */
-    struct sp_usock usock;
+    struct nn_usock usock;
 
     /*  TCP session state machine. */
-    struct sp_stream stream;
+    struct nn_stream stream;
 
     /*  Bound socket that created this connection. */
-    struct sp_bstream *bstream;
+    struct nn_bstream *bstream;
 
-    /*  The object is part of sp_tcpb's list of accepted sockets. */
-    struct sp_list_item item;
+    /*  The object is part of nn_tcpb's list of accepted sockets. */
+    struct nn_list_item item;
 };
 
-void sp_astream_init (struct sp_astream *self, struct sp_epbase *epbase,
-    int s, struct sp_usock *usock, struct sp_bstream *bstream);
-void sp_astream_close (struct sp_astream *self);
+void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
+    int s, struct nn_usock *usock, struct nn_bstream *bstream);
+void nn_astream_close (struct nn_astream *self);
 
 #endif
 

@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
@@ -37,146 +37,146 @@ int main ()
     /*  Test req/rep with raw socket types. */
 
 #if 0
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    rep = sp_socket (AF_SP_RAW, SP_REP);
+    rep = nn_socket (AF_NN_RAW, NN_REP);
     errno_assert (rep != -1);
-    rc = sp_bind (rep, "inproc://a");
+    rc = nn_bind (rep, "inproc://a");
     errno_assert (rc >= 0);
-    req1 = sp_socket (AF_SP_RAW, SP_REQ);
+    req1 = nn_socket (AF_NN_RAW, NN_REQ);
     errno_assert (req1 != -1);
-    rc = sp_connect (req1, "inproc://a");
+    rc = nn_connect (req1, "inproc://a");
     errno_assert (rc >= 0);
-    req2 = sp_socket (AF_SP_RAW, SP_REQ);
+    req2 = nn_socket (AF_NN_RAW, NN_REQ);
     errno_assert (req2 != -1);
-    rc = sp_connect (req2, "inproc://a");
+    rc = nn_connect (req2, "inproc://a");
     errno_assert (rc >= 0);
 
-    rc = sp_send (req2, "ABC", 3, 0);
+    rc = nn_send (req2, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 7);
-    rc = sp_send (rep, buf, 7, 0);
+    nn_assert (rc == 7);
+    rc = nn_send (rep, buf, 7, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 7);
-    rc = sp_recv (req2, buf, sizeof (buf), 0);
+    nn_assert (rc == 7);
+    rc = nn_recv (req2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_send (req1, "ABC", 3, 0);
+    rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 7);
-    rc = sp_send (rep, buf, 7, 0);
+    nn_assert (rc == 7);
+    rc = nn_send (rep, buf, 7, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 7);
-    rc = sp_recv (req1, buf, sizeof (buf), 0);
+    nn_assert (rc == 7);
+    rc = nn_recv (req1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (rep);
+    rc = nn_close (rep);
     errno_assert (rc == 0);
-    rc = sp_close (req1);
+    rc = nn_close (req1);
     errno_assert (rc == 0);    
-    rc = sp_close (req2);
+    rc = nn_close (req2);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 #endif
 
     /*  Test req/rep with full socket types. */
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    rep = sp_socket (AF_SP, SP_REP);
+    rep = nn_socket (AF_SP, NN_REP);
     errno_assert (rep != -1);
-    rc = sp_bind (rep, "inproc://a");
+    rc = nn_bind (rep, "inproc://a");
     errno_assert (rc >= 0);
-    req1 = sp_socket (AF_SP, SP_REQ);
+    req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
-    rc = sp_connect (req1, "inproc://a");
+    rc = nn_connect (req1, "inproc://a");
     errno_assert (rc >= 0);
-    req2 = sp_socket (AF_SP, SP_REQ);
+    req2 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req2 != -1);
-    rc = sp_connect (req2, "inproc://a");
+    rc = nn_connect (req2, "inproc://a");
     errno_assert (rc >= 0);
 
-    rc = sp_send (rep, "ABC", 3, 0);
-    sp_assert (rc == -1 && sp_errno () == EFSM);
-    rc = sp_recv (req1, buf, sizeof (buf), 0);
-    sp_assert (rc == -1 && sp_errno () == EFSM);
+    rc = nn_send (rep, "ABC", 3, 0);
+    nn_assert (rc == -1 && nn_errno () == EFSM);
+    rc = nn_recv (req1, buf, sizeof (buf), 0);
+    nn_assert (rc == -1 && nn_errno () == EFSM);
 
-    rc = sp_send (req2, "ABC", 3, 0);
+    rc = nn_send (req2, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_send (rep, buf, 3, 0);
+    nn_assert (rc == 3);
+    rc = nn_send (rep, buf, 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (req2, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (req2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_send (req1, "ABC", 3, 0);
+    rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_send (rep, buf, 3, 0);
+    nn_assert (rc == 3);
+    rc = nn_send (rep, buf, 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (req1, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (req1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (rep);
+    rc = nn_close (rep);
     errno_assert (rc == 0);
-    rc = sp_close (req1);
+    rc = nn_close (req1);
     errno_assert (rc == 0);    
-    rc = sp_close (req2);
+    rc = nn_close (req2);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     /*  Test re-sending of the request. */
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    rep = sp_socket (AF_SP, SP_REP);
+    rep = nn_socket (AF_SP, NN_REP);
     errno_assert (rep != -1);
-    rc = sp_bind (rep, "inproc://a");
+    rc = nn_bind (rep, "inproc://a");
     errno_assert (rc >= 0);
-    req1 = sp_socket (AF_SP, SP_REQ);
+    req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
-    rc = sp_connect (req1, "inproc://a");
+    rc = nn_connect (req1, "inproc://a");
     errno_assert (rc >= 0);
     resend_ivl = 100;
-    rc = sp_setsockopt (req1, SP_REQ, SP_RESEND_IVL,
+    rc = nn_setsockopt (req1, NN_REQ, NN_RESEND_IVL,
         &resend_ivl, sizeof (resend_ivl));
     errno_assert (rc == 0);
 
-    rc = sp_send (req1, "ABC", 3, 0);
+    rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (rep, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (req1);
+    rc = nn_close (req1);
     errno_assert (rc == 0);
-    rc = sp_close (rep);
+    rc = nn_close (rep);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

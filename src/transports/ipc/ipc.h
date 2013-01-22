@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_IPC_INCLUDED
-#define SP_IPC_INCLUDED
+#ifndef NN_IPC_INCLUDED
+#define NN_IPC_INCLUDED
 
-#if !defined SP_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS
 
 #include "../../transport.h"
 
-extern struct sp_transport *sp_ipc;
+extern struct nn_transport *nn_ipc;
 
 #endif
 

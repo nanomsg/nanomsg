@@ -20,35 +20,35 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XRESPONDENT_INCLUDED
-#define SP_XRESPONDENT_INCLUDED
+#ifndef NN_XRESPONDENT_INCLUDED
+#define NN_XRESPONDENT_INCLUDED
 
 #include "../../protocol.h"
 
 #include "../../utils/excl.h"
 
-extern struct sp_socktype *sp_xrespondent_socktype;
+extern struct nn_socktype *nn_xrespondent_socktype;
 
-struct sp_xrespondent {
-    struct sp_sockbase sockbase;
-    struct sp_excl excl;
+struct nn_xrespondent {
+    struct nn_sockbase sockbase;
+    struct nn_excl excl;
 };
 
-void sp_xrespondent_init (struct sp_xrespondent *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-void sp_xrespondent_term (struct sp_xrespondent *self);
+void nn_xrespondent_init (struct nn_xrespondent *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+void nn_xrespondent_term (struct nn_xrespondent *self);
 
-int sp_xrespondent_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-void sp_xrespondent_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrespondent_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrespondent_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrespondent_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrespondent_recv (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrespondent_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrespondent_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-int sp_xrespondent_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int sp_xrespondent_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen);
-int sp_xrespondent_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+int nn_xrespondent_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+int nn_xrespondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 #endif

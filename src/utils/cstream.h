@@ -20,46 +20,46 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_CSTREAM_INCLUDED
-#define SP_CSTREAM_INCLUDED
+#ifndef NN_CSTREAM_INCLUDED
+#define NN_CSTREAM_INCLUDED
 
 #include "../transport.h"
 
 #include "aio.h"
 #include "stream.h"
 
-struct sp_cstream {
+struct nn_cstream {
 
     /*  Event sink. */
-    const struct sp_cp_sink *sink;
+    const struct nn_cp_sink *sink;
 
     /*  This object is an endpoint. */
-    struct sp_epbase epbase;
+    struct nn_epbase epbase;
 
     /*  The underlying socket. */
-    struct sp_usock usock;
+    struct nn_usock usock;
 
     /*  There's at most one session per connecting endpoint, thus we can
         embed the session object directly into the connecter class. */
-    struct sp_stream stream;
+    struct nn_stream stream;
 
     /*  Current value of rety interval, in milliseconds. -1 means that
-        value of SP_RECONNECT_IVL option should be used. */
+        value of NN_RECONNECT_IVL option should be used. */
     int retry_ivl;
 
     /*  Timer to wait before retrying to connect. */
-    struct sp_timer retry_timer;
+    struct nn_timer retry_timer;
 
     /*  Virtual functions supplied by the specific transport type. */
-    int (*initsockfn) (struct sp_usock *sock, int sndbuf, int rcvbuf,
-        struct sp_cp *cp);
+    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
+        struct nn_cp *cp);
     int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
         socklen_t *sslen);
 };
 
-int sp_cstream_init (struct sp_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct sp_usock *sock, int sndbuf, int rcvbuf,
-    struct sp_cp *cp), int (*resolvefn) (const char *addr,
+int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
+    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
+    struct nn_cp *cp), int (*resolvefn) (const char *addr,
     struct sockaddr_storage *ss, socklen_t *sslen));
 
 #endif

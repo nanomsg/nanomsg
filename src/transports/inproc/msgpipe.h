@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_MSGPIPE_INCLUDED
-#define SP_MSGPIPE_INCLUDED
+#ifndef NN_MSGPIPE_INCLUDED
+#define NN_MSGPIPE_INCLUDED
 
 #include "../../transport.h"
 
@@ -29,43 +29,43 @@
 
 #include "../../utils/aio.h"
 
-struct sp_inprocb;
-struct sp_inprocc;
+struct nn_inprocb;
+struct nn_inprocc;
 
 /*  This object (but not the msgqueues inside it) is synchronised using
     the inproc_ctx critical section. */
 
-#define SP_MSGPIPE_PIPE0_ACTIVE 1
-#define SP_MSGPIPE_PIPE1_ACTIVE 2
+#define NN_MSGPIPE_PIPE0_ACTIVE 1
+#define NN_MSGPIPE_PIPE1_ACTIVE 2
 
-#define SP_MSGPIPE_EVENT_IN 1
-#define SP_MSGPIPE_EVENT_OUT 2
+#define NN_MSGPIPE_EVENT_IN 1
+#define NN_MSGPIPE_EVENT_OUT 2
 
-struct sp_msgpipe {
+struct nn_msgpipe {
 
     /*  The two ends of the pipe. First one is the bound end, second one
         is the connected end. */
-    struct sp_pipebase pipes [2];
+    struct nn_pipebase pipes [2];
 
     /*  TODO: These flags are good only for asserting there's no bug in the
         library. Later on they should be removed. */
     int flags;
 
     /*  The two underlying queues to achieve bi-directional communication. */
-    struct sp_msgqueue queues [2];
+    struct nn_msgqueue queues [2];
 
     /*  Incoming notifications. */
-    struct sp_event inevents [2];
-    struct sp_event outevents [2];
+    struct nn_event inevents [2];
+    struct nn_event outevents [2];
 
     /*  The pipe is owned by exactly one bound endpoint. */
-    struct sp_list_item inprocb;
+    struct nn_list_item inprocb;
 
 };
 
-void sp_msgpipe_init (struct sp_msgpipe *self,
-    struct sp_inprocb *inprocb, struct sp_inprocc *inprocc);
-void sp_msgpipe_detachb (struct sp_msgpipe *self);
-void sp_msgpipe_detachc (struct sp_msgpipe *self);
+void nn_msgpipe_init (struct nn_msgpipe *self,
+    struct nn_inprocb *inprocb, struct nn_inprocc *inprocc);
+void nn_msgpipe_detachb (struct nn_msgpipe *self);
+void nn_msgpipe_detachc (struct nn_msgpipe *self);
 
 #endif

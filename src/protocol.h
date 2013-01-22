@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_PROTOCOL_INCLUDED
-#define SP_PROTOCOL_INCLUDED
+#ifndef NN_PROTOCOL_INCLUDED
+#define NN_PROTOCOL_INCLUDED
 
 #include "utils/aio.h"
 #include "utils/cond.h"
@@ -37,70 +37,70 @@
 /******************************************************************************/
 
 /*  Any combination of following flags can be returned from successful call
-    to sp_pipe_send or sp_pipe_recv. */
-#define SP_PIPE_RELEASE 1
-#define SP_PIPE_PARSED 2
+    to nn_pipe_send or nn_pipe_recv. */
+#define NN_PIPE_RELEASE 1
+#define NN_PIPE_PARSED 2
 
-struct sp_pipe;
+struct nn_pipe;
 
-void sp_pipe_setdata (struct sp_pipe *self, void *data);
-void *sp_pipe_getdata (struct sp_pipe *self);
-int sp_pipe_send (struct sp_pipe *self, struct sp_msg *msg);
-int sp_pipe_recv (struct sp_pipe *self, struct sp_msg *msg);
+void nn_pipe_setdata (struct nn_pipe *self, void *data);
+void *nn_pipe_getdata (struct nn_pipe *self);
+int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg);
+int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
 /******************************************************************************/
 
-struct sp_sockbase;
+struct nn_sockbase;
 
 /*  To be implemented by individual socket types. */
-struct sp_sockbase_vfptr {
-    void (*destroy) (struct sp_sockbase *self);
-    int (*add) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    void (*rm) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    int (*in) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    int (*out) (struct sp_sockbase *self, struct sp_pipe *pipe);
-    int (*send) (struct sp_sockbase *self, struct sp_msg *msg);
-    int (*recv) (struct sp_sockbase *self, struct sp_msg *msg);
-    int (*setopt) (struct sp_sockbase *self, int level, int option,
+struct nn_sockbase_vfptr {
+    void (*destroy) (struct nn_sockbase *self);
+    int (*add) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    void (*rm) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    int (*in) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    int (*out) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    int (*send) (struct nn_sockbase *self, struct nn_msg *msg);
+    int (*recv) (struct nn_sockbase *self, struct nn_msg *msg);
+    int (*setopt) (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
-    int (*getopt) (struct sp_sockbase *self, int level, int option,
+    int (*getopt) (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
-    int (*sethdr) (struct sp_msg *msg, const void *hdr, size_t hdrlen);
-    int (*gethdr) (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+    int (*sethdr) (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+    int (*gethdr) (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 };
 
-#define SP_SOCK_FLAG_ZOMBIE 1
+#define NN_SOCK_FLAG_ZOMBIE 1
 
-struct sp_sockbase
+struct nn_sockbase
 {
     /*  Table of virtual functions supplied by the socket type. */
-    const struct sp_sockbase_vfptr *vfptr;
+    const struct nn_sockbase_vfptr *vfptr;
 
-    /*  Combination so SP_SOCK_FLAG_* flags. */
+    /*  Combination so NN_SOCK_FLAG_* flags. */
     int flags;
 
     /*  Completion port to handle file descriptors, timers and locking. */
-    struct sp_cp cp;
+    struct nn_cp cp;
 
     /*  Condition variable to implement sleeping in blocking socket
         operations. */
-    struct sp_cond cond;
+    struct nn_cond cond;
 
     /*  Clock used to measure send & recv timeouts. */
-    struct sp_clock clock;
+    struct nn_clock clock;
 
     /*  File descriptor for this socket. */
     int fd;
 
     /*  List of all active endpoints. */
-    struct sp_list eps;
+    struct nn_list eps;
 
     /*  Endpoint ID to assign to the next endpoint. */
     int eid;
 
-    /*  SP_SOL_SOCKET level options. */
+    /*  NN_SOL_SOCKET level options. */
     int linger;
     int sndbuf;
     int rcvbuf;
@@ -111,17 +111,17 @@ struct sp_sockbase
 };
 
 /*  Initialise the socket. */
-void sp_sockbase_init (struct sp_sockbase *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
+void nn_sockbase_init (struct nn_sockbase *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
 
 /*  If recv is blocking at the moment, this function will unblock it. */
-void sp_sockbase_unblock_recv (struct sp_sockbase *self);
+void nn_sockbase_unblock_recv (struct nn_sockbase *self);
 
 /*  If send is blocking at the moment, this function will unblock it. */
-void sp_sockbase_unblock_send (struct sp_sockbase *self);
+void nn_sockbase_unblock_send (struct nn_sockbase *self);
 
 /*  Returns completion port associated with the socket. */
-struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
+struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */
@@ -129,14 +129,14 @@ struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self);
 
 /*  This structure defines a class factory for individual socket types. */
 
-struct sp_socktype {
+struct nn_socktype {
     int domain;
     int protocol;
-    struct sp_sockbase *(*create) (int fd);
+    struct nn_sockbase *(*create) (int fd);
 
     /*  This member is owned by the core. Never touch it directly from inside
         the protocol implementation. */
-    struct sp_list_item list;
+    struct nn_list_item list;
 };
 
 #endif

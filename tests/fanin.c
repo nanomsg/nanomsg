@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/fanin.h"
 #include "../src/utils/err.c"
 
@@ -32,43 +32,43 @@ int main ()
     int source2;
     char buf [3];
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    sink = sp_socket (AF_SP, SP_SINK);
+    sink = nn_socket (AF_SP, NN_SINK);
     errno_assert (sink != -1);
-    rc = sp_bind (sink, "inproc://a");
+    rc = nn_bind (sink, "inproc://a");
     errno_assert (rc >= 0);
-    source1 = sp_socket (AF_SP, SP_SOURCE);
+    source1 = nn_socket (AF_SP, NN_SOURCE);
     errno_assert (source1 != -1);
-    rc = sp_connect (source1, "inproc://a");
+    rc = nn_connect (source1, "inproc://a");
     errno_assert (rc >= 0);
-    source2 = sp_socket (AF_SP, SP_SOURCE);
+    source2 = nn_socket (AF_SP, NN_SOURCE);
     errno_assert (source2 != -1);
-    rc = sp_connect (source2, "inproc://a");
+    rc = nn_connect (source2, "inproc://a");
     errno_assert (rc >= 0);
 
-    rc = sp_send (source1, "ABC", 3, 0);
+    rc = nn_send (source1, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_send (source2, "DEF", 3, 0);
+    nn_assert (rc == 3);
+    rc = nn_send (source2, "DEF", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_recv (sink, buf, sizeof (buf), 0);
+    rc = nn_recv (sink, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (sink, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (sink, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (sink);
+    rc = nn_close (sink);
     errno_assert (rc == 0);
-    rc = sp_close (source1);
+    rc = nn_close (source1);
     errno_assert (rc == 0);    
-    rc = sp_close (source2);
+    rc = nn_close (source2);
     errno_assert (rc == 0);
 
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

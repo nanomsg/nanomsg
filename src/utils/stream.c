@@ -31,289 +31,289 @@
 #include <stdint.h>
 
 /*   Private functions. */
-static void sp_stream_hdr_received (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static void sp_stream_hdr_sent (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static void sp_stream_hdr_timeout (const struct sp_cp_sink **self,
-    struct sp_timer *timer);
-static void sp_stream_activate (struct sp_stream *self);
-static void sp_stream_received (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static void sp_stream_sent (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static void sp_stream_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum);
+static void nn_stream_hdr_received (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
+    struct nn_timer *timer);
+static void nn_stream_activate (struct nn_stream *self);
+static void nn_stream_received (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static void nn_stream_sent (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static void nn_stream_err (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int errnum);
 
 /*  START state. */
-static const struct sp_cp_sink sp_stream_state_start = {
-    sp_stream_hdr_received,
-    sp_stream_hdr_sent,
+static const struct nn_cp_sink nn_stream_state_start = {
+    nn_stream_hdr_received,
+    nn_stream_hdr_sent,
     NULL,
     NULL,
-    sp_stream_err,
+    nn_stream_err,
     NULL,
-    sp_stream_hdr_timeout,
+    nn_stream_hdr_timeout,
     NULL
 };
 
 /*  SENT state. */
-static const struct sp_cp_sink sp_stream_state_sent = {
-    sp_stream_hdr_received,
+static const struct nn_cp_sink nn_stream_state_sent = {
+    nn_stream_hdr_received,
     NULL,
     NULL,
     NULL,
-    sp_stream_err,
+    nn_stream_err,
     NULL,
-    sp_stream_hdr_timeout,
+    nn_stream_hdr_timeout,
     NULL
 };
 
 /*  RECEIVED state. */
-static const struct sp_cp_sink sp_stream_state_received = {
+static const struct nn_cp_sink nn_stream_state_received = {
     NULL,
-    sp_stream_hdr_sent,
+    nn_stream_hdr_sent,
     NULL,
     NULL,
-    sp_stream_err,
+    nn_stream_err,
     NULL,
-    sp_stream_hdr_timeout,
+    nn_stream_hdr_timeout,
     NULL
 };
 
 /*  ACTIVE state. */
-static const struct sp_cp_sink sp_stream_state_active = {
-    sp_stream_received,
-    sp_stream_sent,
+static const struct nn_cp_sink nn_stream_state_active = {
+    nn_stream_received,
+    nn_stream_sent,
     NULL,
     NULL,
-    sp_stream_err,
+    nn_stream_err,
     NULL,
     NULL,
     NULL
 };
 
 /*  Pipe interface. */
-static int sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg);
-static int sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg);
-const struct sp_pipebase_vfptr sp_stream_pipebase_vfptr = {
-    sp_stream_send,
-    sp_stream_recv
+static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg);
+const struct nn_pipebase_vfptr nn_stream_pipebase_vfptr = {
+    nn_stream_send,
+    nn_stream_recv
 };
 
-void sp_stream_init (struct sp_stream *self, struct sp_epbase *epbase,
-    struct sp_usock *usock)
+void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
+    struct nn_usock *usock)
 {
     int rc;
-    struct sp_iobuf iobuf;
+    struct nn_iobuf iobuf;
 
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
-    self->sink = &sp_stream_state_start;
-    self->original_sink = sp_usock_setsink (usock, &self->sink);
+    self->sink = &nn_stream_state_start;
+    self->original_sink = nn_usock_setsink (usock, &self->sink);
 
     /*  Initialise the pipe to communicate with the user. */
     /*  TODO: Socket type may reject the pipe. What then? */
-    rc = sp_pipebase_init (&self->pipebase, &sp_stream_pipebase_vfptr, epbase);
-    sp_assert (rc == 0);
+    rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
+    nn_assert (rc == 0);
 
     /*  Start the header timeout timer. */
-    sp_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
-    sp_timer_start (&self->hdr_timeout, 1000);
+    nn_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
+    nn_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
     iobuf.iov_base = "\0\0SP\0\0\0\0";
     iobuf.iov_len = 8;
-    sp_usock_send (usock, &iobuf, 1);
+    nn_usock_send (usock, &iobuf, 1);
 
     /*  Receive the protocol header from the peer. */
-    sp_usock_recv (usock, self->hdr, 8);
+    nn_usock_recv (usock, self->hdr, 8);
 }
 
-void sp_stream_term (struct sp_stream *self)
+void nn_stream_term (struct nn_stream *self)
 {
     /*  TODO:  Close the messages in progress. */
 
-    sp_timer_term (&self->hdr_timeout);
-    sp_pipebase_term (&self->pipebase);
+    nn_timer_term (&self->hdr_timeout);
+    nn_pipebase_term (&self->pipebase);
 
     /*  Return control to the parent state machine. */
-    sp_usock_setsink (self->usock, self->original_sink);
+    nn_usock_setsink (self->usock, self->original_sink);
 }
 
-static void sp_stream_hdr_received (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_stream_hdr_received (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
-    struct sp_stream *stream;
+    struct nn_stream *stream;
 
-    stream = sp_cont (self, struct sp_stream, sink);
+    stream = nn_cont (self, struct nn_stream, sink);
 
-    if (stream->sink == &sp_stream_state_sent) {
-        sp_stream_activate (stream);
+    if (stream->sink == &nn_stream_state_sent) {
+        nn_stream_activate (stream);
         return;
     }
 
-    if (stream->sink == &sp_stream_state_start) {
-        stream->sink = &sp_stream_state_received;
+    if (stream->sink == &nn_stream_state_start) {
+        stream->sink = &nn_stream_state_received;
         return;
     }
 
     /*  This event is not defined in other states. */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static void sp_stream_hdr_sent (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
-    struct sp_stream *stream;
+    struct nn_stream *stream;
 
-    stream = sp_cont (self, struct sp_stream, sink);
+    stream = nn_cont (self, struct nn_stream, sink);
 
-    if (stream->sink == &sp_stream_state_received) {
-        sp_stream_activate (stream);
+    if (stream->sink == &nn_stream_state_received) {
+        nn_stream_activate (stream);
         return;
     }
 
-    if (stream->sink == &sp_stream_state_start) {
-        stream->sink = &sp_stream_state_sent;
+    if (stream->sink == &nn_stream_state_start) {
+        stream->sink = &nn_stream_state_sent;
         return;
     }
 
     /*  This event is not defined in other states. */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static void sp_stream_hdr_timeout (const struct sp_cp_sink **self,
-    struct sp_timer *timer)
+static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
+    struct nn_timer *timer)
 {
-    struct sp_stream *stream;
-    const struct sp_cp_sink **original_sink;
+    struct nn_stream *stream;
+    const struct nn_cp_sink **original_sink;
 
     /*  The initial protocol header exchange have timed out. */
-    stream = sp_cont (self, struct sp_stream, sink);
+    stream = nn_cont (self, struct nn_stream, sink);
     original_sink = stream->original_sink;
 
     /*  Terminate the session object. */
-    sp_stream_term (stream);
+    nn_stream_term (stream);
 
     /*  Notify the parent state machine about the failure. */
-    sp_assert ((*original_sink)->err);
+    nn_assert ((*original_sink)->err);
     (*original_sink)->err (original_sink, stream->usock, ETIMEDOUT);
 }
 
-static void sp_stream_activate (struct sp_stream *self)
+static void nn_stream_activate (struct nn_stream *self)
 {
-    self->sink = &sp_stream_state_active;
-    sp_timer_stop (&self->hdr_timeout);
+    self->sink = &nn_stream_state_active;
+    nn_timer_stop (&self->hdr_timeout);
 
     /*  Check the header. */
     /*  TODO: If it does not conform, drop the connection. */
     if (memcmp (self->hdr, "\0\0SP\0\0\0\0", 8) != 0)
-        sp_assert (0);
+        nn_assert (0);
 
     /*  Connection is ready for sending. Make outpipe available
         to the SP socket. */
-    sp_pipebase_activate (&self->pipebase);
+    nn_pipebase_activate (&self->pipebase);
 
     /*  Start waiting for incoming messages. First, read the 8-byte size. */
-    self->instate = SP_STREAM_INSTATE_HDR;
-    sp_usock_recv (self->usock, self->inhdr, 8);
+    self->instate = NN_STREAM_INSTATE_HDR;
+    nn_usock_recv (self->usock, self->inhdr, 8);
 }
 
-static void sp_stream_received (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_stream_received (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
     int rc;
-    struct sp_stream *stream;
+    struct nn_stream *stream;
     uint64_t size;
 
-    stream = sp_cont (self, struct sp_stream, sink);
+    stream = nn_cont (self, struct nn_stream, sink);
     switch (stream->instate) {
-    case SP_STREAM_INSTATE_HDR:
-        size = sp_getll (stream->inhdr);
-        sp_msg_init (&stream->inmsg, (size_t) size);
+    case NN_STREAM_INSTATE_HDR:
+        size = nn_getll (stream->inhdr);
+        nn_msg_init (&stream->inmsg, (size_t) size);
         if (!size) {
-            sp_pipebase_received (&stream->pipebase);
+            nn_pipebase_received (&stream->pipebase);
             break;
         }
-        stream->instate = SP_STREAM_INSTATE_BODY;
-        sp_usock_recv (stream->usock, sp_chunkref_data (&stream->inmsg.body),
+        stream->instate = NN_STREAM_INSTATE_BODY;
+        nn_usock_recv (stream->usock, nn_chunkref_data (&stream->inmsg.body),
             (size_t) size);
         break;
-    case SP_STREAM_INSTATE_BODY:
-        sp_pipebase_received (&stream->pipebase);
+    case NN_STREAM_INSTATE_BODY:
+        nn_pipebase_received (&stream->pipebase);
         break;
     default:
-        sp_assert (0);
+        nn_assert (0);
     }
 }
 
-static void sp_stream_sent (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_stream_sent (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
-    struct sp_stream *stream;
+    struct nn_stream *stream;
 
-    stream = sp_cont (self, struct sp_stream, sink);
-    sp_pipebase_sent (&stream->pipebase);
-    sp_msg_term (&stream->outmsg);
+    stream = nn_cont (self, struct nn_stream, sink);
+    nn_pipebase_sent (&stream->pipebase);
+    nn_msg_term (&stream->outmsg);
 }
 
-static void sp_stream_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum)
+static void nn_stream_err (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int errnum)
 {
-    struct sp_stream *stream;
-    const struct sp_cp_sink **original_sink;
+    struct nn_stream *stream;
+    const struct nn_cp_sink **original_sink;
 
-    stream = sp_cont (self, struct sp_stream, sink);
+    stream = nn_cont (self, struct nn_stream, sink);
     original_sink = stream->original_sink;
 
     /*  Terminate the session object. */
-    sp_stream_term (stream);
+    nn_stream_term (stream);
 
     /*  Notify the parent state machine about the failure. */
-    sp_assert ((*original_sink)->err);
+    nn_assert ((*original_sink)->err);
     (*original_sink)->err (original_sink, usock, errnum);
 }
 
-static int sp_stream_send (struct sp_pipebase *self, struct sp_msg *msg)
+static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_stream *stream;
-    struct sp_iobuf iov [3];
+    struct nn_stream *stream;
+    struct nn_iobuf iov [3];
 
-    stream = sp_cont (self, struct sp_stream, pipebase);
+    stream = nn_cont (self, struct nn_stream, pipebase);
 
     /*  Mave the message to the local storage. */
-    sp_msg_mv (&stream->outmsg, msg);
+    nn_msg_mv (&stream->outmsg, msg);
 
     /*  Serialise the message header. */
-    sp_putll (stream->outhdr, sp_chunkref_size (&stream->outmsg.hdr) +
-        sp_chunkref_size (&stream->outmsg.body));
+    nn_putll (stream->outhdr, nn_chunkref_size (&stream->outmsg.hdr) +
+        nn_chunkref_size (&stream->outmsg.body));
 
     /*  Start async sending. */
     iov [0].iov_base = stream->outhdr;
     iov [0].iov_len = sizeof (stream->outhdr);
-    iov [1].iov_base = sp_chunkref_data (&stream->outmsg.hdr);
-    iov [1].iov_len = sp_chunkref_size (&stream->outmsg.hdr);
-    iov [2].iov_base = sp_chunkref_data (&stream->outmsg.body);
-    iov [2].iov_len = sp_chunkref_size (&stream->outmsg.body);;
-    sp_usock_send (stream->usock, iov, 3);
+    iov [1].iov_base = nn_chunkref_data (&stream->outmsg.hdr);
+    iov [1].iov_len = nn_chunkref_size (&stream->outmsg.hdr);
+    iov [2].iov_base = nn_chunkref_data (&stream->outmsg.body);
+    iov [2].iov_len = nn_chunkref_size (&stream->outmsg.body);;
+    nn_usock_send (stream->usock, iov, 3);
 
     return 0;
 }
 
-static int sp_stream_recv (struct sp_pipebase *self, struct sp_msg *msg)
+static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg)
 {
-    struct sp_stream *stream;
+    struct nn_stream *stream;
 
-    stream = sp_cont (self, struct sp_stream, pipebase);
+    stream = nn_cont (self, struct nn_stream, pipebase);
 
     /*  Move message content to the user-supplied structure. */
-    sp_msg_mv (msg, &stream->inmsg);
+    nn_msg_mv (msg, &stream->inmsg);
 
     /* Start receiving new message. */ 
-    stream->instate = SP_STREAM_INSTATE_HDR;
-    sp_usock_recv (stream->usock, stream->inhdr, 8);
+    stream->instate = NN_STREAM_INSTATE_HDR;
+    nn_usock_recv (stream->usock, stream->inhdr, 8);
 
     return 0;
 }

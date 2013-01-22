@@ -27,12 +27,12 @@
 extern "C" {
 #endif
 
-#define SP_REQREP_ID 3
+#define NN_REQREP_ID 3
 
-#define SP_REQ (SP_REQREP_ID * 16 + 0)
-#define SP_REP (SP_REQREP_ID * 16 + 1)
+#define NN_REQ (NN_REQREP_ID * 16 + 0)
+#define NN_REP (NN_REQREP_ID * 16 + 1)
 
-#define SP_RESEND_IVL 1
+#define NN_RESEND_IVL 1
 
 #ifdef __cplusplus
 }

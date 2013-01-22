@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define SP_INPROC -1
+#define NN_INPROC -1
 
 #ifdef __cplusplus
 }

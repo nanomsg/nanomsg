@@ -31,17 +31,17 @@
 
 #include <string.h>
 
-/*  Implementation of sp_epbase interface. */
-static void sp_inprocb_close (struct sp_epbase *self);
-static const struct sp_epbase_vfptr sp_inprocb_epbase_vfptr =
-    {sp_inprocb_close};
+/*  Implementation of nn_epbase interface. */
+static void nn_inprocb_close (struct nn_epbase *self);
+static const struct nn_epbase_vfptr nn_inprocb_epbase_vfptr =
+    {nn_inprocb_close};
 
-int sp_inprocb_init (struct sp_inprocb *self, const char *addr, void *hint)
+int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint)
 {
-    sp_epbase_init (&self->epbase, &sp_inprocb_epbase_vfptr, addr, hint);
+    nn_epbase_init (&self->epbase, &nn_inprocb_epbase_vfptr, addr, hint);
 
     /*  Store the name of the endpoint. */
-    if (sp_slow (strlen (addr) + 1 > SP_INPROCB_NAMELEN_MAX))
+    if (nn_slow (strlen (addr) + 1 > NN_INPROCB_NAMELEN_MAX))
         return -ENAMETOOLONG;
 #if defined _MSC_VER
 #pragma warning(push)
@@ -51,43 +51,43 @@ int sp_inprocb_init (struct sp_inprocb *self, const char *addr, void *hint)
 #if defined _MSC_VER
 #pragma warning(pop)
 #endif
-    sp_list_init (&self->pipes);
+    nn_list_init (&self->pipes);
 
     return 0;
 }
 
-void sp_inprocb_add_pipe (struct sp_inprocb *self, struct sp_msgpipe *pipe)
+void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)
 {
-    sp_list_insert (&self->pipes, &pipe->inprocb, sp_list_end (&self->pipes));
+    nn_list_insert (&self->pipes, &pipe->inprocb, nn_list_end (&self->pipes));
 }
 
-static void sp_inprocb_close (struct sp_epbase *self)
+static void nn_inprocb_close (struct nn_epbase *self)
 {
-    struct sp_inprocb *inprocb;
-    struct sp_list_item *it;
-    struct sp_list_item *old_it;
+    struct nn_inprocb *inprocb;
+    struct nn_list_item *it;
+    struct nn_list_item *old_it;
 
-    inprocb = sp_cont (self, struct sp_inprocb, epbase);
+    inprocb = nn_cont (self, struct nn_inprocb, epbase);
 
     /*  Disconnect all the pipes from the bind-side of the socket. */
-    it = sp_list_begin (&inprocb->pipes);
-    while (it != sp_list_end (&inprocb->pipes)) {
+    it = nn_list_begin (&inprocb->pipes);
+    while (it != nn_list_end (&inprocb->pipes)) {
 
         /*  The message pipe may be deallocated inside detachb function thus
             we have to get the next item in the list in advance. */
         old_it = it;
-        it = sp_list_next (&inprocb->pipes, it);
-        sp_msgpipe_detachb (sp_cont (old_it, struct sp_msgpipe, inprocb));
+        it = nn_list_next (&inprocb->pipes, it);
+        nn_msgpipe_detachb (nn_cont (old_it, struct nn_msgpipe, inprocb));
     }
 
     /*  Remove the endpoint from the repository of all inproc endpoints. */
-    sp_inproc_ctx_unbind (inprocb);
+    nn_inproc_ctx_unbind (inprocb);
 
-    sp_epbase_term (&inprocb->epbase);
-    sp_list_term (&inprocb->pipes);
+    nn_epbase_term (&inprocb->epbase);
+    nn_list_term (&inprocb->pipes);
 
     /*  We can deallocate the endpoint straight away. There is no delayed
         termination for inproc endpoints. */
-    sp_free (inprocb);
+    nn_free (inprocb);
 }
 

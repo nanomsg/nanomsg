@@ -22,9 +22,9 @@
 
 #include "efd.h"
 
-#if !defined SP_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS
 
-#if defined SP_USE_SOCKETPAIR
+#if defined NN_USE_SOCKETPAIR
 
 #include "err.h"
 #include "fast.h"
@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-void sp_efd_init (struct sp_efd *self)
+void nn_efd_init (struct nn_efd *self)
 {
     int rc;
     int flags;
@@ -64,7 +64,7 @@ void sp_efd_init (struct sp_efd *self)
     errno_assert (rc != -1);
 }
 
-void sp_efd_term (struct sp_efd *self)
+void nn_efd_term (struct nn_efd *self)
 {
     int rc;
 
@@ -74,22 +74,22 @@ void sp_efd_term (struct sp_efd *self)
     errno_assert (rc == 0);
 }
 
-int sp_efd_getfd (struct sp_efd *self)
+int nn_efd_getfd (struct nn_efd *self)
 {
     return self->r;
 }
 
-void sp_efd_signal (struct sp_efd *self)
+void nn_efd_signal (struct nn_efd *self)
 {
     ssize_t nbytes;
     char c = 101;
 
     nbytes = send (self->w, &c, 1, 0);
     errno_assert (nbytes != -1);
-    sp_assert (nbytes == 1);
+    nn_assert (nbytes == 1);
 }
 
-void sp_efd_unsignal (struct sp_efd *self)
+void nn_efd_unsignal (struct nn_efd *self)
 {
     ssize_t nbytes;
     uint8_t buf [16];
@@ -97,13 +97,13 @@ void sp_efd_unsignal (struct sp_efd *self)
     while (1) {
         nbytes = recv (self->r, buf, sizeof (buf), 0);
         errno_assert (nbytes >= 0);
-        if (sp_fast (nbytes < sizeof (buf)))
+        if (nn_fast (nbytes < sizeof (buf)))
             break;
     }
 }
 
 
-#elif defined SP_USE_EVENTFD
+#elif defined NN_USE_EVENTFD
 
 #include "err.h"
 
@@ -112,7 +112,7 @@ void sp_efd_unsignal (struct sp_efd *self)
 #include <unistd.h>
 #include <fcntl.h>
 
-void sp_efd_init (struct sp_efd *self)
+void nn_efd_init (struct nn_efd *self)
 {
     int rc;
     int flags;
@@ -127,7 +127,7 @@ void sp_efd_init (struct sp_efd *self)
     errno_assert (rc != -1);
 }
 
-void sp_efd_term (struct sp_efd *self)
+void nn_efd_term (struct nn_efd *self)
 {
     int rc;
 
@@ -135,12 +135,12 @@ void sp_efd_term (struct sp_efd *self)
     errno_assert (rc == 0);
 }
 
-int sp_efd_getfd (struct sp_efd *self)
+int nn_efd_getfd (struct nn_efd *self)
 {
     return self->efd;
 }
 
-void sp_efd_signal (struct sp_efd *self)
+void nn_efd_signal (struct nn_efd *self)
 {
     const uint64_t one = 1;
     ssize_t nbytes;
@@ -149,14 +149,14 @@ void sp_efd_signal (struct sp_efd *self)
     errno_assert (nbytes == sizeof (one));
 }
 
-void sp_efd_unsignal (struct sp_efd *self)
+void nn_efd_unsignal (struct nn_efd *self)
 {
     uint64_t count;
 
     /*  Extract all the signals from the eventfd. */
     ssize_t sz = read (self->efd, &count, sizeof (count));
     errno_assert (sz == sizeof (count));
-    sp_assert (count > 0);
+    nn_assert (count > 0);
 }
 
 #endif

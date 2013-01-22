@@ -23,28 +23,28 @@
 #include "thread.h"
 #include "err.h"
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 
-static unsigned int __stdcall sp_thread_main_routine (void *arg)
+static unsigned int __stdcall nn_thread_main_routine (void *arg)
 {
-    struct sp_thread *self;
+    struct nn_thread *self;
 
-    self = (struct sp_thread*) arg;
+    self = (struct nn_thread*) arg;
     self->routine (self->arg);
     return 0;
 }
 
-void sp_thread_init (struct sp_thread *self,
-    sp_thread_routine *routine, void *arg)
+void nn_thread_init (struct nn_thread *self,
+    nn_thread_routine *routine, void *arg)
 {
     self->routine = routine;
     self->arg = arg;
     self->handle = (HANDLE) _beginthreadex (NULL, 0,
-        sp_thread_main_routine, (void*) self, 0 , &self->tid);
+        nn_thread_main_routine, (void*) self, 0 , &self->tid);
     win_assert (self->handle != NULL);
 }
 
-void sp_thread_term (struct sp_thread *self)
+void nn_thread_term (struct nn_thread *self)
 {
     DWORD rc;
     BOOL brc;
@@ -55,7 +55,7 @@ void sp_thread_term (struct sp_thread *self)
     win_assert (brc != 0);
 }
 
-int sp_thread_current (struct sp_thread *self)
+int nn_thread_current (struct nn_thread *self)
 {
     return ((unsigned int) GetCurrentThreadId ()) == self->tid ? 1 : 0;
 }
@@ -64,13 +64,13 @@ int sp_thread_current (struct sp_thread *self)
 
 #include <signal.h>
 
-static void *sp_thread_main_routine (void *arg)
+static void *nn_thread_main_routine (void *arg)
 {
     int rc;
     sigset_t sigset;
-    struct sp_thread *self;
+    struct nn_thread *self;
 
-    self = (struct sp_thread*) arg;
+    self = (struct nn_thread*) arg;
    
     /*  No signals should be processed by this thread. The library doesn't
         use signals and thus all the signals should be delivered to application
@@ -85,19 +85,19 @@ static void *sp_thread_main_routine (void *arg)
     return NULL;
 }
 
-void sp_thread_init (struct sp_thread *self,
-    sp_thread_routine *routine, void *arg)
+void nn_thread_init (struct nn_thread *self,
+    nn_thread_routine *routine, void *arg)
 {
     int rc;
 
     self->routine = routine;
     self->arg = arg;
-    rc = pthread_create (&self->handle, NULL, sp_thread_main_routine,
+    rc = pthread_create (&self->handle, NULL, nn_thread_main_routine,
         (void*) self);
     errnum_assert (rc == 0, rc);
 }
 
-void sp_thread_term (struct sp_thread *self)
+void nn_thread_term (struct nn_thread *self)
 {
     int rc;
 
@@ -105,7 +105,7 @@ void sp_thread_term (struct sp_thread *self)
     errnum_assert (rc == 0, rc);
 }
 
-int sp_thread_current (struct sp_thread *self)
+int nn_thread_current (struct nn_thread *self)
 {
     return pthread_equal (pthread_self (), self->handle) ? 1 : 0;
 }

@@ -36,43 +36,43 @@
 #include <fcntl.h>
 
 /*  Private functions. */
-static void sp_cp_worker (void *arg);
-static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf);
-static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr);
-static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len);
-static int sp_usock_geterr (struct sp_usock *self);
-static void sp_uscok_term (struct sp_usock *self);
+static void nn_cp_worker (void *arg);
+static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf);
+static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
+static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
+static int nn_usock_geterr (struct nn_usock *self);
+static void nn_uscok_term (struct nn_usock *self);
 
-void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
-    struct sp_cp *cp)
+void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
+    struct nn_cp *cp)
 {
     self->sink = sink;
     self->cp = cp;
     self->active = 0;
 }
 
-void sp_timer_term (struct sp_timer *self)
+void nn_timer_term (struct nn_timer *self)
 {
-    sp_timer_stop (self);
+    nn_timer_stop (self);
 }
 
-void sp_timer_start (struct sp_timer *self, int timeout)
+void nn_timer_start (struct nn_timer *self, int timeout)
 {
     int rc;
 
     /*  If the timer is active, cancel it first. */
     if (self->active)
-        sp_timer_stop (self);
+        nn_timer_stop (self);
 
     self->active = 1;
-    rc = sp_timeout_add (&self->cp->timeout, timeout, &self->hndl);
+    rc = nn_timeout_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        sp_efd_signal (&self->cp->efd);
+    if (rc == 1 && !nn_thread_current (&self->cp->worker))
+        nn_efd_signal (&self->cp->efd);
 }
 
-void sp_timer_stop (struct sp_timer *self)
+void nn_timer_stop (struct nn_timer *self)
 {
     int rc;
 
@@ -80,38 +80,38 @@ void sp_timer_stop (struct sp_timer *self)
     if (!self->active)
          return;
 
-    rc = sp_timeout_rm (&self->cp->timeout, &self->hndl);
+    rc = nn_timeout_rm (&self->cp->timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
-    if (rc == 1 && !sp_thread_current (&self->cp->worker))
-        sp_efd_signal (&self->cp->efd);
+    if (rc == 1 && !nn_thread_current (&self->cp->worker))
+        nn_efd_signal (&self->cp->efd);
 }
 
-void sp_event_init (struct sp_event *self, const struct sp_cp_sink **sink,
-    struct sp_cp *cp)
+void nn_event_init (struct nn_event *self, const struct nn_cp_sink **sink,
+    struct nn_cp *cp)
 {
     self->sink = sink;
     self->cp = cp;
     self->active = 0;
 }
 
-void sp_event_term (struct sp_event *self)
+void nn_event_term (struct nn_event *self)
 {
-    sp_assert (!self->active);
+    nn_assert (!self->active);
 }
 
-void sp_event_signal (struct sp_event *self)
+void nn_event_signal (struct nn_event *self)
 {
     /*  Enqueue the event for later processing. */
     self->active = 1;
-    sp_mutex_lock (&self->cp->events_sync);
-    sp_queue_push (&self->cp->events, &self->item);
-    sp_mutex_unlock (&self->cp->events_sync);
-    sp_efd_signal (&self->cp->efd);
+    nn_mutex_lock (&self->cp->events_sync);
+    nn_queue_push (&self->cp->events, &self->item);
+    nn_mutex_unlock (&self->cp->events_sync);
+    nn_efd_signal (&self->cp->efd);
 }
 
-int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
+int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     int domain, int type, int protocol, int sndbuf, int rcvbuf,
-    struct sp_cp *cp)
+    struct nn_cp *cp)
 {
 #if !defined SOCK_CLOEXEC && defined FD_CLOEXEC
     int rc;
@@ -122,13 +122,13 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     self->in.batch = NULL;
     self->in.batch_len = 0;
     self->in.batch_pos = 0;
-    self->in.op = SP_USOCK_INOP_NONE;
-    self->out.op = SP_USOCK_OUTOP_NONE;
-    self->add_hndl.op = SP_USOCK_OP_ADD;
-    self->rm_hndl.op = SP_USOCK_OP_RM;
-    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->in.op = NN_USOCK_INOP_NONE;
+    self->out.op = NN_USOCK_OUTOP_NONE;
+    self->add_hndl.op = NN_USOCK_OP_ADD;
+    self->rm_hndl.op = NN_USOCK_OP_RM;
+    self->in.hndl.op = NN_USOCK_OP_IN;
     memset (&self->out.hdr, 0, sizeof (struct msghdr));
-    self->out.hndl.op = SP_USOCK_OP_OUT;
+    self->out.hndl.op = NN_USOCK_OP_OUT;
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
@@ -155,24 +155,24 @@ int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
     errno_assert (rc != -1);
 #endif
 
-    sp_usock_tune (self, sndbuf, rcvbuf);
+    nn_usock_tune (self, sndbuf, rcvbuf);
 
     return 0;
 }
 
-const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
-    const struct sp_cp_sink **sink)
+const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
+    const struct nn_cp_sink **sink)
 {
-    const struct sp_cp_sink **original;
+    const struct nn_cp_sink **original;
 
     original = self->sink;
     self->sink = sink;
     return original;
 }
 
-int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_cp_sink **sink, int sndbuf, int rcvbuf,
-    struct sp_cp *cp)
+int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
+    int s, const struct nn_cp_sink **sink, int sndbuf, int rcvbuf,
+    struct nn_cp *cp)
 {
     self->sink = sink;
     self->s = s;
@@ -180,35 +180,35 @@ int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
     self->in.batch = NULL;
     self->in.batch_len = 0;
     self->in.batch_pos = 0;
-    self->in.op = SP_USOCK_INOP_NONE;
-    self->out.op = SP_USOCK_OUTOP_NONE;
-    self->add_hndl.op = SP_USOCK_OP_ADD;
-    self->rm_hndl.op = SP_USOCK_OP_RM;
-    self->in.hndl.op = SP_USOCK_OP_IN;
+    self->in.op = NN_USOCK_INOP_NONE;
+    self->out.op = NN_USOCK_OUTOP_NONE;
+    self->add_hndl.op = NN_USOCK_OP_ADD;
+    self->rm_hndl.op = NN_USOCK_OP_RM;
+    self->in.hndl.op = NN_USOCK_OP_IN;
     memset (&self->out.hdr, 0, sizeof (struct msghdr));
-    self->out.hndl.op = SP_USOCK_OP_OUT;
+    self->out.hndl.op = NN_USOCK_OP_OUT;
     self->domain = parent->domain;
     self->type = parent->type;
     self->protocol = parent->protocol;
     self->flags = 0;
 
-    sp_usock_tune (self, sndbuf, rcvbuf);
+    nn_usock_tune (self, sndbuf, rcvbuf);
 
     /*  Register the new socket with the suplied completion port. 
         If the function is called from the worker thread, modify the pollset
         straight away. Otherwise send an event to the worker thread. */
-    self->flags |= SP_USOCK_FLAG_REGISTERED;
-    if (sp_thread_current (&self->cp->worker))
-        sp_poller_add (&self->cp->poller, self->s, &self->hndl);
+    self->flags |= NN_USOCK_FLAG_REGISTERED;
+    if (nn_thread_current (&self->cp->worker))
+        nn_poller_add (&self->cp->poller, self->s, &self->hndl);
     else {
-        sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 
     return 0;
 }
 
-static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf)
+static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
 {
     int rc;
     int opt;
@@ -273,159 +273,159 @@ static void sp_usock_tune (struct sp_usock *self, int sndbuf, int rcvbuf)
 #endif
 }
 
-static void sp_usock_term (struct sp_usock *self)
+static void nn_usock_term (struct nn_usock *self)
 {
     int rc;
 
     if (self->in.batch)
-        sp_free (self->in.batch);
+        nn_free (self->in.batch);
     rc = close (self->s);
     errno_assert (rc == 0);
-    sp_assert ((*self->sink)->closed);
+    nn_assert ((*self->sink)->closed);
     (*self->sink)->closed (self->sink, self);
 }
 
-void sp_cp_init (struct sp_cp *self)
+void nn_cp_init (struct nn_cp *self)
 {
-    sp_mutex_init (&self->sync);
-    sp_timeout_init (&self->timeout);
-    sp_efd_init (&self->efd);
-    sp_poller_init (&self->poller);
-    sp_queue_init (&self->opqueue);
-    sp_mutex_init (&self->events_sync);
-    sp_queue_init (&self->events);
+    nn_mutex_init (&self->sync);
+    nn_timeout_init (&self->timeout);
+    nn_efd_init (&self->efd);
+    nn_poller_init (&self->poller);
+    nn_queue_init (&self->opqueue);
+    nn_mutex_init (&self->events_sync);
+    nn_queue_init (&self->events);
 
     /*  Make poller listen on the internal efd object. */
-    sp_poller_add (&self->poller, sp_efd_getfd (&self->efd),
+    nn_poller_add (&self->poller, nn_efd_getfd (&self->efd),
         &self->efd_hndl);
-    sp_poller_set_in (&self->poller, &self->efd_hndl);
+    nn_poller_set_in (&self->poller, &self->efd_hndl);
 
     /*  Launch the worker thread. */
     self->stop = 0;
-    sp_thread_init (&self->worker, sp_cp_worker, self);
+    nn_thread_init (&self->worker, nn_cp_worker, self);
 }
 
-void sp_cp_term (struct sp_cp *self)
+void nn_cp_term (struct nn_cp *self)
 {
     /*  Ask worker thread to terminate. */
-    sp_mutex_lock (&self->sync);
+    nn_mutex_lock (&self->sync);
     self->stop = 1;
-    sp_efd_signal (&self->efd);
-    sp_mutex_unlock (&self->sync);
+    nn_efd_signal (&self->efd);
+    nn_mutex_unlock (&self->sync);
 
     /*  Wait till it terminates. */
-    sp_thread_term (&self->worker);
+    nn_thread_term (&self->worker);
 
     /*  Remove the remaining internal fd from the poller. */
-    sp_poller_rm (&self->poller, &self->efd_hndl);
+    nn_poller_rm (&self->poller, &self->efd_hndl);
 
     /*  Deallocate the resources. */
-    sp_queue_term (&self->opqueue);
-    sp_queue_term (&self->events);
-    sp_mutex_term (&self->events_sync);
-    sp_poller_term (&self->poller);
-    sp_efd_term (&self->efd);
-    sp_timeout_term (&self->timeout);
-    sp_mutex_term (&self->sync);
+    nn_queue_term (&self->opqueue);
+    nn_queue_term (&self->events);
+    nn_mutex_term (&self->events_sync);
+    nn_poller_term (&self->poller);
+    nn_efd_term (&self->efd);
+    nn_timeout_term (&self->timeout);
+    nn_mutex_term (&self->sync);
 }
 
-void sp_cp_lock (struct sp_cp *self)
+void nn_cp_lock (struct nn_cp *self)
 {
-    sp_mutex_lock (&self->sync);
+    nn_mutex_lock (&self->sync);
 }
 
-void sp_cp_unlock (struct sp_cp *self)
+void nn_cp_unlock (struct nn_cp *self)
 {
-    sp_mutex_unlock (&self->sync);
+    nn_mutex_unlock (&self->sync);
 }
 
-static void sp_cp_worker (void *arg)
+static void nn_cp_worker (void *arg)
 {
     int rc;
-    struct sp_cp *self;
+    struct nn_cp *self;
     int timeout;
-    struct sp_queue_item *qit;
-    struct sp_cp_op_hndl *ophndl;
-    struct sp_timeout_hndl *tohndl;
-    struct sp_timer *timer;
+    struct nn_queue_item *qit;
+    struct nn_cp_op_hndl *ophndl;
+    struct nn_timeout_hndl *tohndl;
+    struct nn_timer *timer;
     int op;
-    struct sp_poller_hndl *phndl;
-    struct sp_queue_item *it;
-    struct sp_event *event;
-    struct sp_usock *usock;
+    struct nn_poller_hndl *phndl;
+    struct nn_queue_item *it;
+    struct nn_event *event;
+    struct nn_usock *usock;
     size_t sz;
     int newsock;
 
-    self = (struct sp_cp*) arg;
+    self = (struct nn_cp*) arg;
 
-    sp_mutex_lock (&self->sync);
+    nn_mutex_lock (&self->sync);
 
     while (1) {
 
         /*  Compute the time interval till next timer expiration. */
-        timeout = sp_timeout_timeout (&self->timeout);
+        timeout = nn_timeout_timeout (&self->timeout);
 
         /*  Wait for new events and/or timeouts. */
-        sp_mutex_unlock (&self->sync);
+        nn_mutex_unlock (&self->sync);
 again:
-        rc = sp_poller_wait (&self->poller, timeout);
+        rc = nn_poller_wait (&self->poller, timeout);
 if (rc == -EINTR) goto again;
         errnum_assert (rc == 0, -rc);
-        sp_mutex_lock (&self->sync);
+        nn_mutex_lock (&self->sync);
 
         /*  Termination of the worker thread. */
         if (self->stop) {
-            sp_mutex_unlock (&self->sync);
+            nn_mutex_unlock (&self->sync);
             break;
         }
 
         /*  Process the events in the opqueue. */
         while (1) {
 
-            qit = sp_queue_pop (&self->opqueue);
-            ophndl = sp_cont (qit, struct sp_cp_op_hndl, item);
+            qit = nn_queue_pop (&self->opqueue);
+            ophndl = nn_cont (qit, struct nn_cp_op_hndl, item);
             if (!ophndl)
                 break;
 
             switch (ophndl->op) {
-            case SP_USOCK_OP_IN:
-                usock = sp_cont (ophndl, struct sp_usock, in.hndl);
-                sp_poller_set_in (&self->poller, &usock->hndl);
+            case NN_USOCK_OP_IN:
+                usock = nn_cont (ophndl, struct nn_usock, in.hndl);
+                nn_poller_set_in (&self->poller, &usock->hndl);
                 break;
-            case SP_USOCK_OP_OUT:
-                usock = sp_cont (ophndl, struct sp_usock, out.hndl);
-                sp_poller_set_out (&self->poller, &usock->hndl);
+            case NN_USOCK_OP_OUT:
+                usock = nn_cont (ophndl, struct nn_usock, out.hndl);
+                nn_poller_set_out (&self->poller, &usock->hndl);
                 break;
-            case SP_USOCK_OP_ADD:
-                usock = sp_cont (ophndl, struct sp_usock, add_hndl);
-                sp_poller_add (&self->poller, usock->s, &usock->hndl);
+            case NN_USOCK_OP_ADD:
+                usock = nn_cont (ophndl, struct nn_usock, add_hndl);
+                nn_poller_add (&self->poller, usock->s, &usock->hndl);
                 break;
-            case SP_USOCK_OP_RM:
-                usock = sp_cont (ophndl, struct sp_usock, rm_hndl);
-                sp_poller_rm (&self->poller, &usock->hndl);
-                sp_usock_term (usock);
+            case NN_USOCK_OP_RM:
+                usock = nn_cont (ophndl, struct nn_usock, rm_hndl);
+                nn_poller_rm (&self->poller, &usock->hndl);
+                nn_usock_term (usock);
                 break;
             default:
-                sp_assert (0);
+                nn_assert (0);
             }
         }
 
         /*  Process any expired timers. */
         while (1) {
-            rc = sp_timeout_event (&self->timeout, &tohndl);
+            rc = nn_timeout_event (&self->timeout, &tohndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);
 
             /*  Fire the timeout event. */
-            timer = sp_cont (tohndl, struct sp_timer, hndl);
-            sp_assert ((*timer->sink)->timeout);
+            timer = nn_cont (tohndl, struct nn_timer, hndl);
+            nn_assert ((*timer->sink)->timeout);
             (*timer->sink)->timeout (timer->sink, timer);
         }
 
         /*  Process any events from the poller. */
         while (1) {
-            rc = sp_poller_event (&self->poller, &op, &phndl);
+            rc = nn_poller_event (&self->poller, &op, &phndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);
@@ -434,30 +434,30 @@ if (rc == -EINTR) goto again;
                 no action in response. Their sole intent is to interrupt the
                 waiting. */
             if (phndl == &self->efd_hndl) {
-                sp_assert (op == SP_POLLER_IN);
-                sp_efd_unsignal (&self->efd);
+                nn_assert (op == NN_POLLER_IN);
+                nn_efd_unsignal (&self->efd);
                 continue;
             }
 
             /*  Process the I/O event. */
-            usock = sp_cont (phndl, struct sp_usock, hndl);
+            usock = nn_cont (phndl, struct nn_usock, hndl);
             switch (op) {
-            case SP_POLLER_IN:
+            case NN_POLLER_IN:
                 switch (usock->in.op) {
-                case SP_USOCK_INOP_RECV:
+                case NN_USOCK_INOP_RECV:
                     sz = usock->in.len;
-                    rc = sp_usock_recv_raw (usock, usock->in.buf, &sz);
+                    rc = nn_usock_recv_raw (usock, usock->in.buf, &sz);
                     if (rc < 0)
                         goto err;
                     usock->in.len -= sz;
                     if (!usock->in.len) {
-                        usock->in.op = SP_USOCK_INOP_NONE;
-                        sp_poller_reset_in (&self->poller, &usock->hndl);
-                        sp_assert ((*usock->sink)->received);
+                        usock->in.op = NN_USOCK_INOP_NONE;
+                        nn_poller_reset_in (&self->poller, &usock->hndl);
+                        nn_assert ((*usock->sink)->received);
                         (*usock->sink)->received (usock->sink, usock);
                     }
                     break;                    
-                case SP_USOCK_INOP_ACCEPT:
+                case NN_USOCK_INOP_ACCEPT:
                     newsock = accept (usock->s, NULL, NULL);
                     if (newsock == -1) {
 
@@ -470,101 +470,101 @@ if (rc == -EINTR) goto again;
                               errno == ENFILE)
                             break;
 
-                        usock->in.op = SP_USOCK_INOP_NONE;
-                        sp_poller_reset_in (&self->poller, &usock->hndl);
+                        usock->in.op = NN_USOCK_INOP_NONE;
+                        nn_poller_reset_in (&self->poller, &usock->hndl);
                         rc = -errno;
                         goto err;
                     }
-                    usock->in.op = SP_USOCK_INOP_NONE;
-                    sp_poller_reset_in (&self->poller, &usock->hndl);
-                    sp_assert ((*usock->sink)->accepted);
+                    usock->in.op = NN_USOCK_INOP_NONE;
+                    nn_poller_reset_in (&self->poller, &usock->hndl);
+                    nn_assert ((*usock->sink)->accepted);
                     (*usock->sink)->accepted (usock->sink, usock, newsock);
                     break;
                 default:
                     /*  TODO:  When async connect succeeds both OUT and IN
                         are signaled, which means we can end up here. */
-                    sp_assert (0);
+                    nn_assert (0);
                 }
                 break;
-            case SP_POLLER_OUT:
+            case NN_POLLER_OUT:
                 switch (usock->out.op) {
-                case SP_USOCK_OUTOP_SEND:
-                    rc = sp_usock_send_raw (usock, &usock->out.hdr);
-                    if (sp_fast (rc == 0)) {
-                        usock->out.op = SP_USOCK_OUTOP_NONE;
-                        sp_poller_reset_out (&self->poller, &usock->hndl);
-                        sp_assert ((*usock->sink)->sent);
+                case NN_USOCK_OUTOP_SEND:
+                    rc = nn_usock_send_raw (usock, &usock->out.hdr);
+                    if (nn_fast (rc == 0)) {
+                        usock->out.op = NN_USOCK_OUTOP_NONE;
+                        nn_poller_reset_out (&self->poller, &usock->hndl);
+                        nn_assert ((*usock->sink)->sent);
                         (*usock->sink)->sent (usock->sink, usock);
                         break;
                     }
-                    if (sp_fast (rc == -EAGAIN))
+                    if (nn_fast (rc == -EAGAIN))
                         break;
                     goto err;
-                case SP_USOCK_OUTOP_CONNECT:
-                    usock->out.op = SP_USOCK_OUTOP_NONE;
-                    sp_poller_reset_out (&self->poller, &usock->hndl);
-                    rc = sp_usock_geterr (usock);
+                case NN_USOCK_OUTOP_CONNECT:
+                    usock->out.op = NN_USOCK_OUTOP_NONE;
+                    nn_poller_reset_out (&self->poller, &usock->hndl);
+                    rc = nn_usock_geterr (usock);
                     if (rc != 0)
                         goto err;
-                    sp_assert ((*usock->sink)->connected);
+                    nn_assert ((*usock->sink)->connected);
                     (*usock->sink)->connected (usock->sink, usock);
                     break;
                 default:
-                    sp_assert (0);
+                    nn_assert (0);
                 }
                 break;
-            case SP_POLLER_ERR:
-                rc = sp_usock_geterr (usock);
+            case NN_POLLER_ERR:
+                rc = nn_usock_geterr (usock);
 err:
-                sp_assert ((*usock->sink)->err);
+                nn_assert ((*usock->sink)->err);
                 (*usock->sink)->err (usock->sink, usock, rc);
                 break;
             default:
-                sp_assert (0);
+                nn_assert (0);
             }
         }
 
         /*  Process any external events. */
-        sp_mutex_lock (&self->events_sync);
+        nn_mutex_lock (&self->events_sync);
         while (1) {
-            it = sp_queue_pop (&self->events);
+            it = nn_queue_pop (&self->events);
             if (!it)
                 break;
-            event = sp_cont (it ,struct sp_event, item);
-            sp_assert ((*event->sink)->event);
+            event = nn_cont (it ,struct nn_event, item);
+            nn_assert ((*event->sink)->event);
             (*event->sink)->event (event->sink, event);
             event->active = 0;
         }
-        sp_mutex_unlock (&self->events_sync);
+        nn_mutex_unlock (&self->events_sync);
     }
 }
 
-void sp_usock_close (struct sp_usock *self)
+void nn_usock_close (struct nn_usock *self)
 {
     int rc;
 
     /*  If the underlying fd was not yet reigstered with the poller we can
         close the usock straight away. */
-    if (!(self->flags & SP_USOCK_FLAG_REGISTERED)) {
-        sp_usock_term (self);
+    if (!(self->flags & NN_USOCK_FLAG_REGISTERED)) {
+        nn_usock_term (self);
         return;
     }
 
     /*  In the worker thread we can remove the fd from the pollset
         in a synchronous way. */
-    if (sp_thread_current (&self->cp->worker)) {
-        sp_poller_rm (&self->cp->poller, &self->hndl);
-        sp_usock_term (self);
+    if (nn_thread_current (&self->cp->worker)) {
+        nn_poller_rm (&self->cp->poller, &self->hndl);
+        nn_usock_term (self);
         return;
     }
 
     /*  Start asynchronous closing of the underlying socket. */
-    sp_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
-    sp_efd_signal (&self->cp->efd);
+    nn_queue_push (&self->cp->opqueue, &self->rm_hndl.item);
+    nn_efd_signal (&self->cp->efd);
 }
 
-int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, int backlog)
+int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen, int backlog)
 {
     int rc;
     int opt;
@@ -578,105 +578,105 @@ int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
 
     /*  Bind the local end of the connections. */
     rc = bind (self->s, addr, addrlen);
-    if (sp_slow (rc < 0))
+    if (nn_slow (rc < 0))
        return -errno;
 
     /*  Start waiting for incoming connections. */
     rc = listen (self->s, backlog);
-    if (sp_slow (rc < 0))
+    if (nn_slow (rc < 0))
        return -errno;
 
     /*  If the function is called from the worker thread, modify the pollset
         straight away. Otherwise send an event to the worker thread. */
-    if (sp_thread_current (&self->cp->worker))
-        sp_poller_add (&self->cp->poller, self->s, &self->hndl);
+    if (nn_thread_current (&self->cp->worker))
+        nn_poller_add (&self->cp->poller, self->s, &self->hndl);
     else {
-        sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 
     return 0;
 }
 
-void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen)
+void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen)
 {
     int rc;
 
     /*  Make sure that there's no outbound operation already in progress. */
-    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
+    nn_assert (self->out.op == NN_USOCK_OUTOP_NONE);
 
     /*  Do the connect itself. */
     rc = connect (self->s, addr, addrlen);
 
     /*  Immediate success. */
-    if (sp_fast (rc == 0)) {
-        self->flags |= SP_USOCK_FLAG_REGISTERED;
-        if (sp_thread_current (&self->cp->worker)) {
-            sp_poller_add (&self->cp->poller, self->s, &self->hndl);
+    if (nn_fast (rc == 0)) {
+        self->flags |= NN_USOCK_FLAG_REGISTERED;
+        if (nn_thread_current (&self->cp->worker)) {
+            nn_poller_add (&self->cp->poller, self->s, &self->hndl);
         }
         else {
-            sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
-            sp_efd_signal (&self->cp->efd);
+            nn_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+            nn_efd_signal (&self->cp->efd);
         }
-        sp_assert ((*self->sink)->connected);
+        nn_assert ((*self->sink)->connected);
         (*self->sink)->connected (self->sink, self);
         return;
     }
 
     /*  Adjust the handle. */
-    self->out.op = SP_USOCK_OUTOP_CONNECT;
+    self->out.op = NN_USOCK_OUTOP_CONNECT;
 
     /*  Return unexpected errors to the caller. */
-    if (sp_slow (errno != EINPROGRESS)) {
-        sp_assert ((*self->sink)->err);
+    if (nn_slow (errno != EINPROGRESS)) {
+        nn_assert ((*self->sink)->err);
         (*self->sink)->err (self->sink, self, errno);
         return;
     }
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
-    self->flags |= SP_USOCK_FLAG_REGISTERED;
-    if (sp_thread_current (&self->cp->worker)) {
-        sp_poller_add (&self->cp->poller, self->s, &self->hndl);
-        sp_poller_set_out (&self->cp->poller, &self->hndl);
+    self->flags |= NN_USOCK_FLAG_REGISTERED;
+    if (nn_thread_current (&self->cp->worker)) {
+        nn_poller_add (&self->cp->poller, self->s, &self->hndl);
+        nn_poller_set_out (&self->cp->poller, &self->hndl);
     }
     else {
-        sp_queue_push (&self->cp->opqueue, &self->add_hndl.item);
-        sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->add_hndl.item);
+        nn_queue_push (&self->cp->opqueue, &self->out.hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 }
 
-void sp_usock_accept (struct sp_usock *self)
+void nn_usock_accept (struct nn_usock *self)
 {
     /*  Make sure that there's no inbound operation already in progress. */
-    sp_assert (self->in.op == SP_USOCK_INOP_NONE);
+    nn_assert (self->in.op == NN_USOCK_INOP_NONE);
 
     /*  Adjust the handle. */
-    self->in.op = SP_USOCK_INOP_ACCEPT;
+    self->in.op = NN_USOCK_INOP_ACCEPT;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for in. */
-    if (sp_thread_current (&self->cp->worker))
-        sp_poller_set_in (&self->cp->poller, &self->hndl);
+    if (nn_thread_current (&self->cp->worker))
+        nn_poller_set_in (&self->cp->poller, &self->hndl);
     else {
-        sp_queue_push (&self->cp->opqueue, &self->in.hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->in.hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 }
 
-void sp_usock_send (struct sp_usock *self,
-    const struct sp_iobuf *iov, int iovcnt)
+void nn_usock_send (struct nn_usock *self,
+    const struct nn_iobuf *iov, int iovcnt)
 {
     int rc;
     int i;
 
     /*  Make sure that there's no outbound operation already in progress. */
-    sp_assert (self->out.op == SP_USOCK_OUTOP_NONE);
+    nn_assert (self->out.op == NN_USOCK_OUTOP_NONE);
 
     /*  Copy the iovecs to the socket. */
-    sp_assert (iovcnt <= SP_AIO_MAX_IOVCNT);
+    nn_assert (iovcnt <= NN_AIO_MAX_IOVCNT);
     self->out.hdr.msg_iov = self->out.iov;
     self->out.hdr.msg_iovlen = iovcnt;
     for (i = 0; i != iovcnt; ++i) {
@@ -685,77 +685,77 @@ void sp_usock_send (struct sp_usock *self,
     }
     
     /*  Try to send the data immediately. */
-    rc = sp_usock_send_raw (self, &self->out.hdr);
+    rc = nn_usock_send_raw (self, &self->out.hdr);
 
     /*  Success. */
-    if (sp_fast (rc == 0)) {
-        sp_assert ((*self->sink)->sent);
+    if (nn_fast (rc == 0)) {
+        nn_assert ((*self->sink)->sent);
         (*self->sink)->sent (self->sink, self);
         return;
     }
 
     /*  Errors. */
-    if (sp_slow (rc != -EAGAIN)) {
+    if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        sp_assert ((*self->sink)->err);
+        nn_assert ((*self->sink)->err);
         (*self->sink)->err (self->sink, self, -rc);
         return;
     }
 
     /*  There are still data to send in the background. */ 
-    self->out.op = SP_USOCK_OUTOP_SEND;
+    self->out.op = NN_USOCK_OUTOP_SEND;
 
     /*  If we are in the worker thread we can simply start polling for out.
         Otherwise, ask worker thread to start polling for out. */
-    if (sp_thread_current (&self->cp->worker))
-        sp_poller_set_out (&self->cp->poller, &self->hndl);
+    if (nn_thread_current (&self->cp->worker))
+        nn_poller_set_out (&self->cp->poller, &self->hndl);
     else {
-        sp_queue_push (&self->cp->opqueue, &self->out.hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->out.hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 }
 
-void sp_usock_recv (struct sp_usock *self, void *buf, size_t len)
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 {
     int rc;
     size_t nbytes;
 
     /*  Make sure that there's no inbound operation already in progress. */
-    sp_assert (self->in.op == SP_USOCK_INOP_NONE);
+    nn_assert (self->in.op == NN_USOCK_INOP_NONE);
 
     /*  Try to receive the data immediately. */
     nbytes = len;
-    rc = sp_usock_recv_raw (self, buf, &nbytes);
-    if (sp_slow (rc < 0)) {
+    rc = nn_usock_recv_raw (self, buf, &nbytes);
+    if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        sp_assert ((*self->sink)->err);
+        nn_assert ((*self->sink)->err);
         (*self->sink)->err (self->sink, self, -rc);
         return;
     }
 
     /*  Success. */
-    if (sp_fast (nbytes == len)) {
-        sp_assert ((*self->sink)->received);
+    if (nn_fast (nbytes == len)) {
+        nn_assert ((*self->sink)->received);
         (*self->sink)->received (self->sink, self);
         return;
     }
 
     /*  There are still data to receive in the background. */ 
-    self->in.op = SP_USOCK_INOP_RECV;
+    self->in.op = NN_USOCK_INOP_RECV;
     self->in.buf = ((uint8_t*) buf) + nbytes;
     self->in.len = len - nbytes;
 
     /*  If we are in the worker thread we can simply start polling for in.
         Otherwise, ask worker thread to start polling for in. */
-    if (sp_thread_current (&self->cp->worker))
-        sp_poller_set_in (&self->cp->poller, &self->hndl);
+    if (nn_thread_current (&self->cp->worker))
+        nn_poller_set_in (&self->cp->poller, &self->hndl);
     else {
-        sp_queue_push (&self->cp->opqueue, &self->in.hndl.item);
-        sp_efd_signal (&self->cp->efd);
+        nn_queue_push (&self->cp->opqueue, &self->in.hndl.item);
+        nn_efd_signal (&self->cp->efd);
     }
 }
 
-static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
+static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
 {
     ssize_t nbytes;
 
@@ -767,13 +767,13 @@ static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
 #endif
 
     /*  Handle errors. */
-    if (sp_slow (nbytes < 0)) {
-        if (sp_fast (errno == EAGAIN || errno == EWOULDBLOCK))
+    if (nn_slow (nbytes < 0)) {
+        if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))
             nbytes = 0;
         else {
 
             /*  If the connection fails, return ECONNRESET. */
-            sp_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
+            nn_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
                 errno == EPIPE);
             return -ECONNRESET;
         }
@@ -784,7 +784,7 @@ static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
         if (nbytes >= hdr->msg_iov->iov_len) {
             --hdr->msg_iovlen;
             if (!hdr->msg_iovlen) {
-                sp_assert (nbytes == hdr->msg_iov->iov_len);
+                nn_assert (nbytes == hdr->msg_iov->iov_len);
                 return 0;
             }
             nbytes -= hdr->msg_iov->iov_len;
@@ -800,7 +800,7 @@ static int sp_usock_send_raw (struct sp_usock *self, struct msghdr *hdr)
     return 0;
 }
 
-static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
+static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
 {
     size_t sz;
     size_t length;
@@ -809,8 +809,8 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
     /*  If batch buffer doesn't exist, allocate it. The point of delayed
         deallocation to allow non-receiving sockets, such as TCP listening
         sockets, to do without the batch buffer. */
-    if (sp_slow (!self->in.batch)) {
-        self->in.batch = sp_alloc (SP_USOCK_BATCH_SIZE, "AIO batch buffer");
+    if (nn_slow (!self->in.batch)) {
+        self->in.batch = nn_alloc (NN_USOCK_BATCH_SIZE, "AIO batch buffer");
         alloc_assert (self->in.batch);
     }
 
@@ -830,21 +830,21 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
 
     /*  If recv request is greater than the batch buffer, get the data directly
         into the place. Otherwise, read data to the batch buffer. */
-    if (length > SP_USOCK_BATCH_SIZE)
+    if (length > NN_USOCK_BATCH_SIZE)
         nbytes = recv (self->s, buf, length, 0);
     else 
-        nbytes = recv (self->s, self->in.batch, SP_USOCK_BATCH_SIZE, 0);
+        nbytes = recv (self->s, self->in.batch, NN_USOCK_BATCH_SIZE, 0);
 
     /*  Handle any possible errors. */
-    if (sp_slow (nbytes < 0)) {
+    if (nn_slow (nbytes < 0)) {
 
         /*  Zero bytes received. */
-        if (sp_fast (errno == EAGAIN || errno == EWOULDBLOCK))
+        if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))
             nbytes = 0;
         else {
 
             /*  If the peer closes the connection, return ECONNRESET. */
-            sp_assert (nbytes == 0 || errno == ECONNRESET ||
+            nn_assert (nbytes == 0 || errno == ECONNRESET ||
                   errno == ENOTCONN || errno == ECONNREFUSED ||
                   errno == ETIMEDOUT || errno == EHOSTUNREACH);
             return -ECONNRESET;
@@ -853,7 +853,7 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
 
     /*  If the data were received directly into the place we can return
         straight away. */
-    if (length > SP_USOCK_BATCH_SIZE) {
+    if (length > NN_USOCK_BATCH_SIZE) {
         length -= nbytes;
         *len -= length;
         return 0;
@@ -874,11 +874,11 @@ static int sp_usock_recv_raw (struct sp_usock *self, void *buf, size_t *len)
     return 0;
 }
 
-static int sp_usock_geterr (struct sp_usock *self)
+static int nn_usock_geterr (struct nn_usock *self)
 {
     int rc;
     int err;
-#if defined SP_HAVE_HPUX
+#if defined NN_HAVE_HPUX
     int errlen;
 #else
     socklen_t errlen;
@@ -893,7 +893,7 @@ static int sp_usock_geterr (struct sp_usock *self)
         return errno;
 
     /*  On other platforms the error is in err. */
-    sp_assert (errlen == sizeof (err));
+    nn_assert (errlen == sizeof (err));
     return err;
 }
 

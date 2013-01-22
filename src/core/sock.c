@@ -30,22 +30,22 @@
 #include "../utils/cont.h"
 #include "../utils/msg.h"
 
-#define SP_SOCK_EVENT_IN 1
-#define SP_SOCK_EVENT_OUT 2
+#define NN_SOCK_EVENT_IN 1
+#define NN_SOCK_EVENT_OUT 2
 
-void sp_sockbase_init (struct sp_sockbase *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+void nn_sockbase_init (struct nn_sockbase *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     self->vfptr = vfptr;
     self->flags = 0;
-    sp_cp_init (&self->cp);
-    sp_cond_init (&self->cond);
-    sp_clock_init (&self->clock);
+    nn_cp_init (&self->cp);
+    nn_cond_init (&self->cond);
+    nn_clock_init (&self->clock);
     self->fd = fd;
-    sp_list_init (&self->eps);
+    nn_list_init (&self->eps);
     self->eid = 1;
 
-    /*  Default values for SP_SOL_SOCKET options. */
+    /*  Default values for NN_SOL_SOCKET options. */
     self->linger = 1000;
     self->sndbuf = 128 * 1024;
     self->rcvbuf = 128 * 1024;
@@ -55,50 +55,50 @@ void sp_sockbase_init (struct sp_sockbase *self,
     self->reconnect_ivl_max = 0;
 }
 
-void sp_sock_zombify (struct sp_sock *self)
+void nn_sock_zombify (struct nn_sock *self)
 {
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
-    sockbase = (struct sp_sockbase*) self;
-    sp_cp_lock (&sockbase->cp);
-    sockbase->flags |= SP_SOCK_FLAG_ZOMBIE;
-    sp_cond_post (&sockbase->cond);
-    sp_cp_unlock (&sockbase->cp);
+    sockbase = (struct nn_sockbase*) self;
+    nn_cp_lock (&sockbase->cp);
+    sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
+    nn_cond_post (&sockbase->cond);
+    nn_cp_unlock (&sockbase->cp);
 }
 
-void sp_sock_term (struct sp_sock *self)
+void nn_sock_term (struct nn_sock *self)
 {
     int rc;
-    struct sp_sockbase *sockbase;
-    struct sp_list_item *it;
-    struct sp_epbase *ep;
+    struct nn_sockbase *sockbase;
+    struct nn_list_item *it;
+    struct nn_epbase *ep;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
-    /*  Ask all the associated endpoints to terminate. Call to sp_ep_close can
+    /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
         actually deallocate the endpoint, so take care to get pointer to the
         next endpoint before the call. */
-    it = sp_list_begin (&sockbase->eps);
-    while (it != sp_list_end (&sockbase->eps)) {
-        ep = sp_cont (it, struct sp_epbase, item);
-        it = sp_list_next (&sockbase->eps, it);
-        sp_ep_close ((void*) ep);       
+    it = nn_list_begin (&sockbase->eps);
+    while (it != nn_list_end (&sockbase->eps)) {
+        ep = nn_cont (it, struct nn_epbase, item);
+        it = nn_list_next (&sockbase->eps, it);
+        nn_ep_close ((void*) ep);       
     }
 
     while (1) {
 
         /*  If there are no active endpoints we can deallocate the socket
             straight away. */
-        if (sp_list_empty (&sockbase->eps)) {
+        if (nn_list_empty (&sockbase->eps)) {
 
-            /*  Terminate the sp_sockbase itself. */
-            sp_cp_unlock (&sockbase->cp);
-            sp_list_term (&sockbase->eps);
-            sp_clock_term (&sockbase->clock);
-            sp_cond_term (&sockbase->cond);
-            sp_cp_term (&sockbase->cp);
+            /*  Terminate the nn_sockbase itself. */
+            nn_cp_unlock (&sockbase->cp);
+            nn_list_term (&sockbase->eps);
+            nn_clock_term (&sockbase->clock);
+            nn_cond_term (&sockbase->cond);
+            nn_cp_term (&sockbase->cp);
 
             /*  Deallocate the derived class. */
             sockbase->vfptr->destroy (sockbase);
@@ -107,194 +107,194 @@ void sp_sock_term (struct sp_sock *self)
         }
 
         /*  Wait till all the endpoints are closed. */
-        sp_cond_set_timeout (&sockbase->cond, -1);
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync);
+        nn_cond_set_timeout (&sockbase->cond, -1);
+        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
         errnum_assert (rc == 0, rc);
     }
 }
 
-void sp_sockbase_unblock_recv (struct sp_sockbase *self)
+void nn_sockbase_unblock_recv (struct nn_sockbase *self)
 {
-    sp_cond_post (&self->cond);
+    nn_cond_post (&self->cond);
 }
 
-void sp_sockbase_unblock_send (struct sp_sockbase *self)
+void nn_sockbase_unblock_send (struct nn_sockbase *self)
 {
-    sp_cond_post (&self->cond);
+    nn_cond_post (&self->cond);
 }
 
-struct sp_cp *sp_sockbase_getcp (struct sp_sockbase *self)
+struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self)
 {
     return &self->cp;
 }
 
-struct sp_cp *sp_sock_getcp (struct sp_sock *self)
+struct nn_cp *nn_sock_getcp (struct nn_sock *self)
 {
-    return &((struct sp_sockbase*) self)->cp;
+    return &((struct nn_sockbase*) self)->cp;
 }
 
-int sp_sock_setopt (struct sp_sock *self, int level, int option,
+int nn_sock_setopt (struct nn_sock *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
     int *dst;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
-    /*  If sp_term() was already called, return ETERM. */
-    if (sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
-        sp_cp_unlock (&sockbase->cp);
+    /*  If nn_term() was already called, return ETERM. */
+    if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+        nn_cp_unlock (&sockbase->cp);
         return -ETERM;
     }
 
     /*  Generic socket-level options. */
-    if (level == SP_SOL_SOCKET) {
+    if (level == NN_SOL_SOCKET) {
         switch (option) {
-        case SP_LINGER:
+        case NN_LINGER:
             dst = &sockbase->linger;
             break;
-        case SP_SNDBUF:
+        case NN_SNDBUF:
             dst = &sockbase->sndbuf;
             break;
-        case SP_RCVBUF:
+        case NN_RCVBUF:
             dst = &sockbase->rcvbuf;
             break;
-        case SP_SNDTIMEO:
+        case NN_SNDTIMEO:
             dst = &sockbase->sndtimeo;
             break;
-        case SP_RCVTIMEO:
+        case NN_RCVTIMEO:
             dst = &sockbase->rcvtimeo;
             break;
-        case SP_RECONNECT_IVL:
+        case NN_RECONNECT_IVL:
             dst = &sockbase->reconnect_ivl;
             break;
-        case SP_RECONNECT_IVL_MAX:
+        case NN_RECONNECT_IVL_MAX:
             dst = &sockbase->reconnect_ivl_max;
             break;
         default:
-            sp_cp_unlock (&sockbase->cp);
+            nn_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
         }
         if (optvallen != sizeof (int)) {
-            sp_cp_unlock (&sockbase->cp);
+            nn_cp_unlock (&sockbase->cp);
             return -EINVAL;
         }
         *dst = *(int*) optval;
-        sp_cp_unlock (&sockbase->cp);
+        nn_cp_unlock (&sockbase->cp);
         return 0;
     }
 
     /*  Protocol-specific socket options. */
-    if (level > SP_SOL_SOCKET) {
+    if (level > NN_SOL_SOCKET) {
         rc = sockbase->vfptr->setopt (sockbase, level, option,
             optval, optvallen);
-        sp_cp_unlock (&sockbase->cp);
+        nn_cp_unlock (&sockbase->cp);
         return rc;
     }
 
     /*  Transport-specific options. */
-    if (level < SP_SOL_SOCKET) {
-        sp_cp_unlock (&sockbase->cp);
+    if (level < NN_SOL_SOCKET) {
+        nn_cp_unlock (&sockbase->cp);
         return -ENOPROTOOPT;
     }
 
-    sp_assert (0);
+    nn_assert (0);
 }
 
-int sp_sock_getopt (struct sp_sock *self, int level, int option,
+int nn_sock_getopt (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen, int internal)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
     int *src;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
     if (!internal)
-        sp_cp_lock (&sockbase->cp);
+        nn_cp_lock (&sockbase->cp);
 
-    /*  If sp_term() was already called, return ETERM. */
-    if (!internal && sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
-        sp_cp_unlock (&sockbase->cp);
+    /*  If nn_term() was already called, return ETERM. */
+    if (!internal && nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+        nn_cp_unlock (&sockbase->cp);
         return -ETERM;
     }
 
     /*  Generic socket-level options. */
-    if (level == SP_SOL_SOCKET) {
+    if (level == NN_SOL_SOCKET) {
         switch (option) {
-        case SP_LINGER:
+        case NN_LINGER:
             src = &sockbase->linger;
             break;
-        case SP_SNDBUF:
+        case NN_SNDBUF:
             src = &sockbase->sndbuf;
             break;
-        case SP_RCVBUF:
+        case NN_RCVBUF:
             src = &sockbase->rcvbuf;
             break;
-        case SP_SNDTIMEO:
+        case NN_SNDTIMEO:
             src = &sockbase->sndtimeo;
             break;
-        case SP_RCVTIMEO:
+        case NN_RCVTIMEO:
             src = &sockbase->rcvtimeo;
             break;
-        case SP_RECONNECT_IVL:
+        case NN_RECONNECT_IVL:
             src = &sockbase->reconnect_ivl;
             break;
-        case SP_RECONNECT_IVL_MAX:
+        case NN_RECONNECT_IVL_MAX:
             src = &sockbase->reconnect_ivl_max;
             break;
         default:
             if (!internal)
-                sp_cp_unlock (&sockbase->cp);
+                nn_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
         }
         memcpy (optval, src,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
         if (!internal)
-            sp_cp_unlock (&sockbase->cp);
+            nn_cp_unlock (&sockbase->cp);
         return 0;
     }
 
     /*  Protocol-specific socket options. */
-    if (level > SP_SOL_SOCKET) {
+    if (level > NN_SOL_SOCKET) {
         rc = sockbase->vfptr->getopt (sockbase, level, option,
             optval, optvallen);
         if (!internal)
-            sp_cp_unlock (&sockbase->cp);
+            nn_cp_unlock (&sockbase->cp);
         return rc;
     }
 
     /*  Transport-specific options. */
-    if (level < SP_SOL_SOCKET) {
+    if (level < NN_SOL_SOCKET) {
         if (!internal)
-            sp_cp_unlock (&sockbase->cp);
+            nn_cp_unlock (&sockbase->cp);
         return -ENOPROTOOPT;
     }
 
-    sp_assert (0);
+    nn_assert (0);
 }
 
 
-int sp_sock_create_ep (struct sp_sock *self, const char *addr,
-    int (*factory) (const char *addr, void *hint, struct sp_epbase **ep))
+int nn_sock_create_ep (struct nn_sock *self, const char *addr,
+    int (*factory) (const char *addr, void *hint, struct nn_epbase **ep))
 {
     int rc;
-    struct sp_sockbase *sockbase;
-    struct sp_epbase *ep;
+    struct nn_sockbase *sockbase;
+    struct nn_epbase *ep;
     int eid;
     
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
     /*  Create the transport-specific endpoint. */
     rc = factory (addr, (void*) self, &ep);
-    if (sp_slow (rc < 0)) {
-        sp_cp_unlock (&sockbase->cp);
+    if (nn_slow (rc < 0)) {
+        nn_cp_unlock (&sockbase->cp);
         return rc;
     }
 
@@ -303,29 +303,29 @@ int sp_sock_create_ep (struct sp_sock *self, const char *addr,
     ++sockbase->eid;
 
     /*  Add it to the list of active endpoints. */
-    sp_list_insert (&sockbase->eps, &ep->item, sp_list_end (&sockbase->eps));
+    nn_list_insert (&sockbase->eps, &ep->item, nn_list_end (&sockbase->eps));
 
-    sp_cp_unlock (&sockbase->cp);
+    nn_cp_unlock (&sockbase->cp);
 
     return eid;
 }
 
-int sp_sock_shutdown (struct sp_sock *self, int eid)
+int nn_sock_shutdown (struct nn_sock *self, int eid)
 {
-    struct sp_sockbase *sockbase;
-    struct sp_list_item *it;
-    struct sp_epbase *ep;
+    struct nn_sockbase *sockbase;
+    struct nn_list_item *it;
+    struct nn_epbase *ep;
     
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
     /*  Find the specified enpoint. */
     ep = NULL;
-    for (it = sp_list_begin (&sockbase->eps);
-          it != sp_list_end (&sockbase->eps);
-          it = sp_list_next (&sockbase->eps, it)) {
-        ep = sp_cont (it, struct sp_epbase, item);
+    for (it = nn_list_begin (&sockbase->eps);
+          it != nn_list_end (&sockbase->eps);
+          it = nn_list_next (&sockbase->eps, it)) {
+        ep = nn_cont (it, struct nn_epbase, item);
         if (ep->eid == eid)
             break;
         ep = NULL;
@@ -333,198 +333,198 @@ int sp_sock_shutdown (struct sp_sock *self, int eid)
 
     /*  The endpoint doesn't exist. */
     if (!ep) {
-        sp_cp_unlock (&sockbase->cp);
+        nn_cp_unlock (&sockbase->cp);
         return -EINVAL;
     }
     
     /*  Ask the endpoint to shutdown. Actual terminatation may be delayed
         by the transport. */
-    sp_ep_close ((void*) ep);
+    nn_ep_close ((void*) ep);
 
-    sp_cp_unlock (&sockbase->cp);
+    nn_cp_unlock (&sockbase->cp);
 
     return 0;
 }
 
-void sp_sock_ep_closed (struct sp_sock *self, struct sp_epbase *ep)
+void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep)
 {
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
     /*  Remove the endpoint from the list of active endpoints. */
-    sp_list_erase (&sockbase->eps, &ep->item);
+    nn_list_erase (&sockbase->eps, &ep->item);
 
-    /*  sp_close() may be waiting for termination of this endpoint.
+    /*  nn_close() may be waiting for termination of this endpoint.
         Send it a signal. */
-    if (sp_list_empty (&sockbase->eps))
-        sp_cond_post (&sockbase->cond);
+    if (nn_list_empty (&sockbase->eps))
+        nn_cond_post (&sockbase->cond);
 }
 
-int sp_sock_send (struct sp_sock *self, struct sp_msg *msg, int flags)
+int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
     /*  Set the SNDTIMEO timer. */
-    sp_cond_set_timeout (&sockbase->cond, sockbase->sndtimeo);
+    nn_cond_set_timeout (&sockbase->cond, sockbase->sndtimeo);
 
     while (1) {
 
-        /*  If sp_term() was already called, return ETERM. */
-        if (sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
-            sp_cp_unlock (&sockbase->cp);
+        /*  If nn_term() was already called, return ETERM. */
+        if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+            nn_cp_unlock (&sockbase->cp);
             return -ETERM;
         }
 
         /*  Try to send the message in a non-blocking way. */
         rc = sockbase->vfptr->send (sockbase, msg);
-        if (sp_fast (rc == 0)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_fast (rc == 0)) {
+            nn_cp_unlock (&sockbase->cp);
             return 0;
         }
 
         /*  Any unexpected error is forwarded to the caller. */
-        if (sp_slow (rc != -EAGAIN)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_slow (rc != -EAGAIN)) {
+            nn_cp_unlock (&sockbase->cp);
             return rc;
         }
 
         /*  If the message cannot be sent at the moment and the send call
             is non-blocking, return immediately. */
-        if (sp_fast (flags & SP_DONTWAIT)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_fast (flags & NN_DONTWAIT)) {
+            nn_cp_unlock (&sockbase->cp);
             return -EAGAIN;
         }
 
         /*  With blocking send, wait while there are new pipes available
             for sending. */
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync);
-        if (sp_slow (rc == -ETIMEDOUT)) {
-            sp_cp_unlock (&sockbase->cp);
+        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
+        if (nn_slow (rc == -ETIMEDOUT)) {
+            nn_cp_unlock (&sockbase->cp);
             return -EAGAIN;
         }
         errnum_assert (rc == 0, rc);
     }   
 }
 
-int sp_sock_recv (struct sp_sock *self, struct sp_msg *msg, int flags)
+int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
 
-    sp_cp_lock (&sockbase->cp);
+    nn_cp_lock (&sockbase->cp);
 
     /*  Set the RCVTIMEO timer. */
-    sp_cond_set_timeout (&sockbase->cond, sockbase->rcvtimeo);
+    nn_cond_set_timeout (&sockbase->cond, sockbase->rcvtimeo);
 
     while (1) {
 
-        /*  If sp_term() was already called, return ETERM. */
-        if (sp_slow (sockbase->flags & SP_SOCK_FLAG_ZOMBIE)) {
-            sp_cp_unlock (&sockbase->cp);
+        /*  If nn_term() was already called, return ETERM. */
+        if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+            nn_cp_unlock (&sockbase->cp);
             return -ETERM;
         }
 
         /*  Try to receive the message in a non-blocking way. */
         rc = sockbase->vfptr->recv (sockbase, msg);
-        if (sp_fast (rc == 0)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_fast (rc == 0)) {
+            nn_cp_unlock (&sockbase->cp);
             return 0;
         }
 
         /*  Any unexpected error is forwarded to the caller. */
-        if (sp_slow (rc != -EAGAIN)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_slow (rc != -EAGAIN)) {
+            nn_cp_unlock (&sockbase->cp);
             return rc;
         }
 
         /*  If the message cannot be received at the moment and the recv call
             is non-blocking, return immediately. */
-        if (sp_fast (flags & SP_DONTWAIT)) {
-            sp_cp_unlock (&sockbase->cp);
+        if (nn_fast (flags & NN_DONTWAIT)) {
+            nn_cp_unlock (&sockbase->cp);
             return -EAGAIN;
         }
 
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        rc = sp_cond_wait (&sockbase->cond, &sockbase->cp.sync);
-        if (sp_slow (rc == -ETIMEDOUT)) {
-            sp_cp_unlock (&sockbase->cp);
+        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
+        if (nn_slow (rc == -ETIMEDOUT)) {
+            nn_cp_unlock (&sockbase->cp);
             return -EAGAIN;
         }
         errnum_assert (rc == 0, rc);
     }  
 }
 
-int sp_sock_sethdr (struct sp_sock *self, struct sp_msg *msg,
+int nn_sock_sethdr (struct nn_sock *self, struct nn_msg *msg,
     const void *hdr, size_t hdrlen)
 {
-    return ((struct sp_sockbase*) self)->vfptr->sethdr (msg, hdr, hdrlen);
+    return ((struct nn_sockbase*) self)->vfptr->sethdr (msg, hdr, hdrlen);
 }
 
-int sp_sock_gethdr (struct sp_sock *self, struct sp_msg *msg,
+int nn_sock_gethdr (struct nn_sock *self, struct nn_msg *msg,
     void *hdr, size_t *hdrlen)
 {
-    return ((struct sp_sockbase*) self)->vfptr->gethdr (msg, hdr, hdrlen);
+    return ((struct nn_sockbase*) self)->vfptr->gethdr (msg, hdr, hdrlen);
 }
 
-int sp_sock_fd (struct sp_sock *self)
+int nn_sock_fd (struct nn_sock *self)
 {
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
     return sockbase->fd;
 }
 
-int sp_sock_add (struct sp_sock *self, struct sp_pipe *pipe)
+int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
     /*  Forward the call to the specific socket type. */
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
     return sockbase->vfptr->add (sockbase, pipe);
 }
 
-void sp_sock_rm (struct sp_sock *self, struct sp_pipe *pipe)
+void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
     /*  Forward the call to the specific socket type. */
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
     sockbase->vfptr->rm (sockbase, pipe);
 }
 
-void sp_sock_in (struct sp_sock *self, struct sp_pipe *pipe)
+void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
     /*  Forward the call to the specific socket type. */
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
     rc = sockbase->vfptr->in (sockbase, pipe);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1)
-        sp_cond_post (&sockbase->cond);
+        nn_cond_post (&sockbase->cond);
 }
 
-void sp_sock_out (struct sp_sock *self, struct sp_pipe *pipe)
+void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)
 {
     int rc;
-    struct sp_sockbase *sockbase;
+    struct nn_sockbase *sockbase;
 
     /*  Forward the call to the specific socket type. */
-    sockbase = (struct sp_sockbase*) self;
+    sockbase = (struct nn_sockbase*) self;
     rc = sockbase->vfptr->out (sockbase, pipe);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1)
-        sp_cond_post (&sockbase->cond);
+        nn_cond_post (&sockbase->cond);
 }
 

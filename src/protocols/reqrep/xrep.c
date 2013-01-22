@@ -22,7 +22,7 @@
 
 #include "xrep.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../reqrep.h"
 
 #include "../../utils/err.h"
@@ -35,186 +35,186 @@
 #include <string.h>
 
 /*  Private functions. */
-static void sp_xrep_destroy (struct sp_sockbase *self);
+static void nn_xrep_destroy (struct nn_sockbase *self);
 
-static const struct sp_sockbase_vfptr sp_xrep_sockbase_vfptr = {
-    sp_xrep_destroy,
-    sp_xrep_add,
-    sp_xrep_rm,
-    sp_xrep_in,
-    sp_xrep_out,
-    sp_xrep_send,
-    sp_xrep_recv,
-    sp_xrep_setopt,
-    sp_xrep_getopt,
-    sp_xrep_sethdr,
-    sp_xrep_gethdr
+static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
+    nn_xrep_destroy,
+    nn_xrep_add,
+    nn_xrep_rm,
+    nn_xrep_in,
+    nn_xrep_out,
+    nn_xrep_send,
+    nn_xrep_recv,
+    nn_xrep_setopt,
+    nn_xrep_getopt,
+    nn_xrep_sethdr,
+    nn_xrep_gethdr
 };
 
-void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
+void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
     int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
 
     /*  Start assigning keys beginning with a random number. This way there
         are no key clashes even if the executable is re-started. */
-    sp_random_generate (&self->next_key, sizeof (self->next_key));
+    nn_random_generate (&self->next_key, sizeof (self->next_key));
 
-    sp_hash_init (&self->pipes);
-    sp_list_init (&self->inpipes);
+    nn_hash_init (&self->pipes);
+    nn_list_init (&self->inpipes);
     self->current = NULL;
 }
 
-void sp_xrep_term (struct sp_xrep *self)
+void nn_xrep_term (struct nn_xrep *self)
 {
-    sp_list_term (&self->inpipes);
-    sp_hash_term (&self->pipes);
+    nn_list_term (&self->inpipes);
+    nn_hash_term (&self->pipes);
 }
 
-static void sp_xrep_destroy (struct sp_sockbase *self)
+static void nn_xrep_destroy (struct nn_sockbase *self)
 {
-    struct sp_xrep *xrep;
+    struct nn_xrep *xrep;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
 
-    sp_xrep_term (xrep);
-    sp_free (xrep);
+    nn_xrep_term (xrep);
+    nn_free (xrep);
 }
 
-int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xrep *xrep;
-    struct sp_xrep_data *data;
+    struct nn_xrep *xrep;
+    struct nn_xrep_data *data;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
 
-    data = sp_alloc (sizeof (struct sp_xrep_data), "pipe data (xrep)");
+    data = nn_alloc (sizeof (struct nn_xrep_data), "pipe data (xrep)");
     alloc_assert (data);
     data->pipe = pipe;
     data->flags = 0;
 
-    sp_pipe_setdata (pipe, data);
+    nn_pipe_setdata (pipe, data);
 
-    sp_hash_insert (&xrep->pipes, xrep->next_key & 0x7fffffff, &data->pipes);
+    nn_hash_insert (&xrep->pipes, xrep->next_key & 0x7fffffff, &data->pipes);
     ++xrep->next_key;
 
     return 0;
 }
 
-void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xrep *xrep;
-    struct sp_xrep_data *data;
+    struct nn_xrep *xrep;
+    struct nn_xrep_data *data;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
-    data = sp_pipe_getdata (pipe);
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
+    data = nn_pipe_getdata (pipe);
 
     /*  TODO: If pipe is in the pipe lists, remove it. Move the 'current'
         pointer as well. */
 
-    sp_hash_erase (&xrep->pipes, &data->pipes);
+    nn_hash_erase (&xrep->pipes, &data->pipes);
 
-    sp_free (data);
+    nn_free (data);
 }
 
-int sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xrep *xrep;
-    struct sp_xrep_data *data;
+    struct nn_xrep *xrep;
+    struct nn_xrep_data *data;
     int result;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
-    data = sp_pipe_getdata (pipe);
-    result = sp_list_empty (&xrep->inpipes) ? 1 : 0;
-    sp_list_insert (&xrep->inpipes, &data->inpipes,
-        sp_list_end (&xrep->inpipes));
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
+    data = nn_pipe_getdata (pipe);
+    result = nn_list_empty (&xrep->inpipes) ? 1 : 0;
+    nn_list_insert (&xrep->inpipes, &data->inpipes,
+        nn_list_end (&xrep->inpipes));
     if (!xrep->current)
         xrep->current = data;
 
     return result;
 }
 
-int sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xrep_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xrep_data *data;
+    struct nn_xrep_data *data;
 
-    data = sp_pipe_getdata (pipe);
-    data->flags |= SP_XREP_OUT;
+    data = nn_pipe_getdata (pipe);
+    data->flags |= NN_XREP_OUT;
 
     /*  XREP socket never blocks on send, so there's no point in unblocking. */
     return 0;
 }
 
-int sp_xrep_send (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     uint32_t key;
-    struct sp_xrep *xrep;
-    struct sp_xrep_data *data;
+    struct nn_xrep *xrep;
+    struct nn_xrep_data *data;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
 
     /*  We treat invalid peer ID as if the peer was non-existent. */
-    if (sp_slow (sp_chunkref_size (&msg->hdr) < sizeof (uint32_t))) {
-        sp_msg_term (msg);
+    if (nn_slow (nn_chunkref_size (&msg->hdr) < sizeof (uint32_t))) {
+        nn_msg_term (msg);
         return 0;
     }
 
     /*  Retrieve the destination peer ID. Trim it from the header. */
-    key = sp_getl (sp_chunkref_data (&msg->hdr));
-    sp_chunkref_trim (&msg->hdr, 4);
+    key = nn_getl (nn_chunkref_data (&msg->hdr));
+    nn_chunkref_trim (&msg->hdr, 4);
 
     /*  Find the appropriate pipe to send the message to. If there's none,
         or if it's not ready for sending, silently drop the message. */
-    data = sp_cont (sp_hash_get (&xrep->pipes, key), struct sp_xrep_data,
+    data = nn_cont (nn_hash_get (&xrep->pipes, key), struct nn_xrep_data,
         pipes);
-    if (!data || !(data->flags & SP_XREP_OUT))
+    if (!data || !(data->flags & NN_XREP_OUT))
         return 0;
 
     /*  Send the message. */
-    rc = sp_pipe_send (data->pipe, msg);
+    rc = nn_pipe_send (data->pipe, msg);
     errnum_assert (rc >= 0, -rc);
-    if (rc & SP_PIPE_RELEASE)
-        data->flags &= ~SP_XREP_OUT;
+    if (rc & NN_PIPE_RELEASE)
+        data->flags &= ~NN_XREP_OUT;
 
     return 0;
 }
 
-int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_xrep *xrep;
+    struct nn_xrep *xrep;
     int i;
     void *data;
     size_t sz;
-    struct sp_list_item *next;
-    struct sp_chunkref ref;
+    struct nn_list_item *next;
+    struct nn_chunkref ref;
 
-    xrep = sp_cont (self, struct sp_xrep, sockbase);
+    xrep = nn_cont (self, struct nn_xrep, sockbase);
 
     /*  If there are no inpipes, we can't recv a message. */
-    if (sp_slow (!xrep->current))
+    if (nn_slow (!xrep->current))
         return -EAGAIN;
 
     /*  Get a request. */
-    rc = sp_pipe_recv (xrep->current->pipe, msg);
+    rc = nn_pipe_recv (xrep->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
-    if (!(rc & SP_PIPE_PARSED)) {
+    if (!(rc & NN_PIPE_PARSED)) {
 
         /*  Determine the size of the message header. */
-        data = sp_chunkref_data (&msg->body);
-        sz = sp_chunkref_size (&msg->body);
+        data = nn_chunkref_data (&msg->body);
+        sz = nn_chunkref_size (&msg->body);
         while (1) {
 
             /*  Ignore the malformed requests without the bottom of the stack. */
-            if (sp_slow (i * sizeof (uint32_t) > sz)) {
-                sp_msg_term (msg);
+            if (nn_slow (i * sizeof (uint32_t) > sz)) {
+                nn_msg_term (msg);
                 return -EAGAIN;
             }
 
             /*  If the bottom of the backtrace stack is reached, proceed. */
-            if (sp_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
+            if (nn_getl ((uint8_t*)(((uint32_t*) data) + i)) & 0x80000000)
                 break;
 
             ++i;
@@ -222,72 +222,72 @@ int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg)
         ++i;
 
         /*  Split the header and the body. */
-        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-        sp_chunkref_term (&msg->hdr);
-        sp_chunkref_init (&msg->hdr, i * sizeof (uint32_t));
-        memcpy (sp_chunkref_data (&msg->hdr), data, i * sizeof (uint32_t));
-        sp_chunkref_trim (&msg->body, i * sizeof (uint32_t));
+        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, i * sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->hdr), data, i * sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, i * sizeof (uint32_t));
     }
 
     /*  Prepend the header by the pipe key. */
-    sp_chunkref_init (&ref, sp_chunkref_size (&msg->hdr) + sizeof (uint32_t));
-    sp_putl (sp_chunkref_data (&ref), xrep->current->pipes.key);
-    memcpy (((uint8_t*) sp_chunkref_data (&ref)) + sizeof (uint32_t),
-        sp_chunkref_data (&msg->hdr), sp_chunkref_size (&msg->hdr));
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_mv (&msg->hdr, &ref);
+    nn_chunkref_init (&ref, nn_chunkref_size (&msg->hdr) + sizeof (uint32_t));
+    nn_putl (nn_chunkref_data (&ref), xrep->current->pipes.key);
+    memcpy (((uint8_t*) nn_chunkref_data (&ref)) + sizeof (uint32_t),
+        nn_chunkref_data (&msg->hdr), nn_chunkref_size (&msg->hdr));
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_mv (&msg->hdr, &ref);
 
     /*  Move the 'current' pointer to the next pipe. */
-    if (rc & SP_PIPE_RELEASE)
-        next = sp_list_erase (&xrep->inpipes, &xrep->current->inpipes);
+    if (rc & NN_PIPE_RELEASE)
+        next = nn_list_erase (&xrep->inpipes, &xrep->current->inpipes);
     else
-        next = sp_list_next (&xrep->inpipes, &xrep->current->inpipes);
-    if (next == sp_list_end (&xrep->inpipes))
-        next = sp_list_begin (&xrep->inpipes);
-    xrep->current = sp_cont (next, struct sp_xrep_data, inpipes);
+        next = nn_list_next (&xrep->inpipes, &xrep->current->inpipes);
+    if (next == nn_list_end (&xrep->inpipes))
+        next = nn_list_begin (&xrep->inpipes);
+    xrep->current = nn_cont (next, struct nn_xrep_data, inpipes);
 
     return 0;
 }
 
-int sp_xrep_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xrep_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrep_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xrep_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+int nn_xrep_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-int sp_xrep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+int nn_xrep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static struct sp_sockbase *sp_xrep_create (int fd)
+static struct nn_sockbase *nn_xrep_create (int fd)
 {
-    struct sp_xrep *self;
+    struct nn_xrep *self;
 
-    self = sp_alloc (sizeof (struct sp_xrep), "socket (xrep)");
+    self = nn_alloc (sizeof (struct nn_xrep), "socket (xrep)");
     alloc_assert (self);
-    sp_xrep_init (self, &sp_xrep_sockbase_vfptr, fd);
+    nn_xrep_init (self, &nn_xrep_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xrep_socktype_struct = {
+static struct nn_socktype nn_xrep_socktype_struct = {
     AF_SP_RAW,
-    SP_REP,
-    sp_xrep_create
+    NN_REP,
+    nn_xrep_create
 };
 
-struct sp_socktype *sp_xrep_socktype = &sp_xrep_socktype_struct;
+struct nn_socktype *nn_xrep_socktype = &nn_xrep_socktype_struct;
 

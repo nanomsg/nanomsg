@@ -20,15 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_RANDOM_INCLUDED
-#define SP_RANDOM_INCLUDED
+#ifndef NN_RANDOM_INCLUDED
+#define NN_RANDOM_INCLUDED
 
 #include <stddef.h>
 
 /*  Seeds the pseudorandom number generator. */
-void sp_random_seed ();
+void nn_random_seed ();
 
 /*  Generate a pseudorandom byte sequence. */
-void sp_random_generate (void *buf, size_t len);
+void nn_random_generate (void *buf, size_t len);
 
 #endif

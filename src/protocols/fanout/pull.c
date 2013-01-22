@@ -23,14 +23,14 @@
 #include "pull.h"
 #include "xpull.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanout.h"
 
-static struct sp_socktype sp_pull_socktype_struct = {
+static struct nn_socktype nn_pull_socktype_struct = {
     AF_SP,
-    SP_PULL,
-    sp_xpull_create
+    NN_PULL,
+    nn_xpull_create
 };
 
-struct sp_socktype *sp_pull_socktype = &sp_pull_socktype_struct;
+struct nn_socktype *nn_pull_socktype = &nn_pull_socktype_struct;
 

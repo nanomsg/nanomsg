@@ -1,16 +1,16 @@
-sp_socket(3)
+nn_socket(3)
 ============
 
 NAME
 ----
-sp_socket - create an SP socket
+nn_socket - create an SP socket
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_socket (int 'domain', int 'protocol');*
+*int nn_socket (int 'domain', int 'protocol');*
 
 
 DESCRIPTION
@@ -33,11 +33,11 @@ protocols to get the list of available socket types.
 
 The newly created socket is initially not associated with any endpoints.
 In order to establish a message flow at least one endpoint has to be added
-to the socket using linknanomsg:sp_bind[3] or linknanomsg:sp_connect[3]
+to the socket using linknanomsg:nn_bind[3] or linknanomsg:nn_connect[3]
 function.
 
 Note that 'type' argument as found in standard _socket(2)_ function is omitted
-from _sp_socket_. All the SP sockets are message-based and thus of
+from _nn_socket_. All the SP sockets are message-based and thus of
 _SOCK_SEQPACKET_ type.
 
 
@@ -69,21 +69,21 @@ EXAMPLE
 -------
 
 ----
-int s = sp_socket (AF_SP, SP_PUB);
+int s = nn_socket (AF_SP, NN_PUB);
 assert (s >= 0);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_pubsub[3]
-linknanomsg:sp_reqrep[3]
-linknanomsg:sp_fanin[3]
-linknanomsg:sp_fanout[3]
-linknanomsg:sp_survey[3]
-linknanomsg:sp_bind[3]
-linknanomsg:sp_connect[3]
-linknanomsg:sp_close[3]
+linknanomsg:nn_pubsub[3]
+linknanomsg:nn_reqrep[3]
+linknanomsg:nn_fanin[3]
+linknanomsg:nn_fanout[3]
+linknanomsg:nn_survey[3]
+linknanomsg:nn_bind[3]
+linknanomsg:nn_connect[3]
+linknanomsg:nn_close[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

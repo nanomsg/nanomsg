@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_TRIE_INCLUDED
-#define SP_TRIE_INCLUDED
+#ifndef NN_TRIE_INCLUDED
+#define NN_TRIE_INCLUDED
 
 #include <stddef.h>
 #include <stdint.h>
@@ -29,25 +29,25 @@
 /*  This class implements extremely memory-efficient patricia trie. */
 
 /* Maximum length of the prefix. */
-#define SP_TRIE_PREFIX_MAX 10
+#define NN_TRIE_PREFIX_MAX 10
 
 /* Maximum number of children in the sparse mode. */
-#define SP_TRIE_SPARSE_MAX 8
+#define NN_TRIE_SPARSE_MAX 8
 
 /* 'type' is set to this value when in the dense mode. */
-#define SP_TRIE_DENSE_TYPE (SP_TRIE_SPARSE_MAX + 1)
+#define NN_TRIE_DENSE_TYPE (NN_TRIE_SPARSE_MAX + 1)
 
 /*  This structure represents a node in patricia trie. It's a 32 bytes
     long header to be followed by the array of pointers to child nodes. */
-struct sp_trie_node
+struct nn_trie_node
 {
     uint32_t refcount;
     uint8_t prefix_len;
     uint8_t type;
-    uint8_t prefix [SP_TRIE_PREFIX_MAX];
+    uint8_t prefix [NN_TRIE_PREFIX_MAX];
     union {
         struct {
-            uint8_t children [SP_TRIE_SPARSE_MAX];
+            uint8_t children [NN_TRIE_SPARSE_MAX];
         } sparse;
         struct {
             uint8_t min;
@@ -58,22 +58,22 @@ struct sp_trie_node
 };
 /*  The structure is followed by the array of pointers to children. */
 
-struct sp_trie {
+struct nn_trie {
 
     /*  The root node of the trie (representing the empty subscription). */
-    struct sp_trie_node *root;
+    struct nn_trie_node *root;
 
 };
 
-void sp_trie_init (struct sp_trie *self);
-void sp_trie_term (struct sp_trie *self);
-int sp_trie_subscribe (struct sp_trie *self, const uint8_t *data, size_t size);
-int sp_trie_unsubscribe (struct sp_trie *self, const uint8_t *data,
+void nn_trie_init (struct nn_trie *self);
+void nn_trie_term (struct nn_trie *self);
+int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size);
+int nn_trie_unsubscribe (struct nn_trie *self, const uint8_t *data,
     size_t size);
-int sp_trie_match (struct sp_trie *self, const uint8_t *data, size_t size);
+int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size);
 
 /*  Debugging interface. */
-void sp_trie_dump (struct sp_trie *self);
+void nn_trie_dump (struct nn_trie *self);
 
 #endif
 

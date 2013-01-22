@@ -1,30 +1,31 @@
-sp_recvmsg(3)
-=============
+nn_send(3)
+==========
 
 NAME
 ----
-sp_recvmsg - receive a pre-allocated message
+nn_send - send a message
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_recvmsg (int 's', void **msg, int 'flags');*
-
+*int nn_send (int 's', const void '*buf', size_t 'len', int 'flags');*
 
 DESCRIPTION
 -----------
-Receive a message from the socket 's' and store the pointer to the buffer into
-'msg' argument. If successful, the returned buffer has to be later deallocated
-using linknanomsg:sp_freemsg[3] function.
+The function will send a message containing the data from buffer pointed to
+by 'buf' parameter to the socket 's'. The message will be 'len' bytes long.
+
+To which of the peers will the message be sent to is determined by
+the particular socket type.
 
 The 'flags' argument is a combination of the flags defined below:
 
-*SP_DONTWAIT*::
+*NN_DONTWAIT*::
 Specifies that the operation should be performed in non-blocking mode. If the
-message cannot be received straight away, the function will fail with 'errno'
-set to EAGAIN.
+message cannot be sent straight away, the function will fail with 'errno' set
+to EAGAIN.
 
 
 RETURN VALUE
@@ -47,10 +48,10 @@ The operation cannot be performed on this socket at the moment because socket is
 not in the appropriate state.  This error may occur with socket types that
 switch between several states.
 *EAGAIN*::
-Non-blocking mode was requested and there's no message to receive at the moment.
+Non-blocking mode was requested and the message cannot be sent at the moment.
 *EINTR*::
 The operation was interrupted by delivery of a signal before the message was
-received.
+sent.
 *ETIMEDOUT*::
 Individual socket types may define their own specific timeouts. If such timeout
 is hit this error will be returned.
@@ -61,20 +62,17 @@ EXAMPLE
 -------
 
 ----
-void *msg;
-sp_recvmsg (s, &msg, 0);
-sp_freemsg (msg);
+nbytes = nn_send (s, "ABC", 3, 0);
+assert (nbytes == 3);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_recv[3]
-linknanomsg:sp_allocmsg[3]
-linknanomsg:sp_freemsg[3]
-linknanomsg:sp_sendmsg[3]
+linknanomsg:nn_recv[3]
+linknanomsg:nn_sendmsg[3]
+linknanomsg:nn_socket[3]
 linknanomsg:nanomsg[7]
-
 
 AUTHORS
 -------

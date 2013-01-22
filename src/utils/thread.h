@@ -20,24 +20,24 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_THREAD_INCLUDED
-#define SP_THREAD_INCLUDED
+#ifndef NN_THREAD_INCLUDED
+#define NN_THREAD_INCLUDED
 
 /*  Platform independent implementation of threading. */
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 #include "win.h"
 #else
 #include <pthread.h>
 #endif
 
-typedef void (sp_thread_routine) (void*);
+typedef void (nn_thread_routine) (void*);
 
-struct sp_thread
+struct nn_thread
 {
-    sp_thread_routine *routine;
+    nn_thread_routine *routine;
     void *arg;
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
     HANDLE handle;
     unsigned int tid;
 #else
@@ -45,13 +45,13 @@ struct sp_thread
 #endif
 };
 
-void sp_thread_init (struct sp_thread *self,
-    sp_thread_routine *routine, void *arg);
-void sp_thread_term (struct sp_thread *self);
+void nn_thread_init (struct nn_thread *self,
+    nn_thread_routine *routine, void *arg);
+void nn_thread_term (struct nn_thread *self);
 
-/*  Returns 1 if the current thread is the one managed by the sp_thread object,
+/*  Returns 1 if the current thread is the one managed by the nn_thread object,
     0 otherwise. */
-int sp_thread_current (struct sp_thread *self);
+int nn_thread_current (struct nn_thread *self);
 
 #endif
 

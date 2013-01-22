@@ -23,14 +23,14 @@
 #include "sink.h"
 #include "xsink.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanin.h"
 
-static struct sp_socktype sp_sink_socktype_struct = {
+static struct nn_socktype nn_sink_socktype_struct = {
     AF_SP,
-    SP_SINK,
-    sp_xsink_create
+    NN_SINK,
+    nn_xsink_create
 };
 
-struct sp_socktype *sp_sink_socktype = &sp_sink_socktype_struct;
+struct nn_socktype *nn_sink_socktype = &nn_sink_socktype_struct;
 

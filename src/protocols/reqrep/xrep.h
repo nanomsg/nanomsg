@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_XREP_INCLUDED
-#define SP_XREP_INCLUDED
+#ifndef NN_XREP_INCLUDED
+#define NN_XREP_INCLUDED
 
 #include "../../protocol.h"
 
@@ -31,50 +31,50 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SP_XREP_OUT 1
+#define NN_XREP_OUT 1
 
-struct sp_xrep_data {
-    struct sp_pipe *pipe;
-    struct sp_hash_item pipes;
-    struct sp_list_item inpipes;
+struct nn_xrep_data {
+    struct nn_pipe *pipe;
+    struct nn_hash_item pipes;
+    struct nn_list_item inpipes;
     uint32_t flags;
 };
 
-struct sp_xrep {
+struct nn_xrep {
 
-    struct sp_sockbase sockbase;
+    struct nn_sockbase sockbase;
 
     /*  Key to be assigned to the next added pipe. */
     uint32_t next_key;
 
     /*  Map of all registered pipes indexed by the peer ID. */
-    struct sp_hash pipes;
+    struct nn_hash pipes;
 
     /*  List of all pipes that can be read from. */
-    struct sp_list inpipes;
+    struct nn_list inpipes;
 
     /*  Next inpipe to use to receive a message. */
-    struct sp_xrep_data *current;
+    struct nn_xrep_data *current;
 
 };
 
-void sp_xrep_init (struct sp_xrep *self, const struct sp_sockbase_vfptr *vfptr,
+void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
     int fd);
-void sp_xrep_term (struct sp_xrep *self);
+void nn_xrep_term (struct nn_xrep *self);
 
-int sp_xrep_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-void sp_xrep_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrep_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrep_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-int sp_xrep_send (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrep_recv (struct sp_sockbase *self, struct sp_msg *msg);
-int sp_xrep_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrep_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xrep_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-int sp_xrep_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int sp_xrep_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen);
-int sp_xrep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+int nn_xrep_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+int nn_xrep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
-extern struct sp_socktype *sp_xrep_socktype;
+extern struct nn_socktype *nn_xrep_socktype;
 
 #endif

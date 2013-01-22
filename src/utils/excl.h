@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_EXCL_INCLUDED
-#define SP_EXCL_INCLUDED
+#ifndef NN_EXCL_INCLUDED
+#define NN_EXCL_INCLUDED
 
 #include "../protocol.h"
 
@@ -30,27 +30,27 @@
 /*  This is an object to handle a single pipe. To be used by socket types that
     can work with precisely one connection, e.g. PAIR. */
 
-struct sp_excl {
+struct nn_excl {
 
     /*  The pipe being used at the moment. All other pipes will be rejected
         until this one terminates. NULL if there is no connected pipe. */
-    struct sp_pipe *pipe;
+    struct nn_pipe *pipe;
 
     /*  Pipe ready for receiving. It's either equal to 'pipe' or NULL. */
-    struct sp_pipe *inpipe;
+    struct nn_pipe *inpipe;
 
     /*  Pipe ready for sending. It's either equal to 'pipe' or NULL. */
-    struct sp_pipe *outpipe;
+    struct nn_pipe *outpipe;
 
 };
 
-void sp_excl_init (struct sp_excl *self);
-void sp_excl_term (struct sp_excl *self);
-int sp_excl_add (struct sp_excl *self, struct sp_pipe *pipe);
-void sp_excl_rm (struct sp_excl *self, struct sp_pipe *pipe);
-int sp_excl_in (struct sp_excl *self, struct sp_pipe *pipe);
-int sp_excl_out (struct sp_excl *self, struct sp_pipe *pipe);
-int sp_excl_send (struct sp_excl *self, struct sp_msg *msg);
-int sp_excl_recv (struct sp_excl *self, struct sp_msg *msg);
+void nn_excl_init (struct nn_excl *self);
+void nn_excl_term (struct nn_excl *self);
+int nn_excl_add (struct nn_excl *self, struct nn_pipe *pipe);
+void nn_excl_rm (struct nn_excl *self, struct nn_pipe *pipe);
+int nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe);
+int nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe);
+int nn_excl_send (struct nn_excl *self, struct nn_msg *msg);
+int nn_excl_recv (struct nn_excl *self, struct nn_msg *msg);
 
 #endif

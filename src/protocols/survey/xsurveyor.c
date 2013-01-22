@@ -22,7 +22,7 @@
 
 #include "xsurveyor.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../survey.h"
 
 #include "../../utils/err.h"
@@ -34,212 +34,212 @@
 #include <stddef.h>
 
 /*  Private functions. */
-static void sp_xsurveyor_destroy (struct sp_sockbase *self);
+static void nn_xsurveyor_destroy (struct nn_sockbase *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static const struct sp_sockbase_vfptr sp_xsurveyor_sockbase_vfptr = {
-    sp_xsurveyor_destroy,
-    sp_xsurveyor_add,
-    sp_xsurveyor_rm,
-    sp_xsurveyor_in,
-    sp_xsurveyor_out,
-    sp_xsurveyor_send,
-    sp_xsurveyor_recv,
-    sp_xsurveyor_setopt,
-    sp_xsurveyor_getopt
+/*  Implementation of nn_sockbase's virtual functions. */
+static const struct nn_sockbase_vfptr nn_xsurveyor_sockbase_vfptr = {
+    nn_xsurveyor_destroy,
+    nn_xsurveyor_add,
+    nn_xsurveyor_rm,
+    nn_xsurveyor_in,
+    nn_xsurveyor_out,
+    nn_xsurveyor_send,
+    nn_xsurveyor_recv,
+    nn_xsurveyor_setopt,
+    nn_xsurveyor_getopt
 };
 
-void sp_xsurveyor_init (struct sp_xsurveyor *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+void nn_xsurveyor_init (struct nn_xsurveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_list_init (&self->outpipes);
-    sp_list_init (&self->inpipes);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_list_init (&self->outpipes);
+    nn_list_init (&self->inpipes);
     self->current = NULL;
 }
 
-void sp_xsurveyor_term (struct sp_xsurveyor *self)
+void nn_xsurveyor_term (struct nn_xsurveyor *self)
 {
-    sp_list_term (&self->inpipes);
-    sp_list_term (&self->outpipes);
+    nn_list_term (&self->inpipes);
+    nn_list_term (&self->outpipes);
 }
 
-static void sp_xsurveyor_destroy (struct sp_sockbase *self)
+static void nn_xsurveyor_destroy (struct nn_sockbase *self)
 {
-    struct sp_xsurveyor *xsurveyor;
+    struct nn_xsurveyor *xsurveyor;
 
-    xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
-    sp_xsurveyor_term (xsurveyor);
-    sp_free (xsurveyor);
+    nn_xsurveyor_term (xsurveyor);
+    nn_free (xsurveyor);
 }
 
-int sp_xsurveyor_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsurveyor_data *data;
+    struct nn_xsurveyor_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xsurveyor_data),
+    data = nn_alloc (sizeof (struct nn_xsurveyor_data),
         "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
-    sp_pipe_setdata (pipe, data);
+    nn_pipe_setdata (pipe, data);
 
     return 0;
 }
 
-void sp_xsurveyor_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsurveyor_data *data;
+    struct nn_xsurveyor_data *data;
 
-    data = sp_pipe_getdata (pipe);
+    data = nn_pipe_getdata (pipe);
 
     /*  TODO: If pipe is in the pipe lists, remove it. */
 
-    sp_free (data);
+    nn_free (data);
 }
 
-int sp_xsurveyor_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsurveyor *xsurveyor;
-    struct sp_xsurveyor_data *data;
+    struct nn_xsurveyor *xsurveyor;
+    struct nn_xsurveyor_data *data;
     int result;
 
-    xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
-    data = sp_pipe_getdata (pipe);
-    result = sp_list_empty (&xsurveyor->inpipes) ? 1 : 0;
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
+    data = nn_pipe_getdata (pipe);
+    result = nn_list_empty (&xsurveyor->inpipes) ? 1 : 0;
     if (result)
         xsurveyor->current = data;
-    sp_list_insert (&xsurveyor->inpipes, &data->initem,
-        sp_list_end (&xsurveyor->inpipes));
+    nn_list_insert (&xsurveyor->inpipes, &data->initem,
+        nn_list_end (&xsurveyor->inpipes));
     return result;
 }
 
-int sp_xsurveyor_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsurveyor *xsurveyor;
-    struct sp_xsurveyor_data *data;
+    struct nn_xsurveyor *xsurveyor;
+    struct nn_xsurveyor_data *data;
     int result;
 
-    xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
-    data = sp_pipe_getdata (pipe);
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
+    data = nn_pipe_getdata (pipe);
 
-    result = sp_list_empty (&xsurveyor->outpipes) ? 1 : 0;
-    sp_list_insert (&xsurveyor->outpipes, &data->outitem,
-        sp_list_end (&xsurveyor->outpipes));
+    result = nn_list_empty (&xsurveyor->outpipes) ? 1 : 0;
+    nn_list_insert (&xsurveyor->outpipes, &data->outitem,
+        nn_list_end (&xsurveyor->outpipes));
     return result;
 }
 
-int sp_xsurveyor_send (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_list_item *it;
-    struct sp_xsurveyor_data *data;
-    struct sp_xsurveyor *xsurveyor;
-    struct sp_msg copy;
+    struct nn_list_item *it;
+    struct nn_xsurveyor_data *data;
+    struct nn_xsurveyor *xsurveyor;
+    struct nn_msg copy;
 
-    xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
     /*  Send the survey to all the respondents. */
-    it = sp_list_begin (&xsurveyor->outpipes);
-    while (it != sp_list_end (&xsurveyor->outpipes)) {
-       data = sp_cont (it, struct sp_xsurveyor_data, outitem);
-       sp_msg_cp (&copy, msg);
-       rc = sp_pipe_send (data->pipe, &copy);
+    it = nn_list_begin (&xsurveyor->outpipes);
+    while (it != nn_list_end (&xsurveyor->outpipes)) {
+       data = nn_cont (it, struct nn_xsurveyor_data, outitem);
+       nn_msg_cp (&copy, msg);
+       rc = nn_pipe_send (data->pipe, &copy);
        errnum_assert (rc >= 0, -rc);
-       if (rc & SP_PIPE_RELEASE) {
-           it = sp_list_erase (&xsurveyor->outpipes, it);
+       if (rc & NN_PIPE_RELEASE) {
+           it = nn_list_erase (&xsurveyor->outpipes, it);
            continue;
        }
-       it = sp_list_next (&xsurveyor->outpipes, it);
+       it = nn_list_next (&xsurveyor->outpipes, it);
     }
 
     /*  Drop the reference to the message. */
-    sp_msg_term (msg);
+    nn_msg_term (msg);
 
     return 0;
 }
 
-int sp_xsurveyor_recv (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_xsurveyor *xsurveyor;
-    struct sp_list_item *it;
+    struct nn_xsurveyor *xsurveyor;
+    struct nn_list_item *it;
 
-    xsurveyor = sp_cont (self, struct sp_xsurveyor, sockbase);
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
     /*  Current is NULL only when there are no avialable inbound pipes. */
-    if (sp_slow (!xsurveyor->current))
+    if (nn_slow (!xsurveyor->current))
         return -EAGAIN;
 
     /*  Get the messsage. */
-    rc = sp_pipe_recv (xsurveyor->current->pipe, msg);
+    rc = nn_pipe_recv (xsurveyor->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */
-    if (rc & SP_PIPE_RELEASE)
-        it = sp_list_erase (&xsurveyor->inpipes, &xsurveyor->current->initem);
+    if (rc & NN_PIPE_RELEASE)
+        it = nn_list_erase (&xsurveyor->inpipes, &xsurveyor->current->initem);
     else
-        it = sp_list_next (&xsurveyor->inpipes, &xsurveyor->current->initem);
+        it = nn_list_next (&xsurveyor->inpipes, &xsurveyor->current->initem);
     if (!it)
-        it = sp_list_begin (&xsurveyor->inpipes);
-    xsurveyor->current = sp_cont (it, struct sp_xsurveyor_data, initem);
+        it = nn_list_begin (&xsurveyor->inpipes);
+    xsurveyor->current = nn_cont (it, struct nn_xsurveyor_data, initem);
 
     /*  Split the header from the body, if needed. */
-    if (!(rc & SP_PIPE_PARSED)) {
-        if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
-            sp_msg_term (msg);
+    if (!(rc & NN_PIPE_PARSED)) {
+        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            nn_msg_term (msg);
             return -EAGAIN;
         }
-        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-        sp_chunkref_term (&msg->hdr);
-        sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
-        memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
+        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
            sizeof (uint32_t));
-        sp_chunkref_trim (&msg->body, sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
     }
 
     return 0;
 }
 
-int sp_xsurveyor_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xsurveyor_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xsurveyor_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xsurveyor_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xsurveyor_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+int nn_xsurveyor_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-int sp_xsurveyor_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+int nn_xsurveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static struct sp_sockbase *sp_xsurveyor_create (int fd)
+static struct nn_sockbase *nn_xsurveyor_create (int fd)
 {
-    struct sp_xsurveyor *self;
+    struct nn_xsurveyor *self;
 
-    self = sp_alloc (sizeof (struct sp_xsurveyor), "socket (xsurveyor)");
+    self = nn_alloc (sizeof (struct nn_xsurveyor), "socket (xsurveyor)");
     alloc_assert (self);
-    sp_xsurveyor_init (self, &sp_xsurveyor_sockbase_vfptr, fd);
+    nn_xsurveyor_init (self, &nn_xsurveyor_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xsurveyor_socktype_struct = {
+static struct nn_socktype nn_xsurveyor_socktype_struct = {
     AF_SP_RAW,
-    SP_SURVEYOR,
-    sp_xsurveyor_create
+    NN_SURVEYOR,
+    nn_xsurveyor_create
 };
 
-struct sp_socktype *sp_xsurveyor_socktype = &sp_xsurveyor_socktype_struct;
+struct nn_socktype *nn_xsurveyor_socktype = &nn_xsurveyor_socktype_struct;
 

@@ -1,16 +1,16 @@
-sp_tcp(7)
+nn_tcp(7)
 =========
 
 NAME
 ----
-sp_tcp - TCP transport mechanism
+nn_tcp - TCP transport mechanism
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/tcp.h>*
+*#include <nanomsg/tcp.h>*
 
 
 DESCRIPTION
@@ -50,16 +50,16 @@ EXAMPLE
 -------
 
 ----
-sp_bind (s1, "tcp://*:5555");
-sp_connect (s2, "tcp://myserver:5555");
+nn_bind (s1, "tcp://*:5555");
+nn_connect (s2, "tcp://myserver:5555");
 ----
 
 SEE ALSO
 --------
-linknanomsg:sp_inproc[7]
-linknanomsg:sp_ipc[7]
-linknanomsg:sp_bind[3]
-linknanomsg:sp_connect[3]
+linknanomsg:nn_inproc[7]
+linknanomsg:nn_ipc[7]
+linknanomsg:nn_bind[3]
+linknanomsg:nn_connect[3]
 linknanomsg:nanomsg[7]
 
 

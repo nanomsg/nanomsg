@@ -20,54 +20,54 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_CHUNK_INCLUDED
-#define SP_CHUNK_INCLUDED
+#ifndef NN_CHUNK_INCLUDED
+#define NN_CHUNK_INCLUDED
 
 #include <stdint.h>
 #include <stddef.h>
 
-struct sp_chunk;
+struct nn_chunk;
 
-struct sp_chunk_vfptr {
+struct nn_chunk_vfptr {
     void (*free) (void *p);
 };
 
-struct sp_chunk {
+struct nn_chunk {
 
     /*  Fixed tag to distinguish chunks from random garbage. */
     uint32_t tag;
 
     /*  Distance between first actually allocated byte and first byte of
-        sp_chunk structure. */
+        nn_chunk structure. */
     uint32_t offset;
 
     /*  Virtual functions. */
-    const struct sp_chunk_vfptr *vfptr;
+    const struct nn_chunk_vfptr *vfptr;
 
     /*  Size of the buffer in bytes. */
     size_t size;
 
-    /*  Actual message buffer follows the sp_chunk structure in the memory. */
+    /*  Actual message buffer follows the nn_chunk structure in the memory. */
 };
 
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
-struct sp_chunk *sp_chunk_alloc (size_t size, int type);
+struct nn_chunk *nn_chunk_alloc (size_t size, int type);
 
 /*  Deallocates the chunk. */
-void sp_chunk_free (struct sp_chunk *self);
+void nn_chunk_free (struct nn_chunk *self);
 
 /*  Checks whether chunk is valid. */
-int sp_chunk_check (struct sp_chunk *self);
+int nn_chunk_check (struct nn_chunk *self);
 
 /*  Returns pointer to the chunk buffer. */
-void *sp_chunk_data (struct sp_chunk *self);
+void *nn_chunk_data (struct nn_chunk *self);
 
 /*  Returns size of the chunk buffer. */
-size_t sp_chunk_size (struct sp_chunk *self);
+size_t nn_chunk_size (struct nn_chunk *self);
 
 /*  Trims n bytes from the beginning of the chunk. Returns pointer to the new
     chunk. */
-struct sp_chunk *sp_chunk_trim (struct sp_chunk *self, size_t n);
+struct nn_chunk *nn_chunk_trim (struct nn_chunk *self, size_t n);
 
 #endif
 

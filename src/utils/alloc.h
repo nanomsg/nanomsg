@@ -20,25 +20,25 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_ALLOC_INCLUDED
-#define SP_ALLOC_INCLUDED
+#ifndef NN_ALLOC_INCLUDED
+#define NN_ALLOC_INCLUDED
 
 #include <stddef.h>
 
 /*  These functions allows for interception of memory allocation-related
     functionality. */
 
-void sp_alloc_init (void);
-void sp_alloc_term (void);
-void *sp_realloc (void *ptr, size_t size);
-void sp_free (void *ptr);
+void nn_alloc_init (void);
+void nn_alloc_term (void);
+void *nn_realloc (void *ptr, size_t size);
+void nn_free (void *ptr);
 
-#if defined SP_ALLOC_MONITOR
-#define sp_alloc(size, name) sp_alloc_ (size, name)
-void *sp_alloc_ (size_t size, const char *name);
+#if defined NN_ALLOC_MONITOR
+#define nn_alloc(size, name) nn_alloc_ (size, name)
+void *nn_alloc_ (size_t size, const char *name);
 #else
-#define sp_alloc(size, name) sp_alloc_(size)
-void *sp_alloc_ (size_t size);
+#define nn_alloc(size, name) nn_alloc_(size)
+void *nn_alloc_ (size_t size);
 #endif
 
 #endif

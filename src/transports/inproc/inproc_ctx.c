@@ -33,139 +33,139 @@
 
 #include <string.h>
 
-/*  sp_transport interface. */
-static const char *sp_inproc_ctx_name (void);
-static void sp_inproc_ctx_init (void);
-static void sp_inproc_ctx_term (void);
-static int sp_inproc_ctx_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase);
-static int sp_inproc_ctx_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase);
+/*  nn_transport interface. */
+static const char *nn_inproc_ctx_name (void);
+static void nn_inproc_ctx_init (void);
+static void nn_inproc_ctx_term (void);
+static int nn_inproc_ctx_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase);
+static int nn_inproc_ctx_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase);
 
-static struct sp_transport sp_inproc_vfptr = {
-    sp_inproc_ctx_name,
-    sp_inproc_ctx_init,
-    sp_inproc_ctx_term,
-    sp_inproc_ctx_bind,
-    sp_inproc_ctx_connect
+static struct nn_transport nn_inproc_vfptr = {
+    nn_inproc_ctx_name,
+    nn_inproc_ctx_init,
+    nn_inproc_ctx_term,
+    nn_inproc_ctx_bind,
+    nn_inproc_ctx_connect
 };
 
-struct sp_transport *sp_inproc = &sp_inproc_vfptr;
+struct nn_transport *nn_inproc = &nn_inproc_vfptr;
 
-struct sp_inproc_ctx {
+struct nn_inproc_ctx {
 
     /*  List of all bound inproc endpoints. */
-    struct sp_list bound;
+    struct nn_list bound;
 
     /*  List of all connected inproc endpoints. */
-    struct sp_list connected;
+    struct nn_list connected;
 
 };
 
-static struct sp_inproc_ctx self;
+static struct nn_inproc_ctx self;
 
-static const char *sp_inproc_ctx_name (void)
+static const char *nn_inproc_ctx_name (void)
 {
     return "inproc";
 }
 
-static void sp_inproc_ctx_init (void)
+static void nn_inproc_ctx_init (void)
 {
-    sp_list_init (&self.bound);
-    sp_list_init (&self.connected);
+    nn_list_init (&self.bound);
+    nn_list_init (&self.connected);
 }
-static void sp_inproc_ctx_term (void)
+static void nn_inproc_ctx_term (void)
 {
-    sp_list_term (&self.connected);
-    sp_list_term (&self.bound);
+    nn_list_term (&self.connected);
+    nn_list_term (&self.bound);
 }
 
-static int sp_inproc_ctx_bind (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_inproc_ctx_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_list_item *it;
-    struct sp_inprocb *inprocb;
-    struct sp_inprocc *inprocc;
-    struct sp_msgpipe *pipe;
+    struct nn_list_item *it;
+    struct nn_inprocb *inprocb;
+    struct nn_inprocc *inprocc;
+    struct nn_msgpipe *pipe;
 
     /*  Check whether the endpoint isn't already bound. */
     /*  TODO:  This is an O(n) algorithm! */
-    for (it = sp_list_begin (&self.bound); it != sp_list_end (&self.bound);
-          it = sp_list_next (&self.bound, it)) {
-        inprocb = sp_cont (it, struct sp_inprocb, list);
-        if (strncmp (addr, inprocb->addr, SP_INPROCB_NAMELEN_MAX) == 0)
+    for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
+          it = nn_list_next (&self.bound, it)) {
+        inprocb = nn_cont (it, struct nn_inprocb, list);
+        if (strncmp (addr, inprocb->addr, NN_INPROCB_NAMELEN_MAX) == 0)
             return -EADDRINUSE;
     }
 
     /*  Insert the entry into the endpoint repository. */
-    inprocb = sp_alloc (sizeof (struct sp_inprocb), "inprocb");
+    inprocb = nn_alloc (sizeof (struct nn_inprocb), "inprocb");
     alloc_assert (inprocb);
-    rc = sp_inprocb_init (inprocb, addr, hint);
-    if (sp_slow (rc != 0))
+    rc = nn_inprocb_init (inprocb, addr, hint);
+    if (nn_slow (rc != 0))
         return rc;
-    sp_list_insert (&self.bound, &inprocb->list, sp_list_end (&self.bound));
+    nn_list_insert (&self.bound, &inprocb->list, nn_list_end (&self.bound));
 
     /*  During this process new pipes may be created. */
-    for (it = sp_list_begin (&self.connected);
-          it != sp_list_end (&self.connected);
-          it = sp_list_next (&self.connected, it)) {
-        inprocc = sp_cont (it, struct sp_inprocc, list);
-        if (strncmp (addr, inprocc->addr, SP_INPROCC_NAMELEN_MAX) == 0) {
-            pipe = sp_alloc (sizeof (struct sp_msgpipe), "msgpipe");
+    for (it = nn_list_begin (&self.connected);
+          it != nn_list_end (&self.connected);
+          it = nn_list_next (&self.connected, it)) {
+        inprocc = nn_cont (it, struct nn_inprocc, list);
+        if (strncmp (addr, inprocc->addr, NN_INPROCC_NAMELEN_MAX) == 0) {
+            pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
-            sp_msgpipe_init (pipe, inprocb, inprocc);
+            nn_msgpipe_init (pipe, inprocb, inprocc);
         }
     }
 
-    sp_assert (epbase);
+    nn_assert (epbase);
     *epbase = &inprocb->epbase;
     return 0;
 }
 
-static int sp_inproc_ctx_connect (const char *addr, void *hint,
-    struct sp_epbase **epbase)
+static int nn_inproc_ctx_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
-    struct sp_list_item *it;
-    struct sp_inprocc *inprocc;
-    struct sp_inprocb *inprocb;
-    struct sp_msgpipe *pipe;
+    struct nn_list_item *it;
+    struct nn_inprocc *inprocc;
+    struct nn_inprocb *inprocb;
+    struct nn_msgpipe *pipe;
 
     /*  Insert the entry into the endpoint repository. */
-    inprocc = sp_alloc (sizeof (struct sp_inprocc), "inprocc");
+    inprocc = nn_alloc (sizeof (struct nn_inprocc), "inprocc");
     alloc_assert (inprocc);
-    rc = sp_inprocc_init (inprocc, addr, hint);
-    if (sp_slow (rc != 0))
+    rc = nn_inprocc_init (inprocc, addr, hint);
+    if (nn_slow (rc != 0))
         return rc;
-    sp_list_insert (&self.connected, &inprocc->list,
-        sp_list_end (&self.connected));
+    nn_list_insert (&self.connected, &inprocc->list,
+        nn_list_end (&self.connected));
 
     /*  During this process a pipe may be created. */
-    for (it = sp_list_begin (&self.bound);
-          it != sp_list_end (&self.bound);
-          it = sp_list_next (&self.bound, it)) {
-        inprocb = sp_cont (it, struct sp_inprocb, list);
+    for (it = nn_list_begin (&self.bound);
+          it != nn_list_end (&self.bound);
+          it = nn_list_next (&self.bound, it)) {
+        inprocb = nn_cont (it, struct nn_inprocb, list);
         if (strcmp (addr, inprocb->addr) == 0) {
-            pipe = sp_alloc (sizeof (struct sp_msgpipe), "msgpipe");
+            pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
-            sp_msgpipe_init (pipe, inprocb, inprocc);
+            nn_msgpipe_init (pipe, inprocb, inprocc);
             break;
         }
     }
 
-    sp_assert (epbase);
+    nn_assert (epbase);
     *epbase = &inprocc->epbase;
     return 0;
 }
 
-void sp_inproc_ctx_unbind (struct sp_inprocb *inprocb)
+void nn_inproc_ctx_unbind (struct nn_inprocb *inprocb)
 {
-    sp_list_erase (&self.bound, &inprocb->list);
+    nn_list_erase (&self.bound, &inprocb->list);
 }
 
-void sp_inproc_ctx_disconnect (struct sp_inprocc *inprocc)
+void nn_inproc_ctx_disconnect (struct nn_inprocc *inprocc)
 {
-    sp_list_erase (&self.connected, &inprocc->list);
+    nn_list_erase (&self.connected, &inprocc->list);
 }
 

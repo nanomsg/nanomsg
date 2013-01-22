@@ -23,14 +23,14 @@
 #include "source.h"
 #include "xsource.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanin.h"
 
-static struct sp_socktype sp_source_socktype_struct = {
+static struct nn_socktype nn_source_socktype_struct = {
     AF_SP,
-    SP_SOURCE,
-    sp_xsource_create
+    NN_SOURCE,
+    nn_xsource_create
 };
 
-struct sp_socktype *sp_source_socktype = &sp_source_socktype_struct;
+struct nn_socktype *nn_source_socktype = &nn_source_socktype_struct;
 

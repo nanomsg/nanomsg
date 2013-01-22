@@ -20,132 +20,132 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_AIO_INCLUDED
-#define SP_AIO_INCLUDED
+#ifndef NN_AIO_INCLUDED
+#define NN_AIO_INCLUDED
 
 #include "addr.h"
 
 #include <stddef.h>
 
 /*  These objects are not thread-safe. To make it work correctly, all the calls
-    should by synchronised via sp_cp_lock(). All the callbacks are already
+    should by synchronised via nn_cp_lock(). All the callbacks are already
     called inside of the same critical section. */
 
-struct sp_cp;
-struct sp_timer;
-struct sp_usock;
-struct sp_event;
+struct nn_cp;
+struct nn_timer;
+struct nn_usock;
+struct nn_event;
 
-#define SP_AIO_MAX_IOVCNT 3
+#define NN_AIO_MAX_IOVCNT 3
 
-struct sp_iobuf {
+struct nn_iobuf {
     void *iov_base;
     size_t iov_len;
 };
 
-struct sp_cp_sink {
-    void (*received) (const struct sp_cp_sink **self,
-        struct sp_usock *usock);
-    void (*sent) (const struct sp_cp_sink **self,
-        struct sp_usock *usock);
-    void (*connected) (const struct sp_cp_sink **self,
-        struct sp_usock *usock);
-    void (*accepted) (const struct sp_cp_sink **self,
-        struct sp_usock *usock, int s);
-    void (*err) (const struct sp_cp_sink **self,
-        struct sp_usock *usock, int errnum);
-    void (*closed) (const struct sp_cp_sink **self,
-        struct sp_usock *usock);
-    void (*timeout) (const struct sp_cp_sink **self,
-        struct sp_timer *timer);
-    void (*event) (const struct sp_cp_sink **self,
-        struct sp_event *event);
+struct nn_cp_sink {
+    void (*received) (const struct nn_cp_sink **self,
+        struct nn_usock *usock);
+    void (*sent) (const struct nn_cp_sink **self,
+        struct nn_usock *usock);
+    void (*connected) (const struct nn_cp_sink **self,
+        struct nn_usock *usock);
+    void (*accepted) (const struct nn_cp_sink **self,
+        struct nn_usock *usock, int s);
+    void (*err) (const struct nn_cp_sink **self,
+        struct nn_usock *usock, int errnum);
+    void (*closed) (const struct nn_cp_sink **self,
+        struct nn_usock *usock);
+    void (*timeout) (const struct nn_cp_sink **self,
+        struct nn_timer *timer);
+    void (*event) (const struct nn_cp_sink **self,
+        struct nn_event *event);
 };
 
-void sp_timer_init (struct sp_timer *self, const struct sp_cp_sink **sink,
-    struct sp_cp *cp);
-void sp_timer_term (struct sp_timer *self);
-void sp_timer_start (struct sp_timer *self, int timeout);
-void sp_timer_stop (struct sp_timer *self);
+void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
+    struct nn_cp *cp);
+void nn_timer_term (struct nn_timer *self);
+void nn_timer_start (struct nn_timer *self, int timeout);
+void nn_timer_stop (struct nn_timer *self);
 
-void sp_event_init (struct sp_event *self, const struct sp_cp_sink **sink,
-    struct sp_cp *cp);
-void sp_event_term (struct sp_event *self);
-void sp_event_signal (struct sp_event *self);
+void nn_event_init (struct nn_event *self, const struct nn_cp_sink **sink,
+    struct nn_cp *cp);
+void nn_event_term (struct nn_event *self);
+void nn_event_signal (struct nn_event *self);
 
-int sp_usock_init (struct sp_usock *self, const struct sp_cp_sink **sink,
+int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     int domain, int type, int protocol, int sndbuf, int rcvbuf,
-    struct sp_cp *cp);
-int sp_usock_init_child (struct sp_usock *self, struct sp_usock *parent,
-    int s, const struct sp_cp_sink **sink, int sndbuf, int rcvbuf,
-    struct sp_cp *cp);
-const struct sp_cp_sink **sp_usock_setsink (struct sp_usock *self,
-    const struct sp_cp_sink **sink);
-void sp_usock_close (struct sp_usock *self);
+    struct nn_cp *cp);
+int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
+    int s, const struct nn_cp_sink **sink, int sndbuf, int rcvbuf,
+    struct nn_cp *cp);
+const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
+    const struct nn_cp_sink **sink);
+void nn_usock_close (struct nn_usock *self);
 
-int sp_usock_listen (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen, int backlog);
-void sp_usock_connect (struct sp_usock *self, const struct sockaddr *addr,
-    sp_socklen addrlen);
-void sp_usock_accept (struct sp_usock *self);
+int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen, int backlog);
+void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen);
+void nn_usock_accept (struct nn_usock *self);
 
-void sp_usock_send (struct sp_usock *self,
-    const struct sp_iobuf *iov, int iovcnt);
-void sp_usock_recv (struct sp_usock *self, void *buf, size_t len);
+void nn_usock_send (struct nn_usock *self,
+    const struct nn_iobuf *iov, int iovcnt);
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len);
 
-void sp_cp_init (struct sp_cp *self);
-void sp_cp_term (struct sp_cp *self);
+void nn_cp_init (struct nn_cp *self);
+void nn_cp_term (struct nn_cp *self);
 
-void sp_cp_lock (struct sp_cp *self);
-void sp_cp_unlock (struct sp_cp *self);
+void nn_cp_lock (struct nn_cp *self);
+void nn_cp_unlock (struct nn_cp *self);
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 
 #include "win.h"
 #include "timeout.h"
 #include "thread.h"
 #include "mutex.h"
 
-struct sp_timer {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
-    struct sp_timeout_hndl hndl;
+struct nn_timer {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
+    struct nn_timeout_hndl hndl;
     int active;
 };
 
-struct sp_event {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
+struct nn_event {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
     int active;
 };
 
-#define SP_USOCK_OP_CONN 1
-#define SP_USOCK_OP_RECV 2
-#define SP_USOCK_OP_SEND 3
-#define SP_USOCK_OP_CONNECT 4
-#define SP_USOCK_OP_ACCEPT 5
+#define NN_USOCK_OP_CONN 1
+#define NN_USOCK_OP_RECV 2
+#define NN_USOCK_OP_SEND 3
+#define NN_USOCK_OP_CONNECT 4
+#define NN_USOCK_OP_ACCEPT 5
 
-struct sp_usock_op {
+struct nn_usock_op {
     OVERLAPPED olpd;
     int op;
 };
 
-struct sp_usock {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
+struct nn_usock {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
     SOCKET s;
-    struct sp_usock_op conn;
-    struct sp_usock_op in;
-    struct sp_usock_op out;
+    struct nn_usock_op conn;
+    struct nn_usock_op in;
+    struct nn_usock_op out;
     SOCKET newsock;
     int domain;
     int type;
     int protocol;
 };
 
-struct sp_cp {
-    struct sp_mutex sync;
-    struct sp_timeout timeout;
+struct nn_cp {
+    struct nn_mutex sync;
+    struct nn_timeout timeout;
     HANDLE hndl;
 
     /*  The values of these members are never used. They serve just like
@@ -153,7 +153,7 @@ struct sp_cp {
     char stop_event;
     char timer_event;
 
-    struct sp_thread worker;
+    struct nn_thread worker;
 };
 
 #else
@@ -168,54 +168,54 @@ struct sp_cp {
 #include <stdint.h>
 #include <sys/socket.h>
 
-struct sp_timer {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
-    struct sp_timeout_hndl hndl;
+struct nn_timer {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
+    struct nn_timeout_hndl hndl;
     int active;
 };
 
-struct sp_event {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
+struct nn_event {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
     int active;
-    struct sp_queue_item item;
+    struct nn_queue_item item;
 };
 
-#define SP_USOCK_OP_ADD 1
-#define SP_USOCK_OP_RM 2
-#define SP_USOCK_OP_IN 3
-#define SP_USOCK_OP_OUT 4
+#define NN_USOCK_OP_ADD 1
+#define NN_USOCK_OP_RM 2
+#define NN_USOCK_OP_IN 3
+#define NN_USOCK_OP_OUT 4
 
-struct sp_cp_op_hndl {
-    struct sp_queue_item item;
+struct nn_cp_op_hndl {
+    struct nn_queue_item item;
     int op;
 };
 
-#define SP_USOCK_INOP_NONE 0
-#define SP_USOCK_INOP_RECV 1
-#define SP_USOCK_INOP_ACCEPT 2
+#define NN_USOCK_INOP_NONE 0
+#define NN_USOCK_INOP_RECV 1
+#define NN_USOCK_INOP_ACCEPT 2
 
-#define SP_USOCK_OUTOP_NONE 0
-#define SP_USOCK_OUTOP_SEND 1
-#define SP_USOCK_OUTOP_CONNECT 2
+#define NN_USOCK_OUTOP_NONE 0
+#define NN_USOCK_OUTOP_SEND 1
+#define NN_USOCK_OUTOP_CONNECT 2
 
-#define SP_USOCK_FLAG_REGISTERED 1
+#define NN_USOCK_FLAG_REGISTERED 1
 
-#define SP_USOCK_BATCH_SIZE 2048
+#define NN_USOCK_BATCH_SIZE 2048
 
-struct sp_usock {
-    const struct sp_cp_sink **sink;
-    struct sp_cp *cp;
+struct nn_usock {
+    const struct nn_cp_sink **sink;
+    struct nn_cp *cp;
     int s;
-    struct sp_poller_hndl hndl;
-    struct sp_cp_op_hndl add_hndl;
-    struct sp_cp_op_hndl rm_hndl;
+    struct nn_poller_hndl hndl;
+    struct nn_cp_op_hndl add_hndl;
+    struct nn_cp_op_hndl rm_hndl;
     struct {
         int op;
         uint8_t *buf;
         size_t len;
-        struct sp_cp_op_hndl hndl;
+        struct nn_cp_op_hndl hndl;
         uint8_t *batch;
         size_t batch_len;
         size_t batch_pos;
@@ -223,8 +223,8 @@ struct sp_usock {
     struct {
         int op;
         struct msghdr hdr;
-        struct iovec iov [SP_AIO_MAX_IOVCNT];
-        struct sp_cp_op_hndl hndl;
+        struct iovec iov [NN_AIO_MAX_IOVCNT];
+        struct nn_cp_op_hndl hndl;
     } out;
     int domain;
     int type;
@@ -232,17 +232,17 @@ struct sp_usock {
     int flags;
 };
 
-struct sp_cp {
-    struct sp_mutex sync;
-    struct sp_timeout timeout;
-    struct sp_efd efd;
-    struct sp_poller_hndl efd_hndl;
-    struct sp_poller poller;
-    struct sp_queue opqueue;
-    struct sp_mutex events_sync;
-    struct sp_queue events;
+struct nn_cp {
+    struct nn_mutex sync;
+    struct nn_timeout timeout;
+    struct nn_efd efd;
+    struct nn_poller_hndl efd_hndl;
+    struct nn_poller poller;
+    struct nn_queue opqueue;
+    struct nn_mutex events_sync;
+    struct nn_queue events;
     int stop;
-    struct sp_thread worker;
+    struct nn_thread worker;
 };
 
 #endif

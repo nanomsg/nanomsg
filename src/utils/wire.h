@@ -20,15 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_WIRE_INCLUDED
-#define SP_WIRE_INCLUDED
+#ifndef NN_WIRE_INCLUDED
+#define NN_WIRE_INCLUDED
 
 #include <stdint.h>
 
-uint32_t sp_getl (const uint8_t *buf);
-void sp_putl (uint8_t *buf, uint32_t val);
-uint64_t sp_getll (const uint8_t *buf);
-void sp_putll (uint8_t *buf, uint64_t val);
+uint32_t nn_getl (const uint8_t *buf);
+void nn_putl (uint8_t *buf, uint32_t val);
+uint64_t nn_getll (const uint8_t *buf);
+void nn_putll (uint8_t *buf, uint64_t val);
 
 #endif
 

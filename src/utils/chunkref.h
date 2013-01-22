@@ -20,31 +20,31 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_CHUNKREF_INCLUDED
-#define SP_CHUNKREF_INCLUDED
+#ifndef NN_CHUNKREF_INCLUDED
+#define NN_CHUNKREF_INCLUDED
 
-#define SP_CHUNKREF_MAX 32
+#define NN_CHUNKREF_MAX 32
 
 #include "chunk.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
-struct sp_chunkref {
-    uint8_t ref [SP_CHUNKREF_MAX];
+struct nn_chunkref {
+    uint8_t ref [NN_CHUNKREF_MAX];
 };
 
-void sp_chunkref_init (struct sp_chunkref *self, size_t size);
-void sp_chunkref_init_chunk (struct sp_chunkref *self, struct sp_chunk *chunk);
-void sp_chunkref_term (struct sp_chunkref *self);
-struct sp_chunk *sp_chunkref_getchunk (struct sp_chunkref *self);
-void sp_chunkref_mv (struct sp_chunkref *dst, struct sp_chunkref *src);
-void sp_chunkref_cp (struct sp_chunkref *dst, struct sp_chunkref *src);
+void nn_chunkref_init (struct nn_chunkref *self, size_t size);
+void nn_chunkref_init_chunk (struct nn_chunkref *self, struct nn_chunk *chunk);
+void nn_chunkref_term (struct nn_chunkref *self);
+struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self);
+void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src);
+void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src);
 
-void *sp_chunkref_data (struct sp_chunkref *self);
-size_t sp_chunkref_size (struct sp_chunkref *self);
+void *nn_chunkref_data (struct nn_chunkref *self);
+size_t nn_chunkref_size (struct nn_chunkref *self);
 
-void sp_chunkref_trim (struct sp_chunkref *self, size_t n);
+void nn_chunkref_trim (struct nn_chunkref *self, size_t n);
 
 #endif
 

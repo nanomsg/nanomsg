@@ -23,7 +23,7 @@
 #include "rep.h"
 #include "xrep.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../reqrep.h"
 
 #include "../../utils/err.h"
@@ -36,148 +36,148 @@
 #include <stdint.h>
 #include <string.h>
 
-#define SP_REP_INPROGRESS 1
+#define NN_REP_INPROGRESS 1
 
-struct sp_rep {
-    struct sp_xrep xrep;
+struct nn_rep {
+    struct nn_xrep xrep;
     uint32_t flags;
-    struct sp_chunkref backtrace;
+    struct nn_chunkref backtrace;
 };
 
 /*  Private functions. */
-static void sp_rep_init (struct sp_rep *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_rep_term (struct sp_rep *self);
+static void nn_rep_init (struct nn_rep *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_rep_term (struct nn_rep *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_rep_destroy (struct sp_sockbase *self);
-static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_rep_sethdr (struct sp_msg *msg, const void *hdr,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_rep_destroy (struct nn_sockbase *self);
+static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_rep_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_rep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
+static int nn_rep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
-static const struct sp_sockbase_vfptr sp_rep_sockbase_vfptr = {
-    sp_rep_destroy,
-    sp_xrep_add,
-    sp_xrep_rm,
-    sp_xrep_in,
-    sp_xrep_out,
-    sp_rep_send,
-    sp_rep_recv,
-    sp_xrep_setopt,
-    sp_xrep_getopt,
-    sp_rep_sethdr,
-    sp_rep_gethdr
+static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
+    nn_rep_destroy,
+    nn_xrep_add,
+    nn_xrep_rm,
+    nn_xrep_in,
+    nn_xrep_out,
+    nn_rep_send,
+    nn_rep_recv,
+    nn_xrep_setopt,
+    nn_xrep_getopt,
+    nn_rep_sethdr,
+    nn_rep_gethdr
 };
 
-static void sp_rep_init (struct sp_rep *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_rep_init (struct nn_rep *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_xrep_init (&self->xrep, vfptr, fd);
+    nn_xrep_init (&self->xrep, vfptr, fd);
     self->flags = 0;
 }
 
-static void sp_rep_term (struct sp_rep *self)
+static void nn_rep_term (struct nn_rep *self)
 {
-    if (self->flags & SP_REP_INPROGRESS)
-        sp_chunkref_term (&self->backtrace);
-    sp_xrep_term (&self->xrep);
+    if (self->flags & NN_REP_INPROGRESS)
+        nn_chunkref_term (&self->backtrace);
+    nn_xrep_term (&self->xrep);
 }
 
-static void sp_rep_destroy (struct sp_sockbase *self)
+static void nn_rep_destroy (struct nn_sockbase *self)
 {
-    struct sp_rep *rep;
+    struct nn_rep *rep;
 
-    rep = sp_cont (self, struct sp_rep, xrep.sockbase);
+    rep = nn_cont (self, struct nn_rep, xrep.sockbase);
 
-    sp_rep_term (rep);
-    sp_free (rep);
+    nn_rep_term (rep);
+    nn_free (rep);
 }
 
-static int sp_rep_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_rep *rep;
+    struct nn_rep *rep;
     size_t replylen;
     uint8_t *reply;
 
-    rep = sp_cont (self, struct sp_rep, xrep.sockbase);
+    rep = nn_cont (self, struct nn_rep, xrep.sockbase);
 
     /*  If no request was received, there's nowhere to send the reply to. */
-    if (sp_slow (!(rep->flags & SP_REP_INPROGRESS)))
+    if (nn_slow (!(rep->flags & NN_REP_INPROGRESS)))
         return -EFSM;
 
     /*  Move the stored backtrace into the message header. */
-    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_mv (&msg->hdr, &rep->backtrace);
-    rep->flags &= ~SP_REP_INPROGRESS;
+    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_mv (&msg->hdr, &rep->backtrace);
+    rep->flags &= ~NN_REP_INPROGRESS;
 
     /*  Send the reply. If it cannot be sent because of pushback,
         drop it silently. */
-    rc = sp_xrep_send (&rep->xrep.sockbase, msg);
+    rc = nn_xrep_send (&rep->xrep.sockbase, msg);
     errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
 
     return 0;
 }
 
-static int sp_rep_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_rep *rep;
+    struct nn_rep *rep;
 
-    rep = sp_cont (self, struct sp_rep, xrep.sockbase);
+    rep = nn_cont (self, struct nn_rep, xrep.sockbase);
 
     /*  If a request is already being processed, cancel it. */
-    if (sp_slow (rep->flags & SP_REP_INPROGRESS)) {
-        sp_chunkref_term (&rep->backtrace);
-        rep->flags &= ~SP_REP_INPROGRESS;
+    if (nn_slow (rep->flags & NN_REP_INPROGRESS)) {
+        nn_chunkref_term (&rep->backtrace);
+        rep->flags &= ~NN_REP_INPROGRESS;
     }
 
     /*  Receive the request. */
-    rc = sp_xrep_recv (&rep->xrep.sockbase, msg);
-    if (sp_slow (rc == -EAGAIN))
+    rc = nn_xrep_recv (&rep->xrep.sockbase, msg);
+    if (nn_slow (rc == -EAGAIN))
         return -EAGAIN;
     errnum_assert (rc == 0, -rc);
 
     /*  Store the backtrace. */
-    sp_chunkref_mv (&rep->backtrace, &msg->hdr);
-    sp_chunkref_init (&msg->hdr, 0);
-    rep->flags |= SP_REP_INPROGRESS;
+    nn_chunkref_mv (&rep->backtrace, &msg->hdr);
+    nn_chunkref_init (&msg->hdr, 0);
+    rep->flags |= NN_REP_INPROGRESS;
 
     return 0;
 }
 
-static int sp_rep_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_rep_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_rep_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_rep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-static struct sp_sockbase *sp_rep_create (int fd)
+static struct nn_sockbase *nn_rep_create (int fd)
 {
-    struct sp_rep *self;
+    struct nn_rep *self;
 
-    self = sp_alloc (sizeof (struct sp_rep), "socket (rep)");
+    self = nn_alloc (sizeof (struct nn_rep), "socket (rep)");
     alloc_assert (self);
-    sp_rep_init (self, &sp_rep_sockbase_vfptr, fd);
+    nn_rep_init (self, &nn_rep_sockbase_vfptr, fd);
     return &self->xrep.sockbase;
 }
 
-static struct sp_socktype sp_rep_socktype_struct = {
+static struct nn_socktype nn_rep_socktype_struct = {
     AF_SP,
-    SP_REP,
-    sp_rep_create
+    NN_REP,
+    nn_rep_create
 };
 
-struct sp_socktype *sp_rep_socktype = &sp_rep_socktype_struct;
+struct nn_socktype *nn_rep_socktype = &nn_rep_socktype_struct;
 

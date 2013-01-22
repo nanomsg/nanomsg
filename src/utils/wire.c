@@ -22,23 +22,23 @@
 
 #include "wire.h"
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #include "win.h"
 #else
 #include <arpa/inet.h>
 #endif
 
-uint32_t sp_getl (const uint8_t *buf)
+uint32_t nn_getl (const uint8_t *buf)
 {
     return ntohl (*(uint32_t*) buf);
 }
 
-void sp_putl (uint8_t *buf, uint32_t val)
+void nn_putl (uint8_t *buf, uint32_t val)
 {
     *(uint32_t*) buf = htonl (val);
 }
 
-uint64_t sp_getll (const uint8_t *buf)
+uint64_t nn_getll (const uint8_t *buf)
 {
     return (((uint64_t) buf [0]) << 56) |
            (((uint64_t) buf [1]) << 48) |
@@ -50,7 +50,7 @@ uint64_t sp_getll (const uint8_t *buf)
            (((uint64_t) buf [7] << 0));
 }
 
-void sp_putll (uint8_t *buf, uint64_t val)
+void nn_putll (uint8_t *buf, uint64_t val)
 {
     buf [0] = (uint8_t) ((val >> 56) & 0xff);
     buf [1] = (uint8_t) ((val >> 48) & 0xff);

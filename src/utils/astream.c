@@ -25,8 +25,8 @@
 #include "cont.h"
 #include "alloc.h"
 
-static const struct sp_cp_sink sp_astream_state_connected;
-static const struct sp_cp_sink sp_astream_state_terminating;
+static const struct nn_cp_sink nn_astream_state_connected;
+static const struct nn_cp_sink nn_astream_state_terminating;
 
 /******************************************************************************/
 /*  State: CONNECTED                                                          */
@@ -34,97 +34,97 @@ static const struct sp_cp_sink sp_astream_state_terminating;
 
 /*  In this state control is yielded to the 'stream' state machine. */
 
-static void sp_astream_connected_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum);
-static const struct sp_cp_sink sp_astream_state_connected = {
+static void nn_astream_connected_err (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int errnum);
+static const struct nn_cp_sink nn_astream_state_connected = {
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_astream_connected_err,
+    nn_astream_connected_err,
     NULL,
     NULL,
     NULL
 };
 
-void sp_astream_init (struct sp_astream *self, struct sp_epbase *epbase,
-    int s, struct sp_usock *usock, struct sp_bstream *bstream)
+void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
+    int s, struct nn_usock *usock, struct nn_bstream *bstream)
 {
     int sndbuf;
     int rcvbuf;
     size_t sz;
 
     /*  Switch the state. */
-    self->sink = &sp_astream_state_connected;
+    self->sink = &nn_astream_state_connected;
     self->bstream = bstream;
 
-    /*  Get the current values of SP_SNDBUF and SP_RCVBUF options. */    
+    /*  Get the current values of NN_SNDBUF and NN_RCVBUF options. */    
     sz = sizeof (sndbuf);
-    sp_epbase_getopt (&self->bstream->epbase, SP_SOL_SOCKET, SP_SNDBUF,
+    nn_epbase_getopt (&self->bstream->epbase, NN_SOL_SOCKET, NN_SNDBUF,
         &sndbuf, &sz);
-    sp_assert (sz == sizeof (sndbuf));
+    nn_assert (sz == sizeof (sndbuf));
     sz = sizeof (rcvbuf);
-    sp_epbase_getopt (&self->bstream->epbase, SP_SOL_SOCKET, SP_RCVBUF,
+    nn_epbase_getopt (&self->bstream->epbase, NN_SOL_SOCKET, NN_RCVBUF,
         &rcvbuf, &sz);
-    sp_assert (sz == sizeof (rcvbuf));
+    nn_assert (sz == sizeof (rcvbuf));
 
     /*  Start the stream state machine. */
-    sp_usock_init_child (&self->usock, usock, s, &self->sink, sndbuf, rcvbuf,
+    nn_usock_init_child (&self->usock, usock, s, &self->sink, sndbuf, rcvbuf,
         usock->cp);
-    sp_stream_init (&self->stream, epbase, &self->usock);
+    nn_stream_init (&self->stream, epbase, &self->usock);
 }
 
-static void sp_astream_connected_err (const struct sp_cp_sink **self,
-    struct sp_usock *usock, int errnum)
+static void nn_astream_connected_err (const struct nn_cp_sink **self,
+    struct nn_usock *usock, int errnum)
 {
-    struct sp_astream *astream;
+    struct nn_astream *astream;
 
-    astream = sp_cont (self, struct sp_astream, sink);
+    astream = nn_cont (self, struct nn_astream, sink);
 
     /*  Ask the underlying socket to terminate. */
-    astream->sink = &sp_astream_state_terminating;
-    sp_usock_close (&astream->usock);
+    astream->sink = &nn_astream_state_terminating;
+    nn_usock_close (&astream->usock);
 }
 
 /******************************************************************************/
 /*  State: TERMINATING                                                        */
 /******************************************************************************/
 
-static void sp_astream_terminating_closed (const struct sp_cp_sink **self,
-    struct sp_usock *usock);
-static const struct sp_cp_sink sp_astream_state_terminating = {
+static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
+    struct nn_usock *usock);
+static const struct nn_cp_sink nn_astream_state_terminating = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_astream_terminating_closed,
+    nn_astream_terminating_closed,
     NULL,
     NULL
 };
 
-void sp_astream_close (struct sp_astream *self)
+void nn_astream_close (struct nn_astream *self)
 {
     /*  If termination is already underway, do nothing and let it continue. */
-    if (self->sink == &sp_astream_state_terminating)
+    if (self->sink == &nn_astream_state_terminating)
         return;
 
     /*  Terminate the associated session. */
-    sp_stream_term (&self->stream);
+    nn_stream_term (&self->stream);
 
     /*  Ask the underlying socket to terminate. */
-    self->sink = &sp_astream_state_terminating;
-    sp_usock_close (&self->usock);
+    self->sink = &nn_astream_state_terminating;
+    nn_usock_close (&self->usock);
 }
 
-static void sp_astream_terminating_closed (const struct sp_cp_sink **self,
-    struct sp_usock *usock)
+static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
 {
-    struct sp_astream *astream;
+    struct nn_astream *astream;
 
-    astream = sp_cont (self, struct sp_astream, sink);
+    astream = nn_cont (self, struct nn_astream, sink);
 
-    sp_bstream_astream_closed (astream->bstream, astream);
-    sp_free (astream);
+    nn_bstream_astream_closed (astream->bstream, astream);
+    nn_free (astream);
 }
 

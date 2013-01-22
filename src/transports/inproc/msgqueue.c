@@ -28,17 +28,17 @@
 
 #include <string.h>
 
-void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem)
+void nn_msgqueue_init (struct nn_msgqueue *self, size_t maxmem)
 {
-    struct sp_msgqueue_chunk *chunk;
+    struct nn_msgqueue_chunk *chunk;
 
-    sp_mutex_init (&self->sync);
+    nn_mutex_init (&self->sync);
 
     self->count = 0;
     self->mem = 0;
     self->maxmem = maxmem;
 
-    chunk = sp_alloc (sizeof (struct sp_msgqueue_chunk), "msgqueue chunk");
+    chunk = nn_alloc (sizeof (struct nn_msgqueue_chunk), "msgqueue chunk");
     alloc_assert (chunk);
     chunk->next = NULL;
 
@@ -50,65 +50,65 @@ void sp_msgqueue_init (struct sp_msgqueue *self, size_t maxmem)
     self->cache = NULL;
 }
 
-void sp_msgqueue_term (struct sp_msgqueue *self)
+void nn_msgqueue_term (struct nn_msgqueue *self)
 {
     int rc;
-    struct sp_msg msg;
+    struct nn_msg msg;
 
     /*  Deallocate messages in the pipe. */
     while (1) {
-        rc = sp_msgqueue_recv (self, &msg);
+        rc = nn_msgqueue_recv (self, &msg);
         if (rc == -EAGAIN)
             break;
         errnum_assert (rc >= 0, -rc);
-        sp_msg_term (&msg);
+        nn_msg_term (&msg);
     }
 
     /*  There are no more messages in the pipe so there's at most one chunk
         in the queue. Deallocate it. */
-    sp_assert (self->in.chunk == self->out.chunk);
-    sp_free (self->in.chunk);
+    nn_assert (self->in.chunk == self->out.chunk);
+    nn_free (self->in.chunk);
 
     /*  Deallocate the cached chunk, if any. */
     if (self->cache)
-        sp_free (self->cache);
+        nn_free (self->cache);
 
-    sp_mutex_term (&self->sync);
+    nn_mutex_term (&self->sync);
 }
 
-int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg)
+int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
 {
     size_t msgsz;
     int result;
 
-    msgsz = sp_chunkref_size (&msg->hdr) + sp_chunkref_size (&msg->body);
+    msgsz = nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body);
 
-    sp_mutex_lock (&self->sync);
+    nn_mutex_lock (&self->sync);
 
     /*  If the message doesn't fit into the queue return error. Note that
         message of any size can be written to an empty queue. This way even
         the messages larger than maximal queue size can be transferred. */
-    if (sp_slow (self->count && self->mem + msgsz > self->maxmem)) {
-        sp_mutex_unlock (&self->sync);
+    if (nn_slow (self->count && self->mem + msgsz > self->maxmem)) {
+        nn_mutex_unlock (&self->sync);
         return -EAGAIN;
     }
 
     /*  Adjust the statistics. */
-    result = self->count ? 0 : SP_MSGQUEUE_SIGNAL;
+    result = self->count ? 0 : NN_MSGQUEUE_SIGNAL;
     ++self->count;
     self->mem += msgsz;
     if (self->mem >= self->maxmem)
-        result |= SP_MSGQUEUE_RELEASE;
+        result |= NN_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
-    sp_msg_mv (&self->out.chunk->msgs [self->out.pos], msg);
+    nn_msg_mv (&self->out.chunk->msgs [self->out.pos], msg);
     ++self->out.pos;
 
     /*  If there's no space for a new message in the pipe, either re-use
         the cache chunk or allocate a new chunk if it does not exist. */
-    if (sp_slow (self->out.pos == SP_MSGQUEUE_GRANULARITY)) {
-        if (sp_slow (!self->cache)) {
-            self->cache = sp_alloc (sizeof (struct sp_msgqueue_chunk),
+    if (nn_slow (self->out.pos == NN_MSGQUEUE_GRANULARITY)) {
+        if (nn_slow (!self->cache)) {
+            self->cache = nn_alloc (sizeof (struct nn_msgqueue_chunk),
                 "msgqueue chunk");
             alloc_assert (self->cache);
             self->cache->next = NULL;
@@ -119,48 +119,48 @@ int sp_msgqueue_send (struct sp_msgqueue *self, struct sp_msg *msg)
         self->out.pos = 0;
     }
 
-    sp_mutex_unlock (&self->sync);
+    nn_mutex_unlock (&self->sync);
 
     return result;
 }
 
-int sp_msgqueue_recv (struct sp_msgqueue *self, struct sp_msg *msg)
+int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
 {
     int result;
-    struct sp_msgqueue_chunk *o;
+    struct nn_msgqueue_chunk *o;
 
-    sp_mutex_lock (&self->sync);
+    nn_mutex_lock (&self->sync);
 
     /*  If there is no message in the queue. */
-    if (sp_slow (!self->count)) {
-        sp_mutex_unlock (&self->sync);
+    if (nn_slow (!self->count)) {
+        nn_mutex_unlock (&self->sync);
         return -EAGAIN;
     }
 
     /*  Move the message from the pipe to the user. */
-    sp_msg_mv (msg, &self->in.chunk->msgs [self->in.pos]);
+    nn_msg_mv (msg, &self->in.chunk->msgs [self->in.pos]);
 
     /*  Move to the next position. */
     ++self->in.pos;
-    if (sp_slow (self->in.pos == SP_MSGQUEUE_GRANULARITY)) {
+    if (nn_slow (self->in.pos == NN_MSGQUEUE_GRANULARITY)) {
         o = self->in.chunk;
         self->in.chunk = self->in.chunk->next;
         self->in.pos = 0;
-        if (sp_fast (!self->cache))
+        if (nn_fast (!self->cache))
             self->cache = o;
         else
-            sp_free (o);
+            nn_free (o);
     }
 
     /*  Adjust the statistics. */
     /*  TODO: Implement a real queue size limit instead of this fake one. */
-    result = self->mem >= self->maxmem ? SP_MSGQUEUE_SIGNAL : 0;
+    result = self->mem >= self->maxmem ? NN_MSGQUEUE_SIGNAL : 0;
     --self->count;
-    self->mem -= (sp_chunkref_size (&msg->hdr) + sp_chunkref_size (&msg->body));
+    self->mem -= (nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body));
     if (!self->count)
-        result |= SP_MSGQUEUE_RELEASE;
+        result |= NN_MSGQUEUE_RELEASE;
     
-    sp_mutex_unlock (&self->sync);
+    nn_mutex_unlock (&self->sync);
 
     return result;
 }

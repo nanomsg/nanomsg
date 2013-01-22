@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pubsub.h"
 
 #include "../src/utils/err.c"
@@ -34,47 +34,47 @@ int main ()
     int sub2;
     char buf [3];
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    pub = sp_socket (AF_SP, SP_PUB);
+    pub = nn_socket (AF_SP, NN_PUB);
     errno_assert (pub != -1);
-    rc = sp_bind (pub, "inproc://a");
+    rc = nn_bind (pub, "inproc://a");
     errno_assert (rc >= 0);
-    sub1 = sp_socket (AF_SP, SP_SUB);
+    sub1 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub1 != -1);
-    rc = sp_setsockopt (sub1, SP_SUB, SP_SUBSCRIBE, "", 0);
+    rc = nn_setsockopt (sub1, NN_SUB, NN_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
-    rc = sp_connect (sub1, "inproc://a");
+    rc = nn_connect (sub1, "inproc://a");
     errno_assert (rc >= 0);
-    sub2 = sp_socket (AF_SP, SP_SUB);
+    sub2 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub2 != -1);
-    rc = sp_setsockopt (sub2, SP_SUB, SP_SUBSCRIBE, "", 0);
+    rc = nn_setsockopt (sub2, NN_SUB, NN_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
-    rc = sp_connect (sub2, "inproc://a");
+    rc = nn_connect (sub2, "inproc://a");
     errno_assert (rc >= 0);
 
     /*  Wait till connections are established to prevent message loss. */
-    sp_sleep (10);
+    nn_sleep (10);
 
-    rc = sp_send (pub, "ABC", 3, 0);
+    rc = nn_send (pub, "ABC", 3, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_recv (sub1, buf, sizeof (buf), 0);
+    rc = nn_recv (sub1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
-    rc = sp_recv (sub2, buf, sizeof (buf), 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (sub2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 3);
+    nn_assert (rc == 3);
 
-    rc = sp_close (pub);
+    rc = nn_close (pub);
     errno_assert (rc == 0);
-    rc = sp_close (sub1);
+    rc = nn_close (sub1);
     errno_assert (rc == 0);    
-    rc = sp_close (sub2);
+    rc = nn_close (sub2);
     errno_assert (rc == 0);
 
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

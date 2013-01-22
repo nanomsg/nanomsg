@@ -1,16 +1,16 @@
-sp_fanout(7)
+nn_fanout(7)
 ============
 
 NAME
 ----
-sp_fanout - fan-out (load balancing) scalability protocol
+nn_fanout - fan-out (load balancing) scalability protocol
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/fanout.h>*
+*#include <nanomsg/fanout.h>*
 
 
 DESCRIPTION
@@ -20,10 +20,10 @@ Load balances messages among multiple destinations.
 Socket Types
 ~~~~~~~~~~~~
 
-SP_PUSH::
+NN_PUSH::
     This socket is used to send messages to the cluster of load-balanced
     nodes. Receive operation is not implemented on this socket type.
-SP_PULL::
+NN_PULL::
     This socket is used to implement a node within a load-balanced cluster.
     It can be used to receive messages. Send operation is not implemented
     on this socket type. This socket can be connected to at most one peer.
@@ -35,11 +35,11 @@ No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:sp_pubsub[7]
-linknanomsg:sp_reqrep[7]
-linknanomsg:sp_fanin[7]
-linknanomsg:sp_survey[7]
-linknanomsg:sp_pair[7]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_fanin[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]
 
 

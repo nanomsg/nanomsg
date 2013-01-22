@@ -25,19 +25,19 @@
 #include "queue.h"
 
 
-void sp_queue_init (struct sp_queue *self)
+void nn_queue_init (struct nn_queue *self)
 {
     self->head = NULL;
     self->tail = NULL;
 }
 
-void sp_queue_term (struct sp_queue *self)
+void nn_queue_term (struct nn_queue *self)
 {
     self->head = NULL;
     self->tail = NULL;
 }
 
-void sp_queue_push (struct sp_queue *self, struct sp_queue_item *item)
+void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
 {
     item->next = NULL;
     if (!self->head)
@@ -47,9 +47,9 @@ void sp_queue_push (struct sp_queue *self, struct sp_queue_item *item)
     self->tail = item;
 }
 
-struct sp_queue_item *sp_queue_pop (struct sp_queue *self)
+struct nn_queue_item *nn_queue_pop (struct nn_queue *self)
 {
-    struct sp_queue_item *result;
+    struct nn_queue_item *result;
 
     if (!self->head)
         return NULL;

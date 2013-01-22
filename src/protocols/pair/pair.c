@@ -23,14 +23,14 @@
 #include "pair.h"
 #include "xpair.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../pair.h"
 
-static struct sp_socktype sp_pair_socktype_struct = {
+static struct nn_socktype nn_pair_socktype_struct = {
     AF_SP,
-    SP_PAIR,
-    sp_xpair_create
+    NN_PAIR,
+    nn_xpair_create
 };
 
-struct sp_socktype *sp_pair_socktype = &sp_pair_socktype_struct;
+struct nn_socktype *nn_pair_socktype = &nn_pair_socktype_struct;
 

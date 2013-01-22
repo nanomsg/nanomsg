@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 
 #include "../src/utils/err.c"
@@ -32,19 +32,19 @@ int main ()
     int rc;
     int sb;
     int sc;
-    struct sp_iovec iov [2];
-    struct sp_msghdr hdr;
+    struct nn_iovec iov [2];
+    struct nn_msghdr hdr;
     char buf [6];
 
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    sb = sp_socket (AF_SP, SP_PAIR);
+    sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = sp_bind (sb, "inproc://a");
+    rc = nn_bind (sb, "inproc://a");
     errno_assert (rc >= 0);
-    sc = sp_socket (AF_SP, SP_PAIR);
+    sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = sp_connect (sc, "inproc://a");
+    rc = nn_connect (sc, "inproc://a");
     errno_assert (rc >= 0);
 
     iov [0].iov_base = "AB";
@@ -54,9 +54,9 @@ int main ()
     memset (&hdr, 0, sizeof (hdr));
     hdr.msg_iov = iov;
     hdr.msg_iovlen = 2;
-    rc = sp_sendmsg (sc, &hdr, 0);
+    rc = nn_sendmsg (sc, &hdr, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 6);
+    nn_assert (rc == 6);
 
     iov [0].iov_base = buf;
     iov [0].iov_len = 4;
@@ -65,16 +65,16 @@ int main ()
     memset (&hdr, 0, sizeof (hdr));
     hdr.msg_iov = iov;
     hdr.msg_iovlen = 2;
-    rc = sp_recvmsg (sb, &hdr, 0);
+    rc = nn_recvmsg (sb, &hdr, 0);
     errno_assert (rc >= 0);
-    sp_assert (rc == 6);
-    sp_assert (memcmp (buf, "ABCDEF", 6) == 0);
+    nn_assert (rc == 6);
+    nn_assert (memcmp (buf, "ABCDEF", 6) == 0);
 
-    rc = sp_close (sc);
+    rc = nn_close (sc);
     errno_assert (rc == 0);
-    rc = sp_close (sb);
+    rc = nn_close (sb);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

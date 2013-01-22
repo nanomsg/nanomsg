@@ -22,11 +22,11 @@
 
 #include "poller.h"
 
-#if defined SP_USE_POLL
+#if defined NN_USE_POLL
 #include "poller_poll.inc"
-#elif defined SP_USE_EPOLL
+#elif defined NN_USE_EPOLL
 #include "poller_epoll.inc"
-#elif defined SP_USE_KQUEUE
+#elif defined NN_USE_KQUEUE
 #include "poller_kqueue.inc"
 #endif
 

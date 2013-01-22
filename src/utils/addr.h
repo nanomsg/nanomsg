@@ -20,39 +20,39 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_ADDR_INCLUDED
-#define SP_ADDR_INCLUDED
+#ifndef NN_ADDR_INCLUDED
+#define NN_ADDR_INCLUDED
 
-#if defined SP_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #include "win.h"
-typedef int sp_socklen;
+typedef int nn_socklen;
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
-typedef socklen_t sp_socklen;
+typedef socklen_t nn_socklen;
 #endif
 
 /*  Helper functions for parsing addresses in form "host:port" where host is
     either an IP address literal, a hostname or a network interface name and
     port is a numeric decimal value. */
 
-#define SP_ADDR_IPV4ONLY 1
+#define NN_ADDR_IPV4ONLY 1
 
 /*  Parse port numbers at the end of the address string. The function returns
     L4 port (e.g. TCP port). If successful, 'colon' output parameter will
     contain a pointer to the colon character in the address string (delimiter
     between address and port part of the string). */
-int sp_addr_parse_port (const char *addr, const char **colon);
+int nn_addr_parse_port (const char *addr, const char **colon);
 
 /*  Resolves name of a local network interface into the address itself.
     Name '*' is resolved as 'all interfaces'. */
-int sp_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen);
+int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen);
 
 /*  Resolves name of a local address into the address itself.
     TODO:  This should be an asynchronous operation. This way a DNS failure
     can block the whole system. */
-int sp_addr_parse_remote (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, sp_socklen *resultlen);
+int nn_addr_parse_remote (const char *addr, size_t addrlen, int flags,
+    struct sockaddr_storage *result, nn_socklen *resultlen);
 
 #endif

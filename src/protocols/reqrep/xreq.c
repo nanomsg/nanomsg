@@ -22,7 +22,7 @@
 
 #include "xreq.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../reqrep.h"
 
 #include "../../utils/err.h"
@@ -31,145 +31,145 @@
 #include "../../utils/alloc.h"
 
 /*  Private functions. */
-static void sp_xreq_destroy (struct sp_sockbase *self);
+static void nn_xreq_destroy (struct nn_sockbase *self);
 
-static const struct sp_sockbase_vfptr sp_xreq_sockbase_vfptr = {
-    sp_xreq_destroy,
-    sp_xreq_add,
-    sp_xreq_rm,
-    sp_xreq_in,
-    sp_xreq_out,
-    sp_xreq_send,
-    sp_xreq_recv,
-    sp_xreq_setopt,
-    sp_xreq_getopt,
-    sp_xreq_sethdr,
-    sp_xreq_gethdr
+static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
+    nn_xreq_destroy,
+    nn_xreq_add,
+    nn_xreq_rm,
+    nn_xreq_in,
+    nn_xreq_out,
+    nn_xreq_send,
+    nn_xreq_recv,
+    nn_xreq_setopt,
+    nn_xreq_getopt,
+    nn_xreq_sethdr,
+    nn_xreq_gethdr
 };
 
-void sp_xreq_init (struct sp_xreq *self, const struct sp_sockbase_vfptr *vfptr,
+void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
     int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_excl_init (&self->excl);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_excl_init (&self->excl);
 }
 
-void sp_xreq_term (struct sp_xreq *self)
+void nn_xreq_term (struct nn_xreq *self)
 {
-    sp_excl_term (&self->excl);
+    nn_excl_term (&self->excl);
 }
 
-static void sp_xreq_destroy (struct sp_sockbase *self)
+static void nn_xreq_destroy (struct nn_sockbase *self)
 {
-    struct sp_xreq *xreq;
+    struct nn_xreq *xreq;
 
-    xreq = sp_cont (self, struct sp_xreq, sockbase);
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
 
-    sp_xreq_term (xreq);
-    sp_free (xreq);
+    nn_xreq_term (xreq);
+    nn_free (xreq);
 }
 
-int sp_xreq_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_add (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    return nn_excl_add (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
 }
 
-void sp_xreq_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    sp_excl_rm (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    nn_excl_rm (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
 }
 
-int sp_xreq_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_in (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    return nn_excl_in (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
 }
 
-int sp_xreq_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+int nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return sp_excl_out (&sp_cont (self, struct sp_xreq, sockbase)->excl, pipe);
+    return nn_excl_out (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
 }
 
-int sp_xreq_send (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
     /*  If request cannot be sent due to the pushback, drop it silenly. */
-    rc = sp_excl_send (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
+    rc = nn_excl_send (&nn_cont (self, struct nn_xreq, sockbase)->excl, msg);
     if (rc == -EAGAIN) {
-        sp_msg_term (msg);
+        nn_msg_term (msg);
         return 0;
     }
     return rc;
 }
 
-int sp_xreq_recv (struct sp_sockbase *self, struct sp_msg *msg)
+int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
-    rc = sp_excl_recv (&sp_cont (self, struct sp_xreq, sockbase)->excl, msg);
+    rc = nn_excl_recv (&nn_cont (self, struct nn_xreq, sockbase)->excl, msg);
     if (rc == -EAGAIN)
         return -EAGAIN;
     errnum_assert (rc > 0, -rc);
 
-    if (!(rc & SP_PIPE_PARSED)) {
+    if (!(rc & NN_PIPE_PARSED)) {
 
         /*  Ignore malformed replies. */
-        if (sp_slow (sp_chunkref_size (&msg->body) < sizeof (uint32_t))) {
-            sp_msg_term (msg);
+        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            nn_msg_term (msg);
             return -EAGAIN;
         }
 
         /*  Split the message into the header and the body. */
-        sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-        sp_chunkref_term (&msg->hdr);
-        sp_chunkref_init (&msg->hdr, sizeof (uint32_t));
-        memcpy (sp_chunkref_data (&msg->hdr), sp_chunkref_data (&msg->body),
+        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
             sizeof (uint32_t));
-        sp_chunkref_trim (&msg->body, sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
     }
 
     return 0;
 }
 
-int sp_xreq_setopt (struct sp_sockbase *self, int level, int option,
+int nn_xreq_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xreq_getopt (struct sp_sockbase *self, int level, int option,
+int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int sp_xreq_sethdr (struct sp_msg *msg, const void *hdr, size_t hdrlen)
+int nn_xreq_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-int sp_xreq_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+int nn_xreq_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     /*  TODO */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static struct sp_sockbase *sp_xreq_create (int fd)
+static struct nn_sockbase *nn_xreq_create (int fd)
 {
-    struct sp_xreq *self;
+    struct nn_xreq *self;
 
-    self = sp_alloc (sizeof (struct sp_xreq), "socket (xreq)");
+    self = nn_alloc (sizeof (struct nn_xreq), "socket (xreq)");
     alloc_assert (self);
-    sp_xreq_init (self, &sp_xreq_sockbase_vfptr, fd);
+    nn_xreq_init (self, &nn_xreq_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xreq_socktype_struct = {
+static struct nn_socktype nn_xreq_socktype_struct = {
     AF_SP_RAW,
-    SP_REQ,
-    sp_xreq_create
+    NN_REQ,
+    nn_xreq_create
 };
 
-struct sp_socktype *sp_xreq_socktype = &sp_xreq_socktype_struct;
+struct nn_socktype *nn_xreq_socktype = &nn_xreq_socktype_struct;
 

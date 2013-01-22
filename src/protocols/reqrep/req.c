@@ -23,7 +23,7 @@
 #include "req.h"
 #include "xreq.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../reqrep.h"
 
 #include "../../utils/err.h"
@@ -36,202 +36,202 @@
 #include <stddef.h>
 #include <string.h>
 
-#define SP_REQ_DEFAULT_RESEND_IVL 60000
+#define NN_REQ_DEFAULT_RESEND_IVL 60000
 
-#define SP_REQ_INPROGRESS 1
+#define NN_REQ_INPROGRESS 1
 
-struct sp_req {
-    struct sp_xreq xreq;
-    const struct sp_cp_sink *sink;
+struct nn_req {
+    struct nn_xreq xreq;
+    const struct nn_cp_sink *sink;
     uint32_t reqid;
     uint32_t flags;
-    struct sp_msg request;
+    struct nn_msg request;
     int resend_ivl;
-    struct sp_timer resend_timer;
+    struct nn_timer resend_timer;
 };
 
 /*  Private functions. */
-static void sp_req_init (struct sp_req *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_req_term (struct sp_req *self);
+static void nn_req_init (struct nn_req *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_req_term (struct nn_req *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_req_destroy (struct sp_sockbase *self);
-static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_req_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_req_destroy (struct nn_sockbase *self);
+static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_req_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_req_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_req_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_req_sockbase_vfptr = {
-    sp_req_destroy,
-    sp_xreq_add,
-    sp_xreq_rm,
-    sp_xreq_in,
-    sp_xreq_out,
-    sp_req_send,
-    sp_req_recv,
-    sp_req_setopt,
-    sp_req_getopt,
-    sp_req_sethdr,
-    sp_req_gethdr
+static int nn_req_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
+    nn_req_destroy,
+    nn_xreq_add,
+    nn_xreq_rm,
+    nn_xreq_in,
+    nn_xreq_out,
+    nn_req_send,
+    nn_req_recv,
+    nn_req_setopt,
+    nn_req_getopt,
+    nn_req_sethdr,
+    nn_req_gethdr
 };
 
 /*  Event sink. */
-static void sp_req_timeout (const struct sp_cp_sink **self,
-    struct sp_timer *timer);
-static const struct sp_cp_sink sp_req_sink = {
+static void nn_req_timeout (const struct nn_cp_sink **self,
+    struct nn_timer *timer);
+static const struct nn_cp_sink nn_req_sink = {
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
     NULL,
-    sp_req_timeout
+    nn_req_timeout
 };
 
-static void sp_req_init (struct sp_req *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_req_init (struct nn_req *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_xreq_init (&self->xreq, vfptr, fd);
+    nn_xreq_init (&self->xreq, vfptr, fd);
 
-    self->sink = &sp_req_sink;
+    self->sink = &nn_req_sink;
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
-    sp_random_generate (&self->reqid, sizeof (self->reqid));
+    nn_random_generate (&self->reqid, sizeof (self->reqid));
 
     self->flags = 0;
-    self->resend_ivl = SP_REQ_DEFAULT_RESEND_IVL;
-    sp_timer_init (&self->resend_timer, &self->sink,
-        sp_sockbase_getcp (&self->xreq.sockbase));
+    self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
+    nn_timer_init (&self->resend_timer, &self->sink,
+        nn_sockbase_getcp (&self->xreq.sockbase));
 }
 
-static void sp_req_term (struct sp_req *self)
+static void nn_req_term (struct nn_req *self)
 {
-    if (self->flags & SP_REQ_INPROGRESS)
-        sp_msg_term (&self->request);
-    sp_timer_term (&self->resend_timer);
-    sp_xreq_term (&self->xreq);
+    if (self->flags & NN_REQ_INPROGRESS)
+        nn_msg_term (&self->request);
+    nn_timer_term (&self->resend_timer);
+    nn_xreq_term (&self->xreq);
 }
 
-static void sp_req_destroy (struct sp_sockbase *self)
+static void nn_req_destroy (struct nn_sockbase *self)
 {
-    struct sp_req *req;
+    struct nn_req *req;
 
-    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
-    sp_req_term (req);
-    sp_free (req);
+    nn_req_term (req);
+    nn_free (req);
 }
 
-static int sp_req_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_req *req;
+    struct nn_req *req;
 
-    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
     /*  If there's a request in progress, cancel it. */
-    if (sp_slow (req->flags & SP_REQ_INPROGRESS)) {
-        sp_msg_term (&req->request);
-        req->flags &= ~SP_REQ_INPROGRESS;
+    if (nn_slow (req->flags & NN_REQ_INPROGRESS)) {
+        nn_msg_term (&req->request);
+        req->flags &= ~NN_REQ_INPROGRESS;
     }
 
     /*  Generate new request ID for the new request and put it into message
         header. The most important bit is set to 1 to indicate that this is
         the bottom of the backtrace stack. */
     ++req->reqid;
-    sp_assert (sp_chunkref_size (&msg->hdr) == 0);
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, 4);
-    sp_putl (sp_chunkref_data (&msg->hdr), req->reqid | 0x80000000);
+    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, 4);
+    nn_putl (nn_chunkref_data (&msg->hdr), req->reqid | 0x80000000);
 
     /*  Store the message so that it can be re-sent if there's no reply. */
-    sp_msg_cp (&req->request, msg);
+    nn_msg_cp (&req->request, msg);
 
     /*  Send the message. If it cannot be sent because of the pushback we'll
         pretend it was sent anyway. Re-send mechanism will take care of the
         rest. */
-    rc = sp_xreq_send (&req->xreq.sockbase, msg);
+    rc = nn_xreq_send (&req->xreq.sockbase, msg);
     errnum_assert (rc == 0, -rc);
 
     /*  Remember that we are processing a request and waiting for the reply
         at the moment. */
-    req->flags |= SP_REQ_INPROGRESS;
+    req->flags |= NN_REQ_INPROGRESS;
 
     /*  Set up the re-send timer. This will also automatically cancel any
         running timer. */
-    sp_timer_start (&req->resend_timer, req->resend_ivl);
+    nn_timer_start (&req->resend_timer, req->resend_ivl);
 
     return 0;
 }
 
-static int sp_req_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_req *req;
+    struct nn_req *req;
     uint32_t reqid;
 
-    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
     /*  TODO: In case of invalid replies we should try to recv again here
         instead of returning -EAGAIN. */
 
     /*  No request was sent. Waiting for a reply doesn't make sense. */
-    if (sp_slow (!(req->flags & SP_REQ_INPROGRESS)))
+    if (nn_slow (!(req->flags & NN_REQ_INPROGRESS)))
         return -EFSM;
 
     /*  Get new reply. */
-    rc = sp_xreq_recv (&req->xreq.sockbase, msg);
-    if (sp_slow (rc == -EAGAIN))
+    rc = nn_xreq_recv (&req->xreq.sockbase, msg);
+    if (nn_slow (rc == -EAGAIN))
         return -EAGAIN;
     errnum_assert (rc == 0, -rc);
 
     /*  Ignore malformed replies. */
-    if (sp_slow (sp_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
-        sp_msg_term (msg);
+    if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
+        nn_msg_term (msg);
         return -EAGAIN;
     }
 
     /*  Ignore replies with incorrect request IDs. */
-    reqid = sp_getl (sp_chunkref_data (&msg->hdr));
-    if (sp_slow (!(reqid & 0x80000000))) {
-        sp_msg_term (msg);
+    reqid = nn_getl (nn_chunkref_data (&msg->hdr));
+    if (nn_slow (!(reqid & 0x80000000))) {
+        nn_msg_term (msg);
         return -EAGAIN;
     }
-    if (sp_slow (reqid != (req->reqid | 0x80000000))) {
-        sp_msg_term (msg);
+    if (nn_slow (reqid != (req->reqid | 0x80000000))) {
+        nn_msg_term (msg);
         return -EAGAIN;
     }
 
     /*  Trim the request ID. */
-    sp_chunkref_term (&msg->hdr);
-    sp_chunkref_init (&msg->hdr, 0);
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, 0);
 
     /*  Clean-up. */
-    sp_timer_stop (&req->resend_timer);
-    sp_msg_term (&req->request);
-    req->flags &= ~SP_REQ_INPROGRESS;
+    nn_timer_stop (&req->resend_timer);
+    nn_msg_term (&req->request);
+    req->flags &= ~NN_REQ_INPROGRESS;
 
     return 0;
 }
 
-static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
-    struct sp_req *req;
+    struct nn_req *req;
 
-    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
-    if (level != SP_REQ)
+    if (level != NN_REQ)
         return -ENOPROTOOPT;
 
-    if (option == SP_RESEND_IVL) {
-        if (sp_slow (optvallen != sizeof (int)))
+    if (option == NN_RESEND_IVL) {
+        if (nn_slow (optvallen != sizeof (int)))
             return -EINVAL;
         req->resend_ivl = *(int*) optval;
         return 0;
@@ -240,18 +240,18 @@ static int sp_req_setopt (struct sp_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
-    struct sp_req *req;
+    struct nn_req *req;
 
-    req = sp_cont (self, struct sp_req, xreq.sockbase);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
-    if (level != SP_REQ)
+    if (level != NN_REQ)
         return -ENOPROTOOPT;
 
-    if (option == SP_RESEND_IVL) {
-        if (sp_slow (*optvallen < sizeof (int)))
+    if (option == NN_RESEND_IVL) {
+        if (nn_slow (*optvallen < sizeof (int)))
             return -EINVAL;
         *(int*) optval = req->resend_ivl;
         *optvallen = sizeof (int);
@@ -261,52 +261,52 @@ static int sp_req_getopt (struct sp_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int sp_req_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_req_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_req_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_req_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-static void sp_req_timeout (const struct sp_cp_sink **self,
-    struct sp_timer *timer)
+static void nn_req_timeout (const struct nn_cp_sink **self,
+    struct nn_timer *timer)
 {
     int rc;
-    struct sp_req *req;
+    struct nn_req *req;
 
-    req = sp_cont (self, struct sp_req, sink);
-    sp_assert (req->flags & SP_REQ_INPROGRESS);
+    req = nn_cont (self, struct nn_req, sink);
+    nn_assert (req->flags & NN_REQ_INPROGRESS);
 
     /*  Re-send the request. */
-    rc = sp_xreq_send (&req->xreq.sockbase, &req->request);
+    rc = nn_xreq_send (&req->xreq.sockbase, &req->request);
     errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
 
     /*  Set up the next re-send timer. */
-    sp_timer_start (&req->resend_timer, req->resend_ivl);
+    nn_timer_start (&req->resend_timer, req->resend_ivl);
 }
 
-static struct sp_sockbase *sp_req_create (int fd)
+static struct nn_sockbase *nn_req_create (int fd)
 {
-    struct sp_req *self;
+    struct nn_req *self;
 
-    self = sp_alloc (sizeof (struct sp_req), "socket (req)");
+    self = nn_alloc (sizeof (struct nn_req), "socket (req)");
     alloc_assert (self);
-    sp_req_init (self, &sp_req_sockbase_vfptr, fd);
+    nn_req_init (self, &nn_req_sockbase_vfptr, fd);
     return &self->xreq.sockbase;
 }
 
-static struct sp_socktype sp_req_socktype_struct = {
+static struct nn_socktype nn_req_socktype_struct = {
     AF_SP,
-    SP_REQ,
-    sp_req_create
+    NN_REQ,
+    nn_req_create
 };
 
-struct sp_socktype *sp_req_socktype = &sp_req_socktype_struct;
+struct nn_socktype *nn_req_socktype = &nn_req_socktype_struct;
 

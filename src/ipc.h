@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define SP_IPC -2
+#define NN_IPC -2
 
 #ifdef __cplusplus
 }

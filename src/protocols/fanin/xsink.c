@@ -22,7 +22,7 @@
 
 #include "xsink.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../fanin.h"
 
 #include "../../utils/err.h"
@@ -31,199 +31,199 @@
 #include "../../utils/list.h"
 #include "../../utils/alloc.h"
 
-struct sp_xsink_data {
-    struct sp_pipe *pipe;
-    struct sp_list_item item;
+struct nn_xsink_data {
+    struct nn_pipe *pipe;
+    struct nn_list_item item;
 };
 
-struct sp_xsink {
+struct nn_xsink {
 
     /*  The generic socket base class. */
-    struct sp_sockbase sockbase;
+    struct nn_sockbase sockbase;
 
     /*  List of pipes that we can get messages from. */
-    struct sp_list pipes;
+    struct nn_list pipes;
 
     /*  Next pipe to receive from. */
-    struct sp_xsink_data *current;
+    struct nn_xsink_data *current;
 };
 
 /*  Private functions. */
-static void sp_xsink_init (struct sp_xsink *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_xsink_term (struct sp_xsink *self);
+static void nn_xsink_init (struct nn_xsink *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_xsink_term (struct nn_xsink *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_xsink_destroy (struct sp_sockbase *self);
-static int sp_xsink_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_xsink_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsink_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsink_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_xsink_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsink_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_xsink_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xsink_destroy (struct nn_sockbase *self);
+static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsink_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsink_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_xsink_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xsink_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_xsink_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_xsink_sockbase_vfptr = {
-    sp_xsink_destroy,
-    sp_xsink_add,
-    sp_xsink_rm,
-    sp_xsink_in,
-    sp_xsink_out,
-    sp_xsink_send,
-    sp_xsink_recv,
-    sp_xsink_setopt,
-    sp_xsink_getopt,
-    sp_xsink_sethdr,
-    sp_xsink_gethdr
+static int nn_xsink_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
+    nn_xsink_destroy,
+    nn_xsink_add,
+    nn_xsink_rm,
+    nn_xsink_in,
+    nn_xsink_out,
+    nn_xsink_send,
+    nn_xsink_recv,
+    nn_xsink_setopt,
+    nn_xsink_getopt,
+    nn_xsink_sethdr,
+    nn_xsink_gethdr
 };
 
-static void sp_xsink_init (struct sp_xsink *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_xsink_init (struct nn_xsink *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_list_init (&self->pipes);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_list_init (&self->pipes);
     self->current = NULL;
 }
 
-static void sp_xsink_term (struct sp_xsink *self)
+static void nn_xsink_term (struct nn_xsink *self)
 {
-    sp_list_term (&self->pipes);
+    nn_list_term (&self->pipes);
 }
 
-void sp_xsink_destroy (struct sp_sockbase *self)
+void nn_xsink_destroy (struct nn_sockbase *self)
 {
-    struct sp_xsink *xsink;
+    struct nn_xsink *xsink;
 
-    xsink = sp_cont (self, struct sp_xsink, sockbase);
+    xsink = nn_cont (self, struct nn_xsink, sockbase);
 
-    sp_xsink_term (xsink);
-    sp_free (xsink);
+    nn_xsink_term (xsink);
+    nn_free (xsink);
 }
 
-static int sp_xsink_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsink_data *data;
+    struct nn_xsink_data *data;
 
-    data = sp_alloc (sizeof (struct sp_xsink_data), "pipe data (sink)");
+    data = nn_alloc (sizeof (struct nn_xsink_data), "pipe data (sink)");
     alloc_assert (data);
     data->pipe = pipe;
-    sp_pipe_setdata (pipe, data);
+    nn_pipe_setdata (pipe, data);
 
     return 0;
 }
 
-static void sp_xsink_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsink_data *data;
+    struct nn_xsink_data *data;
 
-    data = sp_pipe_getdata (pipe);
+    data = nn_pipe_getdata (pipe);
 
     /*  TODO: If pipe is in inbound pipe list, remove it. */
 
-    sp_free (data);
+    nn_free (data);
 }
 
-static int sp_xsink_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsink_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_xsink *xsink;
-    struct sp_xsink_data *data;
+    struct nn_xsink *xsink;
+    struct nn_xsink_data *data;
     int result;
 
-    xsink = sp_cont (self, struct sp_xsink, sockbase);
-    data = sp_pipe_getdata (pipe);
-    result = sp_list_empty (&xsink->pipes) ? 1 : 0;
+    xsink = nn_cont (self, struct nn_xsink, sockbase);
+    data = nn_pipe_getdata (pipe);
+    result = nn_list_empty (&xsink->pipes) ? 1 : 0;
     if (result)
         xsink->current = data;
-    sp_list_insert (&xsink->pipes, &data->item, sp_list_end (&xsink->pipes));
+    nn_list_insert (&xsink->pipes, &data->item, nn_list_end (&xsink->pipes));
     return result;
 }
 
-static int sp_xsink_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_xsink_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     /*  We are not going to send any messages, so there's no need to store
         the list of outbound pipes. */
     return 0;
 }
 
-static int sp_xsink_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return -ENOTSUP;
 }
 
-static int sp_xsink_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_xsink *xsink;
-    struct sp_list_item *it;
+    struct nn_xsink *xsink;
+    struct nn_list_item *it;
 
-    xsink = sp_cont (self, struct sp_xsink, sockbase);
+    xsink = nn_cont (self, struct nn_xsink, sockbase);
 
     /*  Current is NULL only when there are no avialable inbound pipes. */
-    if (sp_slow (!xsink->current))
+    if (nn_slow (!xsink->current))
         return -EAGAIN;
 
     /*  Get the messsage. */
-    rc = sp_pipe_recv (xsink->current->pipe, msg);
+    rc = nn_pipe_recv (xsink->current->pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */
-    if (rc & SP_PIPE_RELEASE)
-        it = sp_list_erase (&xsink->pipes, &xsink->current->item);
+    if (rc & NN_PIPE_RELEASE)
+        it = nn_list_erase (&xsink->pipes, &xsink->current->item);
     else
-        it = sp_list_next (&xsink->pipes, &xsink->current->item);
+        it = nn_list_next (&xsink->pipes, &xsink->current->item);
     if (!it)
-        it = sp_list_begin (&xsink->pipes);
-    xsink->current = sp_cont (it, struct sp_xsink_data, item);
+        it = nn_list_begin (&xsink->pipes);
+    xsink->current = nn_cont (it, struct nn_xsink_data, item);
 
     return 0;
 }
 
-static int sp_xsink_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xsink_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_xsink_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_xsink_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_xsink_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_xsink_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-struct sp_sockbase *sp_xsink_create (int fd)
+struct nn_sockbase *nn_xsink_create (int fd)
 {
-    struct sp_xsink *self;
+    struct nn_xsink *self;
 
-    self = sp_alloc (sizeof (struct sp_xsink), "socket (sink)");
+    self = nn_alloc (sizeof (struct nn_xsink), "socket (sink)");
     alloc_assert (self);
-    sp_xsink_init (self, &sp_xsink_sockbase_vfptr, fd);
+    nn_xsink_init (self, &nn_xsink_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_xsink_socktype_struct = {
+static struct nn_socktype nn_xsink_socktype_struct = {
     AF_SP_RAW,
-    SP_SINK,
-    sp_xsink_create
+    NN_SINK,
+    nn_xsink_create
 };
 
-struct sp_socktype *sp_xsink_socktype = &sp_xsink_socktype_struct;
+struct nn_socktype *nn_xsink_socktype = &nn_xsink_socktype_struct;
 

@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/sp.h"
+#include "../src/nn.h"
 #include "../src/pair.h"
 
 #include "../src/utils/err.c"
@@ -33,11 +33,11 @@ void worker (void *arg)
     int s;
     char buf [3];
 
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
-    rc = sp_recv (s, buf, sizeof (buf), 0);
-    sp_assert (rc == -1 && sp_errno () == ETERM);
-    rc = sp_close (s);
+    rc = nn_recv (s, buf, sizeof (buf), 0);
+    nn_assert (rc == -1 && nn_errno () == ETERM);
+    rc = nn_close (s);
     errno_assert (rc == 0);
 }
 
@@ -45,26 +45,26 @@ int main ()
 {
     int rc;
     int s;
-    struct sp_thread thread;
+    struct nn_thread thread;
 
     /*  Close the socket with no associated endpoints. */
-    rc = sp_init ();
+    rc = nn_init ();
     errno_assert (rc == 0);
-    s = sp_socket (AF_SP, SP_PAIR);
+    s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
-    rc = sp_close (s);
+    rc = nn_close (s);
     errno_assert (rc == 0);
-    rc = sp_term ();
+    rc = nn_term ();
     errno_assert (rc == 0);
 
-    /*  Test sp_term() before sp_close(). */
-    rc = sp_init ();
+    /*  Test nn_term() before nn_close(). */
+    rc = nn_init ();
     errno_assert (rc == 0);
-    sp_thread_init (&thread, worker, NULL);
-    sp_sleep (10);
-    rc = sp_term ();
+    nn_thread_init (&thread, worker, NULL);
+    nn_sleep (10);
+    rc = nn_term ();
     errno_assert (rc == 0);
-    sp_thread_term (&thread);
+    nn_thread_term (&thread);
 
     return 0;
 }

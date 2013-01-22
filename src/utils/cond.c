@@ -25,24 +25,24 @@
 #include "aio.h"
 #include "err.h"
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 
-void sp_cond_init (struct sp_cond *self)
+void nn_cond_init (struct nn_cond *self)
 {
     InitializeConditionVariable (&self->cond);
     self->infinite = 1;
-    sp_clock_init (&self->clock);
+    nn_clock_init (&self->clock);
 }
 
-void sp_cond_term (struct sp_cond *self)
+void nn_cond_term (struct nn_cond *self)
 {
-    sp_clock_term (&self->clock);
+    nn_clock_term (&self->clock);
 
     /*  It seems that on Windows there's no need to terminate
         the condition variable. */
 }
 
-void sp_cond_set_timeout (struct sp_cond *self, int timeout)
+void nn_cond_set_timeout (struct nn_cond *self, int timeout)
 {
     /*  Infinite timeout. */
     if (timeout < 0) {
@@ -52,10 +52,10 @@ void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 
     /*  Finite timeout. */
     self->infinite = 0;
-    self->timeout = sp_clock_now (&self->clock) + timeout;
+    self->timeout = nn_clock_now (&self->clock) + timeout;
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
+int nn_cond_wait (struct nn_cond *self, struct nn_mutex *mutex)
 {
     uint64_t timeout;
     BOOL brc;
@@ -63,7 +63,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
     if (self->infinite)
         timeout = INFINITE;
     else {
-        timeout = sp_clock_now (&self->clock);
+        timeout = nn_clock_now (&self->clock);
         if (timeout >= self->timeout)
             timeout = 0;
         else
@@ -72,7 +72,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
 
     brc = SleepConditionVariableCS (&self->cond, &mutex->mutex,
         (DWORD) timeout);
-    if (sp_slow (!brc)) {
+    if (nn_slow (!brc)) {
         if (GetLastError () == ERROR_TIMEOUT)
             return -ETIMEDOUT;
         win_assert (0);
@@ -81,7 +81,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
     return 0;
 }
 
-void sp_cond_post (struct sp_cond *self)
+void nn_cond_post (struct nn_cond *self)
 {
     WakeConditionVariable (&self->cond);
 }
@@ -90,15 +90,15 @@ void sp_cond_post (struct sp_cond *self)
 
 #include <stdint.h>
 
-void sp_cond_init (struct sp_cond *self)
+void nn_cond_init (struct nn_cond *self)
 {
     int rc;
     pthread_condattr_t attr;
 
     rc = pthread_condattr_init (&attr);
     errnum_assert (rc == 0, rc);
-#if defined SP_HAVE_OSX
-#elif defined SP_HAVE_CLOCK_MONOTONIC
+#if defined NN_HAVE_OSX
+#elif defined NN_HAVE_CLOCK_MONOTONIC
     rc = pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
     errnum_assert (rc == 0, rc);
 #else
@@ -112,7 +112,7 @@ void sp_cond_init (struct sp_cond *self)
     self->infinite = 1;
 }
 
-void sp_cond_term (struct sp_cond *self)
+void nn_cond_term (struct nn_cond *self)
 {
     int rc;
 
@@ -120,10 +120,10 @@ void sp_cond_term (struct sp_cond *self)
     errnum_assert (rc == 0, rc);
 }
 
-void sp_cond_set_timeout (struct sp_cond *self, int timeout)
+void nn_cond_set_timeout (struct nn_cond *self, int timeout)
 {
     int rc;
-#if defined SP_HAVE_OSX
+#if defined NN_HAVE_OSX
     struct timeval tv;
 #endif
 
@@ -138,13 +138,13 @@ void sp_cond_set_timeout (struct sp_cond *self, int timeout)
 
     /*  On OSX the gettimeofday-based clock is hard-wired to the condition
         variable. There's no way to use different clock. */
-#if defined SP_HAVE_OSX
+#if defined NN_HAVE_OSX
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &self->timeout);
 
     /*  On platforms that provide monotonic clock, use it. That way we avoid
         problems when system time is adjusted. */
-#elif defined SP_HAVE_CLOCK_MONOTONIC
+#elif defined NN_HAVE_CLOCK_MONOTONIC
     rc = clock_gettime (CLOCK_MONOTONIC, &self->timeout);
     errno_assert (rc == 0);
 
@@ -162,7 +162,7 @@ void sp_cond_set_timeout (struct sp_cond *self, int timeout)
     }
 }
 
-int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
+int nn_cond_wait (struct nn_cond *self, struct nn_mutex *mutex)
 {
     int rc;
     struct timespec ts;
@@ -182,7 +182,7 @@ int sp_cond_wait (struct sp_cond *self, struct sp_mutex *mutex)
     return 0;
 }
 
-void sp_cond_post (struct sp_cond *self)
+void nn_cond_post (struct nn_cond *self)
 {
     int rc;
 

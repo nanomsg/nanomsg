@@ -26,23 +26,23 @@
 
 #include <string.h>
 
-#define SP_CHUNK_TAG 0xdeadcafe
+#define NN_CHUNK_TAG 0xdeadcafe
 
-static void sp_chunk_default_free (void *p);
-static const struct sp_chunk_vfptr sp_chunk_default_vfptr = {
-    sp_chunk_default_free
+static void nn_chunk_default_free (void *p);
+static const struct nn_chunk_vfptr nn_chunk_default_vfptr = {
+    nn_chunk_default_free
 };
 
-struct sp_chunk *sp_chunk_alloc (size_t size, int type)
+struct nn_chunk *nn_chunk_alloc (size_t size, int type)
 {
     size_t sz;
-    struct sp_chunk *self;
+    struct nn_chunk *self;
 
     /*  Allocate the actual memory depending on the type. */
-    sz = size + sizeof (struct sp_chunk);
+    sz = size + sizeof (struct nn_chunk);
     switch (type) {
     case 0:
-        self = sp_alloc (sz, "message chunk");
+        self = nn_alloc (sz, "message chunk");
         break;
     default:
         return NULL;
@@ -50,18 +50,18 @@ struct sp_chunk *sp_chunk_alloc (size_t size, int type)
     alloc_assert (self);
 
     /*  Fill in the chunk header. */
-    self->tag = SP_CHUNK_TAG;
+    self->tag = NN_CHUNK_TAG;
     self->offset = 0;
-    self->vfptr = &sp_chunk_default_vfptr;
+    self->vfptr = &nn_chunk_default_vfptr;
     self->size = size;
 
     return self;
 }
 
-void sp_chunk_free (struct sp_chunk *self)
+void nn_chunk_free (struct nn_chunk *self)
 {
     /*  Mark chunk as deallocated. */
-    sp_assert (self->tag == SP_CHUNK_TAG);
+    nn_assert (self->tag == NN_CHUNK_TAG);
     self->tag = 0;
 
     /*  Compute the beginning of the allocated block and deallocate it
@@ -69,38 +69,38 @@ void sp_chunk_free (struct sp_chunk *self)
     self->vfptr->free (((uint8_t*) self) - self->offset);
 }
 
-static void sp_chunk_default_free (void *p)
+static void nn_chunk_default_free (void *p)
 {
-    sp_free (p);
+    nn_free (p);
 }
 
-int sp_chunk_check (struct sp_chunk *self)
+int nn_chunk_check (struct nn_chunk *self)
 {
-    if (sp_fast (self->tag == SP_CHUNK_TAG))
+    if (nn_fast (self->tag == NN_CHUNK_TAG))
         return 0;
     return -EFAULT;
 }
 
-void *sp_chunk_data (struct sp_chunk *self)
+void *nn_chunk_data (struct nn_chunk *self)
 {
     return (void*) (self + 1);
 }
 
-size_t sp_chunk_size (struct sp_chunk *self)
+size_t nn_chunk_size (struct nn_chunk *self)
 {
     return self->size;
 }
 
-struct sp_chunk *sp_chunk_trim (struct sp_chunk *self, size_t n)
+struct nn_chunk *nn_chunk_trim (struct nn_chunk *self, size_t n)
 {
-    struct sp_chunk *newself;
+    struct nn_chunk *newself;
 
     /*  Sanity check. We cannot trim more bytes than there are in the chunk. */
-    sp_assert (self->size >= n);
+    nn_assert (self->size >= n);
 
     /*  Move the chunk header to the new place. */
-    newself = (struct sp_chunk*) (((uint8_t*) self) + n);
-    memmove (newself, self, sizeof (struct sp_chunk));
+    newself = (struct nn_chunk*) (((uint8_t*) self) + n);
+    memmove (newself, self, sizeof (struct nn_chunk));
 
     /*  Adjust the header. */
     newself->offset += n;

@@ -23,11 +23,11 @@
 #include "sleep.h"
 #include "err.h"
 
-#ifdef SP_HAVE_WINDOWS
+#ifdef NN_HAVE_WINDOWS
 
 #include "win.h"
 
-void sp_sleep (int milliseconds)
+void nn_sleep (int milliseconds)
 {
     Sleep (milliseconds);
 }
@@ -36,7 +36,7 @@ void sp_sleep (int milliseconds)
 
 #include <time.h>
 
-void sp_sleep (int milliseconds)
+void nn_sleep (int milliseconds)
 {
     int rc;
     struct timespec ts;

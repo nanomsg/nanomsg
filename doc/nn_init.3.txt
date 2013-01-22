@@ -1,23 +1,23 @@
-sp_init(3)
+nn_init(3)
 ==========
 
 NAME
 ----
-sp_init - initialise the nanomsg library
+nn_init - initialise the nanomsg library
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_init (void);*
+*int nn_init (void);*
 
 
 DESCRIPTION
 -----------
 This function initialises the nanomsg library. If the library was already
 initialised it does nothing. The global state of the library is deallocated only
-when each _sp_init()_ is matched by a corresponding _sp_term()_.
+when each _nn_init()_ is matched by a corresponding _nn_term()_.
 
 
 RETURN VALUE
@@ -33,7 +33,7 @@ No errors are defined.
 
 SEE ALSO
 --------
-linknanomsg:sp_term[3]
+linknanomsg:nn_term[3]
 linknanomsg:nanomsg[7]
 
 

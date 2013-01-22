@@ -20,30 +20,30 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_EFD_INCLUDED
-#define SP_EFD_INCLUDED
+#ifndef NN_EFD_INCLUDED
+#define NN_EFD_INCLUDED
 
-#if !defined SP_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS
 
-struct sp_efd;
+struct nn_efd;
 
-void sp_efd_init (struct sp_efd *self);
-void sp_efd_term (struct sp_efd *self);
-int sp_efd_getfd (struct sp_efd *self);
-void sp_efd_signal (struct sp_efd *self);
-void sp_efd_unsignal (struct sp_efd *self);
+void nn_efd_init (struct nn_efd *self);
+void nn_efd_term (struct nn_efd *self);
+int nn_efd_getfd (struct nn_efd *self);
+void nn_efd_signal (struct nn_efd *self);
+void nn_efd_unsignal (struct nn_efd *self);
 
-#if defined SP_USE_SOCKETPAIR
+#if defined NN_USE_SOCKETPAIR
 
-struct sp_efd
+struct nn_efd
 {
     int r;
     int w;
 };
 
-#elif defined SP_USE_EVENTFD
+#elif defined NN_USE_EVENTFD
 
-struct sp_efd
+struct nn_efd
 {
     int efd;
 };

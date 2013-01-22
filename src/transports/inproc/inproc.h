@@ -20,11 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_INPROC_INCLUDED
-#define SP_INPROC_INCLUDED
+#ifndef NN_INPROC_INCLUDED
+#define NN_INPROC_INCLUDED
 
 #include "../../transport.h"
 
-extern struct sp_transport *sp_inproc;
+extern struct nn_transport *nn_inproc;
 
 #endif

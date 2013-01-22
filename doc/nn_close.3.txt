@@ -1,23 +1,23 @@
-sp_close(3)
+nn_close(3)
 ===========
 
 NAME
 ----
-sp_close - close an SP socket
+nn_close - close an SP socket
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*int sp_close (int 's');*
+*int nn_close (int 's');*
 
 
 DESCRIPTION
 -----------
 Closes the socket 's'. Any buffered inbound messages that were not yet received
 by the application will be discarded. The library will try to deliver any
-outstanding outbound messages for the time specified by _SP_LINGER_ socket
+outstanding outbound messages for the time specified by _NN_LINGER_ socket
 option.
 
 
@@ -39,17 +39,17 @@ EXAMPLE
 -------
 
 ----
-int s = sp_socket (AF_SP, SP_PUB);
+int s = nn_socket (AF_SP, NN_PUB);
 assert (s >= 0);
-int rc = sp_close (s);
+int rc = nn_close (s);
 assert (rc == 0);
 ----
 
 
 SEE ALSO
 --------
-linknanomsg:sp_socket[3]
-linknanomsg:sp_setsockopt[3]
+linknanomsg:nn_socket[3]
+linknanomsg:nn_setsockopt[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

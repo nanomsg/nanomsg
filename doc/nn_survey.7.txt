@@ -1,16 +1,16 @@
-sp_survey(7)
+nn_survey(7)
 ============
 
 NAME
 ----
-sp_survey - survey scalability protocol
+nn_survey - survey scalability protocol
 
 
 SYNOPSIS
 --------
-*#include <sp/sp.h>*
+*#include <nanomsg/nn.h>*
 
-*#include <sp/survey.h>*
+*#include <nanomsg/survey.h>*
 
 
 DESCRIPTION
@@ -20,12 +20,12 @@ Allows to broadcast a survey to multiple locations and gather the responses.
 Socket Types
 ~~~~~~~~~~~~
 
-SP_SURVEYOR::
+NN_SURVEYOR::
     Used to send the survey. The survey is delivered to all the connected
     respondents. Once the query is sent, the socket can be used to receive
     the responses. When the survey deadline expires, receive will return
     ETIMEDOUT error.
-SP_RESPONDENT::
+NN_RESPONDENT::
     Use to respond to the survey. Survey is received using receive function,
     response is sent using send function. This socket can be connected to
     at most one peer.
@@ -33,7 +33,7 @@ SP_RESPONDENT::
 Socket Options
 ~~~~~~~~~~~~~~
 
-SP_DEADLINE::
+NN_DEADLINE::
     Specifies how long to wait for responses to the survey. Once the deadline
     expires, receive function will return ETIMEDOUT error and all subsequent
     responses to the survey will be silently dropped. The deadline is measured
@@ -42,11 +42,11 @@ SP_DEADLINE::
 
 SEE ALSO
 --------
-linknanomsg:sp_pubsub[7]
-linknanomsg:sp_reqrep[7]
-linknanomsg:sp_fanin[7]
-linknanomsg:sp_fanout[7]
-linknanomsg:sp_pair[7]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_fanin[7]
+linknanomsg:nn_fanout[7]
+linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]
 
 

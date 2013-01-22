@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-#define SP_TCP -3
+#define NN_TCP -3
 
 #ifdef __cplusplus
 }

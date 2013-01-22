@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef SP_WIN_INCLUDED
-#define SP_WIN_INCLUDED
+#ifndef NN_WIN_INCLUDED
+#define NN_WIN_INCLUDED
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

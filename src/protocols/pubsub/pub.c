@@ -22,7 +22,7 @@
 
 #include "pub.h"
 
-#include "../../sp.h"
+#include "../../nn.h"
 #include "../../pubsub.h"
 
 #include "../../utils/err.h"
@@ -31,196 +31,196 @@
 #include "../../utils/list.h"
 #include "../../utils/alloc.h"
 
-struct sp_pub_data {
-    struct sp_pipe *pipe;
-    struct sp_list_item out;
+struct nn_pub_data {
+    struct nn_pipe *pipe;
+    struct nn_list_item out;
 };
 
-struct sp_pub {
+struct nn_pub {
 
     /*  The generic socket base class. */
-    struct sp_sockbase sockbase;
+    struct nn_sockbase sockbase;
 
     /*  List of pipes ready to accept messages. */
-    struct sp_list pipes;
+    struct nn_list pipes;
 };
 
 /*  Private functions. */
-static void sp_pub_init (struct sp_pub *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd);
-static void sp_pub_term (struct sp_pub *self);
+static void nn_pub_init (struct nn_pub *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+static void nn_pub_term (struct nn_pub *self);
 
-/*  Implementation of sp_sockbase's virtual functions. */
-static void sp_pub_destroy (struct sp_sockbase *self);
-static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe);
-static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe);
-static int sp_pub_send (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_pub_recv (struct sp_sockbase *self, struct sp_msg *msg);
-static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,
+/*  Implementation of nn_sockbase's virtual functions. */
+static void nn_pub_destroy (struct nn_sockbase *self);
+static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg);
+static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int sp_pub_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int sp_pub_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_pub_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen);
-static int sp_pub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen);
-static const struct sp_sockbase_vfptr sp_pub_sockbase_vfptr = {
-    sp_pub_destroy,
-    sp_pub_add,
-    sp_pub_rm,
-    sp_pub_in,
-    sp_pub_out,
-    sp_pub_send,
-    sp_pub_recv,
-    sp_pub_setopt,
-    sp_pub_getopt,
-    sp_pub_sethdr,
-    sp_pub_gethdr
+static int nn_pub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
+static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
+    nn_pub_destroy,
+    nn_pub_add,
+    nn_pub_rm,
+    nn_pub_in,
+    nn_pub_out,
+    nn_pub_send,
+    nn_pub_recv,
+    nn_pub_setopt,
+    nn_pub_getopt,
+    nn_pub_sethdr,
+    nn_pub_gethdr
 };
 
-static void sp_pub_init (struct sp_pub *self,
-    const struct sp_sockbase_vfptr *vfptr, int fd)
+static void nn_pub_init (struct nn_pub *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    sp_sockbase_init (&self->sockbase, vfptr, fd);
-    sp_list_init (&self->pipes);
+    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    nn_list_init (&self->pipes);
 }
 
-static void sp_pub_term (struct sp_pub *self)
+static void nn_pub_term (struct nn_pub *self)
 {
-    sp_list_term (&self->pipes);
+    nn_list_term (&self->pipes);
 }
 
-void sp_pub_destroy (struct sp_sockbase *self)
+void nn_pub_destroy (struct nn_sockbase *self)
 {
-    struct sp_pub *pub;
+    struct nn_pub *pub;
 
-    pub = sp_cont (self, struct sp_pub, sockbase);
+    pub = nn_cont (self, struct nn_pub, sockbase);
 
-    sp_pub_term (pub);
-    sp_free (pub);
+    nn_pub_term (pub);
+    nn_free (pub);
 }
 
-static int sp_pub_add (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_pub_data *data;
+    struct nn_pub_data *data;
 
-    data = sp_alloc (sizeof (struct sp_pub_data), "pipe data (pub)");
+    data = nn_alloc (sizeof (struct nn_pub_data), "pipe data (pub)");
     alloc_assert (data);
     data->pipe = pipe;
-    sp_pipe_setdata (pipe, data);
+    nn_pipe_setdata (pipe, data);
 
     return 0;
 }
 
-static void sp_pub_rm (struct sp_sockbase *self, struct sp_pipe *pipe)
+static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_pub_data *data;
+    struct nn_pub_data *data;
 
-    data = sp_pipe_getdata (pipe);
+    data = nn_pipe_getdata (pipe);
 
     /*  TODO: If pipe is in outbound pipe list, remove it. */
 
-    sp_free (data);
+    nn_free (data);
 }
 
-static int sp_pub_in (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     /*  We shouldn't get any messages from subscribers. */
-    sp_assert (0);
+    nn_assert (0);
 }
 
-static int sp_pub_out (struct sp_sockbase *self, struct sp_pipe *pipe)
+static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    struct sp_pub *pub;
-    struct sp_pub_data *data;
+    struct nn_pub *pub;
+    struct nn_pub_data *data;
     int result;
 
-    pub = sp_cont (self, struct sp_pub, sockbase);
-    data = sp_pipe_getdata (pipe);
+    pub = nn_cont (self, struct nn_pub, sockbase);
+    data = nn_pipe_getdata (pipe);
 
     /*  New subscriber. Let's remember it. */
-    result = sp_list_empty (&pub->pipes) ? 1 : 0;
-    sp_list_insert (&pub->pipes, &data->out, sp_list_end (&pub->pipes));
+    result = nn_list_empty (&pub->pipes) ? 1 : 0;
+    nn_list_insert (&pub->pipes, &data->out, nn_list_end (&pub->pipes));
     return result;
 }
 
-static int sp_pub_send (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
-    struct sp_list_item *it;
-    struct sp_pub_data *data;
-    struct sp_pub *pub;
-    struct sp_msg copy;
+    struct nn_list_item *it;
+    struct nn_pub_data *data;
+    struct nn_pub *pub;
+    struct nn_msg copy;
 
-    pub = sp_cont (self, struct sp_pub, sockbase);
+    pub = nn_cont (self, struct nn_pub, sockbase);
 
     /*  Send the message to all the subscribers. */
-    it = sp_list_begin (&pub->pipes);
-    while (it != sp_list_end (&pub->pipes)) {
-       data = sp_cont (it, struct sp_pub_data, out);
-       sp_msg_cp (&copy, msg);
-       rc = sp_pipe_send (data->pipe, &copy);
+    it = nn_list_begin (&pub->pipes);
+    while (it != nn_list_end (&pub->pipes)) {
+       data = nn_cont (it, struct nn_pub_data, out);
+       nn_msg_cp (&copy, msg);
+       rc = nn_pipe_send (data->pipe, &copy);
        errnum_assert (rc >= 0, -rc);
-       if (rc & SP_PIPE_RELEASE) {
-           it = sp_list_erase (&pub->pipes, it);
+       if (rc & NN_PIPE_RELEASE) {
+           it = nn_list_erase (&pub->pipes, it);
            continue;
        }
-       it = sp_list_next (&pub->pipes, it);
+       it = nn_list_next (&pub->pipes, it);
     }
 
     /*  Drop the reference to the message. */
-    sp_msg_term (msg);
+    nn_msg_term (msg);
 
     return 0;
 }
 
-static int sp_pub_recv (struct sp_sockbase *self, struct sp_msg *msg)
+static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return -ENOTSUP;
 }
 
-static int sp_pub_setopt (struct sp_sockbase *self, int level, int option,
+static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_pub_getopt (struct sp_sockbase *self, int level, int option,
+static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int sp_pub_sethdr (struct sp_msg *msg, const void *hdr,
+static int nn_pub_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
-    if (sp_slow (hdrlen != 0))
+    if (nn_slow (hdrlen != 0))
        return -EINVAL;
     return 0;
 }
 
-static int sp_pub_gethdr (struct sp_msg *msg, void *hdr, size_t *hdrlen)
+static int nn_pub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;
 }
 
-static struct sp_sockbase *sp_pub_create (int fd)
+static struct nn_sockbase *nn_pub_create (int fd)
 {
-    struct sp_pub *self;
+    struct nn_pub *self;
 
-    self = sp_alloc (sizeof (struct sp_pub), "socket (pub)");
+    self = nn_alloc (sizeof (struct nn_pub), "socket (pub)");
     alloc_assert (self);
-    sp_pub_init (self, &sp_pub_sockbase_vfptr, fd);
+    nn_pub_init (self, &nn_pub_sockbase_vfptr, fd);
     return &self->sockbase;
 }
 
-static struct sp_socktype sp_pub_socktype_struct = {
+static struct nn_socktype nn_pub_socktype_struct = {
     AF_SP,
-    SP_PUB,
-    sp_pub_create
+    NN_PUB,
+    nn_pub_create
 };
 
-struct sp_socktype *sp_pub_socktype = &sp_pub_socktype_struct;
+struct nn_socktype *nn_pub_socktype = &nn_pub_socktype_struct;
 

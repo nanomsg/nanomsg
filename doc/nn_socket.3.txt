@@ -36,8 +36,13 @@ In order to establish a message flow at least one endpoint has to be added
 to the socket using linknanomsg:nn_bind[3] or linknanomsg:nn_connect[3]
 function.
 
-Note that 'type' argument as found in standard _socket(2)_ function is omitted
-from _nn_socket_. All the SP sockets are message-based and thus of
+Note that file descriptors returned by _nn_socket_ function are not standard
+file descriptors and will exhibit undefined behaviour when used with system
+functions. Moreover, it may happen that a system file descriptor and file
+descriptor of an SP socket will incidentally collide (be equal).
+
+Also note that 'type' argument as found in standard _socket(2)_ function is
+omitted from _nn_socket_. All the SP sockets are message-based and thus of
 _SOCK_SEQPACKET_ type.
 
 

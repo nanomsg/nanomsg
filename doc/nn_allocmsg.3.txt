@@ -15,12 +15,11 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Allocate a message of the specified 'size' to be sent via
-linknanomsg:nn_sendmsg[3] function. The content of the message is undefined
-after allocation and is supposed to be filled in by the user. While
-linknanomsg:nn_send[3] allows to send arbitrary buffer, buffers allocated using
-_nn_allocmsg()_ may be more efficient for large messages as they allow for
-using zero-copy techniques.
+Allocate a message of the specified 'size' to be sent in zero-copy fashion.
+The content of the message is undefined after allocation and it should be filled
+in by the user. While linknanomsg:nn_send[3] and linknanomsg:nn_sendmsg[3] allow
+to send arbitrary buffers, buffers allocated using _nn_allocmsg()_ can be more
+efficient for large messages as they allow for using zero-copy techniques.
 
 'type' parameter specifies type of allocation mechanism to use. Zero is the
 default one, however, individual transport mechanisms may define their
@@ -49,17 +48,17 @@ EXAMPLE
 -------
 
 ----
-void *msg = nn_allocmsg (12, 0);
-memcpy (msg, "Hello world!", 12);
-nn_sendmsg (s, msg, 0);
+void *buf = nn_allocmsg (12, 0);
+memcpy (buf, "Hello world!", 12);
+nn_send (s, buf, NN_MSG, 0);
 ----
 
 
 SEE ALSO
 --------
 linknanomsg:nn_freemsg[3]
+linknanomsg:nn_send[3]
 linknanomsg:nn_sendmsg[3]
-linknanomsg:nn_recvmsg[3]
 linknanomsg:nanomsg[7]
 
 AUTHORS

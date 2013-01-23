@@ -16,7 +16,10 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Deallocates a message allocated using linknanomsg:nn_allocmsg[3] function or
-received using linknanomsg:nn_recvmsg[3] function.
+received via linknanomsg:nn_recv[3] or linknanomsg:nn_recvmsg[3] function.
+While linknanomsg:nn_recv[3] and linknanomsg:nn_recvmsg[3] allow to receive data
+into arbitrary buffers, using library-allocated buffers can be more
+efficient for large messages as it allows for using zero-copy techniques.
 
 
 RETURN VALUE
@@ -35,16 +38,16 @@ EXAMPLE
 -------
 
 ----
-void *msg;
-nn_recvmsg (s, &msg, 0);
-nn_freemsg (msg);
+void *buf;
+nn_recv (s, &buf, NN_MSG, 0);
+nn_freemsg (buf);
 ----
 
 
 SEE ALSO
 --------
 linknanomsg:nn_allocmsg[3]
-linknanomsg:nn_sendmsg[3]
+linknanomsg:nn_recv[3]
 linknanomsg:nn_recvmsg[3]
 linknanomsg:nanomsg[7]
 

@@ -1,0 +1,37 @@
+nn_cmsg(3)
+==========
+
+NAME
+----
+NN_CMSG_FIRSTHDR, NN_CMSG_NXTHDR - access control information
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*struct nn_cmsghdr *NN_CMSG_FIRSTHDR(struct nn_msghdr *hdr);*
+
+*struct nn_cmsghdr *NN_CMSG_NXTHDR(struct nn_msghdr *hdr, struct nn_cmsghdr *cmsg);*
+
+DESCRIPTION
+-----------
+TODO
+
+
+EXAMPLE
+-------
+TODO
+
+
+SEE ALSO
+--------
+linknanomsg:nn_sendmsg[3]
+linknanomsg:nn_recvmsg[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

@@ -50,17 +50,17 @@ Send a message::
 Receive a message::
     linknanomsg:nn_recv[3]
 
+Fine-grained alternative to nn_send::
+    linknanomsg:nn_sendmsg[3]
+
+Fine-grained alternative to nn_recv::
+    linknanomsg:nn_recvmsg[3]
+
 Allocate a message::
     linknanomsg:nn_allocmsg[3]
 
 Deallocate a message::
     linknanomsg:nn_freemsg[3]
-
-Send a message allocated by nn_allocmsg::
-    linknanomsg:nn_sendmsg[3]
-
-Receive a pre-allocated message::
-    linknanomsg:nn_recvmsg[3]
 
 Retrieve the current errno::
     linknanomsg:nn_errno[3]

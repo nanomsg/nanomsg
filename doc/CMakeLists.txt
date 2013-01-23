@@ -62,6 +62,9 @@ if (NOT WIN32)
         nn_sendmsg.3
         nn_recvmsg.3
 
+        #  Macros.
+        nn_cmsg.3
+
         )
 
     #  Build the genconf program.

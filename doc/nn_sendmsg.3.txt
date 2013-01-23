@@ -3,7 +3,7 @@ nn_sendmsg(3)
 
 NAME
 ----
-nn_sendmsg - send a message allocated by nn_allocmsg
+nn_sendmsg - fine-grained alternative to nn_send
 
 
 SYNOPSIS
@@ -14,16 +14,41 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-The function will send a message containing the data from message 'msg' to
-the socket 's'. The message must be allocated using linknanomsg:nn_allocmsg[3]
-function.
+
+Sends data specified by 'msghdr' paramter to socket 's' along with any
+additional control data. 'msghdr' structure should be nullified before being
+used.
+
+Structure 'nn_msghdr' contains at least following members:
+
+    struct nn_iovec *msg_iov;
+    int msg_iovlen;
+    void *msg_control;
+    size_t msg_controllen;
+
+'msg_iov' points to a scatter array of buffers to send. 'msg_iovlen' specifies
+the size of the array.
+
+'msg_control' points to the buffer containing control information to be
+associated with the message being sent. 'msg_controllen' specifies the length
+of the buffer. If there's no control information to send, 'msg_control' should
+be set to NULL. For detailed discussion of how to set control data check
+linknanomsg:nn_cmsg[3] man page.
+
+Structure 'nn_iovec' defines one element in the scatter array (i.e. a buffer
+to send to the socket) and contains following members:
+
+    void *iov_base;
+    size_t iov_len;
+
+Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
+set 'iov_base' to the buffer pointer and 'iov_len' to _NN_MSG_. The buffer will
+be deallocated by _nn_send_ function. Trying to deallocate it
+afterwards will result in undefined behaviour. Also, scatter array in
+_nn_msghdr_ structure can contain only one element in this case.
 
 To which of the peers will the message be sent to is determined by
 the particular socket type.
-
-When the function succeeds, message pointer 'msg' becomes invalid and should
-not be used any more or deallocated by the user. It will be deallocated
-automatically by the library.
 
 The 'flags' argument is a combination of the flags defined below:
 
@@ -68,18 +93,26 @@ EXAMPLE
 -------
 
 ----
-void *msg = nn_allocmsg (12, 0);
-memcpy (msg, "Hello world!", 12);
-nn_sendmsg (s, msg, 0);
+struct nn_msghdr hdr;
+struct nn_iovec iov [2];
+iov [0].iov_base = "Hello";
+iov [0].iov_len = 5;
+iov [1].iov_base = "World";
+iov [1].iov_len = 5;
+memset (&hdr, 0, sizeof (hdr));
+hdr.msg_iov = iov;
+hdr.msg_iovlen = 2;
+nn_sendmsg (s, &hdr, 0);
 ----
 
 
 SEE ALSO
 --------
 linknanomsg:nn_send[3]
+linknanomsg:nn_recvmsg[3]
 linknanomsg:nn_allocmsg[3]
 linknanomsg:nn_freemsg[3]
-linknanomsg:nn_recvmsg[3]
+linknanomsg:nn_cmsg[3]
 linknanomsg:nanomsg[7]
 
 

@@ -19,6 +19,11 @@ Receive a message from the socket 's' and store it in the buffer referenced by
 the 'buf' argument. Any bytes exceeding the length specified by the 'len'
 argument will be truncated. 
 
+Alternatively, _nanomsg_ library can allocate the buffer for you. To do so,
+let the 'buf' parameter point to void* variable to receive the buffer and set
+'len' parameter to _NN_MSG_. After successful completion user is responsible
+for deallocating the message using linknanomsg:nn_freemsg[3] function.
+
 The 'flags' argument is a combination of the flags defined below:
 
 *NN_DONTWAIT*::

@@ -165,19 +165,32 @@ struct nn_cmsghdr {
     int cmsg_type;
 };
 
-/*  Internal function. Not to be used directly. Use NN_CMSG_NEXTHDR macro
-    instead. */
+/*  Internal function. Not to be used directly.                               */
+/*  Use NN_CMSG_NEXTHDR macro instead.                                        */
 NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
     const struct nn_cmsghdr *cmsg);
 
 #define NN_CMSG_FIRSTHDR(mhdr) \
-    ((struct nn_cmsghdr*) (((struct nn_msghdr*) (mhdr))->msg_control))
+    ((mhdr)->msg_controllen >= sizeof (struct nn_cmsghdr) \
+    ? (struct nn_cmsghdr*) (mhdr)->msg_control : (struct cmsghdr*) NULL)
 
 #define NN_CMSG_NXTHDR(mhdr,cmsg) \
     nn_cmsg_nexthdr ((struct nn_msghdr*) (mhdr), (struct nn_cmsghdr*) (cmsg))
 
 #define NN_CMSG_DATA(cmsg) \
     ((unsigned char*) (((struct nn_cmsghdr*) (cmsg)) + 1))
+
+/*  Helper macro. Not to be used directly.                                    */
+#define NN_CMSG_ALIGN(len) \
+    (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1)) 
+
+/* Extensions to POSIX defined by RFC3542.                                    */                                    
+
+#define NN_CMSG_SPACE(len) \
+    (CMSG_ALIGN (len) + CMSG_ALIGN (sizeof (struct nn_cmsghdr)))
+
+#define NN_CMSG_LEN(len) \
+    (CMSG_ALIGN (sizeof (struct nn_cmsghdr)) + (len))
 
 /*  SP address families.                                                      */
 #define AF_SP 1

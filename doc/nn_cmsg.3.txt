@@ -3,25 +3,35 @@ nn_cmsg(3)
 
 NAME
 ----
-cmsg - access control information
+nn_cmsg - access control information
 
 
 SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*struct nn_cmsghdr *NN_CMSG_FIRSTHDR(struct nn_msghdr *hdr);*
+*struct nn_cmsghdr *NN_CMSG_FIRSTHDR(struct nn_msghdr '*hdr');*
 
-*struct nn_cmsghdr *NN_CMSG_NXTHDR(struct nn_msghdr *hdr, struct nn_cmsghdr *cmsg);*
+*struct nn_cmsghdr *NN_CMSG_NXTHDR(struct nn_msghdr '*hdr', struct nn_cmsghdr '*cmsg');*
+
+*unsigned char *NN_CMSG_DATA(struct nn_cmsghdr '*cmsg');*
+
+*size_t NN_CMSG_SPACE(size_t 'len');*
+
+*size_t NN_CMSG_LEN(size_t 'len');*
 
 DESCRIPTION
 -----------
-TODO
 
+_NN_CMSG_FIRSTHDR_ returns a pointer to the first nn_cmsghdr in the control buffer in the supplied nn_msghdr structure.
 
-EXAMPLE
--------
-TODO
+_NN_CMSG_NXTHDR_ returns the next nn_cmsghdr after the supplied nn_cmsghdr. Returns NULL if there isn't enough space in the buffer.
+
+_NN_CMSG_DATA_ returns a pointer to the data associated with supplied nn_cmsghdr.
+
+_NN_CMSG_SPACE_ returns the number of bytes occupied by nn_cmsghdr with payload of the specified length.
+
+_NN_CMSG_LEN_ returns the value to store in the cmsg_len member of the cmsghdr structure, taking into account any  necessary  alignment.
 
 
 SEE ALSO

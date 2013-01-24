@@ -123,15 +123,16 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg)
     int rc;
     struct nn_pipebase *pipebase;
 
-#if defined NN_LATENCY_MONITOR
-    nn_latmon_measure (NN_LATMON_RECV_FROM_TRANSPORT);
-#endif
-
     pipebase = (struct nn_pipebase*) self;
     nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_IDLE);
     pipebase->instate = NN_PIPEBASE_INSTATE_RECEIVING;
     rc = pipebase->vfptr->recv (pipebase, msg);
     errnum_assert (rc >= 0, -rc);
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_RECV_FROM_TRANSPORT);
+#endif
+
     if (nn_fast (pipebase->instate == NN_PIPEBASE_INSTATE_RECEIVED)) {
         pipebase->instate = NN_PIPEBASE_INSTATE_IDLE;
         return rc;

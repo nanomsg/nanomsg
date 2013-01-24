@@ -62,6 +62,9 @@ Allocate a message::
 Deallocate a message::
     linknanomsg:nn_freemsg[3]
 
+Manipulation of message control data::
+    linknanomsg:nn_cmsg[3]
+
 Retrieve the current errno::
     linknanomsg:nn_errno[3]
 

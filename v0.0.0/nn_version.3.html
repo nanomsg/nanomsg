@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_fanout(7)</title>
+<title>nn_version(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_fanout(7) Manual Page
+nn_version(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_fanout -
-   fan-out (load balancing) scalability protocol
+<p>nn_version -
+   report the version of nanomsg library
 </p>
 </div>
 </div>
@@ -574,53 +574,45 @@ sp_fanout(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/fanout.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>void nn_version (int *major, int *minor, int *patch);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Load balances messages among multiple destinations.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-SP_PUSH
-</dt>
-<dd>
-<p>
-    This socket is used to send messages to the cluster of load-balanced
-    nodes. Receive operation is not implemented on this socket type.
-</p>
-</dd>
-<dt class="hdlist1">
-SP_PULL
-</dt>
-<dd>
-<p>
-    This socket is used to implement a node within a load-balanced cluster.
-    It can be used to receive messages. Send operation is not implemented
-    on this socket type. This socket can be connected to at most one peer.
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>This function allows applications to determine exact version of nanomsg library.
+Integers pointed to <em>major</em>, <em>minor</em> and <em>patch</em> are filled in by components
+of the nanomsg library version.</p></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="paragraph"><p>No protocol-specific socket options are defined at the moment.</p></div>
 </div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>There is no return value.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int major, minor, patch;
+nn_version (&amp;major, &amp;minor, &amp;patch);
+printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-<a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-<a href="sp_fanin.7.html">sp_fanin(7)</a>
-<a href="sp_survey.7.html">sp_survey(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
-<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+<div class="paragraph"><p><a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
 <div class="sect1">
@@ -634,7 +626,7 @@ SP_PULL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

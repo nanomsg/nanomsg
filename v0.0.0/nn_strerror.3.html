@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_tcp(7)</title>
+<title>nn_strerror(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_tcp(7) Manual Page
+nn_strerror(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_tcp -
-   TCP transport mechanism
+<p>nn_strerror -
+   convert an error number into human-readable string
 </p>
 </div>
 </div>
@@ -574,83 +574,28 @@ sp_tcp(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/tcp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>const char *nn_strerror (int <em>errnum</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TCP transport allows for passing message over the network using simple reliable
-one-to-one connections. TCP is the most widely used transport protocol, it is
-virtually ubiquitous and thus the transport of choice for communication over
-the network.</p></div>
-<div class="paragraph"><p>When binding a TCP socket address of the form tcp://interface:port should be
-used. Port is the TCP port number to use. Interface is one of the following
-(optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-Asterisk character (*) meaning all local network interfaces.
-</p>
-</li>
-<li>
-<p>
-IPv4 address of a local network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a local network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-Interface name, as defined by operating system.
-</p>
-</li>
-</ul></div>
-<div class="paragraph"><p>When connecting a TCP socket address of the form tcp://interface;address:port
-should be used. Port is the TCP port number to use. Interface is optional and
-specifies which local network interface to use. If not specified, OS will select
-an appropriate interface itself. If specified it can be one of the following
-(optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-IPv4 address of a local network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a local network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-Interface name, as defined by operating system.
-</p>
-</li>
-</ul></div>
-<div class="paragraph"><p>Finally, address specifies the remote address to connect to. It can be one of
-the following (optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-IPv4 address of a remote network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a remote network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-The DNS name of the remote box.
-</p>
-</li>
-</ul></div>
+<div class="paragraph"><p>Converts error number (errno) into a human-readable string. As opposed to
+<em>strerror(3)</em> this function handles nanomsg-specific errors in addition
+to standard system errors.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Return error message string.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -658,18 +603,16 @@ The DNS name of the remote box.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>sp_bind (s1, "tcp://*:5555");
-sp_connect (s2, "tcp://myserver:5555");</tt></pre>
+<pre><tt>rc = nn_init ();
+if (rc != 0)
+    printf ("nn_init failed: %s\n", nn_strerror (errno));</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_inproc.7.html">sp_inproc(7)</a>
-<a href="sp_ipc.7.html">sp_ipc(7)</a>
-<a href="sp_bind.3.html">sp_bind(3)</a>
-<a href="sp_connect.3.html">sp_connect(3)</a>
+<div class="paragraph"><p><a href="nn_errno.3.html">nn_errno(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -684,7 +627,7 @@ sp_connect (s2, "tcp://myserver:5555");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_survey(7)</title>
+<title>nn_tcp(7)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_survey(7) Manual Page
+nn_tcp(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_survey -
-   survey scalability protocol
+<p>nn_tcp -
+   TCP transport mechanism
 </p>
 </div>
 </div>
@@ -574,66 +574,102 @@ sp_survey(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/survey.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/tcp.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Allows to broadcast a survey to multiple locations and gather the responses.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-SP_SURVEYOR
-</dt>
-<dd>
+<div class="paragraph"><p>TCP transport allows for passing message over the network using simple reliable
+one-to-one connections. TCP is the most widely used transport protocol, it is
+virtually ubiquitous and thus the transport of choice for communication over
+the network.</p></div>
+<div class="paragraph"><p>When binding a TCP socket address of the form tcp://interface:port should be
+used. Port is the TCP port number to use. Interface is one of the following
+(optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
 <p>
-    Used to send the survey. The survey is delivered to all the connected
-    respondents. Once the query is sent, the socket can be used to receive
-    the responses. When the survey deadline expires, receive will return
-    ETIMEDOUT error.
+Asterisk character (*) meaning all local network interfaces.
 </p>
-</dd>
-<dt class="hdlist1">
-SP_RESPONDENT
-</dt>
-<dd>
+</li>
+<li>
 <p>
-    Use to respond to the survey. Survey is received using receive function,
-    response is sent using send function. This socket can be connected to
-    at most one peer.
+IPv4 address of a local network interface in numeric form (192.168.0.111).
 </p>
-</dd>
-</dl></div>
+</li>
+<li>
+<p>
+IPv6 address of a local network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+Interface name, as defined by operating system.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>When connecting a TCP socket address of the form tcp://interface;address:port
+should be used. Port is the TCP port number to use. Interface is optional and
+specifies which local network interface to use. If not specified, OS will select
+an appropriate interface itself. If specified it can be one of the following
+(optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+IPv4 address of a local network interface in numeric form (192.168.0.111).
+</p>
+</li>
+<li>
+<p>
+IPv6 address of a local network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+Interface name, as defined by operating system.
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Finally, address specifies the remote address to connect to. It can be one of
+the following (optionally placed within square brackets):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+IPv4 address of a remote network interface in numeric form (192.168.0.111).
+</p>
+</li>
+<li>
+<p>
+IPv6 address of a remote network interface in numeric form (::1).
+</p>
+</li>
+<li>
+<p>
+The DNS name of the remote box.
+</p>
+</li>
+</ul></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-SP_DEADLINE
-</dt>
-<dd>
-<p>
-    Specifies how long to wait for responses to the survey. Once the deadline
-    expires, receive function will return ETIMEDOUT error and all subsequent
-    responses to the survey will be silently dropped. The deadline is measured
-    in milliseconds. Option type is int. Default value is 1000 (1 second).
-</p>
-</dd>
-</dl></div>
 </div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>nn_bind (s1, "tcp://*:5555");
+nn_connect (s2, "tcp://myserver:5555");</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-<a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-<a href="sp_fanin.7.html">sp_fanin(7)</a>
-<a href="sp_fanout.7.html">sp_fanout(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
+<div class="paragraph"><p><a href="nn_inproc.7.html">nn_inproc(7)</a>
+<a href="nn_ipc.7.html">nn_ipc(7)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
+<a href="nn_connect.3.html">nn_connect(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -648,7 +684,7 @@ SP_DEADLINE
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

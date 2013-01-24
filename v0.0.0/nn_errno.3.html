@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_socket(3)</title>
+<title>nn_errno(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_socket(3) Manual Page
+nn_errno(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_socket -
-   create an SP socket
+<p>nn_errno -
+   retrieve the current errno
 </p>
 </div>
 </div>
@@ -574,103 +574,34 @@ sp_socket(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int sp_socket (int <em>domain</em>, int <em>protocol</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_errno (void);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Creates an SP socket with specified <em>domain</em> and <em>protocol</em>. Returns a file
-descriptor for the newly created socket.</p></div>
-<div class="paragraph"><p>Following domains are defined at the moment:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-<strong>AF_SP</strong>
-</dt>
-<dd>
-<p>
-Standard full-blown SP socket.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>AF_SP_RAW</strong>
-</dt>
-<dd>
-<p>
-Raw SP socket. Raw sockets omit the end-to-end functionality found in AF_SP
-sockets and thus can be used to implement intermediary devices in SP topologies.
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p><em>protocol</em> parameter defines the type of the socket, which in turn determines
-the exact semantics of the socket. Check manual pages for individual SP
-protocols to get the list of available socket types.</p></div>
-<div class="paragraph"><p>The newly created socket is initially not associated with any endpoints.
-In order to establish a message flow at least one endpoint has to be added
-to the socket using <a href="sp_bind.3.html">sp_bind(3)</a> or <a href="sp_connect.3.html">sp_connect(3)</a>
-function.</p></div>
-<div class="paragraph"><p>Note that <em>type</em> argument as found in standard <em>socket(2)</em> function is omitted
-from <em>sp_socket</em>. All the SP sockets are message-based and thus of
-<em>SOCK_SEQPACKET</em> type.</p></div>
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+<div class="paragraph"><p>On most systems, <em>errno</em> can be accessed directly and this function is not
+needed. However, on Windows, there are multiple implementations of the CRT
+library (single-threaded, multi-threaded, release, debug) and each of them
+has its own instance of <em>errno</em>. Thus, if nanomsg library and the application
+that uses it link with different versions of CRT library, they don&#8217;t share
+same instance of <em>errno</em>. Consequently, error codes set by nanomsg cannot be
+accessed by the application. To overcome this problem, application can use
+<em>nn_errno()</em> function to retrieve the nanomsg&#8217;s value of <em>errno</em>.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds file descriptor of the new socket is returned.
-Otherwise, negative number is returned and <em>errno</em> is set to to one of
-the values defined below.</p></div>
-<div class="paragraph"><p>Note that nanomsg file descriptors are distinct from operating system file
-descriptors. For example, it is possible to have system file descriptor 3 and
-nanomsg file descriptor 3, each pointing at a different object.</p></div>
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_errors">ERRORS</h2>
 <div class="sectionbody">
-<div class="dlist"><dl>
-<dt class="hdlist1">
-<strong>EFAULT</strong>
-</dt>
-<dd>
-<p>
-The library is not initialised.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EAFNOSUPPORT</strong>
-</dt>
-<dd>
-<p>
-Specified address family is not supported.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EINVAL</strong>
-</dt>
-<dd>
-<p>
-Unknown protocol.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EMFILE</strong>
-</dt>
-<dd>
-<p>
-The limit on the total number of open SP sockets has been reached.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETERM</strong>
-</dt>
-<dd>
-<p>
-The library is terminating.
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>No errors are defined.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -678,22 +609,16 @@ The library is terminating.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>int s = sp_socket (AF_SP, SP_PUB);
-assert (s &gt;= 0);</tt></pre>
+<pre><tt>rc = nn_init ();
+if (rc != 0)
+    printf ("nn_init failed with error code %d\n", nn_errno ());</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.3.html">sp_pubsub(3)</a>
-<a href="sp_reqrep.3.html">sp_reqrep(3)</a>
-<a href="sp_fanin.3.html">sp_fanin(3)</a>
-<a href="sp_fanout.3.html">sp_fanout(3)</a>
-<a href="sp_survey.3.html">sp_survey(3)</a>
-<a href="sp_bind.3.html">sp_bind(3)</a>
-<a href="sp_connect.3.html">sp_connect(3)</a>
-<a href="sp_close.3.html">sp_close(3)</a>
+<div class="paragraph"><p><a href="nn_strerror.3.html">nn_strerror(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -708,7 +633,7 @@ assert (s &gt;= 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

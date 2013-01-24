@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_ipc(7)</title>
+<title>nn_term(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_ipc(7) Manual Page
+nn_term(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_ipc -
-   inter-process transport mechanism
+<p>nn_term -
+   uninitialise the nanomsg library
 </p>
 </div>
 </div>
@@ -574,43 +574,46 @@ sp_ipc(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/ipc.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_term (void);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Inter-process transport allows for sending messages between processes within
-a single box. The implementation uses native IPC mechanism provided by the local
-operating system and the IPC addresses are thus OS-specific.</p></div>
-<div class="paragraph"><p>On POSIX-compliant systems, UNIX domain sockets are used and IPC addresses are
-file references. Note that both relative (ipc://test.ipc) and absolute
-(ipc:///tmp/test.ipc) paths may be used. Also note that access rights on the IPC
-files must be set in such a way that the appropriate applications can actually
-use them.</p></div>
-<div class="paragraph"><p>On Windows, named pipes are used for IPC. IPC address is an arbitrary
-case-insensitive string containing any character except for backslash.
-Internally, address ipc://test means that named pipe \\.\pipe\test will be used.</p></div>
+<div class="paragraph"><p>Uninitialises the nanomsg library. If the library was initialised multiple
+times, it is uninitialised only when <em>nn_term()</em> call is executed
+for each corresponding <a href="nn_init.3.html">nn_init(3)</a> call.</p></div>
+<div class="paragraph"><p>Calling <em>nn_term()</em> without prior call to <a href="nn_init.3.html">nn_init(3)</a> results in
+undefined behaviour.</p></div>
+<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg permits to call
+<em>nn_term()</em> while some of the sockets are still open. In such case <em>nn_term()</em>
+call blocks and waits while all the sockets are closed.</p></div>
+<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as
+<a href="nn_recv.3.html">nn_recv(3)</a>, it will be unblocked once <em>nn_term()</em> is called and
+ETERM error will be returned to the user. Similarly, any attempt to invoke
+a socket function other than <a href="nn_close.3.html">nn_close(3)</a> after <em>nn_term()</em> was
+called will result in ETERM error.</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
+<h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre><tt>sp_bind (s1, "ipc:///tmp/test.ipc");
-sp_connect (s2, "ipc:///tmp/test.ipc");</tt></pre>
-</div></div>
+<div class="paragraph"><p>Returns zero in case of success. Returns negative value in case of error and
+sets <em>errno</em> to to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_inproc.7.html">sp_inproc(7)</a>
-<a href="sp_tcp.7.html">sp_tcp(7)</a>
-<a href="sp_bind.3.html">sp_bind(3)</a>
-<a href="sp_connect.3.html">sp_connect(3)</a>
+<div class="paragraph"><p><a href="nn_init.3.html">nn_init(3)</a>
+<a href="nn_close.3.html">nn_close(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -625,7 +628,7 @@ sp_connect (s2, "ipc:///tmp/test.ipc");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

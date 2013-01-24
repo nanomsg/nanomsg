@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_strerror(3)</title>
+<title>nn_socket(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_strerror(3) Manual Page
+nn_socket(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_strerror -
-   convert an error number into human-readable string
+<p>nn_socket -
+   create an SP socket
 </p>
 </div>
 </div>
@@ -574,28 +574,104 @@ sp_strerror(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>const char *sp_strerror (int <em>errnum</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_socket (int <em>domain</em>, int <em>protocol</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Converts error number (errno) into a human-readable string. As opposed to
-<em>strerror(3)</em> this function handles nanomsg-specific errors in addition
-to standard system errors.</p></div>
+<div class="paragraph"><p>Creates an SP socket with specified <em>domain</em> and <em>protocol</em>. Returns a file
+descriptor for the newly created socket.</p></div>
+<div class="paragraph"><p>Following domains are defined at the moment:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>AF_SP</strong>
+</dt>
+<dd>
+<p>
+Standard full-blown SP socket.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>AF_SP_RAW</strong>
+</dt>
+<dd>
+<p>
+Raw SP socket. Raw sockets omit the end-to-end functionality found in AF_SP
+sockets and thus can be used to implement intermediary devices in SP topologies.
+</p>
+</dd>
+</dl></div>
+<div class="paragraph"><p><em>protocol</em> parameter defines the type of the socket, which in turn determines
+the exact semantics of the socket. Check manual pages for individual SP
+protocols to get the list of available socket types.</p></div>
+<div class="paragraph"><p>The newly created socket is initially not associated with any endpoints.
+In order to establish a message flow at least one endpoint has to be added
+to the socket using <a href="nn_bind.3.html">nn_bind(3)</a> or <a href="nn_connect.3.html">nn_connect(3)</a>
+function.</p></div>
+<div class="paragraph"><p>Also note that <em>type</em> argument as found in standard <em>socket(2)</em> function is
+omitted from <em>nn_socket</em>. All the SP sockets are message-based and thus of
+<em>SOCK_SEQPACKET</em> type.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Return error message string.</p></div>
+<div class="paragraph"><p>If the function succeeds file descriptor of the new socket is returned.
+Otherwise, negative number is returned and <em>errno</em> is set to to one of
+the values defined below.</p></div>
+<div class="paragraph"><p>Note that file descriptors returned by <em>nn_socket</em> function are not standard
+file descriptors and will exhibit undefined behaviour when used with system
+functions. Moreover, it may happen that a system file descriptor and file
+descriptor of an SP socket will incidentally collide (be equal).</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_errors">ERRORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>No errors are defined.</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAFNOSUPPORT</strong>
+</dt>
+<dd>
+<p>
+Specified address family is not supported.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+Unknown protocol.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EMFILE</strong>
+</dt>
+<dd>
+<p>
+The limit on the total number of open SP sockets has been reached.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -603,16 +679,22 @@ to standard system errors.</p></div>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>rc = sp_init ();
-if (rc != 0)
-    printf ("sp_init failed: %s\n", sp_strerror (errno));</tt></pre>
+<pre><tt>int s = nn_socket (AF_SP, NN_PUB);
+assert (s &gt;= 0);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_errno.3.html">sp_errno(3)</a>
+<div class="paragraph"><p><a href="nn_pubsub.3.html">nn_pubsub(3)</a>
+<a href="nn_reqrep.3.html">nn_reqrep(3)</a>
+<a href="nn_fanin.3.html">nn_fanin(3)</a>
+<a href="nn_fanout.3.html">nn_fanout(3)</a>
+<a href="nn_survey.3.html">nn_survey(3)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
+<a href="nn_connect.3.html">nn_connect(3)</a>
+<a href="nn_close.3.html">nn_close(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -627,7 +709,7 @@ if (rc != 0)
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

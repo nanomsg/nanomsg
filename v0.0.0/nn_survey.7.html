@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_sendmsg(3)</title>
+<title>nn_survey(7)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_sendmsg(3) Manual Page
+nn_survey(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_sendmsg -
-   send a message allocated by sp_allocmsg
+<p>nn_survey -
+   survey scalability protocol
 </p>
 </div>
 </div>
@@ -574,137 +574,66 @@ sp_sendmsg(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int sp_sendmsg (int <em>s</em>, void <em>*msg</em>, int <em>flags</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/survey.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The function will send a message containing the data from message <em>msg</em> to
-the socket <em>s</em>. The message must be allocated using <a href="sp_allocmsg.3.html">sp_allocmsg(3)</a>
-function.</p></div>
-<div class="paragraph"><p>To which of the peers will the message be sent to is determined by
-the particular socket type.</p></div>
-<div class="paragraph"><p>When the function succeeds, message pointer <em>msg</em> becomes invalid and should
-not be used any more or deallocated by the user. It will be deallocated
-automatically by the library.</p></div>
-<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="paragraph"><p>Allows to broadcast a survey to multiple locations and gather the responses.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>SP_DONTWAIT</strong>
+NN_SURVEYOR
 </dt>
 <dd>
 <p>
-Specifies that the operation should be performed in non-blocking mode. If the
-message cannot be sent straight away, the function will fail with <em>errno</em> set
-to EAGAIN.
+    Used to send the survey. The survey is delivered to all the connected
+    respondents. Once the query is sent, the socket can be used to receive
+    the responses. When the survey deadline expires, receive will return
+    ETIMEDOUT error.
+</p>
+</dd>
+<dt class="hdlist1">
+NN_RESPONDENT
+</dt>
+<dd>
+<p>
+    Use to respond to the survey. Survey is received using receive function,
+    response is sent using send function. This socket can be connected to
+    at most one peer.
 </p>
 </dd>
 </dl></div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
-negative number is returned and <em>errno</em> is set to to one of the values defined
-below.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EFAULT</strong>
+NN_DEADLINE
 </dt>
 <dd>
 <p>
-Either the library is not initialised or <em>msg</em> is not a valid message.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EBADF</strong>
-</dt>
-<dd>
-<p>
-The provided socket is invalid.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ENOTSUP</strong>
-</dt>
-<dd>
-<p>
-The operation is not supported by this socket type.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EFSM</strong>
-</dt>
-<dd>
-<p>
-The operation cannot be performed on this socket at the moment because socket is
-not in the appropriate state.  This error may occur with socket types that
-switch between several states.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EAGAIN</strong>
-</dt>
-<dd>
-<p>
-Non-blocking mode was requested and the message cannot be sent at the moment.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EINTR</strong>
-</dt>
-<dd>
-<p>
-The operation was interrupted by delivery of a signal before the message was
-sent.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETIMEDOUT</strong>
-</dt>
-<dd>
-<p>
-Individual socket types may define their own specific timeouts. If such timeout
-is hit this error will be returned.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETERM</strong>
-</dt>
-<dd>
-<p>
-The library is terminating.
+    Specifies how long to wait for responses to the survey. Once the deadline
+    expires, receive function will return ETIMEDOUT error and all subsequent
+    responses to the survey will be silently dropped. The deadline is measured
+    in milliseconds. Option type is int. Default value is 1000 (1 second).
 </p>
 </dd>
 </dl></div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre><tt>void *msg = sp_allocmsg (12, 0);
-memcpy (msg, "Hello world!", 12);
-sp_sendmsg (s, msg, 0);</tt></pre>
-</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_send.3.html">sp_send(3)</a>
-<a href="sp_allocmsg.3.html">sp_allocmsg(3)</a>
-<a href="sp_freemsg.3.html">sp_freemsg(3)</a>
-<a href="sp_recvmsg.3.html">sp_recvmsg(3)</a>
+<div class="paragraph"><p><a href="nn_pubsub.7.html">nn_pubsub(7)</a>
+<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
+<a href="nn_fanin.7.html">nn_fanin(7)</a>
+<a href="nn_fanout.7.html">nn_fanout(7)</a>
+<a href="nn_pair.7.html">nn_pair(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -719,7 +648,7 @@ sp_sendmsg (s, msg, 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_inproc(7)</title>
+<title>nn_allocmsg(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_inproc(7) Manual Page
+nn_allocmsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_inproc -
-   in-process transport mechanism
+<p>nn_allocmsg -
+   allocate a message
 </p>
 </div>
 </div>
@@ -574,24 +574,55 @@ sp_inproc(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/inproc.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>void *nn_allocmsg (size_t <em>size</em>, int <em>type</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>In-process transport allows to send messages between threads or modules inside a
-process. In-process address is an arbitrary case-sensitive string preceded by
-<em>inproc://</em> protocol specifier. All in-process addresses are visible from any
-module within the process. They are not visible from outside of the process.</p></div>
-<div class="paragraph"><p>The nature of in-process transport makes it easy to pass pointers between
-threads instead of actual data. This is, however, considered a bad application
-design and violates the scalable share-nothing architecture. If you do pass
-pointers among threads, synchronising thread access to shared data becomes
-your responsibility. Such design also prevents moving the thread into different
-process or machine once the need arises. As a rule of the thumb, don&#8217;t pass
-pointers among threads unless you know what you are doing.</p></div>
+<div class="paragraph"><p>Allocate a message of the specified <em>size</em> to be sent in zero-copy fashion.
+The content of the message is undefined after allocation and it should be filled
+in by the user. While <a href="nn_send.3.html">nn_send(3)</a> and <a href="nn_sendmsg.3.html">nn_sendmsg(3)</a> allow
+to send arbitrary buffers, buffers allocated using <em>nn_allocmsg()</em> can be more
+efficient for large messages as they allow for using zero-copy techniques.</p></div>
+<div class="paragraph"><p><em>type</em> parameter specifies type of allocation mechanism to use. Zero is the
+default one, however, individual transport mechanisms may define their
+own allocation mechanisms, such as allocating in shared memory or allocating
+a memory block pinned down to a physical memory address. Such allocation,
+when used with the transport that defines them, should be more efficient
+than the default allocation mechanism.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds pointer to newly allocated buffer is returned.
+Otherwise, NULL is returned and <em>errno</em> is set to to one of the values
+defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+Supplied allocation <em>type</em> is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOMEM</strong>
+</dt>
+<dd>
+<p>
+Not enough memory to allocate the message.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -599,18 +630,18 @@ pointers among threads unless you know what you are doing.</p></div>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>sp_bind (s1, "inproc://test");
-sp_connect (s2, "inproc://test);</tt></pre>
+<pre><tt>void *buf = nn_allocmsg (12, 0);
+memcpy (buf, "Hello world!", 12);
+nn_send (s, &amp;buf, NN_MSG, 0);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_ipc.7.html">sp_ipc(7)</a>
-<a href="sp_tcp.7.html">sp_tcp(7)</a>
-<a href="sp_bind.3.html">sp_bind(3)</a>
-<a href="sp_connect.3.html">sp_connect(3)</a>
+<div class="paragraph"><p><a href="nn_freemsg.3.html">nn_freemsg(3)</a>
+<a href="nn_send.3.html">nn_send(3)</a>
+<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -625,7 +656,7 @@ sp_connect (s2, "inproc://test);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

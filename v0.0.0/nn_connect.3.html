@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_reqrep(7)</title>
+<title>nn_connect(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_reqrep(7) Manual Page
+nn_connect(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_reqrep -
-   request/reply scalability protocol
+<p>nn_connect -
+   add a remote endpoint to the socket
 </p>
 </div>
 </div>
@@ -574,63 +574,128 @@ sp_reqrep(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/reprep.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_connect (int <em>s</em>, const char <em>*addr</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This protocol is used to distribute the workload among multiple stateless
-workers.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Adds a remote endpoint to the socket <em>s</em>. The library would then try to connect
+to the specified remote endpoint.</p></div>
+<div class="paragraph"><p>The <em>addr</em> argument consists of two parts as follows: <em>transport</em><tt>://</tt><em>address</em>.
+The <em>transport</em> specifies the underlying transport protocol to use. The meaning
+of the <em>address</em> part is specific to the underlying transport protocol.</p></div>
+<div class="paragraph"><p>For the list of available transport protocols check the list on
+<a href="nanomsg.7.html">nanomsg(7)</a> manual page.</p></div>
+<div class="paragraph"><p>Maximum length of the <em>addr</em> parameter is specified by <em>NN_SOCKADDR_MAX</em>
+defined in <em>&lt;nanomsg/nn.h&gt;</em> header file.</p></div>
+<div class="paragraph"><p>Note that nn_connect and <a href="nn_bind.3.html">nn_bind(3)</a> may be called multiple times
+on the same socket thus allowing the socket to communicate with multiple
+heterogeneous endpoints.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds positive endpoint ID is returned. Endpoint ID can be
+later used to remove the endpoint from the socket via <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
+function.</p></div>
+<div class="paragraph"><p>If the function fails negative value is returned and <em>errno</em> is set to to one of
+the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-SP_REQ
+<strong>EFAULT</strong>
 </dt>
 <dd>
 <p>
-    Used to implement the client application that sends requests and
-    receives replies.
+The library is not initialised.
 </p>
 </dd>
 <dt class="hdlist1">
-SP_REP
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-    Used to implement the stateless worker that receives requests and sends
-    replies.
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EMFILE</strong>
+</dt>
+<dd>
+<p>
+Maximum number of active endpoints was reached.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+The syntax of the supplied address is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENAMETOOLONG</strong>
+</dt>
+<dd>
+<p>
+The supplied address is too long.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EPROTONOSUPPORT</strong>
+</dt>
+<dd>
+<p>
+The requested transport protocol is not supported.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENODEV</strong>
+</dt>
+<dd>
+<p>
+Address specifies a nonexistent interface.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-SP_RESEND_IVL
-</dt>
-<dd>
-<p>
-    This option is defined on the full REQ socket. If reply is not received
-    in specified amount of milliseconds, the request will be automatically
-    resent. The type of this option is int. Default value is 60000 (1 minute).
-</p>
-</dd>
-</dl></div>
 </div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>s = nn_socket (AF_SP, NN_PUB);
+eid1 = nn_connect (s, "ipc:///tmp/test.ipc");
+eid2 = nn_connect (s, "tcp://server001:5560");</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_pubsub.7.html">sp_pubsub(7)</a>
-<a href="sp_fanin.7.html">sp_fanin(7)</a>
-<a href="sp_fanout.7.html">sp_fanout(7)</a>
-<a href="sp_survey.7.html">sp_survey(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
+<div class="paragraph"><p><a href="nn_inproc.7.html">nn_inproc(7)</a>
+<a href="nn_ipc.7.html">nn_ipc(7)</a>
+<a href="nn_tcp.7.html">nn_tcp(7)</a>
+<a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
+<a href="nn_shutdown.3.html">nn_shutdown(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -645,7 +710,7 @@ SP_RESEND_IVL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

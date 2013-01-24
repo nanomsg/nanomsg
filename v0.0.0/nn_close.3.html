@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_version(3)</title>
+<title>nn_close(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_version(3) Manual Page
+nn_close(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_version -
-   report the version of nanomsg library
+<p>nn_close -
+   close an SP socket
 </p>
 </div>
 </div>
@@ -574,28 +574,47 @@ sp_version(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>void sp_version (int *major, int *minor, int *patch);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_close (int <em>s</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This function allows applications to determine exact version of nanomsg library.
-Integers pointed to <em>major</em>, <em>minor</em> and <em>patch</em> are filled in by components
-of the nanomsg library version.</p></div>
+<div class="paragraph"><p>Closes the socket <em>s</em>. Any buffered inbound messages that were not yet received
+by the application will be discarded. The library will try to deliver any
+outstanding outbound messages for the time specified by <em>NN_LINGER</em> socket
+option.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>There is no return value.</p></div>
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_errors">ERRORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>No errors are defined.</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -603,16 +622,19 @@ of the nanomsg library version.</p></div>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>int major, minor, patch;
-sp_version (&amp;major, &amp;minor, &amp;patch);
-printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);</tt></pre>
+<pre><tt>int s = nn_socket (AF_SP, NN_PUB);
+assert (s &gt;= 0);
+int rc = nn_close (s);
+assert (rc == 0);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_setsockopt.3.html">nn_setsockopt(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
 <div class="sect1">
@@ -626,7 +648,7 @@ printf ("nanomsg version is %d.%d.%d\n", major, minor, patch);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

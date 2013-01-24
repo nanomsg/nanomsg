@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_allocmsg(3)</title>
+<title>nn_send(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_allocmsg(3) Manual Page
+nn_send(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_allocmsg -
-   allocate a message
+<p>nn_send -
+   send a message
 </p>
 </div>
 </div>
@@ -574,33 +574,42 @@ sp_allocmsg(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>void *sp_allocmsg (size_t <em>size</em>, int <em>type</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_send (int <em>s</em>, const void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Allocate a message of the specified <em>size</em> to be sent via
-<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a> function. The content of the message is undefined
-after allocation and is supposed to be filled in by the user. While
-<a href="sp_send.3.html">sp_send(3)</a> allows to send arbitrary buffer, buffers allocated using
-<em>sp_allocmsg()</em> may be more efficient for large messages as they allow for
-using zero-copy techniques.</p></div>
-<div class="paragraph"><p><em>type</em> parameter specifies type of allocation mechanism to use. Zero is the
-default one, however, individual transport mechanisms may define their
-own allocation mechanisms, such as allocating in shared memory or allocating
-a memory block pinned down to a physical memory address. Such allocation,
-when used with the transport that defines them, should be more efficient
-than the default allocation mechanism.</p></div>
+<div class="paragraph"><p>The function will send a message containing the data from buffer pointed to
+by <em>buf</em> parameter to the socket <em>s</em>. The message will be <em>len</em> bytes long.</p></div>
+<div class="paragraph"><p>Alternatively, to send a buffer allocated by <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a> function
+set the buf paramter to point to the pointer to the buffer and <em>len</em> parameter
+to <em>NN_MSG</em> constant. In this case the buffer will be deallocated by <em>nn_send</em>
+function. Trying to deallocate it afterwards will result in undefined behaviour.</p></div>
+<div class="paragraph"><p>To which of the peers will the message be sent to is determined by
+the particular socket type.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_DONTWAIT</strong>
+</dt>
+<dd>
+<p>
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be sent straight away, the function will fail with <em>errno</em> set
+to EAGAIN.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds pointer to newly allocated buffer is returned.
-Otherwise, NULL is returned and <em>errno</em> is set to to one of the values
-defined below.</p></div>
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -608,19 +617,71 @@ defined below.</p></div>
 <div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EINVAL</strong>
+<strong>EFAULT</strong>
 </dt>
 <dd>
 <p>
-Supplied allocation <em>type</em> is invalid.
+The library is not initialised.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>ENOMEM</strong>
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-Not enough memory to allocate the message.
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and the message cannot be sent at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+sent.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
@@ -631,18 +692,17 @@ Not enough memory to allocate the message.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>void *msg = sp_allocmsg (12, 0);
-memcpy (msg, "Hello world!", 12);
-sp_sendmsg (s, msg, 0);</tt></pre>
+<pre><tt>nbytes = nn_send (s, "ABC", 3, 0);
+assert (nbytes == 3);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_freemsg.3.html">sp_freemsg(3)</a>
-<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a>
-<a href="sp_recvmsg.3.html">sp_recvmsg(3)</a>
+<div class="paragraph"><p><a href="nn_recv.3.html">nn_recv(3)</a>
+<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
+<a href="nn_socket.3.html">nn_socket(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -657,7 +717,7 @@ sp_sendmsg (s, msg, 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

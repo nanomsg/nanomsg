@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_errno(3)</title>
+<title>nn_freemsg(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_errno(3) Manual Page
+nn_freemsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_errno -
-   retrieve the current errno
+<p>nn_freemsg -
+   deallocate a message
 </p>
 </div>
 </div>
@@ -574,34 +574,40 @@ sp_errno(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int sp_errno (void);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_freemsg (void <em>*msg</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
-<div class="paragraph"><p>On most systems, <em>errno</em> can be accessed directly and this function is not
-needed. However, on Windows, there are multiple implementations of the CRT
-library (single-threaded, multi-threaded, release, debug) and each of them
-has its own instance of <em>errno</em>. Thus, if nanomsg library and the application
-that uses it link with different versions of CRT library, they don&#8217;t share
-same instance of <em>errno</em>. Consequently, error codes set by nanomsg cannot be
-accessed by the application. To overcome this problem, application can use
-<em>sp_errno()</em> function to retrieve the nanomsg&#8217;s value of <em>errno</em>.</p></div>
+<div class="paragraph"><p>Deallocates a message allocated using <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a> function or
+received via <a href="nn_recv.3.html">nn_recv(3)</a> or <a href="nn_recvmsg.3.html">nn_recvmsg(3)</a> function.
+While <a href="nn_recv.3.html">nn_recv(3)</a> and <a href="nn_recvmsg.3.html">nn_recvmsg(3)</a> allow to receive data
+into arbitrary buffers, using library-allocated buffers can be more
+efficient for large messages as it allows for using zero-copy techniques.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_errors">ERRORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>No errors are defined.</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EFAULT</strong>
+</dt>
+<dd>
+<p>
+The message pointer is invalid.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -609,16 +615,18 @@ accessed by the application. To overcome this problem, application can use
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>rc = sp_init ();
-if (rc != 0)
-    printf ("sp_init failed with error code %d\n", sp_errno ());</tt></pre>
+<pre><tt>void *buf;
+nn_recv (s, &amp;buf, NN_MSG, 0);
+nn_freemsg (buf);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_strerror.3.html">sp_strerror(3)</a>
+<div class="paragraph"><p><a href="nn_allocmsg.3.html">nn_allocmsg(3)</a>
+<a href="nn_recv.3.html">nn_recv(3)</a>
+<a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -633,7 +641,7 @@ if (rc != 0)
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

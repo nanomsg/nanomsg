@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_freemsg(3)</title>
+<title>nn_recv(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_freemsg(3) Manual Page
+nn_recv(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_freemsg -
-   deallocate a message
+<p>nn_recv -
+   receive a message
 </p>
 </div>
 </div>
@@ -574,22 +574,41 @@ sp_freemsg(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int sp_freemsg (void <em>*msg</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_recv (int <em>s</em>, void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Deallocates a message allocated using <a href="sp_allocmsg.3.html">sp_allocmsg(3)</a> function or
-received using <a href="sp_recvmsg.3.html">sp_recvmsg(3)</a> function.</p></div>
+<div class="paragraph"><p>Receive a message from the socket <em>s</em> and store it in the buffer referenced by
+the <em>buf</em> argument. Any bytes exceeding the length specified by the <em>len</em>
+argument will be truncated.</p></div>
+<div class="paragraph"><p>Alternatively, <em>nanomsg</em> library can allocate the buffer for you. To do so,
+let the <em>buf</em> parameter point to void* variable to receive the buffer and set
+<em>len</em> parameter to <em>NN_MSG</em>. After successful completion user is responsible
+for deallocating the message using <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_DONTWAIT</strong>
+</dt>
+<dd>
+<p>
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
-returned and <em>errno</em> is set to to one of the values defined below.</p></div>
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -601,7 +620,67 @@ returned and <em>errno</em> is set to to one of the values defined below.</p></d
 </dt>
 <dd>
 <p>
-The message pointer is invalid.
+The library is not initialised.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+received.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
@@ -612,18 +691,17 @@ The message pointer is invalid.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>void *msg;
-sp_recvmsg (s, &amp;msg, 0);
-sp_freemsg (msg);</tt></pre>
+<pre><tt>char buf [100];
+nbytes = nn_recv (s, buf, sizeof (buf), 0);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_allocmsg.3.html">sp_allocmsg(3)</a>
-<a href="sp_sendmsg.3.html">sp_sendmsg(3)</a>
-<a href="sp_recvmsg.3.html">sp_recvmsg(3)</a>
+<div class="paragraph"><p><a href="nn_send.3.html">nn_send(3)</a>
+<a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
+<a href="nn_socket.3.html">nn_socket(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -638,7 +716,7 @@ sp_freemsg (msg);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

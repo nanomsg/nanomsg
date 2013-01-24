@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_pubsub(7)</title>
+<title>nn_setsockopt(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_pubsub(7) Manual Page
+nn_setsockopt(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_pubsub -
-   publish/subscribe scalability protocol
+<p>nn_setsockopt -
+   set a socket option
 </p>
 </div>
 </div>
@@ -574,72 +574,175 @@ sp_pubsub(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;sp/pubsub.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_setsockopt (int <em>s</em>, int <em>level</em>, int <em>option</em>, const void <em>*optval</em>, size_t <em>optvallen</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Broadcasts messages to multiple destinations.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Sets the value of the <em>option</em>. The <em>level</em> argument specifies the protocol
+level at which the option resides. For generic socket-level options use
+<em>NN_SOL_SOCKET</em> level. For socket-type-specific options use socket type
+for <em>level</em> argument (e.g. <em>NN_SUB</em>). For transport-specific options use ID of
+the transport as the <em>level</em> argument (e.g. <em>NN_TCP</em>).</p></div>
+<div class="paragraph"><p>The new value is pointed to by <em>optval</em> argument. Size of the option is
+specified by the <em>optvallen</em> argument.</p></div>
+<div class="paragraph"><p><em>&lt;nanomsg/nn.h&gt;</em> header defines generic socket-level options
+(<em>NN_SOL_SOCKET</em> level). The options are as follows:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-SP_PUB
+<strong>NN_LINGER</strong>
 </dt>
 <dd>
 <p>
-    This socket is used to distribute messages to multiple destinations.
-    Receive operation is not defined.
+    Specifies how long should the socket try to send pending outbound messages
+    after <em>nn_close()</em> have been called, in milliseconds. The type of the option
+    is int. Default value is 1000 (1 second).
 </p>
 </dd>
 <dt class="hdlist1">
-SP_SUB
+<strong>NN_SNDBUF</strong>
 </dt>
 <dd>
 <p>
-    Receives messages from the publisher. Only messages that the socket is
-    subscribed to are received. When the socket is created there are no
-    subscriptions and thus no messages will be received. Send operation is
-    not defined on this socket. The socket can be connected to at most one peer.
+    Size of the send buffer, in bytes. To prevent blocking for messages larger
+    than the buffer, exactly one message may be buffered in addition to the data
+    in the send buffer. The type of this option is int. Default value is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RCVBUF</strong>
+</dt>
+<dd>
+<p>
+    Size of the receive buffer, in bytes. To prevent blocking for messages
+    larger than the buffer, exactly one message may be buffered in addition
+    to the data in the receive buffer. The type of this option is int. Default
+    value is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_SNDTIMEO</strong>
+</dt>
+<dd>
+<p>
+    The timeout for send operation on the socket, in milliseconds. If message
+    cannot be sent within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RCVTIMEO</strong>
+</dt>
+<dd>
+<p>
+    The timeout for recv operation on the socket, in milliseconds. If message
+    cannot be received within the specified timeout, EAGAIN error is returned.
+    Value of -1 means infinite timeout. The type of the option is int.
+    Default value is -1.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RECONNECT_IVL</strong>
+</dt>
+<dd>
+<p>
+    For connection-based transports such as TCP, this option specifies how
+    long to wait, in milliseconds, when connection is broken before trying
+    to re-establish it. Note that actual reconnect interval may be randomised
+    to some extent to prevent severe reconnection storms. The type of the option
+    is int. Default value is 100 (0.1 second).
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RECONNECT_IVL_MAX</strong>
+</dt>
+<dd>
+<p>
+    This option is to be used only in addition to <em>NN_RECONNECT_IVL</em> option.
+    It specifies maximum reconnection interval. On each reconnect attempt,
+    the previous interval is doubled until <em>NN_RECONNECT_IVL_MAX</em> is reached.
+    Value of zero means that no exponential backoff is performed and reconnect
+    interval is based only on <em>NN_RECONNECT_IVL</em>. If <em>NN_RECONNECT_IVL_MAX</em> is
+    less than <em>NN_RECONNECT_IVL</em>, it is ignored. The type of the option is int.
+    Default value is 0.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-SP_SUBSCRIBE
+<strong>EFAULT</strong>
 </dt>
 <dd>
 <p>
-    Defined on full SUB socket. Subscribes for a particular topic. Type of the
-    option is string.
+The library is not initialised.
 </p>
 </dd>
 <dt class="hdlist1">
-SP_UNSUBSCRIBE
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-    Defined on full SUB socket. Unsubscribes from a particular topic. Type of
-    the option is string.
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOPROTOOPT</strong>
+</dt>
+<dd>
+<p>
+The option is unknown at the level indicated.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+The specified option value is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int linger = 1000;
+nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &amp;linger, sizeof (linger));
+nn_setsockopt (s, NN_SUB, NN_SUBSCRIBE, "ABC", 3);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_reqrep.7.html">sp_reqrep(7)</a>
-<a href="sp_fanin.7.html">sp_fanin(7)</a>
-<a href="sp_fanout.7.html">sp_fanout(7)</a>
-<a href="sp_survey.7.html">sp_survey(7)</a>
-<a href="sp_pair.7.html">sp_pair(7)</a>
+<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_getsockopt.3.html">nn_getsockopt(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -654,7 +757,7 @@ SP_UNSUBSCRIBE
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>sp_term(3)</title>
+<title>nn_fanin(7)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-sp_term(3) Manual Page
+nn_fanin(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>sp_term -
-   uninitialise the nanomsg library
+<p>nn_fanin -
+   fan-in (data aggregation) scalability protocol
 </p>
 </div>
 </div>
@@ -574,46 +574,52 @@ sp_term(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;sp/sp.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int sp_term (void);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/fanin.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Uninitialises the nanomsg library. If the library was initialised multiple
-times, it is uninitialised only when <em>sp_term()</em> call is executed
-for each corresponding <a href="sp_init.3.html">sp_init(3)</a> call.</p></div>
-<div class="paragraph"><p>Calling <em>sp_term()</em> without prior call to <a href="sp_init.3.html">sp_init(3)</a> results in
-undefined behaviour.</p></div>
-<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg permits to call
-<em>sp_term()</em> while some of the sockets are still open. In such case <em>sp_term()</em>
-call blocks and waits while all the sockets are closed.</p></div>
-<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as
-<a href="sp_recv.3.html">sp_recv(3)</a>, it will be unblocked once <em>sp_term()</em> is called and
-ETERM error will be returned to the user. Similarly, any attempt to invoke
-a socket function other than <a href="sp_close.3.html">sp_close(3)</a> after <em>sp_term()</em> was
-called will result in ETERM error.</p></div>
+<div class="paragraph"><p>Collects messages from multiple sources.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+NN_SOURCE
+</dt>
+<dd>
+<p>
+    Allows to send messages to the central sink. Receive operation is not
+    implemented on this socket type. This socket can be connected to at most
+    one peer.
+</p>
+</dd>
+<dt class="hdlist1">
+NN_SINK
+</dt>
+<dd>
+<p>
+    Receives the messages from multiple sources. Send operation is not defined
+    on this socket type.
+</p>
+</dd>
+</dl></div>
 </div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="paragraph"><p>No protocol-specific socket options are defined at the moment.</p></div>
 </div>
-<div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>Returns zero in case of success. Returns negative value in case of error and
-sets <em>errno</em> to to one of the values defined below.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>No errors are defined.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="sp_init.3.html">sp_init(3)</a>
-<a href="sp_close.3.html">sp_close(3)</a>
+<div class="paragraph"><p><a href="nn_pubsub.7.html">nn_pubsub(7)</a>
+<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
+<a href="nn_fanout.7.html">nn_fanout(7)</a>
+<a href="nn_survey.7.html">nn_survey(7)</a>
+<a href="nn_pair.7.html">nn_pair(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -628,7 +634,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-14 10:57:46 CET
+Last updated 2013-01-24 07:50:45 CET
 </div>
 </div>
 </body>

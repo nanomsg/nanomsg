@@ -52,7 +52,7 @@ int main ()
     alloc_assert (buf1);
     for (i = 0; i != 256; ++i)
         buf1 [i] = (unsigned char) i;
-    rc = nn_send (sc, buf1, NN_MSG, 0);
+    rc = nn_send (sc, &buf1, NN_MSG, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 256);
 
@@ -70,7 +70,7 @@ int main ()
     alloc_assert (buf1);
     for (i = 0; i != 256; ++i)
         buf1 [i] = (unsigned char) i;
-    iov.iov_base = buf1;
+    iov.iov_base = &buf1;
     iov.iov_len = NN_MSG;
     memset (&hdr, 0, sizeof (hdr));
     hdr.msg_iov = &iov;

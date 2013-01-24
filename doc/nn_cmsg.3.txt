@@ -3,7 +3,7 @@ nn_cmsg(3)
 
 NAME
 ----
-NN_CMSG_FIRSTHDR, NN_CMSG_NXTHDR - access control information
+cmsg - access control information
 
 
 SYNOPSIS

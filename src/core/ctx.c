@@ -35,6 +35,7 @@
 #include "../utils/cont.h"
 #include "../utils/cond.h"
 #include "../utils/random.h"
+#include "../utils/latmon.h"
 #include "../utils/glock.h"
 #include "../utils/chunk.h"
 #include "../utils/msg.h"
@@ -238,6 +239,10 @@ int nn_init (void)
     nn_ctx_add_socktype (nn_xrespondent_socktype);
     nn_ctx_add_socktype (nn_xsurveyor_socktype);
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_init ();
+#endif
+
     nn_glock_unlock ();
 
     return 0;
@@ -271,6 +276,10 @@ int nn_term (void)
         nn_cond_wait (&self.termcond, &self.sync);
     }
     nn_mutex_unlock (&self.sync);
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_term ();
+#endif
 
     /*  Final deallocation of the global resources. */
     nn_cond_term (&self.termcond);
@@ -479,6 +488,10 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 
     NN_BASIC_CHECKS;
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_SEND);
+#endif
+
     if (nn_slow (!buf && len)) {
         errno = EFAULT;
         return -1;
@@ -542,6 +555,10 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     }
     nn_msg_term (&msg);
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_RECV);
+#endif
+
     return (int) sz;
 }
 
@@ -555,6 +572,10 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     struct nn_chunk *ch;
 
     NN_BASIC_CHECKS;
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_SEND);
+#endif
 
     if (nn_slow (!msghdr)) {
         errno = EINVAL;
@@ -694,6 +715,10 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     }
 
     nn_msg_term (&msg);
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_RECV);
+#endif
 
     return (int) sz;
 }

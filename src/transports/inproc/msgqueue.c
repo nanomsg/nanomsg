@@ -23,6 +23,7 @@
 #include "msgqueue.h"
 
 #include "../../utils/alloc.h"
+#include "../../utils/latmon.h"
 #include "../../utils/fast.h"
 #include "../../utils/err.h"
 
@@ -119,6 +120,10 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
         self->out.pos = 0;
     }
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_SEND_TO_PEER);
+#endif
+
     nn_mutex_unlock (&self->sync);
 
     return result;
@@ -159,7 +164,11 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
     self->mem -= (nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body));
     if (!self->count)
         result |= NN_MSGQUEUE_RELEASE;
-    
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_RECV_FROM_PEER);
+#endif
+
     nn_mutex_unlock (&self->sync);
 
     return result;

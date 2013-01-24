@@ -27,6 +27,7 @@
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
+#include "../utils/latmon.h"
 
 int nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
@@ -99,6 +100,10 @@ int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg)
     int rc;
     struct nn_pipebase *pipebase;
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_SEND_TO_TRANSPORT);
+#endif
+
     pipebase = (struct nn_pipebase*) self;
     nn_assert (pipebase->outstate == NN_PIPEBASE_OUTSTATE_IDLE);
     pipebase->outstate = NN_PIPEBASE_OUTSTATE_SENDING;
@@ -117,6 +122,10 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_pipebase *pipebase;
+
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_RECV_FROM_TRANSPORT);
+#endif
 
     pipebase = (struct nn_pipebase*) self;
     nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_IDLE);

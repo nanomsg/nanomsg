@@ -80,6 +80,8 @@ add_library (nanomsg SHARED
     utils/glock.c
     utils/hash.h
     utils/hash.c
+    utils/latmon.h
+    utils/latmon.c
     utils/list.h
     utils/list.c
     utils/msg.h

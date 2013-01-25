@@ -156,7 +156,7 @@ endif ()
 #  Optional deugging/profiling tools to switch on.
 
 # add_definitions (-DNN_ALLOC_MONITOR)
-add_definitions (-DNN_LATENCY_MONITOR=1000)
+# add_definitions (-DNN_LATENCY_MONITOR=1000)
 
 #  Subdirectories to build.
 

@@ -39,10 +39,11 @@ struct nn_latmon {
 
 void nn_latmon_init (void)
 {
-    self.latencies = nn_alloc (NN_LATENCY_MONITOR * 6 * sizeof (uint64_t),
-        "latency table");
+    self.latencies = nn_alloc (NN_LATENCY_MONITOR * NN_LATMON_EVENT_COUNT *
+        sizeof (uint64_t), "latency table");
     alloc_assert (self.latencies);
-    memset (self.latencies, 0, NN_LATENCY_MONITOR * 6 * sizeof (uint64_t));
+    memset (self.latencies, 0, NN_LATENCY_MONITOR * NN_LATMON_EVENT_COUNT *
+        sizeof (uint64_t));
     self.pos = 0;
     self.event = 0;
 }
@@ -59,10 +60,10 @@ void nn_latmon_term (void)
     errno_assert (f);
     min = self.latencies [0];
     for (i = 0; i != NN_LATENCY_MONITOR; ++i) {
-        for (j = 0; j != 6; ++j) {
-            fprintf (f, "%llu",
-                (long long unsigned int) self.latencies [i * 6 + j] - min);
-            if (j != 5)
+        for (j = 0; j != NN_LATMON_EVENT_COUNT; ++j) {
+            fprintf (f, "%llu", (long long unsigned int) self.latencies
+                [i * NN_LATMON_EVENT_COUNT + j] - min);
+            if (j != NN_LATMON_EVENT_COUNT - 1)
                 fprintf (f, ",");
             else
                 fprintf (f, "\n");
@@ -76,8 +77,7 @@ void nn_latmon_term (void)
 void nn_latmon_measure (int event)
 {
     /*  Make sure that no event is skipped. */
-//    nn_assert (event == self.event);
-self.event = event;
+    nn_assert (event == self.event);
 
     /*  Store the current time. */
     self.latencies [self.pos * NN_LATMON_EVENT_COUNT + event] =

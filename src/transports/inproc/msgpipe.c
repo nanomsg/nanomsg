@@ -28,6 +28,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
+#include "../../utils/latmon.h"
 #include "../../utils/msg.h"
 
 #include <stddef.h>
@@ -154,8 +155,12 @@ static int nn_msgpipe_send0 (struct nn_pipebase *self, struct nn_msg *msg)
     rc = nn_msgqueue_send (&msgpipe->queues [0], msg);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc & NN_MSGQUEUE_SIGNAL)
+    if (rc & NN_MSGQUEUE_SIGNAL) {
+#if defined NN_LATENCY_MONITOR
+        nn_latmon_measure (NN_LATMON_EVENT_POST);
+#endif
         nn_event_signal (&msgpipe->inevents [1]);
+    }
     
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_sent (self);
@@ -190,8 +195,12 @@ static int nn_msgpipe_send1 (struct nn_pipebase *self, struct nn_msg *msg)
     rc = nn_msgqueue_send (&msgpipe->queues [1], msg);
     errnum_assert (rc >= 0, -rc);
 
-    if (rc & NN_MSGQUEUE_SIGNAL)
+    if (rc & NN_MSGQUEUE_SIGNAL) {
+#if defined NN_LATENCY_MONITOR
+        nn_latmon_measure (NN_LATMON_EVENT_POST);
+#endif
         nn_event_signal (&msgpipe->inevents [0]);
+    }
 
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_sent (self);
@@ -222,6 +231,9 @@ static void nn_msgpipe_inevent0 (const struct nn_cp_sink **self,
 {
     struct nn_msgpipe *msgpipe;
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_EVENT_EXIT);
+#endif
     msgpipe = nn_cont (event, struct nn_msgpipe, inevents [0]);
     nn_pipebase_received (&msgpipe->pipes [0]);
 }
@@ -231,6 +243,9 @@ static void nn_msgpipe_inevent1 (const struct nn_cp_sink **self,
 {
     struct nn_msgpipe *msgpipe;
 
+#if defined NN_LATENCY_MONITOR
+    nn_latmon_measure (NN_LATMON_EVENT_EXIT);
+#endif
     msgpipe = nn_cont (event, struct nn_msgpipe, inevents [1]);
     nn_pipebase_received (&msgpipe->pipes [1]);
 }

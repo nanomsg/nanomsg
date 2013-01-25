@@ -28,6 +28,7 @@
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
+#include "../utils/latmon.h"
 #include "../utils/msg.h"
 
 #define NN_SOCK_EVENT_IN 1
@@ -461,6 +462,9 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EAGAIN;
         }
         errnum_assert (rc == 0, rc);
+#if defined NN_LATENCY_MONITOR
+        nn_latmon_measure (NN_LATMON_COND_EXIT);
+#endif
     }  
 }
 
@@ -511,8 +515,12 @@ void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe)
     sockbase = (struct nn_sockbase*) self;
     rc = sockbase->vfptr->in (sockbase, pipe);
     errnum_assert (rc >= 0, -rc);
-    if (rc == 1)
+    if (rc == 1) {
+#if defined NN_LATENCY_MONITOR
+        nn_latmon_measure (NN_LATMON_COND_POST);
+#endif
         nn_cond_post (&sockbase->cond);
+    }
 }
 
 void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)

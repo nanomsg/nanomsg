@@ -76,6 +76,8 @@ add_library (nanomsg SHARED
     utils/excl.h
     utils/excl.c
     utils/fast.h
+    utils/fq.h
+    utils/fq.c
     utils/glock.h
     utils/glock.c
     utils/hash.h

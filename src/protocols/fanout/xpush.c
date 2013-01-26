@@ -122,9 +122,6 @@ static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     struct nn_xpush_data *data;
 
     data = nn_pipe_getdata (pipe);
-
-    /*  TODO: If pipe is in inbound pipe list, remove it. */
-
     nn_free (data);
 }
 

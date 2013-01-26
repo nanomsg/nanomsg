@@ -28,24 +28,16 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/alloc.h"
+#include "../../utils/fq.h"
 
 struct nn_xsink_data {
-    struct nn_pipe *pipe;
-    struct nn_list_item item;
+    struct nn_fq_data fq;
 };
 
 struct nn_xsink {
-
-    /*  The generic socket base class. */
     struct nn_sockbase sockbase;
-
-    /*  List of pipes that we can get messages from. */
-    struct nn_list pipes;
-
-    /*  Next pipe to receive from. */
-    struct nn_xsink_data *current;
+    struct nn_fq fq;
 };
 
 /*  Private functions. */
@@ -86,13 +78,12 @@ static void nn_xsink_init (struct nn_xsink *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
-    nn_list_init (&self->pipes);
-    self->current = NULL;
+    nn_fq_init (&self->fq);
 }
 
 static void nn_xsink_term (struct nn_xsink *self)
 {
-    nn_list_term (&self->pipes);
+    nn_fq_term (&self->fq);
 }
 
 void nn_xsink_destroy (struct nn_sockbase *self)
@@ -107,24 +98,26 @@ void nn_xsink_destroy (struct nn_sockbase *self)
 
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xsink *xsink;
     struct nn_xsink_data *data;
 
+    xsink = nn_cont (self, struct nn_xsink, sockbase);
     data = nn_alloc (sizeof (struct nn_xsink_data), "pipe data (sink)");
     alloc_assert (data);
-    data->pipe = pipe;
     nn_pipe_setdata (pipe, data);
+    nn_fq_add (&xsink->fq, pipe, &data->fq);
 
     return 0;
 }
 
 static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xsink *xsink;
     struct nn_xsink_data *data;
 
+    xsink = nn_cont (self, struct nn_xsink, sockbase);
     data = nn_pipe_getdata (pipe);
-
-    /*  TODO: If pipe is in inbound pipe list, remove it. */
-
+    nn_fq_rm (&xsink->fq, pipe, &data->fq);
     nn_free (data);
 }
 
@@ -132,15 +125,10 @@ static int nn_xsink_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsink *xsink;
     struct nn_xsink_data *data;
-    int result;
 
     xsink = nn_cont (self, struct nn_xsink, sockbase);
     data = nn_pipe_getdata (pipe);
-    result = nn_list_empty (&xsink->pipes) ? 1 : 0;
-    if (result)
-        xsink->current = data;
-    nn_list_insert (&xsink->pipes, &data->item, nn_list_end (&xsink->pipes));
-    return result;
+    return nn_fq_in (&xsink->fq, pipe, &data->fq);
 }
 
 static int nn_xsink_out (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -157,30 +145,7 @@ static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg)
 
 static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
-    struct nn_xsink *xsink;
-    struct nn_list_item *it;
-
-    xsink = nn_cont (self, struct nn_xsink, sockbase);
-
-    /*  Current is NULL only when there are no avialable inbound pipes. */
-    if (nn_slow (!xsink->current))
-        return -EAGAIN;
-
-    /*  Get the messsage. */
-    rc = nn_pipe_recv (xsink->current->pipe, msg);
-    errnum_assert (rc >= 0, -rc);
-
-    /*  Move the current pointer to next pipe. */
-    if (rc & NN_PIPE_RELEASE)
-        it = nn_list_erase (&xsink->pipes, &xsink->current->item);
-    else
-        it = nn_list_next (&xsink->pipes, &xsink->current->item);
-    if (!it)
-        it = nn_list_begin (&xsink->pipes);
-    xsink->current = nn_cont (it, struct nn_xsink_data, item);
-
-    return 0;
+    return nn_fq_recv (&nn_cont (self, struct nn_xsink, sockbase)->fq, msg);
 }
 
 static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,

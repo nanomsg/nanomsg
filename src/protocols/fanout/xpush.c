@@ -132,7 +132,6 @@ static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xpush *xpush;
     struct nn_xpush_data *data;
-    int result;
 
     xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);

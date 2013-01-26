@@ -28,24 +28,16 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/alloc.h"
+#include "../../utils/lb.h"
 
 struct nn_xpush_data {
-    struct nn_pipe *pipe;
-    struct nn_list_item item;
+    struct nn_lb_data lb;
 };
 
 struct nn_xpush {
-
-    /*  The generic socket base class. */
     struct nn_sockbase sockbase;
-
-    /*  List of pipes that we can get messages from. */
-    struct nn_list pipes;
-
-    /*  Next pipe to receive from. */
-    struct nn_xpush_data *current;
+    struct nn_lb lb;
 };
 
 /*  Private functions. */
@@ -86,13 +78,12 @@ static void nn_xpush_init (struct nn_xpush *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
-    nn_list_init (&self->pipes);
-    self->current = NULL;
+    nn_lb_init (&self->lb);
 }
 
 static void nn_xpush_term (struct nn_xpush *self)
 {
-    nn_list_term (&self->pipes);
+    nn_lb_term (&self->lb);
 }
 
 void nn_xpush_destroy (struct nn_sockbase *self)
@@ -107,21 +98,26 @@ void nn_xpush_destroy (struct nn_sockbase *self)
 
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xpush *xpush;
     struct nn_xpush_data *data;
 
+    xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_alloc (sizeof (struct nn_xpush_data), "pipe data (push)");
     alloc_assert (data);
-    data->pipe = pipe;
     nn_pipe_setdata (pipe, data);
+    nn_lb_add (&xpush->lb, pipe, &data->lb);
 
     return 0;
 }
 
 static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xpush *xpush;
     struct nn_xpush_data *data;
 
+    xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);
+    nn_lb_rm (&xpush->lb, pipe, &data->lb);
     nn_free (data);
 }
 
@@ -140,40 +136,12 @@ static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);
-    result = nn_list_empty (&xpush->pipes) ? 1 : 0;
-    if (result)
-        xpush->current = data;
-    nn_list_insert (&xpush->pipes, &data->item, nn_list_end (&xpush->pipes));
-    return result;
+    return nn_lb_out (&xpush->lb, pipe, &data->lb);
 }
 
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
-    struct nn_xpush *xpush;
-    struct nn_list_item *it;
-
-    xpush = nn_cont (self, struct nn_xpush, sockbase);
-
-    /*  Current is NULL only when there are no avialable outbound pipes. */
-    if (nn_slow (!xpush->current))
-        return -EAGAIN;
-
-    /*  Send the messsage. */
-    rc = nn_pipe_send (xpush->current->pipe, msg);
-    errnum_assert (rc >= 0, -rc);
-
-    /*  Move the current pointer to next pipe. */
-    if (rc & NN_PIPE_RELEASE)
-        it = nn_list_erase (&xpush->pipes, &xpush->current->item);
-    else
-        it = nn_list_next (&xpush->pipes, &xpush->current->item);
-    if (!it)
-        it = nn_list_begin (&xpush->pipes);
-    xpush->current = nn_cont (it, struct nn_xpush_data, item);
-
-    return 0;
-
+    return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb, msg);
 }
 
 static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg)

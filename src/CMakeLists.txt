@@ -82,6 +82,8 @@ add_library (nanomsg SHARED
     utils/hash.c
     utils/latmon.h
     utils/latmon.c
+    utils/lb.h
+    utils/lb.c
     utils/list.h
     utils/list.c
     utils/msg.h

@@ -29,20 +29,28 @@
 
 /*  Prioritised list of pipes. */
 
+#define NN_PRIOLIST_SLOTS 16
+
 struct nn_priolist_data {
     struct nn_pipe *pipe;
+    int priority;
     struct nn_list_item item;
 };
 
-struct nn_priolist {
+struct nn_priolist_slot {
     struct nn_list pipes;
     struct nn_priolist_data *current;
+};
+
+struct nn_priolist {
+    struct nn_priolist_slot slots [NN_PRIOLIST_SLOTS];
+    int current;
 };
 
 void nn_priolist_init (struct nn_priolist *self);
 void nn_priolist_term (struct nn_priolist *self);
 void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
-    struct nn_priolist_data *data);
+    struct nn_priolist_data *data, int priority);
 void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data);
 int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,

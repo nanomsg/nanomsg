@@ -47,4 +47,5 @@ add_libnanomsg_test (shutdown)
 add_libnanomsg_test (timeo)
 add_libnanomsg_test (iovec)
 add_libnanomsg_test (msg)
+add_libnanomsg_test (prio)
 

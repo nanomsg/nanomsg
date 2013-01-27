@@ -37,9 +37,9 @@ void nn_fq_term (struct nn_fq *self)
 }
 
 void nn_fq_add (struct nn_fq *self, struct nn_pipe *pipe,
-    struct nn_fq_data *data)
+    struct nn_fq_data *data, int priority)
 {
-    nn_priolist_add (&self->priolist, pipe, &data->priolist);
+    nn_priolist_add (&self->priolist, pipe, &data->priolist, priority);
 }
 
 void nn_fq_rm (struct nn_fq *self, struct nn_pipe *pipe,

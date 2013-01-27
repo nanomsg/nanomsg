@@ -41,7 +41,7 @@ struct nn_fq {
 void nn_fq_init (struct nn_fq *self);
 void nn_fq_term (struct nn_fq *self);
 void nn_fq_add (struct nn_fq *self, struct nn_pipe *pipe,
-    struct nn_fq_data *data);
+    struct nn_fq_data *data, int priority);
 void nn_fq_rm (struct nn_fq *self, struct nn_pipe *pipe,
     struct nn_fq_data *data);
 int nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,

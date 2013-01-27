@@ -105,7 +105,7 @@ static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xsink_data), "pipe data (sink)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_fq_add (&xsink->fq, pipe, &data->fq);
+    nn_fq_add (&xsink->fq, pipe, &data->fq, self->rcvprio);
 
     return 0;
 }

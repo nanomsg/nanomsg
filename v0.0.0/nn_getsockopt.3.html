@@ -600,8 +600,9 @@ the option.</p></div>
 <dd>
 <p>
     Specifies how long should the socket try to send pending outbound messages
-    after <em>nn_close()</em> have been called, in milliseconds. The type of the option
-    is int. Default value is 1000 (1 second).
+    after <em>nn_close()</em> have been called, in milliseconds. Nagative value means
+    infinite linger. The type of the option is int. Default value
+    is 1000 (1 second).
 </p>
 </dd>
 <dt class="hdlist1">
@@ -632,7 +633,7 @@ the option.</p></div>
 <p>
     The timeout for send operation on the socket, in milliseconds. If message
     cannot be sent within the specified timeout, EAGAIN error is returned.
-    Value of -1 means infinite timeout. The type of the option is int.
+    Negative value means infinite timeout. The type of the option is int.
     Default value is -1.
 </p>
 </dd>
@@ -643,7 +644,7 @@ the option.</p></div>
 <p>
     The timeout for recv operation on the socket, in milliseconds. If message
     cannot be received within the specified timeout, EAGAIN error is returned.
-    Value of -1 means infinite timeout. The type of the option is int.
+    Negative value means infinite timeout. The type of the option is int.
     Default value is -1.
 </p>
 </dd>
@@ -671,6 +672,30 @@ the option.</p></div>
     interval is based only on <em>NN_RECONNECT_IVL</em>. If <em>NN_RECONNECT_IVL_MAX</em> is
     less than <em>NN_RECONNECT_IVL</em>, it is ignored. The type of the option is int.
     Default value is 0.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_SNDPRIO</strong>
+</dt>
+<dd>
+<p>
+    Retrieves outbound priority currently set on the socket. This
+    option has no effect on socket types that send messages to all the peers.
+    However, if the socket type sends each message to a single peer
+    (or a limited set of peers), peers with high priority take precendence
+    over peers with low priority. The type of the option is int. Highest
+    priority is 1, lowest priority is 16. Default value is 8.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RCVPRIO</strong>
+</dt>
+<dd>
+<p>
+    Retrieves inbound priority currently set on the socket. Peers with high
+    priority take precendence over peers with low priority. The type of
+    the option is int. Highest priority is 1, lowest priority is 16.
+    Default value is 8.
 </p>
 </dd>
 </dl></div>
@@ -752,7 +777,7 @@ nn_getsockopt (s, NN_SOL_SOCKET, NN_LINGER, &amp;linger, &amp;sz);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-24 07:50:45 CET
+Last updated 2013-01-27 07:58:01 CET
 </div>
 </div>
 </body>

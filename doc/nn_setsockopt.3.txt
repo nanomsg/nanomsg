@@ -29,8 +29,9 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
 
 *NN_LINGER*::
     Specifies how long should the socket try to send pending outbound messages
-    after _nn_close()_ have been called, in milliseconds. The type of the option
-    is int. Default value is 1000 (1 second).
+    after _nn_close()_ have been called, in milliseconds. Nagative value means
+    infinite linger. The type of the option is int. Default value
+    is 1000 (1 second).
 *NN_SNDBUF*::
     Size of the send buffer, in bytes. To prevent blocking for messages larger
     than the buffer, exactly one message may be buffered in addition to the data

@@ -78,7 +78,6 @@ static void nn_xreq_destroy (struct nn_sockbase *self)
 
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
 
@@ -86,10 +85,8 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    rc = nn_lb_add (&xreq->lb, pipe, &data->lb);
-    errnum_assert (rc == 0, -rc);
-    rc = nn_fq_add (&xreq->fq, pipe, &data->fq);
-    errnum_assert (rc == 0, -rc);
+    nn_lb_add (&xreq->lb, pipe, &data->lb);
+    nn_fq_add (&xreq->fq, pipe, &data->fq);
     return 0;
 }
 

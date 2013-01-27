@@ -20,31 +20,34 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_LB_INCLUDED
-#define NN_LB_INCLUDED
+#ifndef NN_PRIOLIST_INCLUDED
+#define NN_PRIOLIST_INCLUDED
 
 #include "../protocol.h"
 
-#include "priolist.h"
+#include "list.h"
 
-/*  A load balancer. Round-robins messages to a set of pipes. */
+/*  Prioritised list of pipes. */
 
-struct nn_lb_data {
-    struct nn_priolist_data priolist;
+struct nn_priolist_data {
+    struct nn_pipe *pipe;
+    struct nn_list_item item;
 };
 
-struct nn_lb {
-    struct nn_priolist priolist;
+struct nn_priolist {
+    struct nn_list pipes;
+    struct nn_priolist_data *current;
 };
 
-void nn_lb_init (struct nn_lb *self);
-void nn_lb_term (struct nn_lb *self);
-void nn_lb_add (struct nn_lb *self, struct nn_pipe *pipe,
-    struct nn_lb_data *data);
-void nn_lb_rm (struct nn_lb *self, struct nn_pipe *pipe,
-    struct nn_lb_data *data);
-int nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
-    struct nn_lb_data *data);
-int nn_lb_send (struct nn_lb *self, struct nn_msg *msg);
+void nn_priolist_init (struct nn_priolist *self);
+void nn_priolist_term (struct nn_priolist *self);
+void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
+    struct nn_priolist_data *data);
+void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
+    struct nn_priolist_data *data);
+int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
+    struct nn_priolist_data *data);
+struct nn_pipe *nn_priolist_getpipe (struct nn_priolist *self);
+void nn_priolist_advance (struct nn_priolist *self, int release);
 
 #endif

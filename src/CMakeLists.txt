@@ -97,6 +97,8 @@ add_library (nanomsg SHARED
     utils/poller_epoll.inc
     utils/poller_kqueue.inc
     utils/poller_poll.inc
+    utils/priolist.h
+    utils/priolist.c
     utils/queue.h
     utils/queue.c
     utils/random.h

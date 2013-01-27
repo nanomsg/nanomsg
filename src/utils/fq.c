@@ -28,61 +28,48 @@
 
 void nn_fq_init (struct nn_fq *self)
 {
-    nn_list_init (&self->pipes);
-    self->current = NULL;
+    nn_priolist_init (&self->priolist);
 }
 
 void nn_fq_term (struct nn_fq *self)
 {
-    nn_list_term (&self->pipes);
+    nn_priolist_term (&self->priolist);
 }
 
-int nn_fq_add (struct nn_fq *self, struct nn_pipe *pipe,
+void nn_fq_add (struct nn_fq *self, struct nn_pipe *pipe,
     struct nn_fq_data *data)
 {
-    data->pipe = pipe;
-    return 0;
+    nn_priolist_add (&self->priolist, pipe, &data->priolist);
 }
 
 void nn_fq_rm (struct nn_fq *self, struct nn_pipe *pipe,
     struct nn_fq_data *data)
 {
-    /*  TODO: Shouldn't we actually remove the pipe from the list? */
+    nn_priolist_rm (&self->priolist, pipe, &data->priolist);
 }
 
 int nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,
     struct nn_fq_data *data)
 {
-    int empty;
-
-    empty = nn_list_empty (&self->pipes) ? 1 : 0;
-    if (empty)
-        self->current = data;
-    nn_list_insert (&self->pipes, &data->item, nn_list_end (&self->pipes));
-    return empty;
+    return nn_priolist_activate (&self->priolist, pipe, &data->priolist);
 }
 
 int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg)
 {
     int rc;
-    struct nn_list_item *it;
+    struct nn_pipe *pipe;
 
-    /*  Current is NULL only when there are no avialable outbound pipes. */
-    if (nn_slow (!self->current))
+    /*  Pipe is NULL only when there are no avialable pipes. */
+    pipe = nn_priolist_getpipe (&self->priolist);
+    if (nn_slow (!pipe))
         return -EAGAIN;
 
     /*  Receive the messsage. */
-    rc = nn_pipe_recv (self->current->pipe, msg);
+    rc = nn_pipe_recv (pipe, msg);
     errnum_assert (rc >= 0, -rc);
 
-    /*  Move the current pointer to next pipe. */
-    if (rc & NN_PIPE_RELEASE)
-        it = nn_list_erase (&self->pipes, &self->current->item);
-    else
-        it = nn_list_next (&self->pipes, &self->current->item);
-    if (!it)
-        it = nn_list_begin (&self->pipes);
-    self->current = nn_cont (it, struct nn_fq_data, item);
+    /*  Move to the next pipe. */
+    nn_priolist_advance (&self->priolist, rc & NN_PIPE_RELEASE);
 
     return rc & ~NN_PIPE_RELEASE;
 }

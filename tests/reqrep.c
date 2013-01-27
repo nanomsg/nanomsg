@@ -28,73 +28,20 @@
 int main ()
 {
     int rc;
-    int rep;
+    int rep1;
+    int rep2;
     int req1;
     int req2;
     int resend_ivl;
     char buf [7];
 
-    /*  Test req/rep with raw socket types. */
-
-#if 0
-    rc = nn_init ();
-    errno_assert (rc == 0);
-    rep = nn_socket (AF_NN_RAW, NN_REP);
-    errno_assert (rep != -1);
-    rc = nn_bind (rep, "inproc://a");
-    errno_assert (rc >= 0);
-    req1 = nn_socket (AF_NN_RAW, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_connect (req1, "inproc://a");
-    errno_assert (rc >= 0);
-    req2 = nn_socket (AF_NN_RAW, NN_REQ);
-    errno_assert (req2 != -1);
-    rc = nn_connect (req2, "inproc://a");
-    errno_assert (rc >= 0);
-
-    rc = nn_send (req2, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 7);
-    rc = nn_send (rep, buf, 7, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 7);
-    rc = nn_recv (req2, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 7);
-    rc = nn_send (rep, buf, 7, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 7);
-    rc = nn_recv (req1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-
-    rc = nn_close (rep);
-    errno_assert (rc == 0);
-    rc = nn_close (req1);
-    errno_assert (rc == 0);    
-    rc = nn_close (req2);
-    errno_assert (rc == 0);
-    rc = nn_term ();
-    errno_assert (rc == 0);
-#endif
-
     /*  Test req/rep with full socket types. */
 
     rc = nn_init ();
     errno_assert (rc == 0);
-    rep = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep != -1);
-    rc = nn_bind (rep, "inproc://a");
+    rep1 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep1 != -1);
+    rc = nn_bind (rep1, "inproc://a");
     errno_assert (rc >= 0);
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
@@ -105,18 +52,20 @@ int main ()
     rc = nn_connect (req2, "inproc://a");
     errno_assert (rc >= 0);
 
-    rc = nn_send (rep, "ABC", 3, 0);
+    /*  Check invalid sequence of sends and recvs. */
+    rc = nn_send (rep1, "ABC", 3, 0);
     nn_assert (rc == -1 && nn_errno () == EFSM);
     rc = nn_recv (req1, buf, sizeof (buf), 0);
     nn_assert (rc == -1 && nn_errno () == EFSM);
 
+    /*  Check fair queueing the requests. */
     rc = nn_send (req2, "ABC", 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_send (rep, buf, 3, 0);
+    rc = nn_send (rep1, buf, 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
     rc = nn_recv (req2, buf, sizeof (buf), 0);
@@ -126,17 +75,17 @@ int main ()
     rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_send (rep, buf, 3, 0);
+    rc = nn_send (rep1, buf, 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
     rc = nn_recv (req1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
 
-    rc = nn_close (rep);
+    rc = nn_close (rep1);
     errno_assert (rc == 0);
     rc = nn_close (req1);
     errno_assert (rc == 0);    
@@ -145,13 +94,63 @@ int main ()
     rc = nn_term ();
     errno_assert (rc == 0);
 
-    /*  Test re-sending of the request. */
-
+    /*  Check load-balancing of requests. */
     rc = nn_init ();
     errno_assert (rc == 0);
-    rep = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep != -1);
-    rc = nn_bind (rep, "inproc://a");
+    req1 = nn_socket (AF_SP, NN_REQ);
+    errno_assert (req1 != -1);
+    rc = nn_bind (req1, "inproc://a");
+    errno_assert (rc >= 0);
+    rep1 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep1 != -1);
+    rc = nn_connect (rep1, "inproc://a");
+    errno_assert (rc >= 0);
+    rep2 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep2 != -1);
+    rc = nn_connect (rep2, "inproc://a");
+    errno_assert (rc >= 0);
+
+    rc = nn_send (req1, "ABC", 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_send (rep1, buf, 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (req1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+
+    rc = nn_send (req1, "ABC", 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (rep2, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_send (rep2, buf, 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (req1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+
+    rc = nn_close (rep2);
+    errno_assert (rc == 0);
+    rc = nn_close (rep1);
+    errno_assert (rc == 0);    
+    rc = nn_close (req1);
+    errno_assert (rc == 0);
+    rc = nn_term ();
+    errno_assert (rc == 0);
+
+    /*  Test re-sending of the request. */
+    rc = nn_init ();
+    errno_assert (rc == 0);
+    rep1 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep1 != -1);
+    rc = nn_bind (rep1, "inproc://a");
     errno_assert (rc >= 0);
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
@@ -165,16 +164,16 @@ int main ()
     rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    rc = nn_recv (rep, buf, sizeof (buf), 0);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
 
     rc = nn_close (req1);
     errno_assert (rc == 0);
-    rc = nn_close (rep);
+    rc = nn_close (rep1);
     errno_assert (rc == 0);
     rc = nn_term ();
     errno_assert (rc == 0);

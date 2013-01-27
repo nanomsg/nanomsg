@@ -25,11 +25,13 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/excl.h"
+#include "../../utils/lb.h"
+#include "../../utils/fq.h"
 
 struct nn_xreq {
     struct nn_sockbase sockbase;
-    struct nn_excl excl;
+    struct nn_lb lb;
+    struct nn_fq fq;
 };
 
 void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,

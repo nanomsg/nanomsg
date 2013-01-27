@@ -30,6 +30,11 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 
+struct nn_xreq_data {
+    struct nn_lb_data lb;
+    struct nn_fq_data fq;
+};
+
 /*  Private functions. */
 static void nn_xreq_destroy (struct nn_sockbase *self);
 
@@ -51,12 +56,14 @@ void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
     int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
-    nn_excl_init (&self->excl);
+    nn_lb_init (&self->lb);
+    nn_fq_init (&self->fq);
 }
 
 void nn_xreq_term (struct nn_xreq *self)
 {
-    nn_excl_term (&self->excl);
+    nn_fq_term (&self->fq);
+    nn_lb_term (&self->lb);
 }
 
 static void nn_xreq_destroy (struct nn_sockbase *self)
@@ -71,22 +78,51 @@ static void nn_xreq_destroy (struct nn_sockbase *self)
 
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_add (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
+    int rc;
+    struct nn_xreq *xreq;
+    struct nn_xreq_data *data;
+
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
+    data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
+    alloc_assert (data);
+    nn_pipe_setdata (pipe, data);
+    rc = nn_lb_add (&xreq->lb, pipe, &data->lb);
+    errnum_assert (rc == 0, -rc);
+    rc = nn_fq_add (&xreq->fq, pipe, &data->fq);
+    errnum_assert (rc == 0, -rc);
+    return 0;
 }
 
 void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_rm (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
+    struct nn_xreq *xreq;
+    struct nn_xreq_data *data;
+
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
+    data = nn_pipe_getdata (pipe);
+    nn_lb_rm (&xreq->lb, pipe, &data->lb);
+    nn_fq_rm (&xreq->fq, pipe, &data->fq);
+    nn_free (data);
 }
 
 int nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_in (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
+    struct nn_xreq *xreq;
+    struct nn_xreq_data *data;
+
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
+    data = nn_pipe_getdata (pipe);
+    return nn_fq_in (&xreq->fq, pipe, &data->fq);
 }
 
 int nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_out (&nn_cont (self, struct nn_xreq, sockbase)->excl, pipe);
+    struct nn_xreq *xreq;
+    struct nn_xreq_data *data;
+
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
+    data = nn_pipe_getdata (pipe);
+    return nn_lb_out (&xreq->lb, pipe, &data->lb);
 }
 
 int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
@@ -94,22 +130,24 @@ int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
     int rc;
 
     /*  If request cannot be sent due to the pushback, drop it silenly. */
-    rc = nn_excl_send (&nn_cont (self, struct nn_xreq, sockbase)->excl, msg);
+    rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg);
     if (rc == -EAGAIN) {
         nn_msg_term (msg);
         return 0;
     }
-    return rc;
+    errnum_assert (rc >= 0, -rc);
+
+    return 0;
 }
 
 int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
-    rc = nn_excl_recv (&nn_cont (self, struct nn_xreq, sockbase)->excl, msg);
+    rc = nn_fq_recv (&nn_cont (self, struct nn_xreq, sockbase)->fq, msg);
     if (rc == -EAGAIN)
         return -EAGAIN;
-    errnum_assert (rc > 0, -rc);
+    errnum_assert (rc >= 0, -rc);
 
     if (!(rc & NN_PIPE_PARSED)) {
 

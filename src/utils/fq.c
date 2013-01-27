@@ -84,6 +84,6 @@ int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg)
         it = nn_list_begin (&self->pipes);
     self->current = nn_cont (it, struct nn_fq_data, item);
 
-    return 0;
+    return rc & ~NN_PIPE_RELEASE;
 }
 

@@ -64,7 +64,19 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     interval is based only on _NN_RECONNECT_IVL_. If _NN_RECONNECT_IVL_MAX_ is
     less than _NN_RECONNECT_IVL_, it is ignored. The type of the option is int.
     Default value is 0.
-
+*NN_SNDPRIO*::
+    Sets outbound priority for endpoints subsequently added to the socket. This
+    option has no effect on socket types that send messages to all the peers.
+    However, if the socket type sends each message to a single peer
+    (or a limited set of peers), peers with high priority take precendence
+    over peers with low priority. The type of the option is int. Highest
+    priority is 1, lowest priority is 16. Default value is 8.
+*NN_RCVPRIO*::
+    Sets inbound priority for endpoints subsequently added to the socket.
+    Peers with high priority take precendence over peers with low priority.
+    The type of the option is int. Highest priority is 1, lowest priority is 16.
+    Default value is 8.
+    
 
 RETURN VALUE
 ------------

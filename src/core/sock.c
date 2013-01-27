@@ -54,6 +54,8 @@ void nn_sockbase_init (struct nn_sockbase *self,
     self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
     self->reconnect_ivl_max = 0;
+    self->sndprio = 8;
+    self->rcvprio = 8;
 }
 
 void nn_sock_zombify (struct nn_sock *self)
@@ -175,6 +177,12 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
         case NN_RECONNECT_IVL_MAX:
             dst = &sockbase->reconnect_ivl_max;
             break;
+        case NN_SNDPRIO:
+            dst = &sockbase->sndprio;
+            break;
+        case NN_RCVPRIO:
+            dst = &sockbase->rcvprio;
+            break;
         default:
             nn_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
@@ -246,6 +254,12 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             break;
         case NN_RECONNECT_IVL_MAX:
             src = &sockbase->reconnect_ivl_max;
+            break;
+        case NN_SNDPRIO:
+            src = &sockbase->sndprio;
+            break;
+        case NN_RCVPRIO:
+            src = &sockbase->sndprio;
             break;
         default:
             if (!internal)

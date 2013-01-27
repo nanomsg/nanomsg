@@ -108,6 +108,8 @@ struct nn_sockbase
     int rcvtimeo;
     int reconnect_ivl;
     int reconnect_ivl_max;
+    int sndprio;
+    int rcvprio;
 };
 
 /*  Initialise the socket. */

@@ -211,6 +211,8 @@ NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
 #define NN_RCVTIMEO 5
 #define NN_RECONNECT_IVL 6
 #define NN_RECONNECT_IVL_MAX 7
+#define NN_SNDPRIO 8
+#define NN_RCVPRIO 9
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

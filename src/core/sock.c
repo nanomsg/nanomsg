@@ -28,6 +28,7 @@
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
+#include "../utils/fast.h"
 #include "../utils/latmon.h"
 #include "../utils/msg.h"
 
@@ -141,6 +142,7 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
+    int val;
     int *dst;
 
     sockbase = (struct nn_sockbase*) self;
@@ -151,49 +153,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
         nn_cp_unlock (&sockbase->cp);
         return -ETERM;
-    }
-
-    /*  Generic socket-level options. */
-    if (level == NN_SOL_SOCKET) {
-        switch (option) {
-        case NN_LINGER:
-            dst = &sockbase->linger;
-            break;
-        case NN_SNDBUF:
-            dst = &sockbase->sndbuf;
-            break;
-        case NN_RCVBUF:
-            dst = &sockbase->rcvbuf;
-            break;
-        case NN_SNDTIMEO:
-            dst = &sockbase->sndtimeo;
-            break;
-        case NN_RCVTIMEO:
-            dst = &sockbase->rcvtimeo;
-            break;
-        case NN_RECONNECT_IVL:
-            dst = &sockbase->reconnect_ivl;
-            break;
-        case NN_RECONNECT_IVL_MAX:
-            dst = &sockbase->reconnect_ivl_max;
-            break;
-        case NN_SNDPRIO:
-            dst = &sockbase->sndprio;
-            break;
-        case NN_RCVPRIO:
-            dst = &sockbase->rcvprio;
-            break;
-        default:
-            nn_cp_unlock (&sockbase->cp);
-            return -ENOPROTOOPT;
-        }
-        if (optvallen != sizeof (int)) {
-            nn_cp_unlock (&sockbase->cp);
-            return -EINVAL;
-        }
-        *dst = *(int*) optval;
-        nn_cp_unlock (&sockbase->cp);
-        return 0;
     }
 
     /*  Protocol-specific socket options. */
@@ -208,6 +167,76 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     if (level < NN_SOL_SOCKET) {
         nn_cp_unlock (&sockbase->cp);
         return -ENOPROTOOPT;
+    }
+
+    /*  At this point we assume that all options are of type int. */
+    if (optvallen != sizeof (int)) {
+        nn_cp_unlock (&sockbase->cp);
+        return -EINVAL;
+    }
+    val = *(int*) optval;
+
+    /*  Generic socket-level options. */
+    if (level == NN_SOL_SOCKET) {
+        switch (option) {
+        case NN_LINGER:
+            dst = &sockbase->linger;
+            break;
+        case NN_SNDBUF:
+            if (nn_slow (val <= 0)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->sndbuf;
+            break;
+        case NN_RCVBUF:
+            if (nn_slow (val <= 0)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->rcvbuf;
+            break;
+        case NN_SNDTIMEO:
+            dst = &sockbase->sndtimeo;
+            break;
+        case NN_RCVTIMEO:
+            dst = &sockbase->rcvtimeo;
+            break;
+        case NN_RECONNECT_IVL:
+            if (nn_slow (val < 0)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->reconnect_ivl;
+            break;
+        case NN_RECONNECT_IVL_MAX:
+            if (nn_slow (val < 0)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->reconnect_ivl_max;
+            break;
+        case NN_SNDPRIO:
+            if (nn_slow (val < 1 || val > 16)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->sndprio;
+            break;
+        case NN_RCVPRIO:
+            if (nn_slow (val < 1 || val > 16)) {
+                nn_cp_unlock (&sockbase->cp);
+                return -EINVAL;
+            }
+            dst = &sockbase->rcvprio;
+            break;
+        default:
+            nn_cp_unlock (&sockbase->cp);
+            return -ENOPROTOOPT;
+        }
+        *dst = val;
+        nn_cp_unlock (&sockbase->cp);
+        return 0;
     }
 
     nn_assert (0);

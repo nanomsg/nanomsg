@@ -46,12 +46,12 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
 *NN_SNDTIMEO*::
     The timeout for send operation on the socket, in milliseconds. If message
     cannot be sent within the specified timeout, EAGAIN error is returned.
-    Value of -1 means infinite timeout. The type of the option is int.
+    Negative value means infinite timeout. The type of the option is int.
     Default value is -1.
 *NN_RCVTIMEO*::
     The timeout for recv operation on the socket, in milliseconds. If message
     cannot be received within the specified timeout, EAGAIN error is returned.
-    Value of -1 means infinite timeout. The type of the option is int.
+    Negative value means infinite timeout. The type of the option is int.
     Default value is -1.
 *NN_RECONNECT_IVL*::
     For connection-based transports such as TCP, this option specifies how

@@ -223,7 +223,6 @@ static void nn_stream_activate (struct nn_stream *self)
 static void nn_stream_received (const struct nn_cp_sink **self,
     struct nn_usock *usock)
 {
-    int rc;
     struct nn_stream *stream;
     uint64_t size;
 
@@ -277,7 +276,6 @@ static void nn_stream_err (const struct nn_cp_sink **self,
 
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_stream *stream;
     struct nn_iobuf iov [3];
 

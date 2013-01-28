@@ -99,8 +99,6 @@ static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_rep *rep;
-    size_t replylen;
-    uint8_t *reply;
 
     rep = nn_cont (self, struct nn_rep, xrep.sockbase);
 

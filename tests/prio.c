@@ -25,8 +25,6 @@
 
 #include "../src/utils/err.c"
 
-#include <unistd.h>
-
 int main ()
 {
     int rc;

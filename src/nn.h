@@ -118,7 +118,7 @@ NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 #define NN_EPROTO_DEFINED
 #endif
 
-/*  Native error codes.                                                       */
+/*  Native error codes.                                                      */
 #define ETERM (NN_HAUSNUMERO + 53)
 #define EFSM (NN_HAUSNUMERO + 54)
 

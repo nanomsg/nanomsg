@@ -1,0 +1,2 @@
+ZeroMQ compatibility library. It exposes ZeroMQ API/ABI on top of nanomsg.
+It can be used to take advantage of ZeroMQ language bindings for nanomsg.

@@ -155,10 +155,9 @@ endif ()
 
 #  Optional deugging/profiling tools to switch on.
 
-option (USE_ALLOC_MONITOR
-    "Add memory allocation monitoring" OFF)
-option (USE_LATENCY_MONITOR
-    "Add latency monitoring" OFF)
+option (ALLOC_MONITOR "Add memory allocation monitoring" OFF)
+option (LATENCY_MONITOR "Add latency monitoring" OFF)
+option (ZMQ_COMPAT "Build ZMQ comaptibility library" OFF)
 
 if (ALLOC_MONITOR)
     add_definitions(-DNN_ALLOC_MONITOR)
@@ -173,6 +172,9 @@ add_subdirectory (src)
 add_subdirectory (tests)
 add_subdirectory (perf)
 add_subdirectory (doc)
+if (ZMQ_COMPAT)
+add_subdirectory (compat/zmq)
+endif ()
 
 #  Installation.
 

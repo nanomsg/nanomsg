@@ -156,15 +156,19 @@ endif ()
 #  Optional deugging/profiling tools to switch on.
 
 option (ALLOC_MONITOR "Add memory allocation monitoring" OFF)
-option (LATENCY_MONITOR "Add latency monitoring" OFF)
-option (ZMQ_COMPAT "Build ZMQ comaptibility library" OFF)
-
 if (ALLOC_MONITOR)
     add_definitions(-DNN_ALLOC_MONITOR)
 endif ()
+
+option (LATENCY_MONITOR "Add latency monitoring" OFF)
 if (LATENCY_MONITOR)
     add_definitions(-DNN_LATENCY_MONITOR=1000)
 endif ()
+
+# Be careful when turning this option on. It can mess with the existing ZeroMQ
+# installation on the box.
+option (ZMQ_COMPAT "Build ZMQ comaptibility library" OFF)
+
 
 #  Subdirectories to build.
 

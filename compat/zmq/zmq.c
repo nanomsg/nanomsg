@@ -246,13 +246,74 @@ int zmq_close (void *s)
 int zmq_setsockopt (void *s, int option, const void *optval,
     size_t optvallen)
 {
-    nn_assert (0);
+    int fd;
+    int val;
+    int level;
+
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+
+    /*  First, try to map ZerMQ options to nanomsg options. */
+    switch (option) {
+    case ZMQ_SUBSCRIBE:
+        return nn_setsockopt (fd, NN_SUB, NN_SUBSCRIBE, optval, optvallen);
+    case ZMQ_UNSUBSCRIBE:
+        return nn_setsockopt (fd, NN_SUB, NN_UNSUBSCRIBE, optval, optvallen);
+    case ZMQ_SNDBUF:
+        if (optvallen != sizeof (uint64_t)) {
+            errno = EINVAL;
+            return -1;
+        }
+        val = (int) (*(uint64_t*) optval);
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_SNDBUF, &val, sizeof (val));
+    case ZMQ_RCVBUF:
+        if (optvallen != sizeof (uint64_t)) {
+            errno = EINVAL;
+            return -1;
+        }
+        val = (int) (*(uint64_t*) optval);
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
+    case ZMQ_LINGER:
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_LINGER, optval, optvallen);
+    case ZMQ_RECONNECT_IVL:
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_RECONNECT_IVL,
+            optval, optvallen);
+    case ZMQ_RECONNECT_IVL_MAX:
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+            optval, optvallen);
+    case ZMQ_RCVTIMEO:
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_RCVTIMEO,
+            optval, optvallen);
+    case ZMQ_SNDTIMEO:
+        return nn_setsockopt (fd, NN_SOL_SOCKET, NN_SNDTIMEO,
+            optval, optvallen);
+    }
+
+    /*  If the native ZeroMQ option is not supported by nanomsg, report it. */
+    if (option >= 0 && option < 1000) {
+        errno = ENOTSUP;
+        return -1;
+    }
+
+    /*  Provide a mechanism to expose native nanomsg options via ZeroMQ language
+        bindings. */
+    if (option < 0) {
+        level = -(-option / 1000);
+        option = -option % 1000;
+    }
+    else {
+        level = option / 1000;
+        option %= 1000;
+        nn_assert (level > 0);
+        --level;
+    }
+    return nn_setsockopt (fd, level, option, optval, optvallen);
 }
 
 int zmq_getsockopt (void *s, int option, void *optval,
     size_t *optvallen)
 {
-    nn_assert (0);
+    errno = ENOTSUP;
+    return -1;
 }
 
 int zmq_bind (void *s, const char *addr)

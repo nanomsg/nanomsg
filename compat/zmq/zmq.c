@@ -42,6 +42,15 @@
 #include <stdint.h>
 #include <string.h>
 
+/*  Internally, zmq_msg_t structure is cast to this structure. */
+struct nn_zmqmsg {
+    void *data;
+    size_t size;
+};
+
+/*  Make sure that nn_zmqmsg fits into zmq_msg_t. */
+CT_ASSERT (sizeof (zmq_msg_t) >= sizeof (struct nn_zmqmsg));
+
 /*  nanomsg has no context. Pointer to this variable will be used as
     a substitute context pointer. */
 static const int nn_dummy_context = 0;
@@ -65,15 +74,21 @@ const char *zmq_strerror (int errnum)
 
 int zmq_msg_init (zmq_msg_t *msg)
 {
-    msg->data = NULL;
-    msg->size = 0;
+    struct nn_zmqmsg *zmqmsg;
+
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    zmqmsg->data = NULL;
+    zmqmsg->size = 0;
 }
 
 int zmq_msg_init_size (zmq_msg_t *msg, size_t size)
 {
-    msg->size = size;
-    msg->data = nn_allocmsg (size, 0);
-    return msg->data ? 0 : -1;
+    struct nn_zmqmsg *zmqmsg;
+
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    zmqmsg->size = size;
+    zmqmsg->data = nn_allocmsg (size, 0);
+    return zmqmsg->data ? 0 : -1;
 }
 
 int zmq_msg_init_data (zmq_msg_t *msg, void *data,
@@ -85,37 +100,56 @@ int zmq_msg_init_data (zmq_msg_t *msg, void *data,
 
 int zmq_msg_close (zmq_msg_t *msg)
 {
-    return nn_freemsg (msg->data);
+    struct nn_zmqmsg *zmqmsg;
+
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    return nn_freemsg (zmqmsg->data);
 }
 
 int zmq_msg_move (zmq_msg_t *dest, zmq_msg_t *src)
 {
-    dest->data = src->data;
-    dest->size = src->size;
-    src->data = NULL;
-    src->size = 0;
+    struct nn_zmqmsg *zmqdest;
+    struct nn_zmqmsg *zmqsrc;
+
+    zmqdest = (struct nn_zmqmsg*) dest;
+    zmqsrc = (struct nn_zmqmsg*) src;
+    zmqdest->data = zmqsrc->data;
+    zmqdest->size = zmqsrc->size;
+    zmqsrc->data = NULL;
+    zmqsrc->size = 0;
 }
 
 int zmq_msg_copy (zmq_msg_t *dest, zmq_msg_t *src)
 {
+    struct nn_zmqmsg *zmqdest;
+    struct nn_zmqmsg *zmqsrc;
+
     /*  In nanomsg this functionality is not exposed to the user. Let's do
         an actual copy of the message instead. */
-    dest->size = src->size;
-    dest->data = nn_allocmsg (dest->size, 0);
-    if (!dest->data)
+    zmqdest = (struct nn_zmqmsg*) dest;
+    zmqsrc = (struct nn_zmqmsg*) src;
+    zmqdest->size = zmqsrc->size;
+    zmqdest->data = nn_allocmsg (zmqdest->size, 0);
+    if (!zmqdest->data)
         return -1;
-    mempcy (dest->data, src->data, dest->size);
+    mempcy (zmqdest->data, zmqsrc->data, zmqdest->size);
     return 0;
 }
 
 void *zmq_msg_data (zmq_msg_t *msg)
 {
-    return msg->data;
+    struct nn_zmqmsg *zmqmsg;
+
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    return zmqmsg->data;
 }
 
 size_t zmq_msg_size (zmq_msg_t *msg)
 {
-    return msg->size;
+    struct nn_zmqmsg *zmqmsg;
+
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    return zmqmsg->size;
 }
 
 void *zmq_init (int io_threads)
@@ -341,6 +375,7 @@ int zmq_send (void *s, zmq_msg_t *msg, int flags)
     int fd;
     int nnflags;
     int rc;
+    struct nn_zmqmsg *zmqmsg;
 
     fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
 
@@ -353,7 +388,8 @@ int zmq_send (void *s, zmq_msg_t *msg, int flags)
     if (flags & ZMQ_NOBLOCK)
         nnflags |= NN_DONTWAIT;
 
-    rc = nn_send (fd, &msg->data, NN_MSG, nnflags);
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    rc = nn_send (fd, &zmqmsg->data, NN_MSG, nnflags);
     return rc < 0 ? -1 : 0;
 }
 
@@ -362,6 +398,7 @@ int zmq_recv (void *s, zmq_msg_t *msg, int flags)
     int fd;
     int nnflags;
     int rc;
+    struct nn_zmqmsg *zmqmsg;
 
     fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
 
@@ -369,7 +406,8 @@ int zmq_recv (void *s, zmq_msg_t *msg, int flags)
     if (flags & ZMQ_NOBLOCK)
         nnflags |= NN_DONTWAIT;
 
-    rc = nn_send (fd, &msg->data, NN_MSG, nnflags);
+    zmqmsg = (struct nn_zmqmsg*) msg;
+    rc = nn_send (fd, &zmqmsg->data, NN_MSG, nnflags);
     return rc < 0 ? -1 : 0;
 }
 

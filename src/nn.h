@@ -72,7 +72,7 @@ NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 /*  different OSes. The assumption is that error_t is at least 32-bit type.   */
 #define NN_HAUSNUMERO 156384712
 
-/*  On Windows platform some of the standard POSIX errnos are not defined.    */
+/*  On some platforms some standard POSIX errnos are not defined.    */
 #ifndef ENOTSUP
 #define ENOTSUP (NN_HAUSNUMERO + 1)
 #define NN_ENOTSUP_DEFINED
@@ -112,6 +112,10 @@ NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 #ifndef EAFNOSUPPORT
 #define EAFNOSUPPORT (NN_HAUSNUMERO + 10)
 #define NN_EAFNOSUPPORT_DEFINED
+#endif
+#ifndef EPROTO
+#define EPROTO (NN_HAUSNUMERO + 10)
+#define NN_EPROTO_DEFINED
 #endif
 
 /*  Native error codes.                                                       */

@@ -77,9 +77,13 @@ const char *nn_err_strerror (int errnum)
     case ENOTSOCK:
         return "Not a socket";
 #endif
-#if defined NN_EAFNOTSUPPORT_DEFINED
+#if defined NN_EAFNOSUPPORT_DEFINED
     case EAFNOSUPPORT:
         return "Address family not supported";
+#endif
+#if defined NN_EPROTO_DEFINED
+    case EPROTO:
+        return "Protocol error";
 #endif
     case ETERM:
         return "Nanomsg library was terminated";

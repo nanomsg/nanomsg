@@ -64,7 +64,6 @@ int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
-    int empty;
 
     slot = &self->slots [data->priority - 1];
 

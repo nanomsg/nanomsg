@@ -205,10 +205,11 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
         /*  Determine the size of the message header. */
         data = nn_chunkref_data (&msg->body);
         sz = nn_chunkref_size (&msg->body);
+        i = 0;
         while (1) {
 
             /*  Ignore the malformed requests without the bottom of the stack. */
-            if (nn_slow (i * sizeof (uint32_t) > sz)) {
+            if (nn_slow ((i + 1) * sizeof (uint32_t) > sz)) {
                 nn_msg_term (msg);
                 return -EAGAIN;
             }

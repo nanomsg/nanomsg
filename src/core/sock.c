@@ -223,13 +223,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
             }
             dst = &sockbase->sndprio;
             break;
-        case NN_RCVPRIO:
-            if (nn_slow (val < 1 || val > 16)) {
-                nn_cp_unlock (&sockbase->cp);
-                return -EINVAL;
-            }
-            dst = &sockbase->rcvprio;
-            break;
         default:
             nn_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
@@ -285,9 +278,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             src = &sockbase->reconnect_ivl_max;
             break;
         case NN_SNDPRIO:
-            src = &sockbase->sndprio;
-            break;
-        case NN_RCVPRIO:
             src = &sockbase->sndprio;
             break;
         default:

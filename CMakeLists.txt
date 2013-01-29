@@ -160,10 +160,10 @@ option (USE_ALLOC_MONITOR
 option (USE_LATENCY_MONITOR
     "Add latency monitoring" OFF)
 
-if (USE_ALLOC_MONITOR)
+if (ALLOC_MONITOR)
     add_definitions(-DNN_ALLOC_MONITOR)
 endif ()
-if (USE_LATENCY_MONITOR)
+if (LATENCY_MONITOR)
     add_definitions(-DNN_LATENCY_MONITOR=1000)
 endif ()
 

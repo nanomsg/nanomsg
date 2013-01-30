@@ -74,7 +74,7 @@
 
 /*  Max number of concurrent SP sockets. */
 #define NN_MAX_SOCKETS 512
-CT_ASSERT (NN_MAX_SOCKETS <= 0xffff);
+CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 /*  This check is performed at the beginning of each socket operation to make
     sure that the library was initialised and the socket actually exists. */
@@ -199,8 +199,8 @@ int nn_init (void)
     nn_random_seed ();
 
     /*  Allocate the global table of SP sockets. */
-    self.socks = nn_alloc (sizeof (struct nn_sock*) * NN_MAX_SOCKETS,
-        "socket table");
+    self.socks = nn_alloc ((sizeof (struct nn_sock*) * NN_MAX_SOCKETS) +
+        (sizeof (uint16_t) * NN_MAX_SOCKETS), "socket table");
     alloc_assert (self.socks);
     for (i = 0; i != NN_MAX_SOCKETS; ++i)
         self.socks [i] = NULL;
@@ -208,8 +208,7 @@ int nn_init (void)
     self.zombie = 0;
 
     /*  Allocate the stack of unused file descriptors. */
-    self.unused = nn_alloc (sizeof (uint16_t) * NN_MAX_SOCKETS,
-        "unused socket table");
+    self.unused = (uint16_t*) (self.socks + NN_MAX_SOCKETS);
     alloc_assert (self.unused);
     for (i = 0; i != NN_MAX_SOCKETS; ++i)
         self.unused [i] = NN_MAX_SOCKETS - i - 1;
@@ -295,7 +294,6 @@ int nn_term (void)
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_mutex_term (&self.sync);
-    nn_free (self.unused);
     nn_free (self.socks);
     self.socks = NULL;
 

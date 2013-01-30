@@ -33,7 +33,7 @@ add_library (zmq SHARED
 add_definitions (-DDLL_EXPORTS)
 target_link_libraries (zmq nanomsg)
 
-install (FILES src/zmq.h DESTINATION include)
-install (FILES src/zmq_utils.h DESTINATION include)
+install (FILES zmq.h DESTINATION include)
+install (FILES zmq_utils.h DESTINATION include)
 install (TARGETS zmq DESTINATION lib)
 

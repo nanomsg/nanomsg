@@ -1,0 +1,78 @@
+nn_zmq(7)
+=========
+
+NAME
+----
+nn_zmq - ZeroMQ compatibility library
+
+
+SYNOPSIS
+--------
+*cc* ['flags'] 'files' *-lzmq* ['libraries']
+
+
+DESCRIPTION
+-----------
+The goal of ZeroMQ compatibility library is to re-use existing ZeroMQ language bindings to access nanomsg. To achieve the goal nanomsg is able to build a substitite ZeroMQ library that looks exactly like original ZeroMQ/2.1 library, both in terms of API and ABI.
+
+Build the substitute ZeroMQ library this way:
+
+    $ mkdir build
+    $ cd build
+    $ cmake -DZMQ_COMPAT=ON ..
+    $ make
+    $ sudo make install
+
+The above sequence of commands installs the ZeroMQ header files ('zmq.h' and 'zmq_utils.h') as well as the ZeroMQ substitute library ('libzmq.so' or equivalent, depending on the platform).
+
+The functionality and feature set of ZeroMQ and nanomsg is not identical, so while the substitute library tries to convert the ZeroMQ socket types and socket options to the best fitting nanomsg equivalents, some of them can be only accessed by using literal constants.
+
+Socket types:
+
+    NN_PAIR 1016
+    NN_PAIR (raw) 2016
+    NN_PUB 1032
+    NN_PUB (raw) 2032
+    NN_PULL 1081
+    NN_PULL (raw) 2081
+    NN_PUSH 1080
+    NN_PUSH (raw) 2080
+    NN_REP 1049
+    NN_REP (raw) 2049
+    NN_REQ 1048
+    NN_REQ (raw) 2048
+    NN_RESPONDENT 1097
+    NN_RESPONDENT (raw) 2097
+    NN_SINK 1065
+    NN_SINK (raw) 2065
+    NN_SOURCE 1064
+    NN_SOURCE (raw) 2064
+    NN_SUB 1033
+    NN_SUB (raw) 2033
+    NN_SURVEYOR 1096
+    NN_SURVEYOR (raw) 2096
+
+Socket options:
+
+    NN_REQ/NN_RESEND_IVL 4901
+    NN_SOL_SOCKET/NN_LINGER 101
+    NN_SOL_SOCKET/NN_RCVBUF 103
+    NN_SOL_SOCKET/NN_RCVTIMEO 105
+    NN_SOL_SOCKET/NN_RECONNECT_IVL 106
+    NN_SOL_SOCKET/NN_RECONNECT_IVL_MAX 107
+    NN_SOL_SOCKET/NN_SNDBUF 102
+    NN_SOL_SOCKET/NN_SNDPRIO 108
+    NN_SOL_SOCKET/NN_SNDTIMEO 104
+    NN_SUB/NN_SUBSCRIBE 3301
+    NN_SUB/NN_UNSUBSCRIBE 3302
+    NN_SURVEYOR/NN_DEADLINE 9601
+
+
+SEE ALSO
+--------
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

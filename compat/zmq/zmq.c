@@ -285,7 +285,7 @@ int zmq_setsockopt (void *s, int option, const void *optval,
 
     fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
 
-    /*  First, try to map ZerMQ options to nanomsg options. */
+    /*  First, try to map ZeroMQ options to nanomsg options. */
     switch (option) {
     case ZMQ_SUBSCRIBE:
         return nn_setsockopt (fd, NN_SUB, NN_SUBSCRIBE, optval, optvallen);
@@ -322,7 +322,7 @@ int zmq_setsockopt (void *s, int option, const void *optval,
     }
 
     /*  If the native ZeroMQ option is not supported by nanomsg, report it. */
-    if (option >= 0 && option < 1000) {
+    if (option >= 0 && option < 100) {
         errno = ENOTSUP;
         return -1;
     }
@@ -330,12 +330,12 @@ int zmq_setsockopt (void *s, int option, const void *optval,
     /*  Provide a mechanism to expose native nanomsg options via ZeroMQ language
         bindings. */
     if (option < 0) {
-        level = -(-option / 1000);
-        option = -option % 1000;
+        level = -(-option / 100);
+        option = -option % 100;
     }
     else {
-        level = option / 1000;
-        option %= 1000;
+        level = option / 100;
+        option %= 100;
         nn_assert (level > 0);
         --level;
     }

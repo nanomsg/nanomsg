@@ -62,7 +62,7 @@ int main ()
 
     /*  Set an option using NN-specific constant. */
     nn_sndbuf = 128 * 1024;
-    rc = zmq_setsockopt (s2, 1002, &nn_sndbuf, sizeof (nn_sndbuf));
+    rc = zmq_setsockopt (s2, 102, &nn_sndbuf, sizeof (nn_sndbuf));
     errno_assert (rc == 0);
 
     /*  Send a message. */

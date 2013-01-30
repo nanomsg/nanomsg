@@ -105,6 +105,11 @@ Inter-process transport::
 TCP transport::
     linknanomsg:nn_tcp[7]
 
+Following comaptibility options are provided by nanomsg:
+
+ZeroMQ comaptibility library::
+    linknanomsg:nn_zmq[7]
+
 
 AUTHORS
 -------

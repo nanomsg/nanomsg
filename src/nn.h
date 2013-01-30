@@ -118,9 +118,13 @@ NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 #define NN_EPROTO_DEFINED
 #endif
 
-/*  Native error codes.                                                      */
+/*  Native error codes.                                                       */
+#ifndef ETERM
 #define ETERM (NN_HAUSNUMERO + 53)
+#endif
+#ifndef EFSM
 #define EFSM (NN_HAUSNUMERO + 54)
+#endif
 
 /*  This function retrieves the errno as it is known to the library.          */
 /*  The goal of this function is to make the code 100% portable, including    */

@@ -23,10 +23,6 @@
 #include "zmq.h"
 #include "zmq_utils.h"
 
-/*  Prevent name clashes between ZMQ and NN. */
-#undef ETERM
-#undef EFSM
-
 #include "../../src/nn.h"
 #include "../../src/pair.h"
 #include "../../src/fanout.h"
@@ -79,6 +75,7 @@ int zmq_msg_init (zmq_msg_t *msg)
     zmqmsg = (struct nn_zmqmsg*) msg;
     zmqmsg->data = NULL;
     zmqmsg->size = 0;
+    return 0;
 }
 
 int zmq_msg_init_size (zmq_msg_t *msg, size_t size)
@@ -103,6 +100,8 @@ int zmq_msg_close (zmq_msg_t *msg)
     struct nn_zmqmsg *zmqmsg;
 
     zmqmsg = (struct nn_zmqmsg*) msg;
+    if (!zmqmsg->data)
+        return 0;
     return nn_freemsg (zmqmsg->data);
 }
 
@@ -132,7 +131,7 @@ int zmq_msg_copy (zmq_msg_t *dest, zmq_msg_t *src)
     zmqdest->data = nn_allocmsg (zmqdest->size, 0);
     if (!zmqdest->data)
         return -1;
-    mempcy (zmqdest->data, zmqsrc->data, zmqdest->size);
+    memcpy (zmqdest->data, zmqsrc->data, zmqdest->size);
     return 0;
 }
 
@@ -273,7 +272,7 @@ int zmq_close (void *s)
 {
     int fd;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
     return nn_close (fd);
 }
 
@@ -284,7 +283,7 @@ int zmq_setsockopt (void *s, int option, const void *optval,
     int val;
     int level;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
 
     /*  First, try to map ZerMQ options to nanomsg options. */
     switch (option) {
@@ -355,7 +354,7 @@ int zmq_bind (void *s, const char *addr)
     int fd;
     int rc;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
     rc = nn_bind (fd, addr);
     return rc >= 0 ? 0 : -1;
 }
@@ -365,7 +364,7 @@ int zmq_connect (void *s, const char *addr)
     int fd;
     int rc;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
     rc = nn_connect (fd, addr);
     return rc >= 0 ? 0 : -1;
 }
@@ -377,7 +376,7 @@ int zmq_send (void *s, zmq_msg_t *msg, int flags)
     int rc;
     struct nn_zmqmsg *zmqmsg;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
 
     if (flags & ZMQ_SNDMORE) {
         errno = EINVAL;
@@ -390,7 +389,11 @@ int zmq_send (void *s, zmq_msg_t *msg, int flags)
 
     zmqmsg = (struct nn_zmqmsg*) msg;
     rc = nn_send (fd, &zmqmsg->data, NN_MSG, nnflags);
-    return rc < 0 ? -1 : 0;
+    if (rc < 0)
+        return -1;
+    zmqmsg->data = NULL;
+    zmqmsg->size = 0;
+    return 0;
 }
 
 int zmq_recv (void *s, zmq_msg_t *msg, int flags)
@@ -400,15 +403,18 @@ int zmq_recv (void *s, zmq_msg_t *msg, int flags)
     int rc;
     struct nn_zmqmsg *zmqmsg;
 
-    fd = (int) (((uint8_t*) s) - ((uint8_t*) - 1));
+    fd = (int) (((uint8_t*) s) - ((uint8_t*) 0) - 1);
 
     nnflags = 0;
     if (flags & ZMQ_NOBLOCK)
         nnflags |= NN_DONTWAIT;
 
     zmqmsg = (struct nn_zmqmsg*) msg;
-    rc = nn_send (fd, &zmqmsg->data, NN_MSG, nnflags);
-    return rc < 0 ? -1 : 0;
+    rc = nn_recv (fd, &zmqmsg->data, NN_MSG, nnflags);
+    if (rc < 0)
+        return -1;
+    zmqmsg->size = rc;
+    return 0;
 }
 
 int zmq_poll (zmq_pollitem_t *items, int nitems, long timeout)

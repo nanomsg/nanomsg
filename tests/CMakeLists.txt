@@ -49,3 +49,10 @@ add_libnanomsg_test (iovec)
 add_libnanomsg_test (msg)
 add_libnanomsg_test (prio)
 
+#  If ZMQ compatibility is required, test it.
+if (ZMQ_COMPAT)
+add_executable (zmq_compat zmq_compat.c)
+target_link_libraries (zmq_compat zmq)
+add_test (zmq_compat ${CMAKE_BINARY_DIR}/zmq_compat)
+endif ()
+

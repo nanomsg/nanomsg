@@ -25,6 +25,7 @@
 #include "../src/utils/err.c"
 
 #include <string.h>
+#include <stdint.h>
 
 int main ()
 {
@@ -32,6 +33,7 @@ int main ()
     void *ctx;
     void *s1;
     void *s2;
+    uint64_t sndbuf;
     zmq_msg_t msg1;
     zmq_msg_t msg2;
 
@@ -45,6 +47,9 @@ int main ()
     rc = zmq_bind (s1, "inproc://a");
     errno_assert (rc == 0);
     rc = zmq_connect (s2, "inproc://a");
+    errno_assert (rc == 0);
+    sndbuf = 128 * 1024;
+    rc = zmq_setsockopt (s2, ZMQ_SNDBUF, &sndbuf, sizeof (sndbuf));
     errno_assert (rc == 0);
 
     rc = zmq_msg_init_size (&msg1, 3);

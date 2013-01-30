@@ -25,6 +25,8 @@ Build the substitute ZeroMQ library this way:
 
 The above sequence of commands installs the ZeroMQ header files ('zmq.h' and 'zmq_utils.h') as well as the ZeroMQ substitute library ('libzmq.so' or equivalent, depending on the platform).
 
+WARNING: In case you want to use both ZeroMQ and the substitute library on the same box, make sure that they are installed into different directories and don't overwrite each other.
+
 The functionality and feature set of ZeroMQ and nanomsg is not identical, so while the substitute library tries to convert the ZeroMQ socket types and socket options to the best fitting nanomsg equivalents, some of them can be only accessed by using literal constants.
 
 Socket types:

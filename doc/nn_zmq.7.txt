@@ -13,7 +13,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-The goal of ZeroMQ compatibility library is to re-use existing ZeroMQ language bindings to access nanomsg. To achieve the goal nanomsg is able to build a substitite ZeroMQ library that looks exactly like original ZeroMQ/2.1 library, both in terms of API and ABI.
+The goal of ZeroMQ compatibility library is to re-use existing ZeroMQ language bindings to access nanomsg. To achieve the goal nanomsg is able to build a substitute ZeroMQ library that exposes ZeroMQ/2.1 API and binary compatibility for ZeroMQ ABI version 1.0.0.
 
 Build the substitute ZeroMQ library this way:
 

@@ -95,7 +95,6 @@ struct nn_ctx {
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. */
     struct nn_sock **socks;
-    size_t max_socks;
 
     /*  Number of actual open sockets in the socket table. */
     size_t nsocks;
@@ -196,11 +195,10 @@ int nn_init (void)
     nn_random_seed ();
 
     /*  Allocate the global table of SP sockets. */
-    self.max_socks = NN_MAX_SOCKETS;
-    self.socks = nn_alloc (sizeof (struct nn_sock*) * self.max_socks,
+    self.socks = nn_alloc (sizeof (struct nn_sock*) * NN_MAX_SOCKETS,
         "socket table");
     alloc_assert (self.socks);
-    for (i = 0; i != self.max_socks; ++i)
+    for (i = 0; i != NN_MAX_SOCKETS; ++i)
         self.socks [i] = NULL;
     self.nsocks = 0;
     self.zombie = 0;
@@ -269,7 +267,7 @@ int nn_term (void)
         all of them are closed. */
     nn_mutex_lock (&self.sync);
     if (self.nsocks) {
-        for (i = 0; i != self.max_socks; ++i)
+        for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i])
                 nn_sock_zombify (self.socks [i]);
         self.zombie = 1;
@@ -342,17 +340,18 @@ int nn_socket (int domain, int protocol)
     /*  Find an empty socket slot. */
     /*  TODO: This is O(n) operation! Linked list of empty slots should be
         implemented. */
-    for (s = 0; s != self.max_socks; ++s)
+    for (s = 0; s != NN_MAX_SOCKETS; ++s)
         if (!self.socks [s])
             break;
 
-    /*  TODO: Auto-resize the array here! */
-    if (nn_slow (s == self.max_socks)) {
+    /*  If socket limit was reached, report error. */
+    if (nn_slow (s == NN_MAX_SOCKETS)) {
         nn_mutex_unlock (&self.sync);
         errno = EMFILE;
         return -1;
     }
 
+    /*  Find the appropriate socket type and instantiate it. */
     for (it = nn_list_begin (&self.socktypes);
           it != nn_list_end (&self.socktypes);
           it = nn_list_next (&self.socktypes, it)) {

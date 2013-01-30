@@ -591,6 +591,14 @@ $ make
 $ sudo make install</tt></pre>
 </div></div>
 <div class="paragraph"><p>The above sequence of commands installs the ZeroMQ header files (<em>zmq.h</em> and <em>zmq_utils.h</em>) as well as the ZeroMQ substitute library (<em>libzmq.so</em> or equivalent, depending on the platform).</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">In case you want to use both ZeroMQ and the substitute library on the same box, make sure that they are installed into different directories and don&#8217;t overwrite each other.</td>
+</tr></table>
+</div>
 <div class="paragraph"><p>The functionality and feature set of ZeroMQ and nanomsg is not identical, so while the substitute library tries to convert the ZeroMQ socket types and socket options to the best fitting nanomsg equivalents, some of them can be only accessed by using literal constants.</p></div>
 <div class="paragraph"><p>Socket types:</p></div>
 <div class="literalblock">
@@ -653,7 +661,7 @@ NN_SURVEYOR/NN_DEADLINE 9601</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-30 13:34:15 CET
+Last updated 2013-01-30 14:29:57 CET
 </div>
 </div>
 </body>

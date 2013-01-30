@@ -74,6 +74,7 @@
 
 /*  Max number of concurrent SP sockets. */
 #define NN_MAX_SOCKETS 512
+CT_ASSERT (NN_MAX_SOCKETS <= 0xffff);
 
 /*  This check is performed at the beginning of each socket operation to make
     sure that the library was initialised and the socket actually exists. */
@@ -95,6 +96,9 @@ struct nn_ctx {
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. */
     struct nn_sock **socks;
+
+    /*  Stack of unused file descriptors. */
+    uint16_t *unused;
 
     /*  Number of actual open sockets in the socket table. */
     size_t nsocks;
@@ -203,6 +207,13 @@ int nn_init (void)
     self.nsocks = 0;
     self.zombie = 0;
 
+    /*  Allocate the stack of unused file descriptors. */
+    self.unused = nn_alloc (sizeof (uint16_t) * NN_MAX_SOCKETS,
+        "unused socket table");
+    alloc_assert (self.unused);
+    for (i = 0; i != NN_MAX_SOCKETS; ++i)
+        self.unused [i] = NN_MAX_SOCKETS - i - 1;
+
     /*  Initialise other parts of the global state. */
     nn_mutex_init (&self.sync);
     nn_list_init (&self.transports);
@@ -284,6 +295,7 @@ int nn_term (void)
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_mutex_term (&self.sync);
+    nn_free (self.unused);
     nn_free (self.socks);
     self.socks = NULL;
 
@@ -337,19 +349,15 @@ int nn_socket (int domain, int protocol)
 
     nn_mutex_lock (&self.sync);
 
-    /*  Find an empty socket slot. */
-    /*  TODO: This is O(n) operation! Linked list of empty slots should be
-        implemented. */
-    for (s = 0; s != NN_MAX_SOCKETS; ++s)
-        if (!self.socks [s])
-            break;
-
     /*  If socket limit was reached, report error. */
-    if (nn_slow (s == NN_MAX_SOCKETS)) {
+    if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
         nn_mutex_unlock (&self.sync);
         errno = EMFILE;
         return -1;
     }
+
+    /*  Find an empty socket slot. */
+    s = self.unused [NN_MAX_SOCKETS - self.nsocks - 1];
 
     /*  Find the appropriate socket type and instantiate it. */
     for (it = nn_list_begin (&self.socktypes);
@@ -374,16 +382,25 @@ int nn_close (int s)
 {
     NN_BASIC_CHECKS;
 
+    /*  Additional check of socket validity. */
+    nn_assert (self.nsocks > 0);
+
     /*  Deallocate the socket object. */
     nn_sock_term (self.socks [s]);
 
+    nn_mutex_lock (&self.sync);
+
+    /*  Remove the socket from the socket table, add it to unused socket
+        table. */
+    self.socks [s] = NULL;
+    self.unused [NN_MAX_SOCKETS - self.nsocks] = s;
+    --self.nsocks;
+
     /*  If there's nn_term() waiting for all sockets being closed and this is
         the last open socket let library termination proceed. */
-    nn_mutex_lock (&self.sync);
-    self.socks [s] = NULL;
-    --self.nsocks;
     if (self.zombie && self.nsocks == 0)
         nn_cond_post (&self.termcond);
+
     nn_mutex_unlock (&self.sync);
 
     return 0;

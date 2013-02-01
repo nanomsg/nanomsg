@@ -41,6 +41,7 @@ void nn_efd_init (struct nn_efd *self)
     SOCKET listener;
     int rc;
     struct sockaddr_in addr;
+    int addrlen;
     BOOL reuseaddr;
     BOOL nodelay;
 
@@ -62,7 +63,7 @@ void nn_efd_init (struct nn_efd *self)
     win_assert (sync != NULL);
 
     /*  Enter the critical section. */
-    DWORD dwrc = WaitForSingleObject (sync, INFINITE);
+    dwrc = WaitForSingleObject (sync, INFINITE);
     nn_assert (dwrc == WAIT_OBJECT_0);
 
     /*  Unfortunately, on Windows the only way to send signal to a file
@@ -119,15 +120,16 @@ void nn_efd_init (struct nn_efd *self)
         goto wsafail;
 
     /*  Connect the writer socket to the listener socket. */
-    rc = connect (self->w, (sockaddr*) &addr, sizeof (addr));
+    rc = connect (self->w, (struct sockaddr*) &addr, sizeof (addr));
     if (nn_slow (rc == SOCKET_ERROR))
         goto wsafail;
 
     while (1) {
 
         /*  Accept new incoming connection. */
-        self->w = accept (listener, (struct sockaddr*) &addr, sizeof (addr));
-        if (nn_slow (self->w == INVALID_SOCKET))
+        addrlen = sizeof (addr);
+        self->w = accept (listener, (struct sockaddr*) &addr, &addrlen);
+        if (nn_slow (self->w == INVALID_SOCKET || addrlen != sizeof (addr)))
             goto wsafail;
 
         /*  Check that the connection actually comes from the localhost. */
@@ -160,7 +162,7 @@ wsafail:
     win_assert (brc != 0);
     brc = CloseHandle (sync);
     win_assert (brc != 0);
-    errno_assert (0, rc);
+    errnum_assert (0, rc);
 }
 
 #elif defined NN_USE_SOCKETPAIR

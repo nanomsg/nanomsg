@@ -23,7 +23,9 @@
 #ifndef NN_EFD_INCLUDED
 #define NN_EFD_INCLUDED
 
-#if !defined NN_HAVE_WINDOWS
+/*  Provides a way to send signals via file descriptors. The important part
+    is that nn_efd_getfd() returns an actual OS-level file descriptor that
+    you can poll on to wait for the event. */
 
 struct nn_efd;
 
@@ -33,22 +35,27 @@ int nn_efd_getfd (struct nn_efd *self);
 void nn_efd_signal (struct nn_efd *self);
 void nn_efd_unsignal (struct nn_efd *self);
 
-#if defined NN_USE_SOCKETPAIR
+#if defined NN_HAVE_WINDOWS
 
-struct nn_efd
-{
+#include "win.h"
+
+struct nn_efd {
+    SOCKET r;
+    SOCKET w;
+};
+
+#elif defined NN_USE_SOCKETPAIR
+
+struct nn_efd {
     int r;
     int w;
 };
 
 #elif defined NN_USE_EVENTFD
 
-struct nn_efd
-{
+struct nn_efd {
     int efd;
 };
-
-#endif
 
 #endif
 

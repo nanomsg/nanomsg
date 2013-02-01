@@ -22,9 +22,148 @@
 
 #include "efd.h"
 
-#if !defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 
-#if defined NN_USE_SOCKETPAIR
+#define NN_EFD_PORT 5907
+
+#include "err.h"
+#include "fast.h"
+
+#include <string.h>
+
+void nn_efd_init (struct nn_efd *self)
+{
+    SECURITY_ATTRIBUTES sa = {0};
+    SECURITY_DESCRIPTOR sd;
+    BOOL brc;
+    HANDLE sync;
+    DWORD dwrc;
+    SOCKET listener;
+    int rc;
+    struct sockaddr_in addr;
+    BOOL reuseaddr;
+    BOOL nodelay;
+
+    /*  Make the following critical section accessible to everyone. */
+    sa.nLength = sizeof (sa);
+    sa.bInheritHandle = FALSE;
+    brc = InitializeSecurityDescriptor (&sd, SECURITY_DESCRIPTOR_REVISION);
+    win_assert (brc);
+    brc = SetSecurityDescriptorDacl(&sd, TRUE, (PACL) NULL, FALSE);
+    win_assert (brc);
+    sa.lpSecurityDescriptor = &sd;
+
+    /*  This function has to be enclosed in a system-wide critical section
+        so that two instances of the library don't accidentally create an efd
+        crossing the process boundary. 
+        CAUTION: This critical section has machine-wide scope. Thus, it must
+        be properly exited even before crashing the process by an assertion. */
+    sync = CreateEvent (&sa, FALSE, TRUE, "Global\\nanomsg-port-sync");
+    win_assert (sync != NULL);
+
+    /*  Enter the critical section. */
+    DWORD dwrc = WaitForSingleObject (sync, INFINITE);
+    nn_assert (dwrc == WAIT_OBJECT_0);
+
+    /*  Unfortunately, on Windows the only way to send signal to a file
+        descriptor (SOCKET) is to create a full-blown TCP connecting on top of
+        the loopback interface. */
+    self->w = INVALID_SOCKET;
+    self->r = INVALID_SOCKET;
+
+    /*  Create listening socket. */
+    listener = socket (AF_INET, SOCK_STREAM, 0);
+    if (nn_slow (listener == SOCKET_ERROR))
+        goto wsafail;
+    brc = SetHandleInformation ((HANDLE) listener, HANDLE_FLAG_INHERIT, 0);
+    win_assert (brc);
+
+    /*  This prevents subsequent attempts to create a signaler to fail bacause
+        of "TCP port in use" problem. */
+    reuseaddr = 1;
+    rc = setsockopt (listener, SOL_SOCKET, SO_REUSEADDR,
+        (char*) &reuseaddr, sizeof (reuseaddr));
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /*  Bind the listening socket to the local port. */
+    memset (&addr, 0, sizeof (addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+    addr.sin_port = htons (NN_EFD_PORT);
+    rc = bind (listener, (const struct sockaddr*) &addr, sizeof (addr));
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /*  Start listening for the incomming connections. In normal case we are
+        going to accept just a single connection, so backlog buffer of size
+        1 is sufficient. */
+    rc = listen (listener, 1);
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /*  Create the writer socket. */
+    self->w = socket (AF_INET, SOCK_STREAM, 0);
+    if (nn_slow (listener == SOCKET_ERROR))
+        goto wsafail;
+    brc = SetHandleInformation ((HANDLE) self->w, HANDLE_FLAG_INHERIT, 0);
+    win_assert (brc);
+
+    /*  Set TCP_NODELAY on the writer socket to make efd as fast as possible.
+        There's only one byte going to be written, so batching would not make
+        sense anyway. */
+    nodelay = 1;
+    rc = setsockopt (self->w, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
+        sizeof (nodelay));
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /*  Connect the writer socket to the listener socket. */
+    rc = connect (self->w, (sockaddr*) &addr, sizeof (addr));
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    while (1) {
+
+        /*  Accept new incoming connection. */
+        self->w = accept (listener, (struct sockaddr*) &addr, sizeof (addr));
+        if (nn_slow (self->w == INVALID_SOCKET))
+            goto wsafail;
+
+        /*  Check that the connection actually comes from the localhost. */
+        if (nn_fast (addr.sin_addr.s_addr == htonl (INADDR_LOOPBACK)))
+            break;
+
+        /*  If not so, close the connection and try again. */
+        rc = closesocket (self->w);
+        if (nn_slow (rc == INVALID_SOCKET))
+            goto wsafail;
+    }
+
+    /*  Listener socket can be closed now as no more connections for this efd
+        are going to be established anyway. */
+    rc = closesocket (listener);
+    if (nn_slow (rc == INVALID_SOCKET))
+        goto wsafail;
+
+    /*  Leave the critical section. */
+    brc = SetEvent (sync);
+    win_assert (brc != 0);
+    brc = CloseHandle (sync);
+    win_assert (brc != 0);
+
+    return;
+
+wsafail:
+    rc = nn_err_wsa_to_posix (WSAGetLastError ());
+    brc = SetEvent (sync);
+    win_assert (brc != 0);
+    brc = CloseHandle (sync);
+    win_assert (brc != 0);
+    errno_assert (0, rc);
+}
+
+#elif defined NN_USE_SOCKETPAIR
 
 #include "err.h"
 #include "fast.h"
@@ -158,8 +297,6 @@ void nn_efd_unsignal (struct nn_efd *self)
     errno_assert (sz == sizeof (count));
     nn_assert (count > 0);
 }
-
-#endif
 
 #endif
 

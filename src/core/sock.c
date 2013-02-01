@@ -280,6 +280,9 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
         case NN_SNDPRIO:
             src = &sockbase->sndprio;
             break;
+        case NN_SNDFD:
+        case NN_RCVFD:
+            nn_assert (0);
         default:
             if (!internal)
                 nn_cp_unlock (&sockbase->cp);

@@ -30,6 +30,7 @@
 #include "fast.h"
 
 #include <string.h>
+#include <stdint.h>
 
 void nn_efd_init (struct nn_efd *self)
 {
@@ -165,6 +166,44 @@ wsafail:
     errnum_assert (0, rc);
 }
 
+void nn_efd_term (struct nn_efd *self)
+{
+    int rc;
+
+    rc = closesocket (self->w);
+    wsa_assert (rc != INVALID_SOCKET);
+    rc = closesocket (self->r);
+    wsa_assert (rc != INVALID_SOCKET);
+}
+
+nn_fd nn_efd_getfd (struct nn_efd *self)
+{
+    return self->r;
+}
+
+void nn_efd_signal (struct nn_efd *self)
+{
+    int rc;
+    unsigned char c = 0xec;
+
+    rc = send (self->w, (char*) &c, 1, 0);
+    wsa_assert (rc != SOCKET_ERROR);
+    nn_assert (rc == 1);
+}
+
+void nn_efd_unsignal (struct nn_efd *self)
+{
+    int rc;
+    uint8_t buf [16];
+
+    while (1) {
+        rc = recv (self->r, (char*) buf, sizeof (buf), 0);
+        wsa_assert (rc != SOCKET_ERROR);
+        if (nn_fast (rc < sizeof (buf)))
+            break;
+    }
+}
+
 #elif defined NN_USE_SOCKETPAIR
 
 #include "err.h"
@@ -215,7 +254,7 @@ void nn_efd_term (struct nn_efd *self)
     errno_assert (rc == 0);
 }
 
-int nn_efd_getfd (struct nn_efd *self)
+nn_fd nn_efd_getfd (struct nn_efd *self)
 {
     return self->r;
 }
@@ -225,7 +264,11 @@ void nn_efd_signal (struct nn_efd *self)
     ssize_t nbytes;
     char c = 101;
 
+#if defined MSG_NOSIGNAL
+    nbytes = send (self->w, &c, 1, MSG_NOSIGNAL);
+#else
     nbytes = send (self->w, &c, 1, 0);
+#endif
     errno_assert (nbytes != -1);
     nn_assert (nbytes == 1);
 }
@@ -276,7 +319,7 @@ void nn_efd_term (struct nn_efd *self)
     errno_assert (rc == 0);
 }
 
-int nn_efd_getfd (struct nn_efd *self)
+nn_fd nn_efd_getfd (struct nn_efd *self)
 {
     return self->efd;
 }

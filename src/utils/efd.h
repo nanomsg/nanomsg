@@ -23,6 +23,14 @@
 #ifndef NN_EFD_INCLUDED
 #define NN_EFD_INCLUDED
 
+/*  Defines a type of native file descriptor on the platform. */
+#if defined NN_HAVE_WINDOWS
+#include "win.h"
+typedef SOCKET nn_fd;
+#else
+typedef int nn_fd;
+#endif
+
 /*  Provides a way to send signals via file descriptors. The important part
     is that nn_efd_getfd() returns an actual OS-level file descriptor that
     you can poll on to wait for the event. */
@@ -31,7 +39,7 @@ struct nn_efd;
 
 void nn_efd_init (struct nn_efd *self);
 void nn_efd_term (struct nn_efd *self);
-int nn_efd_getfd (struct nn_efd *self);
+nn_fd nn_efd_getfd (struct nn_efd *self);
 void nn_efd_signal (struct nn_efd *self);
 void nn_efd_unsignal (struct nn_efd *self);
 

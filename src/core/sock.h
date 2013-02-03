@@ -38,11 +38,11 @@ void nn_sock_term (struct nn_sock *self);
 struct nn_cp *nn_sock_getcp (struct nn_sock *self);
 
 /*  Add new endpoint to the socket. */
-int nn_sock_create_ep (struct nn_sock *self, const char *addr,
+int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     int (*factory) (const char *addr, void *hint, struct nn_epbase **ep));
 
 /*  Remove the endpoint with the specified ID from the socket. */
-int nn_sock_shutdown (struct nn_sock *self, int eid);
+int nn_sock_rm_ep (struct nn_sock *self, int eid);
 
 /*  used by endpoint to notify the socket that it has terminated. */
 void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep);

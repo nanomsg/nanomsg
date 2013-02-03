@@ -315,8 +315,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     nn_assert (0);
 }
 
-
-int nn_sock_create_ep (struct nn_sock *self, const char *addr,
+int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     int (*factory) (const char *addr, void *hint, struct nn_epbase **ep))
 {
     int rc;
@@ -347,7 +346,7 @@ int nn_sock_create_ep (struct nn_sock *self, const char *addr,
     return eid;
 }
 
-int nn_sock_shutdown (struct nn_sock *self, int eid)
+int nn_sock_rm_ep (struct nn_sock *self, int eid)
 {
     struct nn_sockbase *sockbase;
     struct nn_list_item *it;

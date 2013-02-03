@@ -484,7 +484,7 @@ int nn_shutdown (int s, int how)
 
     NN_BASIC_CHECKS;
 
-    rc = nn_sock_shutdown (self.socks [s], how);
+    rc = nn_sock_rm_ep (self.socks [s], how);
     if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
@@ -794,7 +794,7 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
 
     /*  Ask socket to create the endpoint. Pass it the class factory
         function. */
-    return nn_sock_create_ep (self.socks [fd], addr,
+    return nn_sock_add_ep (self.socks [fd], addr,
         bind ? tp->bind : tp->connect);
 }
 

@@ -167,7 +167,7 @@ endif ()
 
 # Be careful when turning this option on. It can mess with the existing ZeroMQ
 # installation on the box.
-option (ZMQ_COMPAT "Build ZMQ comaptibility library" OFF)
+option (ZMQ_COMPAT "Build ZMQ compatibility library" OFF)
 
 
 #  Subdirectories to build.

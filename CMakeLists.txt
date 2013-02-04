@@ -193,3 +193,25 @@ install (FILES src/fanin.h DESTINATION include/nanomsg)
 install (FILES src/fanout.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 
+#  Packaging.
+
+#  TODO: These values should be retrieved from nn.h header file.
+set (CPACK_PACKAGE_VERSION_MAJOR "0")
+set (CPACK_PACKAGE_VERSION_MINOR "0")
+set (CPACK_PACKAGE_VERSION_PATCH "0")
+
+# Source package.
+
+if (NOT WIN32)
+set (CPACK_SOURCE_GENERATOR ZIP)
+else ()
+set (CPACK_SOURCE_GENERATOR TGZ)
+endif ()
+set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+set (CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;.gitignore;README.md;${CPACK_SOURCE_IGNORE_FILES}")
+add_custom_target (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
+
+#  Create the packages.
+
+include (CPack)
+

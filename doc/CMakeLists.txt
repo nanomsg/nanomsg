@@ -100,6 +100,10 @@ if (NOT WIN32)
             COMMAND xmlto -o ${CMAKE_BINARY_DIR} man ${topic}.xml
             OUTPUT ${CMAKE_BINARY_DIR}/${topic})
         set (docs ${docs} ${CMAKE_BINARY_DIR}/${topic})
+        get_filename_component (category ${topic} EXT)
+        string (REGEX REPLACE "^\\." "" category "${category}")
+        install (FILES "${CMAKE_BINARY_DIR}/${topic}"
+            DESTINATION share/man/man${category} OPTIONAL)
 
         #  Generate the HTML page.
         add_custom_command (

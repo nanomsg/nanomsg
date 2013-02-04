@@ -3,50 +3,42 @@ nn_term(3)
 
 NAME
 ----
-nn_term - uninitialise the nanomsg library
+nn_term - notify all sockets about process termination
 
 
 SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*int nn_term (void);*
+*void nn_term (void);*
 
 
 DESCRIPTION
 -----------
-Uninitialises the nanomsg library. If the library was initialised multiple
-times, it is uninitialised only when _nn_term()_ call is executed
-for each corresponding linknanomsg:nn_init[3] call.
+To help with shutdown of multi-threaded programs nanomsg provides the
+_nn_term()_ function which informs all the open sockets that process
+terminaion is underway.
 
-Calling _nn_term()_ without prior call to linknanomsg:nn_init[3] results in
-undefined behaviour.
-
-To help with shutdown of multi-threaded programs nanomsg permits to call
-_nn_term()_ while some of the sockets are still open. In such case _nn_term()_
-call blocks and waits while all the sockets are closed.
-
-If a thread is blocked inside a blocking function, such as
-linknanomsg:nn_recv[3], it will be unblocked once _nn_term()_ is called and
-ETERM error will be returned to the user. Similarly, any attempt to invoke
-a socket function other than linknanomsg:nn_close[3] after _nn_term()_ was
-called will result in ETERM error.
+If a socket is blocked inside a blocking function, such as
+linknanomsg:nn_recv[3], it will be unblocked  and ETERM error will be returned
+to the user. Similarly, any subsequent attempt to invoke a socket function other
+than linknanomsg:nn_close[3] after _nn_term()_ was called will result
+in ETERM error.
 
 
-RETURN VALUE
-------------
-Returns zero in case of success. Returns negative value in case of error and
-sets 'errno' to to one of the values defined below.
+EXAMPLE
+-------
 
-
-ERRORS
-------
-No errors are defined.
+----
+s = nn_socket (AF_SP, NN_PAIR);
+nn_term ();
+rc = nn_send (s, "ABC", 3, 0);
+assert (rc == -1 && errno == ETERM);
+----
 
 
 SEE ALSO
 --------
-linknanomsg:nn_init[3]
 linknanomsg:nn_close[3]
 linknanomsg:nanomsg[7]
 

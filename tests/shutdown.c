@@ -35,8 +35,16 @@ void worker (void *arg)
 
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
+
+    /*  Launch blocking function to check that it will be unblocked once
+        nn_term() is called from the main thread. */
     rc = nn_recv (s, buf, sizeof (buf), 0);
     nn_assert (rc == -1 && nn_errno () == ETERM);
+
+    /*  Check that all subsequent operations fail in synchronous manner. */
+    rc = nn_recv (s, buf, sizeof (buf), 0);
+    nn_assert (rc == -1 && nn_errno () == ETERM);
+
     rc = nn_close (s);
     errno_assert (rc == 0);
 }

@@ -33,6 +33,7 @@ void worker (void *arg)
     int s;
     char buf [3];
 
+    /*  Test socket. */
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
 

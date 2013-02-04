@@ -285,7 +285,7 @@ void nn_term (void)
     self.zombie = 1;
 
     /*  Mark all open sockets as terminating. */
-    if (self.nsocks) {
+    if (self.socks && self.nsocks) {
         for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i])
                 nn_sock_zombify (self.socks [i]);

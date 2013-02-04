@@ -86,11 +86,10 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 struct nn_ctx {
 
-    /*  Synchronisation of global state of the library. */
-    struct nn_mutex sync;
-
     /*  The global table of existing sockets. The descriptor representing
-        the socket is the index to this table. */
+        the socket is the index to this table. This pointer is also used to
+        find out whether context is initialised. If it is NULL, context is
+        not initialised. */
     struct nn_sock **socks;
 
     /*  Stack of unused file descriptors. */
@@ -102,21 +101,12 @@ struct nn_ctx {
     /*  1, if nn_term() was already called, 0 otherwise. */
     int zombie;
 
-    /*  List of all available transports. The access to this list is not
-        synchronised. We assume that it never changes after the library was
-        initialised. */
+    /*  List of all available transports. */
     struct nn_list transports;
 
     /*  List of all available socket types. */
     struct nn_list socktypes;
-
-    /*  Condition variable used by nn_term() to wait till all the sockets are
-        closed. */
-    struct nn_cond termcond;
 };
-
-/*  0 if context was not initialised. 1 otherwise. */
-static int nn_ctx_initialised = 0;
 
 /*  Singleton object containing the global state of the library. */
 static struct nn_ctx self = {0};
@@ -174,12 +164,8 @@ static void nn_ctx_init (void)
 #endif
 
     /*  Check whether the library was already initialised. If so, do nothing. */
-    nn_glock_lock ();
-    if (nn_ctx_initialised) {
-        nn_glock_unlock ();
+    if (self.socks)
         return;
-    }
-    nn_ctx_initialised = 1;
 
     /*  On Windows, initialise the socket library. */
 #if defined NN_HAVE_WINDOWS
@@ -211,10 +197,8 @@ static void nn_ctx_init (void)
         self.unused [i] = NN_MAX_SOCKETS - i - 1;
 
     /*  Initialise other parts of the global state. */
-    nn_mutex_init (&self.sync);
     nn_list_init (&self.transports);
     nn_list_init (&self.socktypes);
-    nn_cond_init (&self.termcond);
 
     /*  Plug in individual transports. */
     nn_ctx_add_transport (nn_inproc);
@@ -247,8 +231,6 @@ static void nn_ctx_init (void)
 #if defined NN_LATENCY_MONITOR
     nn_latmon_init ();
 #endif
-
-    nn_glock_unlock ();
 }
 
 static void nn_ctx_term (void)
@@ -259,35 +241,27 @@ static void nn_ctx_term (void)
     int i;
 
     /*  If there are no sockets remaining, uninitialise the global context. */
-    nn_glock_lock ();
-    nn_assert (nn_ctx_initialised);
-    if (self.nsocks) {
-        nn_glock_unlock ();
+    nn_assert (self.socks);
+    if (self.nsocks > 0)
         return;
-    }
-    nn_ctx_initialised = 0;
 
     /*  Notify all the open sockets about the process shutdown and wait till
         all of them are closed. */
-    nn_mutex_lock (&self.sync);
     if (self.nsocks) {
         for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i])
                 nn_sock_zombify (self.socks [i]);
         self.zombie = 1;
-        nn_cond_wait (&self.termcond, &self.sync);
     }
-    nn_mutex_unlock (&self.sync);
 
 #if defined NN_LATENCY_MONITOR
     nn_latmon_term ();
 #endif
 
     /*  Final deallocation of the global resources. */
-    nn_cond_term (&self.termcond);
+
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
-    nn_mutex_term (&self.sync);
     nn_free (self.socks);
     self.socks = NULL;
 
@@ -299,13 +273,25 @@ static void nn_ctx_term (void)
     rc = WSACleanup ();
     nn_assert (rc == 0);
 #endif
-
-    nn_glock_unlock ();
 }
 
 void nn_term (void)
 {
-    nn_assert (0);
+    int i;
+
+    nn_glock_lock ();
+
+    /*  Switch the global state into the terminating state. */
+    self.zombie = 1;
+
+    /*  Mark all open sockets as terminating. */
+    if (self.nsocks) {
+        for (i = 0; i != NN_MAX_SOCKETS; ++i)
+            if (self.socks [i])
+                nn_sock_zombify (self.socks [i]);
+    }
+
+    nn_glock_unlock ();
 }
 
 void *nn_allocmsg (size_t size, int type)
@@ -330,22 +316,31 @@ int nn_socket (int domain, int protocol)
     struct nn_list_item *it;
     struct nn_socktype *socktype;
 
-    /*  Initialise the global context if it is not yet initialised. */
+    nn_glock_lock ();
+
+    /*  Make sure that global state is initialised. */
     nn_ctx_init ();
+
+    /*  If nn_term() was already called, return ETERM. */
+    if (nn_slow (self.zombie)) {
+        nn_ctx_term ();
+        nn_glock_unlock ();
+        errno = -ETERM;
+        return -1;
+    }
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
         nn_ctx_term ();
+        nn_glock_unlock ();
         errno = -EAFNOSUPPORT;
         return -1;
     }
 
-    nn_mutex_lock (&self.sync);
-
     /*  If socket limit was reached, report error. */
     if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
-        nn_mutex_unlock (&self.sync);
         nn_ctx_term ();
+        nn_glock_unlock ();
         errno = EMFILE;
         return -1;
     }
@@ -361,14 +356,14 @@ int nn_socket (int domain, int protocol)
         if (socktype->domain == domain && socktype->protocol == protocol) {
             self.socks [s] = (struct nn_sock*) socktype->create (s);
             ++self.nsocks;
-            nn_mutex_unlock (&self.sync);
+            nn_glock_unlock ();
             return s;
         }
     }
 
     /*  Specified socket type wasn't found. */
-    nn_mutex_unlock (&self.sync);
     nn_ctx_term ();
+    nn_glock_unlock ();
     errno = EINVAL;
     return -1;
 }
@@ -377,13 +372,13 @@ int nn_close (int s)
 {
     NN_BASIC_CHECKS;
 
+    nn_glock_lock ();
+
     /*  Additional check of socket validity. */
     nn_assert (self.nsocks > 0);
 
     /*  Deallocate the socket object. */
     nn_sock_term (self.socks [s]);
-
-    nn_mutex_lock (&self.sync);
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */
@@ -391,15 +386,10 @@ int nn_close (int s)
     self.unused [NN_MAX_SOCKETS - self.nsocks] = s;
     --self.nsocks;
 
-    /*  If there's nn_term() waiting for all sockets being closed and this is
-        the last open socket let library termination proceed. */
-    if (self.zombie && self.nsocks == 0)
-        nn_cond_post (&self.termcond);
-
-    nn_mutex_unlock (&self.sync);
-
     /*  Destroy the global context if there's no socket remaining. */
     nn_ctx_term ();
+
+    nn_glock_unlock ();
 
     return 0;
 }
@@ -742,6 +732,7 @@ static void nn_ctx_add_transport (struct nn_transport *transport)
     transport->init ();
     nn_list_insert (&self.transports, &transport->list,
         nn_list_end (&self.transports));
+    
 }
 
 static void nn_ctx_add_socktype (struct nn_socktype *socktype)
@@ -776,7 +767,7 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
 
     /*  Find the specified protocol. */
     tp = NULL;
-    nn_mutex_lock (&self.sync);
+    nn_glock_lock ();
     for (it = nn_list_begin (&self.transports);
           it != nn_list_end (&self.transports);
           it = nn_list_next (&self.transports, it)) {
@@ -786,7 +777,7 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
             break;
         tp = NULL;
     }
-    nn_mutex_unlock (&self.sync);
+    nn_glock_unlock ();
 
     /*  The protocol specified doesn't match any known protocol. */
     if (!tp)

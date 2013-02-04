@@ -34,8 +34,6 @@ int main ()
     int sub2;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     pub = nn_socket (AF_SP, NN_PUB);
     errno_assert (pub != -1);
     rc = nn_bind (pub, "inproc://a");
@@ -72,9 +70,6 @@ int main ()
     rc = nn_close (sub1);
     errno_assert (rc == 0);    
     rc = nn_close (sub2);
-    errno_assert (rc == 0);
-
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

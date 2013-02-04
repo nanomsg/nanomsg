@@ -48,22 +48,15 @@ int main ()
     struct nn_thread thread;
 
     /*  Close the socket with no associated endpoints. */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
     rc = nn_close (s);
     errno_assert (rc == 0);
-    rc = nn_term ();
-    errno_assert (rc == 0);
 
     /*  Test nn_term() before nn_close(). */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     nn_thread_init (&thread, worker, NULL);
     nn_sleep (10);
-    rc = nn_term ();
-    errno_assert (rc == 0);
+    nn_term ();
     nn_thread_term (&thread);
 
     return 0;

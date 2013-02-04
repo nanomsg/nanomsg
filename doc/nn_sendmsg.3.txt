@@ -67,8 +67,6 @@ below.
 
 ERRORS
 ------
-*EFAULT*::
-Either the library is not initialised or 'msg' is not a valid message.
 *EBADF*::
 The provided socket is invalid.
 *ENOTSUP*::

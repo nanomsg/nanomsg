@@ -79,11 +79,7 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 /*  This check is performed at the beginning of each socket operation to make
     sure that the library was initialised and the socket actually exists. */
 #define NN_BASIC_CHECKS \
-    if (nn_slow (!self.socks)) {\
-        errno = EFAULT;\
-        return -1;\
-    }\
-    if (nn_slow (!self.socks [s])) {\
+    if (nn_slow (!self.socks || !self.socks [s])) {\
         errno = EBADF;\
         return -1;\
     }
@@ -119,12 +115,15 @@ struct nn_ctx {
     struct nn_cond termcond;
 };
 
-/*  Number of times nn_init() was called without corresponding nn_term().
-    This variable is synchronised using the global lock (nn_glock). */
-int nn_ctx_refcount = 0;
+/*  0 if context was not initialised. 1 otherwise. */
+static int nn_ctx_initialised = 0;
 
 /*  Singleton object containing the global state of the library. */
 static struct nn_ctx self = {0};
+
+/*  Context creation- and termination-related private functions. */
+static void nn_ctx_init (void);
+static void nn_ctx_term (void);
 
 /*  Transport-related private functions. */
 static void nn_ctx_add_transport (struct nn_transport *transport);
@@ -166,7 +165,7 @@ struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
     return (struct nn_cmsghdr*) (((uint8_t*) cmsg) + sz);
 }
 
-int nn_init (void)
+static void nn_ctx_init (void)
 {
     int i;
 #if defined NN_HAVE_WINDOWS
@@ -174,15 +173,13 @@ int nn_init (void)
     int rc;
 #endif
 
+    /*  Check whether the library was already initialised. If so, do nothing. */
     nn_glock_lock ();
-
-    /*  If the library is already initialised, do nothing, just increment
-        the reference count. */
-    ++nn_ctx_refcount;
-    if (nn_ctx_refcount > 1) {
+    if (nn_ctx_initialised) {
         nn_glock_unlock ();
-        return 0;
+        return;
     }
+    nn_ctx_initialised = 1;
 
     /*  On Windows, initialise the socket library. */
 #if defined NN_HAVE_WINDOWS
@@ -252,26 +249,23 @@ int nn_init (void)
 #endif
 
     nn_glock_unlock ();
-
-    return 0;
 }
 
-int nn_term (void)
+static void nn_ctx_term (void)
 {
 #if defined NN_HAVE_WINDOWS
     int rc;
 #endif
     int i;
 
+    /*  If there are no sockets remaining, uninitialise the global context. */
     nn_glock_lock ();
-
-    /*  If there are still references to the library, do nothing, just
-        decrement the reference count. */
-    --nn_ctx_refcount;
-    if (nn_ctx_refcount) {
+    nn_assert (nn_ctx_initialised);
+    if (self.nsocks) {
         nn_glock_unlock ();
-        return 0;
+        return;
     }
+    nn_ctx_initialised = 0;
 
     /*  Notify all the open sockets about the process shutdown and wait till
         all of them are closed. */
@@ -307,8 +301,11 @@ int nn_term (void)
 #endif
 
     nn_glock_unlock ();
+}
 
-    return 0;
+void nn_term (void)
+{
+    nn_assert (0);
 }
 
 void *nn_allocmsg (size_t size, int type)
@@ -333,14 +330,12 @@ int nn_socket (int domain, int protocol)
     struct nn_list_item *it;
     struct nn_socktype *socktype;
 
-    /*  Check whether library was initialised. */
-    if (nn_slow (!self.socks)) {
-        errno = EFAULT;
-        return -1;
-    }
+    /*  Initialise the global context if it is not yet initialised. */
+    nn_ctx_init ();
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
+        nn_ctx_term ();
         errno = -EAFNOSUPPORT;
         return -1;
     }
@@ -350,6 +345,7 @@ int nn_socket (int domain, int protocol)
     /*  If socket limit was reached, report error. */
     if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
         nn_mutex_unlock (&self.sync);
+        nn_ctx_term ();
         errno = EMFILE;
         return -1;
     }
@@ -372,6 +368,7 @@ int nn_socket (int domain, int protocol)
 
     /*  Specified socket type wasn't found. */
     nn_mutex_unlock (&self.sync);
+    nn_ctx_term ();
     errno = EINVAL;
     return -1;
 }
@@ -400,6 +397,9 @@ int nn_close (int s)
         nn_cond_post (&self.termcond);
 
     nn_mutex_unlock (&self.sync);
+
+    /*  Destroy the global context if there's no socket remaining. */
+    nn_ctx_term ();
 
     return 0;
 }

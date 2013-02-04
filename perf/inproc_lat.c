@@ -82,9 +82,6 @@ int main (int argc, char *argv [])
     message_size = atoi (argv [1]);
     roundtrip_count = atoi (argv [2]);
 
-    rc = nn_init ();
-    assert (rc == 0);
-
     s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
     rc = nn_bind (s, "inproc://inproc_lat");
@@ -117,8 +114,6 @@ int main (int argc, char *argv [])
     nn_thread_term (&thread);
     free (buf);
     rc = nn_close (s);
-    assert (rc == 0);
-    rc = nn_term ();
     assert (rc == 0);
 
     return 0;

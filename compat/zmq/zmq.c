@@ -153,31 +153,17 @@ size_t zmq_msg_size (zmq_msg_t *msg)
 
 void *zmq_init (int io_threads)
 {
-    int rc;
-
-    /*  Initialise the nanomsg library. */
-    rc = nn_init ();
-    if (rc != 0)
-        return NULL;
-
     /*  Return substitute context pointer. */
     return (void*) &nn_dummy_context;
 }
 
 int zmq_term (void *context)
 {
-    int rc;
-
     /*  Check whether substitute context pointer is valid. */
     if (context != &nn_dummy_context) {
         errno = EFAULT;
         return -1;
     }
-
-    /*  Terminate the nanomsg library. */
-    rc = nn_term ();
-    if (rc != 0)
-        return -1;
 
     return 0;
 }

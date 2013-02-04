@@ -34,8 +34,6 @@ int main ()
     int sndprio;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     pull1 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull1 != -1);
     rc = nn_bind (pull1, "inproc://1");
@@ -73,8 +71,6 @@ int main ()
     rc = nn_close (push);
     errno_assert (rc == 0);
     rc = nn_close (pull2);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

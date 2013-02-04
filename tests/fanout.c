@@ -33,8 +33,6 @@ int main ()
     int pull2;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     push = nn_socket (AF_SP, NN_PUSH);
     errno_assert (push != -1);
     rc = nn_bind (push, "inproc://a");
@@ -71,9 +69,6 @@ int main ()
     rc = nn_close (pull1);
     errno_assert (rc == 0);    
     rc = nn_close (pull2);
-    errno_assert (rc == 0);
-
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

@@ -136,11 +136,10 @@ NN_EXPORT int nn_errno (void);
 NN_EXPORT const char *nn_strerror (int errnum);
 
 /******************************************************************************/
-/*  Initialisation and shutdown.                                              */
+/*  Helper function for shutting down multi-threaded applications.            */
 /******************************************************************************/
 
-NN_EXPORT int nn_init (void);
-NN_EXPORT int nn_term (void);
+NN_EXPORT void nn_term (void);
 
 /******************************************************************************/
 /*  Zero-copy support.                                                        */

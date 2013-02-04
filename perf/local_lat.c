@@ -47,8 +47,6 @@ int main (int argc, char *argv [])
     sz = atoi (argv [2]);
     rts = atoi (argv [3]);
 
-    rc = nn_init ();
-    assert (rc == 0);
     s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
     rc = nn_bind (s, bind_to);
@@ -68,9 +66,6 @@ int main (int argc, char *argv [])
     free (buf);
 
     rc = nn_close (s);
-    assert (rc == 0);
-
-    rc = nn_term ();
     assert (rc == 0);
 
     return 0;

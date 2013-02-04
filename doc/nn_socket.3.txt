@@ -55,8 +55,6 @@ descriptor of an SP socket will incidentally collide (be equal).
 
 ERRORS
 ------
-*EFAULT*::
-The library is not initialised.
 *EAFNOSUPPORT*::
 Specified address family is not supported.
 *EINVAL*::

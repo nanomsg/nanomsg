@@ -57,6 +57,12 @@ int main ()
     nn_thread_init (&thread, worker, NULL);
     nn_sleep (10);
     nn_term ();
+
+    /*  Check that it's not possible to create new sockets after nn_term(). */
+    rc = nn_socket (AF_SP, NN_PAIR);
+    nn_assert (rc == -1 && nn_errno () == ETERM);
+    
+    /*  Wait till worker thread terminates. */
     nn_thread_term (&thread);
 
     return 0;

@@ -325,7 +325,7 @@ int nn_socket (int domain, int protocol)
     if (nn_slow (self.zombie)) {
         nn_ctx_term ();
         nn_glock_unlock ();
-        errno = -ETERM;
+        errno = ETERM;
         return -1;
     }
 
@@ -333,7 +333,7 @@ int nn_socket (int domain, int protocol)
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
         nn_ctx_term ();
         nn_glock_unlock ();
-        errno = -EAFNOSUPPORT;
+        errno = EAFNOSUPPORT;
         return -1;
     }
 

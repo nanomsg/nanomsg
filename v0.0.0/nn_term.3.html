@@ -566,7 +566,7 @@ nn_term(3) Manual Page
 <h2>NAME</h2>
 <div class="sectionbody">
 <p>nn_term -
-   uninitialise the nanomsg library
+   notify all sockets about process termination
 </p>
 </div>
 </div>
@@ -575,45 +575,38 @@ nn_term(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_term (void);</strong></p></div>
+<div class="paragraph"><p><strong>void nn_term (void);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Uninitialises the nanomsg library. If the library was initialised multiple
-times, it is uninitialised only when <em>nn_term()</em> call is executed
-for each corresponding <a href="nn_init.3.html">nn_init(3)</a> call.</p></div>
-<div class="paragraph"><p>Calling <em>nn_term()</em> without prior call to <a href="nn_init.3.html">nn_init(3)</a> results in
-undefined behaviour.</p></div>
-<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg permits to call
-<em>nn_term()</em> while some of the sockets are still open. In such case <em>nn_term()</em>
-call blocks and waits while all the sockets are closed.</p></div>
-<div class="paragraph"><p>If a thread is blocked inside a blocking function, such as
-<a href="nn_recv.3.html">nn_recv(3)</a>, it will be unblocked once <em>nn_term()</em> is called and
-ETERM error will be returned to the user. Similarly, any attempt to invoke
-a socket function other than <a href="nn_close.3.html">nn_close(3)</a> after <em>nn_term()</em> was
-called will result in ETERM error.</p></div>
+<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg provides the
+<em>nn_term()</em> function which informs all the open sockets that process
+terminaion is underway.</p></div>
+<div class="paragraph"><p>If a socket is blocked inside a blocking function, such as
+<a href="nn_recv.3.html">nn_recv(3)</a>, it will be unblocked  and ETERM error will be returned
+to the user. Similarly, any subsequent attempt to invoke a socket function other
+than <a href="nn_close.3.html">nn_close(3)</a> after <em>nn_term()</em> was called will result
+in ETERM error.</p></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
+<h2 id="_example">EXAMPLE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Returns zero in case of success. Returns negative value in case of error and
-sets <em>errno</em> to to one of the values defined below.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>No errors are defined.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>s = nn_socket (AF_SP, NN_PAIR);
+nn_term ();
+rc = nn_send (s, "ABC", 3, 0);
+assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_init.3.html">nn_init(3)</a>
-<a href="nn_close.3.html">nn_close(3)</a>
+<div class="paragraph"><p><a href="nn_close.3.html">nn_close(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -628,7 +621,7 @@ sets <em>errno</em> to to one of the values defined below.</p></div>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-24 07:50:45 CET
+Last updated 2013-02-05 05:35:27 CET
 </div>
 </div>
 </body>

@@ -583,22 +583,6 @@ nanomsg(7) Manual Page
 <div class="paragraph"><p>Following functions are exported by nanomsg library:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Initialise the library
-</dt>
-<dd>
-<p>
-    <a href="nn_init.3.html">nn_init(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Uninitialise the library
-</dt>
-<dd>
-<p>
-    <a href="nn_term.3.html">nn_term(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
 Create an SP socket
 </dt>
 <dd>
@@ -734,6 +718,14 @@ Report the version of nanomsg library
     <a href="nn_version.3.html">nn_version(3)</a>
 </p>
 </dd>
+<dt class="hdlist1">
+Notify all sockets about process termination
+</dt>
+<dd>
+<p>
+    <a href="nn_term.3.html">nn_term(3)</a>
+</p>
+</dd>
 </dl></div>
 <div class="paragraph"><p>Following scalability protocols are provided by nanomsg:</p></div>
 <div class="dlist"><dl>
@@ -813,10 +805,10 @@ TCP transport
 </p>
 </dd>
 </dl></div>
-<div class="paragraph"><p>Following comaptibility options are provided by nanomsg:</p></div>
+<div class="paragraph"><p>Following compatibility options are provided by nanomsg:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-ZeroMQ comaptibility library
+ZeroMQ compatibility library
 </dt>
 <dd>
 <p>
@@ -837,7 +829,7 @@ ZeroMQ comaptibility library
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-01-30 11:25:32 CET
+Last updated 2013-02-05 05:35:27 CET
 </div>
 </div>
 </body>

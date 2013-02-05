@@ -244,6 +244,7 @@ static void nn_ctx_term (void)
 #if defined NN_HAVE_WINDOWS
     int rc;
 #endif
+    struct nn_list_item *it;
 
     /*  If there are no sockets remaining, uninitialise the global context. */
     nn_assert (self.socks);
@@ -254,7 +255,14 @@ static void nn_ctx_term (void)
     nn_latmon_term ();
 #endif
 
-    /*  Final deallocation of the global resources. */
+    /*  Ask all the transport to deallocate their global resources. */
+    while (!nn_list_empty (&self.transports)) {
+        it = nn_list_begin (&self.transports);
+        nn_cont (it, struct nn_transport, list)->term ();
+        nn_list_erase (&self.transports, it);
+    }
+
+    /*  Final deallocation of the nn_ctx object itself. */
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_free (self.socks);

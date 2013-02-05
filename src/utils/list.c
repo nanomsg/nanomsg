@@ -32,6 +32,7 @@ void nn_list_init (struct nn_list *self)
 
 void nn_list_term (struct nn_list *self)
 {
+    /*  TODO: We should assert if either is not NULL. */
     self->first = NULL;
     self->last = NULL;
 }

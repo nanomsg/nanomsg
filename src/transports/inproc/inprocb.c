@@ -41,7 +41,7 @@ int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint)
     nn_epbase_init (&self->epbase, &nn_inprocb_epbase_vfptr, addr, hint);
 
     /*  Store the name of the endpoint. */
-    if (nn_slow (strlen (addr) + 1 > NN_INPROCB_NAMELEN_MAX))
+    if (nn_slow (strlen (addr) + 1 > NN_SOCKADDR_MAX))
         return -ENAMETOOLONG;
 #if defined _MSC_VER
 #pragma warning(push)

@@ -23,13 +23,12 @@
 #ifndef NN_INPROCC_INCLUDED
 #define NN_INPROCC_INCLUDED
 
+#include "../../nn.h"
 #include "../../transport.h"
 
 #include "../../utils/list.h"
 
 #include "msgpipe.h"
-
-#define NN_INPROCC_NAMELEN_MAX 64
 
 struct nn_inprocc {
 
@@ -37,7 +36,7 @@ struct nn_inprocc {
     struct nn_epbase epbase;
 
     /*  Name of the connected endpoint. */
-    char addr [NN_INPROCC_NAMELEN_MAX];
+    char addr [NN_SOCKADDR_MAX];
 
     /*  This object is an element in the list of all connected endpoints managed
         by nn_inproc_ctx object. */

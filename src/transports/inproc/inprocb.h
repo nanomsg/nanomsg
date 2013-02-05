@@ -23,13 +23,12 @@
 #ifndef NN_INPROCB_INCLUDED
 #define NN_INPROCB_INCLUDED
 
+#include "../../nn.h"
 #include "../../transport.h"
 
 #include "../../utils/list.h"
 
 #include "msgpipe.h"
-
-#define NN_INPROCB_NAMELEN_MAX 64
 
 struct nn_inprocb {
 
@@ -37,7 +36,7 @@ struct nn_inprocb {
     struct nn_epbase epbase;
 
     /*  Name of the bound endpoint. */
-    char addr [NN_INPROCB_NAMELEN_MAX];
+    char addr [NN_SOCKADDR_MAX];
 
     /*  This object is an element in the list of all bound endpoints managed
         by nn_inproc_ctx object. */

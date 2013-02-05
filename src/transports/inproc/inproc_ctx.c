@@ -94,7 +94,7 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         inprocb = nn_cont (it, struct nn_inprocb, list);
-        if (strncmp (addr, inprocb->addr, NN_INPROCB_NAMELEN_MAX) == 0)
+        if (strncmp (addr, inprocb->addr, NN_SOCKADDR_MAX) == 0)
             return -EADDRINUSE;
     }
 
@@ -111,7 +111,7 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
           it != nn_list_end (&self.connected);
           it = nn_list_next (&self.connected, it)) {
         inprocc = nn_cont (it, struct nn_inprocc, list);
-        if (strncmp (addr, inprocc->addr, NN_INPROCC_NAMELEN_MAX) == 0) {
+        if (strncmp (addr, inprocc->addr, NN_SOCKADDR_MAX) == 0) {
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
             nn_msgpipe_init (pipe, inprocb, inprocc);

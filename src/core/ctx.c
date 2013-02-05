@@ -547,7 +547,7 @@ int nn_recv (int s, void *buf, size_t len, int flags)
 
     if (len == NN_MSG) {
         ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) buf = (void*) (ch + 1);
+        *(void**) buf = nn_chunk_data (ch);
         sz = nn_chunk_size (ch);
     }
     else {
@@ -682,7 +682,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
         ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) (msghdr->msg_iov [0].iov_base) = (void*) (ch + 1);
+        *(void**) (msghdr->msg_iov [0].iov_base) = nn_chunk_data (ch);
         sz = nn_chunk_size (ch);
     }
     else {

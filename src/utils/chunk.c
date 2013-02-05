@@ -22,6 +22,7 @@
 
 #include "chunk.h"
 #include "alloc.h"
+#include "fast.h"
 #include "err.h"
 
 #include <string.h>
@@ -74,11 +75,16 @@ static void nn_chunk_default_free (void *p)
     nn_free (p);
 }
 
-int nn_chunk_check (struct nn_chunk *self)
+struct nn_chunk *nn_chunk_from_data (void *data)
 {
-    if (nn_fast (self->tag == NN_CHUNK_TAG))
-        return 0;
-    return -EFAULT;
+    struct nn_chunk *chunk;
+
+    if (nn_slow (!data))
+        return NULL;
+    chunk = ((struct nn_chunk*) data) - 1;
+    if (nn_slow (chunk->tag != NN_CHUNK_TAG))
+        return NULL;
+    return chunk;
 }
 
 void *nn_chunk_data (struct nn_chunk *self)

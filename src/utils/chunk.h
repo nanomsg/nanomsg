@@ -56,8 +56,9 @@ struct nn_chunk *nn_chunk_alloc (size_t size, int type);
 /*  Deallocates the chunk. */
 void nn_chunk_free (struct nn_chunk *self);
 
-/*  Checks whether chunk is valid. */
-int nn_chunk_check (struct nn_chunk *self);
+/*  Converts data pointer to chunk pointer. Returns NULL in the case of
+    invalid chunk. */
+struct nn_chunk *nn_chunk_from_data (void *data);
 
 /*  Returns pointer to the chunk buffer. */
 void *nn_chunk_data (struct nn_chunk *self);

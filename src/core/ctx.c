@@ -501,10 +501,9 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 
     /*  Create a message object. */
     if (len == NN_MSG) {
-        ch = (*(struct nn_chunk**) buf) - 1;
-        rc = nn_chunk_check (ch);
-        if (nn_slow (rc < 0)) {
-            errno = -rc;
+        ch = nn_chunk_from_data (*(void**) buf);
+        if (nn_slow (ch == NULL)) {
+            errno = EFAULT;
             return -1;
         }
         len = nn_chunk_size (ch);
@@ -590,7 +589,11 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        ch = (*(struct nn_chunk**) msghdr->msg_iov [0].iov_base) - 1;
+        ch = nn_chunk_from_data (*(void**) msghdr->msg_iov [0].iov_base);
+        if (nn_slow (ch == NULL)) {
+            errno = EFAULT;
+            return -1;
+        }
         sz = nn_chunk_size (ch);
         nn_msg_init_chunk (&msg, ch);
     }

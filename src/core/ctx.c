@@ -74,6 +74,10 @@
 
 /*  Max number of concurrent SP sockets. */
 #define NN_MAX_SOCKETS 512
+
+/*  To save some space, list of unused socket slots uses uint16_t integers to
+    refer to individual sockets. If there's a need to more that 0x10000 sockets,
+    the type should be changed to uint32_t or int. */
 CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 /*  This check is performed at the beginning of each socket operation to make
@@ -84,12 +88,14 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
         return -1;\
     }
 
+#define NN_CTX_FLAG_ZOMBIE 1
+
 struct nn_ctx {
 
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. This pointer is also used to
         find out whether context is initialised. If it is NULL, context is
-        not initialised. */
+        uninitialised. */
     struct nn_sock **socks;
 
     /*  Stack of unused file descriptors. */
@@ -98,8 +104,8 @@ struct nn_ctx {
     /*  Number of actual open sockets in the socket table. */
     size_t nsocks;
 
-    /*  1, if nn_term() was already called, 0 otherwise. */
-    int zombie;
+    /*  Combination of the flags listed above. */
+    int flags;
 
     /*  List of all available transports. */
     struct nn_list transports;
@@ -188,7 +194,7 @@ static void nn_ctx_init (void)
     for (i = 0; i != NN_MAX_SOCKETS; ++i)
         self.socks [i] = NULL;
     self.nsocks = 0;
-    self.zombie = 0;
+    self.flags = 0;
 
     /*  Allocate the stack of unused file descriptors. */
     self.unused = (uint16_t*) (self.socks + NN_MAX_SOCKETS);
@@ -238,31 +244,22 @@ static void nn_ctx_term (void)
 #if defined NN_HAVE_WINDOWS
     int rc;
 #endif
-    int i;
 
     /*  If there are no sockets remaining, uninitialise the global context. */
     nn_assert (self.socks);
     if (self.nsocks > 0)
         return;
 
-    /*  Notify all the open sockets about the process shutdown and wait till
-        all of them are closed. */
-    if (self.nsocks) {
-        for (i = 0; i != NN_MAX_SOCKETS; ++i)
-            if (self.socks [i])
-                nn_sock_zombify (self.socks [i]);
-        self.zombie = 1;
-    }
-
 #if defined NN_LATENCY_MONITOR
     nn_latmon_term ();
 #endif
 
     /*  Final deallocation of the global resources. */
-
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_free (self.socks);
+
+    /*  This marks the global state as uninitialised. */
     self.socks = NULL;
 
     /*  Shut down the memory allocation subsystem. */
@@ -281,8 +278,8 @@ void nn_term (void)
 
     nn_glock_lock ();
 
-    /*  Switch the global state into the terminating state. */
-    self.zombie = 1;
+    /*  Switch the global state into the zombie state. */
+    self.flags |= NN_CTX_FLAG_ZOMBIE;
 
     /*  Mark all open sockets as terminating. */
     if (self.socks && self.nsocks) {
@@ -322,7 +319,7 @@ int nn_socket (int domain, int protocol)
     nn_ctx_init ();
 
     /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (self.zombie)) {
+    if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
         nn_ctx_term ();
         nn_glock_unlock ();
         errno = ETERM;
@@ -374,7 +371,8 @@ int nn_close (int s)
 
     nn_glock_lock ();
 
-    /*  Additional check of socket validity. */
+    /*  Additional check of socket validity. NN_BASIC_CHECKS macro should ensure
+        that this never happens. */
     nn_assert (self.nsocks > 0);
 
     /*  Deallocate the socket object. */

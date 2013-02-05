@@ -28,6 +28,7 @@
 #include "utils/list.h"
 #include "utils/clock.h"
 #include "utils/msg.h"
+#include "utils/efd.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,6 +73,8 @@ struct nn_sockbase_vfptr {
 };
 
 #define NN_SOCK_FLAG_ZOMBIE 1
+#define NN_SOCK_FLAG_SNDFD 2
+#define NN_SOCK_FLAG_RCVFD 4
 
 struct nn_sockbase
 {
@@ -87,6 +90,13 @@ struct nn_sockbase
     /*  Condition variable to implement sleeping in blocking socket
         operations. */
     struct nn_cond cond;
+
+    /*  The efd objects for signalling readability and writeability. These
+        objects are initialised only if NN_SOCK_FLAG_SNDFD/RCVFD flags are
+        set. This way we can create these relatively expensive objcets only
+        when actually needed. */
+    struct nn_efd sndfd;
+    struct nn_efd rcvfd;
 
     /*  Clock used to measure send & recv timeouts. */
     struct nn_clock clock;

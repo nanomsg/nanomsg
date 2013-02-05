@@ -48,6 +48,7 @@ add_libnanomsg_test (timeo)
 add_libnanomsg_test (iovec)
 add_libnanomsg_test (msg)
 add_libnanomsg_test (prio)
+# add_libnanomsg_test (poll)
 
 #  If ZMQ compatibility is required, test it.
 if (ZMQ_COMPAT)

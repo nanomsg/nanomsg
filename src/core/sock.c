@@ -98,6 +98,10 @@ void nn_sock_term (struct nn_sock *self)
         if (nn_list_empty (&sockbase->eps)) {
 
             /*  Terminate the nn_sockbase itself. */
+            if (sockbase->flags & NN_SOCK_FLAG_SNDFD)
+                nn_efd_term (&sockbase->sndfd);
+            if (sockbase->flags & NN_SOCK_FLAG_RCVFD)
+                nn_efd_term (&sockbase->rcvfd);
             nn_cp_unlock (&sockbase->cp);
             nn_list_term (&sockbase->eps);
             nn_clock_term (&sockbase->clock);
@@ -241,6 +245,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     int rc;
     struct nn_sockbase *sockbase;
     int *src;
+    nn_fd fd;
 
     sockbase = (struct nn_sockbase*) self;
 
@@ -281,8 +286,29 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             src = &sockbase->sndprio;
             break;
         case NN_SNDFD:
+            if (!(sockbase->flags & NN_SOCK_FLAG_SNDFD)) {
+                nn_efd_init (&sockbase->sndfd);
+                sockbase->flags |= NN_SOCK_FLAG_SNDFD;
+            }
+            fd = nn_efd_getfd (&sockbase->sndfd);
+            memcpy (optval, &fd,
+                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+            *optvallen = sizeof (nn_fd);
+            if (!internal)
+                nn_cp_unlock (&sockbase->cp);
+            return 0;
         case NN_RCVFD:
-            nn_assert (0);
+            if (!(sockbase->flags & NN_SOCK_FLAG_RCVFD)) {
+                nn_efd_init (&sockbase->rcvfd);
+                sockbase->flags |= NN_SOCK_FLAG_RCVFD;
+            }
+            fd = nn_efd_getfd (&sockbase->rcvfd);
+            memcpy (optval, &fd,
+                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+            *optvallen = sizeof (nn_fd);
+            if (!internal)
+                nn_cp_unlock (&sockbase->cp);
+            return 0;
         default:
             if (!internal)
                 nn_cp_unlock (&sockbase->cp);

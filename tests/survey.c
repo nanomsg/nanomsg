@@ -36,8 +36,6 @@ int main ()
 
     /*  Test a simple survey with two respondents. */
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     surveyor = nn_socket (AF_SP, NN_SURVEYOR);
     errno_assert (surveyor != -1);
     deadline = 100;
@@ -88,8 +86,6 @@ int main ()
     rc = nn_close (respondent1);
     errno_assert (rc == 0);    
     rc = nn_close (respondent2);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

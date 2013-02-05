@@ -32,8 +32,6 @@ int main ()
     int source2;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     sink = nn_socket (AF_SP, NN_SINK);
     errno_assert (sink != -1);
     rc = nn_bind (sink, "inproc://a");
@@ -66,9 +64,6 @@ int main ()
     rc = nn_close (source1);
     errno_assert (rc == 0);    
     rc = nn_close (source2);
-    errno_assert (rc == 0);
-
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

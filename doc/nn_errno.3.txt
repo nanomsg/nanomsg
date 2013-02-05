@@ -40,9 +40,9 @@ EXAMPLE
 -------
 
 ----
-rc = nn_init ();
-if (rc != 0)
-    printf ("nn_init failed with error code %d\n", nn_errno ());
+rc = nn_send (s, "ABC", 3, 0);
+if (rc < 0)
+    printf ("nn_send failed with error code %d\n", nn_errno ());
 ----
 
 

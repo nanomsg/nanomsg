@@ -42,8 +42,6 @@ below.
 
 ERRORS
 ------
-*EFAULT*::
-The library is not initialised.
 *EBADF*::
 The provided socket is invalid.
 *ENOTSUP*::

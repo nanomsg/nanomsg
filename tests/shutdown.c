@@ -33,10 +33,19 @@ void worker (void *arg)
     int s;
     char buf [3];
 
+    /*  Test socket. */
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
+
+    /*  Launch blocking function to check that it will be unblocked once
+        nn_term() is called from the main thread. */
     rc = nn_recv (s, buf, sizeof (buf), 0);
     nn_assert (rc == -1 && nn_errno () == ETERM);
+
+    /*  Check that all subsequent operations fail in synchronous manner. */
+    rc = nn_recv (s, buf, sizeof (buf), 0);
+    nn_assert (rc == -1 && nn_errno () == ETERM);
+
     rc = nn_close (s);
     errno_assert (rc == 0);
 }
@@ -48,22 +57,21 @@ int main ()
     struct nn_thread thread;
 
     /*  Close the socket with no associated endpoints. */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
     rc = nn_close (s);
     errno_assert (rc == 0);
-    rc = nn_term ();
-    errno_assert (rc == 0);
 
     /*  Test nn_term() before nn_close(). */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     nn_thread_init (&thread, worker, NULL);
     nn_sleep (10);
-    rc = nn_term ();
-    errno_assert (rc == 0);
+    nn_term ();
+
+    /*  Check that it's not possible to create new sockets after nn_term(). */
+    rc = nn_socket (AF_SP, NN_PAIR);
+    nn_assert (rc == -1 && nn_errno () == ETERM);
+    
+    /*  Wait till worker thread terminates. */
     nn_thread_term (&thread);
 
     return 0;

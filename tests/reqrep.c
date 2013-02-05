@@ -37,8 +37,6 @@ int main ()
 
     /*  Test req/rep with full socket types. */
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
     rc = nn_bind (rep1, "inproc://a");
@@ -91,12 +89,8 @@ int main ()
     errno_assert (rc == 0);    
     rc = nn_close (req2);
     errno_assert (rc == 0);
-    rc = nn_term ();
-    errno_assert (rc == 0);
 
     /*  Check load-balancing of requests. */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
     rc = nn_bind (req1, "inproc://a");
@@ -142,12 +136,8 @@ int main ()
     errno_assert (rc == 0);    
     rc = nn_close (req1);
     errno_assert (rc == 0);
-    rc = nn_term ();
-    errno_assert (rc == 0);
 
     /*  Test re-sending of the request. */
-    rc = nn_init ();
-    errno_assert (rc == 0);
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
     rc = nn_bind (rep1, "inproc://a");
@@ -174,8 +164,6 @@ int main ()
     rc = nn_close (req1);
     errno_assert (rc == 0);
     rc = nn_close (rep1);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

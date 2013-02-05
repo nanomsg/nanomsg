@@ -32,8 +32,6 @@ int main ()
     int sc;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
     rc = nn_bind (sb, "inproc://a");
@@ -62,8 +60,6 @@ int main ()
     rc = nn_close (sc);
     errno_assert (rc == 0);
     rc = nn_close (sb);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

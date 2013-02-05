@@ -35,8 +35,6 @@ int main ()
     struct nn_stopwatch stopwatch;
     uint64_t elapsed;
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
     s = nn_socket (AF_SP, NN_PAIR);
     errno_assert (s != -1);
 
@@ -57,8 +55,6 @@ int main ()
     time_assert (elapsed, 100000);
 
     rc = nn_close (s);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 
     return 0;

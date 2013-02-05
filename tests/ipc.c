@@ -40,9 +40,6 @@ int main ()
     int i;
     char buf [3];
 
-    rc = nn_init ();
-    errno_assert (rc == 0);
-
     /*  Try closing a IPC socket while it not connected. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
@@ -100,8 +97,6 @@ int main ()
     rc = nn_close (sc);
     errno_assert (rc == 0);
     rc = nn_close (sb);
-    errno_assert (rc == 0);
-    rc = nn_term ();
     errno_assert (rc == 0);
 #endif
 

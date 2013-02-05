@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>nanomsg</title>
+  <style>
+  body {font-family:sans-serif;} 
+  #toplist {
+    padding-left: 0px;
+  }
+  #toplist li {
+    display: inline;
+    list-style-type: none;
+    padding-right: 15px;
+  }
+  a {color:#000000;}
+  </style>
+</head>
+<body>
+<div style="width:50em">
+
+<img src="logo.png">
+
+<b>
+<ul id='toplist'>
+<li><a href="index.html">Home</a></li>
+<li>Download</li>
+<li><a href="documentation.html">Documentation</a></li>
+<li><a href="development.html">Development</a></li>
+<li><a href="community.html">Community</a></li>
+<li><a href="http://www.250bpm.com/services">Support</a></li>
+</ul>
+</b>
+
+<h3>Source code</h3>
+
+<p>Source code of nanomsg library is hosted on GitHub:</p>
+
+<a href="https://github.com/250bpm/nanomsg">https://github.com/250bpm/nanomsg</a>
+
+<p>Source code of this website is located in gh-pages branch:</p>
+
+<p>TODO</p>
+
+<h3>Build</h3>
+
+<p>First, you have to have CMake installed. Once that is done following sequence of steps will build the library and related utilities:</p>
+
+<div>
+<pre>
+<tt>
+$ git clone git@github.com:250bpm/nanomsg.git
+$ cd nanomsg
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+$ make test
+$ sudo make install
+</tt>
+</pre>
+</div>
+
+<p>On Windows, follow the above steps until cmake step is done. Then use MSVC2010 to open and build the nanomsg solution located in on build subdirectory.</p>
+
+<p>To build the documentation (man pages and HTML reference) you need asciidoc and xmlto installed. Once done, run "make doc" command in the build subdirectory.</p>
+
+<h3>Bug tracker</h3>
+
+<p>Use GitHub bug tracker to report problems with nanomsg:</p>
+
+<a href="https://github.com/250bpm/nanomsg/issues">https://github.com/250bpm/nanomsg/issues</a>
+
+<h3>Contributing</h3>
+
+To contribute to nanomsg project send your patch to the mailing list or, alternatively, send a GitHub pull request. In either case you have to state that your patch is submitted under MIT/X11 license, so that we can incorporate it into the mainline codebase.
+
+</div>
+</body>
+</html>

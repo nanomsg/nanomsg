@@ -26,6 +26,10 @@
 #include "inprocb.h"
 #include "inprocc.h"
 
+/*  Inproc context is accessed from the outside via nn_transport virtual
+    interface. Following functions are for internal use from within the
+    transport. */
+
 void nn_inproc_ctx_unbind (struct nn_inprocb *inprocb);
 void nn_inproc_ctx_disconnect (struct nn_inprocc *inprocc);
 

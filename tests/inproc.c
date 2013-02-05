@@ -38,15 +38,19 @@ int main ()
     int i;
     char buf [3];
 
+    /*  Create a simple topology. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
     rc = nn_connect (sc, "inproc://test");
     errno_assert (rc >= 0);
-
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
     rc = nn_bind (sb, "inproc://test");
     errno_assert (rc >= 0);
+
+    /*  Try a duplicate bind. It should fail. */
+    rc = nn_bind (sc, "inproc://test");
+    nn_assert (rc < 0 && errno == EADDRINUSE);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {

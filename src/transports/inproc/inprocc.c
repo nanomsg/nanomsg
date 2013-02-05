@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -75,9 +75,12 @@ static void nn_inprocc_close (struct nn_epbase *self)
     inprocc = nn_cont (self, struct nn_inprocc, epbase);
 
     /*  If the endpoint is connected, detach the pipe from the connect-side
-        socket. */
-    if (inprocc->pipe)
+        socket. The pipe may be deallocated in the process, so make sure that
+        the pointer won't be used any more. */
+    if (inprocc->pipe) {
         nn_msgpipe_detachc (inprocc->pipe);
+        inprocc->pipe = NULL;
+    }
 
     /*  Remove the endpoint from the repository of all inproc endpoints. */
     nn_inproc_ctx_disconnect (inprocc);

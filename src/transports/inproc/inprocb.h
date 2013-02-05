@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -42,7 +42,7 @@ struct nn_inprocb {
         by nn_inproc_ctx object. */
     struct nn_list_item list;
 
-    /*  List of all message pipes belonging to this endpoint. */
+    /*  List of all message pipes attached to this endpoint. */
     struct nn_list pipes;
 
 };

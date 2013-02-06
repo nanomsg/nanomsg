@@ -28,12 +28,10 @@
 #include "msgqueue.h"
 
 #include "../../utils/aio.h"
+#include "../../utils/mutex.h"
 
 struct nn_inprocb;
 struct nn_inprocc;
-
-/*  This object (but not the msgqueues inside it) is synchronised using
-    the inproc_ctx critical section. */
 
 #define NN_MSGPIPE_PIPE0_ACTIVE 1
 #define NN_MSGPIPE_PIPE1_ACTIVE 2
@@ -42,6 +40,9 @@ struct nn_inprocc;
 #define NN_MSGPIPE_EVENT_OUT 2
 
 struct nn_msgpipe {
+
+    /*  Critical section to guard the whole msgpipe object. */
+    struct nn_mutex sync;
 
     /*  The two ends of the pipe. First one is the bound end, second one
         is the connected end. */

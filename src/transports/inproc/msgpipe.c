@@ -75,6 +75,8 @@ static const struct nn_cp_sink *nn_msgpipe_outevent1_sinkptr =
 void nn_msgpipe_init (struct nn_msgpipe *self,
     struct nn_inprocb *inprocb, struct nn_inprocc *inprocc)
 {
+    nn_mutex_init (&self->sync);
+
     /*  Initialise the pipes. */ 
     nn_pipebase_init (&self->pipes [0], &nn_msgpipe_vfptr0, &inprocb->epbase);
     nn_pipebase_init (&self->pipes [1], &nn_msgpipe_vfptr1, &inprocc->epbase);
@@ -106,26 +108,40 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
 
 void nn_msgpipe_detachb (struct nn_msgpipe *self)
 {
+    nn_mutex_lock (&self->sync);
+
     /*  Detach the pipe on the bound end. */
     nn_assert (self->flags & NN_MSGPIPE_PIPE0_ACTIVE);
     nn_pipebase_term (&self->pipes [0]);
     self->flags &= ~NN_MSGPIPE_PIPE0_ACTIVE;
 
     /* If there are no more references deallocate the pipe. */
-    if (!self->flags)
+    if (!self->flags) {
+        nn_mutex_unlock (&self->sync);
         nn_msgpipe_term (self);
+        return;
+    }
+
+    nn_mutex_unlock (&self->sync);
 }
 
 void nn_msgpipe_detachc (struct nn_msgpipe *self)
 {
+    nn_mutex_lock (&self->sync);
+
     /*  Detach the pipe on the bound end. */
     nn_assert (self->flags & NN_MSGPIPE_PIPE1_ACTIVE);
     nn_pipebase_term (&self->pipes [1]);
     self->flags &= ~NN_MSGPIPE_PIPE1_ACTIVE;
 
     /* If there are no more references deallocate the pipe. */
-    if (!self->flags)
+    if (!self->flags) {
+        nn_mutex_unlock (&self->sync);
         nn_msgpipe_term (self);
+        return;
+    }
+
+    nn_mutex_unlock (&self->sync);
 }
 
 static void nn_msgpipe_term (struct nn_msgpipe *self)
@@ -138,6 +154,8 @@ static void nn_msgpipe_term (struct nn_msgpipe *self)
     nn_event_term (&self->inevents [1]);
     nn_event_term (&self->outevents [0]);
     nn_event_term (&self->outevents [1]);
+
+    nn_mutex_term (&self->sync);
 
     /*  The lifetime of this object is managed by reference count (number
         of endpoints having reference to it) not by a particular owner. Thus,
@@ -152,6 +170,9 @@ static int nn_msgpipe_send0 (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_msgpipe *msgpipe;
 
     msgpipe = nn_cont (self, struct nn_msgpipe, pipes [0]);
+
+    nn_mutex_lock (&msgpipe->sync);
+
     rc = nn_msgqueue_send (&msgpipe->queues [0], msg);
     errnum_assert (rc >= 0, -rc);
 
@@ -165,6 +186,8 @@ static int nn_msgpipe_send0 (struct nn_pipebase *self, struct nn_msg *msg)
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_sent (self);
 
+    nn_mutex_unlock (&msgpipe->sync);
+
     return 0;
 }
 
@@ -174,6 +197,9 @@ static int nn_msgpipe_recv0 (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_msgpipe *msgpipe;
 
     msgpipe = nn_cont (self, struct nn_msgpipe, pipes [0]);
+
+    nn_mutex_lock (&msgpipe->sync);
+
     rc = nn_msgqueue_recv (&msgpipe->queues [1], msg);
     errnum_assert (rc >= 0, -rc);
 
@@ -182,6 +208,8 @@ static int nn_msgpipe_recv0 (struct nn_pipebase *self, struct nn_msg *msg)
 
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_received (self);
+
+    nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
 }
@@ -192,6 +220,9 @@ static int nn_msgpipe_send1 (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_msgpipe *msgpipe;
 
     msgpipe = nn_cont (self, struct nn_msgpipe, pipes [1]);
+
+    nn_mutex_lock (&msgpipe->sync);
+
     rc = nn_msgqueue_send (&msgpipe->queues [1], msg);
     errnum_assert (rc >= 0, -rc);
 
@@ -205,6 +236,8 @@ static int nn_msgpipe_send1 (struct nn_pipebase *self, struct nn_msg *msg)
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_sent (self);
 
+    nn_mutex_unlock (&msgpipe->sync);
+
     return 0;
 }
 
@@ -214,6 +247,9 @@ static int nn_msgpipe_recv1 (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_msgpipe *msgpipe;
 
     msgpipe = nn_cont (self, struct nn_msgpipe, pipes [1]);
+
+    nn_mutex_lock (&msgpipe->sync);
+
     rc = nn_msgqueue_recv (&msgpipe->queues [0], msg);
     errnum_assert (rc >= 0, -rc);
 
@@ -222,6 +258,8 @@ static int nn_msgpipe_recv1 (struct nn_pipebase *self, struct nn_msg *msg)
 
     if (!(rc & NN_MSGQUEUE_RELEASE))
         nn_pipebase_received (self);
+
+    nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
 }

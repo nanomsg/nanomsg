@@ -33,8 +33,6 @@ void nn_msgqueue_init (struct nn_msgqueue *self, size_t maxmem)
 {
     struct nn_msgqueue_chunk *chunk;
 
-    nn_mutex_init (&self->sync);
-
     self->count = 0;
     self->mem = 0;
     self->maxmem = maxmem;
@@ -73,8 +71,6 @@ void nn_msgqueue_term (struct nn_msgqueue *self)
     /*  Deallocate the cached chunk, if any. */
     if (self->cache)
         nn_free (self->cache);
-
-    nn_mutex_term (&self->sync);
 }
 
 int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
@@ -84,15 +80,11 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
 
     msgsz = nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body);
 
-    nn_mutex_lock (&self->sync);
-
     /*  If the message doesn't fit into the queue return error. Note that
         message of any size can be written to an empty queue. This way even
         the messages larger than maximal queue size can be transferred. */
-    if (nn_slow (self->count && self->mem + msgsz > self->maxmem)) {
-        nn_mutex_unlock (&self->sync);
+    if (nn_slow (self->count && self->mem + msgsz > self->maxmem))
         return -EAGAIN;
-    }
 
     /*  Adjust the statistics. */
     result = self->count ? 0 : NN_MSGQUEUE_SIGNAL;
@@ -124,8 +116,6 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
     nn_latmon_measure (NN_LATMON_SEND_TO_PEER);
 #endif
 
-    nn_mutex_unlock (&self->sync);
-
     return result;
 }
 
@@ -134,13 +124,9 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
     int result;
     struct nn_msgqueue_chunk *o;
 
-    nn_mutex_lock (&self->sync);
-
     /*  If there is no message in the queue. */
-    if (nn_slow (!self->count)) {
-        nn_mutex_unlock (&self->sync);
+    if (nn_slow (!self->count))
         return -EAGAIN;
-    }
 
     /*  Move the message from the pipe to the user. */
     nn_msg_mv (msg, &self->in.chunk->msgs [self->in.pos]);
@@ -168,8 +154,6 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
 #if defined NN_LATENCY_MONITOR
     nn_latmon_measure (NN_LATMON_RECV_FROM_PEER);
 #endif
-
-    nn_mutex_unlock (&self->sync);
 
     return result;
 }

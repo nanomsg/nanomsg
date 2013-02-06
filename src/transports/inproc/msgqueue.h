@@ -24,12 +24,10 @@
 #define NN_MSGQUEUE_INCLUDED
 
 #include "../../utils/msg.h"
-#include "../../utils/mutex.h"
 
 #include <stddef.h>
 
 /*  This class is a simple uni-directional message queue. */
-/*  TODO: Recv-side batching can be implemented here to improve performance. */
 
 /*  This flag is returned from send/recv functions to let the user know that
     more sends/recvs are not possible. */
@@ -71,15 +69,8 @@ struct nn_msgqueue {
     /*   Maximal queue size (in bytes). */
     size_t maxmem;
 
-    /*  Synchronise passing messages from the writer thread to the reader
-        thread. The 'out' structure is guarded as well as the cached chunk.
-        'in' structure is local to the reader thread and is not synchronised. */
-    struct nn_mutex sync;
-
     /*  One empty chunk is always cached so that in case of steady stream
-        of messages through the pipe there are no memory allocations. The chunk
-        is being handed from the reading thread to the writing thread so it
-        is guarded by the 'sync' mutex. */
+        of messages through the pipe there are no memory allocations. */
     struct nn_msgqueue_chunk *cache;
 
 };

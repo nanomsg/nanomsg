@@ -25,12 +25,15 @@
 
 #include "../../protocol.h"
 
+#include "../../utils/list.h"
+#include "../../utils/fq.h"
+
 extern struct nn_socktype *nn_xsurveyor_socktype;
 
 struct nn_xsurveyor_data {
     struct nn_pipe *pipe;
     struct nn_list_item outitem;
-    struct nn_list_item initem;
+    struct nn_fq_data initem;
 };
 
 struct nn_xsurveyor {
@@ -41,8 +44,8 @@ struct nn_xsurveyor {
     /*  List of pipes to send messages to. */
     struct nn_list outpipes;
 
-    /*  List of pipes that we can get messages from. */
-    struct nn_list inpipes;
+    /*  Fair-queuer to receive messages. */
+    struct nn_fq inpipes;
 
     /*  Next pipe to receive from. */
     struct nn_xsurveyor_data *current;

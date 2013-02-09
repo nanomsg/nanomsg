@@ -54,13 +54,13 @@ void nn_xsurveyor_init (struct nn_xsurveyor *self,
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
     nn_list_init (&self->outpipes);
-    nn_list_init (&self->inpipes);
+    nn_fq_init (&self->inpipes);
     self->current = NULL;
 }
 
 void nn_xsurveyor_term (struct nn_xsurveyor *self)
 {
-    nn_list_term (&self->inpipes);
+    nn_fq_term (&self->inpipes);
     nn_list_term (&self->outpipes);
 }
 
@@ -76,13 +76,16 @@ static void nn_xsurveyor_destroy (struct nn_sockbase *self)
 
 int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
+
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
     data = nn_alloc (sizeof (struct nn_xsurveyor_data),
         "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
-    nn_list_item_nil (&data->initem);
+    nn_fq_add (&xsurveyor->inpipes, pipe, &data->initem, 8);
     nn_list_item_nil (&data->outitem);
     nn_pipe_setdata (pipe, data);
 
@@ -97,9 +100,7 @@ void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    /*  TODO: Move current pointer if needed! */
-    if (!nn_list_item_isnil (&data->initem))
-       nn_list_erase (&xsurveyor->inpipes, &data->initem);
+    nn_fq_rm (&xsurveyor->inpipes, pipe, &data->initem);
     if (!nn_list_item_isnil (&data->outitem))
        nn_list_erase (&xsurveyor->outpipes, &data->outitem);
 
@@ -110,16 +111,11 @@ int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
-    int result;
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
-    result = nn_list_empty (&xsurveyor->inpipes) ? 1 : 0;
-    if (result)
-        xsurveyor->current = data;
-    nn_list_insert (&xsurveyor->inpipes, &data->initem,
-        nn_list_end (&xsurveyor->inpipes));
-    return result;
+
+    return nn_fq_in (&xsurveyor->inpipes, pipe, &data->initem);
 }
 
 int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -178,24 +174,9 @@ int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
-    /*  Current is NULL only when there are no avialable inbound pipes. */
-    if (nn_slow (!xsurveyor->current))
-        return -EAGAIN;
-
-    /*  Get the messsage. */
-    rc = nn_pipe_recv (xsurveyor->current->pipe, msg);
-    errnum_assert (rc >= 0, -rc);
-
-    /*  Move the current pointer to next pipe. */
-    if (rc & NN_PIPE_RELEASE) {
-        it = nn_list_erase (&xsurveyor->inpipes, &xsurveyor->current->initem);
-        nn_list_item_nil (&xsurveyor->current->initem);
-    }
-    else
-        it = nn_list_next (&xsurveyor->inpipes, &xsurveyor->current->initem);
-    if (!it)
-        it = nn_list_begin (&xsurveyor->inpipes);
-    xsurveyor->current = nn_cont (it, struct nn_xsurveyor_data, initem);
+    rc = nn_fq_recv (&xsurveyor->inpipes, msg);
+    if (nn_slow (rc < 0))
+        return rc;
 
     /*  Split the header from the body, if needed. */
     if (!(rc & NN_PIPE_PARSED)) {

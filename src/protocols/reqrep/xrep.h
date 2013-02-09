@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/list.h"
 #include "../../utils/hash.h"
+#include "../../utils/fq.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -35,8 +35,8 @@
 
 struct nn_xrep_data {
     struct nn_pipe *pipe;
-    struct nn_hash_item outpipes;
-    struct nn_list_item inpipes;
+    struct nn_hash_item outitem;
+    struct nn_fq_data initem;
     uint32_t flags;
 };
 
@@ -50,12 +50,8 @@ struct nn_xrep {
     /*  Map of all registered pipes indexed by the peer ID. */
     struct nn_hash outpipes;
 
-    /*  List of all pipes that can be read from. */
-    struct nn_list inpipes;
-
-    /*  Next inpipe to use to receive a message. */
-    struct nn_xrep_data *current;
-
+    /*  Fair-queuer to get messages from. */
+    struct nn_fq inpipes;
 };
 
 void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,

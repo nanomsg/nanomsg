@@ -173,7 +173,7 @@ int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 
-    rc = nn_fq_recv (&xsurveyor->inpipes, msg);
+    rc = nn_fq_recv (&xsurveyor->inpipes, msg, NULL);
     if (nn_slow (rc < 0))
         return rc;
 

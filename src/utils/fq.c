@@ -54,19 +54,23 @@ int nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,
     return nn_priolist_activate (&self->priolist, pipe, &data->priolist);
 }
 
-int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg)
+int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg, struct nn_pipe **pipe)
 {
     int rc;
-    struct nn_pipe *pipe;
+    struct nn_pipe *p;
 
     /*  Pipe is NULL only when there are no avialable pipes. */
-    pipe = nn_priolist_getpipe (&self->priolist);
-    if (nn_slow (!pipe))
+    p = nn_priolist_getpipe (&self->priolist);
+    if (nn_slow (!p))
         return -EAGAIN;
 
     /*  Receive the messsage. */
-    rc = nn_pipe_recv (pipe, msg);
+    rc = nn_pipe_recv (p, msg);
     errnum_assert (rc >= 0, -rc);
+
+    /*  Return the pipe data to the user, if required. */
+    if (pipe)
+        *pipe = p;
 
     /*  Move to the next pipe. */
     nn_priolist_advance (&self->priolist, rc & NN_PIPE_RELEASE);

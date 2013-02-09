@@ -141,7 +141,7 @@ int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
-    rc = nn_fq_recv (&nn_cont (self, struct nn_xreq, sockbase)->fq, msg);
+    rc = nn_fq_recv (&nn_cont (self, struct nn_xreq, sockbase)->fq, msg, NULL);
     if (rc == -EAGAIN)
         return -EAGAIN;
     errnum_assert (rc >= 0, -rc);

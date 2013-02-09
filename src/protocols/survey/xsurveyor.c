@@ -55,7 +55,6 @@ void nn_xsurveyor_init (struct nn_xsurveyor *self,
     nn_sockbase_init (&self->sockbase, vfptr, fd);
     nn_list_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
-    self->current = NULL;
 }
 
 void nn_xsurveyor_term (struct nn_xsurveyor *self)

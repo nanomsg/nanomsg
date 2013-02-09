@@ -46,10 +46,6 @@ struct nn_xsurveyor {
 
     /*  Fair-queuer to receive messages. */
     struct nn_fq inpipes;
-
-    /*  Next pipe to receive from. */
-    struct nn_xsurveyor_data *current;
-
 };
 
 void nn_xsurveyor_init (struct nn_xsurveyor *self,

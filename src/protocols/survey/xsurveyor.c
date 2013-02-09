@@ -53,14 +53,14 @@ void nn_xsurveyor_init (struct nn_xsurveyor *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
-    nn_list_init (&self->outpipes);
+    nn_dist_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
 }
 
 void nn_xsurveyor_term (struct nn_xsurveyor *self)
 {
     nn_fq_term (&self->inpipes);
-    nn_list_term (&self->outpipes);
+    nn_dist_term (&self->outpipes);
 }
 
 static void nn_xsurveyor_destroy (struct nn_sockbase *self)
@@ -85,7 +85,7 @@ int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     alloc_assert (data);
     data->pipe = pipe;
     nn_fq_add (&xsurveyor->inpipes, pipe, &data->initem, 8);
-    nn_list_item_nil (&data->outitem);
+    nn_dist_add (&xsurveyor->outpipes, pipe, &data->outitem);
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -100,8 +100,7 @@ void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_pipe_getdata (pipe);
 
     nn_fq_rm (&xsurveyor->inpipes, pipe, &data->initem);
-    if (!nn_list_item_isnil (&data->outitem))
-       nn_list_erase (&xsurveyor->outpipes, &data->outitem);
+    nn_dist_rm (&xsurveyor->outpipes, pipe, &data->outitem);
 
     nn_free (data);
 }
@@ -126,43 +125,13 @@ int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    result = nn_list_empty (&xsurveyor->outpipes) ? 1 : 0;
-    nn_list_insert (&xsurveyor->outpipes, &data->outitem,
-        nn_list_end (&xsurveyor->outpipes));
-    return result;
+    return nn_dist_out (&xsurveyor->outpipes, pipe, &data->outitem);
 }
 
 int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
-    struct nn_list_item *it;
-    struct nn_list_item *o;
-    struct nn_xsurveyor_data *data;
-    struct nn_xsurveyor *xsurveyor;
-    struct nn_msg copy;
-
-    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
-
-    /*  Send the survey to all the respondents. */
-    it = nn_list_begin (&xsurveyor->outpipes);
-    while (it != nn_list_end (&xsurveyor->outpipes)) {
-       data = nn_cont (it, struct nn_xsurveyor_data, outitem);
-       nn_msg_cp (&copy, msg);
-       rc = nn_pipe_send (data->pipe, &copy);
-       errnum_assert (rc >= 0, -rc);
-       if (rc & NN_PIPE_RELEASE) {
-           o = it;
-           it = nn_list_erase (&xsurveyor->outpipes, it);
-           nn_list_item_nil (o);
-           continue;
-       }
-       it = nn_list_next (&xsurveyor->outpipes, it);
-    }
-
-    /*  Drop the reference to the message. */
-    nn_msg_term (msg);
-
-    return 0;
+    return nn_dist_send (
+        &nn_cont (self, struct nn_xsurveyor, sockbase)->outpipes, msg);
 }
 
 int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)

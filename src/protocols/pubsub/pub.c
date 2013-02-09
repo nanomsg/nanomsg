@@ -28,12 +28,11 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
+#include "../../utils/dist.h"
 #include "../../utils/alloc.h"
 
 struct nn_pub_data {
-    struct nn_pipe *pipe;
-    struct nn_list_item out;
+    struct nn_dist_data item;
 };
 
 struct nn_pub {
@@ -41,8 +40,8 @@ struct nn_pub {
     /*  The generic socket base class. */
     struct nn_sockbase sockbase;
 
-    /*  List of pipes ready to accept messages. */
-    struct nn_list pipes;
+    /*  Distributor. */
+    struct nn_dist outpipes;
 };
 
 /*  Private functions. */
@@ -83,12 +82,12 @@ static void nn_pub_init (struct nn_pub *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
-    nn_list_init (&self->pipes);
+    nn_dist_init (&self->outpipes);
 }
 
 static void nn_pub_term (struct nn_pub *self)
 {
-    nn_list_term (&self->pipes);
+    nn_dist_term (&self->outpipes);
 }
 
 void nn_pub_destroy (struct nn_sockbase *self)
@@ -103,12 +102,14 @@ void nn_pub_destroy (struct nn_sockbase *self)
 
 static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_pub *pub;
     struct nn_pub_data *data;
+
+    pub = nn_cont (self, struct nn_pub, sockbase);
 
     data = nn_alloc (sizeof (struct nn_pub_data), "pipe data (pub)");
     alloc_assert (data);
-    data->pipe = pipe;
-    nn_list_item_nil (&data->out);
+    nn_dist_add (&pub->outpipes, pipe, &data->item);
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -122,8 +123,7 @@ static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     pub = nn_cont (self, struct nn_pub, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    if (!nn_list_item_isnil (&data->out))
-        nn_list_erase (&pub->pipes, &data->out);
+    nn_dist_rm (&pub->outpipes, pipe, &data->item);
 
     nn_free (data);
 }
@@ -143,41 +143,13 @@ static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     pub = nn_cont (self, struct nn_pub, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    /*  New subscriber. Let's remember it. */
-    result = nn_list_empty (&pub->pipes) ? 1 : 0;
-    nn_list_insert (&pub->pipes, &data->out, nn_list_end (&pub->pipes));
-    return result;
+    return nn_dist_out (&pub->outpipes, pipe, &data->item);
 }
 
 static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
-    struct nn_list_item *it;
-    struct nn_pub_data *data;
-    struct nn_pub *pub;
-    struct nn_msg copy;
-
-    pub = nn_cont (self, struct nn_pub, sockbase);
-
-    /*  Send the message to all the subscribers. */
-    it = nn_list_begin (&pub->pipes);
-    while (it != nn_list_end (&pub->pipes)) {
-       data = nn_cont (it, struct nn_pub_data, out);
-       nn_msg_cp (&copy, msg);
-       rc = nn_pipe_send (data->pipe, &copy);
-       errnum_assert (rc >= 0, -rc);
-       if (rc & NN_PIPE_RELEASE) {
-           it = nn_list_erase (&pub->pipes, it);
-           nn_list_item_nil (&data->out);
-           continue;
-       }
-       it = nn_list_next (&pub->pipes, it);
-    }
-
-    /*  Drop the reference to the message. */
-    nn_msg_term (msg);
-
-    return 0;
+    return nn_dist_send (&nn_cont (self, struct nn_pub, sockbase)->outpipes,
+        msg);
 }
 
 static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg)

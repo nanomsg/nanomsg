@@ -25,14 +25,14 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/list.h"
+#include "../../utils/dist.h"
 #include "../../utils/fq.h"
 
 extern struct nn_socktype *nn_xsurveyor_socktype;
 
 struct nn_xsurveyor_data {
     struct nn_pipe *pipe;
-    struct nn_list_item outitem;
+    struct nn_dist_data outitem;
     struct nn_fq_data initem;
 };
 
@@ -41,8 +41,8 @@ struct nn_xsurveyor {
     /*  The generic socket base class. */
     struct nn_sockbase sockbase;
 
-    /*  List of pipes to send messages to. */
-    struct nn_list outpipes;
+    /*  Distributor to send messages. */
+    struct nn_dist outpipes;
 
     /*  Fair-queuer to receive messages. */
     struct nn_fq inpipes;

@@ -69,6 +69,8 @@ add_library (nanomsg SHARED
     utils/cont.h
     utils/cstream.h
     utils/cstream.c
+    utils/dist.h
+    utils/dist.c
     utils/efd.h
     utils/efd.c
     utils/err.h 

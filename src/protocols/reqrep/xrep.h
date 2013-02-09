@@ -35,7 +35,7 @@
 
 struct nn_xrep_data {
     struct nn_pipe *pipe;
-    struct nn_hash_item pipes;
+    struct nn_hash_item outpipes;
     struct nn_list_item inpipes;
     uint32_t flags;
 };
@@ -48,7 +48,7 @@ struct nn_xrep {
     uint32_t next_key;
 
     /*  Map of all registered pipes indexed by the peer ID. */
-    struct nn_hash pipes;
+    struct nn_hash outpipes;
 
     /*  List of all pipes that can be read from. */
     struct nn_list inpipes;

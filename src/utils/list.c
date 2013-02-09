@@ -93,3 +93,12 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
     return item->next;
 }
 
+void nn_list_item_nil (struct nn_list_item *self)
+{
+    self->prev = NULL;
+}
+
+int nn_list_item_isnil (struct nn_list_item *self)
+{
+    return self->prev ? 0 : 1;
+}

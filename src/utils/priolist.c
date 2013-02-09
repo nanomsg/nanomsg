@@ -51,13 +51,14 @@ void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
 {
     data->pipe = pipe;
     data->priority = priority;
+    nn_list_item_nil (&data->item);
 }
 
 void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
-    /*  TODO: Shouldn't we actually remove the pipe from the list?
-        Or do we assume that the pipe is removed by de-activating it? */
+    if (!nn_list_item_isnil (&data->item))
+        nn_list_erase (&self->slots [data->priority - 1].pipes, &data->item);
 }
 
 int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
@@ -110,8 +111,10 @@ void nn_priolist_advance (struct nn_priolist *self, int release)
     slot = &self->slots [self->current - 1];
 
     /*  Move slot's current pointer to the next pipe. */
-    if (release)
+    if (release) {
         it = nn_list_erase (&slot->pipes, &slot->current->item);
+        nn_list_item_nil (&slot->current->item);
+    }
     else
         it = nn_list_next (&slot->pipes, &slot->current->item);
     if (!it)

@@ -60,7 +60,7 @@ void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
         are no key clashes even if the executable is re-started. */
     nn_random_generate (&self->next_key, sizeof (self->next_key));
 
-    nn_hash_init (&self->pipes);
+    nn_hash_init (&self->outpipes);
     nn_list_init (&self->inpipes);
     self->current = NULL;
 }
@@ -68,7 +68,7 @@ void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
 void nn_xrep_term (struct nn_xrep *self)
 {
     nn_list_term (&self->inpipes);
-    nn_hash_term (&self->pipes);
+    nn_hash_term (&self->outpipes);
 }
 
 static void nn_xrep_destroy (struct nn_sockbase *self)
@@ -92,11 +92,12 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     alloc_assert (data);
     data->pipe = pipe;
     data->flags = 0;
+    nn_hash_insert (&xrep->outpipes, xrep->next_key & 0x7fffffff,
+        &data->outpipes);
+    ++xrep->next_key;
+    nn_list_item_nil (&data->inpipes);
 
     nn_pipe_setdata (pipe, data);
-
-    nn_hash_insert (&xrep->pipes, xrep->next_key & 0x7fffffff, &data->pipes);
-    ++xrep->next_key;
 
     return 0;
 }
@@ -109,10 +110,10 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     xrep = nn_cont (self, struct nn_xrep, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    /*  TODO: If pipe is in the pipe lists, remove it. Move the 'current'
-        pointer as well. */
-
-    nn_hash_erase (&xrep->pipes, &data->pipes);
+    /*  TODO: Move current pointer if needed! */
+    if (!nn_list_item_isnil (&data->inpipes))
+       nn_list_erase (&xrep->inpipes, &data->inpipes);
+    nn_hash_erase (&xrep->outpipes, &data->outpipes);
 
     nn_free (data);
 }
@@ -166,8 +167,8 @@ int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Find the appropriate pipe to send the message to. If there's none,
         or if it's not ready for sending, silently drop the message. */
-    data = nn_cont (nn_hash_get (&xrep->pipes, key), struct nn_xrep_data,
-        pipes);
+    data = nn_cont (nn_hash_get (&xrep->outpipes, key), struct nn_xrep_data,
+        outpipes);
     if (!data || !(data->flags & NN_XREP_OUT))
         return 0;
 
@@ -232,15 +233,17 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Prepend the header by the pipe key. */
     nn_chunkref_init (&ref, nn_chunkref_size (&msg->hdr) + sizeof (uint32_t));
-    nn_putl (nn_chunkref_data (&ref), xrep->current->pipes.key);
+    nn_putl (nn_chunkref_data (&ref), xrep->current->outpipes.key);
     memcpy (((uint8_t*) nn_chunkref_data (&ref)) + sizeof (uint32_t),
         nn_chunkref_data (&msg->hdr), nn_chunkref_size (&msg->hdr));
     nn_chunkref_term (&msg->hdr);
     nn_chunkref_mv (&msg->hdr, &ref);
 
     /*  Move the 'current' pointer to the next pipe. */
-    if (rc & NN_PIPE_RELEASE)
+    if (rc & NN_PIPE_RELEASE) {
         next = nn_list_erase (&xrep->inpipes, &xrep->current->inpipes);
+        nn_list_item_nil (&xrep->current->inpipes);
+    }
     else
         next = nn_list_next (&xrep->inpipes, &xrep->current->inpipes);
     if (next == nn_list_end (&xrep->inpipes))

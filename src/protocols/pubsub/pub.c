@@ -108,6 +108,7 @@ static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_pub_data), "pipe data (pub)");
     alloc_assert (data);
     data->pipe = pipe;
+    nn_list_item_nil (&data->out);
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -115,11 +116,14 @@ static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_pub *pub;
     struct nn_pub_data *data;
 
+    pub = nn_cont (self, struct nn_pub, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    /*  TODO: If pipe is in outbound pipe list, remove it. */
+    if (!nn_list_item_isnil (&data->out))
+        nn_list_erase (&pub->pipes, &data->out);
 
     nn_free (data);
 }
@@ -164,6 +168,7 @@ static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
        errnum_assert (rc >= 0, -rc);
        if (rc & NN_PIPE_RELEASE) {
            it = nn_list_erase (&pub->pipes, it);
+           nn_list_item_nil (&data->out);
            continue;
        }
        it = nn_list_next (&pub->pipes, it);

@@ -66,4 +66,11 @@ void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
 struct nn_list_item *nn_list_erase (struct nn_list *self,
     struct nn_list_item *item);
 
+/*  Normally, when item is not part of a list, its value is undefined. This
+    function sets it to nil value. */
+void nn_list_item_nil (struct nn_list_item *self);
+
+/*  Returns 1 is the item was set to nil, or 0 if it is part of a list. */
+int nn_list_item_isnil (struct nn_list_item *self);
+
 #endif

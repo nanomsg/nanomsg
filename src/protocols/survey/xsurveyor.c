@@ -82,6 +82,8 @@ int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
         "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
+    nn_list_item_nil (&data->initem);
+    nn_list_item_nil (&data->outitem);
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -89,11 +91,17 @@ int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
 
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    /*  TODO: If pipe is in the pipe lists, remove it. */
+    /*  TODO: Move current pointer if needed! */
+    if (!nn_list_item_isnil (&data->initem))
+       nn_list_erase (&xsurveyor->inpipes, &data->initem);
+    if (!nn_list_item_isnil (&data->outitem))
+       nn_list_erase (&xsurveyor->outpipes, &data->outitem);
 
     nn_free (data);
 }
@@ -133,6 +141,7 @@ int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_list_item *it;
+    struct nn_list_item *o;
     struct nn_xsurveyor_data *data;
     struct nn_xsurveyor *xsurveyor;
     struct nn_msg copy;
@@ -147,7 +156,9 @@ int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
        rc = nn_pipe_send (data->pipe, &copy);
        errnum_assert (rc >= 0, -rc);
        if (rc & NN_PIPE_RELEASE) {
+           o = it;
            it = nn_list_erase (&xsurveyor->outpipes, it);
+           nn_list_item_nil (o);
            continue;
        }
        it = nn_list_next (&xsurveyor->outpipes, it);
@@ -176,8 +187,10 @@ int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
     errnum_assert (rc >= 0, -rc);
 
     /*  Move the current pointer to next pipe. */
-    if (rc & NN_PIPE_RELEASE)
+    if (rc & NN_PIPE_RELEASE) {
         it = nn_list_erase (&xsurveyor->inpipes, &xsurveyor->current->initem);
+        nn_list_item_nil (&xsurveyor->current->initem);
+    }
     else
         it = nn_list_next (&xsurveyor->inpipes, &xsurveyor->current->initem);
     if (!it)

@@ -76,7 +76,7 @@ static void nn_inprocb_close (struct nn_epbase *self)
         /*  The message pipe may be deallocated inside detachb function thus
             we have to get the next item in the list in advance. */
         old_it = it;
-        it = nn_list_next (&inprocb->pipes, it);
+        it = nn_list_erase (&inprocb->pipes, it);
         nn_msgpipe_detachb (nn_cont (old_it, struct nn_msgpipe, inprocb));
     }
 

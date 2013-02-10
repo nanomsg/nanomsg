@@ -43,6 +43,9 @@ void nn_list_term (struct nn_list *self);
 /*  Returns 1 is list has zero elements, 0 otherwise. */
 int nn_list_empty (struct nn_list *self);
 
+/*  Remove all elements from the list. */
+void nn_list_clear (struct nn_list *self);
+
 /*  Returns iterator to the first item in the list. */
 struct nn_list_item *nn_list_begin (struct nn_list *self);
 

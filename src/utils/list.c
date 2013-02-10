@@ -23,6 +23,9 @@
 #include <stddef.h>
 
 #include "list.h"
+#include "err.h"
+
+static struct nn_list_item nn_list_nil = {NULL, NULL};
 
 void nn_list_init (struct nn_list *self)
 {
@@ -32,14 +35,19 @@ void nn_list_init (struct nn_list *self)
 
 void nn_list_term (struct nn_list *self)
 {
-    /*  TODO: We should assert if either is not NULL. */
-    self->first = NULL;
-    self->last = NULL;
+    nn_assert (!self->first);
+    nn_assert (!self->last);
 }
 
 int nn_list_empty (struct nn_list *self)
 {
     return self->first ? 0 : 1;
+}
+
+void nn_list_clear (struct nn_list *self)
+{
+    self->first = NULL;
+    self->last = NULL;
 }
 
 struct nn_list_item *nn_list_begin (struct nn_list *self)
@@ -95,11 +103,10 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
 
 void nn_list_item_nil (struct nn_list_item *self)
 {
-    self->prev = NULL;
-    self->next = NULL;
+    self->prev = &nn_list_nil;
 }
 
 int nn_list_item_isnil (struct nn_list_item *self)
 {
-    return !self->prev && !self->next ? 1 : 0;
+    return self->prev == &nn_list_nil ? 1 : 0;
 }

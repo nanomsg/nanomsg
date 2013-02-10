@@ -106,14 +106,10 @@ void nn_sock_term (struct nn_sock *self)
             nn_list_term (&sockbase->eps);
             nn_clock_term (&sockbase->clock);
             nn_cond_term (&sockbase->cond);
+            nn_cp_term (&sockbase->cp);
 
             /*  Deallocate the derived class. */
             sockbase->vfptr->destroy (sockbase);
-
-            /*  We have to deallocate the completion point after deallocating
-                the derived class as the derived class may use the completion
-                port with its sockets, timers etc. */
-            nn_cp_term (&sockbase->cp);
 
             return;
         }

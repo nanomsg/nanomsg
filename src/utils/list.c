@@ -96,9 +96,10 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
 void nn_list_item_nil (struct nn_list_item *self)
 {
     self->prev = NULL;
+    self->next = NULL;
 }
 
 int nn_list_item_isnil (struct nn_list_item *self)
 {
-    return self->prev ? 0 : 1;
+    return !self->prev && !self->next ? 1 : 0;
 }

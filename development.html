@@ -70,6 +70,78 @@ $ sudo make install
 
 <p>If you make a substantial contribution to a file, add your copyright to the file header. Irrespective of whether you do so, your name will be added to the AUTHORS file to indicate you own copyright to a part of the codebase.</p>
 
+<h3>Coding style</h3>
+
+<h5>General rules</h5>
+
+<ul>
+<li>Maximal line length is limited to 80 characters.</li>
+<li>If a statement has to be broken into two lines, second (and any subsequent) line should be indented by one level.</li>
+<li>Indentation is always done using spaces, tabs are never used.</li>
+<li>One level of indentation is 4 characters long.</li>
+<li>Each file starts with a header containing the copyrights and the short license text.</li>
+</ul>
+
+<h5>Comments</h5>
+
+<ul>
+<li>Comment starts with /* followed by two spaces.</li>
+<li>Each new line of the comment starts with 4 spaces (one level of identation).</li>
+<li>Last line of comment is closed by a space followed by */</li>
+<li>The text of comment should begin with a capital letter and ends by a period.</li>
+<li>Code should be broken to small pieces (couple of lines each), every piece doing one simple task.</li>
+<li>Each piece should be preceded by a comment explaining what is its intent.</li>
+<li>Each code piece should be followed by a blank line.</li>
+</ul>
+
+<h5>Identifiers</h5>
+
+<ul>
+<li>Function, struct and variable names are in lower case. Constants and macros are in upper case.</li>
+<li>If identifier consists of multiple words, the words are separated by underscores.</li>
+<li>No hungarian notation: The type of the variable or its scope should not be explicitly marked in the identifier.</li>
+<li>Are globally visible identifiers and identifiers local to file (static) are prefixed by 'nn_'. Identifiers local to function require no prefix.</li>
+<li>Identifiers should be meaningful rather than arbitrary, altgough they may be shortened (e.g. sock instead of socket). The only exception are local variables with very limited scope, e.g. control variable for a short cycle may be named 'i'.</li>
+</ul>
+
+<h5>Code blocks</h5>
+
+<ul>
+<li>Opening bracket is put on the same line with conditional statement, struct definition etc.</li>
+<li>The only exception to the above rule are functions where opening bracket is put on new line.</li>
+<li>Even a single-statement block with no brackets should be placed on a separate line.</li>
+<li>If the indenting of the controlled block incidentally collides with the control statement that's broken into two lines, second and any subsequent line of the control statement should be indented by 6 spaces rather than 4 to prevent confusion.</li>
+</ul>
+
+<h5>Operators</h5>
+
+<ul>
+<li>Unary operators are not separated from the expression in any way.</li>
+<li>Binary operators should be separated from adjacent expression by spaces.</li>
+<li>Subscripts and function calls are separated from the expression by space.</li>
+</ul>
+
+<h5>Error handling</h5>
+
+<ul>
+<li>Use assertion where you don't expect the situation to happen. I.e. it only happens if there is a bug in the library. Use assertion generously.</li>
+<li>Return an error where the condition can happen even if there's no bug in the library.</li>
+<li>Returned error code should be always handled by the caller, even if it just means asserting that the function finished all right.</li>
+<li>Except for public API of nanomsg library which uses POSIX-style errors (return code + errno), all functions either have no return value (where error is not expected) or return 'int'. In the latter case negative values should be treated as errors (-EAGAIN etc.)</li>
+</ul>
+
+<h5>Objects</h5>
+
+<ul>
+<li>Although nanomsg is written in C, it's designed in object-oriented way.</li>
+<li>Each class should be defined in its own header and source file.</li>
+<li>Classes are defined as raw structs. No typedefs are used.</li>
+<li>Names of all the functions of the class are prefixed by the class name.</li>
+<li>First argument in the class function should be pointer to the class. The argument should be called 'self'. This rule doesn't apply for singleton classes.</li>
+<li>'init' function initialises the object, but does not allocate it.</li>
+<li>'term' function terminates the object, but does not deallocate it.</li>
+</ul>
+
 </div>
 </body>
 </html>

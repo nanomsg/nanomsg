@@ -59,6 +59,13 @@ struct nn_efd {
     int w;
 };
 
+#elif defined NN_USE_PIPE
+
+struct nn_efd {
+    int r;
+    int w;
+};
+
 #elif defined NN_USE_EVENTFD
 
 struct nn_efd {

@@ -33,10 +33,6 @@ void nn_timeout_init (struct nn_timeout *self)
 
 void nn_timeout_term (struct nn_timeout *self)
 {
-    /*  TODO: This is here just to make the tests pass. Should be removed
-        later on when the problem is fixed. */
-    nn_list_clear (&self->timeouts);
-
     nn_list_term (&self->timeouts);
     nn_clock_term (&self->clock);
 }

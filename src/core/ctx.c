@@ -388,7 +388,7 @@ int nn_close (int s)
     nn_assert (self.nsocks > 0);
 
     /*  Deallocate the socket object. */
-    nn_sock_term (self.socks [s]);
+    nn_sock_destroy (self.socks [s]);
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */

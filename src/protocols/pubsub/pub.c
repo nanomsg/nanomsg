@@ -88,6 +88,7 @@ static void nn_pub_init (struct nn_pub *self,
 static void nn_pub_term (struct nn_pub *self)
 {
     nn_dist_term (&self->outpipes);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_pub_destroy (struct nn_sockbase *self)

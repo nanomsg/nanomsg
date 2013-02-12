@@ -70,7 +70,7 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_cp_unlock (&sockbase->cp);
 }
 
-void nn_sock_term (struct nn_sock *self)
+void nn_sock_destroy (struct nn_sock *self)
 {
     int rc;
     struct nn_sockbase *sockbase;
@@ -79,6 +79,7 @@ void nn_sock_term (struct nn_sock *self)
 
     sockbase = (struct nn_sockbase*) self;
 
+    /*  Unlock will be done in nn_sockbase_term function. */
     nn_cp_lock (&sockbase->cp);
 
     /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
@@ -93,24 +94,14 @@ void nn_sock_term (struct nn_sock *self)
 
     while (1) {
 
-        /*  If there are no active endpoints we can deallocate the socket
-            straight away. */
+        /*  If there are no active endpoints we can deallocate the socket.
+            It is done by asking the derived class to deallocate. Derived
+            class, in turn will terminate the sockbase class. */
         if (nn_list_empty (&sockbase->eps)) {
-
-            /*  Terminate the nn_sockbase itself. */
-            if (sockbase->flags & NN_SOCK_FLAG_SNDFD)
-                nn_efd_term (&sockbase->sndfd);
-            if (sockbase->flags & NN_SOCK_FLAG_RCVFD)
-                nn_efd_term (&sockbase->rcvfd);
-            nn_cp_unlock (&sockbase->cp);
-            nn_list_term (&sockbase->eps);
-            nn_clock_term (&sockbase->clock);
-            nn_cond_term (&sockbase->cond);
-            nn_cp_term (&sockbase->cp);
-
-            /*  Deallocate the derived class. */
             sockbase->vfptr->destroy (sockbase);
 
+            /*  At this point the socket is deallocated, make sure that it
+                is not addressed here any more. */
             return;
         }
 
@@ -119,6 +110,21 @@ void nn_sock_term (struct nn_sock *self)
         rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
         errnum_assert (rc == 0, rc);
     }
+}
+
+void nn_sockbase_term (struct nn_sockbase *self)
+{
+    /*  The lock was done in nn_sock_destroy function. */
+    nn_cp_unlock (&self->cp);
+
+    if (self->flags & NN_SOCK_FLAG_SNDFD)
+        nn_efd_term (&self->sndfd);
+    if (self->flags & NN_SOCK_FLAG_RCVFD)
+        nn_efd_term (&self->rcvfd);
+    nn_list_term (&self->eps);
+    nn_clock_term (&self->clock);
+    nn_cond_term (&self->cond);
+    nn_cp_term (&self->cp);
 }
 
 void nn_sockbase_unblock_recv (struct nn_sockbase *self)

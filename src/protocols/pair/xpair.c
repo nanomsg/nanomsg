@@ -80,6 +80,7 @@ static void nn_xpair_init (struct nn_xpair *self,
 static void nn_xpair_term (struct nn_xpair *self)
 {
     nn_excl_term (&self->excl);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_xpair_destroy (struct nn_sockbase *self)

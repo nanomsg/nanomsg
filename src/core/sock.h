@@ -28,11 +28,11 @@ struct nn_pipe;
 struct nn_msg;
 struct nn_cp;
 
+/*  Called by nn_close() to deallocate the socket. */
+void nn_sock_destroy (struct nn_sock *self);
+
 /*  Called by nn_term() to let the socket know about the process shutdown. */
 void nn_sock_zombify (struct nn_sock *self);
-
-/*  Called by nn_close(). */
-void nn_sock_term (struct nn_sock *self);
 
 /*  Returns default completion port associated with the socket. */
 struct nn_cp *nn_sock_getcp (struct nn_sock *self);

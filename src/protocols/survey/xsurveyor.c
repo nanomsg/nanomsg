@@ -61,6 +61,7 @@ void nn_xsurveyor_term (struct nn_xsurveyor *self)
 {
     nn_fq_term (&self->inpipes);
     nn_dist_term (&self->outpipes);
+    nn_sockbase_term (&self->sockbase);
 }
 
 static void nn_xsurveyor_destroy (struct nn_sockbase *self)

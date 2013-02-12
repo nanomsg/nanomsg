@@ -83,7 +83,8 @@ static void nn_sub_init (struct nn_sub *self,
 static void nn_sub_term (struct nn_sub *self)
 {
     nn_trie_term (&self->trie);
-    nn_excl_term (&self->excl); 
+    nn_excl_term (&self->excl);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_sub_destroy (struct nn_sockbase *self)

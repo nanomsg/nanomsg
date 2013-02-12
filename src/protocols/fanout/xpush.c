@@ -84,6 +84,7 @@ static void nn_xpush_init (struct nn_xpush *self,
 static void nn_xpush_term (struct nn_xpush *self)
 {
     nn_lb_term (&self->lb);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_xpush_destroy (struct nn_sockbase *self)

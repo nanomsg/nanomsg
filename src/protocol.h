@@ -126,6 +126,9 @@ struct nn_sockbase
 void nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 
+/*  Uninitialise the socket. */
+void nn_sockbase_term (struct nn_sockbase *self);
+
 /*  If recv is blocking at the moment, this function will unblock it. */
 void nn_sockbase_unblock_recv (struct nn_sockbase *self);
 

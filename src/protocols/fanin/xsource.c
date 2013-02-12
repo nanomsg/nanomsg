@@ -80,6 +80,7 @@ static void nn_xsource_init (struct nn_xsource *self,
 static void nn_xsource_term (struct nn_xsource *self)
 {
     nn_excl_term (&self->excl);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_xsource_destroy (struct nn_sockbase *self)

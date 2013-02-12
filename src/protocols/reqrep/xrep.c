@@ -68,6 +68,7 @@ void nn_xrep_term (struct nn_xrep *self)
 {
     nn_fq_term (&self->inpipes);
     nn_hash_term (&self->outpipes);
+    nn_sockbase_term (&self->sockbase);
 }
 
 static void nn_xrep_destroy (struct nn_sockbase *self)

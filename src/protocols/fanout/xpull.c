@@ -80,6 +80,7 @@ static void nn_xpull_init (struct nn_xpull *self,
 static void nn_xpull_term (struct nn_xpull *self)
 {
     nn_excl_term (&self->excl);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_xpull_destroy (struct nn_sockbase *self)

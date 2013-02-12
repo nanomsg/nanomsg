@@ -84,6 +84,7 @@ static void nn_xsink_init (struct nn_xsink *self,
 static void nn_xsink_term (struct nn_xsink *self)
 {
     nn_fq_term (&self->fq);
+    nn_sockbase_term (&self->sockbase);
 }
 
 void nn_xsink_destroy (struct nn_sockbase *self)

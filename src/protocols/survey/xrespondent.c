@@ -56,6 +56,7 @@ void nn_xrespondent_init (struct nn_xrespondent *self,
 void nn_xrespondent_term (struct nn_xrespondent *self)
 {
     nn_excl_term (&self->excl);
+    nn_sockbase_term (&self->sockbase);
 }
 
 static void nn_xrespondent_destroy (struct nn_sockbase *self)

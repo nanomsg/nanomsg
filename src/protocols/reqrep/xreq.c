@@ -64,6 +64,7 @@ void nn_xreq_term (struct nn_xreq *self)
 {
     nn_fq_term (&self->fq);
     nn_lb_term (&self->lb);
+    nn_sockbase_term (&self->sockbase);
 }
 
 static void nn_xreq_destroy (struct nn_sockbase *self)

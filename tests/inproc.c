@@ -63,13 +63,13 @@ int main ()
         errno_assert (rc >= 0);
         nn_assert (rc == 3);
 
-        rc = nn_send (sb, "DEF", 3, 0);
+        rc = nn_send (sb, "DEFG", 4, 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 4);
 
         rc = nn_recv (sc, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 4);
     }
 
     /*  Batch transfer test. */

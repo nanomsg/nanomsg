@@ -30,42 +30,47 @@
 #include "../../utils/aio.h"
 #include "../../utils/mutex.h"
 
-struct nn_inprocb;
-struct nn_inprocc;
+#define NN_MSGPIPEHALF_STATE_ATTACHED 1
+#define NN_MSGPIPEHALF_STATE_DETACHING 2
+#define NN_MSGPIPEHALF_STATE_DETACHED 3 
 
-#define NN_MSGPIPE_PIPE0_ACTIVE 1
-#define NN_MSGPIPE_PIPE1_ACTIVE 2
+struct nn_msgpipehalf {
 
-#define NN_MSGPIPE_EVENT_IN 1
-#define NN_MSGPIPE_EVENT_OUT 2
+    /*  Base class to integrate the pipe with the rest of nanomsg
+        infrastructure. */
+    struct nn_pipebase pipebase;
+
+    /*  One of the states defined above. */
+    int state;
+
+    /*  Message queue that this side of the pipe receives from. */
+    struct nn_msgqueue queue;
+
+    /*  Event sink. */
+    const struct nn_cp_sink *sink;
+
+    /*  Various inbound events. */
+    struct nn_event inevent;
+    struct nn_event outevent;
+    struct nn_event detachevent;
+};
 
 struct nn_msgpipe {
 
     /*  Critical section to guard the whole msgpipe object. */
     struct nn_mutex sync;
 
-    /*  The two ends of the pipe. First one is the bound end, second one
-        is the connected end. */
-    struct nn_pipebase pipes [2];
-
-    /*  TODO: These flags are good only for asserting there's no bug in the
-        library. Later on they should be removed. */
-    int flags;
-
-    /*  The two underlying queues to achieve bi-directional communication. */
-    struct nn_msgqueue queues [2];
-
-    /*  Incoming notifications. */
-    struct nn_event inevents [2];
-    struct nn_event outevents [2];
+    /*  Two halfs of the pipe (bind side and connect side). */
+    struct nn_msgpipehalf bhalf;
+    struct nn_msgpipehalf chalf;
 
     /*  The pipe is owned by exactly one bound endpoint. */
     struct nn_list_item inprocb;
-
 };
 
 void nn_msgpipe_init (struct nn_msgpipe *self,
-    struct nn_inprocb *inprocb, struct nn_inprocc *inprocc);
+    struct nn_epbase *inprocb, struct nn_epbase *inprocc);
+
 void nn_msgpipe_detachb (struct nn_msgpipe *self);
 void nn_msgpipe_detachc (struct nn_msgpipe *self);
 

@@ -33,127 +33,49 @@
 
 #include <stddef.h>
 
+/*  Forward declarations for nn_msgpipehalf class. */
+static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
+    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase);
+static void nn_msgpipehalf_term (struct nn_msgpipehalf *self);
+static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
+    struct nn_msgpipehalf *peer, struct nn_msg *msg);
+static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
+    struct nn_msgpipehalf *peer, struct nn_msg *msg);
+
+/******************************************************************************/
+/*  Implementation of nn_msgpipe.                                             */
+/******************************************************************************/
+
 /*  Private functions. */
 static void nn_msgpipe_term (struct nn_msgpipe *self);
 
-/*  Implementation of both nn_pipe interfaces. */
-static int nn_msgpipe_send0 (struct nn_pipebase *self, struct nn_msg *msg);
-static int nn_msgpipe_recv0 (struct nn_pipebase *self, struct nn_msg *msg);
-static int nn_msgpipe_send1 (struct nn_pipebase *self, struct nn_msg *msg);
-static int nn_msgpipe_recv1 (struct nn_pipebase *self, struct nn_msg *msg);
-static const struct nn_pipebase_vfptr nn_msgpipe_vfptr0 =
-    {nn_msgpipe_send0, nn_msgpipe_recv0};
-static const struct nn_pipebase_vfptr nn_msgpipe_vfptr1 =
-    {nn_msgpipe_send1, nn_msgpipe_recv1};
+/*  Implementation of nn_pipe interface for the bound half. */
+static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_msgpipe_recvb (struct nn_pipebase *self, struct nn_msg *msg);
+static const struct nn_pipebase_vfptr nn_msgpipe_vfptrb =
+    {nn_msgpipe_sendb, nn_msgpipe_recvb};
 
-/*  Implementation of event callbacks. */
-static void nn_msgpipe_inevent0 (const struct nn_cp_sink **self,
-    struct nn_event *event);
-static const struct nn_cp_sink nn_msgpipe_inevent0_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipe_inevent0};
-static const struct nn_cp_sink *nn_msgpipe_inevent0_sinkptr =
-    &nn_msgpipe_inevent0_sink;
-static void nn_msgpipe_inevent1 (const struct nn_cp_sink **self,
-    struct nn_event *event);
-static const struct nn_cp_sink nn_msgpipe_inevent1_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipe_inevent1};
-static const struct nn_cp_sink *nn_msgpipe_inevent1_sinkptr =
-    &nn_msgpipe_inevent1_sink;
-static void nn_msgpipe_outevent0 (const struct nn_cp_sink **self,
-    struct nn_event *event);
-static const struct nn_cp_sink nn_msgpipe_outevent0_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipe_outevent0};
-static const struct nn_cp_sink *nn_msgpipe_outevent0_sinkptr =
-    &nn_msgpipe_outevent0_sink;
-static void nn_msgpipe_outevent1 (const struct nn_cp_sink **self,
-    struct nn_event *event);
-static const struct nn_cp_sink nn_msgpipe_outevent1_sink =
-    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipe_outevent1};
-static const struct nn_cp_sink *nn_msgpipe_outevent1_sinkptr =
-    &nn_msgpipe_outevent1_sink;
+/*  Implementation of nn_pipe interface for the connected half. */
+static int nn_msgpipe_sendc (struct nn_pipebase *self, struct nn_msg *msg);
+static int nn_msgpipe_recvc (struct nn_pipebase *self, struct nn_msg *msg);
+static const struct nn_pipebase_vfptr nn_msgpipe_vfptrc =
+    {nn_msgpipe_sendc, nn_msgpipe_recvc};
 
 void nn_msgpipe_init (struct nn_msgpipe *self,
-    struct nn_inprocb *inprocb, struct nn_inprocc *inprocc)
+    struct nn_epbase *inprocb, struct nn_epbase *inprocc)
 {
     nn_mutex_init (&self->sync);
 
-    /*  Initialise the pipes. */ 
-    nn_pipebase_init (&self->pipes [0], &nn_msgpipe_vfptr0, &inprocb->epbase);
-    nn_pipebase_init (&self->pipes [1], &nn_msgpipe_vfptr1, &inprocc->epbase);
-    self->flags = NN_MSGPIPE_PIPE0_ACTIVE | NN_MSGPIPE_PIPE1_ACTIVE;
-
-    /*  Initialise message queues for both directions. */
-    /*  TODO: Set up proper queue limits. */
-    nn_msgqueue_init (&(self->queues [0]), 1000000);
-    nn_msgqueue_init (&(self->queues [1]), 1000000);
-
-    /*  Initlaise the events to communicate between peers. */
-    nn_event_init (&self->inevents [0], &nn_msgpipe_inevent0_sinkptr,
-        nn_pipebase_getcp (&self->pipes [0]));
-    nn_event_init (&self->inevents [1], &nn_msgpipe_inevent1_sinkptr,
-        nn_pipebase_getcp (&self->pipes [1]));
-    nn_event_init (&self->outevents [0], &nn_msgpipe_outevent0_sinkptr,
-        nn_pipebase_getcp (&self->pipes [0]));
-    nn_event_init (&self->outevents [1], &nn_msgpipe_outevent1_sinkptr,
-        nn_pipebase_getcp (&self->pipes [1]));
-
-    /*  Let the endpoints know they own this pipe. */
-    nn_inprocb_add_pipe (inprocb, self);
-    nn_inprocc_add_pipe (inprocc, self);
-
-    /*  Mark the pipe as writeable in both directions. */
-    nn_pipebase_activate (&self->pipes [0]);
-    nn_pipebase_activate (&self->pipes [1]);
-}
-
-void nn_msgpipe_detachb (struct nn_msgpipe *self)
-{
-    nn_mutex_lock (&self->sync);
-
-    /*  Detach the pipe on the bound end. */
-    nn_assert (self->flags & NN_MSGPIPE_PIPE0_ACTIVE);
-    nn_pipebase_term (&self->pipes [0]);
-    self->flags &= ~NN_MSGPIPE_PIPE0_ACTIVE;
-
-    /* If there are no more references deallocate the pipe. */
-    if (!self->flags) {
-        nn_mutex_unlock (&self->sync);
-        nn_msgpipe_term (self);
-        return;
-    }
-
-    nn_mutex_unlock (&self->sync);
-}
-
-void nn_msgpipe_detachc (struct nn_msgpipe *self)
-{
-    nn_mutex_lock (&self->sync);
-
-    /*  Detach the pipe on the bound end. */
-    nn_assert (self->flags & NN_MSGPIPE_PIPE1_ACTIVE);
-    nn_pipebase_term (&self->pipes [1]);
-    self->flags &= ~NN_MSGPIPE_PIPE1_ACTIVE;
-
-    /* If there are no more references deallocate the pipe. */
-    if (!self->flags) {
-        nn_mutex_unlock (&self->sync);
-        nn_msgpipe_term (self);
-        return;
-    }
-
-    nn_mutex_unlock (&self->sync);
+    /*  Initialise the halfs of the pipe. */ 
+    nn_msgpipehalf_init (&self->bhalf, &nn_msgpipe_vfptrb, inprocb);
+    nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, inprocc);
 }
 
 static void nn_msgpipe_term (struct nn_msgpipe *self)
 {
-    /*  Deallocate the message queues along with the messages stored therein. */
-    nn_msgqueue_term (&(self->queues [1]));
-    nn_msgqueue_term (&(self->queues [0]));
-
-    nn_event_term (&self->inevents [0]);
-    nn_event_term (&self->inevents [1]);
-    nn_event_term (&self->outevents [0]);
-    nn_event_term (&self->outevents [1]);
+    /*  Deallocate the halfs of the pipe. */
+    nn_msgpipehalf_term (&self->bhalf);
+    nn_msgpipehalf_term (&self->chalf);
 
     nn_mutex_term (&self->sync);
 
@@ -164,145 +86,190 @@ static void nn_msgpipe_term (struct nn_msgpipe *self)
     nn_free (self);
 }
 
-static int nn_msgpipe_send0 (struct nn_pipebase *self, struct nn_msg *msg)
+void nn_msgpipe_detachb (struct nn_msgpipe *self)
 {
-    int rc;
+    nn_assert (0);
+}
+
+void nn_msgpipe_detachc (struct nn_msgpipe *self)
+{
+    nn_assert (0);
+}
+
+static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg)
+{
     struct nn_msgpipe *msgpipe;
 
-    msgpipe = nn_cont (self, struct nn_msgpipe, pipes [0]);
+    msgpipe = nn_cont (self, struct nn_msgpipe, bhalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-
-    rc = nn_msgqueue_send (&msgpipe->queues [0], msg);
-    errnum_assert (rc >= 0, -rc);
-
-    if (rc & NN_MSGQUEUE_SIGNAL) {
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_EVENT_POST);
-#endif
-        nn_event_signal (&msgpipe->inevents [1]);
-    }
-    
-    if (!(rc & NN_MSGQUEUE_RELEASE))
-        nn_pipebase_sent (self);
-
+    nn_msgpipehalf_send (&msgpipe->bhalf, &msgpipe->chalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return 0;
 }
 
-static int nn_msgpipe_recv0 (struct nn_pipebase *self, struct nn_msg *msg)
+static int nn_msgpipe_recvb (struct nn_pipebase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_msgpipe *msgpipe;
 
-    msgpipe = nn_cont (self, struct nn_msgpipe, pipes [0]);
+    msgpipe = nn_cont (self, struct nn_msgpipe, bhalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-
-    rc = nn_msgqueue_recv (&msgpipe->queues [1], msg);
-    errnum_assert (rc >= 0, -rc);
-
-    if (rc & NN_MSGQUEUE_SIGNAL)
-        nn_event_signal (&msgpipe->outevents [1]);
-
-    if (!(rc & NN_MSGQUEUE_RELEASE))
-        nn_pipebase_received (self);
-
+    nn_msgpipehalf_recv (&msgpipe->bhalf, &msgpipe->chalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
 }
 
-static int nn_msgpipe_send1 (struct nn_pipebase *self, struct nn_msg *msg)
+static int nn_msgpipe_sendc (struct nn_pipebase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_msgpipe *msgpipe;
 
-    msgpipe = nn_cont (self, struct nn_msgpipe, pipes [1]);
+    msgpipe = nn_cont (self, struct nn_msgpipe, chalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-
-    rc = nn_msgqueue_send (&msgpipe->queues [1], msg);
-    errnum_assert (rc >= 0, -rc);
-
-    if (rc & NN_MSGQUEUE_SIGNAL) {
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_EVENT_POST);
-#endif
-        nn_event_signal (&msgpipe->inevents [0]);
-    }
-
-    if (!(rc & NN_MSGQUEUE_RELEASE))
-        nn_pipebase_sent (self);
-
+    nn_msgpipehalf_send (&msgpipe->chalf, &msgpipe->bhalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return 0;
 }
 
-static int nn_msgpipe_recv1 (struct nn_pipebase *self, struct nn_msg *msg)
+static int nn_msgpipe_recvc (struct nn_pipebase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_msgpipe *msgpipe;
 
-    msgpipe = nn_cont (self, struct nn_msgpipe, pipes [1]);
+    msgpipe = nn_cont (self, struct nn_msgpipe, chalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-
-    rc = nn_msgqueue_recv (&msgpipe->queues [0], msg);
-    errnum_assert (rc >= 0, -rc);
-
-    if (rc & NN_MSGQUEUE_SIGNAL)
-        nn_event_signal (&msgpipe->outevents [0]);
-
-    if (!(rc & NN_MSGQUEUE_RELEASE))
-        nn_pipebase_received (self);
-
+    nn_msgpipehalf_recv (&msgpipe->chalf, &msgpipe->bhalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
 }
 
-static void nn_msgpipe_inevent0 (const struct nn_cp_sink **self,
-    struct nn_event *event)
-{
-    struct nn_msgpipe *msgpipe;
+/******************************************************************************/
+/*  Implementation of nn_msgpipehalf.                                         */
+/******************************************************************************/
 
+/*  Implementation of event sink. */
+static void nn_msgpipehalf_event (const struct nn_cp_sink **self,
+    struct nn_event *event);
+static const struct nn_cp_sink nn_msgpipehalf_sink =
+    {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipehalf_event};
+
+static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
+    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
+{
+    struct nn_cp *cp;
+
+    /*  Initialise the base class. */ 
+    nn_pipebase_init (&self->pipebase, vfptr, epbase);
+
+    /*  The pipe is created in attched state. */
+    self->state = NN_MSGPIPEHALF_STATE_ATTACHED;
+
+    /*  Initialise inbound message queue. */
+    /*  TODO: Set up proper queue limits. */
+    nn_msgqueue_init (&(self->queue), 1000000);
+
+    /*  Set the sink for all async events. */
+    self->sink = &nn_msgpipehalf_sink;
+
+    /*  Initlaise the async events. */
+    cp = nn_pipebase_getcp (&self->pipebase);
+    nn_event_init (&self->inevent, &self->sink, cp);
+    nn_event_init (&self->outevent, &self->sink, cp);
+    nn_event_init (&self->detachevent, &self->sink, cp);
+
+    /*  Mark the pipe as writeable. */
+    nn_pipebase_activate (&self->pipebase);
+}
+
+static void nn_msgpipehalf_term (struct nn_msgpipehalf *self)
+{
+    /*  Terminate the async events. */
+    nn_event_term (&self->inevent);
+    nn_event_term (&self->outevent);
+    nn_event_term (&self->detachevent);
+ 
+    /*  Deallocate the message queue along with the messages stored in it. */
+    nn_msgqueue_term (&self->queue);
+
+    /*  Terminate the base class. */
+    nn_pipebase_term (&self->pipebase);
+}
+
+static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
+    struct nn_msgpipehalf *peer, struct nn_msg *msg)
+{
+    int rc;
+
+    /*  Put the message to the peer's inbound queue. */
+    rc = nn_msgqueue_send (&peer->queue, msg);
+    errnum_assert (rc >= 0, -rc);
+
+    /*  If the peer is sleeping, wake it up. */
+    if (rc & NN_MSGQUEUE_SIGNAL) {
 #if defined NN_LATENCY_MONITOR
-    nn_latmon_measure (NN_LATMON_EVENT_EXIT);
+        nn_latmon_measure (NN_LATMON_EVENT_POST);
 #endif
-    msgpipe = nn_cont (event, struct nn_msgpipe, inevents [0]);
-    nn_pipebase_received (&msgpipe->pipes [0]);
+        nn_event_signal (&peer->inevent);
+    }
+
+    /*  If the pipe is still writeable, make sure that it's not removed
+        from the list of eligible outbound pipes. */
+    if (!(rc & NN_MSGQUEUE_RELEASE))
+        nn_pipebase_sent (&self->pipebase);
 }
 
-static void nn_msgpipe_inevent1 (const struct nn_cp_sink **self,
+static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
+    struct nn_msgpipehalf *peer, struct nn_msg *msg)
+{
+    int rc;
+
+    /*  Get a message from the inbound queue. */
+    rc = nn_msgqueue_recv (&self->queue, msg);
+    errnum_assert (rc >= 0, -rc);
+
+    /*  If it makes the other end writeable, notify the peer. */
+    if (rc & NN_MSGQUEUE_SIGNAL)
+        nn_event_signal (&peer->outevent);
+
+    /*  If the pipe is still readable, make sure that it's not removed
+        from the list of eligible inbound pipes. */
+    if (!(rc & NN_MSGQUEUE_RELEASE))
+        nn_pipebase_received (&self->pipebase);
+}
+
+static void nn_msgpipehalf_event (const struct nn_cp_sink **self,
     struct nn_event *event)
 {
-    struct nn_msgpipe *msgpipe;
+    struct nn_msgpipehalf *half;
 
+    half = nn_cont (self, struct nn_msgpipehalf, sink);
+
+    /*  inevent handler. */
+    if (event == &half->inevent) {
 #if defined NN_LATENCY_MONITOR
-    nn_latmon_measure (NN_LATMON_EVENT_EXIT);
+        nn_latmon_measure (NN_LATMON_EVENT_EXIT);
 #endif
-    msgpipe = nn_cont (event, struct nn_msgpipe, inevents [1]);
-    nn_pipebase_received (&msgpipe->pipes [1]);
-}
+        nn_pipebase_received (&half->pipebase);
+        return;
+    }
 
-static void nn_msgpipe_outevent0 (const struct nn_cp_sink **self,
-    struct nn_event *event)
-{
-    struct nn_msgpipe *msgpipe;
+    /*  outevent handler. */
+    if (event == &half->outevent) {
+        nn_pipebase_sent (&half->pipebase);
+        return;
+    }
 
-    msgpipe = nn_cont (event, struct nn_msgpipe, outevents [0]);
-    nn_pipebase_sent (&msgpipe->pipes [0]);
-}
+    /*  detachevent handler. */
+    if (event == &half->detachevent) {
+        nn_assert (0);
+    }
 
-static void nn_msgpipe_outevent1 (const struct nn_cp_sink **self,
-    struct nn_event *event)
-{
-    struct nn_msgpipe *msgpipe;
-
-    msgpipe = nn_cont (event, struct nn_msgpipe, outevents [1]);
-    nn_pipebase_sent (&msgpipe->pipes [1]);
+    /*  Unexpected event. */
+    nn_assert (0);
 }
 

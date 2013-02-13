@@ -30,6 +30,8 @@
 
 #include "msgpipe.h"
 
+#define NN_INPROCB_FLAG_TERMINATING 1
+
 struct nn_inprocb {
 
     /*  This object is an endpoint. */
@@ -45,9 +47,12 @@ struct nn_inprocb {
     /*  List of all message pipes attached to this endpoint. */
     struct nn_list pipes;
 
+    /*  Any combination of the flags defined above. */
+    int flags;
 };
 
 int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint);
 void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
+void nn_inprocb_rm_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
 
 #endif

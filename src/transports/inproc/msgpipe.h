@@ -30,6 +30,9 @@
 #include "../../utils/aio.h"
 #include "../../utils/mutex.h"
 
+struct nn_inprocb;
+struct nn_inprocc;
+
 #define NN_MSGPIPEHALF_STATE_ATTACHED 1
 #define NN_MSGPIPEHALF_STATE_DETACHING 2
 #define NN_MSGPIPEHALF_STATE_DETACHED 3 
@@ -53,6 +56,9 @@ struct nn_msgpipehalf {
     struct nn_event inevent;
     struct nn_event outevent;
     struct nn_event detachevent;
+
+    /*  Function from removing the pipe from the endpoint. */
+    void (*rmpipefn) (struct nn_msgpipehalf *self);
 };
 
 struct nn_msgpipe {
@@ -65,13 +71,24 @@ struct nn_msgpipe {
     struct nn_msgpipehalf chalf;
 
     /*  The pipe is owned by exactly one bound endpoint. */
-    struct nn_list_item inprocb;
+    struct nn_list_item item;
+
+    /*  Bound-side and connected-side endpoint. */
+    struct nn_inprocb *inprocb;
+    struct nn_inprocc *inprocc;
 };
 
+/*  Initialise the message pipe. */
 void nn_msgpipe_init (struct nn_msgpipe *self,
-    struct nn_epbase *inprocb, struct nn_epbase *inprocc);
+    struct nn_inprocb *inprocb, struct nn_inprocc *inprocc);
 
+/*  This function is called from the bound side to ask the pipe to terminate.
+    Accomplishment of the task is signaled by invoking nn_inprocb_rm_pipe. */
 void nn_msgpipe_detachb (struct nn_msgpipe *self);
+
+/*  This function is called from the connected side to ask the pipe to
+    terminate. Accomplishment of the task is signaled by invoking
+    nn_inprocc_rm_pipe. */
 void nn_msgpipe_detachc (struct nn_msgpipe *self);
 
 #endif

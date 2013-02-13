@@ -54,6 +54,7 @@ int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint)
 
     /*  The endpoint is not connected at the moment. */
     self->pipe = NULL;
+    self->flags = 0;
 
     return 0;
 }
@@ -64,8 +65,24 @@ void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)
         shouldn't get connected anew. */
     nn_assert (!self->pipe);
 
+    /*  If already terminating, no new pipe should be attched to the object. */
+    nn_assert (!(self->flags & NN_INPROCC_FLAG_TERMINATING));
+
     /*  Store the reference to the pipe. */
     self->pipe = pipe;
+}
+
+void nn_inprocc_rm_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)
+{
+    /*  Make sure that we are removing the currently attached pipe. */
+    nn_assert (self->pipe && self->pipe == pipe);
+
+    self->pipe = NULL;
+    if (self->flags & NN_INPROCC_FLAG_TERMINATING) {
+        nn_epbase_term (&self->epbase);
+        nn_free (self);
+        return;
+    }
 }
 
 static void nn_inprocc_close (struct nn_epbase *self)
@@ -74,21 +91,25 @@ static void nn_inprocc_close (struct nn_epbase *self)
 
     inprocc = nn_cont (self, struct nn_inprocc, epbase);
 
+    /*  Remove the endpoint from the repository of all inproc endpoints.
+        From now on no new pipes should be attached to this object. */
+    nn_inproc_ctx_disconnect (inprocc);
+
     /*  If the endpoint is connected, detach the pipe from the connect-side
         socket. The pipe may be deallocated in the process, so make sure that
         the pointer won't be used any more. */
     if (inprocc->pipe) {
+
+        /*  Remember that close was already called. Later on, when the pipe
+            detaches from this object, it can be deallocated. */
+        inprocc->flags |= NN_INPROCC_FLAG_TERMINATING;
+
         nn_msgpipe_detachc (inprocc->pipe);
-        inprocc->pipe = NULL;
+        return;
     }
 
-    /*  Remove the endpoint from the repository of all inproc endpoints. */
-    nn_inproc_ctx_disconnect (inprocc);
-
+    /*  If the endpoint is not connected we can deallocate it straight away. */
     nn_epbase_term (&inprocc->epbase);
-
-    /*  We can deallocate the endpoint straight away. There is no delayed
-        termination for inproc endpoints. */
     nn_free (inprocc);
 }
 

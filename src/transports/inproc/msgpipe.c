@@ -35,8 +35,10 @@
 
 /*  Forward declarations for nn_msgpipehalf class. */
 static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
-    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase);
+    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase,
+    void (*rmpipefn) (struct nn_msgpipehalf *self));
 static void nn_msgpipehalf_term (struct nn_msgpipehalf *self);
+static void nn_msgpipehalf_detach (struct nn_msgpipehalf *self);
 static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
     struct nn_msgpipehalf *peer, struct nn_msg *msg);
 static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
@@ -48,6 +50,8 @@ static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
 
 /*  Private functions. */
 static void nn_msgpipe_term (struct nn_msgpipe *self);
+static void nn_msgpipe_rmpipeb (struct nn_msgpipehalf *self);
+static void nn_msgpipe_rmpipec (struct nn_msgpipehalf *self);
 
 /*  Implementation of nn_pipe interface for the bound half. */
 static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg);
@@ -62,13 +66,23 @@ static const struct nn_pipebase_vfptr nn_msgpipe_vfptrc =
     {nn_msgpipe_sendc, nn_msgpipe_recvc};
 
 void nn_msgpipe_init (struct nn_msgpipe *self,
-    struct nn_epbase *inprocb, struct nn_epbase *inprocc)
+    struct nn_inprocb *inprocb, struct nn_inprocc *inprocc)
 {
     nn_mutex_init (&self->sync);
 
     /*  Initialise the halfs of the pipe. */ 
-    nn_msgpipehalf_init (&self->bhalf, &nn_msgpipe_vfptrb, inprocb);
-    nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, inprocc);
+    nn_msgpipehalf_init (&self->bhalf, &nn_msgpipe_vfptrb, &inprocb->epbase,
+        nn_msgpipe_rmpipeb);
+    nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, &inprocc->epbase,
+        nn_msgpipe_rmpipec);
+
+    /*  Store the references to the endpoints. */
+    self->inprocb = inprocb;
+    self->inprocc = inprocc;
+
+    /*  Attach the pipe to both endpoints. */
+    nn_inprocb_add_pipe (inprocb, self);
+    nn_inprocc_add_pipe (inprocc, self);
 }
 
 static void nn_msgpipe_term (struct nn_msgpipe *self)
@@ -88,12 +102,42 @@ static void nn_msgpipe_term (struct nn_msgpipe *self)
 
 void nn_msgpipe_detachb (struct nn_msgpipe *self)
 {
-    nn_assert (0);
+    nn_msgpipehalf_detach (&self->bhalf);
 }
 
 void nn_msgpipe_detachc (struct nn_msgpipe *self)
 {
-    nn_assert (0);
+    nn_msgpipehalf_detach (&self->chalf);
+}
+
+static void nn_msgpipe_rmpipeb (struct nn_msgpipehalf *self)
+{
+    struct nn_msgpipe *msgpipe;
+
+    msgpipe = nn_cont (self, struct nn_msgpipe, bhalf);
+
+    /*  Remove the pipe from the endpoint. */
+    nn_inprocb_rm_pipe (msgpipe->inprocb, msgpipe);
+
+    /*  If both ends of the pipe are detached, deallocate it. */
+    if (msgpipe->bhalf.state == NN_MSGPIPEHALF_STATE_DETACHED &&
+          msgpipe->chalf.state == NN_MSGPIPEHALF_STATE_DETACHED)
+        nn_msgpipe_term (msgpipe);
+}
+
+static void nn_msgpipe_rmpipec (struct nn_msgpipehalf *self)
+{
+    struct nn_msgpipe *msgpipe;
+
+    msgpipe = nn_cont (self, struct nn_msgpipe, chalf);
+
+    /*  Remove the pipe from the endpoint. */
+    nn_inprocc_rm_pipe (msgpipe->inprocc, msgpipe);
+
+    /*  If both ends of the pipe are detached, deallocate it. */
+    if (msgpipe->bhalf.state == NN_MSGPIPEHALF_STATE_DETACHED &&
+          msgpipe->chalf.state == NN_MSGPIPEHALF_STATE_DETACHED)
+        nn_msgpipe_term (msgpipe);
 }
 
 static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg)
@@ -159,7 +203,8 @@ static const struct nn_cp_sink nn_msgpipehalf_sink =
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipehalf_event};
 
 static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
-    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
+    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase,
+    void (*rmpipefn) (struct nn_msgpipehalf *self))
 {
     struct nn_cp *cp;
 
@@ -182,6 +227,8 @@ static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
     nn_event_init (&self->outevent, &self->sink, cp);
     nn_event_init (&self->detachevent, &self->sink, cp);
 
+    self->rmpipefn = rmpipefn;
+
     /*  Mark the pipe as writeable. */
     nn_pipebase_activate (&self->pipebase);
 }
@@ -198,6 +245,22 @@ static void nn_msgpipehalf_term (struct nn_msgpipehalf *self)
 
     /*  Terminate the base class. */
     nn_pipebase_term (&self->pipebase);
+}
+
+static void nn_msgpipehalf_detach (struct nn_msgpipehalf *self)
+{
+    /*  If attached, fire the detach event. */
+    if (self->state == NN_MSGPIPEHALF_STATE_ATTACHED) {
+        nn_event_signal (&self->detachevent);
+        return;
+    }
+
+    /*  If detachment is already underway, do nothing. */
+    if (self->state == NN_MSGPIPEHALF_STATE_DETACHING)
+        return;
+
+    /*  Function called in invalid state. */
+    nn_assert (0);
 }
 
 static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
@@ -266,7 +329,15 @@ static void nn_msgpipehalf_event (const struct nn_cp_sink **self,
 
     /*  detachevent handler. */
     if (event == &half->detachevent) {
-        nn_assert (0);
+
+        /*  Mark this half of the pipe as detached. */
+        half->state = NN_MSGPIPEHALF_STATE_DETACHED;
+
+        /*  Remove the pipe from the endpoint. Be aware that this function
+            may also deallocate the pipe itself. */
+        half->rmpipefn (half);
+
+        return;
     }
 
     /*  Unexpected event. */

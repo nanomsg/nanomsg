@@ -42,6 +42,7 @@ int nn_pipebase_init (struct nn_pipebase *self,
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
+printf ("nn_pipebase_term\n");
     if (self->epbase->sock)
         nn_sock_rm (self->epbase->sock, (struct nn_pipe*) self);
 }

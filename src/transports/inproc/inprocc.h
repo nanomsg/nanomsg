@@ -30,6 +30,8 @@
 
 #include "msgpipe.h"
 
+#define NN_INPROCC_FLAG_TERMINATING 1
+
 struct nn_inprocc {
 
     /*  This object is an endpoint. */
@@ -46,9 +48,12 @@ struct nn_inprocc {
         message pipe. If it's not, the field is set to NULL. */
     struct nn_msgpipe *pipe;
 
+    /*  Any combination of the flags defined above. */
+    int flags;
 };
 
 int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint);
 void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
+void nn_inprocc_rm_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
 
 #endif

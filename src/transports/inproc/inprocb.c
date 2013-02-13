@@ -52,13 +52,28 @@ int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint)
 #pragma warning(pop)
 #endif
     nn_list_init (&self->pipes);
+    self->flags = 0;
 
     return 0;
 }
 
 void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)
 {
-    nn_list_insert (&self->pipes, &pipe->inprocb, nn_list_end (&self->pipes));
+    nn_assert (!(self->flags & NN_INPROCB_FLAG_TERMINATING));
+    nn_list_insert (&self->pipes, &pipe->item, nn_list_end (&self->pipes));
+}
+
+void nn_inprocb_rm_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)
+{
+    nn_list_erase (&self->pipes, &pipe->item);
+
+    if (self->flags & NN_INPROCB_FLAG_TERMINATING &&
+          nn_list_empty (&self->pipes)) {
+        nn_list_term (&self->pipes);
+        nn_epbase_term (&self->epbase);
+        nn_free (self);
+        return;
+    }
 }
 
 static void nn_inprocb_close (struct nn_epbase *self)
@@ -68,6 +83,10 @@ static void nn_inprocb_close (struct nn_epbase *self)
     struct nn_list_item *old_it;
 
     inprocb = nn_cont (self, struct nn_inprocb, epbase);
+
+    /*  Remove the endpoint from the repository of all inproc endpoints.
+        No new connections to this endpoint may be created from now on. */
+    nn_inproc_ctx_unbind (inprocb);
 
     /*  Disconnect all the pipes from the bind-side of the socket. */
     it = nn_list_begin (&inprocb->pipes);
@@ -80,14 +99,16 @@ static void nn_inprocb_close (struct nn_epbase *self)
         nn_msgpipe_detachb (nn_cont (old_it, struct nn_msgpipe, inprocb));
     }
 
-    /*  Remove the endpoint from the repository of all inproc endpoints. */
-    nn_inproc_ctx_unbind (inprocb);
+    /*  Remember that close was already called. Later on, when all the pipes
+        detach from this object, it can be deallocated. */
+    inprocb->flags |= NN_INPROCB_FLAG_TERMINATING;
 
-    nn_epbase_term (&inprocb->epbase);
-    nn_list_term (&inprocb->pipes);
-
-    /*  We can deallocate the endpoint straight away. There is no delayed
-        termination for inproc endpoints. */
-    nn_free (inprocb);
+    /*  If there's no pipe attached, deallocate the object straight away. */
+    if (nn_list_empty (&inprocb->pipes)) {
+        nn_list_term (&inprocb->pipes);
+        nn_epbase_term (&inprocb->epbase);
+        nn_free (inprocb);
+        return;
+    }
 }
 

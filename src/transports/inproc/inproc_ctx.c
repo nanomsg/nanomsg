@@ -114,9 +114,7 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
         if (strncmp (addr, inprocc->addr, NN_SOCKADDR_MAX) == 0) {
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
-            nn_msgpipe_init (pipe, &inprocb->epbase, &inprocc->epbase);
-            nn_inprocb_add_pipe (inprocb, pipe);
-            nn_inprocc_add_pipe (inprocc, pipe);
+            nn_msgpipe_init (pipe, inprocb, inprocc);
         }
     }
 
@@ -151,9 +149,7 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
         if (strcmp (addr, inprocb->addr) == 0) {
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
-            nn_msgpipe_init (pipe, &inprocb->epbase, &inprocc->epbase);
-            nn_inprocb_add_pipe (inprocb, pipe);
-            nn_inprocc_add_pipe (inprocc, pipe);
+            nn_msgpipe_init (pipe, inprocb, inprocc);
             break;
         }
     }

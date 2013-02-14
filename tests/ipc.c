@@ -22,12 +22,29 @@
 
 #include "../src/nn.h"
 #include "../src/pair.h"
+#include "../src/pubsub.h"
 #include "../src/ipc.h"
 
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
+#include "../src/utils/thread.c"
 
 /*  Tests IPC transport. */
+
+#define THREAD_COUNT 100
+
+static void routine (void *arg)
+{
+    int rc;
+    int s;
+
+    s = nn_socket (AF_SP, NN_SUB);
+    errno_assert (s >= 0);
+    rc = nn_connect (s, "ipc://test.ipc");
+    errno_assert (rc >= 0);
+    rc = nn_close (s);
+    errno_assert (rc == 0);
+}
 
 int main ()
 {
@@ -36,7 +53,9 @@ int main ()
     int sb;
     int sc;
     int i;
+    int j;
     char buf [3];
+    struct nn_thread threads [THREAD_COUNT];
 
     /*  Try closing a IPC socket while it not connected. */
     sc = nn_socket (AF_SP, NN_PAIR);
@@ -96,6 +115,23 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (sb);
     errno_assert (rc == 0);
+
+    /*  Now let's try to stress the shutdown algorithm. */
+#if 0
+    sb = nn_socket (AF_SP, NN_PUB);
+    errno_assert (sb >= 0);
+    rc = nn_bind (sb, "ipc://test.ipc");
+    errno_assert (rc >= 0);
+    for (j = 0; j != 10; ++j) {
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine, NULL);
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_term (&threads [i]);
+    }
+    rc = nn_close (sb);
+    errno_assert (rc == 0);
+#endif
+
 #endif
 
     return 0;

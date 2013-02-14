@@ -121,7 +121,6 @@ int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
-    int result;
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
@@ -139,7 +138,6 @@ int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_xsurveyor *xsurveyor;
-    struct nn_list_item *it;
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
 

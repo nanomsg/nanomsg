@@ -181,7 +181,6 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     int i;
     void *data;
     size_t sz;
-    struct nn_list_item *next;
     struct nn_chunkref ref;
     struct nn_xrep_data *pipedata;
 

@@ -27,9 +27,7 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
-/*  This test does nothing but passes a single message from one socket
-    to another one. It's goal is to make sure that all the basic pieces
-    of the infrastructure are present and functional. */
+/*  Tests IPC transport. */
 
 int main ()
 {

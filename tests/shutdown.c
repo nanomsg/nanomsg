@@ -27,7 +27,7 @@
 #include "../src/utils/thread.c"
 #include "../src/utils/sleep.c"
 
-void worker (void *arg)
+static void worker (void *arg)
 {
     int rc;
     int s;

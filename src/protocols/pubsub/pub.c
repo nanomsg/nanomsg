@@ -139,7 +139,6 @@ static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_pub *pub;
     struct nn_pub_data *data;
-    int result;
 
     pub = nn_cont (self, struct nn_pub, sockbase);
     data = nn_pipe_getdata (pipe);

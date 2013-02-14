@@ -121,6 +121,8 @@ void nn_sockbase_term (struct nn_sockbase *self)
         nn_efd_term (&self->sndfd);
     if (self->flags & NN_SOCK_FLAG_RCVFD)
         nn_efd_term (&self->rcvfd);
+    if (self->flags & NN_SOCK_FLAG_ERRFD)
+        nn_efd_term (&self->errfd);
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
     nn_cond_term (&self->cond);
@@ -309,6 +311,18 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 sockbase->flags |= NN_SOCK_FLAG_RCVFD;
             }
             fd = nn_efd_getfd (&sockbase->rcvfd);
+            memcpy (optval, &fd,
+                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+            *optvallen = sizeof (nn_fd);
+            if (!internal)
+                nn_cp_unlock (&sockbase->cp);
+            return 0;
+        case NN_ERRFD:
+            if (!(sockbase->flags & NN_SOCK_FLAG_ERRFD)) {
+                nn_efd_init (&sockbase->errfd);
+                sockbase->flags |= NN_SOCK_FLAG_ERRFD;
+            }
+            fd = nn_efd_getfd (&sockbase->errfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);

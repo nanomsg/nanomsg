@@ -88,6 +88,13 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     file descriptor on the platform. That is, int on POSIX-complaint platforms
     and SOCKET on Windows. The descriptor becomes invalid and should not be
     used any more once the socket is closed.
+*NN_ERRFD*::
+    Retrieves a file descriptor that is readable when there's an error happened
+    within the socket. The descriptor should be used only for polling and never
+    read from or written to. The type of the option is same as the type of
+    file descriptor on the platform. That is, int on POSIX-complaint platforms
+    and SOCKET on Windows. The descriptor becomes invalid and should not be
+    used any more once the socket is closed.
 
 
 RETURN VALUE

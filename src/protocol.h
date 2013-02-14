@@ -75,6 +75,7 @@ struct nn_sockbase_vfptr {
 #define NN_SOCK_FLAG_ZOMBIE 1
 #define NN_SOCK_FLAG_SNDFD 2
 #define NN_SOCK_FLAG_RCVFD 4
+#define NN_SOCK_FLAG_ERRFD 8
 
 struct nn_sockbase
 {
@@ -91,12 +92,13 @@ struct nn_sockbase
         operations. */
     struct nn_cond cond;
 
-    /*  The efd objects for signalling readability and writeability. These
-        objects are initialised only if NN_SOCK_FLAG_SNDFD/RCVFD flags are
-        set. This way we can create these relatively expensive objcets only
-        when actually needed. */
+    /*  The efd objects for signalling readability, writeability and errors.
+        These objects are initialised only if NN_SOCK_FLAG_SNDFD/RCVFD/ERRFD
+        flags are set. This way we can create these relatively expensive objects
+        only when actually needed. */
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
+    struct nn_efd errfd;
 
     /*  Clock used to measure send & recv timeouts. */
     struct nn_clock clock;

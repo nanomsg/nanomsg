@@ -117,7 +117,6 @@ int main ()
     errno_assert (rc == 0);
 
     /*  Now let's try to stress the shutdown algorithm. */
-#if 0
     sb = nn_socket (AF_SP, NN_PUB);
     errno_assert (sb >= 0);
     rc = nn_bind (sb, "tcp://127.0.0.1:5555");
@@ -130,7 +129,6 @@ int main ()
     }
     rc = nn_close (sb);
     errno_assert (rc == 0);
-#endif
 
     return 0;
 }

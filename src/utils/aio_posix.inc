@@ -480,9 +480,11 @@ if (rc == -EINTR) goto again;
                     nn_assert ((*usock->sink)->accepted);
                     (*usock->sink)->accepted (usock->sink, usock, newsock);
                     break;
-                default:
-                    /*  TODO:  When async connect succeeds both OUT and IN
+                case NN_USOCK_INOP_NONE:
+                    /*  When non-blocking connect fails both OUT and IN
                         are signaled, which means we can end up here. */
+                    break;
+                default:
                     nn_assert (0);
                 }
                 break;

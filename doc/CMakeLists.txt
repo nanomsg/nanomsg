@@ -60,6 +60,7 @@ if (NOT WIN32)
         nn_recv.3
         nn_sendmsg.3
         nn_recvmsg.3
+        nn_device.3
 
         #  Macros.
         nn_cmsg.3

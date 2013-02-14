@@ -239,6 +239,12 @@ NN_EXPORT int nn_recv (int s, void *buf, size_t len, int flags);
 NN_EXPORT int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags);
 NN_EXPORT int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags);
 
+/******************************************************************************/
+/*  Built-in support for devices.                                             */
+/******************************************************************************/
+
+NN_EXPORT int nn_device (int s1, int s2);
+
 #undef NN_EXPORT
 
 #ifdef __cplusplus

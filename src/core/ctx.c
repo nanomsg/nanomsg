@@ -802,3 +802,96 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
         bind ? tp->bind : tp->connect);
 }
 
+#if defined NN_HAVE_POLL
+
+#include <poll.h>
+
+int nn_device (int s1, int s2)
+{
+    int rc;
+    int s1in;
+    int s1out;
+    int s2in;
+    int s2out;
+    size_t optsz;
+    struct pollfd pfd [4];
+    void *msg;
+
+    /*  Get file descriptors to poll on. */
+    /*  TODO: To avoid using too much resource, some internal polling mechanism
+        should be used here instead of file descriptors. */
+    /*  TODO: What about errors (ETERM)? How should we poll for errors? */
+    optsz = sizeof (s1in);
+    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_RCVFD, &s1in, &optsz);
+    if (nn_slow (rc != 0))
+        return -1;
+    nn_assert (optsz == sizeof (s1in));
+    optsz = sizeof (s1out);
+    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_SNDFD, &s1out, &optsz);
+    if (nn_slow (rc != 0))
+        return -1;
+    nn_assert (optsz == sizeof (s1out));
+    optsz = sizeof (s2in);
+    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_RCVFD, &s2in, &optsz);
+    if (nn_slow (rc != 0))
+        return -1;
+    nn_assert (optsz == sizeof (s2in));
+    optsz = sizeof (s2out);
+    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_SNDFD, &s2out, &optsz);
+    if (nn_slow (rc != 0))
+        return -1;
+    nn_assert (optsz == sizeof (s2out));
+
+    /*  Initialise the pollset. */
+    pfd [0].fd = s1in;
+    pfd [0].events = POLLIN;
+    pfd [1].fd = s1out;
+    pfd [1].events = POLLIN;
+    pfd [2].fd = s2in;
+    pfd [2].events = POLLIN;
+    pfd [3].fd = s2out;
+    pfd [3].events = POLLIN;
+
+    while (1) {
+
+        /*  Wait for network events. */
+        rc = poll (pfd, 4, -1);
+        errno_assert (rc >= 0);
+        if (nn_slow (rc < 0 && errno == EINTR))
+            return -1;
+        nn_assert (rc != 0);
+
+        /*  Process the events. */
+        if (pfd [0].revents & POLLIN)
+            pfd [0].events = 0;
+        if (pfd [1].revents & POLLIN)
+            pfd [1].events = 0;
+        if (pfd [2].revents & POLLIN)
+            pfd [2].events = 0;
+        if (pfd [3].revents & POLLIN)
+            pfd [3].events = 0;
+
+        /*  If possible, pass the message from s1 to s2. */
+        if (pfd [0].events == 0 && pfd [3].events == 0) {
+            rc = nn_recv (pfd [0].fd, &msg, NN_MSG, NN_DONTWAIT);
+            errno_assert (rc >= 0);
+            rc = nn_send (pfd [3].fd, &msg, NN_MSG, NN_DONTWAIT);
+            errno_assert (rc >= 0);
+            pfd [0].events = POLLIN;
+            pfd [3].events = POLLIN;
+        }
+
+        /*  If possible, pass the message from s2 to s1. */
+        if (pfd [2].events == 0 && pfd [1].events == 0) {
+            rc = nn_recv (pfd [2].fd, &msg, NN_MSG, NN_DONTWAIT);
+            errno_assert (rc >= 0);
+            rc = nn_send (pfd [1].fd, &msg, NN_MSG, NN_DONTWAIT);
+            errno_assert (rc >= 0);
+            pfd [2].events = POLLIN;
+            pfd [1].events = POLLIN;
+        }
+    }
+}
+
+#endif
+

@@ -48,7 +48,6 @@ int main ()
     rc = nn_bind (sb, "inproc://test");
     errno_assert (rc >= 0);
 
-#if 0
     /*  Try a duplicate bind. It should fail. */
     rc = nn_bind (sc, "inproc://test");
     nn_assert (rc < 0 && errno == EADDRINUSE);
@@ -84,7 +83,6 @@ int main ()
         errno_assert (rc >= 0);
         nn_assert (rc == 3);
     }
-#endif
 
     rc = nn_close (sc);
     errno_assert (rc == 0);

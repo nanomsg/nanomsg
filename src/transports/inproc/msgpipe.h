@@ -33,9 +33,7 @@
 struct nn_inprocb;
 struct nn_inprocc;
 
-#define NN_MSGPIPEHALF_STATE_ATTACHED 1
-#define NN_MSGPIPEHALF_STATE_DETACHING 2
-#define NN_MSGPIPEHALF_STATE_DETACHED 3 
+#define NN_MSGPIPEHALF_FLAG_DETACHING 1
 
 struct nn_msgpipehalf {
 
@@ -43,8 +41,8 @@ struct nn_msgpipehalf {
         infrastructure. */
     struct nn_pipebase pipebase;
 
-    /*  One of the states defined above. */
-    int state;
+    /*  Any combination of the flags defined above. */
+    int flags;
 
     /*  Message queue that this side of the pipe receives from. */
     struct nn_msgqueue queue;
@@ -61,10 +59,16 @@ struct nn_msgpipehalf {
     void (*rmpipefn) (struct nn_msgpipehalf *self);
 };
 
+#define NN_MSGPIPE_FLAG_BHALF_DEAD 1
+#define NN_MSGPIPE_FLAG_CHALF_DEAD 2
+
 struct nn_msgpipe {
 
     /*  Critical section to guard the whole msgpipe object. */
     struct nn_mutex sync;
+
+    /*  Any combination of the flags defined above. */
+    int flags;
 
     /*  Two halfs of the pipe (bind side and connect side). */
     struct nn_msgpipehalf bhalf;

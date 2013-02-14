@@ -36,15 +36,14 @@ int nn_pipebase_init (struct nn_pipebase *self,
     self->vfptr = vfptr;
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
-    self->epbase = epbase;
-    return nn_sock_add (self->epbase->sock, (struct nn_pipe*) self);
+    self->sock = epbase->sock;
+    return nn_sock_add (self->sock, (struct nn_pipe*) self);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
-printf ("nn_pipebase_term\n");
-    if (self->epbase->sock)
-        nn_sock_rm (self->epbase->sock, (struct nn_pipe*) self);
+    if (self->sock)
+        nn_sock_rm (self->sock, (struct nn_pipe*) self);
 }
 
 void nn_pipebase_activate (struct nn_pipebase *self)
@@ -53,8 +52,8 @@ void nn_pipebase_activate (struct nn_pipebase *self)
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
 
     /*  Provide the outgoing pipe to the SP socket. */
-    if (self->epbase->sock)
-        nn_sock_out (self->epbase->sock, (struct nn_pipe*) self);
+    if (self->sock)
+        nn_sock_out (self->sock, (struct nn_pipe*) self);
 }
 
 void nn_pipebase_received (struct nn_pipebase *self)
@@ -65,8 +64,8 @@ void nn_pipebase_received (struct nn_pipebase *self)
     }
     nn_assert (self->instate == NN_PIPEBASE_INSTATE_ASYNC);
     self->instate = NN_PIPEBASE_INSTATE_IDLE;
-    if (self->epbase->sock)
-        nn_sock_in (self->epbase->sock, (struct nn_pipe*) self);
+    if (self->sock)
+        nn_sock_in (self->sock, (struct nn_pipe*) self);
 }
 
 void nn_pipebase_sent (struct nn_pipebase *self)
@@ -77,13 +76,13 @@ void nn_pipebase_sent (struct nn_pipebase *self)
     }
     nn_assert (self->outstate == NN_PIPEBASE_OUTSTATE_ASYNC);
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
-    if (self->epbase->sock)
-        nn_sock_out (self->epbase->sock, (struct nn_pipe*) self);
+    if (self->sock)
+        nn_sock_out (self->sock, (struct nn_pipe*) self);
 }
 
 struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self)
 {
-    return nn_epbase_getcp (self->epbase);
+    return nn_sock_getcp (self->sock);
 }
 
 void nn_pipe_setdata (struct nn_pipe *self, void *data)

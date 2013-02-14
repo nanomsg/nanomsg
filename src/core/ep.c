@@ -32,6 +32,7 @@
 void nn_epbase_init (struct nn_epbase *self,
     const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint)
 {
+
     /*  Set up the virtual functions table. */
     self->vfptr = vfptr;
 

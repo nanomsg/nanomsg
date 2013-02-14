@@ -49,7 +49,7 @@ static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
 /******************************************************************************/
 
 /*  Private functions. */
-static void nn_msgpipe_term (struct nn_msgpipe *self);
+static void nn_msgpipe_destroy (struct nn_msgpipe *self);
 static void nn_msgpipe_rmpipeb (struct nn_msgpipehalf *self);
 static void nn_msgpipe_rmpipec (struct nn_msgpipehalf *self);
 
@@ -76,6 +76,8 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
     nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, &inprocc->epbase,
         nn_msgpipe_rmpipec);
 
+    self->flags = 0;
+
     /*  Store the references to the endpoints. */
     self->inprocb = inprocb;
     self->inprocc = inprocc;
@@ -85,29 +87,32 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
     nn_inprocc_add_pipe (inprocc, self);
 }
 
-static void nn_msgpipe_term (struct nn_msgpipe *self)
+static void nn_msgpipe_destroy (struct nn_msgpipe *self)
 {
-    /*  Deallocate the halfs of the pipe. */
-    nn_msgpipehalf_term (&self->bhalf);
-    nn_msgpipehalf_term (&self->chalf);
+    /*  The precondition is that both halfs are already terminated at
+        this point. We don't need to terminate them here. */
+    nn_assert (self->flags & NN_MSGPIPE_FLAG_BHALF_DEAD &&
+        self->flags & NN_MSGPIPE_FLAG_CHALF_DEAD);
 
+    /*  Deallocate the resources. */
     nn_mutex_term (&self->sync);
-
-    /*  The lifetime of this object is managed by reference count (number
-        of endpoints having reference to it) not by a particular owner. Thus,
-        the object has to deallocate itself once there are no more
-        references. */
     nn_free (self);
 }
 
 void nn_msgpipe_detachb (struct nn_msgpipe *self)
 {
+    nn_mutex_lock (&self->sync);
+    nn_assert (!(self->flags & NN_MSGPIPE_FLAG_BHALF_DEAD));
     nn_msgpipehalf_detach (&self->bhalf);
+    nn_mutex_unlock (&self->sync);
 }
 
 void nn_msgpipe_detachc (struct nn_msgpipe *self)
 {
+    nn_mutex_lock (&self->sync);
+    nn_assert (!(self->flags & NN_MSGPIPE_FLAG_CHALF_DEAD));
     nn_msgpipehalf_detach (&self->chalf);
+    nn_mutex_unlock (&self->sync);
 }
 
 static void nn_msgpipe_rmpipeb (struct nn_msgpipehalf *self)
@@ -116,13 +121,16 @@ static void nn_msgpipe_rmpipeb (struct nn_msgpipehalf *self)
 
     msgpipe = nn_cont (self, struct nn_msgpipe, bhalf);
 
+    /*  Terminate the bound half of the pipe. */
+    nn_msgpipehalf_term (&msgpipe->bhalf);
+    msgpipe->flags |= NN_MSGPIPE_FLAG_BHALF_DEAD;
+
     /*  Remove the pipe from the endpoint. */
     nn_inprocb_rm_pipe (msgpipe->inprocb, msgpipe);
 
     /*  If both ends of the pipe are detached, deallocate it. */
-    if (msgpipe->bhalf.state == NN_MSGPIPEHALF_STATE_DETACHED &&
-          msgpipe->chalf.state == NN_MSGPIPEHALF_STATE_DETACHED)
-        nn_msgpipe_term (msgpipe);
+    if (msgpipe->flags & NN_MSGPIPE_FLAG_CHALF_DEAD)
+        nn_msgpipe_destroy (msgpipe);
 }
 
 static void nn_msgpipe_rmpipec (struct nn_msgpipehalf *self)
@@ -131,13 +139,16 @@ static void nn_msgpipe_rmpipec (struct nn_msgpipehalf *self)
 
     msgpipe = nn_cont (self, struct nn_msgpipe, chalf);
 
+    /*  Terminate the bound half of the pipe. */
+    nn_msgpipehalf_term (&msgpipe->chalf);
+    msgpipe->flags |= NN_MSGPIPE_FLAG_CHALF_DEAD;
+
     /*  Remove the pipe from the endpoint. */
     nn_inprocc_rm_pipe (msgpipe->inprocc, msgpipe);
 
     /*  If both ends of the pipe are detached, deallocate it. */
-    if (msgpipe->bhalf.state == NN_MSGPIPEHALF_STATE_DETACHED &&
-          msgpipe->chalf.state == NN_MSGPIPEHALF_STATE_DETACHED)
-        nn_msgpipe_term (msgpipe);
+    if (msgpipe->flags & NN_MSGPIPE_FLAG_BHALF_DEAD)
+        nn_msgpipe_destroy (msgpipe);
 }
 
 static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg)
@@ -147,6 +158,11 @@ static int nn_msgpipe_sendb (struct nn_pipebase *self, struct nn_msg *msg)
     msgpipe = nn_cont (self, struct nn_msgpipe, bhalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
+    nn_assert (!(msgpipe->flags & NN_MSGPIPE_FLAG_BHALF_DEAD));
+    if (nn_slow (msgpipe->flags & NN_MSGPIPE_FLAG_CHALF_DEAD)) {
+        nn_mutex_unlock (&msgpipe->sync);
+        return -EAGAIN;
+    }
     nn_msgpipehalf_send (&msgpipe->bhalf, &msgpipe->chalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
@@ -160,7 +176,9 @@ static int nn_msgpipe_recvb (struct nn_pipebase *self, struct nn_msg *msg)
     msgpipe = nn_cont (self, struct nn_msgpipe, bhalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-    nn_msgpipehalf_recv (&msgpipe->bhalf, &msgpipe->chalf, msg);
+    nn_assert (!(msgpipe->flags & NN_MSGPIPE_FLAG_BHALF_DEAD));
+    nn_msgpipehalf_recv (&msgpipe->bhalf, msgpipe->flags &
+        NN_MSGPIPE_FLAG_CHALF_DEAD ? NULL : &msgpipe->chalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
@@ -173,6 +191,11 @@ static int nn_msgpipe_sendc (struct nn_pipebase *self, struct nn_msg *msg)
     msgpipe = nn_cont (self, struct nn_msgpipe, chalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
+    nn_assert (!(msgpipe->flags & NN_MSGPIPE_FLAG_CHALF_DEAD));
+    if (nn_slow (msgpipe->flags & NN_MSGPIPE_FLAG_BHALF_DEAD)) {
+        nn_mutex_unlock (&msgpipe->sync);
+        return -EAGAIN;
+    }
     nn_msgpipehalf_send (&msgpipe->chalf, &msgpipe->bhalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
@@ -186,7 +209,9 @@ static int nn_msgpipe_recvc (struct nn_pipebase *self, struct nn_msg *msg)
     msgpipe = nn_cont (self, struct nn_msgpipe, chalf.pipebase);
 
     nn_mutex_lock (&msgpipe->sync);
-    nn_msgpipehalf_recv (&msgpipe->chalf, &msgpipe->bhalf, msg);
+    nn_assert (!(msgpipe->flags & NN_MSGPIPE_FLAG_CHALF_DEAD));
+    nn_msgpipehalf_recv (&msgpipe->chalf, msgpipe->flags &
+        NN_MSGPIPE_FLAG_BHALF_DEAD ? NULL : &msgpipe->bhalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
     return NN_PIPE_PARSED;
@@ -211,8 +236,7 @@ static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
     /*  Initialise the base class. */ 
     nn_pipebase_init (&self->pipebase, vfptr, epbase);
 
-    /*  The pipe is created in attched state. */
-    self->state = NN_MSGPIPEHALF_STATE_ATTACHED;
+    self->flags = 0;
 
     /*  Initialise inbound message queue. */
     /*  TODO: Set up proper queue limits. */
@@ -249,18 +273,13 @@ static void nn_msgpipehalf_term (struct nn_msgpipehalf *self)
 
 static void nn_msgpipehalf_detach (struct nn_msgpipehalf *self)
 {
-    /*  If attached, fire the detach event. */
-    if (self->state == NN_MSGPIPEHALF_STATE_ATTACHED) {
-        nn_event_signal (&self->detachevent);
-        return;
-    }
-
     /*  If detachment is already underway, do nothing. */
-    if (self->state == NN_MSGPIPEHALF_STATE_DETACHING)
+    if (self->flags == NN_MSGPIPEHALF_FLAG_DETACHING)
         return;
 
-    /*  Function called in invalid state. */
-    nn_assert (0);
+    /*  If still attached, fire the detach event. */
+    self->flags |= NN_MSGPIPEHALF_FLAG_DETACHING;
+    nn_event_signal (&self->detachevent);
 }
 
 static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
@@ -296,7 +315,7 @@ static void nn_msgpipehalf_recv (struct nn_msgpipehalf *self,
     errnum_assert (rc >= 0, -rc);
 
     /*  If it makes the other end writeable, notify the peer. */
-    if (rc & NN_MSGQUEUE_SIGNAL)
+    if (rc & NN_MSGQUEUE_SIGNAL && peer)
         nn_event_signal (&peer->outevent);
 
     /*  If the pipe is still readable, make sure that it's not removed
@@ -327,16 +346,11 @@ static void nn_msgpipehalf_event (const struct nn_cp_sink **self,
         return;
     }
 
-    /*  detachevent handler. */
+    /*  detachevent handler. Remove the pipe from the endpoint. Be aware that
+        this function may also deallocate the pipe itself. */
     if (event == &half->detachevent) {
-
-        /*  Mark this half of the pipe as detached. */
-        half->state = NN_MSGPIPEHALF_STATE_DETACHED;
-
-        /*  Remove the pipe from the endpoint. Be aware that this function
-            may also deallocate the pipe itself. */
+        nn_assert (half->flags & NN_MSGPIPEHALF_FLAG_DETACHING);
         half->rmpipefn (half);
-
         return;
     }
 

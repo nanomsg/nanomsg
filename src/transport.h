@@ -115,7 +115,7 @@ struct nn_pipebase {
     const struct nn_pipebase_vfptr *vfptr;
     uint8_t instate;
     uint8_t outstate;
-    struct nn_epbase *epbase;
+    struct nn_sock *sock;
     void *data;
 };
 

@@ -80,7 +80,7 @@ static void nn_inprocb_close (struct nn_epbase *self)
 {
     struct nn_inprocb *inprocb;
     struct nn_list_item *it;
-    struct nn_list_item *old_it;
+    struct nn_list_item *nextit;
 
     inprocb = nn_cont (self, struct nn_inprocb, epbase);
 
@@ -88,15 +88,14 @@ static void nn_inprocb_close (struct nn_epbase *self)
         No new connections to this endpoint may be created from now on. */
     nn_inproc_ctx_unbind (inprocb);
 
-    /*  Disconnect all the pipes from the bind-side of the socket. */
+    /*  Disconnect all the pipes from the bind-side of the socket. The message
+        pipe may be deallocated inside detachb function thus we have to get
+        the next item in the list in advance.*/
     it = nn_list_begin (&inprocb->pipes);
     while (it != nn_list_end (&inprocb->pipes)) {
-
-        /*  The message pipe may be deallocated inside detachb function thus
-            we have to get the next item in the list in advance. */
-        old_it = it;
-        it = nn_list_erase (&inprocb->pipes, it);
-        nn_msgpipe_detachb (nn_cont (old_it, struct nn_msgpipe, inprocb));
+        nextit = nn_list_next (&inprocb->pipes, it);
+        nn_msgpipe_detachb (nn_cont (it, struct nn_msgpipe, item));
+        it = nextit;
     }
 
     /*  Remember that close was already called. Later on, when all the pipes

@@ -532,8 +532,8 @@ err:
                 break;
             event = nn_cont (it ,struct nn_event, item);
             nn_assert ((*event->sink)->event);
-            (*event->sink)->event (event->sink, event);
             event->active = 0;
+            (*event->sink)->event (event->sink, event);
         }
         nn_mutex_unlock (&self->events_sync);
     }

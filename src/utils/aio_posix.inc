@@ -846,9 +846,9 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         else {
 
             /*  If the peer closes the connection, return ECONNRESET. */
-            nn_assert (nbytes == 0 || errno == ECONNRESET ||
-                  errno == ENOTCONN || errno == ECONNREFUSED ||
-                  errno == ETIMEDOUT || errno == EHOSTUNREACH);
+            errno_assert (errno == ECONNRESET || errno == ENOTCONN ||
+                errno == ECONNREFUSED || errno == ETIMEDOUT ||
+                errno == EHOSTUNREACH);
             return -ECONNRESET;
         }
     }

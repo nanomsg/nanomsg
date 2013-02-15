@@ -188,6 +188,8 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
             nn_msg_term (msg);
             continue;
         }
+
+        /*  Discard the header and return the message to the user. */
         nn_chunkref_term (&msg->hdr);
         nn_chunkref_init (&msg->hdr, 0);
         break;

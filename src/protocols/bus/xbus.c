@@ -29,41 +29,9 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/dist.h"
-#include "../../utils/fq.h"
-
-struct nn_xbus_data {
-    struct nn_pipe *pipe;
-    struct nn_dist_data outitem;
-    struct nn_fq_data initem;
-};
-
-struct nn_xbus {
-    struct nn_sockbase sockbase;
-    struct nn_dist outpipes;
-    struct nn_fq inpipes;
-};
-
-/*  Private functions. */
-static void nn_xbus_init (struct nn_xbus *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
-static void nn_xbus_term (struct nn_xbus *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_xbus_destroy (struct nn_sockbase *self);
-static int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe);
-static void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen);
-static int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen);
-static int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_destroy,
     nn_xbus_add,
@@ -78,7 +46,7 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_gethdr
 };
 
-static void nn_xbus_init (struct nn_xbus *self,
+void nn_xbus_init (struct nn_xbus *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_sockbase_init (&self->sockbase, vfptr, fd);
@@ -86,14 +54,14 @@ static void nn_xbus_init (struct nn_xbus *self,
     nn_fq_init (&self->inpipes);
 }
 
-static void nn_xbus_term (struct nn_xbus *self)
+void nn_xbus_term (struct nn_xbus *self)
 {
     nn_fq_term (&self->inpipes);
     nn_dist_term (&self->outpipes);
     nn_sockbase_term (&self->sockbase);
 }
 
-void nn_xbus_destroy (struct nn_sockbase *self)
+static void nn_xbus_destroy (struct nn_sockbase *self)
 {
     struct nn_xbus *xbus;
 
@@ -103,7 +71,7 @@ void nn_xbus_destroy (struct nn_sockbase *self)
     nn_free (xbus);
 }
 
-static int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
+int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -121,7 +89,7 @@ static int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     return 0;
 }
 
-static void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -135,7 +103,7 @@ static void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-static int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -146,7 +114,7 @@ static int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     return nn_fq_in (&xbus->inpipes, pipe, &data->initem);
 }
 
-static int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -157,31 +125,53 @@ static int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     return nn_dist_out (&xbus->outpipes, pipe, &data->outitem);
 }
 
-static int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_dist_send (&nn_cont (self, struct nn_xbus, sockbase)->outpipes,
         msg);
 }
 
-static int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return nn_fq_recv (&nn_cont (self, struct nn_xbus, sockbase)->inpipes,
-        msg, NULL);
+    int rc;
+    struct nn_xbus *xbus;
+
+    xbus = nn_cont (self, struct nn_xbus, sockbase);
+
+    rc = nn_fq_recv (&xbus->inpipes, msg, NULL);
+    if (nn_slow (rc < 0))
+        return rc;
+
+    /*  Split the header from the body, if needed. */
+    if (!(rc & NN_PIPE_PARSED)) {
+        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+            nn_msg_term (msg);
+            return -EAGAIN;
+        }
+        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
+           sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
+    }
+
+    return 0;
 }
 
-static int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
+int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
+int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr,
+int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr,
     size_t hdrlen)
 {
     if (nn_slow (hdrlen != 0))
@@ -189,7 +179,7 @@ static int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr,
     return 0;
 }
 
-static int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
+int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
 {
     *hdrlen = 0;
     return 0;

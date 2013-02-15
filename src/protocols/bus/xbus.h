@@ -25,8 +25,40 @@
 
 #include "../../protocol.h"
 
+#include "../../utils/dist.h"
+#include "../../utils/fq.h"
+
 extern struct nn_socktype *nn_xbus_socktype;
 
 struct nn_sockbase *nn_xbus_create (int fd);
+
+struct nn_xbus_data {
+    struct nn_pipe *pipe;
+    struct nn_dist_data outitem;
+    struct nn_fq_data initem;
+};
+
+struct nn_xbus {
+    struct nn_sockbase sockbase;
+    struct nn_dist outpipes;
+    struct nn_fq inpipes;
+};
+
+void nn_xbus_init (struct nn_xbus *self,
+    const struct nn_sockbase_vfptr *vfptr, int fd);
+void nn_xbus_term (struct nn_xbus *self);
+
+int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
+    const void *optval, size_t optvallen);
+int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
+    void *optval, size_t *optvallen);
+int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
+int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 #endif

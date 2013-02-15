@@ -41,18 +41,21 @@ struct nn_cp;
 /*  The base class for endpoints.                                             */
 /******************************************************************************/
 
+/*  The best way to think about endpoints is that endpoint is an object created
+    by each nn_bind() or nn_connect() call. Each endpoint is associated with
+    exactly one address string (e.g. "tcp://127.0.0.1:5555"). */
+
 struct nn_epbase;
 
 struct nn_epbase_vfptr {
 
     /*  Ask the endpoint to terminate itself. The endpoint is allowed to linger
         to send the pending outbound data. Once it's ready, it will close itself
-        using nn_epbase_term() which, in turn, will unregister the endpoint from
-        the socket. */
+        using nn_epbase_term(). */
     void (*close) (struct nn_epbase *self);
 };
 
-/*  The member of this structure are used internally by the core. Never use
+/*  The members of this structure are used exclusively by the core. Never use
     or modify them directly from the transport. */
 struct nn_epbase {
     const struct nn_epbase_vfptr *vfptr;
@@ -62,17 +65,20 @@ struct nn_epbase {
     char addr [NN_SOCKADDR_MAX + 1];
 };
 
-/*  Creates a new endpoint. Returns the endpoint ID. */
+/*  Creates a new endpoint. 'addr' parameter is the address string supplied
+    by the user with the transport prefix chopped off. E.g. "127.0.0.1:5555"
+    rather than "tcp://127.0.0.1:5555". 'hint' parameter is an opaque value that
+    was passed to transport's bind or connect function. */
 void nn_epbase_init (struct nn_epbase *self,
     const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint);
 
-/*  Destroys the endpoint. */
+/*  Destroys the endpoint, unregisters it from the socket etc. */
 void nn_epbase_term (struct nn_epbase *self);
 
 /*  Returns the default completion port associated with the current socket. */
 struct nn_cp *nn_epbase_getcp (struct nn_epbase *self);
 
-/*  Returns the address associated with this endpoint. */
+/*  Returns the address string associated with this endpoint. */
 const char *nn_epbase_getaddr (struct nn_epbase *self);
 
 /*  Retrieve value of a socket option. */
@@ -83,6 +89,11 @@ void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
 /*  The base class for pipes.                                                 */
 /******************************************************************************/
 
+/*  Pipe represents one "connection", i.e. perfectly ordered uni- or
+    bi-directional stream of messages. One endpoint can create multiple pipes
+    (for example, bound TCP socket is an endpoint, individual accepted TCP
+    connections are represented by pipes. */
+
 struct nn_pipebase;
 
 /*  This value is returned by pipe's send and recv functions to signalise that
@@ -91,18 +102,6 @@ struct nn_pipebase;
     flow nn_pipebase_received (respectively nn_pipebase_sent) should
     be called. */
 #define NN_PIPEBASE_RELEASE 1
-
-/*  Internal pipe states. */
-#define NN_PIPEBASE_INSTATE_DEACTIVATED 0
-#define NN_PIPEBASE_INSTATE_IDLE 1
-#define NN_PIPEBASE_INSTATE_RECEIVING 2
-#define NN_PIPEBASE_INSTATE_RECEIVED 3
-#define NN_PIPEBASE_INSTATE_ASYNC 4
-#define NN_PIPEBASE_OUTSTATE_DEACTIVATED 0
-#define NN_PIPEBASE_OUTSTATE_IDLE 1
-#define NN_PIPEBASE_OUTSTATE_SENDING 2
-#define NN_PIPEBASE_OUTSTATE_SENT 3
-#define NN_PIPEBASE_OUTSTATE_ASYNC 4
 
 struct nn_pipebase_vfptr {
     int (*send) (struct nn_pipebase *self, struct nn_msg *msg);

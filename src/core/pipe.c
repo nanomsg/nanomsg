@@ -29,6 +29,18 @@
 #include "../utils/fast.h"
 #include "../utils/latmon.h"
 
+/*  Internal pipe states. */
+#define NN_PIPEBASE_INSTATE_DEACTIVATED 0
+#define NN_PIPEBASE_INSTATE_IDLE 1
+#define NN_PIPEBASE_INSTATE_RECEIVING 2
+#define NN_PIPEBASE_INSTATE_RECEIVED 3
+#define NN_PIPEBASE_INSTATE_ASYNC 4
+#define NN_PIPEBASE_OUTSTATE_DEACTIVATED 0
+#define NN_PIPEBASE_OUTSTATE_IDLE 1
+#define NN_PIPEBASE_OUTSTATE_SENDING 2
+#define NN_PIPEBASE_OUTSTATE_SENT 3
+#define NN_PIPEBASE_OUTSTATE_ASYNC 4
+
 int nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
 {

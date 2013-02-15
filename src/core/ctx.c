@@ -64,6 +64,8 @@
 #include "../protocols/survey/surveyor.h"
 #include "../protocols/survey/xrespondent.h"
 #include "../protocols/survey/xsurveyor.h"
+#include "../protocols/bus/bus.h"
+#include "../protocols/bus/xbus.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -236,6 +238,8 @@ static void nn_ctx_init (void)
     nn_ctx_add_socktype (nn_surveyor_socktype);
     nn_ctx_add_socktype (nn_xrespondent_socktype);
     nn_ctx_add_socktype (nn_xsurveyor_socktype);
+    nn_ctx_add_socktype (nn_bus_socktype);
+    nn_ctx_add_socktype (nn_xbus_socktype);
 
 #if defined NN_LATENCY_MONITOR
     nn_latmon_init ();

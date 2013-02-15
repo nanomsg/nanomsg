@@ -44,6 +44,7 @@ No protocol-specific socket options are defined at the moment.
 
 SEE ALSO
 --------
+linknanomsg:nn_bus[7]
 linknanomsg:nn_pubsub[7]
 linknanomsg:nn_reqrep[7]
 linknanomsg:nn_fanin[7]

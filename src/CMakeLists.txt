@@ -37,6 +37,7 @@ add_library (nanomsg SHARED
     fanin.h
     fanout.h
     survey.h
+    bus.h
 
     core/ctx.h
     core/ctx.c
@@ -163,6 +164,11 @@ add_library (nanomsg SHARED
     protocols/survey/xrespondent.c
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
+
+    protocols/bus/bus.h
+    protocols/bus/bus.c
+    protocols/bus/xbus.h
+    protocols/bus/xbus.c
 
     transports/inproc/inproc.h
     transports/inproc/inproc_ctx.h

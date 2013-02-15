@@ -42,6 +42,7 @@ NN_UNSUBSCRIBE::
 
 SEE ALSO
 --------
+linknanomsg:nn_bus[7]
 linknanomsg:nn_reqrep[7]
 linknanomsg:nn_fanin[7]
 linknanomsg:nn_fanout[7]

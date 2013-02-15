@@ -36,6 +36,7 @@ if (NOT WIN32)
         nn_survey.7
         nn_fanin.7
         nn_fanout.7
+        nn_bus.7
 
         #  Transports.
         nn_inproc.7

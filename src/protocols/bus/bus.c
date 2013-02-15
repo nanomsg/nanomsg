@@ -35,7 +35,7 @@
 
 struct nn_bus {
     struct nn_xbus xbus;
-    uint32_t nodeid;
+    uint64_t nodeid;
 };
 
 /*  Private functions. */
@@ -68,7 +68,7 @@ static void nn_bus_init (struct nn_bus *self,
 {
     nn_xbus_init (&self->xbus, vfptr, fd);
 
-    /*  Generate 32-bit node ID. Any incoming messages with this ID will
+    /*  Generate 64-bit node ID. Any incoming messages with this ID will
         be filtered out. */
     nn_random_generate (&self->nodeid, sizeof (self->nodeid));
 }
@@ -98,8 +98,8 @@ static int nn_bus_send (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Tag the message with node ID. */
     nn_assert (nn_chunkref_size (&msg->hdr) == 0);
     nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, 4);
-    nn_putl (nn_chunkref_data (&msg->hdr), bus->nodeid);
+    nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
+    nn_putll (nn_chunkref_data (&msg->hdr), bus->nodeid);
 
     /*  Send the message. */
     rc = nn_xbus_send (&bus->xbus.sockbase, msg);
@@ -112,7 +112,7 @@ static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_bus *bus;
-    uint32_t nodeid;
+    uint64_t nodeid;
 
     bus = nn_cont (self, struct nn_bus, xbus.sockbase);
 
@@ -125,11 +125,11 @@ static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg)
         errnum_assert (rc == 0, -rc);
 
         /*  Get the node ID. Drop the messages sent by this node itself. */
-        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
+        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint64_t))) {
             nn_msg_term (msg);
             continue;
         }
-        nodeid = nn_getl (nn_chunkref_data (&msg->hdr));
+        nodeid = nn_getll (nn_chunkref_data (&msg->hdr));
         if (nn_slow (nodeid == bus->nodeid)) {
             nn_msg_term (msg);
             continue;

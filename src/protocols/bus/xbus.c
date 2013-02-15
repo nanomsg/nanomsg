@@ -144,16 +144,16 @@ int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Split the header from the body, if needed. */
     if (!(rc & NN_PIPE_PARSED)) {
-        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
+        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint64_t))) {
             nn_msg_term (msg);
             return -EAGAIN;
         }
         nn_assert (nn_chunkref_size (&msg->hdr) == 0);
         nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, sizeof (uint32_t));
+        nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
         memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
-           sizeof (uint32_t));
-        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
+           sizeof (uint64_t));
+        nn_chunkref_trim (&msg->body, sizeof (uint64_t));
     }
 
     return 0;

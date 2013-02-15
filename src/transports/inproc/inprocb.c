@@ -39,22 +39,15 @@ static const struct nn_epbase_vfptr nn_inprocb_epbase_vfptr =
 int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint)
 {
     nn_epbase_init (&self->epbase, &nn_inprocb_epbase_vfptr, addr, hint);
-
-    /*  Store the name of the endpoint. */
-    if (nn_slow (strlen (addr) + 1 > NN_SOCKADDR_MAX))
-        return -ENAMETOOLONG;
-#if defined _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4996)
-#endif
-    strcpy (self->addr, addr);
-#if defined _MSC_VER
-#pragma warning(pop)
-#endif
     nn_list_init (&self->pipes);
     self->flags = 0;
 
     return 0;
+}
+
+const char *nn_inprocb_getaddr (struct nn_inprocb *self)
+{
+    return nn_epbase_getaddr (&self->epbase);
 }
 
 void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)

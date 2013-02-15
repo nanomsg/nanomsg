@@ -23,7 +23,6 @@
 #ifndef NN_INPROCC_INCLUDED
 #define NN_INPROCC_INCLUDED
 
-#include "../../nn.h"
 #include "../../transport.h"
 
 #include "../../utils/list.h"
@@ -36,9 +35,6 @@ struct nn_inprocc {
 
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
-
-    /*  Name of the connected endpoint. */
-    char addr [NN_SOCKADDR_MAX];
 
     /*  This object is an element in the list of all connected endpoints managed
         by nn_inproc_ctx object. */
@@ -53,6 +49,7 @@ struct nn_inprocc {
 };
 
 int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint);
+const char *nn_inprocc_getaddr (struct nn_inprocc *self);
 void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
 void nn_inprocc_rm_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
 

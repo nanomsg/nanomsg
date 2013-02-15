@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -88,7 +88,7 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         inprocb = nn_cont (it, struct nn_inprocb, list);
-        if (strncmp (addr, inprocb->addr, NN_SOCKADDR_MAX) == 0)
+        if (strncmp (addr, nn_inprocb_getaddr (inprocb), NN_SOCKADDR_MAX) == 0)
             return -EADDRINUSE;
     }
 
@@ -105,7 +105,8 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
           it != nn_list_end (&self.connected);
           it = nn_list_next (&self.connected, it)) {
         inprocc = nn_cont (it, struct nn_inprocc, list);
-        if (strncmp (addr, inprocc->addr, NN_SOCKADDR_MAX) == 0) {
+        if (strncmp (addr, nn_inprocc_getaddr (inprocc),
+              NN_SOCKADDR_MAX) == 0) {
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
             nn_msgpipe_init (pipe, inprocb, inprocc);
@@ -140,7 +141,7 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
           it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         inprocb = nn_cont (it, struct nn_inprocb, list);
-        if (strcmp (addr, inprocb->addr) == 0) {
+        if (strcmp (addr, nn_inprocb_getaddr (inprocb)) == 0) {
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
             nn_msgpipe_init (pipe, inprocb, inprocc);

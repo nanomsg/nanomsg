@@ -129,6 +129,9 @@ static void nn_ctx_add_socktype (struct nn_socktype *socktype);
     It returns the ID of the newly created endpoint. */
 static int nn_ctx_create_ep (int fd, const char *addr, int bind);
 
+/*  Device-related private functions. */
+static void nn_device_mvmsg (int from, int to);
+
 void nn_version (int *major, int *minor, int *patch)
 {
     if (major)
@@ -817,7 +820,6 @@ int nn_device (int s1, int s2)
     int s2err;
     size_t optsz;
     struct pollfd pfd [6];
-    void *msg;
 
     /*  Get file descriptors to poll on. */
     /*  TODO: To avoid using too much resource, some internal polling mechanism
@@ -894,24 +896,39 @@ int nn_device (int s1, int s2)
 
         /*  If possible, pass the message from s1 to s2. */
         if (pfd [0].events == 0 && pfd [4].events == 0) {
-            rc = nn_recv (pfd [0].fd, &msg, NN_MSG, NN_DONTWAIT);
-            errno_assert (rc >= 0);
-            rc = nn_send (pfd [4].fd, &msg, NN_MSG, NN_DONTWAIT);
-            errno_assert (rc >= 0);
+            nn_device_mvmsg (pfd [0].fd, pfd [4].fd);
             pfd [0].events = POLLIN;
             pfd [4].events = POLLIN;
         }
 
         /*  If possible, pass the message from s2 to s1. */
         if (pfd [3].events == 0 && pfd [1].events == 0) {
-            rc = nn_recv (pfd [3].fd, &msg, NN_MSG, NN_DONTWAIT);
-            errno_assert (rc >= 0);
-            rc = nn_send (pfd [1].fd, &msg, NN_MSG, NN_DONTWAIT);
-            errno_assert (rc >= 0);
+            nn_device_mvmsg (pfd [3].fd, pfd [1].fd);
             pfd [3].events = POLLIN;
             pfd [1].events = POLLIN;
         }
     }
+}
+
+static void nn_device_mvmsg (int from, int to)
+{
+    int rc;
+    void *body;
+    void *control;
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
+
+    iov.iov_base = &body;
+    iov.iov_len = NN_MSG;
+    memset (&hdr, 0, sizeof (hdr));
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = &control;
+    hdr.msg_controllen = NN_MSG;
+    rc = nn_recvmsg (from, &hdr, NN_DONTWAIT);
+    errno_assert (rc >= 0);
+    rc = nn_sendmsg (to, &hdr, NN_DONTWAIT);
+    errno_assert (rc >= 0);
 }
 
 #endif

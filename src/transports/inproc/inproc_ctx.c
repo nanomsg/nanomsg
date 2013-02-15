@@ -34,7 +34,6 @@
 #include <string.h>
 
 /*  nn_transport interface. */
-static const char *nn_inproc_ctx_name (void);
 static void nn_inproc_ctx_init (void);
 static void nn_inproc_ctx_term (void);
 static int nn_inproc_ctx_bind (const char *addr, void *hint,
@@ -43,7 +42,7 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
     struct nn_epbase **epbase);
 
 static struct nn_transport nn_inproc_vfptr = {
-    nn_inproc_ctx_name,
+    "inproc",
     nn_inproc_ctx_init,
     nn_inproc_ctx_term,
     nn_inproc_ctx_bind,
@@ -63,11 +62,6 @@ struct nn_inproc_ctx {
 };
 
 static struct nn_inproc_ctx self;
-
-static const char *nn_inproc_ctx_name (void)
-{
-    return "inproc";
-}
 
 static void nn_inproc_ctx_init (void)
 {

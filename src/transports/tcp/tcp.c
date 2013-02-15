@@ -40,7 +40,6 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen);
 
 /*  nn_transport interface. */
-static const char *nn_tcp_name (void);
 static void nn_tcp_init (void);
 static void nn_tcp_term (void);
 static int nn_tcp_bind (const char *addr, void *hint,
@@ -49,7 +48,7 @@ static int nn_tcp_connect (const char *addr, void *hint,
     struct nn_epbase **epbase);
 
 static struct nn_transport nn_tcp_vfptr = {
-    nn_tcp_name,
+    "tcp",
     nn_tcp_init,
     nn_tcp_term,
     nn_tcp_bind,
@@ -57,11 +56,6 @@ static struct nn_transport nn_tcp_vfptr = {
 };
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
-
-static const char *nn_tcp_name (void)
-{
-    return "tcp";
-}
 
 static void nn_tcp_init (void)
 {

@@ -45,7 +45,6 @@ static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
     socklen_t *sslen);
 
 /*  nn_transport interface. */
-static const char *nn_ipc_name (void);
 static void nn_ipc_init (void);
 static void nn_ipc_term (void);
 static int nn_ipc_bind (const char *addr, void *hint,
@@ -54,7 +53,7 @@ static int nn_ipc_connect (const char *addr, void *hint,
     struct nn_epbase **epbase);
 
 static struct nn_transport nn_ipc_vfptr = {
-    nn_ipc_name,
+    "ipc",
     nn_ipc_init,
     nn_ipc_term,
     nn_ipc_bind,
@@ -62,11 +61,6 @@ static struct nn_transport nn_ipc_vfptr = {
 };
 
 struct nn_transport *nn_ipc = &nn_ipc_vfptr;
-
-static const char *nn_ipc_name (void)
-{
-    return "ipc";
-}
 
 static void nn_ipc_init (void)
 {

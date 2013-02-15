@@ -785,8 +785,8 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
           it != nn_list_end (&self.transports);
           it = nn_list_next (&self.transports, it)) {
         tp = nn_cont (it, struct nn_transport, list);
-        if (strlen (tp->name ()) == protosz &&
-              memcmp (tp->name (), proto, protosz) == 0)
+        if (strlen (tp->name) == protosz &&
+              memcmp (tp->name, proto, protosz) == 0)
             break;
         tp = NULL;
     }

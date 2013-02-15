@@ -146,20 +146,27 @@ struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self);
 
 struct nn_transport {
 
+    /*  Name of the transport as it appears in the connection strings ("tcp",
+        "ipc", "inproc" etc. */
+    const char *name;
+
     /*  Following methods are guarded by a global critical section. Two of these
-        function will never be invoked in parallel. */
-    const char *(*name) (void);
+        function will never be invoked in parallel. The first is called when
+        the library is initialised, the second one when it is terminated, i.e.
+        when there are no more open sockets. */
     void (*init) (void);
     void (*term) (void);
 
-    /*  Following methods are guarded by a socket-wide critical section.
-        Two of these function will never be invoked in parallel on the same
-        socket. */
+    /*  Each of these functions creates an endpoint and returns the newly
+        create endpoint in 'epbase' parameter. 'hint' is in opaque pointer
+        to be passed to nn_epbase_init().  These functions are guarded by
+        a socket-wide critical section. Two of these function will never be
+        invoked in parallel on the same socket. */
     int (*bind) (const char *addr, void *hint, struct nn_epbase **epbase);
     int (*connect) (const char *addr, void *hint, struct nn_epbase **epbase);
 
-    /*  This member is owned by the core. Never touch it directly from
-        the transport. */
+    /*  This member is used exclusively by the core. Never touch it directly
+        from the transport. */
     struct nn_list_item list;
 };
 

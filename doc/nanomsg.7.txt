@@ -94,6 +94,9 @@ Fan-in (data aggregation) protocol::
 Fan-out (load balancing) protocol::
     linknanomsg:nn_fanout[7]
 
+Message bus protocol::
+    linknanomsg:nn_bus[7]
+
 Following transport mechanisms are provided by nanomsg:
 
 In-process transport::

@@ -121,7 +121,12 @@ static int nn_xpair_send (struct nn_sockbase *self, struct nn_msg *msg)
 
 static int nn_xpair_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return nn_excl_recv (&nn_cont (self, struct nn_xpair, sockbase)->excl, msg);
+    int rc;
+
+    rc = nn_excl_recv (&nn_cont (self, struct nn_xpair, sockbase)->excl, msg);
+
+    /*  Discard NN_PIPEBASE_PARSED flag. */
+    return rc < 0 ? rc : 0;
 }
 
 static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,

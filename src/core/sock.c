@@ -477,6 +477,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             nn_cp_unlock (&sockbase->cp);
             return 0;
         }
+        nn_assert (rc < 0);
 
         /*  Any unexpected error is forwarded to the caller. */
         if (nn_slow (rc != -EAGAIN)) {
@@ -529,6 +530,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             nn_cp_unlock (&sockbase->cp);
             return 0;
         }
+        nn_assert (rc < 0);
 
         /*  Any unexpected error is forwarded to the caller. */
         if (nn_slow (rc != -EAGAIN)) {

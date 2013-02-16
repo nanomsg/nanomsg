@@ -146,8 +146,13 @@ static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg)
 
 static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return nn_fq_recv (&nn_cont (self, struct nn_xsink, sockbase)->fq,
+    int rc;
+
+    rc = nn_fq_recv (&nn_cont (self, struct nn_xsink, sockbase)->fq,
         msg, NULL);
+
+    /*  Discard NN_PIPEBASE_PARSED flag. */
+    return rc < 0 ? rc : 0;
 }
 
 static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,

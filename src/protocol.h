@@ -75,17 +75,38 @@ struct nn_sockbase;
 
 /*  To be implemented by individual socket types. */
 struct nn_sockbase_vfptr {
+
+    /*  Deallocate the socket. */
     void (*destroy) (struct nn_sockbase *self);
+
+    /*  Management of pipes. 'add' registers a new pipe. The pipe cannot to
+        send to or received from at the moment. 'rm' unregisters the pipe.
+        The pipe should not be used after this call as it may already be
+        deallocated. 'in' informs the socket that pipe is readable. 'out'
+        informs it that it is writeable. */
     int (*add) (struct nn_sockbase *self, struct nn_pipe *pipe);
     void (*rm) (struct nn_sockbase *self, struct nn_pipe *pipe);
     int (*in) (struct nn_sockbase *self, struct nn_pipe *pipe);
     int (*out) (struct nn_sockbase *self, struct nn_pipe *pipe);
+
+    /*  Send a message to the socket. Returns -EAGAIN if it cannot be done at
+        the moment or zero in case of success. */
     int (*send) (struct nn_sockbase *self, struct nn_msg *msg);
+
+    /*  Receive a message from the socket. Returns -EAGAIN if it cannot be done
+        at the moment or zero in case of success. */
     int (*recv) (struct nn_sockbase *self, struct nn_msg *msg);
+
+    /*  Set a protocol specific option. */
     int (*setopt) (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
+
+    /*  Retrieve a protocol specific option. */
     int (*getopt) (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
+
+    /*  Protocol-specific manipulation of message headers. */
+    /*  TODO: Is this needed or can we rely on generic mechanisms? */
     int (*sethdr) (struct nn_msg *msg, const void *hdr, size_t hdrlen);
     int (*gethdr) (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 };

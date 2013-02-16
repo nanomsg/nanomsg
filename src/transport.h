@@ -109,7 +109,13 @@ struct nn_pipebase;
 #define NN_PIPEBASE_PARSED 2
 
 struct nn_pipebase_vfptr {
+
+    /*  Send a message to the network. The function can return either error
+        (negative number) or any combination of the flags defined above. */
     int (*send) (struct nn_pipebase *self, struct nn_msg *msg);
+
+    /*  Receive a message from the network. The function can return either error
+        (negative number) or any combination of the flags defined above. */
     int (*recv) (struct nn_pipebase *self, struct nn_msg *msg);
 };
 

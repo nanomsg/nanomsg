@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>nn_reqrep(7)</title>
+<title>nn_device(3)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-nn_reqrep(7) Manual Page
+nn_device(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_reqrep -
-   request/reply scalability protocol
+<p>nn_device -
+   start a device
 </p>
 </div>
 </div>
@@ -575,63 +575,75 @@ nn_reqrep(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/reprep.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_device (int <em>s1</em>, int <em>s2</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This protocol is used to distribute the workload among multiple stateless
-workers.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Starts a device to forward messages between two sockets. <em>nn_device</em> function
+loops infinitely and sends and messages received from <em>s1</em> to <em>s2</em> and vice
+versa.</p></div>
+<div class="paragraph"><p>To break the loop and make <em>nn_device</em> function exit use
+<a href="nn_term.3.html">nn_term(3)</a> function.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>The function loops until it hits an error. In such case it returns a negative
+value and sets <em>errno</em> to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-NN_REQ
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-    Used to implement the client application that sends requests and
-    receives replies.
+One of the provided sockets is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
-NN_REP
+<strong>EINTR</strong>
 </dt>
 <dd>
 <p>
-    Used to implement the stateless worker that receives requests and sends
-    replies.
+The operation was interrupted by delivery of a signal.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-NN_RESEND_IVL
-</dt>
-<dd>
-<p>
-    This option is defined on the full REQ socket. If reply is not received
-    in specified amount of milliseconds, the request will be automatically
-    resent. The type of this option is int. Default value is 60000 (1 minute).
-</p>
-</dd>
-</dl></div>
 </div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int s1 = nn_socket (AF_SP_RAW, NN_REQ);
+nn_bind (s1, "tcp://eth0:5555");
+int s2 = nn_socket (AF_SP_RAW, NN_REP);
+nn_bind (s2, "tcp://eth0:5556");
+nn_device (s1, s2);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
-<a href="nn_pubsub.7.html">nn_pubsub(7)</a>
-<a href="nn_fanin.7.html">nn_fanin(7)</a>
-<a href="nn_fanout.7.html">nn_fanout(7)</a>
-<a href="nn_survey.7.html">nn_survey(7)</a>
-<a href="nn_pair.7.html">nn_pair(7)</a>
+<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_term.3.html">nn_term(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -646,7 +658,7 @@ NN_RESEND_IVL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-15 10:17:52 CET
+Last updated 2013-02-14 13:37:10 CET
 </div>
 </div>
 </body>

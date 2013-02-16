@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.3" />
-<title>nn_reqrep(7)</title>
+<title>nn_bus(7)</title>
 <style type="text/css">
 /* Sans-serif font. */
 h1, h2, h3, h4, h5, h6,
@@ -561,12 +561,12 @@ footnotes: function () {
 <body class="manpage">
 <div id="header">
 <h1>
-nn_reqrep(7) Manual Page
+nn_bus(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_reqrep -
-   request/reply scalability protocol
+<p>nn_bus -
+   message bus scalability protocol
 </p>
 </div>
 </div>
@@ -575,59 +575,52 @@ nn_reqrep(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/reprep.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/bus.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This protocol is used to distribute the workload among multiple stateless
-workers.</p></div>
+<div class="paragraph"><p>Broadcasts messages from any node to all other nodes in the topology. The socket
+never receives messages that it sent itself.</p></div>
+<div class="paragraph"><p>This pattern scales only to local level (within a single machine or within
+a single LAN). Trying to scale it further can result in overloading individual
+nodes with messages.</p></div>
+<div class="admonitionblock">
+<table><tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">For bus topology to function correctly, user is responsible for
+ensuring that path from each node to any other node exists within the topology.</td>
+</tr></table>
+</div>
 <div class="sect2">
 <h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-NN_REQ
+NN_BUS
 </dt>
 <dd>
 <p>
-    Used to implement the client application that sends requests and
-    receives replies.
-</p>
-</dd>
-<dt class="hdlist1">
-NN_REP
-</dt>
-<dd>
-<p>
-    Used to implement the stateless worker that receives requests and sends
-    replies.
+    Sent messages are distributed to all nodes in the topology. Incoming
+    messages from all other nodes in the topology are fair-queued in the
+    socket.
 </p>
 </dd>
 </dl></div>
 </div>
 <div class="sect2">
 <h3 id="_socket_options">Socket Options</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-NN_RESEND_IVL
-</dt>
-<dd>
-<p>
-    This option is defined on the full REQ socket. If reply is not received
-    in specified amount of milliseconds, the request will be automatically
-    resent. The type of this option is int. Default value is 60000 (1 minute).
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>There are no options defined at the moment.</p></div>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
-<a href="nn_pubsub.7.html">nn_pubsub(7)</a>
+<div class="paragraph"><p><a href="nn_pubsub.7.html">nn_pubsub(7)</a>
+<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
 <a href="nn_fanin.7.html">nn_fanin(7)</a>
 <a href="nn_fanout.7.html">nn_fanout(7)</a>
 <a href="nn_survey.7.html">nn_survey(7)</a>
@@ -646,7 +639,7 @@ NN_RESEND_IVL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-15 10:17:52 CET
+Last updated 2013-02-15 12:40:08 CET
 </div>
 </div>
 </body>

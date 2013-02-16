@@ -103,6 +103,11 @@ struct nn_pipebase;
     be called. */
 #define NN_PIPEBASE_RELEASE 1
 
+/*  Specifies that received message is already split into header and body.
+    This flag is used only by inproc transport to avoid merging and re-splitting
+    the messages passed with a single process. */
+#define NN_PIPEBASE_PARSED 2
+
 struct nn_pipebase_vfptr {
     int (*send) (struct nn_pipebase *self, struct nn_msg *msg);
     int (*recv) (struct nn_pipebase *self, struct nn_msg *msg);

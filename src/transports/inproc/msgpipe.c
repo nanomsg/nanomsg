@@ -181,7 +181,7 @@ static int nn_msgpipe_recvb (struct nn_pipebase *self, struct nn_msg *msg)
         NN_MSGPIPE_FLAG_CHALF_DEAD ? NULL : &msgpipe->chalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
-    return NN_PIPE_PARSED;
+    return NN_PIPEBASE_PARSED;
 }
 
 static int nn_msgpipe_sendc (struct nn_pipebase *self, struct nn_msg *msg)
@@ -214,7 +214,7 @@ static int nn_msgpipe_recvc (struct nn_pipebase *self, struct nn_msg *msg)
         NN_MSGPIPE_FLAG_BHALF_DEAD ? NULL : &msgpipe->bhalf, msg);
     nn_mutex_unlock (&msgpipe->sync);
 
-    return NN_PIPE_PARSED;
+    return NN_PIPEBASE_PARSED;
 }
 
 /******************************************************************************/

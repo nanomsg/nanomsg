@@ -39,14 +39,32 @@
 
 /*  Any combination of following flags can be returned from successful call
     to nn_pipe_send or nn_pipe_recv. */
+
+/*  This flag means that the pipe can't be used for receiving (when returned
+    from nn_pipe_recv()) or sending (when returned from nn_pipe_send()).
+    Protocol implementation should not send/recv messages from the pipe until
+    the pipe is revived by in()/out() function. */
 #define NN_PIPE_RELEASE 1
+
+/*  Specifies that received message is already split into header and body.
+    This flag is used only by inproc transport to avoid merging and re-splitting
+    the messages passed with a single process. */
 #define NN_PIPE_PARSED 2
 
 struct nn_pipe;
 
+/*  Associates opaque pointer to protocol-specific data with the pipe. */
 void nn_pipe_setdata (struct nn_pipe *self, void *data);
+
+/*  Retrieves the opaque pointer associated with the pipe. */
 void *nn_pipe_getdata (struct nn_pipe *self);
+
+/*  Send the message to the pipe. If successful, pipe takes ownership of the
+    messages. */
 int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg);
+
+/*  Receive a message from a pipe. 'msg' should not be initialised prior to
+    the call. It will be initialised when the call succeeds. */
 int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
 /******************************************************************************/
@@ -72,47 +90,21 @@ struct nn_sockbase_vfptr {
     int (*gethdr) (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 };
 
-#define NN_SOCK_FLAG_ZOMBIE 1
-#define NN_SOCK_FLAG_SNDFD 2
-#define NN_SOCK_FLAG_RCVFD 4
-#define NN_SOCK_FLAG_ERRFD 8
-
+/*  The members of this structure are used exclusively by the core. Never use
+    or modify them directly from the protocol implementation. */
 struct nn_sockbase
 {
-    /*  Table of virtual functions supplied by the socket type. */
     const struct nn_sockbase_vfptr *vfptr;
-
-    /*  Combination so NN_SOCK_FLAG_* flags. */
     int flags;
-
-    /*  Completion port to handle file descriptors, timers and locking. */
     struct nn_cp cp;
-
-    /*  Condition variable to implement sleeping in blocking socket
-        operations. */
     struct nn_cond cond;
-
-    /*  The efd objects for signalling readability, writeability and errors.
-        These objects are initialised only if NN_SOCK_FLAG_SNDFD/RCVFD/ERRFD
-        flags are set. This way we can create these relatively expensive objects
-        only when actually needed. */
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
     struct nn_efd errfd;
-
-    /*  Clock used to measure send & recv timeouts. */
     struct nn_clock clock;
-
-    /*  File descriptor for this socket. */
     int fd;
-
-    /*  List of all active endpoints. */
     struct nn_list eps;
-
-    /*  Endpoint ID to assign to the next endpoint. */
     int eid;
-
-    /*  NN_SOL_SOCKET level options. */
     int linger;
     int sndbuf;
     int rcvbuf;
@@ -137,7 +129,7 @@ void nn_sockbase_unblock_recv (struct nn_sockbase *self);
 /*  If send is blocking at the moment, this function will unblock it. */
 void nn_sockbase_unblock_send (struct nn_sockbase *self);
 
-/*  Returns completion port associated with the socket. */
+/*  Returns the completion port associated with the socket. */
 struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self);
 
 /******************************************************************************/
@@ -147,8 +139,14 @@ struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self);
 /*  This structure defines a class factory for individual socket types. */
 
 struct nn_socktype {
+
+    /*  Domain and protocol IDs as specified in nn_socket() function. */
     int domain;
     int protocol;
+
+    /*  Function to create the socket type. This function is called under
+        global lock, so it is not possible that two sockets are being
+        created in parallel. */
     struct nn_sockbase *(*create) (int fd);
 
     /*  This member is owned by the core. Never touch it directly from inside

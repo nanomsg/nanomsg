@@ -32,8 +32,16 @@
 #include "../utils/latmon.h"
 #include "../utils/msg.h"
 
-#define NN_SOCK_EVENT_IN 1
-#define NN_SOCK_EVENT_OUT 2
+/*  This flag is set, if nn_term() function was already called. All the socket
+    function, except for nn_close() should return ETERM error in such case. */
+#define NN_SOCK_FLAG_ZOMBIE 1
+
+/*  The efd objects for signalling readability, writeability and errors are
+    initialised only if these flags are set. This way we can create these
+    relatively expensive objects only when actually needed. */
+#define NN_SOCK_FLAG_SNDFD 2
+#define NN_SOCK_FLAG_RCVFD 4
+#define NN_SOCK_FLAG_ERRFD 8
 
 void nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)

@@ -31,6 +31,7 @@
 /*  Tests the inproc transport. */
 
 #define THREAD_COUNT 100
+#define SOCKET_NAME "inproc://test"
 
 static void routine (void *arg)
 {
@@ -39,7 +40,7 @@ static void routine (void *arg)
 
     s = nn_socket (AF_SP, NN_SUB);
     errno_assert (s >= 0);
-    rc = nn_connect (s, "inproc://a");
+    rc = nn_connect (s, SOCKET_NAME);
     errno_assert (rc >= 0);
     rc = nn_close (s);
     errno_assert (rc == 0);
@@ -58,15 +59,15 @@ int main ()
     /*  Create a simple topology. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "inproc://test");
+    rc = nn_connect (sc, SOCKET_NAME);
     errno_assert (rc >= 0);
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = nn_bind (sb, "inproc://test");
+    rc = nn_bind (sb, SOCKET_NAME);
     errno_assert (rc >= 0);
 
     /*  Try a duplicate bind. It should fail. */
-    rc = nn_bind (sc, "inproc://test");
+    rc = nn_bind (sc, SOCKET_NAME);
     nn_assert (rc < 0 && errno == EADDRINUSE);
 
     /*  Ping-pong test. */
@@ -109,7 +110,7 @@ int main ()
     /*  Now let's try to stress the shutdown algorithm. */
     sb = nn_socket (AF_SP, NN_PUB);
     errno_assert (sb >= 0);
-    rc = nn_bind (sb, "inproc://test");
+    rc = nn_bind (sb, SOCKET_NAME);
     errno_assert (rc >= 0);
     for (j = 0; j != 10; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)

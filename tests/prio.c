@@ -25,6 +25,9 @@
 
 #include "../src/utils/err.c"
 
+#define SOCKET_ADDRESS_1 "inproc://1"
+#define SOCKET_ADDRESS_2 "inproc://2"
+
 int main ()
 {
     int rc;
@@ -36,11 +39,11 @@ int main ()
 
     pull1 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull1 != -1);
-    rc = nn_bind (pull1, "inproc://1");
+    rc = nn_bind (pull1, SOCKET_ADDRESS_1);
     errno_assert (rc >= 0);
     pull2 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull2 != -1);
-    rc = nn_bind (pull2, "inproc://2");
+    rc = nn_bind (pull2, SOCKET_ADDRESS_2);
     errno_assert (rc >= 0);
     push = nn_socket (AF_SP, NN_PUSH);
     errno_assert (push != -1);
@@ -48,13 +51,13 @@ int main ()
     rc = nn_setsockopt (push, NN_SOL_SOCKET, NN_SNDPRIO,
         &sndprio, sizeof (sndprio));
     errno_assert (rc == 0);
-    rc = nn_connect (push, "inproc://1");
+    rc = nn_connect (push, SOCKET_ADDRESS_1);
     errno_assert (rc >= 0);
     sndprio = 2;
     rc = nn_setsockopt (push, NN_SOL_SOCKET, NN_SNDPRIO,
         &sndprio, sizeof (sndprio));
     errno_assert (rc == 0);
-    rc = nn_connect (push, "inproc://2");
+    rc = nn_connect (push, SOCKET_ADDRESS_2);
     errno_assert (rc >= 0);
 
     rc = nn_send (push, "ABC", 3, 0);

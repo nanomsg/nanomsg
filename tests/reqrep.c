@@ -25,6 +25,8 @@
 
 #include "../src/utils/err.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -39,15 +41,15 @@ int main ()
 #if 0
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, "inproc://a");
+    rc = nn_bind (rep1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
-    rc = nn_connect (req1, "inproc://a");
+    rc = nn_connect (req1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     req2 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req2 != -1);
-    rc = nn_connect (req2, "inproc://a");
+    rc = nn_connect (req2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Check invalid sequence of sends and recvs. */
@@ -93,15 +95,15 @@ int main ()
     /*  Check load-balancing of requests. */
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
-    rc = nn_bind (req1, "inproc://a");
+    rc = nn_bind (req1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
-    rc = nn_connect (rep1, "inproc://a");
+    rc = nn_connect (rep1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     rep2 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep2 != -1);
-    rc = nn_connect (rep2, "inproc://a");
+    rc = nn_connect (rep2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     rc = nn_send (req1, "ABC", 3, 0);
@@ -141,11 +143,11 @@ int main ()
     /*  Test re-sending of the request. */
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, "inproc://a");
+    rc = nn_bind (rep1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     req1 = nn_socket (AF_SP, NN_REQ);
     errno_assert (req1 != -1);
-    rc = nn_connect (req1, "inproc://a");
+    rc = nn_connect (req1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     resend_ivl = 100;
     rc = nn_setsockopt (req1, NN_REQ, NN_RESEND_IVL,

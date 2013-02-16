@@ -25,6 +25,8 @@
 
 #include "../src/utils/err.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -34,11 +36,11 @@ int main ()
 
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = nn_bind (sb, "inproc://a");
+    rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "inproc://a");
+    rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     rc = nn_send (sc, "ABC", 3, 0);

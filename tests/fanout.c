@@ -25,6 +25,8 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -35,15 +37,15 @@ int main ()
 
     push = nn_socket (AF_SP, NN_PUSH);
     errno_assert (push != -1);
-    rc = nn_bind (push, "inproc://a");
+    rc = nn_bind (push, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     pull1 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull1 != -1);
-    rc = nn_connect (pull1, "inproc://a");
+    rc = nn_connect (pull1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     pull2 = nn_socket (AF_SP, NN_PULL);
     errno_assert (pull2 != -1);
-    rc = nn_connect (pull2, "inproc://a");
+    rc = nn_connect (pull2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Wait till both connections are established to get messages spread

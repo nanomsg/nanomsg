@@ -25,6 +25,8 @@
 
 #include "../src/utils/err.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -42,19 +44,19 @@ int main ()
     rc = nn_setsockopt (surveyor, NN_SURVEYOR, NN_DEADLINE,
         &deadline, sizeof (deadline));
     errno_assert (rc == 0);
-    rc = nn_bind (surveyor, "inproc://a");
+    rc = nn_bind (surveyor, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     respondent1 = nn_socket (AF_SP, NN_RESPONDENT);
     errno_assert (respondent1 != -1);
-    rc = nn_connect (respondent1, "inproc://a");
+    rc = nn_connect (respondent1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     respondent2 = nn_socket (AF_SP, NN_RESPONDENT);
     errno_assert (respondent2 != -1);
-    rc = nn_connect (respondent2, "inproc://a");
+    rc = nn_connect (respondent2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     respondent3 = nn_socket (AF_SP, NN_RESPONDENT);
     errno_assert (respondent3 != -1);
-    rc = nn_connect (respondent3, "inproc://a");
+    rc = nn_connect (respondent3, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Send the survey. */

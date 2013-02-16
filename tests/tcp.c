@@ -32,6 +32,7 @@
 /*  Tests TCP transport. */
 
 #define THREAD_COUNT 100
+#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
 
 static void routine (void *arg)
 {
@@ -40,7 +41,7 @@ static void routine (void *arg)
 
     s = nn_socket (AF_SP, NN_SUB);
     errno_assert (s >= 0);
-    rc = nn_connect (s, "tcp://127.0.0.1:5555");
+    rc = nn_connect (s, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     rc = nn_close (s);
     errno_assert (rc == 0);
@@ -60,7 +61,7 @@ int main ()
     /*  Try closing a TCP socket while it not connected. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "tcp://127.0.0.1:5555");
+    rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     rc = nn_close (sc);
     errno_assert (rc == 0);
@@ -68,7 +69,7 @@ int main ()
     /*  Open the socket anew. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "tcp://127.0.0.1:5555");
+    rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Leave enough time for at least on re-connect attempt. */
@@ -76,7 +77,7 @@ int main ()
 
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = nn_bind (sb, "tcp://127.0.0.1:5555");
+    rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Ping-pong test. */
@@ -119,7 +120,7 @@ int main ()
     /*  Now let's try to stress the shutdown algorithm. */
     sb = nn_socket (AF_SP, NN_PUB);
     errno_assert (sb >= 0);
-    rc = nn_bind (sb, "tcp://127.0.0.1:5555");
+    rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     for (j = 0; j != 10; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)

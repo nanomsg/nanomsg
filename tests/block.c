@@ -29,6 +29,8 @@
 
 /*  This test checks whether blocking on send/recv works as expected. */
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int sc;
 int sb;
 
@@ -60,11 +62,11 @@ int main ()
 
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = nn_bind (sb, "inproc://a");
+    rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "inproc://a");
+    rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     nn_thread_init (&thread, worker, NULL);

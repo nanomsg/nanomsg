@@ -24,6 +24,8 @@
 #include "../src/fanin.h"
 #include "../src/utils/err.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -34,15 +36,15 @@ int main ()
 
     sink = nn_socket (AF_SP, NN_SINK);
     errno_assert (sink != -1);
-    rc = nn_bind (sink, "inproc://a");
+    rc = nn_bind (sink, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     source1 = nn_socket (AF_SP, NN_SOURCE);
     errno_assert (source1 != -1);
-    rc = nn_connect (source1, "inproc://a");
+    rc = nn_connect (source1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     source2 = nn_socket (AF_SP, NN_SOURCE);
     errno_assert (source2 != -1);
-    rc = nn_connect (source2, "inproc://a");
+    rc = nn_connect (source2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     rc = nn_send (source1, "ABC", 3, 0);

@@ -26,6 +26,8 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -36,19 +38,19 @@ int main ()
 
     pub = nn_socket (AF_SP, NN_PUB);
     errno_assert (pub != -1);
-    rc = nn_bind (pub, "inproc://a");
+    rc = nn_bind (pub, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sub1 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub1 != -1);
     rc = nn_setsockopt (sub1, NN_SUB, NN_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
-    rc = nn_connect (sub1, "inproc://a");
+    rc = nn_connect (sub1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sub2 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub2 != -1);
     rc = nn_setsockopt (sub2, NN_SUB, NN_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
-    rc = nn_connect (sub2, "inproc://a");
+    rc = nn_connect (sub2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Wait till connections are established to prevent message loss. */

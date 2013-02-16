@@ -25,6 +25,9 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
+#define SOCKET_ADDRESS_A "inproc://a"
+#define SOCKET_ADDRESS_B "inproc://b"
+
 int main ()
 {
     int rc;
@@ -36,19 +39,19 @@ int main ()
     /*  Create a simple bus topology consisting of 3 nodes. */
     bus1 = nn_socket (AF_SP, NN_BUS);
     errno_assert (bus1 != -1);
-    rc = nn_bind (bus1, "inproc://a");
+    rc = nn_bind (bus1, SOCKET_ADDRESS_A);
     errno_assert (rc >= 0);
     bus2 = nn_socket (AF_SP, NN_BUS);
     errno_assert (bus2 != -1);
-    rc = nn_bind (bus2, "inproc://b");
+    rc = nn_bind (bus2, SOCKET_ADDRESS_B);
     errno_assert (rc >= 0);
-    rc = nn_connect (bus2, "inproc://a");
+    rc = nn_connect (bus2, SOCKET_ADDRESS_A);
     errno_assert (rc >= 0);
     bus3 = nn_socket (AF_SP, NN_BUS);
     errno_assert (bus3 != -1);
-    rc = nn_connect (bus3, "inproc://a");
+    rc = nn_connect (bus3, SOCKET_ADDRESS_A);
     errno_assert (rc >= 0);
-    rc = nn_connect (bus3, "inproc://b");
+    rc = nn_connect (bus3, SOCKET_ADDRESS_B);
     errno_assert (rc >= 0);
 
     /*  Send a message from each node. */

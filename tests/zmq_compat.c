@@ -27,6 +27,8 @@
 #include <string.h>
 #include <stdint.h>
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -50,9 +52,9 @@ int main ()
     errno_assert (s2);
 
     /*  Check wiring up the topology. */
-    rc = zmq_bind (s1, "inproc://a");
+    rc = zmq_bind (s1, SOCKET_ADDRESS);
     errno_assert (rc == 0);
-    rc = zmq_connect (s2, "inproc://a");
+    rc = zmq_connect (s2, SOCKET_ADDRESS);
     errno_assert (rc == 0);
 
     /*  Set an option using ZMQ-specific name. */

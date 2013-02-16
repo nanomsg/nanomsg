@@ -30,6 +30,8 @@
 
 /*  Test of polling via NN_SNDFD and NN_RCVFD mechanism. */
 
+#define SOCKET_ADDRESS "inproc://a"
+
 int main ()
 {
     int rc;
@@ -47,11 +49,11 @@ int main ()
     /*  Create a simple topology. */
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    rc = nn_bind (sb, "inproc://a");
+    rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, "inproc://a");
+    rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Retrieve the file descriptor for polling for inbound messages. */

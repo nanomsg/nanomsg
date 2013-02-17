@@ -55,6 +55,12 @@ $ make test
 $ sudo make install
 </pre>
 
+<p>To build a version with debug info use the following command instead of "cmake .." step:
+
+<pre>
+$ cmake -DCMAKE_BUILD_TYPE=Debug ..
+</pre>
+
 <p>On Windows, follow the above steps until cmake step is done. Then use MSVC2010 to open and build the nanomsg solution located in on build subdirectory.</p>
 
 <p>To build the documentation (man pages and HTML reference) you need asciidoc and xmlto installed. Once done, run "make doc" command in the build subdirectory.</p>

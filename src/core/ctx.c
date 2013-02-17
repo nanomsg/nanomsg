@@ -763,6 +763,7 @@ static void nn_ctx_add_socktype (struct nn_socktype *socktype)
 
 static int nn_ctx_create_ep (int fd, const char *addr, int bind)
 {
+    int rc;
     const char *proto;
     const char *delim;
     size_t protosz;
@@ -797,16 +798,19 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
             break;
         tp = NULL;
     }
-    nn_glock_unlock ();
 
     /*  The protocol specified doesn't match any known protocol. */
-    if (!tp)
+    if (!tp) {
+        nn_glock_unlock ();
         return -EPROTONOSUPPORT;
+    }
 
     /*  Ask socket to create the endpoint. Pass it the class factory
         function. */
-    return nn_sock_add_ep (self.socks [fd], addr,
+    rc = nn_sock_add_ep (self.socks [fd], addr,
         bind ? tp->bind : tp->connect);
+    nn_glock_unlock ();
+    return rc;
 }
 
 #if defined NN_HAVE_POLL

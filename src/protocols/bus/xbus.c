@@ -31,6 +31,13 @@
 #include "../../utils/alloc.h"
 
 #include <stddef.h>
+#include <string.h>
+#include <stdint.h>
+
+/*  To make the algorithm super efficient we directly cast pipe pointers to
+    pipe IDs (rather than maintaining a hash table). For this to work, it is
+    neccessary for the pointer to fit in 64-bit ID. */
+CT_ASSERT (sizeof (uint64_t) >= sizeof (struct nn_pipe*));
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_xbus_destroy (struct nn_sockbase *self);
@@ -128,34 +135,47 @@ int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
+    size_t hdrsz;
+    struct nn_pipe *exclude;
+
+    hdrsz = nn_chunkref_size (&msg->hdr);
+    if (hdrsz == 0)
+        exclude = NULL;
+    else if (hdrsz == sizeof (uint64_t))
+        memcpy (&exclude, nn_chunkref_data (&msg->hdr), sizeof (exclude));
+    else
+        return -EINVAL;
+
     return nn_dist_send (&nn_cont (self, struct nn_xbus, sockbase)->outpipes,
-        msg, NULL);
+        msg, exclude);
 }
 
 int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_xbus *xbus;
+    struct nn_pipe *pipe;
 
     xbus = nn_cont (self, struct nn_xbus, sockbase);
 
-    rc = nn_fq_recv (&xbus->inpipes, msg, NULL);
-    if (nn_slow (rc < 0))
-        return rc;
+    while (1) {
 
-    /*  Split the header from the body, if needed. */
-    if (!(rc & NN_PIPE_PARSED)) {
-        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint64_t))) {
-            nn_msg_term (msg);
-            return -EAGAIN;
-        }
-        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-        nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
-        memcpy (nn_chunkref_data (&msg->hdr), nn_chunkref_data (&msg->body),
-           sizeof (uint64_t));
-        nn_chunkref_trim (&msg->body, sizeof (uint64_t));
+        /*  Get next message in fair-queued manner. */
+        rc = nn_fq_recv (&xbus->inpipes, msg, &pipe);
+        if (nn_slow (rc < 0))
+            return rc;
+
+        /*  The message should have no header. Drop malformed messages. */
+        if (nn_chunkref_size (&msg->hdr) == 0)
+            break;
+        nn_msg_term (msg);
     }
+
+    /*  Add pipe ID to the message header. */
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
+    memset (nn_chunkref_data (&msg->hdr), 0, sizeof (uint64_t));
+    memcpy (nn_chunkref_data (&msg->hdr), &pipe, sizeof (pipe));
 
     return 0;
 }

@@ -27,15 +27,11 @@
 #include "../../bus.h"
 
 #include "../../utils/cont.h"
-#include "../../utils/random.h"
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
 
-#include <stdint.h>
-
 struct nn_bus {
     struct nn_xbus xbus;
-    uint64_t nodeid;
 };
 
 /*  Private functions. */
@@ -67,10 +63,6 @@ static void nn_bus_init (struct nn_bus *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
     nn_xbus_init (&self->xbus, vfptr, fd);
-
-    /*  Generate 64-bit node ID. Any incoming messages with this ID will
-        be filtered out. */
-    nn_random_generate (&self->nodeid, sizeof (self->nodeid));
 }
 
 static void nn_bus_term (struct nn_bus *self)
@@ -95,11 +87,9 @@ static int nn_bus_send (struct nn_sockbase *self, struct nn_msg *msg)
 
     bus = nn_cont (self, struct nn_bus, xbus.sockbase);
 
-    /*  Tag the message with node ID. */
-    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
-    nn_putll (nn_chunkref_data (&msg->hdr), bus->nodeid);
+    /*  Check for malformed messages. */
+    if (nn_chunkref_size (&msg->hdr))
+        return -EINVAL;
 
     /*  Send the message. */
     rc = nn_xbus_send (&bus->xbus.sockbase, msg);
@@ -112,37 +102,21 @@ static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_bus *bus;
-    uint64_t nodeid;
 
     bus = nn_cont (self, struct nn_bus, xbus.sockbase);
 
-    while (1) {
+    /*  Get next message. */
+    rc = nn_xbus_recv (&bus->xbus.sockbase, msg);
+    if (nn_slow (rc == -EAGAIN))
+        return -EAGAIN;
+    errnum_assert (rc == 0, -rc);
+    nn_assert (nn_chunkref_size (&msg->hdr) == sizeof (uint64_t));
 
-        /*  Get next message. */
-        rc = nn_xbus_recv (&bus->xbus.sockbase, msg);
-        if (nn_slow (rc == -EAGAIN))
-            return -EAGAIN;
-        errnum_assert (rc == 0, -rc);
-
-        /*  Get the node ID. Drop the messages sent by this node itself. */
-        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint64_t))) {
-            nn_msg_term (msg);
-            continue;
-        }
-        nodeid = nn_getll (nn_chunkref_data (&msg->hdr));
-        if (nn_slow (nodeid == bus->nodeid)) {
-            nn_msg_term (msg);
-            continue;
-        }
-
-        /*  Discard the header and return the message to the user. */
-        nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, 0);
-        break;
-    }
-
+    /*  Discard the header. */
+    nn_chunkref_term (&msg->hdr);
+    nn_chunkref_init (&msg->hdr, 0);
+    
     return 0;
-
 }
 
 static int nn_bus_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)

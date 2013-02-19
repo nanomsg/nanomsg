@@ -16,7 +16,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Broadcasts messages from any node to all other nodes in the topology. The socket
-never receives messages that it sent itself.
+should never receives messages that it sent itself.
 
 This pattern scales only to local level (within a single machine or within
 a single LAN). Trying to scale it further can result in overloading individual
@@ -24,6 +24,9 @@ nodes with messages.
 
 WARNING: For bus topology to function correctly, user is responsible for
 ensuring that path from each node to any other node exists within the topology.
+
+Raw (AF_SP_RAW) BUS socket never sends the message to the peer it was received
+from.
 
 Socket Types
 ~~~~~~~~~~~~

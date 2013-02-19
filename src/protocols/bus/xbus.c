@@ -81,7 +81,6 @@ int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xbus_data),
         "pipe data (xbus)");
     alloc_assert (data);
-    data->pipe = pipe;
     nn_fq_add (&xbus->inpipes, pipe, &data->initem, 8);
     nn_dist_add (&xbus->outpipes, pipe, &data->outitem);
     nn_pipe_setdata (pipe, data);

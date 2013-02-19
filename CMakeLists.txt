@@ -207,6 +207,7 @@ install (FILES src/reqrep.h DESTINATION include/nanomsg)
 install (FILES src/fanin.h DESTINATION include/nanomsg)
 install (FILES src/fanout.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
+install (FILES src/bus.h DESTINATION include/nanomsg)
 
 #  Packaging.
 

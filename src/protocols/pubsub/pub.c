@@ -31,6 +31,8 @@
 #include "../../utils/dist.h"
 #include "../../utils/alloc.h"
 
+#include <stddef.h>
+
 struct nn_pub_data {
     struct nn_dist_data item;
 };
@@ -149,7 +151,7 @@ static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_dist_send (&nn_cont (self, struct nn_pub, sockbase)->outpipes,
-        msg);
+        msg, NULL);
 }
 
 static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg)

@@ -23,6 +23,7 @@
 #include "dist.h"
 #include "err.h"
 #include "cont.h"
+#include "fast.h"
 
 #include <stddef.h>
 
@@ -61,7 +62,8 @@ int nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
     return result;
 }
 
-int nn_dist_send (struct nn_dist *self, struct nn_msg *msg)
+int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,
+    struct nn_pipe *exclude)
 {
     int rc;
     struct nn_list_item *it;
@@ -72,13 +74,15 @@ int nn_dist_send (struct nn_dist *self, struct nn_msg *msg)
     it = nn_list_begin (&self->pipes);
     while (it != nn_list_end (&self->pipes)) {
        data = nn_cont (it, struct nn_dist_data, item);
-       nn_msg_cp (&copy, msg);
-       rc = nn_pipe_send (data->pipe, &copy);
-       errnum_assert (rc >= 0, -rc);
-       if (rc & NN_PIPE_RELEASE) {
-           it = nn_list_erase (&self->pipes, it);
-           nn_list_item_nil (&data->item);
-           continue;
+       if (nn_fast (data->pipe != exclude)) {
+           nn_msg_cp (&copy, msg);
+           rc = nn_pipe_send (data->pipe, &copy);
+           errnum_assert (rc >= 0, -rc);
+           if (rc & NN_PIPE_RELEASE) {
+               it = nn_list_erase (&self->pipes, it);
+               nn_list_item_nil (&data->item);
+               continue;
+           }
        }
        it = nn_list_next (&self->pipes, it);
     }

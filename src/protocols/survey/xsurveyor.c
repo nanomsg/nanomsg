@@ -131,7 +131,7 @@ int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_dist_send (
-        &nn_cont (self, struct nn_xsurveyor, sockbase)->outpipes, msg);
+        &nn_cont (self, struct nn_xsurveyor, sockbase)->outpipes, msg, NULL);
 }
 
 int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)

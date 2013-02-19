@@ -46,6 +46,11 @@ void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data);
 int nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data);
-int nn_dist_send (struct nn_dist *self, struct nn_msg *msg);
+
+/*  Sends the message to all the attached pipes except the one specified
+    by 'exclude' parameter. If 'exclude' is NULL, message is sent to all
+    attached pipes. */
+int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,
+    struct nn_pipe *exclude);
 
 #endif

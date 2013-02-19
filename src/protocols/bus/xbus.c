@@ -30,6 +30,8 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 
+#include <stddef.h>
+
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_xbus_destroy (struct nn_sockbase *self);
 static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
@@ -127,7 +129,7 @@ int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_dist_send (&nn_cont (self, struct nn_xbus, sockbase)->outpipes,
-        msg);
+        msg, NULL);
 }
 
 int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)

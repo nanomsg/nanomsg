@@ -582,7 +582,7 @@ nn_bus(7) Manual Page
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>Broadcasts messages from any node to all other nodes in the topology. The socket
-never receives messages that it sent itself.</p></div>
+should never receives messages that it sent itself.</p></div>
 <div class="paragraph"><p>This pattern scales only to local level (within a single machine or within
 a single LAN). Trying to scale it further can result in overloading individual
 nodes with messages.</p></div>
@@ -595,6 +595,8 @@ nodes with messages.</p></div>
 ensuring that path from each node to any other node exists within the topology.</td>
 </tr></table>
 </div>
+<div class="paragraph"><p>Raw (AF_SP_RAW) BUS socket never sends the message to the peer it was received
+from.</p></div>
 <div class="sect2">
 <h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
@@ -639,7 +641,7 @@ NN_BUS
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-15 12:40:08 CET
+Last updated 2013-02-19 09:44:58 CET
 </div>
 </div>
 </body>

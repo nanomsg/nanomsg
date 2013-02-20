@@ -80,6 +80,15 @@ int main ()
     rc = nn_connect (sc, "tcp://*:some_port");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
+    rc = nn_bind (sc, "tcp://127.0.0.1:");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_bind (sc, "tcp://127.0.0.1:1000000");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_bind (sc, "tcp://eth10000:5555");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == ENODEV);
 
     /*  Connect correctly. Do so before binding the peer socket. */
     rc = nn_connect (sc, SOCKET_ADDRESS);

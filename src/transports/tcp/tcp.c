@@ -89,7 +89,12 @@ static int nn_tcp_connect (const char *addr, void *hint,
     int rc;
     struct nn_cstream *cstream;
 
-    /*  TODO: Check the syntax of the address here! */
+    /*  Check the syntax of the address here. All we can check is whether
+        port is OK. Address itself has to be resolved by DNS. */
+    /*  TODO: Check local address, if any. */
+    rc = nn_addr_parse_port (addr, NULL);
+    if (rc < 0)
+        return rc;
 
     cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (tcp)");
     alloc_assert (cstream);
@@ -166,6 +171,8 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
 
     /*  Parse the port. */
     port = nn_addr_parse_port (addr, &colon);
+    if (nn_slow (port == -EINVAL))
+        return -EINVAL;
     errnum_assert (port > 0, -port);
 
     /*  TODO: Parse the local address, if any. */

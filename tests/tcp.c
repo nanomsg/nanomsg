@@ -69,6 +69,16 @@ int main ()
     /*  Open the socket anew. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
+
+    /* Try using invalid address strings. */
+    rc = nn_connect (sc, "tcp://*:");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://*:1000000");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+
+    /*  Connect correctly. Do so before binding the peer socket. */
     rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 

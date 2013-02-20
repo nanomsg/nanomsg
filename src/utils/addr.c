@@ -42,12 +42,14 @@ void nn_addr_any (int flags, struct sockaddr_storage *result,
 
 int nn_addr_parse_port (const char *addr, const char **colon)
 {
+    size_t len;
     size_t pos;
     int port;
     
     /*  Find the last colon in the address. If there is no colon in the string
         or if the port contains non-numeric characters return error. */
-    pos = strlen (addr);
+    len = strlen (addr);
+    pos = len;
     while (1) {
         if (!pos)
             return -EINVAL;
@@ -57,6 +59,10 @@ int nn_addr_parse_port (const char *addr, const char **colon)
         if (addr [pos] < '0' || addr [pos] > '9')
             return -EINVAL;
     }
+
+    /*  If there's no port specified at all, it's an error. */
+    if (pos + 1 == len)
+        return -EINVAL;
 
     /*  Return the pointer to the colon character. */
     if (colon)

@@ -77,6 +77,9 @@ int main ()
     rc = nn_connect (sc, "tcp://*:1000000");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://*:some_port");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
 
     /*  Connect correctly. Do so before binding the peer socket. */
     rc = nn_connect (sc, SOCKET_ADDRESS);

@@ -47,6 +47,7 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_rm,
     nn_xbus_in,
     nn_xbus_out,
+    nn_xbus_events,
     nn_xbus_send,
     nn_xbus_recv,
     nn_xbus_setopt,
@@ -111,7 +112,7 @@ void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -119,10 +120,10 @@ int nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xbus = nn_cont (self, struct nn_xbus, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    return nn_fq_in (&xbus->inpipes, pipe, &data->initem);
+    nn_fq_in (&xbus->inpipes, pipe, &data->initem);
 }
 
-int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
@@ -130,7 +131,13 @@ int nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xbus = nn_cont (self, struct nn_xbus, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    return nn_dist_out (&xbus->outpipes, pipe, &data->outitem);
+    nn_dist_out (&xbus->outpipes, pipe, &data->outitem);
+}
+
+int nn_xbus_events (struct nn_sockbase *self)
+{
+    return (nn_fq_can_recv (&nn_cont (self, struct nn_xbus,
+        sockbase)->inpipes) ? NN_SOCKBASE_EVENT_IN : 0) | NN_SOCKBASE_EVENT_OUT;
 }
 
 int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)

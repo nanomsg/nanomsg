@@ -44,6 +44,7 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_rm,
     nn_xreq_in,
     nn_xreq_out,
+    nn_xreq_events,
     nn_xreq_send,
     nn_xreq_recv,
     nn_xreq_setopt,
@@ -103,24 +104,34 @@ void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-int nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
-    return nn_fq_in (&xreq->fq, pipe, &data->fq);
+    nn_fq_in (&xreq->fq, pipe, &data->fq);
 }
 
-int nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
-    return nn_lb_out (&xreq->lb, pipe, &data->lb);
+    nn_lb_out (&xreq->lb, pipe, &data->lb);
+}
+
+int nn_xreq_events (struct nn_sockbase *self)
+{
+    struct nn_xreq *xreq;
+
+    xreq = nn_cont (self, struct nn_xreq, sockbase);
+
+    return (nn_fq_can_recv (&xreq->fq) ? NN_SOCKBASE_EVENT_IN : 0) |
+        (nn_lb_can_send (&xreq->lb) ? NN_SOCKBASE_EVENT_OUT : 0);
 }
 
 int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)

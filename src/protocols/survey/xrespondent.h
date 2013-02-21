@@ -40,8 +40,9 @@ void nn_xrespondent_term (struct nn_xrespondent *self);
 
 int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xrespondent_events (struct nn_sockbase *self);
 int nn_xrespondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,

@@ -55,8 +55,9 @@ static void nn_pub_term (struct nn_pub *self);
 static void nn_pub_destroy (struct nn_sockbase *self);
 static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_pub_events (struct nn_sockbase *self);
 static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
@@ -72,6 +73,7 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_rm,
     nn_pub_in,
     nn_pub_out,
+    nn_pub_events,
     nn_pub_send,
     nn_pub_recv,
     nn_pub_setopt,
@@ -131,13 +133,13 @@ static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-static int nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     /*  We shouldn't get any messages from subscribers. */
     nn_assert (0);
 }
 
-static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_pub *pub;
     struct nn_pub_data *data;
@@ -145,7 +147,12 @@ static int nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     pub = nn_cont (self, struct nn_pub, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    return nn_dist_out (&pub->outpipes, pipe, &data->item);
+    nn_dist_out (&pub->outpipes, pipe, &data->item);
+}
+
+static int nn_pub_events (struct nn_sockbase *self)
+{
+    return NN_SOCKBASE_EVENT_OUT;
 }
 
 static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)

@@ -43,6 +43,17 @@
 #define NN_SOCK_FLAG_RCVFD 4
 #define NN_SOCK_FLAG_ERRFD 8
 
+/*  These bits specify whether individual efds are signalled or not at
+    the moment. Storing this information allows us to avoid redundant signalling
+    and unsignalling of the efd objects. It is also used to store events
+    while efds are not yet created (see above). */
+#define NN_SOCK_FLAG_IN 16
+#define NN_SOCK_FLAG_OUT 32
+#define NN_SOCK_FLAG_ERR 64
+
+/*  Private functions. */
+void nn_sockbase_adjust_events (struct nn_sockbase *self);
+
 void nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
@@ -137,14 +148,9 @@ void nn_sockbase_term (struct nn_sockbase *self)
     nn_cp_term (&self->cp);
 }
 
-void nn_sockbase_unblock_recv (struct nn_sockbase *self)
+void nn_sockbase_changed (struct nn_sockbase *self)
 {
-    nn_cond_post (&self->cond);
-}
-
-void nn_sockbase_unblock_send (struct nn_sockbase *self)
-{
-    nn_cond_post (&self->cond);
+    nn_sockbase_adjust_events (self);
 }
 
 struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self)
@@ -179,6 +185,7 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     if (level > NN_SOL_SOCKET) {
         rc = sockbase->vfptr->setopt (sockbase, level, option,
             optval, optvallen);
+        nn_sockbase_adjust_events (sockbase);
         nn_cp_unlock (&sockbase->cp);
         return rc;
     }
@@ -354,6 +361,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     if (level > NN_SOL_SOCKET) {
         rc = sockbase->vfptr->getopt (sockbase, level, option,
             optval, optvallen);
+        nn_sockbase_adjust_events (sockbase);
         if (!internal)
             nn_cp_unlock (&sockbase->cp);
         return rc;
@@ -473,6 +481,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  Try to send the message in a non-blocking way. */
         rc = sockbase->vfptr->send (sockbase, msg);
+        nn_sockbase_adjust_events (sockbase);
         if (nn_fast (rc == 0)) {
             nn_cp_unlock (&sockbase->cp);
             return 0;
@@ -526,6 +535,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  Try to receive the message in a non-blocking way. */
         rc = sockbase->vfptr->recv (sockbase, msg);
+        nn_sockbase_adjust_events (sockbase);
         if (nn_fast (rc == 0)) {
             nn_cp_unlock (&sockbase->cp);
             return 0;
@@ -581,49 +591,83 @@ int nn_sock_fd (struct nn_sock *self)
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
 {
+    int rc;
     struct nn_sockbase *sockbase;
 
-    /*  Forward the call to the specific socket type. */
     sockbase = (struct nn_sockbase*) self;
-    return sockbase->vfptr->add (sockbase, pipe);
+
+    rc = sockbase->vfptr->add (sockbase, pipe);
+    nn_sockbase_adjust_events (sockbase);
+    return rc;
 }
 
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
 {
     struct nn_sockbase *sockbase;
 
-    /*  Forward the call to the specific socket type. */
     sockbase = (struct nn_sockbase*) self;
+
     sockbase->vfptr->rm (sockbase, pipe);
+    nn_sockbase_adjust_events (sockbase);
 }
 
 void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_sockbase *sockbase;
 
-    /*  Forward the call to the specific socket type. */
     sockbase = (struct nn_sockbase*) self;
-    rc = sockbase->vfptr->in (sockbase, pipe);
-    errnum_assert (rc >= 0, -rc);
-    if (rc == 1) {
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_COND_POST);
-#endif
-        nn_cond_post (&sockbase->cond);
-    }
+
+    sockbase->vfptr->in (sockbase, pipe);
+    nn_sockbase_adjust_events (sockbase);
 }
 
 void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_sockbase *sockbase;
 
-    /*  Forward the call to the specific socket type. */
     sockbase = (struct nn_sockbase*) self;
-    rc = sockbase->vfptr->out (sockbase, pipe);
-    errnum_assert (rc >= 0, -rc);
-    if (rc == 1)
-        nn_cond_post (&sockbase->cond);
+
+    sockbase->vfptr->out (sockbase, pipe);
+    nn_sockbase_adjust_events (sockbase);
+}
+
+void nn_sockbase_adjust_events (struct nn_sockbase *self)
+{
+    int events;
+
+    /*  Check whether socket is readable and/or writeable at the moment. */
+    events = self->vfptr->events (self);
+    errnum_assert (events >= 0, -events);
+
+    /*  Socket becomes readable. */
+    if (!(self->flags & NN_SOCK_FLAG_IN) && events & NN_SOCKBASE_EVENT_IN) {
+        self->flags |= NN_SOCK_FLAG_IN;
+        if (self->flags & NN_SOCK_FLAG_RCVFD)
+            nn_efd_signal (&self->rcvfd);
+        nn_cond_post (&self->cond);
+    }
+
+    /*  Socket becomes writeable. */
+    if (!(self->flags & NN_SOCK_FLAG_OUT) && events & NN_SOCKBASE_EVENT_OUT) {
+        self->flags |= NN_SOCK_FLAG_OUT;
+        if (self->flags & NN_SOCK_FLAG_SNDFD)
+            nn_efd_signal (&self->sndfd);
+        nn_cond_post (&self->cond);
+    }
+    
+    /*  Socket ceases to be readable. */
+    if (self->flags & NN_SOCK_FLAG_IN && !(events & NN_SOCKBASE_EVENT_IN)) {
+        self->flags &= ~NN_SOCK_FLAG_IN;
+        if (self->flags & NN_SOCK_FLAG_RCVFD)
+            nn_efd_unsignal (&self->rcvfd);
+    }
+
+    /*  Socket ceases to be writeable. */
+    if (self->flags & NN_SOCK_FLAG_OUT &&
+          !(events & NN_SOCKBASE_EVENT_OUT)) {
+        self->flags &= ~NN_SOCK_FLAG_OUT;
+        if (self->flags & NN_SOCK_FLAG_SNDFD)
+            nn_efd_unsignal (&self->sndfd);
+    }
 }
 

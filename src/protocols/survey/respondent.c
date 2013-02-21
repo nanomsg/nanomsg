@@ -50,6 +50,7 @@ static void nn_respondent_term (struct nn_respondent *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_respondent_destroy (struct nn_sockbase *self);
+static int nn_respondent_events (struct nn_sockbase *self);
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_sethdr (struct nn_msg *msg, const void *hdr,
@@ -61,6 +62,7 @@ static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
     nn_xrespondent_rm,
     nn_xrespondent_in,
     nn_xrespondent_out,
+    nn_respondent_events,
     nn_respondent_send,
     nn_respondent_recv,
     nn_xrespondent_setopt,
@@ -89,6 +91,19 @@ void nn_respondent_destroy (struct nn_sockbase *self)
 
     nn_respondent_term (respondent);
     nn_free (respondent);
+}
+
+static int nn_respondent_events (struct nn_sockbase *self)
+{
+    int events;
+    struct nn_respondent *respondent;
+
+    respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
+
+    events = nn_xrespondent_events (&respondent->xrespondent.sockbase);
+    if (!(respondent->flags & NN_RESPONDENT_INPROGRESS))
+        events &= ~NN_SOCKBASE_EVENT_OUT;
+    return events;
 }
 
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg)

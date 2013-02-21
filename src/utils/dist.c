@@ -51,15 +51,10 @@ void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
         nn_list_erase (&self->pipes, &data->item);
 }
 
-int nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
+void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
-    int result;
-
-    result = nn_list_empty (&self->pipes) ? 1 : 0;
     nn_list_insert (&self->pipes, &data->item, nn_list_end (&self->pipes));
-
-    return result;
 }
 
 int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,

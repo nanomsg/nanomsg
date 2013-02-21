@@ -40,8 +40,9 @@ void nn_xreq_term (struct nn_xreq *self);
 
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xreq_events (struct nn_sockbase *self);
 int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xreq_setopt (struct nn_sockbase *self, int level, int option,

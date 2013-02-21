@@ -45,8 +45,9 @@ static void nn_xsource_term (struct nn_xsource *self);
 static void nn_xsource_destroy (struct nn_sockbase *self);
 static int nn_xsource_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xsource_events (struct nn_sockbase *self);
 static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsource_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
@@ -62,6 +63,7 @@ static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_rm,
     nn_xsource_in,
     nn_xsource_out,
+    nn_xsource_events,
     nn_xsource_send,
     nn_xsource_recv,
     nn_xsource_setopt,
@@ -104,16 +106,29 @@ static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_excl_rm (&nn_cont (self, struct nn_xsource, sockbase)->excl, pipe);
 }
 
-static int nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_in (&nn_cont (self, struct nn_xsource, sockbase)->excl,
-        pipe);
+    nn_excl_in (&nn_cont (self, struct nn_xsource, sockbase)->excl, pipe);
 }
 
-static int nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_out (&nn_cont (self, struct nn_xsource, sockbase)->excl,
-        pipe);
+    nn_excl_out (&nn_cont (self, struct nn_xsource, sockbase)->excl, pipe);
+}
+
+static int nn_xsource_events (struct nn_sockbase *self)
+{
+    struct nn_xsource *xsource;
+    int events;
+
+    xsource = nn_cont (self, struct nn_xsource, sockbase);
+
+    events = 0;
+    if (nn_excl_can_recv (&xsource->excl))
+        events |= NN_SOCKBASE_EVENT_IN;
+    if (nn_excl_can_send (&xsource->excl))
+        events |= NN_SOCKBASE_EVENT_OUT;
+    return events;
 }
 
 static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg)

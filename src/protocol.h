@@ -73,6 +73,9 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
 struct nn_sockbase;
 
+#define NN_SOCKBASE_EVENT_IN 1
+#define NN_SOCKBASE_EVENT_OUT 2
+
 /*  To be implemented by individual socket types. */
 struct nn_sockbase_vfptr {
 
@@ -86,8 +89,12 @@ struct nn_sockbase_vfptr {
         informs it that it is writeable. */
     int (*add) (struct nn_sockbase *self, struct nn_pipe *pipe);
     void (*rm) (struct nn_sockbase *self, struct nn_pipe *pipe);
-    int (*in) (struct nn_sockbase *self, struct nn_pipe *pipe);
-    int (*out) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    void (*in) (struct nn_sockbase *self, struct nn_pipe *pipe);
+    void (*out) (struct nn_sockbase *self, struct nn_pipe *pipe);
+
+    /*  Return any combination of event flags defined above, thus specifying
+        whether the socket should be readable, writeable or none. */
+    int (*events) (struct nn_sockbase *self);
 
     /*  Send a message to the socket. Returns -EAGAIN if it cannot be done at
         the moment or zero in case of success. */
@@ -144,11 +151,13 @@ void nn_sockbase_init (struct nn_sockbase *self,
 /*  Uninitialise the socket. */
 void nn_sockbase_term (struct nn_sockbase *self);
 
-/*  If recv is blocking at the moment, this function will unblock it. */
-void nn_sockbase_unblock_recv (struct nn_sockbase *self);
-
-/*  If send is blocking at the moment, this function will unblock it. */
-void nn_sockbase_unblock_send (struct nn_sockbase *self);
+/*  Call this function when the state of the socket changed asynchronously,
+    i.e. if the socket became (un)readable/(un)writeable outside of one of the
+    nn_sockbase_vfptr functions, for example, in a timer handler or in a worker
+    thread created by the protocol implementation. Calling it allows nanomsg
+    core to check the new state and unblock any threads blocked in
+    send/recv/poll functions as needed. */
+void nn_sockbase_changed (struct nn_sockbase *self);
 
 /*  Returns the completion port associated with the socket. */
 struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self);

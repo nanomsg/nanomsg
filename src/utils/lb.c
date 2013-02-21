@@ -48,10 +48,15 @@ void nn_lb_rm (struct nn_lb *self, struct nn_pipe *pipe,
     nn_priolist_rm (&self->priolist, pipe, &data->priolist);
 }
 
-int nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
+void nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
     struct nn_lb_data *data)
 {
-    return nn_priolist_activate (&self->priolist, pipe, &data->priolist);
+    nn_priolist_activate (&self->priolist, pipe, &data->priolist);
+}
+
+int nn_lb_can_send (struct nn_lb *self)
+{
+    return nn_priolist_is_active (&self->priolist);
 }
 
 int nn_lb_send (struct nn_lb *self, struct nn_msg *msg)

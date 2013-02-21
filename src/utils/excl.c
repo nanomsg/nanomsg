@@ -59,20 +59,18 @@ void nn_excl_rm (struct nn_excl *self, struct nn_pipe *pipe)
    self->outpipe = NULL;
 }
 
-int nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe)
+void nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe)
 {
     nn_assert (!self->inpipe);
     nn_assert (pipe == self->pipe);
     self->inpipe = pipe;
-    return 1;
 }
 
-int nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
+void nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
 {
     nn_assert (!self->outpipe);
     nn_assert (pipe == self->pipe);
     self->outpipe = pipe;
-    return 1;
 }
 
 int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
@@ -105,5 +103,15 @@ int nn_excl_recv (struct nn_excl *self, struct nn_msg *msg)
         self->inpipe = NULL;
 
     return rc & ~NN_PIPE_RELEASE;
+}
+
+int nn_excl_can_send (struct nn_excl *self)
+{
+    return self->outpipe ? 1 : 0;
+}
+
+int nn_excl_can_recv (struct nn_excl *self)
+{
+    return self->inpipe ? 1 : 0;
 }
 

@@ -48,10 +48,15 @@ void nn_fq_rm (struct nn_fq *self, struct nn_pipe *pipe,
     nn_priolist_rm (&self->priolist, pipe, &data->priolist);
 }
 
-int nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,
+void nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,
     struct nn_fq_data *data)
 {
-    return nn_priolist_activate (&self->priolist, pipe, &data->priolist);
+    nn_priolist_activate (&self->priolist, pipe, &data->priolist);
+}
+
+int nn_fq_can_recv (struct nn_fq *self)
+{
+    return nn_priolist_is_active (&self->priolist);
 }
 
 int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg, struct nn_pipe **pipe)

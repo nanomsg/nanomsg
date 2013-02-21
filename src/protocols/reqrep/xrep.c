@@ -43,6 +43,7 @@ static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
     nn_xrep_rm,
     nn_xrep_in,
     nn_xrep_out,
+    nn_xrep_events,
     nn_xrep_send,
     nn_xrep_recv,
     nn_xrep_setopt,
@@ -116,7 +117,7 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-int nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xrep *xrep;
     struct nn_xrep_data *data;
@@ -124,18 +125,21 @@ int nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xrep = nn_cont (self, struct nn_xrep, sockbase);
     data = nn_pipe_getdata (pipe);
     
-    return nn_fq_in (&xrep->inpipes, pipe, &data->initem);
+    nn_fq_in (&xrep->inpipes, pipe, &data->initem);
 }
 
-int nn_xrep_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrep_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xrep_data *data;
 
     data = nn_pipe_getdata (pipe);
     data->flags |= NN_XREP_OUT;
+}
 
-    /*  XREP socket never blocks on send, so there's no point in unblocking. */
-    return 0;
+int nn_xrep_events (struct nn_sockbase *self)
+{
+    return (nn_fq_can_recv (&nn_cont (self, struct nn_xrep,
+        sockbase)->inpipes) ? NN_SOCKBASE_EVENT_IN : 0) | NN_SOCKBASE_EVENT_OUT;
 }
 
 int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)

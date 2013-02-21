@@ -43,6 +43,7 @@ static const struct nn_sockbase_vfptr nn_xsurveyor_sockbase_vfptr = {
     nn_xsurveyor_rm,
     nn_xsurveyor_in,
     nn_xsurveyor_out,
+    nn_xsurveyor_events,
     nn_xsurveyor_send,
     nn_xsurveyor_recv,
     nn_xsurveyor_setopt,
@@ -106,7 +107,7 @@ void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
@@ -114,10 +115,10 @@ int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    return nn_fq_in (&xsurveyor->inpipes, pipe, &data->initem);
+    nn_fq_in (&xsurveyor->inpipes, pipe, &data->initem);
 }
 
-int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
@@ -125,7 +126,20 @@ int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    return nn_dist_out (&xsurveyor->outpipes, pipe, &data->outitem);
+    nn_dist_out (&xsurveyor->outpipes, pipe, &data->outitem);
+}
+
+int nn_xsurveyor_events (struct nn_sockbase *self)
+{
+    struct nn_xsurveyor *xsurveyor;
+    int events;
+
+    xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
+
+    events = NN_SOCKBASE_EVENT_OUT;
+    if (nn_fq_can_recv (&xsurveyor->inpipes))
+        events |= NN_SOCKBASE_EVENT_IN;
+    return events;
 }
 
 int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg)

@@ -56,6 +56,7 @@ static void nn_surveyor_term (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_surveyor_destroy (struct nn_sockbase *self);
+static int nn_surveyor_events (struct nn_sockbase *self);
 static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
@@ -71,6 +72,7 @@ static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
     nn_xsurveyor_rm,
     nn_xsurveyor_in,
     nn_xsurveyor_out,
+    nn_surveyor_events,
     nn_surveyor_send,
     nn_surveyor_recv,
     nn_surveyor_setopt,
@@ -122,6 +124,17 @@ void nn_surveyor_destroy (struct nn_sockbase *self)
 
     nn_surveyor_term (surveyor);
     nn_free (surveyor);
+}
+
+static int nn_surveyor_events (struct nn_sockbase *self)
+{
+    struct nn_surveyor *surveyor;
+
+    surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
+
+    if (!(surveyor->flags & NN_SURVEYOR_INPROGRESS))
+        return NN_SOCKBASE_EVENT_IN | NN_SOCKBASE_EVENT_OUT;
+    return nn_xsurveyor_events (&surveyor->xsurveyor.sockbase);
 }
 
 static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
@@ -208,8 +221,8 @@ static void nn_surveyor_timeout (const struct nn_cp_sink **self,
     /*  Cancel the survey. */
     surveyor->flags &= ~NN_SURVEYOR_INPROGRESS;
 
-    /*  If there's a blocked recv() operation, unblock it. */
-    nn_sockbase_unblock_recv (&surveyor->xsurveyor.sockbase);
+    /*  If there's a blocked recv/poll operation, unblock it. */
+    nn_sockbase_changed (&surveyor->xsurveyor.sockbase);
 }
 
 static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,

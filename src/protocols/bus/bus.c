@@ -51,6 +51,7 @@ static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     nn_xbus_rm,
     nn_xbus_in,
     nn_xbus_out,
+    nn_xbus_events,
     nn_bus_send,
     nn_bus_recv,
     nn_xbus_setopt,

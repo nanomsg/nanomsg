@@ -51,6 +51,7 @@ static void nn_rep_term (struct nn_rep *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_rep_destroy (struct nn_sockbase *self);
+static int nn_rep_events (struct nn_sockbase *self);
 static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_sethdr (struct nn_msg *msg, const void *hdr,
@@ -63,6 +64,7 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_xrep_rm,
     nn_xrep_in,
     nn_xrep_out,
+    nn_rep_events,
     nn_rep_send,
     nn_rep_recv,
     nn_xrep_setopt,
@@ -93,6 +95,17 @@ static void nn_rep_destroy (struct nn_sockbase *self)
 
     nn_rep_term (rep);
     nn_free (rep);
+}
+
+static int nn_rep_events (struct nn_sockbase *self)
+{
+    struct nn_rep *rep;
+    int events;
+
+    rep = nn_cont (self, struct nn_rep, xrep.sockbase);
+    if (!(rep->flags & NN_REP_INPROGRESS))
+        events &= ~NN_SOCKBASE_EVENT_OUT;
+    events = nn_xrep_events (&rep->xrep.sockbase);
 }
 
 static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)

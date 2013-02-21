@@ -57,6 +57,7 @@ static void nn_req_term (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_req_destroy (struct nn_sockbase *self);
+static int nn_req_events (struct nn_sockbase *self);
 static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
@@ -72,6 +73,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_xreq_rm,
     nn_xreq_in,
     nn_xreq_out,
+    nn_req_events,
     nn_req_send,
     nn_req_recv,
     nn_req_setopt,
@@ -126,6 +128,19 @@ static void nn_req_destroy (struct nn_sockbase *self)
 
     nn_req_term (req);
     nn_free (req);
+}
+
+static int nn_req_events (struct nn_sockbase *self)
+{
+    struct nn_req *req;
+    int events;
+
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
+
+    events = nn_xreq_events (&req->xreq.sockbase);
+    if (!(req->flags & NN_REQ_INPROGRESS))
+        events &= ~NN_SOCKBASE_EVENT_IN;
+    return events;
 }
 
 static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)

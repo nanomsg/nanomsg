@@ -45,8 +45,9 @@ static void nn_xpair_term (struct nn_xpair *self);
 static void nn_xpair_destroy (struct nn_sockbase *self);
 static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpair_events (struct nn_sockbase *self);
 static int nn_xpair_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpair_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
@@ -62,6 +63,7 @@ static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_rm,
     nn_xpair_in,
     nn_xpair_out,
+    nn_xpair_events,
     nn_xpair_send,
     nn_xpair_recv,
     nn_xpair_setopt,
@@ -103,14 +105,29 @@ static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_excl_rm (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static int nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpair_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_in (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
+    nn_excl_in (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
 }
 
-static int nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpair_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_out (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
+    nn_excl_out (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
+}
+
+static int nn_xpair_events (struct nn_sockbase *self)
+{
+    struct nn_xpair *xpair;
+    int events;
+
+    xpair = nn_cont (self, struct nn_xpair, sockbase);
+
+    events = 0;
+    if (nn_excl_can_recv (&xpair->excl))
+        events |= NN_SOCKBASE_EVENT_IN;
+    if (nn_excl_can_send (&xpair->excl))
+        events |= NN_SOCKBASE_EVENT_OUT;
+    return events;
 }
 
 static int nn_xpair_send (struct nn_sockbase *self, struct nn_msg *msg)

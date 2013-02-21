@@ -54,8 +54,9 @@ void nn_xsurveyor_term (struct nn_xsurveyor *self);
 
 int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-int nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+void nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+int nn_xsurveyor_events (struct nn_sockbase *self);
 int nn_xsurveyor_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xsurveyor_recv (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xsurveyor_setopt (struct nn_sockbase *self, int level, int option,

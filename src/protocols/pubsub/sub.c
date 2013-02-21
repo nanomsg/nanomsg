@@ -47,8 +47,9 @@ static void nn_sub_term (struct nn_sub *self);
 static void nn_sub_destroy (struct nn_sockbase *self);
 static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_sub_events (struct nn_sockbase *self);
 static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
@@ -64,6 +65,7 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_rm,
     nn_sub_in,
     nn_sub_out,
+    nn_sub_events,
     nn_sub_send,
     nn_sub_recv,
     nn_sub_setopt,
@@ -107,14 +109,29 @@ static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_excl_rm (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static int nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_in (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    nn_excl_in (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
 }
 
-static int nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_out (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    nn_excl_out (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+}
+
+static int nn_sub_events (struct nn_sockbase *self)
+{
+    struct nn_sub *sub;
+    int events;
+
+    sub = nn_cont (self, struct nn_sub, sockbase);
+
+    events = 0;
+    if (nn_excl_can_recv (&sub->excl))
+        events |= NN_SOCKBASE_EVENT_IN;
+    if (nn_excl_can_send (&sub->excl))
+        events |= NN_SOCKBASE_EVENT_OUT;
+    return events;
 }
 
 static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg)

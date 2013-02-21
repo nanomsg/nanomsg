@@ -44,7 +44,7 @@ void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data);
 void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data);
-int nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
+void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data);
 
 /*  Sends the message to all the attached pipes except the one specified

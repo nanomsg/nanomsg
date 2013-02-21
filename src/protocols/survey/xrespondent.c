@@ -40,6 +40,7 @@ static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
     nn_xrespondent_rm,
     nn_xrespondent_in,
     nn_xrespondent_out,
+    nn_xrespondent_events,
     nn_xrespondent_send,
     nn_xrespondent_recv,
     nn_xrespondent_setopt,
@@ -80,16 +81,29 @@ void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_excl_rm (&nn_cont (self, struct nn_xrespondent, sockbase)->excl, pipe);
 }
 
-int nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_in (&nn_cont (self, struct nn_xrespondent, sockbase)->excl,
-        pipe);
+    nn_excl_in (&nn_cont (self, struct nn_xrespondent, sockbase)->excl, pipe);
 }
 
-int nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_out (&nn_cont (self, struct nn_xrespondent, sockbase)->excl,
-        pipe);
+    nn_excl_out (&nn_cont (self, struct nn_xrespondent, sockbase)->excl, pipe);
+}
+
+int nn_xrespondent_events (struct nn_sockbase *self)
+{
+    struct nn_xrespondent *xrespondent;
+    int events;
+
+    xrespondent = nn_cont (self, struct nn_xrespondent, sockbase);
+
+    events = 0;
+    if (nn_excl_can_recv (&xrespondent->excl))
+        events |= NN_SOCKBASE_EVENT_IN;
+    if (nn_excl_can_send (&xrespondent->excl))
+        events |= NN_SOCKBASE_EVENT_OUT;
+    return events;
 }
 
 int nn_xrespondent_send (struct nn_sockbase *self, struct nn_msg *msg)

@@ -61,7 +61,7 @@ void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
         nn_list_erase (&self->slots [data->priority - 1].pipes, &data->item);
 }
 
-int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
+void nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
@@ -72,7 +72,7 @@ int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
         going to change. */
     if (!nn_list_empty (&slot->pipes)) {
         nn_list_insert (&slot->pipes, &data->item, nn_list_end (&slot->pipes));
-        return 0;
+        return;
     }
 
     /*  Add first pipe into the slot. If there are no pipes in priolist at all
@@ -81,18 +81,22 @@ int nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
     slot->current = data;
     if (self->current == -1) {
         self->current = data->priority;
-        return 1;
+        return;
     }
 
     /*  If the current priority is lower than the one of the newly activated
         pipe, this slot becomes current. */
     if (self->current > data->priority) {
         self->current = data->priority;
-        return 0;
+        return;
     }
 
     /*  Current doesn't change otherwise. */
-    return 0;
+}
+
+int nn_priolist_is_active (struct nn_priolist *self)
+{
+    return self->current == -1 ? 0 : 1;
 }
 
 struct nn_pipe *nn_priolist_getpipe (struct nn_priolist *self)

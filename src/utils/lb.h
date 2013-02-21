@@ -43,8 +43,9 @@ void nn_lb_add (struct nn_lb *self, struct nn_pipe *pipe,
     struct nn_lb_data *data, int priority);
 void nn_lb_rm (struct nn_lb *self, struct nn_pipe *pipe,
     struct nn_lb_data *data);
-int nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
+void nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
     struct nn_lb_data *data);
+int nn_lb_can_send (struct nn_lb *self);
 int nn_lb_send (struct nn_lb *self, struct nn_msg *msg);
 
 #endif

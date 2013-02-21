@@ -49,8 +49,9 @@ static void nn_xpush_term (struct nn_xpush *self);
 static void nn_xpush_destroy (struct nn_sockbase *self);
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe);
-static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe);
+static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe);
+static int nn_xpush_events (struct nn_sockbase *self);
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
@@ -66,6 +67,7 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_rm,
     nn_xpush_in,
     nn_xpush_out,
+    nn_xpush_events,
     nn_xpush_send,
     nn_xpush_recv,
     nn_xpush_setopt,
@@ -122,21 +124,26 @@ static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-static int nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     /*  We are not going to receive any messages, so there's no need to store
         the list of inbound pipes. */
-    return 0;
 }
 
-static int nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xpush *xpush;
     struct nn_xpush_data *data;
 
     xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);
-    return nn_lb_out (&xpush->lb, pipe, &data->lb);
+    nn_lb_out (&xpush->lb, pipe, &data->lb);
+}
+
+static int nn_xpush_events (struct nn_sockbase *self)
+{
+    return nn_lb_can_send (&nn_cont (self, struct nn_xpush, sockbase)->lb) ?
+        NN_SOCKBASE_EVENT_OUT : 0;
 }
 
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)

@@ -371,6 +371,7 @@ int nn_socket (int domain, int protocol)
         socktype = nn_cont (it, struct nn_socktype, list);
         if (socktype->domain == domain && socktype->protocol == protocol) {
             self.socks [s] = (struct nn_sock*) socktype->create (s);
+            nn_sock_postinit (self.socks [s]);
             ++self.nsocks;
             nn_glock_unlock ();
             return s;

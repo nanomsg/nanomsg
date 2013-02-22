@@ -28,6 +28,10 @@ struct nn_pipe;
 struct nn_msg;
 struct nn_cp;
 
+/*  Called after the whole socket (including the derived class) is
+    intialised. */
+void nn_sock_postinit (struct nn_sock *self);
+
 /*  Called by nn_close() to deallocate the socket. */
 void nn_sock_destroy (struct nn_sock *self);
 

@@ -125,6 +125,10 @@ int main ()
     rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
+    /*  Check the initial state of the socket. */
+    rc = getevents (sb, IN | OUT | ERR, 1000);
+    nn_assert (rc == OUT);
+
     /*  Poll for IN when there's no message available. The call should
         time out. */
     rc = getevents (sb, IN, 10);

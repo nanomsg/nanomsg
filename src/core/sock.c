@@ -148,6 +148,11 @@ void nn_sockbase_term (struct nn_sockbase *self)
     nn_cp_term (&self->cp);
 }
 
+void nn_sock_postinit (struct nn_sock *self)
+{
+    nn_sockbase_adjust_events ((struct nn_sockbase*) self);
+}
+
 void nn_sockbase_changed (struct nn_sockbase *self)
 {
     nn_sockbase_adjust_events (self);
@@ -312,6 +317,8 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             if (!(sockbase->flags & NN_SOCK_FLAG_SNDFD)) {
                 nn_efd_init (&sockbase->sndfd);
                 sockbase->flags |= NN_SOCK_FLAG_SNDFD;
+                if (sockbase->flags & NN_SOCK_FLAG_OUT)
+                    nn_efd_signal (&sockbase->sndfd);
             }
             fd = nn_efd_getfd (&sockbase->sndfd);
             memcpy (optval, &fd,
@@ -324,6 +331,9 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             if (!(sockbase->flags & NN_SOCK_FLAG_RCVFD)) {
                 nn_efd_init (&sockbase->rcvfd);
                 sockbase->flags |= NN_SOCK_FLAG_RCVFD;
+                if (sockbase->flags & NN_SOCK_FLAG_IN)
+                    nn_efd_signal (&sockbase->rcvfd);
+
             }
             fd = nn_efd_getfd (&sockbase->rcvfd);
             memcpy (optval, &fd,
@@ -336,6 +346,8 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             if (!(sockbase->flags & NN_SOCK_FLAG_ERRFD)) {
                 nn_efd_init (&sockbase->errfd);
                 sockbase->flags |= NN_SOCK_FLAG_ERRFD;
+                if (sockbase->flags & NN_SOCK_FLAG_ERR)
+                    nn_efd_signal (&sockbase->errfd);
             }
             fd = nn_efd_getfd (&sockbase->errfd);
             memcpy (optval, &fd,
@@ -639,35 +651,38 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
     events = self->vfptr->events (self);
     errnum_assert (events >= 0, -events);
 
-    /*  Socket becomes readable. */
-    if (!(self->flags & NN_SOCK_FLAG_IN) && events & NN_SOCKBASE_EVENT_IN) {
-        self->flags |= NN_SOCK_FLAG_IN;
-        if (self->flags & NN_SOCK_FLAG_RCVFD)
-            nn_efd_signal (&self->rcvfd);
-        nn_cond_post (&self->cond);
+    /*  Signal/unsignal IN as needed. */
+    if (events & NN_SOCKBASE_EVENT_IN) {
+        if (!(self->flags & NN_SOCK_FLAG_IN)) {
+            self->flags |= NN_SOCK_FLAG_IN;
+            if (self->flags & NN_SOCK_FLAG_RCVFD)
+                nn_efd_signal (&self->rcvfd);
+            nn_cond_post (&self->cond);
+        }
+    }
+    else {
+        if (self->flags & NN_SOCK_FLAG_IN) {
+            self->flags &= ~NN_SOCK_FLAG_IN;
+            if (self->flags & NN_SOCK_FLAG_RCVFD)
+                nn_efd_unsignal (&self->rcvfd);
+        }
     }
 
-    /*  Socket becomes writeable. */
-    if (!(self->flags & NN_SOCK_FLAG_OUT) && events & NN_SOCKBASE_EVENT_OUT) {
-        self->flags |= NN_SOCK_FLAG_OUT;
-        if (self->flags & NN_SOCK_FLAG_SNDFD)
-            nn_efd_signal (&self->sndfd);
-        nn_cond_post (&self->cond);
+    /*  Signal/unsignal OUT as needed. */
+    if (events & NN_SOCKBASE_EVENT_OUT) {
+        if (!(self->flags & NN_SOCK_FLAG_OUT)) {
+            self->flags |= NN_SOCK_FLAG_OUT;
+            if (self->flags & NN_SOCK_FLAG_SNDFD)
+                nn_efd_signal (&self->sndfd);
+            nn_cond_post (&self->cond);
+        }
     }
-    
-    /*  Socket ceases to be readable. */
-    if (self->flags & NN_SOCK_FLAG_IN && !(events & NN_SOCKBASE_EVENT_IN)) {
-        self->flags &= ~NN_SOCK_FLAG_IN;
-        if (self->flags & NN_SOCK_FLAG_RCVFD)
-            nn_efd_unsignal (&self->rcvfd);
-    }
-
-    /*  Socket ceases to be writeable. */
-    if (self->flags & NN_SOCK_FLAG_OUT &&
-          !(events & NN_SOCKBASE_EVENT_OUT)) {
-        self->flags &= ~NN_SOCK_FLAG_OUT;
-        if (self->flags & NN_SOCK_FLAG_SNDFD)
-            nn_efd_unsignal (&self->sndfd);
+    else {
+        if (self->flags & NN_SOCK_FLAG_OUT) {
+            self->flags &= ~NN_SOCK_FLAG_OUT;
+            if (self->flags & NN_SOCK_FLAG_SNDFD)
+                nn_efd_unsignal (&self->sndfd);
+        }
     }
 }
 

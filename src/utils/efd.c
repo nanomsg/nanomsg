@@ -419,8 +419,8 @@ void nn_efd_unsignal (struct nn_efd *self)
 
     /*  Extract all the signals from the eventfd. */
     ssize_t sz = read (self->efd, &count, sizeof (count));
-    errno_assert (sz == sizeof (count));
-    nn_assert (count > 0);
+    errno_assert (sz >= 0);
+    nn_assert (sz == sizeof (count));
 }
 
 #endif

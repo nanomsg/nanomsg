@@ -28,23 +28,92 @@
 
 #include <sys/select.h>
 
-/*  Test of polling via NN_SNDFD and NN_RCVFD mechanism. */
+/*  Test of polling via NN_SNDFD, NN_RCVFD and NN_ERRFD mechanism. */
 
 #define SOCKET_ADDRESS "inproc://a"
+
+#define IN 1
+#define OUT 2
+#define ERR 4
+
+int getevents (int s, int events, int timeout)
+{
+    int rc;
+    fd_set pollset;
+#if defined NN_HAVE_WINDOWS
+    SOCKET rcvfd;
+    SOCKET sndfd;
+    SOCKET errfd;
+#else
+    int rcvfd;
+    int sndfd;
+    int errfd;
+    int maxfd;
+#endif
+    size_t fdsz;
+    struct timeval tv;
+    int revents;
+
+    maxfd = 0;
+    FD_ZERO (&pollset);
+
+    if (events & IN) {
+        fdsz = sizeof (rcvfd);
+        rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, (char*) &rcvfd, &fdsz);
+        errno_assert (rc == 0);
+        nn_assert (fdsz == sizeof (rcvfd));
+        FD_SET (rcvfd, &pollset);
+        if (rcvfd + 1 > maxfd)
+            maxfd = rcvfd + 1;
+    }
+
+    if (events & OUT) {
+        fdsz = sizeof (sndfd);
+        rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_SNDFD, (char*) &sndfd, &fdsz);
+        errno_assert (rc == 0);
+        nn_assert (fdsz == sizeof (sndfd));
+        FD_SET (sndfd, &pollset);
+        if (sndfd + 1 > maxfd)
+            maxfd = sndfd + 1;
+    }
+
+    if (events & ERR) {
+        fdsz = sizeof (errfd);
+        rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_ERRFD, (char*) &errfd, &fdsz);
+        errno_assert (rc == 0);
+        nn_assert (fdsz == sizeof (errfd));
+        FD_SET (errfd, &pollset);
+        if (errfd + 1 > maxfd)
+            maxfd = errfd + 1;
+    }
+
+    if (timeout >= 0) {
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+    }
+#if defined NN_HAVE_WINDOWS
+    rc = select (0, &pollser, NULL, NULL, timeout < 0 ? NULL : &tv);
+    wsa_assert (rc != SOCKET_ERROR);
+#else
+    rc = select (maxfd, &pollset, NULL, NULL, timeout < 0 ? NULL : &tv);
+    errno_assert (rc >= 0);
+#endif
+    revents = 0;
+    if ((events & IN) && FD_ISSET (rcvfd, &pollset))
+        revents |= IN;
+    if ((events & OUT) && FD_ISSET (sndfd, &pollset))
+        revents |= OUT;
+    if ((events & ERR) && FD_ISSET (errfd, &pollset))
+        revents |= ERR;
+    return revents;
+}
 
 int main ()
 {
     int rc;
     int sb;
     int sc;
-    fd_set pollset;
-#if defined NN_HAVE_WINDOWS
-    SOCKET rcvfd;
-#else
-    int rcvfd;
-#endif
-    size_t rcvfdsz;
-    struct timeval tv;
+    char buf [3];
 
     /*  Create a simple topology. */
     sb = nn_socket (AF_SP, NN_PAIR);
@@ -56,26 +125,9 @@ int main ()
     rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
-    /*  Retrieve the file descriptor for polling for inbound messages. */
-    rcvfdsz = sizeof (rcvfd);
-    rc = nn_getsockopt (sb, NN_SOL_SOCKET, NN_RCVFD,
-        (char*) &rcvfd, &rcvfdsz);
-    errno_assert (rc == 0);
-    nn_assert (rcvfdsz == sizeof (rcvfd));
-
-    /*  First poll for IN when there's no message available. The call should
+    /*  Poll for IN when there's no message available. The call should
         time out. */
-    FD_ZERO (&pollset);
-    FD_SET (rcvfd, &pollset);
-    tv.tv_sec = 0;
-    tv.tv_usec = 1000;
-#if defined NN_HAVE_WINDOWS
-    rc = select (0, &rfds, NULL, NULL, &tv);
-    wsa_assert (rc != SOCKET_ERROR);
-#else
-    rc = select (rcvfd + 1, &pollset, NULL, NULL, &tv);
-    errno_assert (rc >= 0);
-#endif
+    rc = getevents (sb, IN, 10);
     nn_assert (rc == 0);
 
     /*  Send a message and start polling. This time IN event should be
@@ -83,17 +135,15 @@ int main ()
     rc = nn_send (sc, "ABC", 3, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
-    FD_SET (rcvfd, &pollset);
-    tv.tv_sec = 0;
-    tv.tv_usec = 100000;
-#if defined NN_HAVE_WINDOWS
-    rc = select (0, &rfds, NULL, NULL, &tv);
-    wsa_assert (rc != SOCKET_ERROR);
-#else
-    rc = select (rcvfd + 1, &pollset, NULL, NULL, &tv);
+    rc = getevents (sb, IN, 1000);
+    nn_assert (rc == IN);
+
+    /*  Receive the message and make sure that IN is no longer signaled. */
+    rc = nn_recv (sb, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-#endif
-    nn_assert (rc == 1);
+    nn_assert (rc == 3);
+    rc = getevents (sb, IN, 10);
+    nn_assert (rc == 0);
 
     /*  Clean up. */
     rc = nn_close (sc);

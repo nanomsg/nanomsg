@@ -859,7 +859,7 @@ int nn_device (int s1, int s2)
         return -1;
     nn_assert (optsz == sizeof (s2out));
     optsz = sizeof (s2err);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_ERRFD, &s2err, &optsz);
+    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_ERRFD, &s2err, &optsz);
     if (nn_slow (rc != 0))
         return -1;
     nn_assert (optsz == sizeof (s2err));
@@ -905,14 +905,14 @@ int nn_device (int s1, int s2)
 
         /*  If possible, pass the message from s1 to s2. */
         if (pfd [0].events == 0 && pfd [4].events == 0) {
-            nn_device_mvmsg (pfd [0].fd, pfd [4].fd);
+            nn_device_mvmsg (s1, s2);
             pfd [0].events = POLLIN;
             pfd [4].events = POLLIN;
         }
 
         /*  If possible, pass the message from s2 to s1. */
         if (pfd [3].events == 0 && pfd [1].events == 0) {
-            nn_device_mvmsg (pfd [3].fd, pfd [1].fd);
+            nn_device_mvmsg (s2, s1);
             pfd [3].events = POLLIN;
             pfd [1].events = POLLIN;
         }

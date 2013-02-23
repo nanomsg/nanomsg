@@ -101,7 +101,7 @@ void nn_sock_zombify (struct nn_sock *self)
           !(sockbase->flags & NN_SOCK_FLAG_ERR)) {
         sockbase->flags |= NN_SOCK_FLAG_ERR;
         nn_efd_signal (&sockbase->errfd);
-     }
+    }
     nn_cond_post (&sockbase->cond);
 
     nn_cp_unlock (&sockbase->cp);

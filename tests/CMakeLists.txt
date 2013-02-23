@@ -50,6 +50,7 @@ add_libnanomsg_test (iovec)
 add_libnanomsg_test (msg)
 add_libnanomsg_test (prio)
 add_libnanomsg_test (poll)
+add_libnanomsg_test (device)
 
 #  If ZMQ compatibility is required, test it.
 if (ZMQ_COMPAT)

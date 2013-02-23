@@ -25,12 +25,32 @@
 #include "../src/inproc.h"
 
 #include "../src/utils/err.c"
+#include "../src/utils/thread.c"
+#include "../src/utils/sleep.c"
 
 #include <sys/select.h>
 
 /*  Test of polling via NN_SNDFD, NN_RCVFD and NN_ERRFD mechanism. */
 
 #define SOCKET_ADDRESS "inproc://a"
+
+int sc;
+
+void routine1 (void *arg)
+{
+   int rc;
+
+   nn_sleep (10);
+   rc = nn_send (sc, "ABC", 3, 0);
+   errno_assert (rc >= 0);
+   nn_assert (rc == 3);
+}
+
+void routine2 (void *arg)
+{
+   nn_sleep (10);
+   nn_term ();
+}
 
 #define IN 1
 #define OUT 2
@@ -112,8 +132,8 @@ int main ()
 {
     int rc;
     int sb;
-    int sc;
     char buf [3];
+    struct nn_thread thread;
 
     /*  Create a simple topology. */
     sb = nn_socket (AF_SP, NN_PAIR);
@@ -148,6 +168,18 @@ int main ()
     nn_assert (rc == 3);
     rc = getevents (sb, IN, 10);
     nn_assert (rc == 0);
+
+    /*  Check signalling from a different thread. */
+    nn_thread_init (&thread, routine1, NULL);
+    rc = getevents (sb, IN, 1000);
+    nn_assert (rc == IN);
+    nn_thread_term (&thread);
+
+    /*  Check terminating the library from a different thread. */
+    nn_thread_init (&thread, routine2, NULL);
+    rc = getevents (sb, ERR, 1000);
+    nn_assert (rc == ERR);
+    nn_thread_term (&thread);
 
     /*  Clean up. */
     rc = nn_close (sc);

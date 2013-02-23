@@ -85,7 +85,25 @@ void nn_sock_zombify (struct nn_sock *self)
     sockbase = (struct nn_sockbase*) self;
     nn_cp_lock (&sockbase->cp);
     sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
+
+    /*  Reset IN and OUT events. Set ERR event. */
+    if (sockbase->flags & NN_SOCK_FLAG_RCVFD &&
+          sockbase->flags & NN_SOCK_FLAG_IN) {
+        sockbase->flags &= ~NN_SOCK_FLAG_IN;
+        nn_efd_unsignal (&sockbase->rcvfd);
+    }
+    if (sockbase->flags & NN_SOCK_FLAG_SNDFD &&
+          sockbase->flags & NN_SOCK_FLAG_OUT) {
+        sockbase->flags &= ~NN_SOCK_FLAG_OUT;
+        nn_efd_unsignal (&sockbase->sndfd);
+    }
+    if (sockbase->flags & NN_SOCK_FLAG_ERRFD &&
+          !(sockbase->flags & NN_SOCK_FLAG_ERR)) {
+        sockbase->flags |= NN_SOCK_FLAG_ERR;
+        nn_efd_signal (&sockbase->errfd);
+     }
     nn_cond_post (&sockbase->cond);
+
     nn_cp_unlock (&sockbase->cp);
 }
 

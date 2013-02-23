@@ -38,7 +38,6 @@ int main ()
     char buf [7];
 
     /*  Test req/rep with full socket types. */
-#if 0
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
     rc = nn_bind (rep1, SOCKET_ADDRESS);
@@ -138,7 +137,6 @@ int main ()
     errno_assert (rc == 0);    
     rc = nn_close (req1);
     errno_assert (rc == 0);
-#endif
 
     /*  Test re-sending of the request. */
     rep1 = nn_socket (AF_SP, NN_REP);

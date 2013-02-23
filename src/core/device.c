@@ -31,67 +31,20 @@
 #include <string.h>
 
 /*  Private functions. */
+static void nn_device_getfds (int s, int *rcvfd, int *sndfd, int *errfd);
 static void nn_device_mvmsg (int from, int to);
 
 int nn_device (int s1, int s2)
 {
     int rc;
-    int s1in;
-    int s1out;
-    int s1err;
-    int s2in;
-    int s2out;
-    int s2err;
-    size_t optsz;
+    int i;
     struct pollfd pfd [6];
 
-    /*  Get file descriptors to poll on. */
-    /*  TODO: To avoid using too much resource, some internal polling mechanism
-        should be used here instead of file descriptors. */
-    optsz = sizeof (s1in);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_RCVFD, &s1in, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s1in));
-    optsz = sizeof (s1out);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_SNDFD, &s1out, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s1out));
-    optsz = sizeof (s1err);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_ERRFD, &s1err, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s1err));
-    optsz = sizeof (s2in);
-    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_RCVFD, &s2in, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s2in));
-    optsz = sizeof (s2out);
-    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_SNDFD, &s2out, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s2out));
-    optsz = sizeof (s2err);
-    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_ERRFD, &s2err, &optsz);
-    if (nn_slow (rc != 0))
-        return -1;
-    nn_assert (optsz == sizeof (s2err));
-
     /*  Initialise the pollset. */
-    pfd [0].fd = s1in;
-    pfd [0].events = POLLIN;
-    pfd [1].fd = s1out;
-    pfd [1].events = POLLIN;
-    pfd [2].fd = s1err;
-    pfd [2].events = POLLIN;
-    pfd [3].fd = s2in;
-    pfd [3].events = POLLIN;
-    pfd [4].fd = s2out;
-    pfd [4].events = POLLIN;
-    pfd [5].fd = s2err;
-    pfd [5].events = POLLIN;
+    nn_device_getfds (s1, &pfd [0].fd, &pfd [1].fd, &pfd [2].fd);
+    nn_device_getfds (s2, &pfd [3].fd, &pfd [4].fd, &pfd [5].fd);
+    for (i = 0; i != 6; ++i)
+        pfd [i].events = POLLIN;
 
     while (1) {
 
@@ -108,7 +61,8 @@ int nn_device (int s1, int s2)
             return -1;
         }
 
-        /*  Process the events. */
+        /*  Process the events. When the event is received, we cease polling
+            for it. */
         if (pfd [0].revents & POLLIN)
             pfd [0].events = 0;
         if (pfd [1].revents & POLLIN)
@@ -132,6 +86,25 @@ int nn_device (int s1, int s2)
             pfd [1].events = POLLIN;
         }
     }
+}
+
+static void nn_device_getfds (int s, int *rcvfd, int *sndfd, int *errfd)
+{
+    int rc;
+    size_t optsz;
+
+    optsz = sizeof (*rcvfd);
+    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, rcvfd, &optsz);
+    nn_assert (rc == 0);
+    nn_assert (optsz == sizeof (*rcvfd));
+    optsz = sizeof (*sndfd);
+    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_SNDFD, sndfd, &optsz);
+    nn_assert (rc == 0);
+    nn_assert (optsz == sizeof (*sndfd));
+    optsz = sizeof (*errfd);
+    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_ERRFD, errfd, &optsz);
+    nn_assert (rc == 0);
+    nn_assert (optsz == sizeof (*errfd));
 }
 
 static void nn_device_mvmsg (int from, int to)

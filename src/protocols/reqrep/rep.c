@@ -109,9 +109,10 @@ static int nn_rep_events (struct nn_sockbase *self)
     int events;
 
     rep = nn_cont (self, struct nn_rep, xrep.sockbase);
+    events = nn_xrep_events (&rep->xrep.sockbase);
     if (!(rep->flags & NN_REP_INPROGRESS))
         events &= ~NN_SOCKBASE_EVENT_OUT;
-    events = nn_xrep_events (&rep->xrep.sockbase);
+    return events;
 }
 
 static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)

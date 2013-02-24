@@ -218,7 +218,7 @@ static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static nn_sub_create (int fd, struct nn_sockbase **sockbase)
+static int nn_sub_create (int fd, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_sub *self;

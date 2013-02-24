@@ -61,7 +61,7 @@ Specified address family is not supported.
 Unknown protocol.
 *EMFILE*::
 The limit on the total number of open SP sockets or OS limit for file
-desctiptors has been reached.
+descriptors has been reached.
 *ETERM*::
 The library is terminating.
 

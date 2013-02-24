@@ -25,6 +25,10 @@ to the user. Similarly, any subsequent attempt to invoke a socket function other
 than linknanomsg:nn_close[3] after _nn_term()_ was called will result
 in ETERM error.
 
+If waiting for _NN_SNDFD_ or _NN_RCVFD_ using a polling function, such as
+_poll()_ or _select()_, the call will unblock with both _NN_SNDFD_ and
+_NN_RCVFD_ signaled.
+
 
 EXAMPLE
 -------
@@ -40,6 +44,9 @@ assert (rc == -1 && errno == ETERM);
 SEE ALSO
 --------
 linknanomsg:nn_close[3]
+linknanomsg:nn_send[3]
+linknanomsg:nn_recv[3]
+linknanomsg:nn_getsockopt[3]
 linknanomsg:nanomsg[7]
 
 

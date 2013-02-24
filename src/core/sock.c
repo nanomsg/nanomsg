@@ -36,20 +36,12 @@
     function, except for nn_close() should return ETERM error in such case. */
 #define NN_SOCK_FLAG_ZOMBIE 1
 
-/*  The efd objects for signalling readability, writeability and errors are
-    initialised only if these flags are set. This way we can create these
-    relatively expensive objects only when actually needed. */
-#define NN_SOCK_FLAG_SNDFD 2
-#define NN_SOCK_FLAG_RCVFD 4
-#define NN_SOCK_FLAG_ERRFD 8
-
 /*  These bits specify whether individual efds are signalled or not at
     the moment. Storing this information allows us to avoid redundant signalling
-    and unsignalling of the efd objects. It is also used to store events
-    while efds are not yet created (see above). */
-#define NN_SOCK_FLAG_IN 16
-#define NN_SOCK_FLAG_OUT 32
-#define NN_SOCK_FLAG_ERR 64
+    and unsignalling of the efd objects. */
+#define NN_SOCK_FLAG_IN 2
+#define NN_SOCK_FLAG_OUT 4
+#define NN_SOCK_FLAG_ERR 8
 
 /*  Private functions. */
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
@@ -66,6 +58,9 @@ int nn_sockbase_init (struct nn_sockbase *self,
     self->vfptr = vfptr;
     self->flags = 0;
     nn_cond_init (&self->cond);
+    nn_efd_init (&self->sndfd);
+    nn_efd_init (&self->rcvfd);
+    nn_efd_init (&self->errfd);
     nn_clock_init (&self->clock);
     self->fd = fd;
     nn_list_init (&self->eps);
@@ -94,18 +89,15 @@ void nn_sock_zombify (struct nn_sock *self)
     sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
 
     /*  Reset IN and OUT events. Set ERR event. */
-    if (sockbase->flags & NN_SOCK_FLAG_RCVFD &&
-          sockbase->flags & NN_SOCK_FLAG_IN) {
+    if (sockbase->flags & NN_SOCK_FLAG_IN) {
         sockbase->flags &= ~NN_SOCK_FLAG_IN;
         nn_efd_unsignal (&sockbase->rcvfd);
     }
-    if (sockbase->flags & NN_SOCK_FLAG_SNDFD &&
-          sockbase->flags & NN_SOCK_FLAG_OUT) {
+    if (sockbase->flags & NN_SOCK_FLAG_OUT) {
         sockbase->flags &= ~NN_SOCK_FLAG_OUT;
         nn_efd_unsignal (&sockbase->sndfd);
     }
-    if (sockbase->flags & NN_SOCK_FLAG_ERRFD &&
-          !(sockbase->flags & NN_SOCK_FLAG_ERR)) {
+    if (!(sockbase->flags & NN_SOCK_FLAG_ERR)) {
         sockbase->flags |= NN_SOCK_FLAG_ERR;
         nn_efd_signal (&sockbase->errfd);
     }
@@ -160,15 +152,12 @@ void nn_sockbase_term (struct nn_sockbase *self)
 {
     /*  The lock was done in nn_sock_destroy function. */
     nn_cp_unlock (&self->cp);
-
-    if (self->flags & NN_SOCK_FLAG_SNDFD)
-        nn_efd_term (&self->sndfd);
-    if (self->flags & NN_SOCK_FLAG_RCVFD)
-        nn_efd_term (&self->rcvfd);
-    if (self->flags & NN_SOCK_FLAG_ERRFD)
-        nn_efd_term (&self->errfd);
+        
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
+    nn_efd_term (&self->errfd);
+    nn_efd_term (&self->rcvfd);
+    nn_efd_term (&self->sndfd);
     nn_cond_term (&self->cond);
     nn_cp_term (&self->cp);
 }
@@ -339,12 +328,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             src = &sockbase->sndprio;
             break;
         case NN_SNDFD:
-            if (!(sockbase->flags & NN_SOCK_FLAG_SNDFD)) {
-                nn_efd_init (&sockbase->sndfd);
-                sockbase->flags |= NN_SOCK_FLAG_SNDFD;
-                if (sockbase->flags & NN_SOCK_FLAG_OUT)
-                    nn_efd_signal (&sockbase->sndfd);
-            }
             fd = nn_efd_getfd (&sockbase->sndfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
@@ -353,13 +336,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 nn_cp_unlock (&sockbase->cp);
             return 0;
         case NN_RCVFD:
-            if (!(sockbase->flags & NN_SOCK_FLAG_RCVFD)) {
-                nn_efd_init (&sockbase->rcvfd);
-                sockbase->flags |= NN_SOCK_FLAG_RCVFD;
-                if (sockbase->flags & NN_SOCK_FLAG_IN)
-                    nn_efd_signal (&sockbase->rcvfd);
-
-            }
             fd = nn_efd_getfd (&sockbase->rcvfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
@@ -368,12 +344,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 nn_cp_unlock (&sockbase->cp);
             return 0;
         case NN_ERRFD:
-            if (!(sockbase->flags & NN_SOCK_FLAG_ERRFD)) {
-                nn_efd_init (&sockbase->errfd);
-                sockbase->flags |= NN_SOCK_FLAG_ERRFD;
-                if (sockbase->flags & NN_SOCK_FLAG_ERR)
-                    nn_efd_signal (&sockbase->errfd);
-            }
             fd = nn_efd_getfd (&sockbase->errfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
@@ -680,16 +650,14 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
     if (events & NN_SOCKBASE_EVENT_IN) {
         if (!(self->flags & NN_SOCK_FLAG_IN)) {
             self->flags |= NN_SOCK_FLAG_IN;
-            if (self->flags & NN_SOCK_FLAG_RCVFD)
-                nn_efd_signal (&self->rcvfd);
+            nn_efd_signal (&self->rcvfd);
             nn_cond_post (&self->cond);
         }
     }
     else {
         if (self->flags & NN_SOCK_FLAG_IN) {
             self->flags &= ~NN_SOCK_FLAG_IN;
-            if (self->flags & NN_SOCK_FLAG_RCVFD)
-                nn_efd_unsignal (&self->rcvfd);
+            nn_efd_unsignal (&self->rcvfd);
         }
     }
 
@@ -697,16 +665,14 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
     if (events & NN_SOCKBASE_EVENT_OUT) {
         if (!(self->flags & NN_SOCK_FLAG_OUT)) {
             self->flags |= NN_SOCK_FLAG_OUT;
-            if (self->flags & NN_SOCK_FLAG_SNDFD)
-                nn_efd_signal (&self->sndfd);
+            nn_efd_signal (&self->sndfd);
             nn_cond_post (&self->cond);
         }
     }
     else {
         if (self->flags & NN_SOCK_FLAG_OUT) {
             self->flags &= ~NN_SOCK_FLAG_OUT;
-            if (self->flags & NN_SOCK_FLAG_SNDFD)
-                nn_efd_unsignal (&self->sndfd);
+            nn_efd_unsignal (&self->sndfd);
         }
     }
 }

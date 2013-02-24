@@ -145,7 +145,7 @@ struct nn_sockbase
 };
 
 /*  Initialise the socket. */
-void nn_sockbase_init (struct nn_sockbase *self,
+int nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 
 /*  Uninitialise the socket. */
@@ -177,7 +177,7 @@ struct nn_socktype {
     /*  Function to create the socket type. This function is called under
         global lock, so it is not possible that two sockets are being
         created in parallel. */
-    struct nn_sockbase *(*create) (int fd);
+    int (*create) (int fd, struct nn_sockbase **sockbase);
 
     /*  This member is owned by the core. Never touch it directly from inside
         the protocol implementation. */

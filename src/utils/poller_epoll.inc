@@ -25,14 +25,20 @@
 
 #include <string.h>
 
-void nn_poller_init (struct nn_poller *self)
+int nn_poller_init (struct nn_poller *self)
 {
     int rc;
 
     self->ep = epoll_create1 (EPOLL_CLOEXEC);
-    errno_assert (self->ep != -1);
+    if (self->ep == -1) {
+        if (errno == ENFILE || errno == EMFILE)
+            return -EMFILE;
+        errno_assert (0);
+    }
     self->nevents = 0;
     self->index = 0;
+
+    return 0;
 }
 
 void nn_poller_term (struct nn_poller *self)

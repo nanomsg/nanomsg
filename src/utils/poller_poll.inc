@@ -25,7 +25,7 @@
 
 #define NN_POLLER_GRANULARITY 16
 
-void nn_poller_init (struct nn_poller *self)
+int nn_poller_init (struct nn_poller *self)
 {
     self->size = 0;
     self->index = 0;
@@ -39,6 +39,8 @@ void nn_poller_init (struct nn_poller *self)
             "hndlset");
     alloc_assert (self->hndls);
     self->removed = -1;
+
+    return 0;
 }
 
 void nn_poller_term (struct nn_poller *self)

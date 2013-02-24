@@ -48,7 +48,7 @@ struct nn_xsurveyor {
     struct nn_fq inpipes;
 };
 
-void nn_xsurveyor_init (struct nn_xsurveyor *self,
+int nn_xsurveyor_init (struct nn_xsurveyor *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 void nn_xsurveyor_term (struct nn_xsurveyor *self);
 

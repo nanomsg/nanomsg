@@ -35,7 +35,7 @@ struct nn_bus {
 };
 
 /*  Private functions. */
-static void nn_bus_init (struct nn_bus *self,
+static int nn_bus_init (struct nn_bus *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_bus_term (struct nn_bus *self);
 
@@ -60,10 +60,10 @@ static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     nn_bus_gethdr
 };
 
-static void nn_bus_init (struct nn_bus *self,
+static int nn_bus_init (struct nn_bus *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_xbus_init (&self->xbus, vfptr, fd);
+    return nn_xbus_init (&self->xbus, vfptr, fd);
 }
 
 static void nn_bus_term (struct nn_bus *self)
@@ -133,14 +133,21 @@ static int nn_bus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static struct nn_sockbase *nn_bus_create (int fd)
+static int nn_bus_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_bus *self;
 
     self = nn_alloc (sizeof (struct nn_bus), "socket (bus)");
     alloc_assert (self);
-    nn_bus_init (self, &nn_bus_sockbase_vfptr, fd);
-    return &self->xbus.sockbase;
+    rc = nn_bus_init (self, &nn_bus_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->xbus.sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_bus_socktype_struct = {

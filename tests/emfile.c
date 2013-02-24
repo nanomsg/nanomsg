@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,13 +20,38 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_XPAIR_INCLUDED
-#define NN_XPAIR_INCLUDED
+#include "../src/nn.h"
+#include "../src/pair.h"
+#include "../src/tcp.h"
+#include "../src/utils/err.c"
 
-#include "../../protocol.h"
+#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
+#define MAX_SOCKETS 1000
 
-extern struct nn_socktype *nn_xpair_socktype;
+int main ()
+{
+#if 0
+    int rc;
+    int i;
+    int socks [MAX_SOCKETS];
 
-int nn_xpair_create (int fd, struct nn_sockbase **sockbase);
-
+    /*  First, just create as much SP sockets as possible. */
+    for (i = 0; i != MAX_SOCKETS; ++i) {
+        socks [i] = nn_socket (AF_SP, NN_PAIR);
+        if (socks [i] < 0) {
+            errno_assert (nn_errno () == EMFILE);
+            break;
+        }
+    }
+    while (1) {
+        --i;
+        if (i == -1)
+            break;
+        rc = nn_close (socks [i]);
+        errno_assert (rc == 0);
+    }
 #endif
+
+    return 0;
+}
+

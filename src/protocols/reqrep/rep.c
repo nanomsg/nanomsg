@@ -45,7 +45,7 @@ struct nn_rep {
 };
 
 /*  Private functions. */
-static void nn_rep_init (struct nn_rep *self,
+static int nn_rep_init (struct nn_rep *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_rep_term (struct nn_rep *self);
 
@@ -73,11 +73,17 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_rep_gethdr
 };
 
-static void nn_rep_init (struct nn_rep *self,
+static int nn_rep_init (struct nn_rep *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_xrep_init (&self->xrep, vfptr, fd);
+    int rc;
+
+    rc = nn_xrep_init (&self->xrep, vfptr, fd);
+    if (rc < 0)
+        return rc;
     self->flags = 0;
+
+    return 0;
 }
 
 static void nn_rep_term (struct nn_rep *self)
@@ -174,14 +180,21 @@ static int nn_rep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static struct nn_sockbase *nn_rep_create (int fd)
+static int nn_rep_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_rep *self;
 
     self = nn_alloc (sizeof (struct nn_rep), "socket (rep)");
     alloc_assert (self);
-    nn_rep_init (self, &nn_rep_sockbase_vfptr, fd);
-    return &self->xrep.sockbase;
+    rc = nn_rep_init (self, &nn_rep_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->xrep.sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_rep_socktype_struct = {

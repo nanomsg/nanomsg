@@ -32,7 +32,7 @@
 struct nn_poller;
 struct nn_poller_hndl;
 
-void nn_poller_init (struct nn_poller *self);
+int nn_poller_init (struct nn_poller *self);
 void nn_poller_term (struct nn_poller *self);
 void nn_poller_add (struct nn_poller *self, int fd,
     struct nn_poller_hndl *hndl);

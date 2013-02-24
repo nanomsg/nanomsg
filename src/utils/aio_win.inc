@@ -206,7 +206,7 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
 #endif
 }
 
-void nn_cp_init (struct nn_cp *self)
+int nn_cp_init (struct nn_cp *self)
 {
     nn_mutex_init (&self->sync);
     nn_timeout_init (&self->timeout);
@@ -217,6 +217,8 @@ void nn_cp_init (struct nn_cp *self)
 
     /*  Launch the worker thread. */
     nn_thread_init (&self->worker, nn_cp_worker, self);
+
+    return 0;
 }
 
 void nn_cp_term (struct nn_cp *self)

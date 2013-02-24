@@ -44,7 +44,7 @@ struct nn_respondent {
 };
 
 /*  Private functions. */
-static void nn_respondent_init (struct nn_respondent *self,
+static int nn_respondent_init (struct nn_respondent *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_respondent_term (struct nn_respondent *self);
 
@@ -71,11 +71,17 @@ static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
     nn_respondent_gethdr
 };
 
-static void nn_respondent_init (struct nn_respondent *self,
+static int nn_respondent_init (struct nn_respondent *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_xrespondent_init (&self->xrespondent, vfptr, fd);
+    int rc;
+
+    rc = nn_xrespondent_init (&self->xrespondent, vfptr, fd);
+    if (rc < 0)
+        return rc;
     self->flags = 0;
+
+    return 0;
 }
 
 static void nn_respondent_term (struct nn_respondent *self)
@@ -180,14 +186,21 @@ static int nn_respondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static struct nn_sockbase *nn_respondent_create (int fd)
+static int nn_respondent_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_respondent *self;
 
     self = nn_alloc (sizeof (struct nn_respondent), "socket (respondent)");
     alloc_assert (self);
-    nn_respondent_init (self, &nn_respondent_sockbase_vfptr, fd);
-    return &self->xrespondent.sockbase;
+    rc = nn_respondent_init (self, &nn_respondent_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->xrespondent.sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_respondent_socktype_struct = {

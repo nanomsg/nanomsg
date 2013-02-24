@@ -93,7 +93,7 @@ void nn_usock_send (struct nn_usock *self,
     const struct nn_iobuf *iov, int iovcnt);
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len);
 
-void nn_cp_init (struct nn_cp *self);
+int nn_cp_init (struct nn_cp *self);
 void nn_cp_term (struct nn_cp *self);
 
 void nn_cp_lock (struct nn_cp *self);

@@ -54,12 +54,17 @@
 /*  Private functions. */
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
 
-void nn_sockbase_init (struct nn_sockbase *self,
+int nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
+    int rc;
+
+    rc = nn_cp_init (&self->cp);
+    if (rc < 0)
+        return rc;
+
     self->vfptr = vfptr;
     self->flags = 0;
-    nn_cp_init (&self->cp);
     nn_cond_init (&self->cond);
     nn_clock_init (&self->clock);
     self->fd = fd;
@@ -76,6 +81,8 @@ void nn_sockbase_init (struct nn_sockbase *self,
     self->reconnect_ivl_max = 0;
     self->sndprio = 8;
     self->rcvprio = 8;
+
+    return 0;
 }
 
 void nn_sock_zombify (struct nn_sock *self)

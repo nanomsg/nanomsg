@@ -325,6 +325,7 @@ int nn_freemsg (void *msg)
 
 int nn_socket (int domain, int protocol)
 {
+    int rc;
     int s;
     struct nn_list_item *it;
     struct nn_socktype *socktype;
@@ -367,18 +368,22 @@ int nn_socket (int domain, int protocol)
           it = nn_list_next (&self.socktypes, it)) {
         socktype = nn_cont (it, struct nn_socktype, list);
         if (socktype->domain == domain && socktype->protocol == protocol) {
-            self.socks [s] = (struct nn_sock*) socktype->create (s);
+            rc = socktype->create (s, (struct nn_sockbase**) &self.socks [s]);
+            if (rc < 0)
+                goto error;
             nn_sock_postinit (self.socks [s]);
             ++self.nsocks;
             nn_glock_unlock ();
             return s;
         }
     }
+    rc = -EINVAL;
 
     /*  Specified socket type wasn't found. */
+error:
     nn_ctx_term ();
     nn_glock_unlock ();
-    errno = EINVAL;
+    errno = -rc;
     return -1;
 }
 

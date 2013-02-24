@@ -53,12 +53,18 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_gethdr
 };
 
-void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
+int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
     int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return rc;
+
     nn_lb_init (&self->lb);
     nn_fq_init (&self->fq);
+
+    return 0;
 }
 
 void nn_xreq_term (struct nn_xreq *self)
@@ -202,14 +208,21 @@ int nn_xreq_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     nn_assert (0);
 }
 
-static struct nn_sockbase *nn_xreq_create (int fd)
+static int nn_xreq_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_xreq *self;
 
     self = nn_alloc (sizeof (struct nn_xreq), "socket (xreq)");
     alloc_assert (self);
-    nn_xreq_init (self, &nn_xreq_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_xreq_init (self, &nn_xreq_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_xreq_socktype_struct = {

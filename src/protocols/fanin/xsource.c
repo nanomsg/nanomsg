@@ -37,7 +37,7 @@ struct nn_xsource {
 };
 
 /*  Private functions. */
-static void nn_xsource_init (struct nn_xsource *self,
+static int nn_xsource_init (struct nn_xsource *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_xsource_term (struct nn_xsource *self);
 
@@ -72,11 +72,18 @@ static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_gethdr
 };
 
-static void nn_xsource_init (struct nn_xsource *self,
+static int nn_xsource_init (struct nn_xsource *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return rc;
+
     nn_excl_init (&self->excl);
+
+    return 0;
 }
 
 static void nn_xsource_term (struct nn_xsource *self)
@@ -168,14 +175,21 @@ static int nn_xsource_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-struct nn_sockbase *nn_xsource_create (int fd)
+int nn_xsource_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_xsource *self;
 
     self = nn_alloc (sizeof (struct nn_xsource), "socket (source)");
     alloc_assert (self);
-    nn_xsource_init (self, &nn_xsource_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_xsource_init (self, &nn_xsource_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_xsource_socktype_struct = {

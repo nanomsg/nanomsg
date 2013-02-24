@@ -285,12 +285,17 @@ static void nn_usock_term (struct nn_usock *self)
     (*self->sink)->closed (self->sink, self);
 }
 
-void nn_cp_init (struct nn_cp *self)
+int nn_cp_init (struct nn_cp *self)
 {
+    int rc;
+
+    rc = nn_poller_init (&self->poller);
+    if (rc < 0)
+        return rc;
+
     nn_mutex_init (&self->sync);
     nn_timeout_init (&self->timeout);
     nn_efd_init (&self->efd);
-    nn_poller_init (&self->poller);
     nn_queue_init (&self->opqueue);
     nn_mutex_init (&self->events_sync);
     nn_queue_init (&self->events);
@@ -303,6 +308,8 @@ void nn_cp_init (struct nn_cp *self)
     /*  Launch the worker thread. */
     self->stop = 0;
     nn_thread_init (&self->worker, nn_cp_worker, self);
+
+    return 0;
 }
 
 void nn_cp_term (struct nn_cp *self)

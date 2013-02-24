@@ -50,7 +50,7 @@ struct nn_surveyor {
 };
 
 /*  Private functions. */
-static void nn_surveyor_init (struct nn_surveyor *self,
+static int nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_surveyor_term (struct nn_surveyor *self);
 
@@ -94,10 +94,15 @@ static const struct nn_cp_sink nn_surveyor_sink = {
     nn_surveyor_timeout
 };
 
-static void nn_surveyor_init (struct nn_surveyor *self,
+static int nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_xsurveyor_init (&self->xsurveyor, vfptr, fd);
+    int rc;
+
+    rc = nn_xsurveyor_init (&self->xsurveyor, vfptr, fd);
+    if (rc < 0)
+        return rc;
+
     self->sink = &nn_surveyor_sink;
     self->flags = 0;
 
@@ -108,6 +113,8 @@ static void nn_surveyor_init (struct nn_surveyor *self,
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
     nn_timer_init (&self->deadline_timer, &self->sink,
         nn_sockbase_getcp (&self->xsurveyor.sockbase));
+
+    return 0;
 }
 
 static void nn_surveyor_term (struct nn_surveyor *self)
@@ -280,14 +287,21 @@ static int nn_surveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static struct nn_sockbase *nn_surveyor_create (int fd)
+static int nn_surveyor_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_surveyor *self;
 
     self = nn_alloc (sizeof (struct nn_surveyor), "socket (surveyor)");
     alloc_assert (self);
-    nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr, fd);
-    return &self->xsurveyor.sockbase;
+    rc = nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->xsurveyor.sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_surveyor_socktype_struct = {

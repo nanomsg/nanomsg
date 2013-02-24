@@ -37,7 +37,7 @@ struct nn_xpull {
 };
 
 /*  Private functions. */
-static void nn_xpull_init (struct nn_xpull *self,
+static int nn_xpull_init (struct nn_xpull *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_xpull_term (struct nn_xpull *self);
 
@@ -72,11 +72,18 @@ static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     nn_xpull_gethdr
 };
 
-static void nn_xpull_init (struct nn_xpull *self,
+static int nn_xpull_init (struct nn_xpull *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return rc;
+
     nn_excl_init (&self->excl);
+
+    return 0;
 }
 
 static void nn_xpull_term (struct nn_xpull *self)
@@ -172,14 +179,21 @@ static int nn_xpull_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-struct nn_sockbase *nn_xpull_create (int fd)
+int nn_xpull_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_xpull *self;
 
     self = nn_alloc (sizeof (struct nn_xpull), "socket (pull)");
     alloc_assert (self);
-    nn_xpull_init (self, &nn_xpull_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_xpull_init (self, &nn_xpull_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_xpull_socktype_struct = {

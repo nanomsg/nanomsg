@@ -32,12 +32,18 @@
 #define nn_poller_udata void*
 #endif
 
-void nn_poller_init (struct nn_poller *self)
+int nn_poller_init (struct nn_poller *self)
 {
     self->kq = kqueue ();
-    errno_assert (self->kq != -1);
+    if (self->kq == -1) {
+         if (errno == ENFILE || errno == EMFILE)
+              return -EMFILE;
+         errno_assert (0);
+    }
     self->nevents = 0;
     self->index = 0;
+
+    return 0;
 }
 
 void nn_poller_term (struct nn_poller *self)

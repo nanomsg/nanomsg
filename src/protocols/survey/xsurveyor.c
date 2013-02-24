@@ -50,12 +50,19 @@ static const struct nn_sockbase_vfptr nn_xsurveyor_sockbase_vfptr = {
     nn_xsurveyor_getopt
 };
 
-void nn_xsurveyor_init (struct nn_xsurveyor *self,
+int nn_xsurveyor_init (struct nn_xsurveyor *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return -rc;
+
     nn_dist_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
+
+    return 0;
 }
 
 void nn_xsurveyor_term (struct nn_xsurveyor *self)
@@ -200,14 +207,21 @@ int nn_xsurveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     nn_assert (0);
 }
 
-static struct nn_sockbase *nn_xsurveyor_create (int fd)
+static int nn_xsurveyor_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_xsurveyor *self;
 
     self = nn_alloc (sizeof (struct nn_xsurveyor), "socket (xsurveyor)");
     alloc_assert (self);
-    nn_xsurveyor_init (self, &nn_xsurveyor_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_xsurveyor_init (self, &nn_xsurveyor_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_xsurveyor_socktype_struct = {

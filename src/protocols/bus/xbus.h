@@ -30,8 +30,6 @@
 
 extern struct nn_socktype *nn_xbus_socktype;
 
-struct nn_sockbase *nn_xbus_create (int fd);
-
 struct nn_xbus_data {
     struct nn_dist_data outitem;
     struct nn_fq_data initem;
@@ -43,7 +41,7 @@ struct nn_xbus {
     struct nn_fq inpipes;
 };
 
-void nn_xbus_init (struct nn_xbus *self,
+int nn_xbus_init (struct nn_xbus *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 void nn_xbus_term (struct nn_xbus *self);
 

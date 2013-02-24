@@ -39,7 +39,7 @@ struct nn_sub {
 };
 
 /*  Private functions. */
-static void nn_sub_init (struct nn_sub *self,
+static int nn_sub_init (struct nn_sub *self,
     const struct nn_sockbase_vfptr *vfptr, int fd);
 static void nn_sub_term (struct nn_sub *self);
 
@@ -74,12 +74,19 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_gethdr
 };
 
-static void nn_sub_init (struct nn_sub *self,
+static int nn_sub_init (struct nn_sub *self,
     const struct nn_sockbase_vfptr *vfptr, int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return rc;
+
     nn_excl_init (&self->excl);
     nn_trie_init (&self->trie);
+
+    return 0;
 }
 
 static void nn_sub_term (struct nn_sub *self)
@@ -211,14 +218,21 @@ static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     return 0;
 }
 
-static struct nn_sockbase *nn_sub_create (int fd)
+static nn_sub_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_sub *self;
 
     self = nn_alloc (sizeof (struct nn_sub), "socket (sub)");
     alloc_assert (self);
-    nn_sub_init (self, &nn_sub_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_sub_init (self, &nn_sub_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_sub_socktype_struct = {

@@ -52,10 +52,14 @@ static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
     nn_xrep_gethdr
 };
 
-void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
+int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
     int fd)
 {
-    nn_sockbase_init (&self->sockbase, vfptr, fd);
+    int rc;
+
+    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    if (rc < 0)
+        return rc;
 
     /*  Start assigning keys beginning with a random number. This way there
         are no key clashes even if the executable is re-started. */
@@ -63,6 +67,8 @@ void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
 
     nn_hash_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
+
+    return 0;
 }
 
 void nn_xrep_term (struct nn_xrep *self)
@@ -260,14 +266,21 @@ int nn_xrep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
     nn_assert (0);
 }
 
-static struct nn_sockbase *nn_xrep_create (int fd)
+static int nn_xrep_create (int fd, struct nn_sockbase **sockbase)
 {
+    int rc;
     struct nn_xrep *self;
 
     self = nn_alloc (sizeof (struct nn_xrep), "socket (xrep)");
     alloc_assert (self);
-    nn_xrep_init (self, &nn_xrep_sockbase_vfptr, fd);
-    return &self->sockbase;
+    rc = nn_xrep_init (self, &nn_xrep_sockbase_vfptr, fd);
+    if (rc < 0) {
+        nn_free (self);
+        return rc;
+    }
+    *sockbase = &self->sockbase;
+
+    return 0;
 }
 
 static struct nn_socktype nn_xrep_socktype_struct = {

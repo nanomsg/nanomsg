@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -37,7 +37,7 @@ typedef int nn_fd;
 
 struct nn_efd;
 
-void nn_efd_init (struct nn_efd *self);
+int nn_efd_init (struct nn_efd *self);
 void nn_efd_term (struct nn_efd *self);
 nn_fd nn_efd_getfd (struct nn_efd *self);
 void nn_efd_signal (struct nn_efd *self);

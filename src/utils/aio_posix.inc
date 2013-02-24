@@ -289,13 +289,16 @@ int nn_cp_init (struct nn_cp *self)
 {
     int rc;
 
-    rc = nn_poller_init (&self->poller);
-    if (rc < 0)
+    rc = nn_efd_init (&self->efd);
+    if (nn_slow (rc < 0))
         return rc;
-
+    rc = nn_poller_init (&self->poller);
+    if (nn_slow (rc < 0)) {
+        nn_efd_term (&self->efd);
+        return rc;
+    }
     nn_mutex_init (&self->sync);
     nn_timeout_init (&self->timeout);
-    nn_efd_init (&self->efd);
     nn_queue_init (&self->opqueue);
     nn_mutex_init (&self->events_sync);
     nn_queue_init (&self->events);

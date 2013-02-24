@@ -51,16 +51,31 @@ int nn_sockbase_init (struct nn_sockbase *self,
 {
     int rc;
 
-    rc = nn_cp_init (&self->cp);
-    if (rc < 0)
+    rc = nn_efd_init (&self->sndfd);
+    if (nn_slow (rc < 0))
         return rc;
+    rc = nn_efd_init (&self->rcvfd);
+    if (nn_slow (rc < 0)) {
+        nn_efd_term (&self->sndfd);
+        return rc;
+    }
+    rc = nn_efd_init (&self->errfd);
+    if (nn_slow (rc < 0)) {
+        nn_efd_term (&self->rcvfd);
+        nn_efd_term (&self->sndfd);
+        return rc;
+    }
+    rc = nn_cp_init (&self->cp);
+    if (nn_slow (rc < 0)) {
+        nn_efd_term (&self->errfd);
+        nn_efd_term (&self->rcvfd);
+        nn_efd_term (&self->sndfd);
+        return rc;
+    }
 
     self->vfptr = vfptr;
     self->flags = 0;
     nn_cond_init (&self->cond);
-    nn_efd_init (&self->sndfd);
-    nn_efd_init (&self->rcvfd);
-    nn_efd_init (&self->errfd);
     nn_clock_init (&self->clock);
     self->fd = fd;
     nn_list_init (&self->eps);

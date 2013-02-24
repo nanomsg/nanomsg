@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -32,7 +32,7 @@
 #include <string.h>
 #include <stdint.h>
 
-void nn_efd_init (struct nn_efd *self)
+int nn_efd_init (struct nn_efd *self)
 {
     SECURITY_ATTRIBUTES sa = {0};
     SECURITY_DESCRIPTOR sd;
@@ -155,7 +155,7 @@ void nn_efd_init (struct nn_efd *self)
     brc = CloseHandle (sync);
     win_assert (brc != 0);
 
-    return;
+    return 0;
 
 wsafail:
     rc = nn_err_wsa_to_posix (WSAGetLastError ());
@@ -215,7 +215,7 @@ void nn_efd_unsignal (struct nn_efd *self)
 #include <unistd.h>
 #include <fcntl.h>
 
-void nn_efd_init (struct nn_efd *self)
+int nn_efd_init (struct nn_efd *self)
 {
     int rc;
     int flags;
@@ -226,6 +226,8 @@ void nn_efd_init (struct nn_efd *self)
 #else
     rc = socketpair (AF_UNIX, SOCK_STREAM, 0, sp);
 #endif
+    if (rc != 0 && (errno == EMFILE || errno == ENFILE))
+        return -EMFILE;
     errno_assert (rc == 0);
     self->r = sp [0];
     self->w = sp [1];
@@ -242,6 +244,8 @@ void nn_efd_init (struct nn_efd *self)
         flags = 0;
 	rc = fcntl (self->r, F_SETFL, flags | O_NONBLOCK);
     errno_assert (rc != -1);
+
+    return 0;
 }
 
 void nn_efd_term (struct nn_efd *self)
@@ -298,7 +302,7 @@ void nn_efd_unsignal (struct nn_efd *self)
 #include <unistd.h>
 #include <fcntl.h>
 
-void nn_efd_init (struct nn_efd *self)
+int nn_efd_init (struct nn_efd *self)
 {
     int rc;
     int flags;
@@ -309,6 +313,8 @@ void nn_efd_init (struct nn_efd *self)
 #else
     rc = pipe (p);
 #endif
+    if (rc != 0 && (errno == EMFILE || errno == ENFILE))
+        return -EMFILE;
     errno_assert (rc == 0);
     self->r = p [0];
     self->w = p [1];
@@ -327,6 +333,8 @@ void nn_efd_init (struct nn_efd *self)
 	rc = fcntl (self->r, F_SETFL, flags | O_NONBLOCK);
     errno_assert (rc != -1);
 #endif
+
+    return 0;
 }
 
 void nn_efd_term (struct nn_efd *self)
@@ -376,12 +384,14 @@ void nn_efd_unsignal (struct nn_efd *self)
 #include <unistd.h>
 #include <fcntl.h>
 
-void nn_efd_init (struct nn_efd *self)
+int nn_efd_init (struct nn_efd *self)
 {
     int rc;
     int flags;
 
     self->efd = eventfd (0, EFD_CLOEXEC);
+    if (self->efd == -1 && (errno == EMFILE || errno == ENFILE))
+        return -EMFILE;
     errno_assert (self->efd != -1);
 
     flags = fcntl (self->efd, F_GETFL, 0);
@@ -389,6 +399,8 @@ void nn_efd_init (struct nn_efd *self)
         flags = 0;
 	rc = fcntl (self->efd, F_SETFL, flags | O_NONBLOCK);
     errno_assert (rc != -1);
+
+    return 0;
 }
 
 void nn_efd_term (struct nn_efd *self)

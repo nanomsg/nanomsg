@@ -59,15 +59,8 @@ int nn_sockbase_init (struct nn_sockbase *self,
         nn_efd_term (&self->sndfd);
         return rc;
     }
-    rc = nn_efd_init (&self->errfd);
-    if (nn_slow (rc < 0)) {
-        nn_efd_term (&self->rcvfd);
-        nn_efd_term (&self->sndfd);
-        return rc;
-    }
     rc = nn_cp_init (&self->cp);
     if (nn_slow (rc < 0)) {
-        nn_efd_term (&self->errfd);
         nn_efd_term (&self->rcvfd);
         nn_efd_term (&self->sndfd);
         return rc;
@@ -103,18 +96,14 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_cp_lock (&sockbase->cp);
     sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
 
-    /*  Reset IN and OUT events. Set ERR event. */
-    if (sockbase->flags & NN_SOCK_FLAG_IN) {
-        sockbase->flags &= ~NN_SOCK_FLAG_IN;
-        nn_efd_unsignal (&sockbase->rcvfd);
+    /*  Reset IN and OUT events to unblock any polling function. */
+    if (!(sockbase->flags & NN_SOCK_FLAG_IN)) {
+        sockbase->flags |= NN_SOCK_FLAG_IN;
+        nn_efd_signal (&sockbase->rcvfd);
     }
-    if (sockbase->flags & NN_SOCK_FLAG_OUT) {
-        sockbase->flags &= ~NN_SOCK_FLAG_OUT;
-        nn_efd_unsignal (&sockbase->sndfd);
-    }
-    if (!(sockbase->flags & NN_SOCK_FLAG_ERR)) {
-        sockbase->flags |= NN_SOCK_FLAG_ERR;
-        nn_efd_signal (&sockbase->errfd);
+    if (!(sockbase->flags & NN_SOCK_FLAG_OUT)) {
+        sockbase->flags |= NN_SOCK_FLAG_OUT;
+        nn_efd_signal (&sockbase->sndfd);
     }
     nn_cond_post (&sockbase->cond);
 
@@ -170,7 +159,6 @@ void nn_sockbase_term (struct nn_sockbase *self)
         
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
-    nn_efd_term (&self->errfd);
     nn_efd_term (&self->rcvfd);
     nn_efd_term (&self->sndfd);
     nn_cond_term (&self->cond);
@@ -352,14 +340,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             return 0;
         case NN_RCVFD:
             fd = nn_efd_getfd (&sockbase->rcvfd);
-            memcpy (optval, &fd,
-                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
-            *optvallen = sizeof (nn_fd);
-            if (!internal)
-                nn_cp_unlock (&sockbase->cp);
-            return 0;
-        case NN_ERRFD:
-            fd = nn_efd_getfd (&sockbase->errfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);

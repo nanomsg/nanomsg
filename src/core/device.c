@@ -31,35 +31,29 @@
 #include <string.h>
 
 /*  Private functions. */
-static void nn_device_getfds (int s, int *rcvfd, int *sndfd, int *errfd);
-static void nn_device_mvmsg (int from, int to);
+static void nn_device_getfds (int s, int *rcvfd, int *sndfd);
+static int nn_device_mvmsg (int from, int to);
 
 int nn_device (int s1, int s2)
 {
     int rc;
     int i;
-    struct pollfd pfd [6];
+    struct pollfd pfd [4];
 
     /*  Initialise the pollset. */
-    nn_device_getfds (s1, &pfd [0].fd, &pfd [1].fd, &pfd [2].fd);
-    nn_device_getfds (s2, &pfd [3].fd, &pfd [4].fd, &pfd [5].fd);
-    for (i = 0; i != 6; ++i)
+    nn_device_getfds (s1, &pfd [0].fd, &pfd [1].fd);
+    nn_device_getfds (s2, &pfd [2].fd, &pfd [3].fd);
+    for (i = 0; i != 4; ++i)
         pfd [i].events = POLLIN;
 
     while (1) {
 
         /*  Wait for network events. */
-        rc = poll (pfd, 6, -1);
+        rc = poll (pfd, 4, -1);
         errno_assert (rc >= 0);
         if (nn_slow (rc < 0 && errno == EINTR))
             return -1;
         nn_assert (rc != 0);
-
-        /*  Process the eventual errors. */
-        if (nn_slow (pfd [2].revents & POLLIN || pfd [5].revents & POLLIN)) {
-            errno = ETERM;
-            return -1;
-        }
 
         /*  Process the events. When the event is received, we cease polling
             for it. */
@@ -67,28 +61,32 @@ int nn_device (int s1, int s2)
             pfd [0].events = 0;
         if (pfd [1].revents & POLLIN)
             pfd [1].events = 0;
+        if (pfd [2].revents & POLLIN)
+            pfd [2].events = 0;
         if (pfd [3].revents & POLLIN)
             pfd [3].events = 0;
-        if (pfd [4].revents & POLLIN)
-            pfd [4].events = 0;
 
         /*  If possible, pass the message from s1 to s2. */
-        if (pfd [0].events == 0 && pfd [4].events == 0) {
-            nn_device_mvmsg (s1, s2);
+        if (pfd [0].events == 0 && pfd [3].events == 0) {
+            rc = nn_device_mvmsg (s1, s2);
+            if (nn_slow (rc < 0))
+                return -1;
             pfd [0].events = POLLIN;
-            pfd [4].events = POLLIN;
+            pfd [3].events = POLLIN;
         }
 
         /*  If possible, pass the message from s2 to s1. */
-        if (pfd [3].events == 0 && pfd [1].events == 0) {
-            nn_device_mvmsg (s2, s1);
-            pfd [3].events = POLLIN;
+        if (pfd [2].events == 0 && pfd [1].events == 0) {
+            rc = nn_device_mvmsg (s2, s1);
+            if (nn_slow (rc < 0))
+                return -1;
+            pfd [2].events = POLLIN;
             pfd [1].events = POLLIN;
         }
     }
 }
 
-static void nn_device_getfds (int s, int *rcvfd, int *sndfd, int *errfd)
+static void nn_device_getfds (int s, int *rcvfd, int *sndfd)
 {
     int rc;
     size_t optsz;
@@ -101,13 +99,9 @@ static void nn_device_getfds (int s, int *rcvfd, int *sndfd, int *errfd)
     rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_SNDFD, sndfd, &optsz);
     nn_assert (rc == 0);
     nn_assert (optsz == sizeof (*sndfd));
-    optsz = sizeof (*errfd);
-    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_ERRFD, errfd, &optsz);
-    nn_assert (rc == 0);
-    nn_assert (optsz == sizeof (*errfd));
 }
 
-static void nn_device_mvmsg (int from, int to)
+static int nn_device_mvmsg (int from, int to)
 {
     int rc;
     void *body;
@@ -123,9 +117,14 @@ static void nn_device_mvmsg (int from, int to)
     hdr.msg_control = &control;
     hdr.msg_controllen = NN_MSG;
     rc = nn_recvmsg (from, &hdr, NN_DONTWAIT);
+    if (nn_slow (rc < 0 && nn_errno () == ETERM))
+        return -1;
     errno_assert (rc >= 0);
     rc = nn_sendmsg (to, &hdr, NN_DONTWAIT);
+    if (nn_slow (rc < 0 && nn_errno () == ETERM))
+        return -1;
     errno_assert (rc >= 0);
+    return 0;
 }
 
 #endif

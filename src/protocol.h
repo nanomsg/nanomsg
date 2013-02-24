@@ -128,7 +128,6 @@ struct nn_sockbase
     struct nn_cond cond;
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
-    struct nn_efd errfd;
     struct nn_clock clock;
     int fd;
     struct nn_list eps;

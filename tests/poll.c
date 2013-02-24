@@ -30,7 +30,7 @@
 
 #include <sys/select.h>
 
-/*  Test of polling via NN_SNDFD, NN_RCVFD and NN_ERRFD mechanism. */
+/*  Test of polling via NN_SNDFD/NN_RCVFD mechanism. */
 
 #define SOCKET_ADDRESS "inproc://a"
 
@@ -54,7 +54,6 @@ void routine2 (void *arg)
 
 #define IN 1
 #define OUT 2
-#define ERR 4
 
 int getevents (int s, int events, int timeout)
 {
@@ -63,11 +62,9 @@ int getevents (int s, int events, int timeout)
 #if defined NN_HAVE_WINDOWS
     SOCKET rcvfd;
     SOCKET sndfd;
-    SOCKET errfd;
 #else
     int rcvfd;
     int sndfd;
-    int errfd;
     int maxfd;
 #endif
     size_t fdsz;
@@ -97,16 +94,6 @@ int getevents (int s, int events, int timeout)
             maxfd = sndfd + 1;
     }
 
-    if (events & ERR) {
-        fdsz = sizeof (errfd);
-        rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_ERRFD, (char*) &errfd, &fdsz);
-        errno_assert (rc == 0);
-        nn_assert (fdsz == sizeof (errfd));
-        FD_SET (errfd, &pollset);
-        if (errfd + 1 > maxfd)
-            maxfd = errfd + 1;
-    }
-
     if (timeout >= 0) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = (timeout % 1000) * 1000;
@@ -123,8 +110,6 @@ int getevents (int s, int events, int timeout)
         revents |= IN;
     if ((events & OUT) && FD_ISSET (sndfd, &pollset))
         revents |= OUT;
-    if ((events & ERR) && FD_ISSET (errfd, &pollset))
-        revents |= ERR;
     return revents;
 }
 
@@ -146,7 +131,7 @@ int main ()
     errno_assert (rc >= 0);
 
     /*  Check the initial state of the socket. */
-    rc = getevents (sb, IN | OUT | ERR, 1000);
+    rc = getevents (sb, IN | OUT, 1000);
     nn_assert (rc == OUT);
 
     /*  Poll for IN when there's no message available. The call should
@@ -173,12 +158,17 @@ int main ()
     nn_thread_init (&thread, routine1, NULL);
     rc = getevents (sb, IN, 1000);
     nn_assert (rc == IN);
+    rc = nn_recv (sb, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
     nn_thread_term (&thread);
 
     /*  Check terminating the library from a different thread. */
     nn_thread_init (&thread, routine2, NULL);
-    rc = getevents (sb, ERR, 1000);
-    nn_assert (rc == ERR);
+    rc = getevents (sb, IN, 1000);
+    nn_assert (rc == IN);
+    rc = nn_recv (sb, buf, sizeof (buf), 0);
+    nn_assert (rc < 0 && nn_errno () == ETERM);
     nn_thread_term (&thread);
 
     /*  Clean up. */

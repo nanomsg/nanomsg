@@ -589,6 +589,9 @@ terminaion is underway.</p></div>
 to the user. Similarly, any subsequent attempt to invoke a socket function other
 than <a href="nn_close.3.html">nn_close(3)</a> after <em>nn_term()</em> was called will result
 in ETERM error.</p></div>
+<div class="paragraph"><p>If waiting for <em>NN_SNDFD</em> or <em>NN_RCVFD</em> using a polling function, such as
+<em>poll()</em> or <em>select()</em>, the call will unblock with both <em>NN_SNDFD</em> and
+<em>NN_RCVFD</em> signaled.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -607,6 +610,9 @@ assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><a href="nn_close.3.html">nn_close(3)</a>
+<a href="nn_send.3.html">nn_send(3)</a>
+<a href="nn_recv.3.html">nn_recv(3)</a>
+<a href="nn_getsockopt.3.html">nn_getsockopt(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -621,7 +627,7 @@ assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-19 07:57:48 CET
+Last updated 2013-02-24 22:02:38 CET
 </div>
 </div>
 </body>

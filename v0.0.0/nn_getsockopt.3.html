@@ -713,19 +713,6 @@ the option.</p></div>
     used any more once the socket is closed.
 </p>
 </dd>
-<dt class="hdlist1">
-<strong>NN_ERRFD</strong>
-</dt>
-<dd>
-<p>
-    Retrieves a file descriptor that is readable when there&#8217;s an error happened
-    within the socket. The descriptor should be used only for polling and never
-    read from or written to. The type of the option is same as the type of
-    file descriptor on the platform. That is, int on POSIX-complaint platforms
-    and SOCKET on Windows. The descriptor becomes invalid and should not be
-    used any more once the socket is closed.
-</p>
-</dd>
 </dl></div>
 </div>
 </div>
@@ -797,7 +784,7 @@ nn_getsockopt (s, NN_SOL_SOCKET, NN_LINGER, &amp;linger, &amp;sz);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-19 07:57:48 CET
+Last updated 2013-02-24 21:41:32 CET
 </div>
 </div>
 </body>

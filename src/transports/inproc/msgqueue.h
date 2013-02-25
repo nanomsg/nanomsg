@@ -82,13 +82,13 @@ void nn_msgqueue_init (struct nn_msgqueue *self, size_t maxmem);
 void nn_msgqueue_term (struct nn_msgqueue *self);
 
 /*  Writes a message to the pipe. -EAGAIN is returned if the message cannot
-    be sent because the queue is full. 0 is returned in case of success. If,
-    additionally, this makes the queue readable, the return value is 1. */
+    be sent because the queue is full. Any combination of NN_MSGQUEUE_RELEASE
+    and NN_MSGQUEUE_SIGNAL flags is return in case of success. */
 int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg);
 
 /*  Reads a message from the pipe. -EAGAIN is returned if there's no message
-    to receive. 0 is returned in case of success. If, additionally, this makes
-    the queue writeable, the return value is 1. */
+    to receive. Any combination of NN_MSGQUEUE_RELEASE and NN_MSGQUEUE_SIGNAL
+    flags is return in case of success. */
 int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg);
 
 #endif

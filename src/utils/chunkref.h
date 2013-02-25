@@ -32,7 +32,9 @@
 
 /*  This class represents a reference to a data chunk. It's either an actual
     reference to data allocated on the heap, or if short enough, it may store
-    the data in itself. */
+    the data in itself. While user messages are not often short enough to store
+    them inside the chunkref itself, SP protocol headers mostly are and thus
+    we can avoid additional memory allocation per message. */
 
 struct nn_chunkref {
     uint8_t ref [NN_CHUNKREF_MAX];

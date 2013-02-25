@@ -30,20 +30,44 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/*  This class represents a reference to a data chunk. It's either an actual
+    reference to data allocated on the heap, or if short enough, it may store
+    the data in itself. */
+
 struct nn_chunkref {
     uint8_t ref [NN_CHUNKREF_MAX];
 };
 
+/*  Initialise the chunkref. The actual storage will be either on stack (for
+    small messages, or will be allocated via nn_chunk object. */
 void nn_chunkref_init (struct nn_chunkref *self, size_t size);
+
+/*  Create a chunkref from an existing chunk object. */
 void nn_chunkref_init_chunk (struct nn_chunkref *self, struct nn_chunk *chunk);
+
+/*  Deallocate the chunk. */
 void nn_chunkref_term (struct nn_chunkref *self);
+
+/*  Get the unerlying chunk. If it doesn't exist (small messages) it allocates
+    one. */
 struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self);
+
+/*  Moves chunk content from src to dst. dst should not be initialised before
+    calling this function. After the call, dst becomes initialised and src
+    becomes uninitilised. */
 void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src);
+
+/*  Copies chunk content from src to dst. dst should not be initialised before
+    calling this function. */
 void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src);
 
+/*  Returns the pointer to the binary data stored in the chunk. */
 void *nn_chunkref_data (struct nn_chunkref *self);
+
+/*  Returns the size of the binary data stored in the chunk. */
 size_t nn_chunkref_size (struct nn_chunkref *self);
 
+/*  Trims n bytes from the beginning of the chunk. */
 void nn_chunkref_trim (struct nn_chunkref *self, size_t n);
 
 #endif

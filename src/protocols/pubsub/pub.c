@@ -59,12 +59,12 @@ static void nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_pub_events (struct nn_sockbase *self);
 static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NORECV,
     nn_pub_destroy,
     nn_pub_add,
     nn_pub_rm,
@@ -72,7 +72,7 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_out,
     nn_pub_events,
     nn_pub_send,
-    nn_pub_recv,
+    NULL,
     nn_pub_setopt,
     nn_pub_getopt
 };
@@ -161,11 +161,6 @@ static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_dist_send (&nn_cont (self, struct nn_pub, sockbase)->outpipes,
         msg, NULL);
-}
-
-static int nn_pub_recv (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
 }
 
 static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,

@@ -50,20 +50,20 @@ static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_sub_events (struct nn_sockbase *self);
-static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NOSEND,
     nn_sub_destroy,
     nn_sub_add,
     nn_sub_rm,
     nn_sub_in,
     nn_sub_out,
     nn_sub_events,
-    nn_sub_send,
+    NULL,
     nn_sub_recv,
     nn_sub_setopt,
     nn_sub_getopt
@@ -123,22 +123,8 @@ static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 static int nn_sub_events (struct nn_sockbase *self)
 {
-    struct nn_sub *sub;
-    int events;
-
-    sub = nn_cont (self, struct nn_sub, sockbase);
-
-    events = 0;
-    if (nn_excl_can_recv (&sub->excl))
-        events |= NN_SOCKBASE_EVENT_IN;
-    if (nn_excl_can_send (&sub->excl))
-        events |= NN_SOCKBASE_EVENT_OUT;
-    return events;
-}
-
-static int nn_sub_send (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
+    return nn_excl_can_recv (&nn_cont (self, struct nn_sub, sockbase)->excl) ?
+        NN_SOCKBASE_EVENT_IN : 0;
 }
 
 static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg)

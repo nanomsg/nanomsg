@@ -48,20 +48,20 @@ static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpull_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpull_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xpull_events (struct nn_sockbase *self);
-static int nn_xpull_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpull_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NOSEND,
     nn_xpull_destroy,
     nn_xpull_add,
     nn_xpull_rm,
     nn_xpull_in,
     nn_xpull_out,
     nn_xpull_events,
-    nn_xpull_send,
+    NULL,
     nn_xpull_recv,
     nn_xpull_setopt,
     nn_xpull_getopt
@@ -120,22 +120,8 @@ static void nn_xpull_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 static int nn_xpull_events (struct nn_sockbase *self)
 {
-    struct nn_xpull *xpull;
-    int events;
-
-    xpull = nn_cont (self, struct nn_xpull, sockbase);
-
-    events = 0;
-    if (nn_excl_can_recv (&xpull->excl))
-        events |= NN_SOCKBASE_EVENT_IN;
-    if (nn_excl_can_send (&xpull->excl))
-        events |= NN_SOCKBASE_EVENT_OUT;
-    return events;
-}
-
-static int nn_xpull_send (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
+    return nn_excl_can_recv (&nn_cont (self, struct nn_xpull, sockbase)->excl) ?
+        NN_SOCKBASE_EVENT_IN : 0;
 }
 
 static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg)

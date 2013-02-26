@@ -52,20 +52,20 @@ static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsink_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsink_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xsink_events (struct nn_sockbase *self);
-static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NOSEND,
     nn_xsink_destroy,
     nn_xsink_add,
     nn_xsink_rm,
     nn_xsink_in,
     nn_xsink_out,
     nn_xsink_events,
-    nn_xsink_send,
+    NULL,
     nn_xsink_recv,
     nn_xsink_setopt,
     nn_xsink_getopt
@@ -146,11 +146,6 @@ static int nn_xsink_events (struct nn_sockbase *self)
 {
     return nn_fq_can_recv (&nn_cont (self, struct nn_xsink, sockbase)->fq) ?
         NN_SOCKBASE_EVENT_IN : 0;
-}
-
-static int nn_xsink_send (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
 }
 
 static int nn_xsink_recv (struct nn_sockbase *self, struct nn_msg *msg)

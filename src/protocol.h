@@ -76,8 +76,17 @@ struct nn_sockbase;
 #define NN_SOCKBASE_EVENT_IN 1
 #define NN_SOCKBASE_EVENT_OUT 2
 
+/*  Specifies that the socket type can be never used to receive messages. */
+#define NN_SOCKBASE_FLAG_NORECV 1
+
+/*  Specifies that the socket type can be never used to send messages. */
+#define NN_SOCKBASE_FLAG_NOSEND 2
+
 /*  To be implemented by individual socket types. */
 struct nn_sockbase_vfptr {
+
+    /*  Returns any combination of the flags defined above. */
+    int flags;
 
     /*  Deallocate the socket. */
     void (*destroy) (struct nn_sockbase *self);

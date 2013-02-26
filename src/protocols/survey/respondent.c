@@ -54,6 +54,7 @@ static int nn_respondent_events (struct nn_sockbase *self);
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
+    0,
     nn_respondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,

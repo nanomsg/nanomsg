@@ -51,18 +51,27 @@ int nn_sockbase_init (struct nn_sockbase *self,
 {
     int rc;
 
-    rc = nn_efd_init (&self->sndfd);
-    if (nn_slow (rc < 0))
-        return rc;
-    rc = nn_efd_init (&self->rcvfd);
-    if (nn_slow (rc < 0)) {
-        nn_efd_term (&self->sndfd);
-        return rc;
+    /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
+        supports send/recv, as appropriate. */
+    if (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+        rc = nn_efd_init (&self->sndfd);
+        if (nn_slow (rc < 0))
+            return rc;
+    }
+    if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+        rc = nn_efd_init (&self->rcvfd);
+        if (nn_slow (rc < 0)) {
+            if (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+                nn_efd_term (&self->sndfd);
+            return rc;
+        }
     }
     rc = nn_cp_init (&self->cp);
     if (nn_slow (rc < 0)) {
-        nn_efd_term (&self->rcvfd);
-        nn_efd_term (&self->sndfd);
+        if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
+            nn_efd_term (&self->rcvfd);
+        if (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+            nn_efd_term (&self->sndfd);
         return rc;
     }
 
@@ -99,11 +108,13 @@ void nn_sock_zombify (struct nn_sock *self)
     /*  Reset IN and OUT events to unblock any polling function. */
     if (!(sockbase->flags & NN_SOCK_FLAG_IN)) {
         sockbase->flags |= NN_SOCK_FLAG_IN;
-        nn_efd_signal (&sockbase->rcvfd);
+        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
+            nn_efd_signal (&sockbase->rcvfd);
     }
     if (!(sockbase->flags & NN_SOCK_FLAG_OUT)) {
         sockbase->flags |= NN_SOCK_FLAG_OUT;
-        nn_efd_signal (&sockbase->sndfd);
+        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+            nn_efd_signal (&sockbase->sndfd);
     }
     nn_cond_post (&sockbase->cond);
 
@@ -159,8 +170,10 @@ void nn_sockbase_term (struct nn_sockbase *self)
         
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
-    nn_efd_term (&self->rcvfd);
-    nn_efd_term (&self->sndfd);
+    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
+        nn_efd_term (&self->rcvfd);
+    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+        nn_efd_term (&self->sndfd);
     nn_cond_term (&self->cond);
     nn_cp_term (&self->cp);
 }
@@ -331,6 +344,11 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             src = &sockbase->sndprio;
             break;
         case NN_SNDFD:
+            if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) {
+                if (!internal)
+                    nn_cp_unlock (&sockbase->cp);
+                return -ENOPROTOOPT;
+            }
             fd = nn_efd_getfd (&sockbase->sndfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
@@ -339,6 +357,11 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 nn_cp_unlock (&sockbase->cp);
             return 0;
         case NN_RCVFD:
+            if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV) {
+                if (!internal)
+                    nn_cp_unlock (&sockbase->cp);
+                return -ENOPROTOOPT;
+            }
             fd = nn_efd_getfd (&sockbase->rcvfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
@@ -468,6 +491,10 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     sockbase = (struct nn_sockbase*) self;
 
+    /*  Some sockets types cannot be used for sending messages. */
+    if (nn_slow (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+        return -ENOTSUP;
+
     nn_cp_lock (&sockbase->cp);
 
     /*  Set the SNDTIMEO timer. */
@@ -519,8 +546,11 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     int rc;
     struct nn_sockbase *sockbase;
 
-
     sockbase = (struct nn_sockbase*) self;
+
+    /*  Some sockets types cannot be used for receiving messages. */
+    if (nn_slow (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
+        return -ENOTSUP;
 
     nn_cp_lock (&sockbase->cp);
 
@@ -631,6 +661,7 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
 
     /*  Signal/unsignal IN as needed. */
     if (events & NN_SOCKBASE_EVENT_IN) {
+        nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
         if (!(self->flags & NN_SOCK_FLAG_IN)) {
             self->flags |= NN_SOCK_FLAG_IN;
             nn_efd_signal (&self->rcvfd);
@@ -646,6 +677,7 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
 
     /*  Signal/unsignal OUT as needed. */
     if (events & NN_SOCKBASE_EVENT_OUT) {
+        nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND));
         if (!(self->flags & NN_SOCK_FLAG_OUT)) {
             self->flags |= NN_SOCK_FLAG_OUT;
             nn_efd_signal (&self->sndfd);

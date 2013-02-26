@@ -53,12 +53,12 @@ static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xpush_events (struct nn_sockbase *self);
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NORECV,
     nn_xpush_destroy,
     nn_xpush_add,
     nn_xpush_rm,
@@ -66,7 +66,7 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_out,
     nn_xpush_events,
     nn_xpush_send,
-    nn_xpush_recv,
+    NULL,
     nn_xpush_setopt,
     nn_xpush_getopt
 };
@@ -151,11 +151,6 @@ static int nn_xpush_events (struct nn_sockbase *self)
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb, msg);
-}
-
-static int nn_xpush_recv (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
 }
 
 static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,

@@ -39,6 +39,7 @@ struct nn_xreq_data {
 static void nn_xreq_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
+    0,
     nn_xreq_destroy,
     nn_xreq_add,
     nn_xreq_rm,

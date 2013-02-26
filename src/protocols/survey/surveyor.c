@@ -64,6 +64,7 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
+    0,
     nn_surveyor_destroy,
     nn_xsurveyor_add,
     nn_xsurveyor_rm,

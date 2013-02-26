@@ -38,6 +38,7 @@
 static void nn_xrep_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
+    0,
     nn_xrep_destroy,
     nn_xrep_add,
     nn_xrep_rm,

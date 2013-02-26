@@ -55,6 +55,7 @@ static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
+    0,
     nn_xpair_destroy,
     nn_xpair_add,
     nn_xpair_rm,

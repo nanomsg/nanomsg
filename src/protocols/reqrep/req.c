@@ -65,6 +65,7 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
+    0,
     nn_req_destroy,
     nn_xreq_add,
     nn_xreq_rm,

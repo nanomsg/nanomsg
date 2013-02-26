@@ -49,12 +49,12 @@ static void nn_xsource_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xsource_events (struct nn_sockbase *self);
 static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xsource_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
+    NN_SOCKBASE_FLAG_NORECV,
     nn_xsource_destroy,
     nn_xsource_add,
     nn_xsource_rm,
@@ -62,7 +62,7 @@ static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_out,
     nn_xsource_events,
     nn_xsource_send,
-    nn_xsource_recv,
+    NULL,
     nn_xsource_setopt,
     nn_xsource_getopt
 };
@@ -120,28 +120,14 @@ static void nn_xsource_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
 static int nn_xsource_events (struct nn_sockbase *self)
 {
-    struct nn_xsource *xsource;
-    int events;
-
-    xsource = nn_cont (self, struct nn_xsource, sockbase);
-
-    events = 0;
-    if (nn_excl_can_recv (&xsource->excl))
-        events |= NN_SOCKBASE_EVENT_IN;
-    if (nn_excl_can_send (&xsource->excl))
-        events |= NN_SOCKBASE_EVENT_OUT;
-    return events;
+    return nn_excl_can_send (&nn_cont (self, struct nn_xsource,
+        sockbase)->excl) ? NN_SOCKBASE_EVENT_OUT : 0;
 }
 
 static int nn_xsource_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_excl_send (&nn_cont (self, struct nn_xsource, sockbase)->excl,
         msg);
-}
-
-static int nn_xsource_recv (struct nn_sockbase *self, struct nn_msg *msg)
-{
-    return -ENOTSUP;
 }
 
 static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,

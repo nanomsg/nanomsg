@@ -35,6 +35,7 @@ static void nn_xrespondent_destroy (struct nn_sockbase *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
+    0,
     nn_xrespondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,

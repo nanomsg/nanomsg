@@ -56,6 +56,7 @@ static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
 
 static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
+    0,
     nn_rep_destroy,
     nn_xrep_add,
     nn_xrep_rm,

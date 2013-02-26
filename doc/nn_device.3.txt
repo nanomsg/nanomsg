@@ -15,9 +15,11 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Starts a device to forward messages between two sockets. _nn_device_ function
-loops infinitely and sends and messages received from 's1' to 's2' and vice
-versa.
+Starts a device to forward messages between two sockets. If both sockets are
+valid, _nn_device_ function loops and sends and messages received from 's1' to
+'s2' and vice versa. If only one socket is valid and the other is negative,
+_nn_device_ works in a "loopback" mode -- it loops and sends any messages
+received from the socket back to itself.
 
 To break the loop and make _nn_device_ function exit use
 linknanomsg:nn_term[3] function.
@@ -31,6 +33,10 @@ ERRORS
 ------
 *EBADF*::
 One of the provided sockets is invalid.
+*EINVAL*::
+Either one of the socket is not an AF_SP_RAW socket; or the two sockets don't
+belong to the same protocol; or the directionality of the sockets doesn't fit
+(e.g. attempt to join two SINK sockets to form a device).
 *EINTR*::
 The operation was interrupted by delivery of a signal.
 *ETERM*::

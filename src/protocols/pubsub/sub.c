@@ -40,7 +40,7 @@ struct nn_sub {
 
 /*  Private functions. */
 static int nn_sub_init (struct nn_sub *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 static void nn_sub_term (struct nn_sub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -70,11 +70,11 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
 };
 
 static int nn_sub_init (struct nn_sub *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd)
+    const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    rc = nn_sockbase_init (&self->sockbase, vfptr);
     if (rc < 0)
         return rc;
 
@@ -185,14 +185,14 @@ static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_sub_create (int fd, struct nn_sockbase **sockbase)
+static int nn_sub_create (struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_sub *self;
 
     self = nn_alloc (sizeof (struct nn_sub), "socket (sub)");
     alloc_assert (self);
-    rc = nn_sub_init (self, &nn_sub_sockbase_vfptr, fd);
+    rc = nn_sub_init (self, &nn_sub_sockbase_vfptr);
     if (rc < 0) {
         nn_free (self);
         return rc;

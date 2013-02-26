@@ -27,7 +27,7 @@
 
 extern struct nn_socktype *nn_xpush_socktype;
 
-int nn_xpush_create (int fd, struct nn_sockbase **sockbase);
+int nn_xpush_create (struct nn_sockbase **sockbase);
 
 #endif
 

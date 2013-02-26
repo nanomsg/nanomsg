@@ -368,10 +368,10 @@ int nn_socket (int domain, int protocol)
           it = nn_list_next (&self.socktypes, it)) {
         socktype = nn_cont (it, struct nn_socktype, list);
         if (socktype->domain == domain && socktype->protocol == protocol) {
-            rc = socktype->create (s, (struct nn_sockbase**) &self.socks [s]);
+            rc = socktype->create ((struct nn_sockbase**) &self.socks [s]);
             if (rc < 0)
                 goto error;
-            nn_sock_postinit (self.socks [s]);
+            nn_sock_postinit (self.socks [s], domain, protocol);
             ++self.nsocks;
             nn_glock_unlock ();
             return s;

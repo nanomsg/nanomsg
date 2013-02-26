@@ -49,7 +49,7 @@ struct nn_xsurveyor {
 };
 
 int nn_xsurveyor_init (struct nn_xsurveyor *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 void nn_xsurveyor_term (struct nn_xsurveyor *self);
 
 int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe);

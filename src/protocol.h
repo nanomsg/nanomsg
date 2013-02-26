@@ -133,9 +133,10 @@ struct nn_sockbase
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
     struct nn_clock clock;
-    int fd;
     struct nn_list eps;
     int eid;
+    int domain;
+    int protocol;
     int linger;
     int sndbuf;
     int rcvbuf;
@@ -149,7 +150,7 @@ struct nn_sockbase
 
 /*  Initialise the socket. */
 int nn_sockbase_init (struct nn_sockbase *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 
 /*  Uninitialise the socket. */
 void nn_sockbase_term (struct nn_sockbase *self);
@@ -177,10 +178,11 @@ struct nn_socktype {
     int domain;
     int protocol;
 
-    /*  Function to create the socket type. This function is called under
-        global lock, so it is not possible that two sockets are being
+    /*  Function to create the socket type. 'sockbase' is the output parameter
+        to return reference to newly created socket. This function is called
+        under global lock, so it is not possible that two sockets are being
         created in parallel. */
-    int (*create) (int fd, struct nn_sockbase **sockbase);
+    int (*create) (struct nn_sockbase **sockbase);
 
     /*  This member is owned by the core. Never touch it directly from inside
         the protocol implementation. */

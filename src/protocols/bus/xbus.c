@@ -56,11 +56,11 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
 };
 
 int nn_xbus_init (struct nn_xbus *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd)
+    const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    rc = nn_sockbase_init (&self->sockbase, vfptr);
     if (rc < 0)
         return rc;
 
@@ -205,14 +205,14 @@ int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xbus_create (int fd, struct nn_sockbase **sockbase)
+static int nn_xbus_create (struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xbus *self;
 
     self = nn_alloc (sizeof (struct nn_xbus), "socket (bus)");
     alloc_assert (self);
-    rc = nn_xbus_init (self, &nn_xbus_sockbase_vfptr, fd);
+    rc = nn_xbus_init (self, &nn_xbus_sockbase_vfptr);
     if (rc < 0) {
         nn_free (self);
         return rc;

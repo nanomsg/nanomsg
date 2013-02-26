@@ -51,7 +51,7 @@ struct nn_surveyor {
 
 /*  Private functions. */
 static int nn_surveyor_init (struct nn_surveyor *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 static void nn_surveyor_term (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -91,11 +91,11 @@ static const struct nn_cp_sink nn_surveyor_sink = {
 };
 
 static int nn_surveyor_init (struct nn_surveyor *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd)
+    const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
 
-    rc = nn_xsurveyor_init (&self->xsurveyor, vfptr, fd);
+    rc = nn_xsurveyor_init (&self->xsurveyor, vfptr);
     if (rc < 0)
         return rc;
 
@@ -269,14 +269,14 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_surveyor_create (int fd, struct nn_sockbase **sockbase)
+static int nn_surveyor_create (struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_surveyor *self;
 
     self = nn_alloc (sizeof (struct nn_surveyor), "socket (surveyor)");
     alloc_assert (self);
-    rc = nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr, fd);
+    rc = nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr);
     if (rc < 0) {
         nn_free (self);
         return rc;

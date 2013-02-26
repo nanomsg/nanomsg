@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,13 +20,37 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_XPAIR_INCLUDED
-#define NN_XPAIR_INCLUDED
+#include "../src/nn.h"
+#include "../src/pair.h"
+#include "../src/utils/err.c"
 
-#include "../../protocol.h"
+/*  Test the NN_DOMAIN and NN_PROTOCOL socket options. */
 
-extern struct nn_socktype *nn_xpair_socktype;
+int main ()
+{
+    int rc;
+    int s;
+    int op;
+    size_t opsz;
 
-int nn_xpair_create (struct nn_sockbase **sockbase);
+    s = nn_socket (AF_SP, NN_PAIR);
+    errno_assert (s >= 0);
 
-#endif
+    opsz = sizeof (op);
+    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_DOMAIN, &op, &opsz);
+    errno_assert (rc == 0);
+    nn_assert (opsz == sizeof (op));
+    nn_assert (op == AF_SP);
+
+    opsz = sizeof (op);
+    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_PROTOCOL, &op, &opsz);
+    errno_assert (rc == 0);
+    nn_assert (opsz == sizeof (op));
+    nn_assert (op == NN_PAIR);
+
+    rc = nn_close (s);
+    errno_assert (rc == 0);
+
+    return 0;
+}
+

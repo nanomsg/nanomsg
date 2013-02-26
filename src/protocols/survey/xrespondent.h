@@ -35,7 +35,7 @@ struct nn_xrespondent {
 };
 
 int nn_xrespondent_init (struct nn_xrespondent *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 void nn_xrespondent_term (struct nn_xrespondent *self);
 
 int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe);

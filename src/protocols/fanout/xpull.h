@@ -27,6 +27,6 @@
 
 extern struct nn_socktype *nn_xpull_socktype;
 
-int nn_xpull_create (int fd, struct nn_sockbase **sockbase);
+int nn_xpull_create (struct nn_sockbase **sockbase);
 
 #endif

@@ -52,7 +52,7 @@ struct nn_req {
 
 /*  Private functions. */
 static int nn_req_init (struct nn_req *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd);
+    const struct nn_sockbase_vfptr *vfptr);
 static void nn_req_term (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -92,11 +92,11 @@ static const struct nn_cp_sink nn_req_sink = {
 };
 
 static int nn_req_init (struct nn_req *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd)
+    const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
 
-    rc = nn_xreq_init (&self->xreq, vfptr, fd);
+    rc = nn_xreq_init (&self->xreq, vfptr);
     if (rc < 0)
         return rc;
 
@@ -295,14 +295,14 @@ static void nn_req_timeout (const struct nn_cp_sink **self,
     nn_timer_start (&req->resend_timer, req->resend_ivl);
 }
 
-static int nn_req_create (int fd, struct nn_sockbase **sockbase)
+static int nn_req_create (struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_req *self;
 
     self = nn_alloc (sizeof (struct nn_req), "socket (req)");
     alloc_assert (self);
-    rc = nn_req_init (self, &nn_req_sockbase_vfptr, fd);
+    rc = nn_req_init (self, &nn_req_sockbase_vfptr);
     if (rc < 0) {
         nn_free (self);
         return rc;

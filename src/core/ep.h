@@ -25,9 +25,6 @@
 
 struct nn_ep;
 
-/*  Returns fd of the socket the endpoint belongs to. */
-int nn_ep_fd (struct nn_ep *self);
-
 /*  Asks endpoint to terminate. */
 void nn_ep_close (struct nn_ep *self);
 

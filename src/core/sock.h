@@ -30,7 +30,7 @@ struct nn_cp;
 
 /*  Called after the whole socket (including the derived class) is
     intialised. */
-void nn_sock_postinit (struct nn_sock *self);
+void nn_sock_postinit (struct nn_sock *self, int domain, int protocol);
 
 /*  Called by nn_close() to deallocate the socket. */
 void nn_sock_destroy (struct nn_sock *self);
@@ -66,7 +66,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen, int internal);
 
-int nn_sock_fd (struct nn_sock *self);
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe);

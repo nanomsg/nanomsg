@@ -27,7 +27,7 @@
 
 extern struct nn_socktype *nn_xsink_socktype;
 
-int nn_xsink_create (int fd, struct nn_sockbase **sockbase);
+int nn_xsink_create (struct nn_sockbase **sockbase);
 
 #endif
 

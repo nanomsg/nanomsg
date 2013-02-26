@@ -52,11 +52,10 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_getopt
 };
 
-int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
-    int fd)
+int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
-    rc = nn_sockbase_init (&self->sockbase, vfptr, fd);
+    rc = nn_sockbase_init (&self->sockbase, vfptr);
     if (rc < 0)
         return rc;
 
@@ -195,14 +194,14 @@ int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xreq_create (int fd, struct nn_sockbase **sockbase)
+static int nn_xreq_create (struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xreq *self;
 
     self = nn_alloc (sizeof (struct nn_xreq), "socket (xreq)");
     alloc_assert (self);
-    rc = nn_xreq_init (self, &nn_xreq_sockbase_vfptr, fd);
+    rc = nn_xreq_init (self, &nn_xreq_sockbase_vfptr);
     if (rc < 0) {
         nn_free (self);
         return rc;

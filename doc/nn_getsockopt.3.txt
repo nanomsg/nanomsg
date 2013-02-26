@@ -29,6 +29,10 @@ the option.
 _<nanomsg/nn.h>_ header defines generic socket-level options
 (_NN_SOL_SOCKET_ level). The options are as follows:
 
+*NN_DOMAIN*::
+    Returns the domain constant as it was passed to _nn_socket()_.
+*NN_PROTOCOL*::
+    Returns the protocol constant as it was passed to _nn_socket()_.
 *NN_LINGER*::
     Specifies how long should the socket try to send pending outbound messages
     after _nn_close()_ have been called, in milliseconds. Negative value means

@@ -47,7 +47,7 @@
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
 
 int nn_sockbase_init (struct nn_sockbase *self,
-    const struct nn_sockbase_vfptr *vfptr, int fd)
+    const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
 
@@ -83,11 +83,12 @@ int nn_sockbase_init (struct nn_sockbase *self,
     self->flags = 0;
     nn_cond_init (&self->cond);
     nn_clock_init (&self->clock);
-    self->fd = fd;
     nn_list_init (&self->eps);
     self->eid = 1;
 
     /*  Default values for NN_SOL_SOCKET options. */
+    self->domain = -1;
+    self->protocol = -1;
     self->linger = 1000;
     self->sndbuf = 128 * 1024;
     self->rcvbuf = 128 * 1024;
@@ -182,9 +183,16 @@ void nn_sockbase_term (struct nn_sockbase *self)
     nn_cp_term (&self->cp);
 }
 
-void nn_sock_postinit (struct nn_sock *self)
+void nn_sock_postinit (struct nn_sock *self, int domain, int protocol)
 {
-    nn_sockbase_adjust_events ((struct nn_sockbase*) self);
+    struct nn_sockbase *sockbase;
+
+    sockbase = (struct nn_sockbase*) self;
+
+    nn_assert (sockbase->domain == -1 && sockbase->protocol == -1);
+    sockbase->domain = domain;
+    sockbase->protocol = protocol;
+    nn_sockbase_adjust_events (sockbase);
 }
 
 void nn_sockbase_changed (struct nn_sockbase *self)
@@ -306,7 +314,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
-    int *src;
+    int intval;
     nn_fd fd;
 
     sockbase = (struct nn_sockbase*) self;
@@ -323,29 +331,35 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     /*  Generic socket-level options. */
     if (level == NN_SOL_SOCKET) {
         switch (option) {
+        case NN_DOMAIN:
+            intval = sockbase->domain;
+            break;
+        case NN_PROTOCOL:
+            intval = sockbase->protocol;
+            break;
         case NN_LINGER:
-            src = &sockbase->linger;
+            intval = sockbase->linger;
             break;
         case NN_SNDBUF:
-            src = &sockbase->sndbuf;
+            intval = sockbase->sndbuf;
             break;
         case NN_RCVBUF:
-            src = &sockbase->rcvbuf;
+            intval = sockbase->rcvbuf;
             break;
         case NN_SNDTIMEO:
-            src = &sockbase->sndtimeo;
+            intval = sockbase->sndtimeo;
             break;
         case NN_RCVTIMEO:
-            src = &sockbase->rcvtimeo;
+            intval = sockbase->rcvtimeo;
             break;
         case NN_RECONNECT_IVL:
-            src = &sockbase->reconnect_ivl;
+            intval = sockbase->reconnect_ivl;
             break;
         case NN_RECONNECT_IVL_MAX:
-            src = &sockbase->reconnect_ivl_max;
+            intval = sockbase->reconnect_ivl_max;
             break;
         case NN_SNDPRIO:
-            src = &sockbase->sndprio;
+            intval = sockbase->sndprio;
             break;
         case NN_SNDFD:
             if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) {
@@ -378,7 +392,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 nn_cp_unlock (&sockbase->cp);
             return -ENOPROTOOPT;
         }
-        memcpy (optval, src,
+        memcpy (optval, &intval,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
         if (!internal)
@@ -603,14 +617,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         nn_latmon_measure (NN_LATMON_COND_EXIT);
 #endif
     }  
-}
-
-int nn_sock_fd (struct nn_sock *self)
-{
-    struct nn_sockbase *sockbase;
-
-    sockbase = (struct nn_sockbase*) self;
-    return sockbase->fd;
 }
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)

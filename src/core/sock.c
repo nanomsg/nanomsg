@@ -53,12 +53,16 @@ int nn_sockbase_init (struct nn_sockbase *self,
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
-    if (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+    if (vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)
+        memset (&self->sndfd, 0xcd, sizeof (self->sndfd));
+    else {
         rc = nn_efd_init (&self->sndfd);
         if (nn_slow (rc < 0))
             return rc;
     }
-    if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+    if (vfptr->flags & NN_SOCKBASE_FLAG_NORECV)
+        memset (&self->rcvfd, 0xcd, sizeof (self->rcvfd));
+    else {
         rc = nn_efd_init (&self->rcvfd);
         if (nn_slow (rc < 0)) {
             if (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))

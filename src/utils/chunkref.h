@@ -51,7 +51,7 @@ void nn_chunkref_init_chunk (struct nn_chunkref *self, struct nn_chunk *chunk);
 void nn_chunkref_term (struct nn_chunkref *self);
 
 /*  Get the unerlying chunk. If it doesn't exist (small messages) it allocates
-    one. */
+    one. Chunkref points to empty chunk after the call. */
 struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self);
 
 /*  Moves chunk content from src to dst. dst should not be initialised before

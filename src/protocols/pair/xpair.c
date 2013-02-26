@@ -54,9 +54,6 @@ static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen);
 static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
-static int nn_xpair_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_xpair_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_destroy,
     nn_xpair_add,
@@ -67,9 +64,7 @@ static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_send,
     nn_xpair_recv,
     nn_xpair_setopt,
-    nn_xpair_getopt,
-    nn_xpair_sethdr,
-    nn_xpair_gethdr
+    nn_xpair_getopt
 };
 
 static int nn_xpair_init (struct nn_xpair *self,
@@ -163,20 +158,6 @@ static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-static int nn_xpair_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_xpair_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 int nn_xpair_create (int fd, struct nn_sockbase **sockbase)

@@ -51,9 +51,7 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_send,
     nn_xbus_recv,
     nn_xbus_setopt,
-    nn_xbus_getopt,
-    nn_xbus_sethdr,
-    nn_xbus_gethdr
+    nn_xbus_getopt
 };
 
 int nn_xbus_init (struct nn_xbus *self,
@@ -204,20 +202,6 @@ int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 static int nn_xbus_create (int fd, struct nn_sockbase **sockbase)

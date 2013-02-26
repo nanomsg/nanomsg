@@ -111,11 +111,6 @@ struct nn_sockbase_vfptr {
     /*  Retrieve a protocol specific option. */
     int (*getopt) (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
-
-    /*  Protocol-specific manipulation of message headers. */
-    /*  TODO: Is this needed or can we rely on generic mechanisms? */
-    int (*sethdr) (struct nn_msg *msg, const void *hdr, size_t hdrlen);
-    int (*gethdr) (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 };
 
 /*  The members of this structure are used exclusively by the core. Never use

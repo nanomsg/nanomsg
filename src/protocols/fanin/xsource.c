@@ -54,9 +54,6 @@ static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_xsource_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_xsource_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_destroy,
     nn_xsource_add,
@@ -67,9 +64,7 @@ static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_send,
     nn_xsource_recv,
     nn_xsource_setopt,
-    nn_xsource_getopt,
-    nn_xsource_sethdr,
-    nn_xsource_gethdr
+    nn_xsource_getopt
 };
 
 static int nn_xsource_init (struct nn_xsource *self,
@@ -159,20 +154,6 @@ static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-static int nn_xsource_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_xsource_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 int nn_xsource_create (int fd, struct nn_sockbase **sockbase)

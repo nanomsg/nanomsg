@@ -56,9 +56,6 @@ static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_sub_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_destroy,
     nn_sub_add,
@@ -69,9 +66,7 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_send,
     nn_sub_recv,
     nn_sub_setopt,
-    nn_sub_getopt,
-    nn_sub_sethdr,
-    nn_sub_gethdr
+    nn_sub_getopt
 };
 
 static int nn_sub_init (struct nn_sub *self,
@@ -202,20 +197,6 @@ static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-static int nn_sub_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_sub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 static int nn_sub_create (int fd, struct nn_sockbase **sockbase)

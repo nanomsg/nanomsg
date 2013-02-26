@@ -69,8 +69,6 @@ int nn_xrep_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int nn_xrep_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
-int nn_xrep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 extern struct nn_socktype *nn_xrep_socktype;
 

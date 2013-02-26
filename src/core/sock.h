@@ -66,14 +66,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen, int internal);
 
-/*  Set header of the message. */
-int nn_sock_sethdr (struct nn_sock *self, struct nn_msg *msg,
-    const void *hdr, size_t hdrlen);
-
-/*  Retrieve header of the message. */
-int nn_sock_gethdr (struct nn_sock *self, struct nn_msg *msg,
-    void *hdr, size_t *hdrlen);
-
 int nn_sock_fd (struct nn_sock *self);
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);

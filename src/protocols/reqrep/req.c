@@ -64,9 +64,6 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_req_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_req_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_destroy,
     nn_xreq_add,
@@ -77,9 +74,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_send,
     nn_req_recv,
     nn_req_setopt,
-    nn_req_getopt,
-    nn_req_sethdr,
-    nn_req_gethdr
+    nn_req_getopt
 };
 
 /*  Event sink. */
@@ -280,20 +275,6 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     }
 
     return -ENOPROTOOPT;
-}
-
-static int nn_req_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_req_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 static void nn_req_timeout (const struct nn_cp_sink **self,

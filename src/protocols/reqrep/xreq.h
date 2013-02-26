@@ -49,8 +49,6 @@ int nn_xreq_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int nn_xreq_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
-int nn_xreq_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 extern struct nn_socktype *nn_xreq_socktype;
 

@@ -54,9 +54,6 @@ static void nn_rep_destroy (struct nn_sockbase *self);
 static int nn_rep_events (struct nn_sockbase *self);
 static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_rep_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_rep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_rep_destroy,
@@ -68,9 +65,7 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_rep_send,
     nn_rep_recv,
     nn_xrep_setopt,
-    nn_xrep_getopt,
-    nn_rep_sethdr,
-    nn_rep_gethdr
+    nn_xrep_getopt
 };
 
 static int nn_rep_init (struct nn_rep *self,
@@ -164,20 +159,6 @@ static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     nn_chunkref_init (&msg->hdr, 0);
     rep->flags |= NN_REP_INPROGRESS;
 
-    return 0;
-}
-
-static int nn_rep_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_rep_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
     return 0;
 }
 

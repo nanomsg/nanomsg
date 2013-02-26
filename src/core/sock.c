@@ -571,18 +571,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     }  
 }
 
-int nn_sock_sethdr (struct nn_sock *self, struct nn_msg *msg,
-    const void *hdr, size_t hdrlen)
-{
-    return ((struct nn_sockbase*) self)->vfptr->sethdr (msg, hdr, hdrlen);
-}
-
-int nn_sock_gethdr (struct nn_sock *self, struct nn_msg *msg,
-    void *hdr, size_t *hdrlen)
-{
-    return ((struct nn_sockbase*) self)->vfptr->gethdr (msg, hdr, hdrlen);
-}
-
 int nn_sock_fd (struct nn_sock *self)
 {
     struct nn_sockbase *sockbase;

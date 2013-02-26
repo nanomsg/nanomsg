@@ -195,18 +195,6 @@ int nn_xsurveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-int nn_xsurveyor_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
-{
-    /*  TODO */
-    nn_assert (0);
-}
-
-int nn_xsurveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    /*  TODO */
-    nn_assert (0);
-}
-
 static int nn_xsurveyor_create (int fd, struct nn_sockbase **sockbase)
 {
     int rc;

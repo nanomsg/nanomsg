@@ -63,9 +63,6 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_surveyor_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_surveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
     nn_surveyor_destroy,
     nn_xsurveyor_add,
@@ -76,9 +73,7 @@ static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
     nn_surveyor_send,
     nn_surveyor_recv,
     nn_surveyor_setopt,
-    nn_surveyor_getopt,
-    nn_surveyor_sethdr,
-    nn_surveyor_gethdr
+    nn_surveyor_getopt
 };
 
 /*  Event sink. */
@@ -271,20 +266,6 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     }
 
     return -ENOPROTOOPT;
-}
-
-static int nn_surveyor_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_surveyor_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 static int nn_surveyor_create (int fd, struct nn_sockbase **sockbase)

@@ -54,9 +54,6 @@ static int nn_xpull_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_xpull_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_xpull_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     nn_xpull_destroy,
     nn_xpull_add,
@@ -67,9 +64,7 @@ static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     nn_xpull_send,
     nn_xpull_recv,
     nn_xpull_setopt,
-    nn_xpull_getopt,
-    nn_xpull_sethdr,
-    nn_xpull_gethdr
+    nn_xpull_getopt
 };
 
 static int nn_xpull_init (struct nn_xpull *self,
@@ -163,20 +158,6 @@ static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-static int nn_xpull_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_xpull_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 int nn_xpull_create (int fd, struct nn_sockbase **sockbase)

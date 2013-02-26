@@ -48,9 +48,7 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_send,
     nn_xreq_recv,
     nn_xreq_setopt,
-    nn_xreq_getopt,
-    nn_xreq_sethdr,
-    nn_xreq_gethdr
+    nn_xreq_getopt
 };
 
 int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
@@ -194,18 +192,6 @@ int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-int nn_xreq_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
-{
-    /*  TODO */
-    nn_assert (0);
-}
-
-int nn_xreq_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    /*  TODO */
-    nn_assert (0);
 }
 
 static int nn_xreq_create (int fd, struct nn_sockbase **sockbase)

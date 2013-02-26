@@ -43,8 +43,6 @@ static void nn_bus_term (struct nn_bus *self);
 static void nn_bus_destroy (struct nn_sockbase *self);
 static int nn_bus_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_bus_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
-static int nn_bus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     nn_bus_destroy,
     nn_xbus_add,
@@ -55,9 +53,7 @@ static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     nn_bus_send,
     nn_bus_recv,
     nn_xbus_setopt,
-    nn_xbus_getopt,
-    nn_bus_sethdr,
-    nn_bus_gethdr
+    nn_xbus_getopt
 };
 
 static int nn_bus_init (struct nn_bus *self,
@@ -117,19 +113,6 @@ static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg)
     nn_chunkref_term (&msg->hdr);
     nn_chunkref_init (&msg->hdr, 0);
     
-    return 0;
-}
-
-static int nn_bus_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_bus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
     return 0;
 }
 

@@ -53,9 +53,6 @@ static void nn_respondent_destroy (struct nn_sockbase *self);
 static int nn_respondent_events (struct nn_sockbase *self);
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_respondent_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_respondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
     nn_respondent_destroy,
     nn_xrespondent_add,
@@ -66,9 +63,7 @@ static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
     nn_respondent_send,
     nn_respondent_recv,
     nn_xrespondent_setopt,
-    nn_xrespondent_getopt,
-    nn_respondent_sethdr,
-    nn_respondent_gethdr
+    nn_xrespondent_getopt
 };
 
 static int nn_respondent_init (struct nn_respondent *self,
@@ -169,20 +164,6 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Remember that survey is being processed. */
     respondent->flags |= NN_RESPONDENT_INPROGRESS;
 
-    return 0;
-}
-
-static int nn_respondent_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_respondent_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
     return 0;
 }
 

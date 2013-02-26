@@ -64,9 +64,6 @@ static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-static int nn_pub_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen);
-static int nn_pub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_destroy,
     nn_pub_add,
@@ -77,9 +74,7 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_send,
     nn_pub_recv,
     nn_pub_setopt,
-    nn_pub_getopt,
-    nn_pub_sethdr,
-    nn_pub_gethdr
+    nn_pub_getopt
 };
 
 static int nn_pub_init (struct nn_pub *self,
@@ -183,20 +178,6 @@ static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     return -ENOPROTOOPT;
-}
-
-static int nn_pub_sethdr (struct nn_msg *msg, const void *hdr,
-    size_t hdrlen)
-{
-    if (nn_slow (hdrlen != 0))
-       return -EINVAL;
-    return 0;
-}
-
-static int nn_pub_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen)
-{
-    *hdrlen = 0;
-    return 0;
 }
 
 static int nn_pub_create (int fd, struct nn_sockbase **sockbase)

@@ -653,12 +653,15 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
 
     /*  Add ancillary data to the message. */
     if (msghdr->msg_control) {
-        rc = nn_sock_sethdr (self.socks [s], &msg,
-            msghdr->msg_control, msghdr->msg_controllen);
-        if (nn_slow (rc < 0)) {
-            nn_msg_term (&msg);
-            errno = -rc;
-            return -1;
+        if (msghdr->msg_controllen == NN_MSG) {
+            ch = nn_chunk_from_data (*((void**) msghdr->msg_control));
+            nn_chunkref_term (&msg.hdr);
+            nn_chunkref_init_chunk (&msg.hdr, ch);
+        }
+        else {
+
+            /*  TODO: Copy the control data to the message. */
+            nn_assert (0);
         }
     }
 
@@ -732,13 +735,16 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
-        rc = nn_sock_gethdr (self.socks [s], &msg,
-            msghdr->msg_control, &msghdr->msg_controllen);
-        if (nn_slow (rc < 0)) {
-            nn_msg_term (&msg);
-            errno = -rc;
-            return -1;
+        if (msghdr->msg_controllen == NN_MSG) {
+            ch = nn_chunkref_getchunk (&msg.hdr);
+            *((void**) msghdr->msg_control) = nn_chunk_data (ch);
         }
+        else {
+
+            /*  TODO: Copy the data to the supplied buffer, prefix them
+                with size. */
+            nn_assert (0);
+        }   
     }
 
     nn_msg_term (&msg);

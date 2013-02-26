@@ -56,7 +56,5 @@ int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
-int nn_xbus_sethdr (struct nn_msg *msg, const void *hdr, size_t hdrlen);
-int nn_xbus_gethdr (struct nn_msg *msg, void *hdr, size_t *hdrlen);
 
 #endif

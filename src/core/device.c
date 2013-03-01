@@ -149,11 +149,11 @@ int nn_device (int s1, int s2)
         return nn_device_twoway (s1, s1rcv, s1snd, s2, s2rcv, s2snd);
 
     /*  Single-directional device passing messages from s1 to s2. */
-    if (s1rcv != -1 && s2snd == -1 && s2rcv == -1 && s2snd != -1)
+    if (s1rcv != -1 && s1snd == -1 && s2rcv == -1 && s2snd != -1)
         return nn_device_oneway (s1, s1rcv, s2, s2snd);
 
     /*  Single-directional device passing messages from s2 to s1. */
-    if (s1rcv == -1 && s2snd != -1 && s2rcv != -1 && s2snd == -1)
+    if (s1rcv == -1 && s1snd != -1 && s2rcv != -1 && s2snd == -1)
         return nn_device_oneway (s2, s2rcv, s1, s1snd);
 
     /*  This should never happen. */

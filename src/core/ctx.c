@@ -229,6 +229,7 @@ static void nn_ctx_init (void)
     nn_ctx_add_socktype (nn_xsink_socktype);
     nn_ctx_add_socktype (nn_xsource_socktype);
     nn_ctx_add_socktype (nn_push_socktype);
+    nn_ctx_add_socktype (nn_xpush_socktype);
     nn_ctx_add_socktype (nn_pull_socktype);
     nn_ctx_add_socktype (nn_xpull_socktype);
     nn_ctx_add_socktype (nn_respondent_socktype);

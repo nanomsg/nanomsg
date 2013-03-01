@@ -21,16 +21,22 @@
 */
 
 #include "../src/nn.h"
+#include "../src/bus.h"
 #include "../src/pair.h"
+#include "../src/fanout.h"
 #include "../src/inproc.h"
 
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.c"
 #include "../src/utils/thread.c"
 
 #define SOCKET_ADDRESS_A "inproc://a"
 #define SOCKET_ADDRESS_B "inproc://b"
+#define SOCKET_ADDRESS_C "inproc://c"
+#define SOCKET_ADDRESS_D "inproc://d"
+#define SOCKET_ADDRESS_E "inproc://e"
 
-void routine (void *arg)
+void device1 (void *arg)
 {
     int rc;
     int deva;
@@ -57,16 +63,71 @@ void routine (void *arg)
     errno_assert (rc == 0);
 }
 
+void device2 (void *arg)
+{
+    int rc;
+    int devc;
+    int devd;
+
+    /*  Intialise the device sockets. */
+    devc = nn_socket (AF_SP_RAW, NN_PULL);
+    errno_assert (devc >= 0);
+    rc = nn_bind (devc, SOCKET_ADDRESS_C);
+    errno_assert (rc >= 0);
+    devd = nn_socket (AF_SP_RAW, NN_PUSH);
+    errno_assert (devd >= 0);
+    rc = nn_bind (devd, SOCKET_ADDRESS_D);
+    errno_assert (rc >= 0);
+
+    /*  Run the device. */
+    rc = nn_device (devc, devd);
+    nn_assert (rc < 0 && nn_errno () == ETERM);
+
+    /*  Clean up. */
+    rc = nn_close (devd);
+    errno_assert (rc == 0);
+    rc = nn_close (devc);
+    errno_assert (rc == 0);
+}
+
+void device3 (void *arg)
+{
+    int rc;
+    int deve;
+
+    /*  Intialise the device socket. */
+    deve = nn_socket (AF_SP_RAW, NN_BUS);
+    errno_assert (deve >= 0);
+    rc = nn_bind (deve, SOCKET_ADDRESS_E);
+    errno_assert (rc >= 0);
+
+    /*  Run the device. */
+    rc = nn_device (deve, -1);
+    nn_assert (rc < 0 && nn_errno () == ETERM);
+
+    /*  Clean up. */
+    rc = nn_close (deve);
+    errno_assert (rc == 0);
+}
+
 int main ()
 {
     int rc;
     int enda;
     int endb;
-    struct nn_thread thread;
+    int endc;
+    int endd;
+    int ende1;
+    int ende2;
+    struct nn_thread thread1;
+    struct nn_thread thread2;
+    struct nn_thread thread3;
     char buf [3];
 
+    /*  Test the bi-directional device. */
+
     /*  Start the device. */
-    nn_thread_init (&thread, routine, NULL);
+    nn_thread_init (&thread1, device1, NULL);
 
     /*  Create two sockets to connect to the device. */
     enda = nn_socket (AF_SP, NN_PAIR);
@@ -97,8 +158,77 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (enda);
     errno_assert (rc == 0);
+
+#if 0
+    /*  Test the uni-directional device. */
+
+    /*  Start the device. */
+    nn_thread_init (&thread2, device2, NULL);
+
+    /*  Create two sockets to connect to the device. */
+    endc = nn_socket (AF_SP, NN_PUSH);
+    errno_assert (endc >= 0);
+    rc = nn_connect (endc, SOCKET_ADDRESS_C);
+    errno_assert (rc >= 0);
+    endd = nn_socket (AF_SP, NN_PULL);
+    errno_assert (endd >= 0);
+    rc = nn_connect (endd, SOCKET_ADDRESS_D);
+    errno_assert (rc >= 0);
+
+    /*  Pass a message between endpoints. */
+    rc = nn_send (endc, "XYZ", 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (endd, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+
+    /*  Clean up. */
+    rc = nn_close (endd);
+    errno_assert (rc == 0);
+    rc = nn_close (endc);
+    errno_assert (rc == 0);
+
+    /*  Test the loopback device. */
+
+    /*  Start the device. */
+    nn_thread_init (&thread3, device3, NULL);
+
+    /*  Create two sockets to connect to the device. */
+    ende1 = nn_socket (AF_SP, NN_BUS);
+    errno_assert (ende1 >= 0);
+    rc = nn_connect (ende1, SOCKET_ADDRESS_E);
+    errno_assert (rc >= 0);
+    ende2 = nn_socket (AF_SP, NN_BUS);
+    errno_assert (ende2 >= 0);
+    rc = nn_connect (ende2, SOCKET_ADDRESS_E);
+    errno_assert (rc >= 0);
+
+    /*  BUS is unreliable so wait a bit for connections to be established. */
+    nn_sleep (100);
+
+    /*  Pass a message to the bus. */
+    rc = nn_send (ende1, "KLM", 3, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    rc = nn_recv (ende2, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+
+    /*  Clean up. */
+    rc = nn_close (ende2);
+    errno_assert (rc == 0);
+    rc = nn_close (ende1);
+    errno_assert (rc == 0);
+#endif
+
+    /*  Shut down the devices. */
     nn_term ();
-    nn_thread_term (&thread);
+    nn_thread_term (&thread1);
+#if 0
+    nn_thread_term (&thread2);
+    nn_thread_term (&thread3);
+#endif
 
     return 0;
 }

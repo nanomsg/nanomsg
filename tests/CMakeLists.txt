@@ -30,8 +30,11 @@ endmacro (add_libnanomsg_test)
 
 #  Transport tests.
 add_libnanomsg_test (inproc)
+add_libnanomsg_test (inproc_shutdown)
 add_libnanomsg_test (ipc)
+add_libnanomsg_test (ipc_shutdown)
 add_libnanomsg_test (tcp)
+add_libnanomsg_test (tcp_shutdown)
 
 #  Protocol tests.
 add_libnanomsg_test (pair)

@@ -6,6 +6,7 @@
     to deal in the Software without restriction, including without limitation
     the rights to use, copy, modify, merge, publish, distribute, sublicense,
     and/or sell copies of the Software, and to permit persons to whom
+    the Software is furnished to do so, subject to the following conditions:
 
     The above copyright notice and this permission notice shall be included
     in all copies or substantial portions of the Software.
@@ -25,67 +26,48 @@
 #include "../src/inproc.h"
 
 #include "../src/utils/err.c"
+#include "../src/utils/thread.c"
 
-/*  Tests inproc transport. */
+/*  Stress test the inproc transport. */
 
+#define THREAD_COUNT 100
 #define SOCKET_ADDRESS "inproc://test"
+
+static void routine (void *arg)
+{
+    int rc;
+    int s;
+
+    s = nn_socket (AF_SP, NN_SUB);
+    errno_assert (s >= 0);
+    rc = nn_connect (s, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    rc = nn_close (s);
+    errno_assert (rc == 0);
+}
 
 int main ()
 {
     int rc;
     int sb;
-    int sc;
     int i;
-    char buf [3];
+    int j;
+    struct nn_thread threads [THREAD_COUNT];
 
-    /*  Create a simple topology. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
+    /*  Stress the shutdown algorithm. */
+
+    sb = nn_socket (AF_SP, NN_PUB);
+    errno_assert (sb >= 0);
     rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
-    /*  Try a duplicate bind. It should fail. */
-    rc = nn_bind (sc, SOCKET_ADDRESS);
-    nn_assert (rc < 0 && errno == EADDRINUSE);
-
-    /*  Ping-pong test. */
-    for (i = 0; i != 100; ++i) {
-
-        rc = nn_send (sc, "ABC", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_send (sb, "DEFG", 4, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 4);
-
-        rc = nn_recv (sc, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 4);
+    for (j = 0; j != 10; ++j) {
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine, NULL);
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_term (&threads [i]);
     }
 
-    /*  Batch transfer test. */
-    for (i = 0; i != 100; ++i) {
-
-        rc = nn_send (sc, "XYZ", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-    }
-
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
     rc = nn_close (sb);
     errno_assert (rc == 0);
 

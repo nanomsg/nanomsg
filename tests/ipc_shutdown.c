@@ -27,76 +27,49 @@
 
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
+#include "../src/utils/thread.c"
 
-/*  Tests IPC transport. */
+/*  Stress test the IPC transport. */
 
+#define THREAD_COUNT 100
 #define SOCKET_ADDRESS "ipc://test.ipc"
+
+static void routine (void *arg)
+{
+    int rc;
+    int s;
+
+    s = nn_socket (AF_SP, NN_SUB);
+    errno_assert (s >= 0);
+    rc = nn_connect (s, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    rc = nn_close (s);
+    errno_assert (rc == 0);
+}
 
 int main ()
 {
 #if !defined NN_HAVE_WINDOWS
     int rc;
     int sb;
-    int sc;
     int i;
-    char buf [3];
+    int j;
+    struct nn_thread threads [THREAD_COUNT];
 
-    /*  Try closing a IPC socket while it not connected. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
+    /*  Stress the shutdown algorithm. */
 
-    /*  Open the socket anew. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-
-    /*  Leave enough time for at least on re-connect attempt. */
-    nn_sleep (200);
-
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
+    sb = nn_socket (AF_SP, NN_PUB);
+    errno_assert (sb >= 0);
     rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
-    /*  Ping-pong test. */
-    for (i = 0; i != 1; ++i) {
-
-        rc = nn_send (sc, "ABC", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_send (sb, "DEF", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sc, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+    for (j = 0; j != 10; ++j) {
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine, NULL);
+        for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_term (&threads [i]);
     }
 
-    /*  Batch transfer test. */
-    for (i = 0; i != 100; ++i) {
-
-        rc = nn_send (sc, "XYZ", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-    }
-
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
     rc = nn_close (sb);
     errno_assert (rc == 0);
 

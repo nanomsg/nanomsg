@@ -18,7 +18,7 @@ Build it
 5.  cd build
 6.  cmake ..
 7.  make
-8.  make test
+8.  make check
 9.  sudo make install
 10. On Linux or other platforms which use ld.so for dynamic linking, run 
     ldconfig or equivalent as root to update your system’s shared library cache

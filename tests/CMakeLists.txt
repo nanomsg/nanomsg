@@ -22,7 +22,10 @@
 
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+set (all_tests "")
+
 macro (add_libnanomsg_test NAME)
+    list (APPEND all_tests ${NAME})
     add_executable (${NAME} ${NAME}.c)
     target_link_libraries (${NAME} nanomsg)
     add_test (${NAME} ${CMAKE_BINARY_DIR}/${NAME})
@@ -59,8 +62,17 @@ add_libnanomsg_test (domain)
 
 #  If ZMQ compatibility is required, test it.
 if (ZMQ_COMPAT)
+list (APPEND all_tests zmq_compat)
 add_executable (zmq_compat zmq_compat.c)
 target_link_libraries (zmq_compat zmq)
 add_test (zmq_compat ${CMAKE_BINARY_DIR}/zmq_compat)
 endif ()
 
+#  The builtin "test" target cannot be modified to build the library and tests
+#  or to show output when a test failes.
+add_custom_target (check
+                   COMMENT "Running tests..."
+                   COMMAND ctest --force-new-ctest-process --output-on-failure
+                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_dependencies (check ${all_tests})

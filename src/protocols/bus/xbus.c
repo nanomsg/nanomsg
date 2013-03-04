@@ -154,8 +154,11 @@ int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
     hdrsz = nn_chunkref_size (&msg->hdr);
     if (hdrsz == 0)
         exclude = NULL;
-    else if (hdrsz == sizeof (uint64_t))
+    else if (hdrsz == sizeof (uint64_t)) {
         memcpy (&exclude, nn_chunkref_data (&msg->hdr), sizeof (exclude));
+        nn_chunkref_term (&msg->hdr);
+        nn_chunkref_init (&msg->hdr, 0);
+    }
     else
         return -EINVAL;
 

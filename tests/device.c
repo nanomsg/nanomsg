@@ -159,9 +159,8 @@ int main ()
     rc = nn_close (enda);
     errno_assert (rc == 0);
 
-#if 0
     /*  Test the uni-directional device. */
-
+#if 0
     /*  Start the device. */
     nn_thread_init (&thread2, device2, NULL);
 
@@ -188,6 +187,7 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (endc);
     errno_assert (rc == 0);
+#endif
 
     /*  Test the loopback device. */
 
@@ -220,15 +220,14 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (ende1);
     errno_assert (rc == 0);
-#endif
 
     /*  Shut down the devices. */
     nn_term ();
     nn_thread_term (&thread1);
 #if 0
     nn_thread_term (&thread2);
-    nn_thread_term (&thread3);
 #endif
+    nn_thread_term (&thread3);
 
     return 0;
 }

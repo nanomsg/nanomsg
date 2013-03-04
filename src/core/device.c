@@ -165,8 +165,6 @@ int nn_device_loopback (int s)
     int rc;
     int op;
     size_t opsz;
-    int rcv;
-    int snd;
 
     /*  Check whether the socket is a "raw" socket. */
     opsz = sizeof (op);
@@ -177,26 +175,6 @@ int nn_device_loopback (int s)
         errno = EINVAL;
         return -1;
     }
-
-    /*  Get the file descriptors for polling. */
-    opsz = sizeof (rcv);
-    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, &rcv, &opsz);
-    if (rc < 0 && nn_errno () == ENOPROTOOPT) {
-        errno = EINVAL;
-        return -1;
-    }
-    nn_assert (rc == 0);
-    nn_assert (opsz == sizeof (rcv));
-    nn_assert (rcv >= 0);
-    opsz = sizeof (snd);
-    rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_SNDFD, &snd, &opsz);
-    if (rc < 0 && nn_errno () == ENOPROTOOPT) {
-        errno = EINVAL;
-        return -1;
-    }
-    nn_assert (rc == 0);
-    nn_assert (opsz == sizeof (snd));
-    nn_assert (snd >= 0);
 
     while (1) {
         rc = nn_device_mvmsg (s, s, 0);

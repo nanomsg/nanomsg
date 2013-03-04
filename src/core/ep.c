@@ -39,6 +39,9 @@ void nn_epbase_init (struct nn_epbase *self,
     /*  Remember which socket the endpoint belongs to. */
     self->sock = (struct nn_sock*) hint;
 
+    /*  This enpoint does not belong to any socket yet. */
+    nn_list_item_nil(&self->item);
+
     /*  Store the textual for of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
 #if defined _MSC_VER
@@ -53,6 +56,11 @@ void nn_epbase_init (struct nn_epbase *self,
 
 void nn_epbase_term (struct nn_epbase *self)
 {
+    /*  If we are shutting the endpoint down before it was added to the socket
+        (failure during initialisation), do nothing. */
+    if (nn_slow (nn_list_item_isnil (&self->item)))
+        return;
+
     nn_sock_ep_closed (self->sock, self);
 }
 

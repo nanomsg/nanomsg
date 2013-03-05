@@ -123,6 +123,7 @@ int main ()
     struct nn_thread thread2;
     struct nn_thread thread3;
     char buf [3];
+    int timeo;
 
     /*  Test the bi-directional device. */
 
@@ -214,6 +215,15 @@ int main ()
     rc = nn_recv (ende2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
+
+    /*  Make sure that the message doesn't arrive at the socket it was
+        originally sent to. */
+    timeo = 100;
+    rc = nn_setsockopt (ende1, NN_SOL_SOCKET, NN_RCVTIMEO,
+       &timeo, sizeof (timeo));
+    errno_assert (rc == 0);
+    rc = nn_recv (ende1, buf, sizeof (buf), 0);
+    errno_assert (rc < 0 && nn_errno () == EAGAIN);
 
     /*  Clean up. */
     rc = nn_close (ende2);

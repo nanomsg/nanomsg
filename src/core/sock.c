@@ -670,34 +670,38 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
     errnum_assert (events >= 0, -events);
 
     /*  Signal/unsignal IN as needed. */
-    if (events & NN_SOCKBASE_EVENT_IN) {
-        nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
-        if (!(self->flags & NN_SOCK_FLAG_IN)) {
-            self->flags |= NN_SOCK_FLAG_IN;
-            nn_efd_signal (&self->rcvfd);
-            nn_cond_post (&self->cond);
+    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+        if (events & NN_SOCKBASE_EVENT_IN) {
+            nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
+            if (!(self->flags & NN_SOCK_FLAG_IN)) {
+                self->flags |= NN_SOCK_FLAG_IN;
+                nn_efd_signal (&self->rcvfd);
+                nn_cond_post (&self->cond);
+            }
         }
-    }
-    else {
-        if (self->flags & NN_SOCK_FLAG_IN) {
-            self->flags &= ~NN_SOCK_FLAG_IN;
-            nn_efd_unsignal (&self->rcvfd);
+        else {
+            if (self->flags & NN_SOCK_FLAG_IN) {
+                self->flags &= ~NN_SOCK_FLAG_IN;
+                nn_efd_unsignal (&self->rcvfd);
+            }
         }
     }
 
     /*  Signal/unsignal OUT as needed. */
-    if (events & NN_SOCKBASE_EVENT_OUT) {
-        nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND));
-        if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-            self->flags |= NN_SOCK_FLAG_OUT;
-            nn_efd_signal (&self->sndfd);
-            nn_cond_post (&self->cond);
+    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+        if (events & NN_SOCKBASE_EVENT_OUT) {
+            nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND));
+            if (!(self->flags & NN_SOCK_FLAG_OUT)) {
+                self->flags |= NN_SOCK_FLAG_OUT;
+                nn_efd_signal (&self->sndfd);
+                nn_cond_post (&self->cond);
+            }
         }
-    }
-    else {
-        if (self->flags & NN_SOCK_FLAG_OUT) {
-            self->flags &= ~NN_SOCK_FLAG_OUT;
-            nn_efd_unsignal (&self->sndfd);
+        else {
+            if (self->flags & NN_SOCK_FLAG_OUT) {
+                self->flags &= ~NN_SOCK_FLAG_OUT;
+                nn_efd_unsignal (&self->sndfd);
+            }
         }
     }
 }

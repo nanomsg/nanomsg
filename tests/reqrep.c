@@ -24,6 +24,7 @@
 #include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.c"
 
 #define SOCKET_ADDRESS "inproc://a"
 
@@ -36,6 +37,7 @@ int main ()
     int req2;
     int resend_ivl;
     char buf [7];
+    int timeo;
 
     /*  Test req/rep with full socket types. */
     rep1 = nn_socket (AF_SP, NN_REP);
@@ -158,6 +160,35 @@ int main ()
     rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+
+    rc = nn_close (req1);
+    errno_assert (rc == 0);
+    rc = nn_close (rep1);
+    errno_assert (rc == 0);
+
+    /*  Check sending a request when the peer is not available. (It should
+        be sent immediatelly when the peer comes online rather than relying
+        on the resend algorithm. */
+    req1 = nn_socket (AF_SP, NN_REQ);
+    errno_assert (req1 != -1);
+    rc = nn_connect (req1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    rc = nn_send (req1, "ABC", 3, 0);
+    errno_assert (rc >= 0);
+
+    nn_sleep (10);
+
+    rep1 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep1 != -1);
+    rc = nn_bind (rep1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    timeo = 100;
+    rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
+       &timeo, sizeof (timeo));
+    errno_assert (rc == 0);
     rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);

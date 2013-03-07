@@ -70,13 +70,13 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
 {
     nn_mutex_init (&self->sync);
 
+    self->flags = 0;
+
     /*  Initialise the halfs of the pipe. */ 
     nn_msgpipehalf_init (&self->bhalf, &nn_msgpipe_vfptrb, &inprocb->epbase,
         nn_msgpipe_rmpipeb);
     nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, &inprocc->epbase,
         nn_msgpipe_rmpipec);
-
-    self->flags = 0;
 
     /*  Store the references to the endpoints. */
     self->inprocb = inprocb;

@@ -144,10 +144,8 @@ int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  If request cannot be sent due to the pushback, drop it silenly. */
     rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg);
-    if (rc == -EAGAIN) {
-        nn_msg_term (msg);
-        return 0;
-    }
+    if (nn_slow (rc == -EAGAIN))
+        return -EAGAIN;
     errnum_assert (rc >= 0, -rc);
 
     return 0;

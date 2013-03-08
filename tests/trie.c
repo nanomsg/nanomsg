@@ -122,6 +122,21 @@ int main ()
     nn_assert (rc == 0);
     nn_trie_term (&trie);
 
+    /*  Check prefix splitting and compaction. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "ABCD", 4);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "AB", 2);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "AB", 2);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "AB", 2);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "ABCDEF", 6);
+    nn_assert (rc == 1);
+
+    nn_trie_term (&trie);
+
     return 0;
 }
 

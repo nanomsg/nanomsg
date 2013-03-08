@@ -42,7 +42,8 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
 static void nn_node_term (struct nn_trie_node *self);
 static int nn_node_has_subscribers (struct nn_trie_node *self);
 static void nn_node_dump (struct nn_trie_node *self, int indent);
-static void nn_node_ident (int indent);
+static void nn_node_indent (int indent);
+static void nn_node_putchar (uint8_t c);
 
 void nn_trie_init (struct nn_trie *self)
 {
@@ -65,43 +66,43 @@ void nn_node_dump (struct nn_trie_node *self, int indent)
     int children;
 
     if (!self) {
-        nn_node_ident (indent);
+        nn_node_indent (indent);
         printf ("NULL\n");
         return;
     }
 
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     printf ("===================\n");
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     printf ("refcount=%d\n", (int) self->refcount);
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     printf ("prefix_len=%d\n", (int) self->prefix_len);
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     if (self->type == NN_TRIE_DENSE_TYPE)
         printf ("type=dense\n");
     else
         printf ("type=sparse\n");
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     printf ("prefix=\"");
     for (i = 0; i != self->prefix_len; ++i)
-        putchar (self->prefix [i]);
+        nn_node_putchar (self->prefix [i]);
     printf ("\"\n");
     if (self->type <= 8) {
-        nn_node_ident (indent);
+        nn_node_indent (indent);
         printf ("sparse.children=\"");
         for (i = 0; i != self->type; ++i)
-            putchar (self->sparse.children [i]);
+            nn_node_putchar (self->sparse.children [i]);
         printf ("\"\n");
         children = self->type;
     }
     else {
-        nn_node_ident (indent);
+        nn_node_indent (indent);
         printf ("dense.min='%c' (%d)\n", (char) self->dense.min,
             (int) self->dense.min);
-        nn_node_ident (indent);
+        nn_node_indent (indent);
         printf ("dense.max='%c' (%d)\n", (char) self->dense.max,
             (int) self->dense.max);
-        nn_node_ident (indent);
+        nn_node_indent (indent);
         printf ("dense.nbr=%d\n", (int) self->dense.nbr);
         children = self->dense.max - self->dense.min + 1;
     }
@@ -109,16 +110,24 @@ void nn_node_dump (struct nn_trie_node *self, int indent)
     for (i = 0; i != children; ++i)
         nn_node_dump (((struct nn_trie_node**) (self + 1)) [i], indent + 1);
 
-    nn_node_ident (indent);
+    nn_node_indent (indent);
     printf ("===================\n");
 }
 
-void nn_node_ident (int indent)
+void nn_node_indent (int indent)
 {
     int i;
 
     for (i = 0; i != indent * 4; ++i)
-        putchar (' ');
+        nn_node_putchar (' ');
+}
+
+void nn_node_putchar (uint8_t c)
+{
+    if (c < 32 || c > 127)
+        putchar ('?');
+    else
+        putchar (c);
 }
 
 void nn_node_term (struct nn_trie_node *self)

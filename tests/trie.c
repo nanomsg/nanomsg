@@ -134,7 +134,18 @@ int main ()
     nn_assert (rc == 0);
     rc = nn_trie_match (&trie, "ABCDEF", 6);
     nn_assert (rc == 1);
+    nn_trie_term (&trie);
 
+    /*  Check whether there's no problem with removing all subscriptions. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "", 0);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "A", 1);
+    nn_assert (rc == 0);
     nn_trie_term (&trie);
 
     return 0;

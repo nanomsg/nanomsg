@@ -426,13 +426,13 @@ int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size)
     node = self->root;
     while (1) {
 
-        /*  If there's no more data to match, return. */
-        if (!size)
-            return nn_node_has_subscribers (node) ? 1 : 0;
-
         /*  If we are at the end of the trie, return. */
         if (!node)
             return 0;
+
+        /*  If there's no more data to match, return. */
+        if (!size)
+            return nn_node_has_subscribers (node) ? 1 : 0;
 
         /*  If prefix does not match the data, return. */
         if (nn_node_check_prefix (node, data, size) != node->prefix_len)
@@ -649,7 +649,7 @@ found:
 
 int nn_node_has_subscribers (struct nn_trie_node *node)
 {
-    //  Returns 1 when there are no subscribers associated with the node.
+    /*  Returns 1 when there are no subscribers associated with the node. */
     return node->refcount ? 1 : 0;
 }
 

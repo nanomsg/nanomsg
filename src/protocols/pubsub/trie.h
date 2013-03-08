@@ -70,6 +70,9 @@ void nn_trie_term (struct nn_trie *self);
 int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size);
 int nn_trie_unsubscribe (struct nn_trie *self, const uint8_t *data,
     size_t size);
+
+/*  Checks the supplied string. If it matches it returns 1, if it does not
+    it returns 0. */
 int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size);
 
 /*  Debugging interface. */

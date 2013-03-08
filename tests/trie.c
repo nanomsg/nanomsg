@@ -36,6 +36,56 @@ int main ()
     nn_assert (rc == 0);
     nn_trie_term (&trie);
 
+    /*  Try matching with "all" subscription. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "", 0);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "", 0);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "ABC", 3);
+    nn_assert (rc == 1);
+    nn_trie_term (&trie);
+
+    /*  Try some simple matching. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "ABC", 3);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "DEF", 3);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "AB", 2);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "ABC", 3);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "ABCDE", 5);
+    nn_assert (rc == 1);
+    nn_trie_term (&trie);
+
+    /*  Try a long subcsription. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "01234567890123456789012345678901234", 35);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "", 0);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "012456789", 10);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "012345678901234567", 18);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "01234567890123456789012345678901234", 35);
+    nn_assert (rc == 1);
+    nn_trie_term (&trie);
+
+    /*  Try matching with a sparse node involved. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "ABC", 3);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "ADE", 3);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "A", 1);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "AD", 2);
+    nn_assert (rc == 0);
+    nn_trie_term (&trie);
+
     return 0;
 }
 

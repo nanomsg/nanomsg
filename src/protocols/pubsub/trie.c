@@ -73,9 +73,14 @@ void nn_node_dump (struct nn_trie_node *self, int indent)
     nn_node_ident (indent);
     printf ("===================\n");
     nn_node_ident (indent);
+    printf ("refcount=%d\n", (int) self->refcount);
+    nn_node_ident (indent);
     printf ("prefix_len=%d\n", (int) self->prefix_len);
     nn_node_ident (indent);
-    printf ("type=%d\n", (int) self->type);
+    if (self->type == NN_TRIE_DENSE_TYPE)
+        printf ("type=dense\n");
+    else
+        printf ("type=sparse\n");
     nn_node_ident (indent);
     printf ("prefix=\"");
     for (i = 0; i != self->prefix_len; ++i)
@@ -422,6 +427,7 @@ step5:
 int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size)
 {
     struct nn_trie_node *node;
+    struct nn_trie_node **tmp;
 
     node = self->root;
     while (1) {
@@ -430,11 +436,8 @@ int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size)
         if (!node)
             return 0;
 
-        /*  If there's no more data to match, return. */
-        if (!size)
-            return nn_node_has_subscribers (node) ? 1 : 0;
-
-        /*  If prefix does not match the data, return. */
+        /*  Check whether whole prefix matches the data. If not so,
+            the whole string won't match. */
         if (nn_node_check_prefix (node, data, size) != node->prefix_len)
             return 0;
 
@@ -442,16 +445,13 @@ int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size)
         data += node->prefix_len;
         size -= node->prefix_len;
 
-        /*  If there's at least one subscriber, the message is matching. */
+        /*  If all the data are matched, return. */
         if (nn_node_has_subscribers (node))
             return 1;
 
-        /*  If there's no more data to match, return. */
-        if (!size)
-            return 0;
-
         /*  Move to the next node. */
-        node = *nn_node_next (node, *data);
+        tmp = nn_node_next (node, *data);
+        node = tmp ? *tmp : NULL;
         ++data;
         --size;
     }

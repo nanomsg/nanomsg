@@ -86,6 +86,42 @@ int main ()
     nn_assert (rc == 0);
     nn_trie_term (&trie);
 
+    /*  Try matching with a dense node involved. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "B", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "C", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "0", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "E", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "F", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "1", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "@", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "b", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "f", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "0", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "f", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "000", 3);
+    nn_assert (rc == 1);
+    rc = nn_trie_match (&trie, "a", 1);
+    nn_assert (rc == 0);
+    rc = nn_trie_match (&trie, "c", 1);
+    nn_assert (rc == 0);
+    nn_trie_term (&trie);
+
     return 0;
 }
 

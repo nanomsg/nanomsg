@@ -50,7 +50,9 @@ int main ()
     timeo = 100;
     rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_SNDTIMEO, &timeo, sizeof (timeo));
     errno_assert (rc == 0);
+    nn_stopwatch_init (&stopwatch);
     rc = nn_send (s, "ABC", 3, 0);
+    elapsed = nn_stopwatch_term (&stopwatch);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
     time_assert (elapsed, 100000);
 

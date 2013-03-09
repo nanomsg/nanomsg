@@ -306,9 +306,7 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
 
 static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_req *req;
-    uint32_t reqid;
 
     req = nn_cont (self, struct nn_req, xreq.sockbase);
 

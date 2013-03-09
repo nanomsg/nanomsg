@@ -156,6 +156,50 @@ int main ()
     nn_assert (rc == 0);
     nn_trie_term (&trie);
 
+    /*  Check converting from sparse node to dense node and vice versa. */
+    nn_trie_init (&trie);
+    rc = nn_trie_subscribe (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "B", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "C", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "0", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "E", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "F", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "1", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "@", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "b", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_subscribe (&trie, "f", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "0", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "f", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "E", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "B", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "A", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "1", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "@", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "F", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "C", 1);
+    nn_assert (rc == 1);
+    rc = nn_trie_unsubscribe (&trie, "b", 1);
+    nn_assert (rc == 1);
+    nn_trie_term (&trie);
+
     return 0;
 }
 

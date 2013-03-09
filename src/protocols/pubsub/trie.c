@@ -29,6 +29,10 @@
 #include "../../utils/fast.h"
 #include "../../utils/err.h"
 
+/*  Double check that the size of node structure is as small as
+    we believe it to be. */
+CT_ASSERT (sizeof (struct nn_trie_node) == 24);
+
 /*  Forward declarations. */
 static struct nn_trie_node *nn_node_compact (struct nn_trie_node *self);
 static int nn_node_check_prefix (struct nn_trie_node *self,
@@ -175,7 +179,7 @@ struct nn_trie_node **nn_node_child (struct nn_trie_node *self, int index)
 struct nn_trie_node **nn_node_next (struct nn_trie_node *self, uint8_t c)
 {
     /*  Finds the pointer to the next node based on the supplied character.
-      If there is no such pointer, it returns NULL. */
+        If there is no such pointer, it returns NULL. */
 
     int i;
 
@@ -477,7 +481,6 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
     int i;
     int j;
     int index;
-    int ptr_index;
     int new_min;
     struct nn_trie_node **ch;
     struct nn_trie_node *new_node;
@@ -522,7 +525,6 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
             if ((*self)->sparse.children [index] == *data)
                 break;
         assert (index != (*self)->type);
-        ptr_index = (*self)->sparse.children [index];
 
         /*  Remove the destroyed child from both lists of children. */
         memmove (
@@ -530,13 +532,10 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
             (*self)->sparse.children + index + 1,
             (*self)->type - index - 1);
         memmove (
-            nn_node_child (*self, ptr_index),
-            nn_node_child (*self, ptr_index + 1),
+            nn_node_child (*self, index),
+            nn_node_child (*self, index + 1),
             ((*self)->type - index - 1) * sizeof (struct nn_trie_node*));
         --(*self)->type;
-        for (i = 0; i != (*self)->type; ++i)
-            if ((*self)->sparse.children [i] >= ptr_index)
-                --((*self)->sparse.children [i]);
         *self = nn_realloc (*self, sizeof (struct nn_trie_node) +
             ((*self)->type * sizeof (struct nn_trie_node*)));
         assert (*self);

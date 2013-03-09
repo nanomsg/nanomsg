@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/*  This class implements extremely memory-efficient patricia trie. */
+/*  This class implements highly memory-efficient patricia trie. */
 
 /* Maximum length of the prefix. */
 #define NN_TRIE_PREFIX_MAX 10
@@ -37,22 +37,48 @@
 /* 'type' is set to this value when in the dense mode. */
 #define NN_TRIE_DENSE_TYPE (NN_TRIE_SPARSE_MAX + 1)
 
-/*  This structure represents a node in patricia trie. It's a 32 bytes
-    long header to be followed by the array of pointers to child nodes. */
+/*  This structure represents a node in patricia trie. It's a header to be
+    followed by the array of pointers to child nodes. Each node represents
+    the string composed of all the prefixes on the way from the trie root,
+    including the prefix in that node. */
 struct nn_trie_node
 {
+    /*  Number of subscriptions to the given string. */
     uint32_t refcount;
-    uint8_t prefix_len;
+
+    /*  Number of elements is a sparse array, or NN_TRIE_DENSE_TYPE in case
+        the array of children is dense. */
     uint8_t type;
+
+    /*  The node adds more characters to the string, compared to the parent
+        node. If there is only a single character added, it's represented
+        directly in the child array. If there's more than one character added,
+        all but the last one are stored as a 'prefix'. */
+    uint8_t prefix_len;
     uint8_t prefix [NN_TRIE_PREFIX_MAX];
+
+    /*  The array of characters pointing to individual children of the node.
+        Actual pointers to child nodes are stored in the memory following
+        nn_trie_node structure. */
     union {
+
+        /*  Sparse array means that individual children are identified by
+            characters stored in 'children' array. The number of characters
+            in the array is specified in the 'type' field. */
         struct {
             uint8_t children [NN_TRIE_SPARSE_MAX];
         } sparse;
+
+        /*  Dense array means that the array of node pointers following the
+            structure corresponds to a continuous list of characters starting
+            by 'min' character and ending by 'max' character. The characters
+            in the range that have no corresponding child node are represented
+            by NULL pointers. 'nbr' is the count of child nodes. */
         struct {
             uint8_t min;
             uint8_t max;
             uint16_t nbr;
+            /*  There are 4 bytes of padding here. */
         } dense;
     };
 };

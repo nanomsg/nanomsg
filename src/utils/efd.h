@@ -37,11 +37,26 @@ typedef int nn_fd;
 
 struct nn_efd;
 
+/*  Initialise the efd object. */
 int nn_efd_init (struct nn_efd *self);
+
+/*  Uninitialise the efd object. */
 void nn_efd_term (struct nn_efd *self);
+
+/*  Get the OS file descriptor that is readable when the efd object
+    is signaled. */
 nn_fd nn_efd_getfd (struct nn_efd *self);
+
+/*  Switch the object into signaled state. */
 void nn_efd_signal (struct nn_efd *self);
+
+/*  Switch the object into unsignaled state. */
 void nn_efd_unsignal (struct nn_efd *self);
+
+/*  Wait till efd object becomes signaled or when timeout (in milliseconds,
+    nagative value meaning 'infinite') expires. In the former case 0 is
+    returened. In the latter, -ETIMEDOUT. */
+int nn_efd_wait (struct nn_efd *self, int timeout);
 
 #if defined NN_HAVE_WINDOWS
 
@@ -50,6 +65,7 @@ void nn_efd_unsignal (struct nn_efd *self);
 struct nn_efd {
     SOCKET r;
     SOCKET w;
+    fd_set fds;
 };
 
 #elif defined NN_USE_SOCKETPAIR

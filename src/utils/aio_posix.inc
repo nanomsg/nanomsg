@@ -97,11 +97,13 @@ void nn_event_init (struct nn_event *self, const struct nn_cp_sink **sink,
     self->sink = sink;
     self->cp = cp;
     self->active = 0;
+    nn_queue_item_init (&self->item);
 }
 
 void nn_event_term (struct nn_event *self)
 {
     nn_assert (!self->active);
+    nn_queue_item_term (&self->item);
 }
 
 void nn_event_signal (struct nn_event *self)
@@ -129,11 +131,15 @@ int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     self->in.batch_pos = 0;
     self->in.op = NN_USOCK_INOP_NONE;
     self->out.op = NN_USOCK_OUTOP_NONE;
+    nn_queue_item_init (&self->add_hndl.item);
     self->add_hndl.op = NN_USOCK_OP_ADD;
+    nn_queue_item_init (&self->rm_hndl.item);
     self->rm_hndl.op = NN_USOCK_OP_RM;
+    nn_queue_item_init (&self->in.hndl.item);
     self->in.hndl.op = NN_USOCK_OP_IN;
-    memset (&self->out.hdr, 0, sizeof (struct msghdr));
+    nn_queue_item_init (&self->out.hndl.item);
     self->out.hndl.op = NN_USOCK_OP_OUT;
+    memset (&self->out.hdr, 0, sizeof (struct msghdr));
     self->domain = domain;
     self->type = type;
     self->protocol = protocol;
@@ -187,11 +193,15 @@ int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
     self->in.batch_pos = 0;
     self->in.op = NN_USOCK_INOP_NONE;
     self->out.op = NN_USOCK_OUTOP_NONE;
+    nn_queue_item_init (&self->add_hndl.item);
     self->add_hndl.op = NN_USOCK_OP_ADD;
+    nn_queue_item_init (&self->rm_hndl.item);
     self->rm_hndl.op = NN_USOCK_OP_RM;
+    nn_queue_item_init (&self->in.hndl.item);
     self->in.hndl.op = NN_USOCK_OP_IN;
-    memset (&self->out.hdr, 0, sizeof (struct msghdr));
+    nn_queue_item_init (&self->out.hndl.item);
     self->out.hndl.op = NN_USOCK_OP_OUT;
+    memset (&self->out.hdr, 0, sizeof (struct msghdr));
     self->domain = parent->domain;
     self->type = parent->type;
     self->protocol = parent->protocol;
@@ -286,6 +296,10 @@ static void nn_usock_term (struct nn_usock *self)
         nn_free (self->in.batch);
     rc = close (self->s);
     errno_assert (rc == 0);
+    nn_queue_item_term (&self->add_hndl.item);
+    nn_queue_item_term (&self->rm_hndl.item);
+    nn_queue_item_term (&self->in.hndl.item);
+    nn_queue_item_term (&self->out.hndl.item);
     nn_assert ((*self->sink)->closed);
     (*self->sink)->closed (self->sink, self);
 }

@@ -23,6 +23,13 @@
 #ifndef NN_QUEUE_INCLUDED
 #define NN_QUEUE_INCLUDED
 
+/*  Undefined value for initialising a queue item which is not
+    part of a queue. */
+#define NN_QUEUE_NOTINQUEUE ((struct nn_queue_item*) -1)
+
+/*  Use for initialising a queue item statically. */
+#define NN_QUEUE_ITEM_INITIALIZER {NN_LIST_NOTINQUEUE}
+
 struct nn_queue_item {
     struct nn_queue_item *next;
 };
@@ -45,5 +52,12 @@ void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
 /*  Retrieves one element from the queue. The element is removed
     from the queue. Returns NULL if the queue is empty. */
 struct nn_queue_item *nn_queue_pop (struct nn_queue *self);
+
+/*  Initialise a queue item. At this point it is not a part of any queue. */
+void nn_queue_item_init (struct nn_queue_item *self);
+
+/*  Terminate a queue item. The item must not be in a queue prior to
+    this call. */
+void nn_queue_item_term (struct nn_queue_item *self);
 
 #endif

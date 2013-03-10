@@ -59,7 +59,7 @@ void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item);
 /*  Gets an item in the hash based on the key. */
 struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key);
 
-/*  Initialise a hash item. At this point is not a part of any hash table. */
+/*  Initialise a hash item. At this point it is not a part of any hash table. */
 void nn_hash_item_init (struct nn_hash_item *self);
 
 /*  Terminate a hash item. The item must not be in a hash table prior to

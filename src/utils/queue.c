@@ -23,7 +23,7 @@
 #include <stddef.h>
 
 #include "queue.h"
-
+#include "err.h"
 
 void nn_queue_init (struct nn_queue *self)
 {
@@ -39,6 +39,8 @@ void nn_queue_term (struct nn_queue *self)
 
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
 {
+    nn_assert (item->next == NN_QUEUE_NOTINQUEUE);
+
     item->next = NULL;
     if (!self->head)
         self->head = item;
@@ -57,6 +59,17 @@ struct nn_queue_item *nn_queue_pop (struct nn_queue *self)
     self->head = result->next;
     if (!self->head)
         self->tail = NULL;
+    result->next = NN_QUEUE_NOTINQUEUE;
     return result;
+}
+
+void nn_queue_item_init (struct nn_queue_item *self)
+{
+    self->next = NN_QUEUE_NOTINQUEUE;
+}
+
+void nn_queue_item_term (struct nn_queue_item *self)
+{
+    nn_assert (self->next == NN_QUEUE_NOTINQUEUE);
 }
 

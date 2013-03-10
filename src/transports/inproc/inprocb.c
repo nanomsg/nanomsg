@@ -39,6 +39,7 @@ static const struct nn_epbase_vfptr nn_inprocb_epbase_vfptr =
 int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint)
 {
     nn_epbase_init (&self->epbase, &nn_inprocb_epbase_vfptr, addr, hint);
+    nn_list_item_init (&self->list);
     nn_list_init (&self->pipes);
     self->flags = 0;
 
@@ -98,6 +99,7 @@ static void nn_inprocb_close (struct nn_epbase *self)
     /*  If there's no pipe attached, deallocate the object straight away. */
     if (nn_list_empty (&inprocb->pipes)) {
         nn_list_term (&inprocb->pipes);
+        nn_list_item_term (&inprocb->list);
         nn_epbase_term (&inprocb->epbase);
         nn_free (inprocb);
         return;

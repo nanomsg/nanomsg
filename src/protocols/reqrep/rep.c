@@ -31,6 +31,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/chunkref.h"
 #include "../../utils/wire.h"
+#include "../../utils/list.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -183,7 +184,8 @@ static int nn_rep_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_rep_socktype_struct = {
     AF_SP,
     NN_REP,
-    nn_rep_create
+    nn_rep_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_rep_socktype = &nn_rep_socktype_struct;

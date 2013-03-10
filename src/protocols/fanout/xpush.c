@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/lb.h"
+#include "../../utils/list.h"
 
 struct nn_xpush_data {
     struct nn_lb_data lb;
@@ -185,7 +186,8 @@ int nn_xpush_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xpush_socktype_struct = {
     AF_SP_RAW,
     NN_PUSH,
-    nn_xpush_create
+    nn_xpush_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xpush_socktype = &nn_xpush_socktype_struct;

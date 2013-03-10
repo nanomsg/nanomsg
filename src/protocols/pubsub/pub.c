@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/dist.h"
 #include "../../utils/alloc.h"
+#include "../../utils/list.h"
 
 #include <stddef.h>
 
@@ -195,7 +196,8 @@ static int nn_pub_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_pub_socktype_struct = {
     AF_SP,
     NN_PUB,
-    nn_pub_create
+    nn_pub_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_pub_socktype = &nn_pub_socktype_struct;

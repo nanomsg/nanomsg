@@ -78,6 +78,8 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
     nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, &inprocc->epbase,
         nn_msgpipe_rmpipec);
 
+    nn_list_item_init (&self->item);
+
     /*  Store the references to the endpoints. */
     self->inprocb = inprocb;
     self->inprocc = inprocc;
@@ -96,6 +98,7 @@ static void nn_msgpipe_destroy (struct nn_msgpipe *self)
 
     /*  Deallocate the resources. */
     nn_mutex_term (&self->sync);
+    nn_list_item_term (&self->item);
     nn_free (self);
 }
 

@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
+#include "../../utils/list.h"
 
 struct nn_xsource {
     struct nn_sockbase sockbase;
@@ -162,7 +163,8 @@ int nn_xsource_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xsource_socktype_struct = {
     AF_SP_RAW,
     NN_SOURCE,
-    nn_xsource_create
+    nn_xsource_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xsource_socktype = &nn_xsource_socktype_struct;

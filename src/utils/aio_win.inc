@@ -37,7 +37,7 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
     self->cp = cp;
     
     /*  This handle does not belong to any list yet. */
-    nn_list_item_nil (&self->hndl.list);
+    nn_list_item_init (&self->hndl.list);
 
     self->active = 0;
 }
@@ -45,6 +45,7 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
 void nn_timer_term (struct nn_timer *self)
 {
     nn_timer_stop (self);
+    nn_list_item_term (&self->hndl.list);
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)

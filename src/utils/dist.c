@@ -41,7 +41,7 @@ void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
     data->pipe = pipe;
-    nn_list_item_nil (&data->item);
+    nn_list_item_init (&data->item);
 }
 
 void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
@@ -49,6 +49,7 @@ void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
 {
     if (!nn_list_item_isnil (&data->item))
         nn_list_erase (&self->pipes, &data->item);
+    nn_list_item_term (&data->item);
 }
 
 void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
@@ -75,7 +76,6 @@ int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,
            errnum_assert (rc >= 0, -rc);
            if (rc & NN_PIPE_RELEASE) {
                it = nn_list_erase (&self->pipes, it);
-               nn_list_item_nil (&data->item);
                continue;
            }
        }

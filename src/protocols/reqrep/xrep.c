@@ -31,6 +31,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
+#include "../../utils/list.h"
 
 #include <string.h>
 
@@ -96,6 +97,7 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xrep_data), "pipe data (xrep)");
     alloc_assert (data);
     data->pipe = pipe;
+    nn_list_item_init (&data->outitem.list);
     data->flags = 0;
     nn_hash_insert (&xrep->outpipes, xrep->next_key & 0x7fffffff,
         &data->outitem);
@@ -117,6 +119,7 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     nn_fq_rm (&xrep->inpipes, pipe, &data->initem);
     nn_hash_erase (&xrep->outpipes, &data->outitem);
+    nn_list_item_term (&data->outitem.list);
 
     nn_free (data);
 }
@@ -272,7 +275,8 @@ static int nn_xrep_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xrep_socktype_struct = {
     AF_SP_RAW,
     NN_REP,
-    nn_xrep_create
+    nn_xrep_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xrep_socktype = &nn_xrep_socktype_struct;

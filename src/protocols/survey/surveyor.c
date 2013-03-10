@@ -32,6 +32,7 @@
 #include "../../utils/wire.h"
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
+#include "../../utils/list.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -289,7 +290,8 @@ static int nn_surveyor_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_surveyor_socktype_struct = {
     AF_SP,
     NN_SURVEYOR,
-    nn_surveyor_create
+    nn_surveyor_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_surveyor_socktype = &nn_surveyor_socktype_struct;

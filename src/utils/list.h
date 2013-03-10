@@ -33,6 +33,12 @@ struct nn_list {
     struct nn_list_item *last;
 };
 
+/*  Undefined value for initializing a list item which is not part of a list. */
+#define NN_LIST_NIL (struct nn_list_item *)-1
+
+/*  Use for initializing list item statically. */
+#define NN_LIST_ITEM_INITIALIZER {NN_LIST_NIL, NN_LIST_NIL}
+
 /*  Initialise the list. */
 void nn_list_init (struct nn_list *self);
 
@@ -60,18 +66,21 @@ struct nn_list_item *nn_list_prev (struct nn_list *self,
 struct nn_list_item *nn_list_next (struct nn_list *self,
     struct nn_list_item *it);
 
-/*  Adds the item to the list before the item pointed to by 'it'. */
+/*  Adds the item to the list before the item pointed to by 'it'. Item must be
+ *  set to nil. */
 void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     struct nn_list_item *it);
 
 /*  Removes the item from the list and returns pointer to the next item in the
- *  list. Item must be part of the list. */
+ *  list. Item must be part of the list. When removed, item is set to nil. */
 struct nn_list_item *nn_list_erase (struct nn_list *self,
     struct nn_list_item *item);
 
-/*  Normally, when item is not part of a list, its value is undefined. This
-    function sets it to nil value. */
-void nn_list_item_nil (struct nn_list_item *self);
+/*  Initialize a list item and set it to nil. */
+void nn_list_item_init (struct nn_list_item *self);
+
+/*  Terminates a list item. Item must be set to nil. */
+void nn_list_item_term (struct nn_list_item *self);
 
 /*  Returns 1 is the item was set to nil, or 0 if it is part of a list. */
 int nn_list_item_isnil (struct nn_list_item *self);

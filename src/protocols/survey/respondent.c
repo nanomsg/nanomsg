@@ -31,6 +31,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/wire.h"
+#include "../../utils/list.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -188,7 +189,8 @@ static int nn_respondent_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_respondent_socktype_struct = {
     AF_SP,
     NN_RESPONDENT,
-    nn_respondent_create
+    nn_respondent_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_respondent_socktype = &nn_respondent_socktype_struct;

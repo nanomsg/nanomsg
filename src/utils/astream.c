@@ -59,7 +59,7 @@ void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
     self->bstream = bstream;
 
     /*  This stearm does not belong yet to the bstream. */
-    nn_list_item_nil(&self->item);
+    nn_list_item_init (&self->item);
 
     /*  Get the current values of NN_SNDBUF and NN_RCVBUF options. */    
     sz = sizeof (sndbuf);
@@ -131,6 +131,7 @@ static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
     if (!nn_list_item_isnil (&astream->item))
         nn_bstream_astream_closed (astream->bstream, astream);
 
+    nn_list_item_term (&astream->item);
     nn_free (astream);
 }
 

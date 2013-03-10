@@ -42,7 +42,27 @@ int main ()
     struct nn_list_item *list_item;
     struct item *item;
 
-    /* Initialize a list. */
+    /*  List item life cycle. */
+
+    /*  Initialize set item to nil. */
+    nn_list_item_init (&that.item);
+    nn_assert (nn_list_item_isnil (&that.item));
+
+    /*  That may be part of some list, or uninitialized memory. */
+    that.item.prev = &sentinel;
+    that.item.next = &sentinel;
+    nn_assert (!nn_list_item_isnil (&that.item));
+
+    /*  That may be part of some list, or uninitialized memory. */
+    that.item.prev = NULL;
+    that.item.next = NULL;
+    nn_assert (!nn_list_item_isnil (&that.item));
+
+    /*  Before termination, item must be set to nil. */
+    nn_list_item_init (&that.item);
+    nn_list_item_term (&that.item);
+
+    /*  Initializing a list. */
 
     /*  Uninitialized list has random content. */
     list.first = &sentinel;
@@ -52,6 +72,7 @@ int main ()
 
     nn_assert (list.first == NULL);
     nn_assert (list.last == NULL);
+
     nn_list_term (&list);
     
     /*  Empty list. */
@@ -69,39 +90,28 @@ int main ()
 
     nn_list_term (&list);
 
-    /*  Insert nil item. */
+    /*  Inserting an item. */
 
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
+
+    /*  Item must be initialized - set to nil. */
+    nn_list_item_init (&that.item);
+    nn_assert (nn_list_item_isnil( &that.item));
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
 
+    nn_assert (!nn_list_item_isnil( &that.item));
     nn_assert (that.item.prev == NULL);
     nn_assert (that.item.next == NULL);
 
     nn_list_clear(&list);
-    nn_list_term (&list);
-
-    /*  Insert non-nil item. */
-
-    nn_list_init (&list);
-
-    /*  That is uninitialized, or belong to another list. */
-    that.item.prev = &sentinel;
-    that.item.next = &sentinel;
-
-    nn_list_insert (&list, &that.item, nn_list_end (&list));
-
-    nn_assert (that.item.prev == NULL);
-    nn_assert (that.item.next == NULL);
-
-    nn_list_clear (&list);
+    nn_list_item_term (&that.item);
     nn_list_term (&list);
 
     /*  Iterating items. */
     
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
+    nn_list_item_init (&that.item);
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
     
@@ -124,13 +134,14 @@ int main ()
     nn_assert (rc == 0);
 
     nn_list_clear (&list);
+    nn_list_item_term (&that.item);
     nn_list_term (&list);
 
-    /*  Append items. */
+    /*  Appending items. */
 
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
-    nn_list_item_nil (&other.item);
+    nn_list_item_init (&that.item);
+    nn_list_item_init (&other.item);
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
     nn_list_insert (&list, &other.item, nn_list_end (&list));
@@ -142,13 +153,15 @@ int main ()
     nn_assert (list_item == &other.item);
 
     nn_list_clear(&list);
+    nn_list_item_term (&that.item);
+    nn_list_item_term (&other.item);
     nn_list_term (&list);
 
-    /*  Prepend items. */
+    /*  Prepending items. */
 
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
-    nn_list_item_nil (&other.item);
+    nn_list_item_init (&that.item);
+    nn_list_item_init (&other.item);
 
     nn_list_insert (&list, &that.item, nn_list_begin (&list));
     nn_list_insert (&list, &other.item, nn_list_begin (&list));
@@ -160,12 +173,14 @@ int main ()
     nn_assert (list_item == &that.item);
 
     nn_list_clear(&list);
+    nn_list_item_term (&that.item);
+    nn_list_item_term (&other.item);
     nn_list_term (&list);
 
-    /*  Erase item. */
+    /*  Erasing item. */
 
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
+    nn_list_item_init (&that.item);
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
 
@@ -185,13 +200,14 @@ int main ()
     rc = nn_list_empty (&list);
     nn_assert (rc == 1);
 
+    nn_list_item_term (&that.item);
     nn_list_term (&list);
 
-    /*  Clear all items. */
+    /*  Clearing all items. */
 
     nn_list_init (&list);
-    nn_list_item_nil (&that.item);
-    nn_list_item_nil (&other.item);
+    nn_list_item_init (&that.item);
+    nn_list_item_init (&other.item);
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
     nn_list_insert (&list, &other.item, nn_list_end (&list));
@@ -209,6 +225,8 @@ int main ()
     nn_assert (list.first == NULL);
     nn_assert (list.last == NULL);
 
+    nn_list_item_term (&that.item);
+    nn_list_item_term (&other.item);
     nn_list_term (&list);
 
     return 0;

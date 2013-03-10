@@ -40,7 +40,7 @@ void nn_epbase_init (struct nn_epbase *self,
     self->sock = (struct nn_sock*) hint;
 
     /*  This enpoint does not belong to any socket yet. */
-    nn_list_item_nil(&self->item);
+    nn_list_item_init (&self->item);
 
     /*  Store the textual for of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
@@ -62,6 +62,7 @@ void nn_epbase_term (struct nn_epbase *self)
         return;
 
     nn_sock_ep_closed (self->sock, self);
+    nn_list_item_term (&self->item);
 }
 
 struct nn_cp *nn_epbase_getcp (struct nn_epbase *self)

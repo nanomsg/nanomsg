@@ -25,11 +25,13 @@
 
 #include "../../nn.h"
 #include "../../fanout.h"
+#include "../../utils/list.h"
 
 static struct nn_socktype nn_pull_socktype_struct = {
     AF_SP,
     NN_PULL,
-    nn_xpull_create
+    nn_xpull_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_pull_socktype = &nn_pull_socktype_struct;

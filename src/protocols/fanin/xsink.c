@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fq.h"
+#include "../../utils/list.h"
 
 struct nn_xsink_data {
     struct nn_fq_data fq;
@@ -191,7 +192,8 @@ int nn_xsink_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xsink_socktype_struct = {
     AF_SP_RAW,
     NN_SINK,
-    nn_xsink_create
+    nn_xsink_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xsink_socktype = &nn_xsink_socktype_struct;

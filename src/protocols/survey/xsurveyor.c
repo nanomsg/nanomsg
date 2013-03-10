@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/list.h"
 #include "../../utils/alloc.h"
+#include "../../utils/list.h"
 
 #include <stddef.h>
 
@@ -216,7 +217,8 @@ static int nn_xsurveyor_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xsurveyor_socktype_struct = {
     AF_SP_RAW,
     NN_SURVEYOR,
-    nn_xsurveyor_create
+    nn_xsurveyor_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xsurveyor_socktype = &nn_xsurveyor_socktype_struct;

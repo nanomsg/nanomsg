@@ -31,6 +31,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
+#include "../../utils/list.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -407,7 +408,8 @@ static int nn_req_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_req_socktype_struct = {
     AF_SP,
     NN_REQ,
-    nn_req_create
+    nn_req_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_req_socktype = &nn_req_socktype_struct;

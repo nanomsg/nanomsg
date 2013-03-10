@@ -29,6 +29,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
+#include "../../utils/list.h"
 
 struct nn_bus {
     struct nn_xbus xbus;
@@ -137,7 +138,8 @@ static int nn_bus_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_bus_socktype_struct = {
     AF_SP,
     NN_BUS,
-    nn_bus_create
+    nn_bus_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_bus_socktype = &nn_bus_socktype_struct;

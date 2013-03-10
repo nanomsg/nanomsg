@@ -29,6 +29,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
+#include "../../utils/list.h"
 
 /*  Private functions. */
 static void nn_xrespondent_destroy (struct nn_sockbase *self);
@@ -184,7 +185,8 @@ static int nn_xrespondent_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xrespondent_socktype_struct = {
     AF_SP_RAW,
     NN_RESPONDENT,
-    nn_xrespondent_create
+    nn_xrespondent_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xrespondent_socktype = &nn_xrespondent_socktype_struct;

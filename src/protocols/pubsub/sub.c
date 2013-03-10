@@ -31,6 +31,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
+#include "../../utils/list.h"
 
 struct nn_sub {
     struct nn_sockbase sockbase;
@@ -205,7 +206,8 @@ static int nn_sub_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_sub_socktype_struct = {
     AF_SP,
     NN_SUB,
-    nn_sub_create
+    nn_sub_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_sub_socktype = &nn_sub_socktype_struct;

@@ -39,6 +39,7 @@ static const struct nn_epbase_vfptr nn_inprocc_epbase_vfptr =
 int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint)
 {
     nn_epbase_init (&self->epbase, &nn_inprocc_epbase_vfptr, addr, hint);
+    nn_list_item_init (&self->list);
     self->flags = 0;
 
     /*  The endpoint is not connected at the moment. */
@@ -101,6 +102,7 @@ static void nn_inprocc_close (struct nn_epbase *self)
         return;
     }
 
+    nn_list_item_term (&inprocc->list);
     /*  If the endpoint is not connected we can deallocate it straight away. */
     nn_epbase_term (&inprocc->epbase);
     nn_free (inprocc);

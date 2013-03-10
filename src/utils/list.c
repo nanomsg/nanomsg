@@ -25,7 +25,7 @@
 #include "list.h"
 #include "err.h"
 
-static struct nn_list_item nn_list_nil = {NULL, NULL};
+static void nn_list_item_nil (struct nn_list_item *self);
 
 void nn_list_init (struct nn_list *self)
 {
@@ -35,8 +35,8 @@ void nn_list_init (struct nn_list *self)
 
 void nn_list_term (struct nn_list *self)
 {
-    nn_assert (!self->first);
-    nn_assert (!self->last);
+    nn_assert (self->first == NULL);
+    nn_assert (self->last == NULL);
 }
 
 int nn_list_empty (struct nn_list *self)
@@ -68,20 +68,22 @@ struct nn_list_item *nn_list_prev (struct nn_list *self,
 {
     if (!it)
         return self->last;
-    nn_assert (it->prev != &nn_list_nil);
+    nn_assert (it->prev != NN_LIST_NIL);
     return it->prev;
 }
 
 struct nn_list_item *nn_list_next (struct nn_list *self,
     struct nn_list_item *it)
 {
-    nn_assert (it->next != &nn_list_nil);
+    nn_assert (it->next != NN_LIST_NIL);
     return it->next;
 }
 
 void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     struct nn_list_item *it)
 {
+    nn_assert (nn_list_item_isnil (item));
+
     item->prev = it ? it->prev : self->last;
     item->next = it;
     if (item->prev)
@@ -116,13 +118,24 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
     return next;
 }
 
-void nn_list_item_nil (struct nn_list_item *self)
+void nn_list_item_init (struct nn_list_item *self)
 {
-    self->prev = &nn_list_nil;
-    self->next = &nn_list_nil;
+    nn_list_item_nil (self);
+}
+
+void nn_list_item_term (struct nn_list_item *self)
+{
+    nn_assert (nn_list_item_isnil (self));
 }
 
 int nn_list_item_isnil (struct nn_list_item *self)
 {
-    return self->prev == &nn_list_nil ? 1 : 0;
+    return self->prev == NN_LIST_NIL ? 1 : 0;
 }
+
+void nn_list_item_nil (struct nn_list_item *self)
+{
+    self->prev = NN_LIST_NIL;
+    self->next = NN_LIST_NIL;
+}
+

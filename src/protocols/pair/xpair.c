@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
+#include "../../utils/list.h"
 
 struct nn_xpair {
     struct nn_sockbase sockbase;
@@ -181,7 +182,8 @@ int nn_xpair_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xpair_socktype_struct = {
     AF_SP_RAW,
     NN_PAIR,
-    nn_xpair_create
+    nn_xpair_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xpair_socktype = &nn_xpair_socktype_struct;

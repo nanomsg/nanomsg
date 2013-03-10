@@ -25,11 +25,13 @@
 
 #include "../../nn.h"
 #include "../../fanin.h"
+#include "../../utils/list.h"
 
 static struct nn_socktype nn_sink_socktype_struct = {
     AF_SP,
     NN_SINK,
-    nn_xsink_create
+    nn_xsink_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_sink_socktype = &nn_sink_socktype_struct;

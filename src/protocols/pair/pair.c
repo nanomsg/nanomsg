@@ -25,11 +25,13 @@
 
 #include "../../nn.h"
 #include "../../pair.h"
+#include "../../utils/list.h"
 
 static struct nn_socktype nn_pair_socktype_struct = {
     AF_SP,
     NN_PAIR,
-    nn_xpair_create
+    nn_xpair_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_pair_socktype = &nn_pair_socktype_struct;

@@ -51,7 +51,7 @@ void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
 {
     data->pipe = pipe;
     data->priority = priority;
-    nn_list_item_nil (&data->item);
+    nn_list_item_init (&data->item);
 }
 
 void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
@@ -59,6 +59,7 @@ void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
 {
     if (!nn_list_item_isnil (&data->item))
         nn_list_erase (&self->slots [data->priority - 1].pipes, &data->item);
+    nn_list_item_term (&data->item);
 }
 
 void nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
@@ -115,10 +116,8 @@ void nn_priolist_advance (struct nn_priolist *self, int release)
     slot = &self->slots [self->current - 1];
 
     /*  Move slot's current pointer to the next pipe. */
-    if (release) {
+    if (release)
         it = nn_list_erase (&slot->pipes, &slot->current->item);
-        nn_list_item_nil (&slot->current->item);
-    }
     else
         it = nn_list_next (&slot->pipes, &slot->current->item);
     if (!it)

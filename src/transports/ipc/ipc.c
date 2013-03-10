@@ -29,6 +29,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/bstream.h"
 #include "../../utils/cstream.h"
+#include "../../utils/list.h"
 
 #include <string.h>
 #include <sys/un.h>
@@ -57,7 +58,8 @@ static struct nn_transport nn_ipc_vfptr = {
     nn_ipc_init,
     nn_ipc_term,
     nn_ipc_bind,
-    nn_ipc_connect
+    nn_ipc_connect,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_transport *nn_ipc = &nn_ipc_vfptr;

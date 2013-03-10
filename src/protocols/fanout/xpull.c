@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/excl.h"
+#include "../../utils/list.h"
 
 struct nn_xpull {
     struct nn_sockbase sockbase;
@@ -166,7 +167,8 @@ int nn_xpull_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_xpull_socktype_struct = {
     AF_SP_RAW,
     NN_PULL,
-    nn_xpull_create
+    nn_xpull_create,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_socktype *nn_xpull_socktype = &nn_xpull_socktype_struct;

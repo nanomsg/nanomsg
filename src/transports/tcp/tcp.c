@@ -28,6 +28,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/bstream.h"
 #include "../../utils/cstream.h"
+#include "../../utils/list.h"
 
 #define NN_TCP_BACKLOG 100
 
@@ -52,7 +53,8 @@ static struct nn_transport nn_tcp_vfptr = {
     nn_tcp_init,
     nn_tcp_term,
     nn_tcp_bind,
-    nn_tcp_connect
+    nn_tcp_connect,
+    NN_LIST_ITEM_INITIALIZER
 };
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;

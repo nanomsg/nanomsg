@@ -25,8 +25,6 @@
 #include "list.h"
 #include "err.h"
 
-static void nn_list_item_nil (struct nn_list_item *self);
-
 void nn_list_init (struct nn_list *self)
 {
     self->first = NULL;
@@ -104,14 +102,17 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
         self->last = item->prev;
 
     next = item->next;
-    nn_list_item_nil (item);
+
+    item->prev = NN_LIST_NOTINLIST;
+    item->next = NN_LIST_NOTINLIST;
 
     return next;
 }
 
 void nn_list_item_init (struct nn_list_item *self)
 {
-    nn_list_item_nil (self);
+    self->prev = NN_LIST_NOTINLIST;
+    self->next = NN_LIST_NOTINLIST;
 }
 
 void nn_list_item_term (struct nn_list_item *self)
@@ -122,11 +123,5 @@ void nn_list_item_term (struct nn_list_item *self)
 int nn_list_item_isinlist (struct nn_list_item *self)
 {
     return self->prev == NN_LIST_NOTINLIST ? 0 : 1;
-}
-
-void nn_list_item_nil (struct nn_list_item *self)
-{
-    self->prev = NN_LIST_NOTINLIST;
-    self->next = NN_LIST_NOTINLIST;
 }
 

@@ -36,14 +36,14 @@ struct nn_list {
 /*  Initialise the list. */
 void nn_list_init (struct nn_list *self);
 
-/*  Terminate the list. Note that list must be manually emptied before the
+/*  terminates the list. Note that all items must be removed before the
     termination. */
 void nn_list_term (struct nn_list *self);
 
-/*  Returns 1 is list has zero elements, 0 otherwise. */
+/*  Returns 1 is list has zero items, 0 otherwise. */
 int nn_list_empty (struct nn_list *self);
 
-/*  Remove all elements from the list. */
+/*  Removes all items from the list. */
 void nn_list_clear (struct nn_list *self);
 
 /*  Returns iterator to the first item in the list. */
@@ -52,11 +52,11 @@ struct nn_list_item *nn_list_begin (struct nn_list *self);
 /*  Returns iterator to one past the last item in the list. */
 struct nn_list_item *nn_list_end (struct nn_list *self);
 
-/*  Returns iterator to an element prior to the one pointed to be it. */
+/*  Returns iterator to an item prior to the one pointed to by 'it'. */
 struct nn_list_item *nn_list_prev (struct nn_list *self,
     struct nn_list_item *it);
 
-/*  Returns iterator to one past the element pointed to be it. */
+/*  Returns iterator to one past the item pointed to by 'it'. */
 struct nn_list_item *nn_list_next (struct nn_list *self,
     struct nn_list_item *it);
 
@@ -64,8 +64,8 @@ struct nn_list_item *nn_list_next (struct nn_list *self,
 void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     struct nn_list_item *it);
 
-/*  Removes the element from the list it is in at the moment. Returns pointer
-    to the next element in the list. */
+/*  Removes the item from the list and returns pointer to the next item in the
+ *  list. Item must be part of the list. */
 struct nn_list_item *nn_list_erase (struct nn_list *self,
     struct nn_list_item *item);
 

@@ -44,21 +44,19 @@ int main ()
 
     /*  List item life cycle. */
 
-    /*  Initialize set item to nil. */
+    /*  Initialize the item. Make sure it's not part of any list. */
     nn_list_item_init (&that.item);
-    nn_assert (nn_list_item_isnil (&that.item));
+    nn_assert (!nn_list_item_isinlist (&that.item));
 
     /*  That may be part of some list, or uninitialized memory. */
     that.item.prev = &sentinel;
     that.item.next = &sentinel;
-    nn_assert (!nn_list_item_isnil (&that.item));
-
-    /*  That may be part of some list, or uninitialized memory. */
+    nn_assert (nn_list_item_isinlist (&that.item));
     that.item.prev = NULL;
     that.item.next = NULL;
-    nn_assert (!nn_list_item_isnil (&that.item));
+    nn_assert (nn_list_item_isinlist (&that.item));
 
-    /*  Before termination, item must be set to nil. */
+    /*  Before termination, item must be removed from the list. */
     nn_list_item_init (&that.item);
     nn_list_item_term (&that.item);
 
@@ -93,14 +91,11 @@ int main ()
     /*  Inserting an item. */
 
     nn_list_init (&list);
-
-    /*  Item must be initialized - set to nil. */
     nn_list_item_init (&that.item);
-    nn_assert (nn_list_item_isnil (&that.item));
 
+    nn_assert (!nn_list_item_isinlist (&that.item));
     nn_list_insert (&list, &that.item, nn_list_end (&list));
-
-    nn_assert (!nn_list_item_isnil (&that.item));
+    nn_assert (nn_list_item_isinlist (&that.item));
     nn_assert (that.item.prev == NULL);
     nn_assert (that.item.next == NULL);
 
@@ -186,16 +181,16 @@ int main ()
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
 
-    /*  That belongs to list now. */
-    rc = nn_list_item_isnil (&that.item);
-    nn_assert (rc == 0);
+    /*  Check that item belongs to the list now. */
+    rc = nn_list_item_isinlist (&that.item);
+    nn_assert (rc == 1);
 
     list_item = nn_list_begin (&list);
     list_item = nn_list_erase (&list, list_item);
     
-    /*  That does not belong to list now. */
-    rc = nn_list_item_isnil (&that.item);
-    nn_assert (rc == 1);
+    /*  Check that item doesn't belong to the list now. */
+    rc = nn_list_item_isinlist (&that.item);
+    nn_assert (rc == 0);
 
     nn_assert (list_item == NULL);
 
@@ -205,11 +200,9 @@ int main ()
     nn_list_item_term (&that.item);
     nn_list_term (&list);
 
-    /*  All items should become nil. */
-    rc = nn_list_item_isnil (&that.item);
-    nn_assert (rc == 1);
-    rc = nn_list_item_isnil (&other.item);
-    nn_assert (rc == 1);
+    /*  Check that item doesn't belong to the list now. */
+    rc = nn_list_item_isinlist (&that.item);
+    nn_assert (rc == 0);
 
     rc = nn_list_empty (&list);
     nn_assert (rc = 1);

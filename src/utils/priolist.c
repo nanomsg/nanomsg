@@ -57,7 +57,7 @@ void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
 void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
-    if (!nn_list_item_isnil (&data->item))
+    if (nn_list_item_isinlist (&data->item))
         nn_list_erase (&self->slots [data->priority - 1].pipes, &data->item);
     nn_list_item_term (&data->item);
 }

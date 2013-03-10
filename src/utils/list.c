@@ -59,21 +59,21 @@ struct nn_list_item *nn_list_prev (struct nn_list *self,
 {
     if (!it)
         return self->last;
-    nn_assert (it->prev != NN_LIST_NIL);
+    nn_assert (it->prev != NN_LIST_NOTINLIST);
     return it->prev;
 }
 
 struct nn_list_item *nn_list_next (struct nn_list *self,
     struct nn_list_item *it)
 {
-    nn_assert (it->next != NN_LIST_NIL);
+    nn_assert (it->next != NN_LIST_NOTINLIST);
     return it->next;
 }
 
 void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     struct nn_list_item *it)
 {
-    nn_assert (nn_list_item_isnil (item));
+    nn_assert (!nn_list_item_isinlist (item));
 
     item->prev = it ? it->prev : self->last;
     item->next = it;
@@ -92,7 +92,7 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
 {
     struct nn_list_item *next;
 
-    nn_assert (!nn_list_item_isnil (item));
+    nn_assert (nn_list_item_isinlist (item));
 
     if (item->prev)
         item->prev->next = item->next;
@@ -116,17 +116,17 @@ void nn_list_item_init (struct nn_list_item *self)
 
 void nn_list_item_term (struct nn_list_item *self)
 {
-    nn_assert (nn_list_item_isnil (self));
+    nn_assert (!nn_list_item_isinlist (self));
 }
 
-int nn_list_item_isnil (struct nn_list_item *self)
+int nn_list_item_isinlist (struct nn_list_item *self)
 {
-    return self->prev == NN_LIST_NIL ? 1 : 0;
+    return self->prev == NN_LIST_NOTINLIST ? 0 : 1;
 }
 
 void nn_list_item_nil (struct nn_list_item *self)
 {
-    self->prev = NN_LIST_NIL;
-    self->next = NN_LIST_NIL;
+    self->prev = NN_LIST_NOTINLIST;
+    self->next = NN_LIST_NOTINLIST;
 }
 

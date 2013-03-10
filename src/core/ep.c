@@ -58,7 +58,7 @@ void nn_epbase_term (struct nn_epbase *self)
 {
     /*  If we are shutting the endpoint down before it was added to the socket
         (failure during initialisation), do nothing. */
-    if (nn_slow (nn_list_item_isnil (&self->item)))
+    if (nn_slow (!nn_list_item_isinlist (&self->item)))
         return;
 
     nn_sock_ep_closed (self->sock, self);

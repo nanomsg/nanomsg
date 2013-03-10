@@ -47,7 +47,7 @@ void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
 void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
-    if (!nn_list_item_isnil (&data->item))
+    if (nn_list_item_isinlist (&data->item))
         nn_list_erase (&self->pipes, &data->item);
     nn_list_item_term (&data->item);
 }

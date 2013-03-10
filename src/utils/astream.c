@@ -128,7 +128,7 @@ static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
     astream = nn_cont (self, struct nn_astream, sink);
 
     /*  Ignore if I don't belong to the bstream. */
-    if (!nn_list_item_isnil (&astream->item))
+    if (nn_list_item_isinlist (&astream->item))
         nn_bstream_astream_closed (astream->bstream, astream);
 
     nn_list_item_term (&astream->item);

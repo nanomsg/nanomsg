@@ -96,15 +96,15 @@ int main ()
 
     /*  Item must be initialized - set to nil. */
     nn_list_item_init (&that.item);
-    nn_assert (nn_list_item_isnil( &that.item));
+    nn_assert (nn_list_item_isnil (&that.item));
 
     nn_list_insert (&list, &that.item, nn_list_end (&list));
 
-    nn_assert (!nn_list_item_isnil( &that.item));
+    nn_assert (!nn_list_item_isnil (&that.item));
     nn_assert (that.item.prev == NULL);
     nn_assert (that.item.next == NULL);
 
-    nn_list_clear(&list);
+    nn_list_erase (&list, &that.item);
     nn_list_item_term (&that.item);
     nn_list_term (&list);
 
@@ -118,7 +118,7 @@ int main ()
     list_item = nn_list_begin (&list);
     nn_assert (list_item == &that.item);
 
-    item = nn_cont(list_item, struct item, item);
+    item = nn_cont (list_item, struct item, item);
     nn_assert (item == &that);
 
     list_item = nn_list_end (&list);
@@ -133,7 +133,7 @@ int main ()
     rc = nn_list_empty (&list);
     nn_assert (rc == 0);
 
-    nn_list_clear (&list);
+    nn_list_erase (&list, &that.item);
     nn_list_item_term (&that.item);
     nn_list_term (&list);
 
@@ -152,7 +152,8 @@ int main ()
     list_item = nn_list_next (&list, list_item);
     nn_assert (list_item == &other.item);
 
-    nn_list_clear(&list);
+    nn_list_erase (&list, &that.item);
+    nn_list_erase (&list, &other.item);
     nn_list_item_term (&that.item);
     nn_list_item_term (&other.item);
     nn_list_term (&list);
@@ -172,7 +173,8 @@ int main ()
     list_item = nn_list_next (&list, list_item);
     nn_assert (list_item == &that.item);
 
-    nn_list_clear(&list);
+    nn_list_erase (&list, &that.item);
+    nn_list_erase (&list, &other.item);
     nn_list_item_term (&that.item);
     nn_list_item_term (&other.item);
     nn_list_term (&list);
@@ -202,16 +204,6 @@ int main ()
 
     nn_list_item_term (&that.item);
     nn_list_term (&list);
-
-    /*  Clearing all items. */
-
-    nn_list_init (&list);
-    nn_list_item_init (&that.item);
-    nn_list_item_init (&other.item);
-
-    nn_list_insert (&list, &that.item, nn_list_end (&list));
-    nn_list_insert (&list, &other.item, nn_list_end (&list));
-    nn_list_clear (&list);
 
     /*  All items should become nil. */
     rc = nn_list_item_isnil (&that.item);

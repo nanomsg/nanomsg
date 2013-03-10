@@ -269,7 +269,8 @@ static void nn_ctx_term (void)
 
     /*  For now there's nothing to deallocate about socket types, however,
         let's remove them from the list anyway. */
-    nn_list_clear (&self.socktypes);
+    while (!nn_list_empty (&self.socktypes))
+        nn_list_erase (&self.socktypes, nn_list_begin (&self.socktypes));
 
     /*  Final deallocation of the nn_ctx object itself. */
     nn_list_term (&self.socktypes);

@@ -44,15 +44,6 @@ int nn_list_empty (struct nn_list *self)
     return self->first ? 0 : 1;
 }
 
-void nn_list_clear (struct nn_list *self)
-{
-    struct nn_list_item *it;
-    
-    it = self->first;
-    while (it)
-        it = nn_list_erase(self, it);
-}
-
 struct nn_list_item *nn_list_begin (struct nn_list *self)
 {
     return self->first;

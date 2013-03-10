@@ -34,23 +34,20 @@ struct nn_list {
 };
 
 /*  Undefined value for initializing a list item which is not part of a list. */
-#define NN_LIST_NIL (struct nn_list_item *)-1
+#define NN_LIST_NIL ((struct nn_list_item*) -1)
 
-/*  Use for initializing list item statically. */
+/*  Use for initializing a list item statically. */
 #define NN_LIST_ITEM_INITIALIZER {NN_LIST_NIL, NN_LIST_NIL}
 
 /*  Initialise the list. */
 void nn_list_init (struct nn_list *self);
 
-/*  terminates the list. Note that all items must be removed before the
+/*  Terminates the list. Note that all items must be removed before the
     termination. */
 void nn_list_term (struct nn_list *self);
 
 /*  Returns 1 is list has zero items, 0 otherwise. */
 int nn_list_empty (struct nn_list *self);
-
-/*  Removes all items from the list. */
-void nn_list_clear (struct nn_list *self);
 
 /*  Returns iterator to the first item in the list. */
 struct nn_list_item *nn_list_begin (struct nn_list *self);
@@ -67,12 +64,12 @@ struct nn_list_item *nn_list_next (struct nn_list *self,
     struct nn_list_item *it);
 
 /*  Adds the item to the list before the item pointed to by 'it'. Item must be
- *  set to nil. */
+    set to nil. */
 void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     struct nn_list_item *it);
 
 /*  Removes the item from the list and returns pointer to the next item in the
- *  list. Item must be part of the list. When removed, item is set to nil. */
+    list. Item must be part of the list. When removed, item is set to nil. */
 struct nn_list_item *nn_list_erase (struct nn_list *self,
     struct nn_list_item *item);
 

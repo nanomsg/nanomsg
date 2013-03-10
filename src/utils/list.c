@@ -46,8 +46,11 @@ int nn_list_empty (struct nn_list *self)
 
 void nn_list_clear (struct nn_list *self)
 {
-    self->first = NULL;
-    self->last = NULL;
+    struct nn_list_item *it;
+    
+    it = self->first;
+    while (it)
+        it = nn_list_erase(self, it);
 }
 
 struct nn_list_item *nn_list_begin (struct nn_list *self)
@@ -94,8 +97,10 @@ void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
 struct nn_list_item *nn_list_erase (struct nn_list *self,
     struct nn_list_item *item)
 {
-    nn_assert (item && item->prev != &nn_list_nil &&
-        item->next != &nn_list_nil);
+    struct nn_list_item *next;
+
+    nn_assert (!nn_list_item_isnil (item));
+
     if (item->prev)
         item->prev->next = item->next;
     else
@@ -104,7 +109,11 @@ struct nn_list_item *nn_list_erase (struct nn_list *self,
         item->next->prev = item->prev;
     else
         self->last = item->prev;
-    return item->next;
+
+    next = item->next;
+    nn_list_item_nil (item);
+
+    return next;
 }
 
 void nn_list_item_nil (struct nn_list_item *self)

@@ -35,6 +35,10 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
 {
     self->sink = sink;
     self->cp = cp;
+    
+    /*  This handle does not belong to any list yet. */
+    nn_list_item_nil (&self->hndl.list);
+
     self->active = 0;
 }
 

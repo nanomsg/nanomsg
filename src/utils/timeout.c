@@ -67,6 +67,10 @@ int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl)
 {
     int first;
 
+    /*  Ignore if handle is not in the timeouts list. */
+    if (nn_list_item_isnil (&hndl->list))
+        return 0;
+
     /*  If it was the first timeout that was removed, the actual waiting time
         may have changed. We'll thus return 1 to let the user know. */
     first = nn_list_begin (&self->timeouts) == &hndl->list ? 1 : 0;

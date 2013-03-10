@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,6 +28,9 @@
 
 #include "list.h"
 
+/*  Use for initialising a hash item statically. */
+#define NN_HASH_ITEM_INITIALIZER {0xffff, NN_LIST_ITEM_INITILIZER}
+
 struct nn_hash_item {
     uint32_t key;
     struct nn_list_item list;
@@ -55,5 +58,12 @@ void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item);
 
 /*  Gets an item in the hash based on the key. */
 struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key);
+
+/*  Initialise a hash item. At this point is not a part of any hash table. */
+void nn_hash_item_init (struct nn_hash_item *self);
+
+/*  Terminate a hash item. The item must not be in a hash table prior to
+    this call. */
+void nn_hash_item_term (struct nn_hash_item *self);
 
 #endif

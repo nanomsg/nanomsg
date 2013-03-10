@@ -97,7 +97,7 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xrep_data), "pipe data (xrep)");
     alloc_assert (data);
     data->pipe = pipe;
-    nn_list_item_init (&data->outitem.list);
+    nn_hash_item_init (&data->outitem);
     data->flags = 0;
     nn_hash_insert (&xrep->outpipes, xrep->next_key & 0x7fffffff,
         &data->outitem);
@@ -119,7 +119,7 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     nn_fq_rm (&xrep->inpipes, pipe, &data->initem);
     nn_hash_erase (&xrep->outpipes, &data->outitem);
-    nn_list_item_term (&data->outitem.list);
+    nn_hash_item_term (&data->outitem);
 
     nn_free (data);
 }

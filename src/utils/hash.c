@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -141,5 +141,15 @@ uint32_t nn_hash_key (uint32_t key)
     key = key ^ (key >> 15);
 
     return key;
+}
+
+void nn_hash_item_init (struct nn_hash_item *self)
+{
+    nn_list_item_init (&self->list);
+}
+
+void nn_hash_item_term (struct nn_hash_item *self)
+{
+    nn_list_item_term (&self->list);
 }
 

@@ -27,13 +27,15 @@
 
 static struct nn_list_item sentinel;
 
+/*  Typical object that can be added to a list. */
 struct item {
     int value;
     struct nn_list_item item;
 };
 
-static struct item that = {1};
-static struct item other = {2};
+/*  Initializing list items statically so they can be inserted into a list. */
+static struct item that = {1, NN_LIST_ITEM_INITIALIZER};
+static struct item other = {2, NN_LIST_ITEM_INITIALIZER};
 
 int main ()
 {
@@ -88,18 +90,34 @@ int main ()
 
     nn_list_term (&list);
 
-    /*  Inserting an item. */
+    /*  Inserting and erasing items. */
 
     nn_list_init (&list);
     nn_list_item_init (&that.item);
 
+    /*  Item doesn'tt belong to list yet. */
     nn_assert (!nn_list_item_isinlist (&that.item));
+
     nn_list_insert (&list, &that.item, nn_list_end (&list));
+
+    /*  Item is now part of a list. */
     nn_assert (nn_list_item_isinlist (&that.item));
+
+    /*  Single item does not have prev or next item. */
     nn_assert (that.item.prev == NULL);
     nn_assert (that.item.next == NULL);
 
+    /*  Item is both first and list item. */
+    nn_assert (list.first == &that.item);
+    nn_assert (list.last == &that.item);
+
+    /*  Removing an item. */
     nn_list_erase (&list, &that.item);
+    nn_assert (!nn_list_item_isinlist (&that.item));
+
+    nn_assert (list.first == NULL);
+    nn_assert (list.last == NULL);
+
     nn_list_item_term (&that.item);
     nn_list_term (&list);
 
@@ -170,46 +188,6 @@ int main ()
 
     nn_list_erase (&list, &that.item);
     nn_list_erase (&list, &other.item);
-    nn_list_item_term (&that.item);
-    nn_list_item_term (&other.item);
-    nn_list_term (&list);
-
-    /*  Erasing item. */
-
-    nn_list_init (&list);
-    nn_list_item_init (&that.item);
-
-    nn_list_insert (&list, &that.item, nn_list_end (&list));
-
-    /*  Check that item belongs to the list now. */
-    rc = nn_list_item_isinlist (&that.item);
-    nn_assert (rc == 1);
-
-    list_item = nn_list_begin (&list);
-    list_item = nn_list_erase (&list, list_item);
-    
-    /*  Check that item doesn't belong to the list now. */
-    rc = nn_list_item_isinlist (&that.item);
-    nn_assert (rc == 0);
-
-    nn_assert (list_item == NULL);
-
-    rc = nn_list_empty (&list);
-    nn_assert (rc == 1);
-
-    nn_list_item_term (&that.item);
-    nn_list_term (&list);
-
-    /*  Check that item doesn't belong to the list now. */
-    rc = nn_list_item_isinlist (&that.item);
-    nn_assert (rc == 0);
-
-    rc = nn_list_empty (&list);
-    nn_assert (rc = 1);
-
-    nn_assert (list.first == NULL);
-    nn_assert (list.last == NULL);
-
     nn_list_item_term (&that.item);
     nn_list_item_term (&other.item);
     nn_list_term (&list);

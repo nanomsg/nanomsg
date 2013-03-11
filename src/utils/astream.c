@@ -74,6 +74,13 @@ void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
     /*  Start the stream state machine. */
     nn_usock_init_child (&self->usock, usock, s, &self->sink, sndbuf, rcvbuf,
         usock->cp);
+    
+    /*  Note: must add myself to the astreams list *before* initializing my
+        stream, which may fail and terminate me. */
+    nn_list_insert (&bstream->astreams, &self->item,
+        nn_list_end (&bstream->astreams));
+
+    /*  Note: may fail and terminate me - do not reference self after this point! */
     nn_stream_init (&self->stream, epbase, &self->usock);
 }
 

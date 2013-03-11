@@ -94,9 +94,9 @@ static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
 
     astream = nn_alloc (sizeof (struct nn_astream), "astream");
     alloc_assert (astream);
+    
+    /*  Note: astream may be terminated after this call - do not reference it. */
     nn_astream_init (astream, &bstream->epbase, s, usock, bstream);
-    nn_list_insert (&bstream->astreams, &astream->item,
-        nn_list_end (&bstream->astreams));
 }
 
 /******************************************************************************/

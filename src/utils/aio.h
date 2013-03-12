@@ -172,7 +172,6 @@ struct nn_timer {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
     struct nn_timeout_hndl hndl;
-    int active;
 };
 
 struct nn_event {

@@ -178,7 +178,6 @@ struct nn_timer {
 struct nn_event {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
-    int active;
     struct nn_queue_item item;
 };
 

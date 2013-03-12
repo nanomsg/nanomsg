@@ -96,20 +96,17 @@ void nn_event_init (struct nn_event *self, const struct nn_cp_sink **sink,
 {
     self->sink = sink;
     self->cp = cp;
-    self->active = 0;
     nn_queue_item_init (&self->item);
 }
 
 void nn_event_term (struct nn_event *self)
 {
-    nn_assert (!self->active);
     nn_queue_item_term (&self->item);
 }
 
 void nn_event_signal (struct nn_event *self)
 {
     /*  Enqueue the event for later processing. */
-    self->active = 1;
     nn_mutex_lock (&self->cp->events_sync);
     nn_queue_push (&self->cp->events, &self->item);
     nn_mutex_unlock (&self->cp->events_sync);
@@ -563,7 +560,6 @@ err:
                 break;
             event = nn_cont (it ,struct nn_event, item);
             nn_assert ((*event->sink)->event);
-            event->active = 0;
             (*event->sink)->event (event->sink, event);
         }
         nn_mutex_unlock (&self->events_sync);

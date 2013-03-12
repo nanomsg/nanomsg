@@ -47,5 +47,9 @@ int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl);
 int nn_timeout_timeout (struct nn_timeout *self);
 int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl);
 
+void nn_timeout_hndl_init (struct nn_timeout_hndl *self);
+void nn_timeout_hndl_term (struct nn_timeout_hndl *self);
+int nn_timeout_hndl_isactive (struct nn_timeout_hndl *self);
+
 #endif
 

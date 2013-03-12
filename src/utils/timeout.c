@@ -111,3 +111,18 @@ int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl)
     return 0;
 }
 
+void nn_timeout_hndl_init (struct nn_timeout_hndl *self)
+{
+    nn_list_item_init (&self->list);
+}
+
+void nn_timeout_hndl_term (struct nn_timeout_hndl *self)
+{
+    nn_list_item_term (&self->list);
+}
+
+int nn_timeout_hndl_isactive (struct nn_timeout_hndl *self)
+{
+    return nn_list_item_isinlist (&self->list);
+}
+

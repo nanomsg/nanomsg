@@ -48,15 +48,13 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
 {
     self->sink = sink;
     self->cp = cp;
-    
-    /*  This handle does not belong to any list yet. */
-    nn_list_item_init (&self->hndl.list);
+    nn_timeout_hndl_init (&self->hndl);
 }
 
 void nn_timer_term (struct nn_timer *self)
 {
     nn_timer_stop (self);
-    nn_list_item_term (&self->hndl.list);
+    nn_timeout_hndl_term (&self->hndl);
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)
@@ -64,7 +62,7 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     int rc;
 
     /*  If the timer is active, cancel it first. */
-    if (nn_list_item_isinlist (&self->hndl.list))
+    if (nn_timeout_hndl_isactive (&self->hndl))
         nn_timer_stop (self);
 
     rc = nn_timeout_add (&self->cp->timeout, timeout, &self->hndl);
@@ -79,7 +77,7 @@ void nn_timer_stop (struct nn_timer *self)
     int rc;
 
     /*  If the timer is not active, do nothing. */
-    if (!nn_list_item_isinlist (&self->hndl.list))
+    if (!nn_timeout_hndl_isactive (&self->hndl))
          return;
 
     rc = nn_timeout_rm (&self->cp->timeout, &self->hndl);

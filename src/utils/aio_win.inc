@@ -35,17 +35,13 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
 {
     self->sink = sink;
     self->cp = cp;
-    
-    /*  This handle does not belong to any list yet. */
-    nn_list_item_init (&self->hndl.list);
-
-    self->active = 0;
+    nn_timeout_hndl_init (&self->hndl);
 }
 
 void nn_timer_term (struct nn_timer *self)
 {
     nn_timer_stop (self);
-    nn_list_item_term (&self->hndl.list);
+    nn_timeout_hndl_term (&self->hndl);
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)
@@ -54,10 +50,9 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     BOOL brc;
 
     /*  If the timer is active, cancel it first. */
-    if (self->active)
+    if (nn_timeout_hndl_isactive (&self->hndl))
         nn_timer_stop (self);
 
-    self->active = 1;
     rc = nn_timeout_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
 
@@ -74,7 +69,7 @@ void nn_timer_stop (struct nn_timer *self)
     BOOL brc;
 
     /*  If the timer is not active, do nothing. */
-    if (!self->active)
+    if (!nn_timeout_hndl_isactive (&self->hndl))
          return;
 
     rc = nn_timeout_rm (&self->cp->timeout, &self->hndl);
@@ -103,6 +98,7 @@ void nn_event_signal (struct nn_event *self)
 {
     BOOL brc;
 
+    self->active = 1;
     brc = PostQueuedCompletionStatus (self->cp->hndl, 0,
             (ULONG_PTR) self, NULL);
     win_assert (brc);

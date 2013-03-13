@@ -222,16 +222,29 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
     int flags;
     int only;
 
+    /*  TODO: Currently, EINVAL errors are ignored on OSX platform. The reason
+        for that is buggy OSX behaviour where setsockopt returns EINVAL if the
+        peer have already disconnected. In the future we should return the
+        error to the caller and let it handle it in a decent way. */
+
     /*  Set the size of tx and rc buffers. */
     if (sndbuf >= 0) {
         rc = setsockopt (self->s, SOL_SOCKET, SO_SNDBUF,
             &sndbuf, sizeof (sndbuf));
+#if defined NN_HAVE_OSX
+        errno_assert (rc == 0 || errno == EINVAL);
+#else
         errno_assert (rc == 0);
+#endif
     }
     if (rcvbuf >= 0) {
         rc = setsockopt (self->s, SOL_SOCKET, SO_RCVBUF,
             &rcvbuf, sizeof (rcvbuf));
+#if defined NN_HAVE_OSX
+        errno_assert (rc == 0 || errno == EINVAL);
+#else
         errno_assert (rc == 0);
+#endif
     }
 
     /*  If applicable, prevent SIGPIPE signal when writing to the connection
@@ -240,7 +253,11 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
     opt = 1;
     rc = setsockopt (self->s, SOL_SOCKET, SO_NOSIGPIPE,
         &opt, sizeof (opt));
+#if defined NN_HAVE_OSX
+    errno_assert (rc == 0 || errno == EINVAL);
+#else
     errno_assert (rc == 0);
+#endif
 #endif
 
     /*  Switch the socket to the non-blocking mode. All underlying sockets
@@ -249,7 +266,11 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
 	if (flags == -1)
         flags = 0;
 	rc = fcntl (self->s, F_SETFL, flags | O_NONBLOCK);
+#if defined NN_HAVE_OSX
+    errno_assert (rc != -1 || errno == EINVAL);
+#else
     errno_assert (rc != -1);
+#endif
 
     /*  On TCP sockets switch off the Nagle's algorithm to get
         the best possible latency. */
@@ -258,14 +279,22 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
         opt = 1;
         rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELAY,
             (const char*) &opt, sizeof (opt));
+#if defined NN_HAVE_OSX
+        errno_assert (rc == 0 || errno == EINVAL);
+#else
         errno_assert (rc == 0);
+#endif
     }
 
     /*  If applicable, disable delayed acknowledgements to improve latency. */
 #if defined TCP_NODELACK
     opt = 1;
     rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));
+#if defined NN_HAVE_OSX
+    errno_assert (rc == 0 || errno == EINVAL);
+#else
     errno_assert (rc == 0);
+#endif
 #endif
 
     /*  On some operating systems IPv4 mapping for IPv6 sockets is disabled
@@ -275,7 +304,11 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
         only = 0;
         rc = setsockopt (self->s, IPPROTO_IPV6, IPV6_V6ONLY,
             (const char*) &only, sizeof (only));
+#if defined NN_HAVE_OSX
+        errno_assert (rc == 0 || errno == EINVAL);
+#else
         errno_assert (rc == 0);
+#endif
     }
 #endif
 }

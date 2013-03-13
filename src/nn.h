@@ -114,7 +114,7 @@ NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 #define NN_EAFNOSUPPORT_DEFINED
 #endif
 #ifndef EPROTO
-#define EPROTO (NN_HAUSNUMERO + 10)
+#define EPROTO (NN_HAUSNUMERO + 11)
 #define NN_EPROTO_DEFINED
 #endif
 

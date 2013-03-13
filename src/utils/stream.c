@@ -47,13 +47,13 @@ static void nn_stream_err (const struct nn_cp_sink **self,
 
 /*  START state. */
 static const struct nn_cp_sink nn_stream_state_start = {
-    nn_stream_hdr_received,
+    NULL,
     nn_stream_hdr_sent,
     NULL,
     NULL,
     nn_stream_err,
     NULL,
-    nn_stream_hdr_timeout,
+    NULL,
     NULL
 };
 
@@ -61,18 +61,6 @@ static const struct nn_cp_sink nn_stream_state_start = {
 static const struct nn_cp_sink nn_stream_state_sent = {
     nn_stream_hdr_received,
     NULL,
-    NULL,
-    NULL,
-    nn_stream_err,
-    NULL,
-    nn_stream_hdr_timeout,
-    NULL
-};
-
-/*  RECEIVED state. */
-static const struct nn_cp_sink nn_stream_state_received = {
-    NULL,
-    nn_stream_hdr_sent,
     NULL,
     NULL,
     nn_stream_err,
@@ -117,17 +105,12 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
     nn_assert (rc == 0);
 
-    /*  Start the header timeout timer. */
     nn_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
-    nn_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
     iobuf.iov_base = "\0\0SP\0\0\0\0";
     iobuf.iov_len = 8;
     nn_usock_send (usock, &iobuf, 1);
-
-    /*  Receive the protocol header from the peer. */
-    nn_usock_recv (usock, self->hdr, 8);
 }
 
 void nn_stream_term (struct nn_stream *self)
@@ -141,27 +124,6 @@ void nn_stream_term (struct nn_stream *self)
     nn_usock_setsink (self->usock, self->original_sink);
 }
 
-static void nn_stream_hdr_received (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
-{
-    struct nn_stream *stream;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-
-    if (stream->sink == &nn_stream_state_sent) {
-        nn_stream_activate (stream);
-        return;
-    }
-
-    if (stream->sink == &nn_stream_state_start) {
-        stream->sink = &nn_stream_state_received;
-        return;
-    }
-
-    /*  This event is not defined in other states. */
-    nn_assert (0);
-}
-
 static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     struct nn_usock *usock)
 {
@@ -169,18 +131,23 @@ static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
 
     stream = nn_cont (self, struct nn_stream, sink);
 
-    if (stream->sink == &nn_stream_state_received) {
-        nn_stream_activate (stream);
-        return;
-    }
+    stream->sink = &nn_stream_state_sent;
 
-    if (stream->sink == &nn_stream_state_start) {
-        stream->sink = &nn_stream_state_sent;
-        return;
-    }
+    /*  Start the header timeout timer. */
+    nn_timer_start (&stream->hdr_timeout, 1000);
 
-    /*  This event is not defined in other states. */
-    nn_assert (0);
+    /*  Receive the protocol header from the peer. */
+    nn_usock_recv (usock, stream->hdr, 8);
+}
+
+static void nn_stream_hdr_received (const struct nn_cp_sink **self,
+    struct nn_usock *usock)
+{
+    struct nn_stream *stream;
+
+    stream = nn_cont (self, struct nn_stream, sink);
+
+    nn_stream_activate (stream);
 }
 
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,

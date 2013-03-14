@@ -53,7 +53,7 @@ static const struct nn_cp_sink nn_stream_state_start = {
     NULL,
     nn_stream_err,
     NULL,
-    NULL,
+    nn_stream_hdr_timeout,
     NULL
 };
 
@@ -105,7 +105,9 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
     nn_assert (rc == 0);
 
+    /*  Start the header timeout timer. */
     nn_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
+    nn_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
     iobuf.iov_base = "\0\0SP\0\0\0\0";
@@ -132,9 +134,6 @@ static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     stream = nn_cont (self, struct nn_stream, sink);
 
     stream->sink = &nn_stream_state_sent;
-
-    /*  Start the header timeout timer. */
-    nn_timer_start (&stream->hdr_timeout, 1000);
 
     /*  Receive the protocol header from the peer. */
     nn_usock_recv (usock, stream->hdr, 8);

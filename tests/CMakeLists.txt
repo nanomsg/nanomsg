@@ -61,6 +61,7 @@ add_libnanomsg_test (emfile)
 add_libnanomsg_test (domain)
 add_libnanomsg_test (trie)
 add_libnanomsg_test (list)
+add_libnanomsg_test (hash)
 
 #  If ZMQ compatibility is required, test it.
 if (ZMQ_COMPAT)

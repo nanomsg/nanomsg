@@ -105,6 +105,9 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
     nn_assert (rc == 0);
 
+    nn_msg_init (&self->inmsg, 0);
+    nn_msg_init (&self->outmsg, 0);
+
     /*  Start the header timeout timer. */
     nn_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
     nn_timer_start (&self->hdr_timeout, 1000);
@@ -117,7 +120,9 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
 
 void nn_stream_term (struct nn_stream *self)
 {
-    /*  TODO:  Close the messages in progress. */
+    /*  Close the messages in progress. */
+    nn_msg_term (&self->inmsg);
+    nn_msg_term (&self->outmsg);
 
     nn_timer_term (&self->hdr_timeout);
     nn_pipebase_term (&self->pipebase);
@@ -196,6 +201,7 @@ static void nn_stream_received (const struct nn_cp_sink **self,
     switch (stream->instate) {
     case NN_STREAM_INSTATE_HDR:
         size = nn_getll (stream->inhdr);
+        nn_msg_term (&stream->inmsg);
         nn_msg_init (&stream->inmsg, (size_t) size);
         if (!size) {
             nn_pipebase_received (&stream->pipebase);
@@ -221,6 +227,7 @@ static void nn_stream_sent (const struct nn_cp_sink **self,
     stream = nn_cont (self, struct nn_stream, sink);
     nn_pipebase_sent (&stream->pipebase);
     nn_msg_term (&stream->outmsg);
+    nn_msg_init (&stream->outmsg, 0);
 }
 
 static void nn_stream_err (const struct nn_cp_sink **self,
@@ -248,6 +255,7 @@ static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
     stream = nn_cont (self, struct nn_stream, pipebase);
 
     /*  Mave the message to the local storage. */
+    nn_msg_term (&stream->outmsg);
     nn_msg_mv (&stream->outmsg, msg);
 
     /*  Serialise the message header. */
@@ -274,6 +282,7 @@ static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Move message content to the user-supplied structure. */
     nn_msg_mv (msg, &stream->inmsg);
+    nn_msg_init (&stream->inmsg, 0);
 
     /* Start receiving new message. */ 
     stream->instate = NN_STREAM_INSTATE_HDR;

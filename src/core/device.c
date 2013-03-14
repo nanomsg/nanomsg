@@ -20,15 +20,20 @@
     IN THE SOFTWARE.
 */
 
-#if defined NN_HAVE_POLL
-
 #include "../nn.h"
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
 
-#include <poll.h>
 #include <string.h>
+
+#if defined NN_HAVE_WINDOWS
+#include "../utils/win.h"
+#elif defined NN_HAVE_POLL
+#include <poll.h>
+#else
+#error
+#endif
 
 /*  Private functions. */
 static int nn_device_loopback (int s);
@@ -183,6 +188,68 @@ int nn_device_loopback (int s)
     }
 }
 
+#if defined NN_HAVE_WINDOWS
+
+static int nn_device_twoway (int s1, int s1rcv, int s1snd,
+    int s2, int s2rcv, int s2snd)
+{
+    int rc;
+    fd_set fds;
+
+    /*  Initialise the pollset. */
+    FD_ZERO (&fds);
+    FD_SET (s1rcv, &fds);
+    FD_SET (s1snd, &fds);
+    FD_SET (s2rcv, &fds);
+    FD_SET (s2snd, &fds);
+
+    while (1) {
+
+        /*  Wait for network events. */
+        rc = select (0, &fds, NULL, NULL, NULL);
+        wsa_assert (rc != SOCKET_ERROR);
+
+        /*  Process the events. When the event is received, we cease polling
+            for it. */
+        if (FD_ISSET (s1rcv, &fds))
+            FD_CLR (s1rcv, &fds);
+        else
+            FD_SET (s1snd, &fds);
+        if (FD_ISSET (s1snd, &fds))
+            FD_CLR (s1snd, &fds);
+        else
+            FD_SET (s1snd, &fds);
+        if (FD_ISSET (s2rcv, &fds))
+            FD_CLR (s2rcv, &fds);
+        else
+            FD_SET (s2snd, &fds);
+        if (FD_ISSET (s2snd, &fds))
+            FD_CLR (s2snd, &fds);
+        else
+            FD_SET (s2snd, &fds);
+
+        /*  If possible, pass the message from s1 to s2. */
+        if (!FD_ISSET (s1rcv, &fds) && !FD_ISSET (s2snd, &fds)) {
+            rc = nn_device_mvmsg (s1, s2, NN_DONTWAIT);
+            if (nn_slow (rc < 0))
+                return -1;
+            FD_SET (s1rcv, &fds);
+            FD_SET (s2snd, &fds);
+        }
+
+        /*  If possible, pass the message from s2 to s1. */
+        if (!FD_ISSET (s2rcv, &fds) && !FD_ISSET (s1snd, &fds)) {
+            rc = nn_device_mvmsg (s2, s1, NN_DONTWAIT);
+            if (nn_slow (rc < 0))
+                return -1;
+            FD_SET (s2rcv, &fds);
+            FD_SET (s1snd, &fds);
+        }
+    }
+}
+
+#elif defined NN_HAVE_POLL
+
 static int nn_device_twoway (int s1, int s1rcv, int s1snd,
     int s2, int s2rcv, int s2snd)
 {
@@ -239,6 +306,10 @@ static int nn_device_twoway (int s1, int s1rcv, int s1snd,
     }
 }
 
+#else
+#error
+#endif
+
 static int nn_device_oneway (int s1, int s1rcv, int s2, int s2snd)
 {
     int rc;
@@ -275,6 +346,3 @@ static int nn_device_mvmsg (int from, int to, int flags)
     errno_assert (rc >= 0);
     return 0;
 }
-
-#endif
-

@@ -156,7 +156,7 @@ int nn_efd_init (struct nn_efd *self)
     win_assert (brc != 0);
 
     /* Initialise the pre-allocated pollset. */
-    FD_ZERO (self->fds);
+    FD_ZERO (&self->fds);
 
     return 0;
 

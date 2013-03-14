@@ -21,6 +21,7 @@
 */
 
 #include "../src/protocols/pubsub/trie.c"
+#include "../src/utils/alloc.c"
 #include "../src/utils/err.c"
 
 int main ()

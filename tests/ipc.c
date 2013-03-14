@@ -66,21 +66,21 @@ int main ()
     /*  Ping-pong test. */
     for (i = 0; i != 1; ++i) {
 
-        rc = nn_send (sc, "ABC", 3, 0);
+        rc = nn_send (sc, "0123456789012345678901234567890123456789", 40, 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 40);
 
         rc = nn_recv (sb, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 40);
 
-        rc = nn_send (sb, "DEF", 3, 0);
+        rc = nn_send (sb, "0123456789012345678901234567890123456789", 40, 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 40);
 
         rc = nn_recv (sc, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        nn_assert (rc == 40);
     }
 
     /*  Batch transfer test. */

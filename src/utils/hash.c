@@ -32,7 +32,7 @@ static uint32_t nn_hash_key (uint32_t key);
 
 void nn_hash_init (struct nn_hash *self)
 {
-    int i;
+    uint32_t i;
 
     self->slots = NN_HASH_INITIAL_SLOTS;
     self->items = 0;
@@ -45,7 +45,7 @@ void nn_hash_init (struct nn_hash *self)
 
 void nn_hash_term (struct nn_hash *self)
 {
-    int i;
+    uint32_t i;
 
     for (i = 0; i != self->slots; ++i)
         nn_list_term (&self->array [i]);
@@ -109,7 +109,7 @@ void nn_hash_insert (struct nn_hash *self, uint32_t key,
 
 void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item)
 {
-    int slot;
+    uint32_t slot;
 
     slot = nn_hash_key (item->key) % self->slots;
     nn_list_erase (&self->array [slot], &item->list);
@@ -117,7 +117,7 @@ void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item)
 
 struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key)
 {
-    int slot;
+    uint32_t slot;
     struct nn_list_item *it;
     struct nn_hash_item *item;
 

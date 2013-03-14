@@ -50,6 +50,7 @@ int main ()
     for (k = 0; k != 10000; ++k) {
         item = nn_hash_get (&hash, k);
         nn_hash_erase (&hash, item);
+        nn_free (item);
     }
     nn_hash_term (&hash);
 

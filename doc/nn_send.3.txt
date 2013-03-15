@@ -18,11 +18,11 @@ The function will send a message containing the data from buffer pointed to
 by 'buf' parameter to the socket 's'. The message will be 'len' bytes long.
 
 Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
-set the buf paramter to point to the pointer to the buffer and 'len' parameter
+set the buf parameter to point to the pointer to the buffer and 'len' parameter
 to _NN_MSG_ constant. In this case the buffer will be deallocated by _nn_send_
 function. Trying to deallocate it afterwards will result in undefined behaviour.
 
-To which of the peers will the message be sent to is determined by
+Which of the peers the message will be sent to is determined by
 the particular socket type.
 
 The 'flags' argument is a combination of the flags defined below:
@@ -35,9 +35,9 @@ to EAGAIN.
 
 RETURN VALUE
 ------------
-If the function succeeds number of bytes in the message is returned. Otherwise,
-negative number is returned and 'errno' is set to to one of the values defined
-below.
+If the function succeeds, the number of bytes in the message is returned.
+Otherwise, a negative number is returned and 'errno' is set to to one of the
+values defined below.
 
 
 ERRORS
@@ -47,8 +47,8 @@ The provided socket is invalid.
 *ENOTSUP*::
 The operation is not supported by this socket type.
 *EFSM*::
-The operation cannot be performed on this socket at the moment because socket is
-not in the appropriate state.  This error may occur with socket types that
+The operation cannot be performed on this socket at the moment because the socket
+is not in the appropriate state.  This error may occur with socket types that
 switch between several states.
 *EAGAIN*::
 Non-blocking mode was requested and the message cannot be sent at the moment.
@@ -57,7 +57,7 @@ The operation was interrupted by delivery of a signal before the message was
 sent.
 *ETIMEDOUT*::
 Individual socket types may define their own specific timeouts. If such timeout
-is hit this error will be returned.
+is hit, this error will be returned.
 *ETERM*::
 The library is terminating.
 

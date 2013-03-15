@@ -726,6 +726,7 @@ void nn_usock_send (struct nn_usock *self,
 {
     int rc;
     int i;
+    int out;
 
     /*  Make sure that there's no outbound operation already in progress. */
     nn_assert (self->out.op == NN_USOCK_OUTOP_NONE);
@@ -733,11 +734,13 @@ void nn_usock_send (struct nn_usock *self,
     /*  Copy the iovecs to the socket. */
     nn_assert (iovcnt <= NN_AIO_MAX_IOVCNT);
     self->out.hdr.msg_iov = self->out.iov;
-    self->out.hdr.msg_iovlen = iovcnt;
-    for (i = 0; i != iovcnt; ++i) {
-        self->out.iov [i].iov_base = iov [i].iov_base;
-        self->out.iov [i].iov_len = iov [i].iov_len;
+    for (i = 0, out = 0; i != iovcnt; ++i) {
+        if(iov [i].iov_len == 0) continue;
+        self->out.iov [out].iov_base = iov [i].iov_base;
+        self->out.iov [out].iov_len = iov [i].iov_len;
+        out++;
     }
+    self->out.hdr.msg_iovlen = out;
     
     /*  Try to send the data immediately. */
     rc = nn_usock_send_raw (self, &self->out.hdr);
@@ -851,6 +854,9 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
             return -EAGAIN;
         }
     }
+    if (hdr->msg_iovlen > 0) {
+        return -EAGAIN;
+    }
 
     return 0;
 }
@@ -891,12 +897,13 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         nbytes = recv (self->s, self->in.batch, NN_USOCK_BATCH_SIZE, 0);
 
     /*  Handle any possible errors. */
-    if (nn_slow (nbytes < 0)) {
+    if (nn_slow (nbytes <= 0)) {
 
         /*  Zero bytes received. */
         if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))
             nbytes = 0;
         else {
+            if (nbytes == 0) return -ECONNRESET;
 
             /*  If the peer closes the connection, return ECONNRESET. */
             errno_assert (errno == ECONNRESET || errno == ENOTCONN ||

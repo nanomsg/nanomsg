@@ -61,8 +61,6 @@ extern "C" {
 #define NN_VERSION \
     NN_MAKE_VERSION(NN_VERSION_MAJOR, NN_VERSION_MINOR, NN_VERSION_PATCH)
 
-/*  Run-time API version detection                                            */
-NN_EXPORT void nn_version (int *major, int *minor, int *patch);
 
 /******************************************************************************/
 /*  Errors.                                                                   */

@@ -68,9 +68,6 @@ Convert an error number into human-readable string::
 Query the names and values of nanomsg symbols::
     linknanomsg:nn_symbol[3]
 
-Report the version of nanomsg library::
-    linknanomsg:nn_version[3]
-
 Start a device::
     linknanomsg:nn_device[3]
 

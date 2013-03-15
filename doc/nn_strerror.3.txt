@@ -42,6 +42,7 @@ if (rc < 0)
 SEE ALSO
 --------
 linknanomsg:nn_errno[3]
+linknanomsg:nn_symbol[3]
 linknanomsg:nanomsg[7]
 
 

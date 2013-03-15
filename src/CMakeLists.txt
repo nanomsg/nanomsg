@@ -47,6 +47,7 @@ add_library (nanomsg SHARED
     core/sock.h
     core/sock.c
     core/device.c
+    core/symbol.c
 
     utils/addr.h
     utils/addr.c

@@ -47,6 +47,7 @@ if (NOT WIN32)
         nn_version.3
         nn_errno.3
         nn_strerror.3
+        nn_symbol.3
         nn_term.3
         nn_allocmsg.3
         nn_freemsg.3

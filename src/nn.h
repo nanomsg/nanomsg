@@ -135,6 +135,12 @@ NN_EXPORT int nn_errno (void);
 /*  Resolves system errors and native errors to human-readable string.        */
 NN_EXPORT const char *nn_strerror (int errnum);
 
+/*  Returns the symbol name (e.g. "NN_REQ") and value at a specified index.   */
+/*  If the index is out-of-range, returns NULL and sets errno to EINVAL       */
+/*  General usage is to start at i=0 and iterate until NULL is returned.      */
+NN_EXPORT const char *nn_symbol (int i, int* value);
+
+
 /******************************************************************************/
 /*  Helper function for shutting down multi-threaded applications.            */
 /******************************************************************************/

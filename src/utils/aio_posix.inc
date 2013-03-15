@@ -854,6 +854,9 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
             return -EAGAIN;
         }
     }
+    if (hdr->msg_iovlen > 0) {
+        return -EAGAIN;
+    }
 
     return 0;
 }

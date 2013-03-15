@@ -726,6 +726,7 @@ void nn_usock_send (struct nn_usock *self,
 {
     int rc;
     int i;
+    int out;
 
     /*  Make sure that there's no outbound operation already in progress. */
     nn_assert (self->out.op == NN_USOCK_OUTOP_NONE);
@@ -733,11 +734,15 @@ void nn_usock_send (struct nn_usock *self,
     /*  Copy the iovecs to the socket. */
     nn_assert (iovcnt <= NN_AIO_MAX_IOVCNT);
     self->out.hdr.msg_iov = self->out.iov;
-    self->out.hdr.msg_iovlen = iovcnt;
+    out = 0;
     for (i = 0; i != iovcnt; ++i) {
-        self->out.iov [i].iov_base = iov [i].iov_base;
-        self->out.iov [i].iov_len = iov [i].iov_len;
+        if (iov [i].iov_len == 0)
+            continue;
+        self->out.iov [out].iov_base = iov [i].iov_base;
+        self->out.iov [out].iov_len = iov [i].iov_len;
+        out++;
     }
+    self->out.hdr.msg_iovlen = out; 
     
     /*  Try to send the data immediately. */
     rc = nn_usock_send_raw (self, &self->out.hdr);

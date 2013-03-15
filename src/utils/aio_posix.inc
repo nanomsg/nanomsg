@@ -891,7 +891,10 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         nbytes = recv (self->s, self->in.batch, NN_USOCK_BATCH_SIZE, 0);
 
     /*  Handle any possible errors. */
-    if (nn_slow (nbytes < 0)) {
+    if (nn_slow (nbytes <= 0)) {
+
+        if (nn_slow (nbytes == 0))
+            return -ECONNRESET; 
 
         /*  Zero bytes received. */
         if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))

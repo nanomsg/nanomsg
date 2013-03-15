@@ -189,9 +189,9 @@ NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
 
 /*  Helper macro. Not to be used directly.                                    */
 #define NN_CMSG_ALIGN(len) \
-    (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1)) 
+    (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1))
 
-/* Extensions to POSIX defined by RFC3542.                                    */                                    
+/* Extensions to POSIX defined by RFC3542.                                    */
 
 #define NN_CMSG_SPACE(len) \
     (CMSG_ALIGN (len) + CMSG_ALIGN (sizeof (struct nn_cmsghdr)))
@@ -230,7 +230,7 @@ NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
 NN_EXPORT int nn_socket (int domain, int protocol);
 NN_EXPORT int nn_close (int s);
 NN_EXPORT int nn_setsockopt (int s, int level, int option, const void *optval,
-    size_t optvallen); 
+    size_t optvallen);
 NN_EXPORT int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen);
 NN_EXPORT int nn_bind (int s, const char *addr);

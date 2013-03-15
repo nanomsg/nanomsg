@@ -37,6 +37,7 @@ struct nn_xreq {
 int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr);
 void nn_xreq_term (struct nn_xreq *self);
 
+int nn_xreq_ispeer (int socktype);
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe);

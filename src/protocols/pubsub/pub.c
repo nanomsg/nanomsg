@@ -53,6 +53,7 @@ static int nn_pub_init (struct nn_pub *self,
 static void nn_pub_term (struct nn_pub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_pub_ispeer (int socktype);
 static void nn_pub_destroy (struct nn_sockbase *self);
 static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -66,6 +67,7 @@ static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     NN_SOCKBASE_FLAG_NORECV,
+    nn_pub_ispeer,
     nn_pub_destroy,
     nn_pub_add,
     nn_pub_rm,
@@ -77,6 +79,11 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_setopt,
     nn_pub_getopt
 };
+
+static int nn_pub_ispeer (int socktype)
+{
+     return socktype == NN_SUB ? 1 : 0;
+}
 
 static int nn_pub_init (struct nn_pub *self,
     const struct nn_sockbase_vfptr *vfptr)

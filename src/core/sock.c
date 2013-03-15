@@ -210,6 +210,22 @@ struct nn_cp *nn_sock_getcp (struct nn_sock *self)
     return &((struct nn_sockbase*) self)->cp;
 }
 
+int nn_sock_ispeer (struct nn_sock *self, int socktype)
+{
+    struct nn_sockbase *sockbase;
+
+    sockbase = (struct nn_sockbase*) self;
+
+    /*  If the peer implements a different SP protocol,
+        it is not a valid peer. */
+    if ((sockbase->protocol & 0xfff0) != (socktype  & 0xfff0))
+        return 0;
+
+    /*  As long as the peer speaks the same protocol, socket type itself
+        decides which socket types are to be accepted. */
+    return sockbase->vfptr->ispeer (socktype);
+}
+
 int nn_sock_setopt (struct nn_sock *self, int level, int option,
     const void *optval, size_t optvallen)
 {

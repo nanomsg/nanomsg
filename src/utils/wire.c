@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -27,6 +27,18 @@
 #else
 #include <arpa/inet.h>
 #endif
+
+uint16_t nn_gets (const uint8_t *buf)
+{
+    return (((uint16_t) buf [0]) << 8) |
+           ((uint16_t) buf [1]);
+}
+
+void nn_puts (uint8_t *buf, uint16_t val)
+{
+    buf [0] = (uint8_t) (((val) >> 8) & 0xff);
+    buf [1] = (uint8_t) (val & 0xff);
+}
 
 uint32_t nn_getl (const uint8_t *buf)
 {

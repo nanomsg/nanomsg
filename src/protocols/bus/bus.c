@@ -46,6 +46,7 @@ static int nn_bus_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     0,
+    nn_xbus_ispeer,
     nn_bus_destroy,
     nn_xbus_add,
     nn_xbus_rm,

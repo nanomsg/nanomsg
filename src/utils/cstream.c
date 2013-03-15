@@ -198,7 +198,8 @@ static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
 
     cstream = nn_cont (self, struct nn_cstream, sink);
 
-    /*  Set current reconnect interval to the value of NN_RECONNECT_IVL. */
+    /*  TODO: Set current reconnect interval to the value of
+        NN_RECONNECT_IVL. */
 
     /*  Connect succeeded. Switch to the session state machine. */
     cstream->sink = &nn_cstream_state_connected;

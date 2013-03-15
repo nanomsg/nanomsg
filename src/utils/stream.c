@@ -37,7 +37,6 @@ static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     struct nn_usock *usock);
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
     struct nn_timer *timer);
-static void nn_stream_activate (struct nn_stream *self);
 static void nn_stream_received (const struct nn_cp_sink **self,
     struct nn_usock *usock);
 static void nn_stream_sent (const struct nn_cp_sink **self,
@@ -93,6 +92,8 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     struct nn_usock *usock)
 {
     int rc;
+    int protocol;
+    size_t sz;
     struct nn_iobuf iobuf;
 
     /*  Redirect the underlying socket's events to this state machine. */
@@ -101,7 +102,6 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     self->original_sink = nn_usock_setsink (usock, &self->sink);
 
     /*  Initialise the pipe to communicate with the user. */
-    /*  TODO: Socket type may reject the pipe. What then? */
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
     nn_assert (rc == 0);
 
@@ -113,7 +113,13 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
-    iobuf.iov_base = "\0\0SP\0\0\0\0";
+    sz = sizeof (protocol);
+    nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_PROTOCOL, &protocol, &sz);
+    errnum_assert (rc == 0, -rc);
+    nn_assert (sz == sizeof (protocol));
+    memcpy (self->protohdr, "\0\0SP\0\0\0\0", 8);
+    nn_puts (self->protohdr + 4, (uint16_t) protocol);
+    iobuf.iov_base = self->protohdr;
     iobuf.iov_len = 8;
     nn_usock_send (usock, &iobuf, 1);
 }
@@ -141,17 +147,32 @@ static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     stream->sink = &nn_stream_state_sent;
 
     /*  Receive the protocol header from the peer. */
-    nn_usock_recv (usock, stream->hdr, 8);
+    nn_usock_recv (usock, stream->protohdr, 8);
 }
 
 static void nn_stream_hdr_received (const struct nn_cp_sink **self,
     struct nn_usock *usock)
 {
     struct nn_stream *stream;
+    int protocol;
 
     stream = nn_cont (self, struct nn_stream, sink);
 
-    nn_stream_activate (stream);
+    stream->sink = &nn_stream_state_active;
+    nn_timer_stop (&stream->hdr_timeout);
+
+    /*  TODO: If it does not conform, drop the connection. */
+    protocol = nn_gets (stream->protohdr + 4);
+    if (!nn_pipebase_ispeer (&stream->pipebase, protocol))
+        nn_assert (0);
+
+    /*  Connection is ready for sending. Make outpipe available
+        to the SP socket. */
+    nn_pipebase_activate (&stream->pipebase);
+
+    /*  Start waiting for incoming messages. First, read the 8-byte size. */
+    stream->instate = NN_STREAM_INSTATE_HDR;
+    nn_usock_recv (stream->usock, stream->inhdr, 8);
 }
 
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
@@ -170,25 +191,6 @@ static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
     /*  Notify the parent state machine about the failure. */
     nn_assert ((*original_sink)->err);
     (*original_sink)->err (original_sink, stream->usock, ETIMEDOUT);
-}
-
-static void nn_stream_activate (struct nn_stream *self)
-{
-    self->sink = &nn_stream_state_active;
-    nn_timer_stop (&self->hdr_timeout);
-
-    /*  Check the header. */
-    /*  TODO: If it does not conform, drop the connection. */
-    if (memcmp (self->hdr, "\0\0SP\0\0\0\0", 8) != 0)
-        nn_assert (0);
-
-    /*  Connection is ready for sending. Make outpipe available
-        to the SP socket. */
-    nn_pipebase_activate (&self->pipebase);
-
-    /*  Start waiting for incoming messages. First, read the 8-byte size. */
-    self->instate = NN_STREAM_INSTATE_HDR;
-    nn_usock_recv (self->usock, self->inhdr, 8);
 }
 
 static void nn_stream_received (const struct nn_cp_sink **self,

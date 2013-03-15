@@ -38,6 +38,7 @@ int nn_xrespondent_init (struct nn_xrespondent *self,
     const struct nn_sockbase_vfptr *vfptr);
 void nn_xrespondent_term (struct nn_xrespondent *self);
 
+int nn_xrespondent_ispeer (int socktype);
 int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe);

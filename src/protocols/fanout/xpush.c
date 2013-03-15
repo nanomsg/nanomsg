@@ -47,6 +47,7 @@ static int nn_xpush_init (struct nn_xpush *self,
 static void nn_xpush_term (struct nn_xpush *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_xpush_ispeer (int socktype);
 static void nn_xpush_destroy (struct nn_sockbase *self);
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -60,6 +61,7 @@ static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     NN_SOCKBASE_FLAG_NORECV,
+    nn_xpush_ispeer,
     nn_xpush_destroy,
     nn_xpush_add,
     nn_xpush_rm,
@@ -71,6 +73,11 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_setopt,
     nn_xpush_getopt
 };
+
+static int nn_xpush_ispeer (int socktype)
+{
+    return socktype == NN_PULL ? 1 : 0;
+}
 
 static int nn_xpush_init (struct nn_xpush *self,
     const struct nn_sockbase_vfptr *vfptr)

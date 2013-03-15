@@ -40,6 +40,7 @@ static void nn_xrep_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
     0,
+    nn_xrep_ispeer,
     nn_xrep_destroy,
     nn_xrep_add,
     nn_xrep_rm,
@@ -51,6 +52,11 @@ static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
     nn_xrep_setopt,
     nn_xrep_getopt
 };
+
+int nn_xrep_ispeer (int socktype)
+{
+    return socktype == NN_REQ ? 1 : 0;
+}
 
 int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr)
 {

@@ -45,6 +45,7 @@ static int nn_sub_init (struct nn_sub *self,
 static void nn_sub_term (struct nn_sub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_sub_ispeer (int socktype);
 static void nn_sub_destroy (struct nn_sockbase *self);
 static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -58,6 +59,7 @@ static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     NN_SOCKBASE_FLAG_NOSEND,
+    nn_sub_ispeer,
     nn_sub_destroy,
     nn_sub_add,
     nn_sub_rm,
@@ -69,6 +71,11 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_setopt,
     nn_sub_getopt
 };
+
+static int nn_sub_ispeer (int socktype)
+{
+    return socktype == NN_PUB ? 1 : 0;
+}
 
 static int nn_sub_init (struct nn_sub *self,
     const struct nn_sockbase_vfptr *vfptr)

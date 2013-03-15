@@ -44,6 +44,7 @@ CT_ASSERT (sizeof (uint64_t) >= sizeof (struct nn_pipe*));
 static void nn_xbus_destroy (struct nn_sockbase *self);
 static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     0,
+    nn_xbus_ispeer,
     nn_xbus_destroy,
     nn_xbus_add,
     nn_xbus_rm,
@@ -55,6 +56,11 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_setopt,
     nn_xbus_getopt
 };
+
+int nn_xbus_ispeer (int socktype)
+{
+    return socktype == NN_BUS ? 1 : 0;
+}
 
 int nn_xbus_init (struct nn_xbus *self,
     const struct nn_sockbase_vfptr *vfptr)

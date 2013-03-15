@@ -37,6 +37,7 @@ static void nn_xrespondent_destroy (struct nn_sockbase *self);
 /*  Implementation of nn_sockbase's virtual functions. */
 static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
     0,
+    nn_xrespondent_ispeer,
     nn_xrespondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,
@@ -48,6 +49,11 @@ static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
     nn_xrespondent_setopt,
     nn_xrespondent_getopt
 };
+
+int nn_xrespondent_ispeer (int socktype)
+{
+    return socktype == NN_SURVEYOR ? 1 : 0;
+}
 
 int nn_xrespondent_init (struct nn_xrespondent *self,
     const struct nn_sockbase_vfptr *vfptr)

@@ -88,6 +88,12 @@ struct nn_sockbase_vfptr {
     /*  Returns any combination of the flags defined above. */
     int flags;
 
+    /*  Returns 1 if the supplied socket type is a valid peer for this socket,
+        0 otherwise. Note that the validation is done only within a single
+        SP protocol. Peers speaking ather SP protocols are discarded by the
+        core and socket is not even asked to validate them. */
+    int (*ispeer) (int socktype);
+
     /*  Deallocate the socket. */
     void (*destroy) (struct nn_sockbase *self);
 

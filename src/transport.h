@@ -149,6 +149,9 @@ void nn_pipebase_sent (struct nn_pipebase *self);
 /*  Returns the default completion port associated with the pipe. */
 struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self);
 
+/*  Returns 1 is the specified socket type is a valid peer for this socket,
+    or 0 otherwise. */
+int nn_pipebase_ispeer (struct nn_pipebase *self, int socktype);
 
 /******************************************************************************/
 /*  The transport class.                                                      */

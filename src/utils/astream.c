@@ -80,7 +80,8 @@ void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
     nn_list_insert (&bstream->astreams, &self->item,
         nn_list_end (&bstream->astreams));
 
-    /*  Note: may fail and terminate me - do not reference self after this point! */
+    /*  Note: may fail and terminate me - do not reference self after
+        this point! */
     nn_stream_init (&self->stream, epbase, &self->usock);
 }
 

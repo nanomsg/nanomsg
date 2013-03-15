@@ -97,6 +97,11 @@ struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self)
     return nn_sock_getcp (self->sock);
 }
 
+int nn_pipebase_ispeer (struct nn_pipebase *self, int socktype)
+{
+    return nn_sock_ispeer (self->sock, socktype);
+}
+
 void nn_pipe_setdata (struct nn_pipe *self, void *data)
 {
     ((struct nn_pipebase*) self)->data = data;

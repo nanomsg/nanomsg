@@ -43,6 +43,7 @@ static int nn_xpull_init (struct nn_xpull *self,
 static void nn_xpull_term (struct nn_xpull *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_xpull_ispeer (int socktype);
 static void nn_xpull_destroy (struct nn_sockbase *self);
 static int nn_xpull_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -56,6 +57,7 @@ static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     NN_SOCKBASE_FLAG_NOSEND,
+    nn_xpull_ispeer,
     nn_xpull_destroy,
     nn_xpull_add,
     nn_xpull_rm,
@@ -67,6 +69,11 @@ static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     nn_xpull_setopt,
     nn_xpull_getopt
 };
+
+static int nn_xpull_ispeer (int socktype)
+{
+    return socktype == NN_PUSH ? 1 : 0;
+}
 
 static int nn_xpull_init (struct nn_xpull *self,
     const struct nn_sockbase_vfptr *vfptr)

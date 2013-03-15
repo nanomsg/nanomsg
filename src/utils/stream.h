@@ -46,8 +46,8 @@ struct nn_stream {
     /*  The underlying socket. */
     struct nn_usock *usock;
 
-    /*  Protocol header received from the peer. */
-    uint8_t hdr [8];
+    /*  Protocol header. */
+    uint8_t protohdr [8];
 
     /*  If header is not received in certain amount of time, connection is
         closed. This solves a rare race condition in TCP. It also minimises
@@ -67,7 +67,7 @@ struct nn_stream {
     /*  State of the outbound state machine. */
     int outstate;
 
-    /*  Buffer for the header of outgoing message. */
+    /*  Buffer used to store the header of outgoing message. */
     uint8_t outhdr [8];
 
     /*  Message being sent at the moment. */

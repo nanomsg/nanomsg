@@ -41,6 +41,10 @@ void nn_sock_zombify (struct nn_sock *self);
 /*  Returns default completion port associated with the socket. */
 struct nn_cp *nn_sock_getcp (struct nn_sock *self);
 
+/*  Returns 1 if the specified socket type is a valid peer for this socket,
+    0 otherwise. */
+int nn_sock_ispeer (struct nn_sock *self, int socktype);
+
 /*  Add new endpoint to the socket. */
 int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     int (*factory) (const char *addr, void *hint, struct nn_epbase **ep));

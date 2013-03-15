@@ -47,6 +47,7 @@ static int nn_xsink_init (struct nn_xsink *self,
 static void nn_xsink_term (struct nn_xsink *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_xsink_ispeer (int socktype);
 static void nn_xsink_destroy (struct nn_sockbase *self);
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -60,6 +61,7 @@ static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
     NN_SOCKBASE_FLAG_NOSEND,
+    nn_xsink_ispeer,
     nn_xsink_destroy,
     nn_xsink_add,
     nn_xsink_rm,
@@ -71,6 +73,11 @@ static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
     nn_xsink_setopt,
     nn_xsink_getopt
 };
+
+static int nn_xsink_ispeer (int socktype)
+{
+    return socktype == NN_SOURCE ? 1 : 0;
+}
 
 static int nn_xsink_init (struct nn_xsink *self,
     const struct nn_sockbase_vfptr *vfptr)

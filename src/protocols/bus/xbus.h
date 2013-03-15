@@ -45,6 +45,7 @@ int nn_xbus_init (struct nn_xbus *self,
     const struct nn_sockbase_vfptr *vfptr);
 void nn_xbus_term (struct nn_xbus *self);
 
+int nn_xbus_ispeer (int socktype);
 int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe);

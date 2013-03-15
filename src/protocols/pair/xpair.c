@@ -43,6 +43,7 @@ static int nn_xpair_init (struct nn_xpair *self,
 static void nn_xpair_term (struct nn_xpair *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static int nn_xpair_ispeer (int socktype);
 static void nn_xpair_destroy (struct nn_sockbase *self);
 static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -57,6 +58,7 @@ static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     0,
+    nn_xpair_ispeer,
     nn_xpair_destroy,
     nn_xpair_add,
     nn_xpair_rm,
@@ -68,6 +70,11 @@ static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_setopt,
     nn_xpair_getopt
 };
+
+static int nn_xpair_ispeer (int socktype)
+{
+    return socktype == NN_PAIR ? 1 : 0;
+}
 
 static int nn_xpair_init (struct nn_xpair *self,
     const struct nn_sockbase_vfptr *vfptr)

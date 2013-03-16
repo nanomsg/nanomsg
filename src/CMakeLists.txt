@@ -24,7 +24,7 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_library (nanomsg SHARED
+set (NN_SOURCES
     nn.h
     transport.h
     protocol.h
@@ -75,7 +75,7 @@ add_library (nanomsg SHARED
     utils/dist.c
     utils/efd.h
     utils/efd.c
-    utils/err.h 
+    utils/err.h
     utils/err.c
     utils/excl.h
     utils/excl.c
@@ -188,7 +188,10 @@ add_library (nanomsg SHARED
 
     transports/tcp/tcp.h
     transports/tcp/tcp.c
-    )
+)
+
+add_library (nanomsg SHARED ${NN_SOURCES})
+set_target_properties (nanomsg PROPERTIES VERSION "${NN_VERSION_STR}")
 
 add_definitions (-DNN_EXPORTS)
 

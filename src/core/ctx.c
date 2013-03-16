@@ -131,16 +131,6 @@ static void nn_ctx_add_socktype (struct nn_socktype *socktype);
     It returns the ID of the newly created endpoint. */
 static int nn_ctx_create_ep (int fd, const char *addr, int bind);
 
-void nn_version (int *major, int *minor, int *patch)
-{
-    if (major)
-        *major = NN_VERSION_MAJOR;
-    if (minor)
-        *minor = NN_VERSION_MINOR;
-    if (patch)
-        *patch = NN_VERSION_PATCH;
-}
-
 int nn_errno (void)
 {
     return nn_err_errno ();

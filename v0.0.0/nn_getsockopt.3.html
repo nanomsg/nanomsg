@@ -595,6 +595,22 @@ the option.</p></div>
 (<em>NN_SOL_SOCKET</em> level). The options are as follows:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
+<strong>NN_DOMAIN</strong>
+</dt>
+<dd>
+<p>
+    Returns the domain constant as it was passed to <em>nn_socket()</em>.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_PROTOCOL</strong>
+</dt>
+<dd>
+<p>
+    Returns the protocol constant as it was passed to <em>nn_socket()</em>.
+</p>
+</dd>
+<dt class="hdlist1">
 <strong>NN_LINGER</strong>
 </dt>
 <dd>
@@ -697,7 +713,8 @@ the option.</p></div>
     read from or written to. The type of the option is same as the type of
     file descriptor on the platform. That is, int on POSIX-complaint platforms
     and SOCKET on Windows. The descriptor becomes invalid and should not be
-    used any more once the socket is closed.
+    used any more once the socket is closed. This socket option is not available
+    for unidirectional recv-only socket types.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -710,7 +727,8 @@ the option.</p></div>
     read from or written to. The type of the option is same as the type of
     file descriptor on the platform. That is, int on POSIX-complaint platforms
     and SOCKET on Windows. The descriptor becomes invalid and should not be
-    used any more once the socket is closed.
+    used any more once the socket is closed. This socket option is not available
+    for unidirectional send-only socket types.
 </p>
 </dd>
 </dl></div>
@@ -784,7 +802,7 @@ nn_getsockopt (s, NN_SOL_SOCKET, NN_LINGER, &amp;linger, &amp;sz);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-24 21:41:32 CET
+Last updated 2013-03-14 09:50:40 CET
 </div>
 </div>
 </body>

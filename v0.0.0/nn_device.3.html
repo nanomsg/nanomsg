@@ -581,9 +581,11 @@ nn_device(3) Manual Page
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Starts a device to forward messages between two sockets. <em>nn_device</em> function
-loops infinitely and sends and messages received from <em>s1</em> to <em>s2</em> and vice
-versa.</p></div>
+<div class="paragraph"><p>Starts a device to forward messages between two sockets. If both sockets are
+valid, <em>nn_device</em> function loops and sends and messages received from <em>s1</em> to
+<em>s2</em> and vice versa. If only one socket is valid and the other is negative,
+<em>nn_device</em> works in a "loopback" mode&#8201;&#8212;&#8201;it loops and sends any messages
+received from the socket back to itself.</p></div>
 <div class="paragraph"><p>To break the loop and make <em>nn_device</em> function exit use
 <a href="nn_term.3.html">nn_term(3)</a> function.</p></div>
 </div>
@@ -605,6 +607,16 @@ value and sets <em>errno</em> to one of the values defined below.</p></div>
 <dd>
 <p>
 One of the provided sockets is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+Either one of the socket is not an AF_SP_RAW socket; or the two sockets don&#8217;t
+belong to the same protocol; or the directionality of the sockets doesn&#8217;t fit
+(e.g. attempt to join two SINK sockets to form a device).
 </p>
 </dd>
 <dt class="hdlist1">
@@ -658,7 +670,7 @@ nn_device (s1, s2);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-24 06:25:40 CET
+Last updated 2013-03-14 09:50:40 CET
 </div>
 </div>
 </body>

@@ -584,10 +584,10 @@ nn_send(3) Manual Page
 <div class="paragraph"><p>The function will send a message containing the data from buffer pointed to
 by <em>buf</em> parameter to the socket <em>s</em>. The message will be <em>len</em> bytes long.</p></div>
 <div class="paragraph"><p>Alternatively, to send a buffer allocated by <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a> function
-set the buf paramter to point to the pointer to the buffer and <em>len</em> parameter
+set the buf parameter to point to the pointer to the buffer and <em>len</em> parameter
 to <em>NN_MSG</em> constant. In this case the buffer will be deallocated by <em>nn_send</em>
 function. Trying to deallocate it afterwards will result in undefined behaviour.</p></div>
-<div class="paragraph"><p>To which of the peers will the message be sent to is determined by
+<div class="paragraph"><p>Which of the peers the message will be sent to is determined by
 the particular socket type.</p></div>
 <div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
 <div class="dlist"><dl>
@@ -607,9 +607,9 @@ to EAGAIN.
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
-negative number is returned and <em>errno</em> is set to to one of the values defined
-below.</p></div>
+<div class="paragraph"><p>If the function succeeds, the number of bytes in the message is returned.
+Otherwise, a negative number is returned and <em>errno</em> is set to to one of the
+values defined below.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -637,8 +637,8 @@ The operation is not supported by this socket type.
 </dt>
 <dd>
 <p>
-The operation cannot be performed on this socket at the moment because socket is
-not in the appropriate state.  This error may occur with socket types that
+The operation cannot be performed on this socket at the moment because the socket
+is not in the appropriate state.  This error may occur with socket types that
 switch between several states.
 </p>
 </dd>
@@ -665,7 +665,7 @@ sent.
 <dd>
 <p>
 Individual socket types may define their own specific timeouts. If such timeout
-is hit this error will be returned.
+is hit, this error will be returned.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -709,7 +709,7 @@ assert (nbytes == 3);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-02-24 06:25:40 CET
+Last updated 2013-03-15 21:38:01 CET
 </div>
 </div>
 </body>

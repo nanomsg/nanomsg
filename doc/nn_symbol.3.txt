@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-const char *nn_symbol (int i, int* value);
+*const char *nn_symbol (int 'i', int '*value');*
 
 
 DESCRIPTION

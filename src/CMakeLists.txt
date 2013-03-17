@@ -191,6 +191,12 @@ set (NN_SOURCES
     transports/tcp/tcp.c
 )
 
+#  Here we cause symbols not to be exported from the library unless
+#  they are explicitly marked by NN_EXPORT specifier.
+if (CMAKE_COMPILER_IS_GNUCC)
+    add_definitions (-fvisibility=hidden)
+endif ()
+
 add_library (nanomsg SHARED ${NN_SOURCES})
 set_target_properties (nanomsg PROPERTIES VERSION "${NN_VERSION_STR}")
 

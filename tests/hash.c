@@ -21,6 +21,7 @@
 */
 
 #include "../src/utils/err.c"
+#include "../src/utils/list.c"
 #include "../src/utils/hash.c"
 #include "../src/utils/alloc.c"
 

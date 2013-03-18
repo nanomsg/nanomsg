@@ -193,7 +193,9 @@ set (NN_SOURCES
 
 #  Here we cause symbols not to be exported from the library unless
 #  they are explicitly marked by NN_EXPORT specifier.
-if (CMAKE_COMPILER_IS_GNUCC)
+#  Note: For MSVC there's no need for defining a special option. With MSVC
+#  symbols are not exported from the library unless explicitly said so.
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER MATCHES "/(icpc|icc)$")
     add_definitions (-fvisibility=hidden)
 endif ()
 

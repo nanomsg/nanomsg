@@ -17,7 +17,7 @@ DESCRIPTION
 -----------
 To help with shutdown of multi-threaded programs nanomsg provides the
 _nn_term()_ function which informs all the open sockets that process
-terminaion is underway.
+termination is underway.
 
 If a socket is blocked inside a blocking function, such as
 linknanomsg:nn_recv[3], it will be unblocked  and ETERM error will be returned

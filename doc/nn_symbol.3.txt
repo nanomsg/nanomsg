@@ -22,6 +22,11 @@ library versions.
 Typically a client will iterate through the symbols until nn_symbol returns
 NULL in order to collect all the symbols.  
 
+All symbols exposed by 'nn_symbol' are available directly in the C API,
+generally as preprocessor macros.  Thus, this function is useful mostly for
+language bindings that can't parse the header file and rely on retrieving the
+symbols in the runtime.
+
 
 RETURN VALUE
 ------------

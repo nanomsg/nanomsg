@@ -84,6 +84,11 @@ void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
     errnum_assert (rc == 0, -rc);
 }
 
+int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
+{
+    return nn_sock_ispeer (self->sock, socktype);
+}
+
 void nn_ep_close (struct nn_ep *self)
 {
     struct nn_epbase *epbase;

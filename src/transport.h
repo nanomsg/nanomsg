@@ -85,6 +85,10 @@ const char *nn_epbase_getaddr (struct nn_epbase *self);
 void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
     void *optval, size_t *optvallen);
 
+/*  Returns 1 is the specified socket type is a valid peer for this socket,
+    or 0 otherwise. */
+int nn_epbase_ispeer (struct nn_epbase *self, int socktype);
+
 /******************************************************************************/
 /*  The base class for pipes.                                                 */
 /******************************************************************************/

@@ -53,6 +53,23 @@ const char *nn_inprocc_getaddr (struct nn_inprocc *self)
     return nn_epbase_getaddr (&self->epbase);
 }
 
+int nn_inprocc_socktype (struct nn_inprocc *self)
+{
+    int socktype;
+    size_t sz;
+
+    sz = sizeof (socktype);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+        &socktype, &sz);
+    nn_assert (sz == sizeof (socktype));
+    return socktype;
+}
+
+int nn_inprocc_ispeer (struct nn_inprocc *self, int socktype)
+{
+    return nn_epbase_ispeer (&self->epbase, socktype);
+}
+
 void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)
 {
     /*  This should never happen. If the endpoint is already connected it

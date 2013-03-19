@@ -63,6 +63,7 @@ add_libnanomsg_test (trie)
 add_libnanomsg_test (list)
 add_libnanomsg_test (hash)
 add_libnanomsg_test (symbol)
+add_libnanomsg_test (separation)
 
 #  If ZMQ compatibility is required, test it.
 if (ZMQ_COMPAT)

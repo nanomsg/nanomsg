@@ -108,6 +108,9 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
         inprocc = nn_cont (it, struct nn_inprocc, list);
         if (strncmp (addr, nn_inprocc_getaddr (inprocc),
               NN_SOCKADDR_MAX) == 0) {
+            if (!nn_inprocb_ispeer (inprocb, nn_inprocc_socktype (inprocc)) ||
+                  !nn_inprocc_ispeer (inprocc, nn_inprocb_socktype (inprocb)))
+                continue;
             pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
             alloc_assert (pipe);
             nn_msgpipe_init (pipe, inprocb, inprocc);
@@ -143,9 +146,12 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
           it = nn_list_next (&self.bound, it)) {
         inprocb = nn_cont (it, struct nn_inprocb, list);
         if (strcmp (addr, nn_inprocb_getaddr (inprocb)) == 0) {
-            pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
-            alloc_assert (pipe);
-            nn_msgpipe_init (pipe, inprocb, inprocc);
+            if (nn_inprocb_ispeer (inprocb, nn_inprocc_socktype (inprocc)) &&
+                  nn_inprocc_ispeer (inprocc, nn_inprocb_socktype (inprocb))) {
+                pipe = nn_alloc (sizeof (struct nn_msgpipe), "msgpipe");
+                alloc_assert (pipe);
+                nn_msgpipe_init (pipe, inprocb, inprocc);
+            }
             break;
         }
     }

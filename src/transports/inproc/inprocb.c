@@ -51,6 +51,23 @@ const char *nn_inprocb_getaddr (struct nn_inprocb *self)
     return nn_epbase_getaddr (&self->epbase);
 }
 
+int nn_inprocb_socktype (struct nn_inprocb *self)
+{
+    int socktype;
+    size_t sz;
+
+    sz = sizeof (socktype);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+        &socktype, &sz);
+    nn_assert (sz == sizeof (socktype));
+    return socktype;
+}
+
+int nn_inprocb_ispeer (struct nn_inprocb *self, int socktype)
+{
+    return nn_epbase_ispeer (&self->epbase, socktype);
+}
+
 void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)
 {
     nn_assert (!(self->flags & NN_INPROCB_FLAG_TERMINATING));

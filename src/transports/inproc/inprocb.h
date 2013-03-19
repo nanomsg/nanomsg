@@ -49,6 +49,8 @@ struct nn_inprocb {
 
 int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint);
 const char *nn_inprocb_getaddr (struct nn_inprocb *self);
+int nn_inprocb_socktype (struct nn_inprocb *self);
+int nn_inprocb_ispeer (struct nn_inprocb *self, int socktype);
 void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
 void nn_inprocb_rm_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
 

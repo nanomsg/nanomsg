@@ -83,6 +83,11 @@ static const struct sym_value_name sym_value_names[] = {
     {NN_DOMAIN, "NN_DOMAIN"},
     {NN_PROTOCOL, "NN_PROTOCOL"},
 
+    {NN_SUBSCRIBE, "NN_SUBSCRIBE"},
+    {NN_UNSUBSCRIBE, "NN_UNSUBSCRIBE"},
+    {NN_RESEND_IVL, "NN_RESEND_IVL"},
+    {NN_DEADLINE, "NN_DEADLINE"},
+
     {NN_DONTWAIT, "NN_DONTWAIT"},
 
     {EADDRINUSE, "EADDRINUSE"},

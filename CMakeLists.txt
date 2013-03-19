@@ -23,6 +23,7 @@
 cmake_minimum_required (VERSION 2.8)
 include (CheckIncludeFiles)
 include (CheckSymbolExists)
+include (CheckCSourceCompiles)
 
 project (nanomsg)
 enable_testing ()
@@ -131,6 +132,20 @@ list (REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES anl)
 list (REMOVE_ITEM CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 if (NN_HAVE_GETADDRINFO_A)
     add_definitions (-DNN_HAVE_GETADDRINFO_A)
+endif ()
+
+check_c_source_compiles ("
+    #include <stdint.h>
+    int main()
+    {
+        volatile uint32_t n = 0;
+        __sync_fetch_and_add (&n, 1);
+        __sync_fetch_and_sub (&n, 1);
+        return 0;
+    }
+    " NN_HAVE_GCC_ATOMIC_BUILTINS)
+if (NN_HAVE_GCC_ATOMIC_BUILTINS)
+    add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
 
 #  Decide which features to actually use.

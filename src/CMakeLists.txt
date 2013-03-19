@@ -59,6 +59,8 @@ set (NN_SOURCES
     utils/alloc.c
     utils/astream.h
     utils/astream.c
+    utils/atomic.h
+    utils/atomic.c
     utils/bstream.h
     utils/bstream.c
     utils/chunk.h

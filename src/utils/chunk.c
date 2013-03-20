@@ -53,6 +53,7 @@ struct nn_chunk *nn_chunk_alloc (size_t size, int type)
     /*  Fill in the chunk header. */
     self->tag = NN_CHUNK_TAG;
     self->offset = 0;
+    nn_atomic_init (&self->refcount, 1);
     self->vfptr = &nn_chunk_default_vfptr;
     self->size = size;
 
@@ -61,13 +62,27 @@ struct nn_chunk *nn_chunk_alloc (size_t size, int type)
 
 void nn_chunk_free (struct nn_chunk *self)
 {
-    /*  Mark chunk as deallocated. */
     nn_assert (self->tag == NN_CHUNK_TAG);
-    self->tag = 0;
 
-    /*  Compute the beginning of the allocated block and deallocate it
-        according to the allocation mechanism specified. */
-    self->vfptr->free (((uint8_t*) self) - self->offset);
+    /*  Decrement the reference count. Actual deallocation happens only if
+        it drops to zero. */
+    if (nn_atomic_dec (&self->refcount, 1) <= 1) {
+        
+        /*  Mark chunk as deallocated. */
+        self->tag = 0;
+
+        nn_atomic_term (&self->refcount);
+
+        /*  Compute the beginning of the allocated block and deallocate it
+            according to the allocation mechanism specified. */
+        self->vfptr->free (((uint8_t*) self) - self->offset);
+    }
+}
+
+void nn_chunk_addref (struct nn_chunk *self, uint32_t n)
+{
+    nn_assert (self->tag == NN_CHUNK_TAG);
+    nn_atomic_inc (&self->refcount, n);
 }
 
 static void nn_chunk_default_free (void *p)

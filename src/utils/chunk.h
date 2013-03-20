@@ -23,6 +23,8 @@
 #ifndef NN_CHUNK_INCLUDED
 #define NN_CHUNK_INCLUDED
 
+#include "atomic.h"
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -41,11 +43,14 @@ struct nn_chunk {
         nn_chunk structure. */
     uint32_t offset;
 
-    /*  Virtual functions. */
-    const struct nn_chunk_vfptr *vfptr;
+    /*  Number of places the chunk is referenced from. */
+    struct nn_atomic refcount;
 
     /*  Size of the buffer in bytes. */
     size_t size;
+
+    /*  Virtual functions. */
+    const struct nn_chunk_vfptr *vfptr;
 
     /*  Actual message buffer follows the nn_chunk structure in the memory. */
 };
@@ -55,6 +60,9 @@ struct nn_chunk *nn_chunk_alloc (size_t size, int type);
 
 /*  Deallocates the chunk. */
 void nn_chunk_free (struct nn_chunk *self);
+
+/*  Increases the reference count of the chunk by 'n'. */
+void nn_chunk_addref (struct nn_chunk *self, uint32_t n);
 
 /*  Converts data pointer to chunk pointer. Returns NULL in the case of
     invalid chunk. */

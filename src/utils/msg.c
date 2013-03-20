@@ -54,4 +54,15 @@ void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src)
     nn_chunkref_cp (&dst->body, &src->body);
 }
 
+void nn_msg_bulkcopy_start (struct nn_msg *self, uint32_t copies)
+{
+    nn_chunkref_bulkcopy_start (&self->hdr, copies);
+    nn_chunkref_bulkcopy_start (&self->body, copies);
+}
+
+void nn_msg_bulkcopy_cp (struct nn_msg *dst, struct nn_msg *src)
+{
+    nn_chunkref_bulkcopy_cp (&dst->hdr, &src->hdr);
+    nn_chunkref_bulkcopy_cp (&dst->body, &src->body);
+}
 

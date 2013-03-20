@@ -29,11 +29,13 @@
 
 void nn_dist_init (struct nn_dist *self)
 {
+    self->count = 0;
     nn_list_init (&self->pipes);
 }
 
 void nn_dist_term (struct nn_dist *self)
 {
+    nn_assert (self->count == 0);
     nn_list_term (&self->pipes);
 }
 
@@ -47,14 +49,17 @@ void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
 void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
-    if (nn_list_item_isinlist (&data->item))
+    if (nn_list_item_isinlist (&data->item)) {
+        --self->count;
         nn_list_erase (&self->pipes, &data->item);
+    }
     nn_list_item_term (&data->item);
 }
 
 void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
+    ++self->count;
     nn_list_insert (&self->pipes, &data->item, nn_list_end (&self->pipes));
 }
 
@@ -66,23 +71,36 @@ int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,
     struct nn_dist_data *data;
     struct nn_msg copy;
 
+    /*  TODO: We can optimise for the case when there's only one outbound
+        pipe here. No message copying is needed in such case. */
+
+    /*  In the specific case when there are no outbound pipes. There's nowhere
+        to send the message to. Deallocate it. */
+    if (nn_slow (self->count) == 0) {
+        nn_msg_term (msg);
+        return 0;
+    }
+
     /*  Send the message to all the subscribers. */
+    nn_msg_bulkcopy_start (msg, self->count);
     it = nn_list_begin (&self->pipes);
     while (it != nn_list_end (&self->pipes)) {
        data = nn_cont (it, struct nn_dist_data, item);
-       if (nn_fast (data->pipe != exclude)) {
-           nn_msg_cp (&copy, msg);
+       nn_msg_bulkcopy_cp (&copy, msg);
+       if (nn_fast (data->pipe == exclude)) {
+           nn_msg_term (&copy);
+       }
+       else {
            rc = nn_pipe_send (data->pipe, &copy);
            errnum_assert (rc >= 0, -rc);
            if (rc & NN_PIPE_RELEASE) {
+               --self->count;
                it = nn_list_erase (&self->pipes, it);
                continue;
            }
        }
        it = nn_list_next (&self->pipes, it);
     }
-
-    /*  Drop the reference to the message. */
     nn_msg_term (msg);
 
     return 0;

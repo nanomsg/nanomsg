@@ -56,16 +56,16 @@ int main ()
     /*  Wait till connections are established to prevent message loss. */
     nn_sleep (10);
 
-    rc = nn_send (pub, "ABC", 3, 0);
+    rc = nn_send (pub, "0123456789012345678901234567890123456789", 40, 0);
     errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    nn_assert (rc == 40);
 
     rc = nn_recv (sub1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    nn_assert (rc == 40);
     rc = nn_recv (sub2, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    nn_assert (rc == 40);
 
     rc = nn_close (pub);
     errno_assert (rc == 0);

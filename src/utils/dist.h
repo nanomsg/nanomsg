@@ -35,6 +35,7 @@ struct nn_dist_data {
 };
 
 struct nn_dist {
+    size_t count;
     struct nn_list pipes;
 };
 

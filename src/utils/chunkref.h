@@ -72,5 +72,13 @@ size_t nn_chunkref_size (struct nn_chunkref *self);
 /*  Trims n bytes from the beginning of the chunk. */
 void nn_chunkref_trim (struct nn_chunkref *self, size_t n);
 
+/*  Bulk copying is done by first invoking nn_chunkref_bulkcopy_start on the
+    source chunk and specifying how many copies of the chunk will be made.
+    Then, nn_chunkref_bulkcopy_cp should be used 'copies' of times to make
+    individual copies of the source chunk. Note: Using bulk copying is more
+    efficient than making each copy separately. */
+void nn_chunkref_bulkcopy_start (struct nn_chunkref *self, uint32_t copies);
+void nn_chunkref_bulkcopy_cp (struct nn_chunkref *dst, struct nn_chunkref *src);
+
 #endif
 

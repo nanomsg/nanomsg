@@ -99,10 +99,13 @@ void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src)
 
 void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
 {
-    /*  TODO: At the moment, copy is made. Do it via reference count. */
-    nn_chunkref_init (dst, nn_chunkref_size (src));
-    memcpy (nn_chunkref_data (dst), nn_chunkref_data (src),
-        nn_chunkref_size (src));
+    struct nn_chunkref_chunk *ch;
+
+    if (src->ref [0] == 0xff) {
+        ch = (struct nn_chunkref_chunk*) src;
+        nn_chunk_addref (ch->chunk, 1);
+    }
+    memcpy (dst, src, sizeof (struct nn_chunkref));
 }
 
 void *nn_chunkref_data (struct nn_chunkref *self)
@@ -132,5 +135,20 @@ void nn_chunkref_trim (struct nn_chunkref *self, size_t n)
     nn_assert (self->ref [0] >= n);
     memmove (&self->ref [1], &self->ref [1 + n], self->ref [0] - n);
     self->ref [0] -= n;
+}
+
+void nn_chunkref_bulkcopy_start (struct nn_chunkref *self, uint32_t copies)
+{
+    struct nn_chunkref_chunk *ch;
+
+    if (self->ref [0] == 0xff) {
+        ch = (struct nn_chunkref_chunk*) self;
+        nn_chunk_addref (ch->chunk, copies);
+    }
+}
+
+void nn_chunkref_bulkcopy_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
+{
+    memcpy (dst, src, sizeof (struct nn_chunkref));
 }
 

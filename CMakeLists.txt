@@ -50,6 +50,16 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
     add_definitions (-DNN_HAVE_FREEBSD)
 endif ()
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "NetBSD")
+    set (NN_HAVE_NETBSD 1)
+    add_definitions (-DNN_HAVE_NETBSD)
+endif ()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "OpenBSD")
+    set (NN_HAVE_OPENBSD 1)
+    add_definitions (-DNN_HAVE_OPENBSD)
+endif ()
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
     set (NN_HAVE_SOLARIS 1)
     add_definitions (-DNN_HAVE_SOLARIS)

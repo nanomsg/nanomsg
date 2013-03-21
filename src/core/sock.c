@@ -522,6 +522,9 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;
     struct nn_sockbase *sockbase;
+    uint64_t deadline;
+    uint64_t now;
+    int timeout;
 
     sockbase = (struct nn_sockbase*) self;
 
@@ -531,8 +534,13 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     nn_cp_lock (&sockbase->cp);
 
-    /*  Set the SNDTIMEO timer. */
-    nn_cond_set_timeout (&sockbase->cond, sockbase->sndtimeo);
+    /*  Compute the deadline for SNDTIMEO timer. */
+    if (sockbase->sndtimeo < 0)
+        timeout = -1;
+    else {
+        deadline = nn_clock_now (&sockbase->clock) + sockbase->sndtimeo;
+        timeout = sockbase->sndtimeo;
+    }
 
     while (1) {
 
@@ -566,12 +574,21 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  With blocking send, wait while there are new pipes available
             for sending. */
-        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
-        if (nn_slow (rc == -ETIMEDOUT)) {
-            nn_cp_unlock (&sockbase->cp);
+        nn_cp_unlock (&sockbase->cp);
+        rc = nn_efd_wait (&sockbase->sndfd, timeout);
+        if (nn_slow (rc == -ETIMEDOUT))
             return -EAGAIN;
-        }
+        if (nn_slow (rc == -EINTR))
+            return -EINTR;
         errnum_assert (rc == 0, rc);
+        nn_cp_lock (&sockbase->cp);
+
+        /*  If needed, re-compute the timeout to reflect the time that have
+            already elapsed. */
+        if (sockbase->sndtimeo >= 0) {
+            now = nn_clock_now (&sockbase->clock);
+            timeout = now > deadline ? 0 : deadline - now;
+        }
     }   
 }
 
@@ -579,6 +596,9 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;
     struct nn_sockbase *sockbase;
+    uint64_t deadline;
+    uint64_t now;
+    int timeout;
 
     sockbase = (struct nn_sockbase*) self;
 
@@ -588,8 +608,13 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     nn_cp_lock (&sockbase->cp);
 
-    /*  Set the RCVTIMEO timer. */
-    nn_cond_set_timeout (&sockbase->cond, sockbase->rcvtimeo);
+    /*  Compute the deadline for RCVTIMEO timer. */
+    if (sockbase->rcvtimeo < 0)
+        timeout = -1;
+    else {
+        deadline = nn_clock_now (&sockbase->clock) + sockbase->rcvtimeo;
+        timeout = sockbase->rcvtimeo;
+    }
 
     while (1) {
 
@@ -623,12 +648,22 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
-        if (nn_slow (rc == -ETIMEDOUT)) {
-            nn_cp_unlock (&sockbase->cp);
+        nn_cp_unlock (&sockbase->cp);
+        rc = nn_efd_wait (&sockbase->rcvfd, timeout);
+        if (nn_slow (rc == -ETIMEDOUT))
             return -EAGAIN;
-        }
+        if (nn_slow (rc == -EINTR))
+            return -EINTR;
         errnum_assert (rc == 0, rc);
+        nn_cp_lock (&sockbase->cp);
+
+        /*  If needed, re-compute the timeout to reflect the time that have
+            already elapsed. */
+        if (sockbase->rcvtimeo >= 0) {
+            now = nn_clock_now (&sockbase->clock);
+            timeout = now > deadline ? 0 : deadline - now;
+        }
+
 #if defined NN_LATENCY_MONITOR
         nn_latmon_measure (NN_LATMON_COND_EXIT);
 #endif
@@ -692,7 +727,6 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
             if (!(self->flags & NN_SOCK_FLAG_IN)) {
                 self->flags |= NN_SOCK_FLAG_IN;
                 nn_efd_signal (&self->rcvfd);
-                nn_cond_post (&self->cond);
             }
         }
         else {
@@ -710,7 +744,6 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
             if (!(self->flags & NN_SOCK_FLAG_OUT)) {
                 self->flags |= NN_SOCK_FLAG_OUT;
                 nn_efd_signal (&self->sndfd);
-                nn_cond_post (&self->cond);
             }
         }
         else {

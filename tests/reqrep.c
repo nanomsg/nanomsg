@@ -150,7 +150,7 @@ int main ()
     rc = nn_connect (req1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     resend_ivl = 100;
-    rc = nn_setsockopt (req1, NN_REQ, NN_RESEND_IVL,
+    rc = nn_setsockopt (req1, NN_REQ, NN_REQ_RESEND_IVL,
         &resend_ivl, sizeof (resend_ivl));
     errno_assert (rc == 0);
 

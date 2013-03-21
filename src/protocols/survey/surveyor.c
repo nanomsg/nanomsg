@@ -240,7 +240,7 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
     if (level != NN_SURVEYOR)
         return -ENOPROTOOPT;
 
-    if (option == NN_DEADLINE) {
+    if (option == NN_SURVEYOR_DEADLINE) {
         if (nn_slow (optvallen != sizeof (int)))
             return -EINVAL;
         surveyor->deadline = *(int*) optval;
@@ -260,7 +260,7 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     if (level != NN_SURVEYOR)
         return -ENOPROTOOPT;
 
-    if (option == NN_DEADLINE) {
+    if (option == NN_SURVEYOR_DEADLINE) {
         if (nn_slow (*optvallen < sizeof (int)))
             return -EINVAL;
         *(int*) optval = surveyor->deadline;

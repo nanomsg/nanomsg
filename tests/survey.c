@@ -41,7 +41,7 @@ int main ()
     surveyor = nn_socket (AF_SP, NN_SURVEYOR);
     errno_assert (surveyor != -1);
     deadline = 500;
-    rc = nn_setsockopt (surveyor, NN_SURVEYOR, NN_DEADLINE,
+    rc = nn_setsockopt (surveyor, NN_SURVEYOR, NN_SURVEYOR_DEADLINE,
         &deadline, sizeof (deadline));
     errno_assert (rc == 0);
     rc = nn_bind (surveyor, SOCKET_ADDRESS);

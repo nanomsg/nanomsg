@@ -42,13 +42,13 @@ int main ()
     errno_assert (rc >= 0);
     sub1 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub1 != -1);
-    rc = nn_setsockopt (sub1, NN_SUB, NN_SUBSCRIBE, "", 0);
+    rc = nn_setsockopt (sub1, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
     rc = nn_connect (sub1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sub2 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub2 != -1);
-    rc = nn_setsockopt (sub2, NN_SUB, NN_SUBSCRIBE, "", 0);
+    rc = nn_setsockopt (sub2, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
     rc = nn_connect (sub2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);

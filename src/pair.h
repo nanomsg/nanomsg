@@ -27,9 +27,9 @@
 extern "C" {
 #endif
 
-#define NN_PAIR_ID 1
+#define NN_PROTO_PAIR 1
 
-#define NN_PAIR (NN_PAIR_ID * 16 + 0)
+#define NN_PAIR (NN_PROTO_PAIR * 16 + 0)
 
 #ifdef __cplusplus
 }

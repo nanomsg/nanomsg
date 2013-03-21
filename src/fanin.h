@@ -27,10 +27,10 @@
 extern "C" {
 #endif
 
-#define NN_FANIN_ID 4
+#define NN_PROTO_FANIN 4
 
-#define NN_SOURCE (NN_FANIN_ID * 16 + 0)
-#define NN_SINK (NN_FANIN_ID * 16 + 1)
+#define NN_SOURCE (NN_PROTO_FANIN * 16 + 0)
+#define NN_SINK (NN_PROTO_FANIN * 16 + 1)
 
 #ifdef __cplusplus
 }

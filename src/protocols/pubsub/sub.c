@@ -170,14 +170,14 @@ static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
     if (level != NN_SUB)
         return -ENOPROTOOPT;
 
-    if (option == NN_SUBSCRIBE) {
+    if (option == NN_SUB_SUBSCRIBE) {
         rc = nn_trie_subscribe (&sub->trie, optval, optvallen);
         if (rc >= 0)
             return 0;
         return rc;
     }
 
-    if (option == NN_UNSUBSCRIBE) {
+    if (option == NN_SUB_UNSUBSCRIBE) {
         rc = nn_trie_unsubscribe (&sub->trie, optval, optvallen);
         if (rc >= 0)
             return 0;

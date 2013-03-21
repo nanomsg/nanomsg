@@ -337,7 +337,7 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
     if (level != NN_REQ)
         return -ENOPROTOOPT;
 
-    if (option == NN_RESEND_IVL) {
+    if (option == NN_REQ_RESEND_IVL) {
         if (nn_slow (optvallen != sizeof (int)))
             return -EINVAL;
         req->resend_ivl = *(int*) optval;
@@ -357,7 +357,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     if (level != NN_REQ)
         return -ENOPROTOOPT;
 
-    if (option == NN_RESEND_IVL) {
+    if (option == NN_REQ_RESEND_IVL) {
         if (nn_slow (*optvallen < sizeof (int)))
             return -EINVAL;
         *(int*) optval = req->resend_ivl;

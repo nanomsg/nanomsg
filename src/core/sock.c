@@ -121,7 +121,6 @@ void nn_sock_zombify (struct nn_sock *self)
         if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
             nn_efd_signal (&sockbase->sndfd);
     }
-    nn_cond_post (&sockbase->cond);
 
     nn_cp_unlock (&sockbase->cp);
 }

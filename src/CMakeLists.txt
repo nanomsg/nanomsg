@@ -69,8 +69,6 @@ set (NN_SOURCES
     utils/chunkref.c
     utils/clock.h
     utils/clock.c
-    utils/cond.h
-    utils/cond.c
     utils/cont.h
     utils/cstream.h
     utils/cstream.c

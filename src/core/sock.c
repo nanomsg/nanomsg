@@ -81,7 +81,6 @@ int nn_sockbase_init (struct nn_sockbase *self,
 
     self->vfptr = vfptr;
     self->flags = 0;
-    nn_cond_init (&self->cond);
     nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
     self->eid = 1;
@@ -137,6 +136,10 @@ void nn_sock_destroy (struct nn_sock *self)
     /*  Unlock will be done in nn_sockbase_term function. */
     nn_cp_lock (&sockbase->cp);
 
+    /*  Create the efd object that will be used to wait for all endpoints
+        to shut down. */
+    nn_efd_init (&sockbase->termfd);
+
     /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
         actually deallocate the endpoint, so take care to get pointer to the
         next endpoint before the call. */
@@ -153,6 +156,7 @@ void nn_sock_destroy (struct nn_sock *self)
             It is done by asking the derived class to deallocate. Derived
             class, in turn will terminate the sockbase class. */
         if (nn_list_empty (&sockbase->eps)) {
+            nn_efd_term (&sockbase->termfd);
             sockbase->vfptr->destroy (sockbase);
 
             /*  At this point the socket is deallocated, make sure that it
@@ -161,9 +165,10 @@ void nn_sock_destroy (struct nn_sock *self)
         }
 
         /*  Wait till all the endpoints are closed. */
-        nn_cond_set_timeout (&sockbase->cond, -1);
-        rc = nn_cond_wait (&sockbase->cond, &sockbase->cp.sync);
-        errnum_assert (rc == 0, rc);
+        nn_cp_unlock (&sockbase->cp);
+        rc = nn_efd_wait (&sockbase->termfd, -1);
+        errnum_assert (rc == 0, -rc);
+        nn_cp_lock (&sockbase->cp);
     }
 }
 
@@ -178,7 +183,6 @@ void nn_sockbase_term (struct nn_sockbase *self)
         nn_efd_term (&self->rcvfd);
     if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
         nn_efd_term (&self->sndfd);
-    nn_cond_term (&self->cond);
     nn_cp_term (&self->cp);
 }
 
@@ -514,7 +518,7 @@ void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep)
     /*  nn_close() may be waiting for termination of this endpoint.
         Send it a signal. */
     if (nn_list_empty (&sockbase->eps))
-        nn_cond_post (&sockbase->cond);
+        nn_efd_signal (&sockbase->termfd);
 }
 
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)

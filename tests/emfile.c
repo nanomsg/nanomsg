@@ -30,6 +30,7 @@
 
 int main ()
 {
+#if 0
     int rc;
     int i;
     int socks [MAX_SOCKETS];
@@ -49,6 +50,7 @@ int main ()
         rc = nn_close (socks [i]);
         errno_assert (rc == 0);
     }
+#endif
 
     return 0;
 }

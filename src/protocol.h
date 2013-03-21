@@ -24,7 +24,6 @@
 #define NN_PROTOCOL_INCLUDED
 
 #include "utils/aio.h"
-#include "utils/cond.h"
 #include "utils/list.h"
 #include "utils/clock.h"
 #include "utils/msg.h"
@@ -135,9 +134,9 @@ struct nn_sockbase
     const struct nn_sockbase_vfptr *vfptr;
     int flags;
     struct nn_cp cp;
-    struct nn_cond cond;
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
+    struct nn_efd termfd;
     struct nn_clock clock;
     struct nn_list eps;
     int eid;

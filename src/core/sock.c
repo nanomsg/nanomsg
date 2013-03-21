@@ -590,7 +590,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             already elapsed. */
         if (sockbase->sndtimeo >= 0) {
             now = nn_clock_now (&sockbase->clock);
-            timeout = now > deadline ? 0 : deadline - now;
+            timeout = (int) (now > deadline ? 0 : deadline - now);
         }
     }   
 }
@@ -664,7 +664,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             already elapsed. */
         if (sockbase->rcvtimeo >= 0) {
             now = nn_clock_now (&sockbase->clock);
-            timeout = now > deadline ? 0 : deadline - now;
+            timeout = (int) (now > deadline ? 0 : deadline - now);
         }
 
 #if defined NN_LATENCY_MONITOR

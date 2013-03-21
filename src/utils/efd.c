@@ -129,8 +129,8 @@ int nn_efd_init (struct nn_efd *self)
 
         /*  Accept new incoming connection. */
         addrlen = sizeof (addr);
-        self->w = accept (listener, (struct sockaddr*) &addr, &addrlen);
-        if (nn_slow (self->w == INVALID_SOCKET || addrlen != sizeof (addr)))
+        self->r = accept (listener, (struct sockaddr*) &addr, &addrlen);
+        if (nn_slow (self->r == INVALID_SOCKET || addrlen != sizeof (addr)))
             goto wsafail;
 
         /*  Check that the connection actually comes from the localhost. */
@@ -138,7 +138,7 @@ int nn_efd_init (struct nn_efd *self)
             break;
 
         /*  If not so, close the connection and try again. */
-        rc = closesocket (self->w);
+        rc = closesocket (self->r);
         if (nn_slow (rc == INVALID_SOCKET))
             goto wsafail;
     }

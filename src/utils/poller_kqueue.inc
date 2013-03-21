@@ -83,7 +83,7 @@ void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
     /*  Invalidate any subsequent events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].ident == hndl->fd)
-            self->events [i].udata = NULL;
+            self->events [i].udata = (nn_poller_udata) NULL;
 }
 
 void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
@@ -117,7 +117,7 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].ident == hndl->fd &&
               self->events [i].filter == EVFILT_READ)
-            self->events [i].udata = NULL;
+            self->events [i].udata = (nn_poller_udata) NULL;
 }
 
 void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
@@ -151,7 +151,7 @@ void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].ident == hndl->fd &&
               self->events [i].filter == EVFILT_WRITE)
-            self->events [i].udata = NULL;
+            self->events [i].udata = (nn_poller_udata) NULL;
 }
 
 int nn_poller_wait (struct nn_poller *self, int timeout)

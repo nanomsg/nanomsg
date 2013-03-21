@@ -52,7 +52,7 @@ int main ()
     rc = nn_connect (sink, SOCKET_ADDRESS_INPROC);
     errno_assert (rc >= 0);
     timeo = 100;
-    rc == nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
@@ -71,7 +71,7 @@ int main ()
     rc = nn_bind (pair, SOCKET_ADDRESS_INPROC);
     errno_assert (rc >= 0);
     timeo = 100;
-    rc == nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
@@ -91,7 +91,7 @@ int main ()
     rc = nn_connect (sink, SOCKET_ADDRESS_IPC);
     errno_assert (rc >= 0);
     timeo = 100;
-    rc == nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
@@ -110,7 +110,7 @@ int main ()
     rc = nn_connect (sink, SOCKET_ADDRESS_TCP);
     errno_assert (rc >= 0);
     timeo = 100;
-    rc == nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);

@@ -41,7 +41,9 @@
     and unsignalling of the efd objects. */
 #define NN_SOCK_FLAG_IN 2
 #define NN_SOCK_FLAG_OUT 4
-#define NN_SOCK_FLAG_ERR 8
+
+/*  Set if nn_close() is already in progress. */
+#define NN_SOCK_FLAG_CLOSING 8
 
 /*  Private functions. */
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
@@ -50,6 +52,10 @@ int nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
+
+    /* Make sure that at least one message direction is supported. */
+    nn_assert (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) ||
+        !(vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
@@ -70,6 +76,7 @@ int nn_sockbase_init (struct nn_sockbase *self,
             return rc;
         }
     }
+    memset (&self->termfd, 0xcd, sizeof (self->termfd));
     rc = nn_cp_init (&self->cp);
     if (nn_slow (rc < 0)) {
         if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
@@ -110,15 +117,17 @@ void nn_sock_zombify (struct nn_sock *self)
     sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
 
     /*  Reset IN and OUT events to unblock any polling function. */
-    if (!(sockbase->flags & NN_SOCK_FLAG_IN)) {
-        sockbase->flags |= NN_SOCK_FLAG_IN;
-        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
-            nn_efd_signal (&sockbase->rcvfd);
-    }
-    if (!(sockbase->flags & NN_SOCK_FLAG_OUT)) {
-        sockbase->flags |= NN_SOCK_FLAG_OUT;
-        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
-            nn_efd_signal (&sockbase->sndfd);
+    if (!(sockbase->flags & NN_SOCK_FLAG_CLOSING)) {
+        if (!(sockbase->flags & NN_SOCK_FLAG_IN)) {
+            sockbase->flags |= NN_SOCK_FLAG_IN;
+            if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
+                nn_efd_signal (&sockbase->rcvfd);
+        }
+        if (!(sockbase->flags & NN_SOCK_FLAG_OUT)) {
+            sockbase->flags |= NN_SOCK_FLAG_OUT;
+            if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
+                nn_efd_signal (&sockbase->sndfd);
+        }
     }
 
     nn_cp_unlock (&sockbase->cp);
@@ -136,9 +145,29 @@ void nn_sock_destroy (struct nn_sock *self)
     /*  Unlock will be done in nn_sockbase_term function. */
     nn_cp_lock (&sockbase->cp);
 
-    /*  Create the efd object that will be used to wait for all endpoints
-        to shut down. */
-    nn_efd_init (&sockbase->termfd);
+    /*  Mark the socket as being in process of shutting down. */
+    sockbase->flags |= NN_SOCK_FLAG_CLOSING;
+
+    /*  Close sndfd and rcvfd. Re-purpose one of the to become a termfd. This
+        way we cannot fail here because of lack of resources (EMFILE/ENFILE). */
+    if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+        if (sockbase->flags & NN_SOCK_FLAG_IN)
+            nn_efd_unsignal (&sockbase->rcvfd);
+        memcpy (&sockbase->termfd, &sockbase->rcvfd, sizeof (struct nn_efd));
+        memset (&sockbase->rcvfd, 0xcd, sizeof (sockbase->rcvfd));
+        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+            nn_efd_term (&sockbase->sndfd);
+            memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
+        }
+    }
+    else if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+        if (sockbase->flags & NN_SOCK_FLAG_OUT)
+            nn_efd_unsignal (&sockbase->sndfd);
+        memcpy (&sockbase->termfd, &sockbase->sndfd, sizeof (struct nn_efd));
+        memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
+    }
+    else
+        nn_assert (0);
 
     /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
         actually deallocate the endpoint, so take care to get pointer to the
@@ -174,15 +203,13 @@ void nn_sock_destroy (struct nn_sock *self)
 
 void nn_sockbase_term (struct nn_sockbase *self)
 {
+    nn_assert (self->flags & NN_SOCK_FLAG_CLOSING);
+
     /*  The lock was done in nn_sock_destroy function. */
     nn_cp_unlock (&self->cp);
-        
+
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
-    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
-        nn_efd_term (&self->rcvfd);
-    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
-        nn_efd_term (&self->sndfd);
     nn_cp_term (&self->cp);
 }
 
@@ -517,8 +544,10 @@ void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep)
 
     /*  nn_close() may be waiting for termination of this endpoint.
         Send it a signal. */
-    if (nn_list_empty (&sockbase->eps))
+    if (nn_list_empty (&sockbase->eps)) {
+        nn_assert (sockbase->flags & NN_SOCK_FLAG_CLOSING);
         nn_efd_signal (&sockbase->termfd);
+    }
 }
 
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
@@ -718,6 +747,11 @@ void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)
 void nn_sockbase_adjust_events (struct nn_sockbase *self)
 {
     int events;
+
+    /*  If nn_close() was already called there's no point in adjusting the
+        snd/rcv file descriptors. */
+    if (self->flags & NN_SOCK_FLAG_CLOSING)
+        return;
 
     /*  Check whether socket is readable and/or writeable at the moment. */
     events = self->vfptr->events (self);

@@ -33,7 +33,7 @@ NN_RESPONDENT::
 Socket Options
 ~~~~~~~~~~~~~~
 
-NN_DEADLINE::
+NN_SURVEYOR_DEADLINE::
     Specifies how long to wait for responses to the survey. Once the deadline
     expires, receive function will return ETIMEDOUT error and all subsequent
     responses to the survey will be silently dropped. The deadline is measured

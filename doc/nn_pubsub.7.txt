@@ -32,10 +32,10 @@ NN_SUB::
 Socket Options
 ~~~~~~~~~~~~~~
 
-NN_SUBSCRIBE::
+NN_SUB_SUBSCRIBE::
     Defined on full SUB socket. Subscribes for a particular topic. Type of the
     option is string.
-NN_UNSUBSCRIBE::
+NN_SUB_UNSUBSCRIBE::
     Defined on full SUB socket. Unsubscribes from a particular topic. Type of
     the option is string.
 

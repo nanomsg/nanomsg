@@ -583,7 +583,7 @@ nn_term(3) Manual Page
 <div class="sectionbody">
 <div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg provides the
 <em>nn_term()</em> function which informs all the open sockets that process
-terminaion is underway.</p></div>
+termination is underway.</p></div>
 <div class="paragraph"><p>If a socket is blocked inside a blocking function, such as
 <a href="nn_recv.3.html">nn_recv(3)</a>, it will be unblocked  and ETERM error will be returned
 to the user. Similarly, any subsequent attempt to invoke a socket function other
@@ -627,7 +627,7 @@ assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-14 09:50:40 CET
+Last updated 2013-03-23 21:50:02 CET
 </div>
 </div>
 </body>

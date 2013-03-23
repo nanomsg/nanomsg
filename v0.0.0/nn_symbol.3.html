@@ -586,6 +586,10 @@ has no significance to its associated symbol; the mappings may change between
 library versions.</p></div>
 <div class="paragraph"><p>Typically a client will iterate through the symbols until nn_symbol returns
 NULL in order to collect all the symbols.</p></div>
+<div class="paragraph"><p>All symbols exposed by <em>nn_symbol</em> are available directly in the C API,
+generally as preprocessor macros.  Thus, this function is useful mostly for
+language bindings that can&#8217;t parse the header file and rely on retrieving the
+symbols in the runtime.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -645,7 +649,7 @@ for (i = 0; ; ++i) {
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-17 08:29:24 CET
+Last updated 2013-03-23 21:50:02 CET
 </div>
 </div>
 </body>

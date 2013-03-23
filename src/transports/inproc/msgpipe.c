@@ -35,7 +35,8 @@
 
 /*  Forward declarations for nn_msgpipehalf class. */
 static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
-    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase,
+    const struct nn_pipebase_vfptr *vfptr,
+    struct nn_epbase *epbase, struct nn_epbase *peer_epbase,
     void (*rmpipefn) (struct nn_msgpipehalf *self));
 static void nn_msgpipehalf_term (struct nn_msgpipehalf *self);
 static void nn_msgpipehalf_detach (struct nn_msgpipehalf *self);
@@ -74,9 +75,9 @@ void nn_msgpipe_init (struct nn_msgpipe *self,
 
     /*  Initialise the halfs of the pipe. */ 
     nn_msgpipehalf_init (&self->bhalf, &nn_msgpipe_vfptrb, &inprocb->epbase,
-        nn_msgpipe_rmpipeb);
+        &inprocc->epbase, nn_msgpipe_rmpipeb);
     nn_msgpipehalf_init (&self->chalf, &nn_msgpipe_vfptrc, &inprocc->epbase,
-        nn_msgpipe_rmpipec);
+        &inprocb->epbase, nn_msgpipe_rmpipec);
 
     nn_list_item_init (&self->item);
 
@@ -231,9 +232,13 @@ static const struct nn_cp_sink nn_msgpipehalf_sink =
     {NULL, NULL, NULL, NULL, NULL, NULL, NULL, nn_msgpipehalf_event};
 
 static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
-    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase,
+    const struct nn_pipebase_vfptr *vfptr,
+    struct nn_epbase *epbase, struct nn_epbase *peer_epbase,
     void (*rmpipefn) (struct nn_msgpipehalf *self))
 {
+    int rcvbuf;
+    int sndbuf;
+    size_t sz;
     struct nn_cp *cp;
 
     /*  Initialise the base class. */ 
@@ -241,9 +246,16 @@ static void nn_msgpipehalf_init (struct nn_msgpipehalf *self,
 
     self->flags = 0;
 
+    /*  Get buffer sizes. */
+    sz = sizeof (rcvbuf);
+    nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_RCVBUF, &rcvbuf, &sz);
+    nn_assert (sz == sizeof (rcvbuf));
+    sz = sizeof (sndbuf);
+    nn_epbase_getopt (peer_epbase, NN_SOL_SOCKET, NN_SNDBUF, &sndbuf, &sz);
+    nn_assert (sz == sizeof (sndbuf));
+
     /*  Initialise inbound message queue. */
-    /*  TODO: Set up proper queue limits. */
-    nn_msgqueue_init (&(self->queue), 1000000);
+    nn_msgqueue_init (&(self->queue), sndbuf + rcvbuf);
 
     /*  Set the sink for all async events. */
     self->sink = &nn_msgpipehalf_sink;

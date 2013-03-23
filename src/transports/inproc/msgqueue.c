@@ -80,17 +80,15 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
 
     msgsz = nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body);
 
-    /*  If the message doesn't fit into the queue return error. Note that
-        message of any size can be written to an empty queue. This way even
-        the messages larger than maximal queue size can be transferred. */
-    if (nn_slow (self->count && self->mem + msgsz > self->maxmem))
-        return -EAGAIN;
-
     /*  Adjust the statistics. */
     result = self->count ? 0 : NN_MSGQUEUE_SIGNAL;
     ++self->count;
     self->mem += msgsz;
-    if (self->mem >= self->maxmem)
+
+    /*  To mimic other transports, it should be always possible to store two
+        messages in the queue. Beyond that we'll apply the queue limit specified
+        by the user (SNDBUF on the sender side + RCVBUF on the receiver side. */
+    if (self->count >= 2 && self->mem >= self->maxmem)
         result |= NN_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
@@ -144,10 +142,14 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
     }
 
     /*  Adjust the statistics. */
-    /*  TODO: Implement a real queue size limit instead of this fake one. */
-    result = self->mem >= self->maxmem ? NN_MSGQUEUE_SIGNAL : 0;
+    result = 0;
+    if (self->count >= 2 && self->mem >= self->maxmem)
+        result |= NN_MSGQUEUE_SIGNAL;
     --self->count;
     self->mem -= (nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body));
+    if (self->count >= 2 && self->mem >= self->maxmem)
+        result &= ~NN_MSGQUEUE_SIGNAL;
+
     if (!self->count)
         result |= NN_MSGQUEUE_RELEASE;
 

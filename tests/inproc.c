@@ -36,7 +36,8 @@ int main ()
     int sb;
     int sc;
     int i;
-    char buf [3];
+    char buf [10];
+    int val;
 
     /*  Create a simple topology. */
     sc = nn_socket (AF_SP, NN_PAIR);
@@ -83,6 +84,49 @@ int main ()
         errno_assert (rc >= 0);
         nn_assert (rc == 3);
     }
+
+    rc = nn_close (sc);
+    errno_assert (rc == 0);
+    rc = nn_close (sb);
+    errno_assert (rc == 0);
+
+    /*  Test whether queue limits are observed. */
+    sb = nn_socket (AF_SP, NN_PAIR);
+    errno_assert (sb != -1);
+    val = 100;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
+    errno_assert (rc == 0);
+    rc = nn_bind (sb, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    sc = nn_socket (AF_SP, NN_PAIR);
+    errno_assert (sc != -1);
+    val = 100;
+    rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDBUF, &val, sizeof (val));
+    errno_assert (rc == 0);
+    rc = nn_connect (sc, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+
+    val = 100;
+    rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &val, sizeof (val));
+    errno_assert (rc == 0);
+    i = 0;
+    while (1) {
+        rc = nn_send (sc, "0123456789", 10, 0);
+        if (rc < 0 && nn_errno () == EAGAIN)
+            break;
+        errno_assert (rc >= 0);
+        nn_assert (rc == 10);
+        ++i;
+    }
+    nn_assert (i == 20);
+    rc = nn_recv (sb, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 10);
+    rc = nn_send (sc, "0123456789", 10, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 10);
+    rc = nn_send (sc, "0123456789", 10, 0);
+    nn_assert (rc < 0 && nn_errno () == EAGAIN);
 
     rc = nn_close (sc);
     errno_assert (rc == 0);

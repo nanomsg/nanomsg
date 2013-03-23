@@ -36,7 +36,7 @@ int main ()
     int sb;
     int sc;
     int i;
-    char buf [10];
+    char buf [256];
     int val;
 
     /*  Create a simple topology. */
@@ -127,6 +127,22 @@ int main ()
     nn_assert (rc == 10);
     rc = nn_send (sc, "0123456789", 10, 0);
     nn_assert (rc < 0 && nn_errno () == EAGAIN);
+    for (i = 0; i != 20; ++i) {
+        rc = nn_recv (sb, buf, sizeof (buf), 0);
+        errno_assert (rc >= 0);
+        nn_assert (rc == 10);
+    }
+
+    /*  Make sure that even a message that doesn't fit into the buffers
+        gets across. */
+    for (i = 0; i != sizeof (buf); ++i)
+        buf [i] = 0xab;
+    rc = nn_send (sc, buf, 256, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 256);
+    rc = nn_recv (sb, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 256);
 
     rc = nn_close (sc);
     errno_assert (rc == 0);

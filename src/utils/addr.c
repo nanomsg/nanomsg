@@ -214,6 +214,8 @@ int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
 int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
     struct sockaddr_storage *result, nn_socklen *resultlen)
 {
+    int rc;
+
     /*  Asterisk is a special name meaning "all interfaces". */
     if (addrlen == 1 && addr [0] == '*') {
         nn_addr_any (flags, result, resultlen);
@@ -222,7 +224,11 @@ int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
     /*  On Windows there are no sane network interface names. We'll treat the
         name as a IP address literal. */
-    return nn_addr_parse_literal (addr, addrlen, flags, result, resultlen);
+    rc = nn_addr_parse_literal (addr, addrlen, flags, result, resultlen);
+    if (rc == -EINVAL)
+        return -ENODEV;
+    errnum_assert (rc == 0, -rc);
+    return 0;
 }
 
 #endif

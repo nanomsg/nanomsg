@@ -106,11 +106,11 @@ int main ()
 
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
-
         rc = nn_send (sc, "0123456789012345678901234567890123456789", 40, 0);
         errno_assert (rc >= 0);
         nn_assert (rc == 40);
-
+    }
+    for (i = 0; i != 100; ++i) {
         rc = nn_recv (sb, buf, sizeof (buf), 0);
         errno_assert (rc >= 0);
         nn_assert (rc == 40);

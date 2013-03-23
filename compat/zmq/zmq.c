@@ -274,9 +274,11 @@ int zmq_setsockopt (void *s, int option, const void *optval,
     /*  First, try to map ZeroMQ options to nanomsg options. */
     switch (option) {
     case ZMQ_SUBSCRIBE:
-        return nn_setsockopt (fd, NN_SUB, NN_SUBSCRIBE, optval, optvallen);
+        return nn_setsockopt (fd, NN_SUB, NN_SUB_SUBSCRIBE,
+            optval, optvallen);
     case ZMQ_UNSUBSCRIBE:
-        return nn_setsockopt (fd, NN_SUB, NN_UNSUBSCRIBE, optval, optvallen);
+        return nn_setsockopt (fd, NN_SUB, NN_SUB_UNSUBSCRIBE,
+            optval, optvallen);
     case ZMQ_SNDBUF:
         if (optvallen != sizeof (uint64_t)) {
             errno = EINVAL;

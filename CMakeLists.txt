@@ -144,6 +144,13 @@ if (NN_HAVE_GETADDRINFO_A)
     add_definitions (-DNN_HAVE_GETADDRINFO_A)
 endif ()
 
+list (APPEND CMAKE_REQUIRED_LIBRARIES rt)
+check_symbol_exists (sem_wait semaphore.h NN_HAVE_SEMAPHORE)
+list (REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES rt)
+if (NN_HAVE_SEMAPHORE)
+    add_definitions (-DNN_HAVE_SEMAPHORE)
+endif()
+
 check_c_source_compiles ("
     #include <stdint.h>
     int main()

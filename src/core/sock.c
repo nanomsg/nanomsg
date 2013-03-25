@@ -76,7 +76,7 @@ int nn_sockbase_init (struct nn_sockbase *self,
             return rc;
         }
     }
-    memset (&self->termfd, 0xcd, sizeof (self->termfd));
+    memset (&self->termsem, 0xcd, sizeof (self->termsem));
     rc = nn_cp_init (&self->cp);
     if (nn_slow (rc < 0)) {
         if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
@@ -139,6 +139,7 @@ void nn_sock_destroy (struct nn_sock *self)
     struct nn_sockbase *sockbase;
     struct nn_list_item *it;
     struct nn_epbase *ep;
+    int once;
 
     sockbase = (struct nn_sockbase*) self;
 
@@ -148,26 +149,19 @@ void nn_sock_destroy (struct nn_sock *self)
     /*  Mark the socket as being in process of shutting down. */
     sockbase->flags |= NN_SOCK_FLAG_CLOSING;
 
-    /*  Close sndfd and rcvfd. Re-purpose one of the to become a termfd. This
-        way we cannot fail here because of lack of resources (EMFILE/ENFILE). */
+    /*  Close sndfd and rcvfd. This should make any current select/poll using
+        SNDFD and/or RCVFD exit. */
     if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
-        if (sockbase->flags & NN_SOCK_FLAG_IN)
-            nn_efd_unsignal (&sockbase->rcvfd);
-        memcpy (&sockbase->termfd, &sockbase->rcvfd, sizeof (struct nn_efd));
+        nn_efd_term (&sockbase->rcvfd);
         memset (&sockbase->rcvfd, 0xcd, sizeof (sockbase->rcvfd));
-        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
-            nn_efd_term (&sockbase->sndfd);
-            memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
-        }
     }
-    else if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
-        if (sockbase->flags & NN_SOCK_FLAG_OUT)
-            nn_efd_unsignal (&sockbase->sndfd);
-        memcpy (&sockbase->termfd, &sockbase->sndfd, sizeof (struct nn_efd));
+    if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+        nn_efd_term (&sockbase->sndfd);
         memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
     }
-    else
-        nn_assert (0);
+
+    /*  Create a semaphore to wait on for all endpoint to terminate. */
+    nn_sem_init (&sockbase->termsem);
 
     /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
         actually deallocate the endpoint, so take care to get pointer to the
@@ -179,13 +173,14 @@ void nn_sock_destroy (struct nn_sock *self)
         nn_ep_close ((void*) ep);       
     }
 
+    once = 0;
     while (1) {
 
         /*  If there are no active endpoints we can deallocate the socket.
             It is done by asking the derived class to deallocate. Derived
             class, in turn will terminate the sockbase class. */
         if (nn_list_empty (&sockbase->eps)) {
-            nn_efd_term (&sockbase->termfd);
+            nn_sem_term (&sockbase->termsem);
             sockbase->vfptr->destroy (sockbase);
 
             /*  At this point the socket is deallocated, make sure that it
@@ -193,11 +188,16 @@ void nn_sock_destroy (struct nn_sock *self)
             return;
         }
 
+        /*  Sanity check: The semaphore should be posted once only. When last
+            endpoint is closed. */
+        nn_assert (once == 0);
+
         /*  Wait till all the endpoints are closed. */
         nn_cp_unlock (&sockbase->cp);
-        rc = nn_efd_wait (&sockbase->termfd, -1);
+        rc = nn_sem_wait (&sockbase->termsem);
         errnum_assert (rc == 0, -rc);
         nn_cp_lock (&sockbase->cp);
+        once = 1;
     }
 }
 
@@ -544,10 +544,9 @@ void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep)
 
     /*  nn_close() may be waiting for termination of this endpoint.
         Send it a signal. */
-    if (nn_list_empty (&sockbase->eps)) {
-        nn_assert (sockbase->flags & NN_SOCK_FLAG_CLOSING);
-        nn_efd_signal (&sockbase->termfd);
-    }
+    if (sockbase->flags & NN_SOCK_FLAG_CLOSING &&
+          nn_list_empty (&sockbase->eps))
+        nn_sem_post (&sockbase->termsem);
 }
 
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)

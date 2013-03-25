@@ -28,6 +28,7 @@
 #include "utils/clock.h"
 #include "utils/msg.h"
 #include "utils/efd.h"
+#include "utils/sem.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -136,7 +137,7 @@ struct nn_sockbase
     struct nn_cp cp;
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
-    struct nn_efd termfd;
+    struct nn_sem termsem;
     struct nn_clock clock;
     struct nn_list eps;
     int eid;

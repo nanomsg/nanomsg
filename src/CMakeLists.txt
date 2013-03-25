@@ -108,6 +108,8 @@ set (NN_SOURCES
     utils/queue.c
     utils/random.h
     utils/random.c
+    utils/sem.h
+    utils/sem.c
     utils/sleep.h
     utils/sleep.c
     utils/stream.h

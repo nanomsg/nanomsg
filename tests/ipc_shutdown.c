@@ -40,6 +40,8 @@ static void routine (void *arg)
     int s;
 
     s = nn_socket (AF_SP, NN_SUB);
+    if (s < 0 && nn_errno () == EMFILE)
+        return;
     errno_assert (s >= 0);
     rc = nn_connect (s, SOCKET_ADDRESS);
     errno_assert (rc >= 0);

@@ -78,7 +78,7 @@ static int nn_cstream_compute_retry_ivl (struct nn_cstream *self)
 }
 
 /*  Implementation of nn_epbase interface. */
-static void nn_cstream_close (struct nn_epbase *self);
+static int nn_cstream_close (struct nn_epbase *self);
 static const struct nn_epbase_vfptr nn_cstream_epbase_vfptr =
     {nn_cstream_close};
 
@@ -314,7 +314,7 @@ static const struct nn_cp_sink nn_cstream_state_terminating = {
     NULL
 };
 
-static void nn_cstream_close (struct nn_epbase *self)
+static int nn_cstream_close (struct nn_epbase *self)
 {
     struct nn_cstream *cstream;
 
@@ -322,7 +322,7 @@ static void nn_cstream_close (struct nn_epbase *self)
 
     /*  If termination is already underway, do nothing and let it continue. */
     if (cstream->sink == &nn_cstream_state_terminating)
-        return;
+        return -EINPROGRESS;
 
     /*  If the connection exists, stop the session state machine. */
     if (cstream->sink == &nn_cstream_state_connected)
@@ -334,6 +334,8 @@ static void nn_cstream_close (struct nn_epbase *self)
     /*  Close the socket, if needed. */
     cstream->sink = &nn_cstream_state_terminating;
     nn_usock_close (&cstream->usock);
+
+    return -EINPROGRESS;
 }
 
 static void nn_cstream_terminating_closed (const struct nn_cp_sink **self,

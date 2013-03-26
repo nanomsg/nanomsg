@@ -32,7 +32,7 @@
 #include <string.h>
 
 /*  Implementation of nn_epbase interface. */
-static void nn_inprocb_close (struct nn_epbase *self);
+static int nn_inprocb_close (struct nn_epbase *self);
 static const struct nn_epbase_vfptr nn_inprocb_epbase_vfptr =
     {nn_inprocb_close};
 
@@ -87,7 +87,7 @@ void nn_inprocb_rm_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe)
     }
 }
 
-static void nn_inprocb_close (struct nn_epbase *self)
+static int nn_inprocb_close (struct nn_epbase *self)
 {
     struct nn_inprocb *inprocb;
     struct nn_list_item *it;
@@ -119,7 +119,9 @@ static void nn_inprocb_close (struct nn_epbase *self)
         nn_list_item_term (&inprocb->list);
         nn_epbase_term (&inprocb->epbase);
         nn_free (inprocb);
-        return;
+        return 0;
     }
+
+    return -EINPROGRESS;
 }
 

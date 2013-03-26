@@ -26,6 +26,6 @@
 struct nn_ep;
 
 /*  Asks endpoint to terminate. */
-void nn_ep_close (struct nn_ep *self);
+int nn_ep_close (struct nn_ep *self);
 
 #endif

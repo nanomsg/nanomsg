@@ -50,9 +50,9 @@ struct nn_epbase;
 struct nn_epbase_vfptr {
 
     /*  Ask the endpoint to terminate itself. The endpoint is allowed to linger
-        to send the pending outbound data. Once it's ready, it will close itself
-        using nn_epbase_term(). */
-    void (*close) (struct nn_epbase *self);
+        to send the pending outbound data. In such case the function returns
+        -EINPROGRESS error. */
+    int (*close) (struct nn_epbase *self);
 };
 
 /*  The members of this structure are used exclusively by the core. Never use

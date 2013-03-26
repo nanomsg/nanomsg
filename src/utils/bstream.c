@@ -39,7 +39,7 @@ static const struct nn_cp_sink nn_bstream_state_terminating1;
 static const struct nn_cp_sink nn_bstream_state_terminating2;
 
 /*  Implementation of nn_epbase interface. */
-static void nn_bstream_close (struct nn_epbase *self);
+static int nn_bstream_close (struct nn_epbase *self);
 static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr =
     {nn_bstream_close};
 
@@ -117,7 +117,7 @@ static const struct nn_cp_sink nn_bstream_state_terminating1 = {
     NULL
 };
 
-static void nn_bstream_close (struct nn_epbase *self)
+static int nn_bstream_close (struct nn_epbase *self)
 {
     struct nn_bstream *bstream;
 
@@ -126,6 +126,8 @@ static void nn_bstream_close (struct nn_epbase *self)
     /*  Close the listening socket itself. */
     bstream->sink = &nn_bstream_state_terminating1;
     nn_usock_close (&bstream->usock);
+
+    return -EINPROGRESS;
 }
 
 static void nn_bstream_terminating1_closed (const struct nn_cp_sink **self,

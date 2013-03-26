@@ -17,7 +17,9 @@ DESCRIPTION
 -----------
 Removes an endpoint from socket 's'. 'how' parameter specifies the ID of the
 endpoint to remove as returned by prior call to linknanomsg:nn_bind[3] or
-linknanomsg:nn_connect[3].
+linknanomsg:nn_connect[3]. The library will try to deliver any outstanding
+outbound messages to this endpoint for the time specified by _NN_LINGER_ socket
+option. The call will block in the meantime.
 
 
 RETURN VALUE
@@ -32,6 +34,9 @@ ERRORS
 The provided socket is invalid.
 *EINVAL*::
 The 'how' parameter doesn't correspond to an active endpoint.
+*EINTR*::
+Operation was interrupted by a signal. The endpoint is not fully closed yet.
+Operation can be re-started by calling _nn_shutdown()_ again.
 *ETERM*::
 The library is terminating.
 

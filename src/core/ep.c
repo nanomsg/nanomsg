@@ -89,11 +89,11 @@ int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
     return nn_sock_ispeer (self->sock, socktype);
 }
 
-void nn_ep_close (struct nn_ep *self)
+int nn_ep_close (struct nn_ep *self)
 {
     struct nn_epbase *epbase;
 
     epbase = (struct nn_epbase*) self;
-    epbase->vfptr->close (epbase);
+    return epbase->vfptr->close (epbase);
 }
 

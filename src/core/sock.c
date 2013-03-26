@@ -173,7 +173,8 @@ int nn_sock_destroy (struct nn_sock *self)
         while (it != nn_list_end (&sockbase->eps)) {
             ep = nn_cont (it, struct nn_epbase, item);
             it = nn_list_next (&sockbase->eps, it);
-            nn_ep_close ((void*) ep);       
+            rc = nn_ep_close ((void*) ep);
+            errnum_assert (rc == 0 || rc == -EINPROGRESS, -rc);      
         }
     }
 
@@ -498,6 +499,7 @@ int nn_sock_add_ep (struct nn_sock *self, const char *addr,
 
 int nn_sock_rm_ep (struct nn_sock *self, int eid)
 {
+    int rc;
     struct nn_sockbase *sockbase;
     struct nn_list_item *it;
     struct nn_epbase *ep;
@@ -525,7 +527,8 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     
     /*  Ask the endpoint to shutdown. Actual terminatation may be delayed
         by the transport. */
-    nn_ep_close ((void*) ep);
+    rc = nn_ep_close ((void*) ep);
+    errnum_assert (rc == 0 || rc == -EINPROGRESS, -rc);
 
     nn_cp_unlock (&sockbase->cp);
 

@@ -32,7 +32,7 @@
 #include <stddef.h>
 
 /*  Implementation of nn_epbase callback interface. */
-static void nn_inprocc_close (struct nn_epbase *self);
+static int nn_inprocc_close (struct nn_epbase *self);
 static const struct nn_epbase_vfptr nn_inprocc_epbase_vfptr =
     {nn_inprocc_close};
 
@@ -96,7 +96,7 @@ void nn_inprocc_rm_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)
     }
 }
 
-static void nn_inprocc_close (struct nn_epbase *self)
+static int nn_inprocc_close (struct nn_epbase *self)
 {
     struct nn_inprocc *inprocc;
 
@@ -114,14 +114,15 @@ static void nn_inprocc_close (struct nn_epbase *self)
         /*  Remember that close was already called. Later on, when the pipe
             detaches from this object, it can be deallocated. */
         inprocc->flags |= NN_INPROCC_FLAG_TERMINATING;
-
         nn_msgpipe_detachc (inprocc->pipe);
-        return;
+        return -EINPROGRESS;
     }
 
     nn_list_item_term (&inprocc->list);
     /*  If the endpoint is not connected we can deallocate it straight away. */
     nn_epbase_term (&inprocc->epbase);
     nn_free (inprocc);
+
+    return 0;
 }
 

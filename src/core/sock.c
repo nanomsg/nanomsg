@@ -197,6 +197,8 @@ int nn_sock_destroy (struct nn_sock *self)
     sockbase->vfptr->destroy (sockbase);
     /*  At this point the socket is already deallocated, make sure
         that it is not used here any more. */
+
+    return 0;
 }
 
 void nn_sockbase_term (struct nn_sockbase *self)

@@ -18,7 +18,7 @@ DESCRIPTION
 Closes the socket 's'. Any buffered inbound messages that were not yet received
 by the application will be discarded. The library will try to deliver any
 outstanding outbound messages for the time specified by _NN_LINGER_ socket
-option.
+option. The call will block in the meantime.
 
 
 RETURN VALUE
@@ -31,6 +31,9 @@ ERRORS
 ------
 *EBADF*::
 The provided socket is invalid.
+*EINTR*::
+Operation was interrupted by a signal. The socket is not fully closed yet.
+Operation can be re-started by calling _nn_close()_ again.
 
 
 EXAMPLE

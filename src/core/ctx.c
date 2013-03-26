@@ -380,16 +380,18 @@ error:
 
 int nn_close (int s)
 {
+    int rc;
+
     NN_BASIC_CHECKS;
 
-    nn_glock_lock ();
-
-    /*  Additional check of socket validity. NN_BASIC_CHECKS macro should ensure
-        that this never happens. */
-    nn_assert (self.nsocks > 0);
-
     /*  Deallocate the socket object. */
-    nn_sock_destroy (self.socks [s]);
+    rc = nn_sock_destroy (self.socks [s]);
+    if (nn_slow (rc == -EINTR)) {
+        errno = EINTR;
+        return -1;
+    }
+
+    nn_glock_lock ();
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */

@@ -133,72 +133,69 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_cp_unlock (&sockbase->cp);
 }
 
-void nn_sock_destroy (struct nn_sock *self)
+int nn_sock_destroy (struct nn_sock *self)
 {
     int rc;
     struct nn_sockbase *sockbase;
     struct nn_list_item *it;
     struct nn_epbase *ep;
-    int once;
+    int empty;
 
     sockbase = (struct nn_sockbase*) self;
 
-    /*  Unlock will be done in nn_sockbase_term function. */
     nn_cp_lock (&sockbase->cp);
 
-    /*  Mark the socket as being in process of shutting down. */
-    sockbase->flags |= NN_SOCK_FLAG_CLOSING;
+    /*  The call may have been interrupted by a singal and restarted afterwards.
+        In such case don't do the following stuff again. */
+    if (!(sockbase->flags & NN_SOCK_FLAG_CLOSING)) {
 
-    /*  Close sndfd and rcvfd. This should make any current select/poll using
-        SNDFD and/or RCVFD exit. */
-    if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
-        nn_efd_term (&sockbase->rcvfd);
-        memset (&sockbase->rcvfd, 0xcd, sizeof (sockbase->rcvfd));
-    }
-    if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
-        nn_efd_term (&sockbase->sndfd);
-        memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
-    }
+        /*  Mark the socket as being in process of shutting down. */
+        sockbase->flags |= NN_SOCK_FLAG_CLOSING;
 
-    /*  Create a semaphore to wait on for all endpoint to terminate. */
-    nn_sem_init (&sockbase->termsem);
-
-    /*  Ask all the associated endpoints to terminate. Call to nn_ep_close can
-        actually deallocate the endpoint, so take care to get pointer to the
-        next endpoint before the call. */
-    it = nn_list_begin (&sockbase->eps);
-    while (it != nn_list_end (&sockbase->eps)) {
-        ep = nn_cont (it, struct nn_epbase, item);
-        it = nn_list_next (&sockbase->eps, it);
-        nn_ep_close ((void*) ep);       
-    }
-
-    once = 0;
-    while (1) {
-
-        /*  If there are no active endpoints we can deallocate the socket.
-            It is done by asking the derived class to deallocate. Derived
-            class, in turn will terminate the sockbase class. */
-        if (nn_list_empty (&sockbase->eps)) {
-            nn_sem_term (&sockbase->termsem);
-            sockbase->vfptr->destroy (sockbase);
-
-            /*  At this point the socket is deallocated, make sure that it
-                is not addressed here any more. */
-            return;
+        /*  Close sndfd and rcvfd. This should make any current select/poll
+            using SNDFD and/or RCVFD exit. */
+        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+            nn_efd_term (&sockbase->rcvfd);
+            memset (&sockbase->rcvfd, 0xcd, sizeof (sockbase->rcvfd));
+        }
+        if (!(sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+            nn_efd_term (&sockbase->sndfd);
+            memset (&sockbase->sndfd, 0xcd, sizeof (sockbase->sndfd));
         }
 
-        /*  Sanity check: The semaphore should be posted once only. When last
-            endpoint is closed. */
-        nn_assert (once == 0);
+        /*  Create a semaphore to wait on for all endpoint to terminate. */
+        nn_sem_init (&sockbase->termsem);
 
-        /*  Wait till all the endpoints are closed. */
+        /*  Ask all the associated endpoints to terminate. Call to nn_ep_close
+            can actually deallocate the endpoint, so take care to get pointer
+            to the next endpoint before the call. */
+        it = nn_list_begin (&sockbase->eps);
+        while (it != nn_list_end (&sockbase->eps)) {
+            ep = nn_cont (it, struct nn_epbase, item);
+            it = nn_list_next (&sockbase->eps, it);
+            nn_ep_close ((void*) ep);       
+        }
+    }
+
+    /*  Shutdown process was already started but some endpoints are still
+        alive. Here we are going to wait till they are all closed. */
+    if (!nn_list_empty (&sockbase->eps)) {
         nn_cp_unlock (&sockbase->cp);
         rc = nn_sem_wait (&sockbase->termsem);
+        if (nn_slow (rc == -EINTR))
+            return -EINTR;
         errnum_assert (rc == 0, -rc);
         nn_cp_lock (&sockbase->cp);
-        once = 1;
+        nn_assert (nn_list_empty (&sockbase->eps));
     }
+
+    /*  Deallocation of the socket is done by asking the derived class
+        to deallocate. Derived class, in turn will terminate the sockbase
+        class. */
+    nn_sem_term (&sockbase->termsem);
+    sockbase->vfptr->destroy (sockbase);
+    /*  At this point the socket is already deallocated, make sure
+        that it is not used here any more. */
 }
 
 void nn_sockbase_term (struct nn_sockbase *self)
@@ -269,7 +266,8 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     nn_cp_lock (&sockbase->cp);
 
     /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+    if (nn_slow (sockbase->flags &
+          (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
         nn_cp_unlock (&sockbase->cp);
         return -ETERM;
     }
@@ -369,7 +367,8 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
         nn_cp_lock (&sockbase->cp);
 
     /*  If nn_term() was already called, return ETERM. */
-    if (!internal && nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+    if (!internal && nn_slow (sockbase->flags &
+          (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
         nn_cp_unlock (&sockbase->cp);
         return -ETERM;
     }
@@ -576,7 +575,8 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
     while (1) {
 
         /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+        if (nn_slow (sockbase->flags &
+              (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
             nn_cp_unlock (&sockbase->cp);
             return -ETERM;
         }
@@ -650,7 +650,8 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     while (1) {
 
         /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (sockbase->flags & NN_SOCK_FLAG_ZOMBIE)) {
+        if (nn_slow (sockbase->flags &
+              (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
             nn_cp_unlock (&sockbase->cp);
             return -ETERM;
         }

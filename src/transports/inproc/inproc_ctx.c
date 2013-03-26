@@ -54,6 +54,9 @@ struct nn_transport *nn_inproc = &nn_inproc_vfptr;
 
 struct nn_inproc_ctx {
 
+    /*  Synchronises access to this object. */
+    struct nn_mutex sync;
+
     /*  List of all bound inproc endpoints. */
     struct nn_list bound;
 
@@ -66,6 +69,7 @@ static struct nn_inproc_ctx self;
 
 static void nn_inproc_ctx_init (void)
 {
+    nn_mutex_init (&self.sync);
     nn_list_init (&self.bound);
     nn_list_init (&self.connected);
 }
@@ -73,6 +77,7 @@ static void nn_inproc_ctx_term (void)
 {
     nn_list_term (&self.connected);
     nn_list_term (&self.bound);
+    nn_mutex_term (&self.sync);
 }
 
 static int nn_inproc_ctx_bind (const char *addr, void *hint,
@@ -84,21 +89,28 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
     struct nn_inprocc *inprocc;
     struct nn_msgpipe *pipe;
 
+    nn_mutex_lock (&self.sync);
+
     /*  Check whether the endpoint isn't already bound. */
     /*  TODO:  This is an O(n) algorithm! */
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         inprocb = nn_cont (it, struct nn_inprocb, list);
-        if (strncmp (addr, nn_inprocb_getaddr (inprocb), NN_SOCKADDR_MAX) == 0)
+        if (strncmp (addr, nn_inprocb_getaddr (inprocb),
+              NN_SOCKADDR_MAX) == 0) {
+            nn_mutex_unlock (&self.sync);
             return -EADDRINUSE;
+        }
     }
 
     /*  Insert the entry into the endpoint repository. */
     inprocb = nn_alloc (sizeof (struct nn_inprocb), "inprocb");
     alloc_assert (inprocb);
     rc = nn_inprocb_init (inprocb, addr, hint);
-    if (nn_slow (rc != 0))
+    if (nn_slow (rc != 0)) {
+        nn_mutex_unlock (&self.sync);
         return rc;
+    }
     nn_list_insert (&self.bound, &inprocb->list, nn_list_end (&self.bound));
 
     /*  During this process new pipes may be created. */
@@ -119,6 +131,8 @@ static int nn_inproc_ctx_bind (const char *addr, void *hint,
 
     nn_assert (epbase);
     *epbase = &inprocb->epbase;
+    nn_mutex_unlock (&self.sync);
+
     return 0;
 }
 
@@ -131,12 +145,16 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
     struct nn_inprocb *inprocb;
     struct nn_msgpipe *pipe;
 
+    nn_mutex_lock (&self.sync);
+
     /*  Insert the entry into the endpoint repository. */
     inprocc = nn_alloc (sizeof (struct nn_inprocc), "inprocc");
     alloc_assert (inprocc);
     rc = nn_inprocc_init (inprocc, addr, hint);
-    if (nn_slow (rc != 0))
+    if (nn_slow (rc != 0)) {
+        nn_mutex_unlock (&self.sync);
         return rc;
+    }
     nn_list_insert (&self.connected, &inprocc->list,
         nn_list_end (&self.connected));
 
@@ -158,16 +176,22 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
 
     nn_assert (epbase);
     *epbase = &inprocc->epbase;
+    nn_mutex_unlock (&self.sync);
+
     return 0;
 }
 
 void nn_inproc_ctx_unbind (struct nn_inprocb *inprocb)
 {
+    nn_mutex_lock (&self.sync);
     nn_list_erase (&self.bound, &inprocb->list);
+    nn_mutex_unlock (&self.sync);
 }
 
 void nn_inproc_ctx_disconnect (struct nn_inprocc *inprocc)
 {
+    nn_mutex_lock (&self.sync);
     nn_list_erase (&self.connected, &inprocc->list);
+    nn_mutex_unlock (&self.sync);
 }
 

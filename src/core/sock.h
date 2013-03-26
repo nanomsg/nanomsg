@@ -32,8 +32,9 @@ struct nn_cp;
     intialised. */
 void nn_sock_postinit (struct nn_sock *self, int domain, int protocol);
 
-/*  Called by nn_close() to deallocate the socket. */
-void nn_sock_destroy (struct nn_sock *self);
+/*  Called by nn_close() to deallocate the socket. It's a blocking function
+    and can return -EINTR. */
+int nn_sock_destroy (struct nn_sock *self);
 
 /*  Called by nn_term() to let the socket know about the process shutdown. */
 void nn_sock_zombify (struct nn_sock *self);

@@ -39,7 +39,17 @@ void nn_sem_post (struct nn_sem *self);
 /*  Waits till sem object becomes unlocked and locks it. */
 int nn_sem_wait (struct nn_sem *self);
 
-#if defined NN_HAVE_SEMAPHORE
+#if defined NN_HAVE_OSX
+
+#include <pthread.h>
+
+struct nn_sem {
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int signaled;
+};
+
+#elif defined NN_HAVE_SEMAPHORE
 
 #include <semaphore.h>
 

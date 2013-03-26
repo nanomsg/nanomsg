@@ -584,10 +584,11 @@ nn_recv(3) Manual Page
 <div class="paragraph"><p>Receive a message from the socket <em>s</em> and store it in the buffer referenced by
 the <em>buf</em> argument. Any bytes exceeding the length specified by the <em>len</em>
 argument will be truncated.</p></div>
-<div class="paragraph"><p>Alternatively, <em>nanomsg</em> library can allocate the buffer for you. To do so,
-let the <em>buf</em> parameter point to void* variable to receive the buffer and set
-<em>len</em> parameter to <em>NN_MSG</em>. After successful completion user is responsible
-for deallocating the message using <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function.</p></div>
+<div class="paragraph"><p>Alternatively, <em>nanomsg</em> can allocate the buffer for you. To do so,
+let the <em>buf</em> parameter be a pointer to a void* variable (pointer to pointer)
+to the receive buffer and set the <em>len</em> parameter to <em>NN_MSG</em>. If the call is
+successful the user is responsible for deallocating the message using
+the <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function.</p></div>
 <div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
@@ -679,13 +680,55 @@ The library is terminating.
 </div>
 </div>
 <div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
+<h2 id="_examples">EXAMPLES</h2>
 <div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+Receiving a message into a buffer allocated by the user
+</dt>
+<dd>
+<p>
+This example code will retrieve a message of either 100 bytes or less. If a
+larger message was sent it will be truncated to 100 bytes.
+</p>
+</dd>
+</dl></div>
 <div class="listingblock">
 <div class="content">
 <pre><tt>char buf [100];
 nbytes = nn_recv (s, buf, sizeof (buf), 0);</tt></pre>
 </div></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+Receiving a message into a buffer allocated by <em>nanomsg</em>
+</dt>
+<dd>
+<p>
+The following will get a message from the pipe with a buffer allocated by
+the system. It is large enough to accomodate the entire message. This is a good
+way to get the entire message without truncating if the size of the message is
+unknown. It is the user&#8217;s responsibility to call <a href="nn_freemsg.3.html">nn_freemsg(3)</a> after
+processing the message.
+</p>
+</dd>
+</dl></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>char *buf = NULL;
+nbytes = nn_recv (s, &amp;buf, NN_MSG, 0);
+
+if (nbytes &lt; 0) {
+    /* handle error */
+    ...
+}
+else {
+    /* process message */
+    ...
+    nn_freemsg (buf);
+}</tt></pre>
+</div></div>
+<div class="paragraph"><p>Note that this can be more efficient than manually allocating a buffer since
+it is a zero-copy operation.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -708,7 +751,7 @@ nbytes = nn_recv (s, buf, sizeof (buf), 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-23 21:50:02 CET
+Last updated 2013-03-26 07:58:05 CET
 </div>
 </div>
 </body>

@@ -106,7 +106,7 @@ int main ()
     rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
-    val = 100;
+    val = 200;
     rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &val, sizeof (val));
     errno_assert (rc == 0);
     i = 0;

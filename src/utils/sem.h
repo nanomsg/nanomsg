@@ -49,6 +49,14 @@ struct nn_sem {
     int signaled;
 };
 
+#elif defined NN_HAVE_WINDOWS
+
+#include "win.h"
+
+struct nn_sem {
+    HANDLE h;
+};
+
 #elif defined NN_HAVE_SEMAPHORE
 
 #include <semaphore.h>

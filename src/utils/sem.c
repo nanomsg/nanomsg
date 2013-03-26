@@ -91,6 +91,41 @@ int nn_sem_wait (struct nn_sem *self)
     return 0;
 }
 
+#elif defined NN_HAVE_WINDOWS
+
+void nn_sem_init (struct nn_sem *self)
+{
+    self->h = CreateEvent (NULL, FALSE, FALSE, NULL);
+    win_assert (self->h);
+}
+
+void nn_sem_term (struct nn_sem *self)
+{
+    BOOL brc;
+
+    brc = CloseHandle (self->h);
+    win_assert (brc);
+}
+
+void nn_sem_post (struct nn_sem *self)
+{
+    BOOL brc;
+
+    brc = SetEvent (self->h);
+    win_assert (brc);
+}
+
+int nn_sem_wait (struct nn_sem *self)
+{
+    DWORD rc;
+
+    rc = WaitForSingleObject (self->h, INFINITE);
+    win_assert (rc != WAIT_FAILED);
+    nn_assert (rc == WAIT_OBJECT_0);
+
+    return 0;
+}
+
 #elif defined NN_HAVE_SEMAPHORE
 
 void nn_sem_init (struct nn_sem *self)

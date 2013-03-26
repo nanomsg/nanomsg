@@ -139,7 +139,6 @@ int nn_sock_destroy (struct nn_sock *self)
     struct nn_sockbase *sockbase;
     struct nn_list_item *it;
     struct nn_epbase *ep;
-    int empty;
 
     sockbase = (struct nn_sockbase*) self;
 

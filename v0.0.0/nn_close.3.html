@@ -584,7 +584,7 @@ nn_close(3) Manual Page
 <div class="paragraph"><p>Closes the socket <em>s</em>. Any buffered inbound messages that were not yet received
 by the application will be discarded. The library will try to deliver any
 outstanding outbound messages for the time specified by <em>NN_LINGER</em> socket
-option.</p></div>
+option. The call will block in the meantime.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -604,6 +604,15 @@ returned and <em>errno</em> is set to to one of the values defined below.</p></d
 <dd>
 <p>
 The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+Operation was interrupted by a signal. The socket is not fully closed yet.
+Operation can be re-started by calling <em>nn_close()</em> again.
 </p>
 </dd>
 </dl></div>
@@ -640,7 +649,7 @@ assert (rc == 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-26 07:51:54 CET
+Last updated 2013-03-27 10:19:09 CET
 </div>
 </div>
 </body>

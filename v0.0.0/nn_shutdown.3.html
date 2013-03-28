@@ -583,7 +583,9 @@ nn_shutdown(3) Manual Page
 <div class="sectionbody">
 <div class="paragraph"><p>Removes an endpoint from socket <em>s</em>. <em>how</em> parameter specifies the ID of the
 endpoint to remove as returned by prior call to <a href="nn_bind.3.html">nn_bind(3)</a> or
-<a href="nn_connect.3.html">nn_connect(3)</a>.</p></div>
+<a href="nn_connect.3.html">nn_connect(3)</a>. The library will try to deliver any outstanding
+outbound messages to this endpoint for the time specified by <em>NN_LINGER</em> socket
+option. The call will block in the meantime.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -611,6 +613,15 @@ The provided socket is invalid.
 <dd>
 <p>
 The <em>how</em> parameter doesn&#8217;t correspond to an active endpoint.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+Operation was interrupted by a signal. The endpoint is not fully closed yet.
+Operation can be re-started by calling <em>nn_shutdown()</em> again.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -655,7 +666,7 @@ nn_shutdown (s, eid);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-26 07:51:54 CET
+Last updated 2013-03-27 10:19:09 CET
 </div>
 </div>
 </body>

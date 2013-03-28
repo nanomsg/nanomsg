@@ -248,9 +248,9 @@ install (FILES src/fanout.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
-# Source package.
+#  Source package.
 
-if (NOT WIN32)
+if (WIN32)
     set (CPACK_SOURCE_GENERATOR ZIP)
 else ()
     set (CPACK_SOURCE_GENERATOR TGZ)
@@ -261,13 +261,13 @@ add_custom_target (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 
 #  Create the packages.
 
-set(CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+set (CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "nanomsg library is a high-performance implementation of several \"scalability protocols\". Scalability protocol's job is to define how multiple applications communicate to form a single distributed application")
-set(CPACK_PACKAGE_VERSION "${NN_VERSION_STR}")
-set(CPACK_PACKAGE_VERSION_MAJOR "${NN_VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${NN_VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${NN_VERSION_PATCH}")
+set (CPACK_PACKAGE_VERSION "${NN_VERSION_STR}")
+set (CPACK_PACKAGE_VERSION_MAJOR "${NN_VERSION_MAJOR}")
+set (CPACK_PACKAGE_VERSION_MINOR "${NN_VERSION_MINOR}")
+set (CPACK_PACKAGE_VERSION_PATCH "${NN_VERSION_PATCH}")
 
 include (CPack)
 

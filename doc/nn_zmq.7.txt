@@ -31,6 +31,8 @@ The functionality and feature set of ZeroMQ and nanomsg is not identical, so whi
 
 Socket types:
 
+    NN_BUS 1112
+    NN_BUS (raw) 2112
     NN_PAIR 1016
     NN_PAIR (raw) 2016
     NN_PUB 1032

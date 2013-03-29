@@ -83,8 +83,9 @@ const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
     const struct nn_cp_sink **sink);
 void nn_usock_close (struct nn_usock *self);
 
-int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
-    nn_socklen addrlen, int backlog);
+int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen);
+int nn_usock_listen (struct nn_usock *self, int backlog);
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     nn_socklen addrlen);
 void nn_usock_accept (struct nn_usock *self);

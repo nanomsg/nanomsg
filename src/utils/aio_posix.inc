@@ -618,8 +618,8 @@ void nn_usock_close (struct nn_usock *self)
     nn_efd_signal (&self->cp->efd);
 }
 
-int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
-    nn_socklen addrlen, int backlog)
+int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen)
 {
     int rc;
     int opt;
@@ -635,6 +635,13 @@ int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
     rc = bind (self->s, addr, addrlen);
     if (nn_slow (rc < 0))
        return -errno;
+
+    return 0;
+}
+
+int nn_usock_listen (struct nn_usock *self, int backlog)
+{
+    int rc;
 
     /*  Start waiting for incoming connections. */
     rc = listen (self->s, backlog);

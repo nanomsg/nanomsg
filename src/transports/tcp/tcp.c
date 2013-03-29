@@ -37,8 +37,8 @@ static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
     struct nn_cp *cp, int backlog);
 static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
     struct nn_cp *cp);
-static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen);
+static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
+    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen);
 
 /*  nn_transport interface. */
 static void nn_tcp_init (void);
@@ -148,7 +148,9 @@ static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
     rc = nn_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
         -1, -1, cp);
     errnum_assert (rc == 0, -rc);
-    rc = nn_usock_listen (usock, (struct sockaddr*) &ss, sslen, NN_TCP_BACKLOG);
+    rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
+    errnum_assert (rc == 0, -rc);
+    rc = nn_usock_listen (usock, NN_TCP_BACKLOG);
     errnum_assert (rc == 0, -rc);
 
     return 0;
@@ -161,15 +163,15 @@ static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
         sndbuf, rcvbuf, cp);
 }
 
-static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen)
+static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
+    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen)
 {
     int rc;
     int port;
     const char *colon;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (ss, 0, sizeof (struct sockaddr_storage));
+    memset (remote, 0, sizeof (struct sockaddr_storage));
 
     /*  Parse the port. */
     port = nn_addr_parse_port (addr, &colon);
@@ -182,15 +184,15 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *ss,
     /*  Parse the remote address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
     rc = nn_addr_parse_remote (addr, colon - addr, NN_ADDR_IPV4ONLY,
-        ss, sslen);
+        remote, remotelen);
     if (nn_slow (rc < 0))
         return rc;
 
     /*  Combine the port and the address. */
-    if (ss->ss_family == AF_INET)
-        ((struct sockaddr_in*) ss)->sin_port = htons (port);
-    else if (ss->ss_family == AF_INET6)
-        ((struct sockaddr_in6*) ss)->sin6_port = htons (port);
+    if (remote->ss_family == AF_INET)
+        ((struct sockaddr_in*) remote)->sin_port = htons (port);
+    else if (remote->ss_family == AF_INET6)
+        ((struct sockaddr_in6*) remote)->sin6_port = htons (port);
     else
         nn_assert (0);
 

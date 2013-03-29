@@ -102,7 +102,8 @@ static const struct nn_cp_sink nn_cstream_state_waiting = {
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
     struct nn_cp *cp), int (*resolvefn) (const char *addr,
-    struct sockaddr_storage *ss, socklen_t *sslen))
+    struct sockaddr_storage *local, socklen_t *locallen,
+    struct sockaddr_storage *remote, socklen_t *remotelen))
 {
     int rc;
     int sndbuf;
@@ -151,13 +152,16 @@ static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
 {
     int rc;
     struct nn_cstream *cstream;
-    struct sockaddr_storage ss;
-    socklen_t sslen;
+    struct sockaddr_storage local;
+    socklen_t locallen;
+    struct sockaddr_storage remote;
+    socklen_t remotelen;
 
     cstream = nn_cont (self, struct nn_cstream, sink);
 
     /*  Retry timer expired. Now we'll try to resolve the address. */
-    rc = cstream->resolvefn (nn_epbase_getaddr (&cstream->epbase), &ss, &sslen);
+    rc = cstream->resolvefn (nn_epbase_getaddr (&cstream->epbase),
+        &local, &locallen, &remote, &remotelen);
 
     /*  If the address resolution have failed, wait and re-try. */
     if (rc < 0) {
@@ -169,7 +173,9 @@ static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
 
     /*  Open the socket and start connecting. */
     cstream->sink = &nn_cstream_state_connecting;
-    nn_usock_connect (&cstream->usock, (struct sockaddr*) &ss, sslen);
+    if (rc & NN_CSTREAM_DOBIND)
+        nn_usock_bind (&cstream->usock, (struct sockaddr*) &local, locallen);
+    nn_usock_connect (&cstream->usock, (struct sockaddr*) &remote, remotelen);
 }
 
 /******************************************************************************/

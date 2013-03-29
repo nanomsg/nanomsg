@@ -42,8 +42,8 @@ static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
     struct nn_cp *cp, int backlog);
 static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
     struct nn_cp *cp);
-static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen);
+static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *local,
+    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen);
 
 /*  nn_transport interface. */
 static void nn_ipc_init (void);
@@ -136,7 +136,9 @@ static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
     /*  Open the listening socket. */
     rc = nn_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
     errnum_assert (rc == 0, -rc);
-    rc = nn_usock_listen (usock, (struct sockaddr*) &ss, sslen, backlog);
+    rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
+    errnum_assert (rc == 0, -rc);
+    rc = nn_usock_listen (usock, backlog);
     errnum_assert (rc == 0, -rc);
 
     return 0;
@@ -149,21 +151,21 @@ static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
         sndbuf, rcvbuf, cp);
 }
 
-static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *ss,
-    socklen_t *sslen)
+static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *local,
+    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen)
 {
     struct sockaddr_un *un;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (ss, 0, sizeof (struct sockaddr_storage));
+    memset (remote, 0, sizeof (struct sockaddr_storage));
 
     /*  Fill in the address. */
-    un = (struct sockaddr_un*) ss;
+    un = (struct sockaddr_un*) remote;
     if (strlen (addr) >= sizeof (un->sun_path))
         return -ENAMETOOLONG;
-    ss->ss_family = AF_UNIX;
+    remote->ss_family = AF_UNIX;
     strncpy (un->sun_path, addr, sizeof (un->sun_path));
-    *sslen = sizeof (struct sockaddr_un);
+    *remotelen = sizeof (struct sockaddr_un);
 
     return 0;
 }

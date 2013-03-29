@@ -363,8 +363,8 @@ void nn_usock_close (struct nn_usock *self)
     wsa_assert (rc != SOCKET_ERROR);
 }
 
-int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
-    nn_socklen addrlen, int backlog)
+int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+    nn_socklen addrlen)
 {
     int rc;
     int opt;
@@ -379,6 +379,13 @@ int nn_usock_listen (struct nn_usock *self, const struct sockaddr *addr,
     rc = bind (self->s, addr, addrlen);
     if (nn_slow (rc == SOCKET_ERROR))
        return -nn_err_wsa_to_posix (WSAGetLastError ());
+
+    return 0;
+}
+
+int nn_usock_listen (struct nn_usock *self, int backlog)
+{
+    int rc;
 
     rc = listen (self->s, backlog);
     wsa_assert (rc != SOCKET_ERROR);

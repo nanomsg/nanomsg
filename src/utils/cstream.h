@@ -28,6 +28,10 @@
 #include "aio.h"
 #include "stream.h"
 
+/*  Returned by the resolve function to indicate that the 'local' address
+    should be used. */
+#define NN_CSTREAM_DOBIND 1
+
 struct nn_cstream {
 
     /*  Event sink. */
@@ -53,14 +57,16 @@ struct nn_cstream {
     /*  Virtual functions supplied by the specific transport type. */
     int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
         struct nn_cp *cp);
-    int (*resolvefn) (const char *addr, struct sockaddr_storage *ss,
-        socklen_t *sslen);
+    int (*resolvefn) (const char *addr, struct sockaddr_storage *local,
+        socklen_t *locallen, struct sockaddr_storage *remote,
+        socklen_t *remotelen);
 };
 
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
     struct nn_cp *cp), int (*resolvefn) (const char *addr,
-    struct sockaddr_storage *ss, socklen_t *sslen));
+    struct sockaddr_storage *local, socklen_t *locallen,
+    struct sockaddr_storage *remote, socklen_t *remotelen));
 
 #endif
 

@@ -38,11 +38,8 @@ typedef socklen_t nn_socklen;
 
 #define NN_ADDR_IPV4ONLY 1
 
-/*  Parse port numbers at the end of the address string. The function returns
-    L4 port (e.g. TCP port). If successful, 'colon' output parameter will
-    contain a pointer to the colon character in the address string (delimiter
-    between address and port part of the string). */
-int nn_addr_parse_port (const char *addr, const char **colon);
+/*  Parse are return port number. */
+int nn_addr_parse_port (const char *port, size_t portlen);
 
 /*  Resolves name of a local network interface into the address itself.
     Name '*' is resolved as 'all interfaces'. */

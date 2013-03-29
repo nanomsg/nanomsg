@@ -30,6 +30,8 @@
 #include "../../utils/cstream.h"
 #include "../../utils/list.h"
 
+#include <string.h>
+
 #define NN_TCP_BACKLOG 100
 
 /*  Private functions. */
@@ -89,15 +91,31 @@ static int nn_tcp_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
     int rc;
+    const char *end;
+    const char *pos;
     struct nn_cstream *cstream;
 
-    /*  Check the syntax of the address here. All we can check is whether
-        port is OK. Address itself has to be resolved by DNS. */
-    /*  TODO: Check local address, if any. */
-    rc = nn_addr_parse_port (addr, NULL);
+    /*  Check the syntax of the address here. First, check whether port number
+        is OK.  */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    if (!pos)
+        return -EINVAL;
+    ++pos;
+    rc = nn_addr_parse_port (pos, end - pos);
     if (rc < 0)
         return rc;
 
+    /*  Now check whether local address, in any, is valid. */
+    pos = strchr (addr, ';');
+    if (pos) {
+        rc = nn_addr_parse_local (addr, pos - addr, NN_ADDR_IPV4ONLY,
+            NULL, NULL);
+        if (rc < 0)
+            return rc;
+    }
+
+    /*  Create the async object to handle the connection. */
     cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (tcp)");
     alloc_assert (cstream);
     rc = nn_cstream_init (cstream, addr, hint, nn_tcp_csockinit,
@@ -116,7 +134,8 @@ static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
 {
     int rc;
     int port;
-    const char *colon;
+    const char *end;
+    const char *pos;
     struct sockaddr_storage ss;
     socklen_t sslen;
 
@@ -124,14 +143,19 @@ static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
     memset (&ss, 0, sizeof (ss));
 
     /*  Parse the port. */
-    rc = nn_addr_parse_port (addr, &colon);
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    if (!pos)
+        return -EINVAL;
+    ++pos;
+    rc = nn_addr_parse_port (pos, end - pos);
     if (rc < 0)
         return rc;
     port = rc;
 
     /*  Parse the address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_local (addr, colon - addr, NN_ADDR_IPV4ONLY,
+    rc = nn_addr_parse_local (addr, pos - addr - 1, NN_ADDR_IPV4ONLY,
         &ss, &sslen);
     if (rc < 0)
         return rc;
@@ -168,6 +192,7 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
 {
     int rc;
     int port;
+    const char *end;
     const char *colon;
     const char *semicolon;
     int res;
@@ -178,7 +203,9 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
     memset (remote, 0, sizeof (struct sockaddr_storage));
 
     /*  Parse the port. */
-    port = nn_addr_parse_port (addr, &colon);
+    end = addr + strlen (addr);
+    colon = strrchr (addr, ':');
+    port = nn_addr_parse_port (colon + 1, end - colon - 1);
     if (nn_slow (port == -EINVAL))
         return -EINVAL;
     errnum_assert (port > 0, -port);

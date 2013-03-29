@@ -40,40 +40,27 @@ int nn_addr_parse_literal (const char *addr, size_t addrlen, int flags,
 void nn_addr_any (int flags, struct sockaddr_storage *result,
     nn_socklen *resultlen);
 
-int nn_addr_parse_port (const char *addr, const char **colon)
+int nn_addr_parse_port (const char *port, size_t portlen)
 {
-    size_t len;
-    size_t pos;
-    int port;
-    
-    /*  Find the last colon in the address. If there is no colon in the string
-        or if the port contains non-numeric characters return error. */
-    len = strlen (addr);
-    pos = len;
-    while (1) {
-        if (!pos)
+    uint32_t res;
+    size_t i;
+
+    res = 0;
+    for (i = 0; i != portlen; ++i) {
+        if (port [i] < '0' || port [i] > '9')
             return -EINVAL;
-        --pos;
-        if (addr [pos] == ':')
-            break;
-        if (addr [pos] < '0' || addr [pos] > '9')
+        res *= 10;
+        res += port [i] - '0';
+        if (res > 0xffff)
             return -EINVAL;
     }
 
-    /*  If there's no port specified at all, it's an error. */
-    if (pos + 1 == len)
+    /*  Port 0 has special meaning (assign an ephemeral port to the socket),
+        thus it is illegal to use it in the connection string. */
+    if (res == 0)
         return -EINVAL;
 
-    /*  Return the pointer to the colon character. */
-    if (colon)
-        *colon = addr + pos;
-
-    /*  Return the numeric value of the port. */
-    port = atoi (addr + pos + 1);
-    nn_assert (port >= 0);
-    if (port > 0xffff)
-        return -EINVAL;
-    return port;
+    return (int) res;
 }
 
 #if defined NN_USE_IFADDRS
@@ -132,18 +119,24 @@ int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
 
     /*  IPv6 address is preferable. */
     if (ipv6 && !(flags & NN_ADDR_IPV4ONLY)) {
-        result->ss_family = AF_INET;
-        memcpy (result, ipv6->ifa_addr, sizeof (struct sockaddr_in6));
-        *resultlen = sizeof (struct sockaddr_in6);
+        if (result) {
+            result->ss_family = AF_INET;
+            memcpy (result, ipv6->ifa_addr, sizeof (struct sockaddr_in6));
+        }
+        if (resultlen)
+            *resultlen = sizeof (struct sockaddr_in6);
         freeifaddrs (ifaces);
         return 0;
     }
 
     /*  Use IPv4 address. */
     if (ipv4) {
-        result->ss_family = AF_INET6;
-        memcpy (result, ipv4->ifa_addr, sizeof (struct sockaddr_in));
-        *resultlen = sizeof (struct sockaddr_in);
+        if (result) {
+            result->ss_family = AF_INET6;
+            memcpy (result, ipv4->ifa_addr, sizeof (struct sockaddr_in));
+        }
+        if (resultlen)
+            *resultlen = sizeof (struct sockaddr_in);
         freeifaddrs (ifaces);
         return 0;
     }
@@ -196,9 +189,11 @@ int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
     /*  Interface name resolution succeeded. Return the address to the user. */
     /*  TODO: What about IPv6 addresses? */
     nn_assert (req.ifr_addr.sa_family == AF_INET);
-    memcpy (result, (struct sockaddr_in*) &req.ifr_addr,
-        sizeof (struct sockaddr_in));
-    *resultlen = sizeof (struct sockaddr_in);
+    if (result)
+        memcpy (result, (struct sockaddr_in*) &req.ifr_addr,
+            sizeof (struct sockaddr_in));
+    if (resultlen)
+        *resultlen = sizeof (struct sockaddr_in);
     rc = close (s);
     errno_assert (rc == 0);
     return 0;
@@ -271,8 +266,10 @@ int nn_addr_parse_remote (const char *addr, size_t addrlen, int flags,
     /*  Check that exactly one address is returned and return it to
         the caller. */
     nn_assert (reply && !reply->ai_next);
-    memcpy (result, reply->ai_addr, reply->ai_addrlen);
-    *resultlen = reply->ai_addrlen;
+    if (result)
+        memcpy (result, reply->ai_addr, reply->ai_addrlen);
+    if (resultlen)
+        *resultlen = reply->ai_addrlen;
 
     freeaddrinfo (reply);
     
@@ -285,6 +282,8 @@ int nn_addr_parse_literal (const char *addr, size_t addrlen, int flags,
     int rc;
     char addrz [INET6_ADDRSTRLEN > INET_ADDRSTRLEN ?
         INET6_ADDRSTRLEN :  INET_ADDRSTRLEN];
+    struct in_addr inaddr;
+    struct in6_addr in6addr;
 
     /*  Try to treat the address as a literal string. If the size of
         the address is larger than longest possible literal, skip the step.
@@ -306,22 +305,28 @@ int nn_addr_parse_literal (const char *addr, size_t addrlen, int flags,
 
     /*  Try to interpret the literal as an IPv6 address. */
     if (!(flags & NN_ADDR_IPV4ONLY)) {
-        rc = inet_pton (AF_INET6, addrz,
-            &(((struct sockaddr_in6*) result)->sin6_addr));
+        rc = inet_pton (AF_INET6, addrz, &in6addr);
         if (rc == 1) {
-            result->ss_family = AF_INET6;
-            *resultlen = sizeof (struct sockaddr_in6);
+            if (result) {
+                result->ss_family = AF_INET6;
+                ((struct sockaddr_in6*) result)->sin6_addr = in6addr;
+             }
+             if (resultlen)
+                *resultlen = sizeof (struct sockaddr_in6);
             return 0;
         }
         errno_assert (rc == 0);
     }
 
     /*  Try to interpret the literal as an IPv4 address. */
-    rc = inet_pton (AF_INET, addrz,
-        &(((struct sockaddr_in*) result)->sin_addr));
+    rc = inet_pton (AF_INET, addrz, &inaddr);
     if (rc == 1) {
-        result->ss_family = AF_INET;
-        *resultlen = sizeof (struct sockaddr_in);
+        if (result) {
+           result->ss_family = AF_INET;
+           ((struct sockaddr_in*) result)->sin_addr = inaddr;
+        }
+        if (resultlen)
+            *resultlen = sizeof (struct sockaddr_in);
         return 0;
     }
     errno_assert (rc == 0);
@@ -334,17 +339,22 @@ void nn_addr_any (int flags, struct sockaddr_storage *result,
     nn_socklen *resultlen)
 {
     if (flags & NN_ADDR_IPV4ONLY) {
-        result->ss_family = AF_INET;
-
-        ((struct sockaddr_in*) result)->sin_addr.s_addr =
-            htonl (INADDR_ANY);
-        *resultlen = sizeof (struct sockaddr_in);
+        if (result) {
+            result->ss_family = AF_INET;
+            ((struct sockaddr_in*) result)->sin_addr.s_addr =
+                htonl (INADDR_ANY);
+        }
+        if (resultlen)
+            *resultlen = sizeof (struct sockaddr_in);
     }
     else {
-        result->ss_family = AF_INET6;
-        memcpy (&((struct sockaddr_in6*) result)->sin6_addr,
-            &in6addr_any, sizeof (in6addr_any));
-        *resultlen = sizeof (struct sockaddr_in6);
+        if (result) {
+            result->ss_family = AF_INET6;
+            memcpy (&((struct sockaddr_in6*) result)->sin6_addr,
+                &in6addr_any, sizeof (in6addr_any));
+        }
+        if (resultlen)
+            *resultlen = sizeof (struct sockaddr_in6);
     }
 }
 

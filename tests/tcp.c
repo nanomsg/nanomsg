@@ -72,7 +72,9 @@ int main ()
     errno_assert (nn_errno () == EINVAL);
     rc = nn_connect (sc, "tcp://*:some_port");
     nn_assert (rc < 0);
-    errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://eth10000;127.0.0.1:5555");
+    nn_assert (rc < 0);    
+    errno_assert (nn_errno () == ENODEV);
     rc = nn_bind (sc, "tcp://127.0.0.1:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);

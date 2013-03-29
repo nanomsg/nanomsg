@@ -48,7 +48,7 @@
 $ git clone git@github.com:250bpm/nanomsg.git
 $ cd nanomsg
 $ mkdir build
-$ cd build
+$ cmake .. # or cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 $ cmake ..
 $ make
 $ make check

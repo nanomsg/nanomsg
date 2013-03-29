@@ -40,10 +40,11 @@ int main ()
     int i;
     char buf [3];
 
-    /*  Try closing a TCP socket while it not connected. */
+    /*  Try closing a TCP socket while it not connected. At the same time
+        test specifying the local address for connection. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
+    rc = nn_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");
     errno_assert (rc >= 0);
     rc = nn_close (sc);
     errno_assert (rc == 0);

@@ -169,6 +169,10 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
     int rc;
     int port;
     const char *colon;
+    const char *semicolon;
+    int res;
+
+    res = 0;
 
     /*  Make sure we're working from a clean slate. Required on Mac OS X. */
     memset (remote, 0, sizeof (struct sockaddr_storage));
@@ -179,7 +183,16 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
         return -EINVAL;
     errnum_assert (port > 0, -port);
 
-    /*  TODO: Parse the local address, if any. */
+    /*  Parse the local address, if any. */
+    semicolon = strchr (addr, ';');
+    if (semicolon) {
+        memset (local, 0, sizeof (struct sockaddr_storage));
+        rc = nn_addr_parse_local (addr, semicolon - addr, NN_ADDR_IPV4ONLY,
+            local, locallen);
+        errnum_assert (rc == 0, -rc);
+        addr = semicolon + 1;
+        res |= NN_CSTREAM_DOBIND;
+    }
 
     /*  Parse the remote address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
@@ -196,6 +209,6 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
     else
         nn_assert (0);
 
-    return 0;
+    return res;
 }
 

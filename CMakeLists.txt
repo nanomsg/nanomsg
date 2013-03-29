@@ -224,6 +224,10 @@ string (REGEX REPLACE ".*#define NN_VERSION_MINOR ([0-9]+).*" "\\1" NN_VERSION_M
 string (REGEX REPLACE ".*#define NN_VERSION_PATCH ([0-9]+).*" "\\1" NN_VERSION_PATCH "${NN_H_DATA}")
 set (NN_VERSION_STR "${NN_VERSION_MAJOR}.${NN_VERSION_MINOR}.${NN_VERSION_PATCH}")
 
+#  Description
+
+set (NN_DESCRIPTION "nanomsg library is a high-performance implementation of several \"scalability protocols\". Scalability protocol's job is to define how multiple applications communicate to form a single distributed application")
+
 #  Subdirectories to build.
 
 add_subdirectory (src)
@@ -262,8 +266,7 @@ add_custom_target (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 #  Create the packages.
 
 set (CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "nanomsg library is a high-performance implementation of several \"scalability protocols\". Scalability protocol's job is to define how multiple applications communicate to form a single distributed application")
+set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "${NN_DESCRIPTION}")
 set (CPACK_PACKAGE_VERSION "${NN_VERSION_STR}")
 set (CPACK_PACKAGE_VERSION_MAJOR "${NN_VERSION_MAJOR}")
 set (CPACK_PACKAGE_VERSION_MINOR "${NN_VERSION_MINOR}")

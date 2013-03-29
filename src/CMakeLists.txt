@@ -224,3 +224,9 @@ target_link_libraries (nanomsg ${CMAKE_THREAD_LIBS_INIT})
 
 install (TARGETS nanomsg DESTINATION lib)
 
+# pkg-config file
+if (UNIX)
+    configure_file (pkgconfig.in ${CMAKE_PROJECT_NAME}.pc @ONLY)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.pc DESTINATION lib/pkgconfig)
+endif ()
+

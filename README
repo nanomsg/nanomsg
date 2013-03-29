@@ -16,7 +16,7 @@ Build it
 3.  cd nanomsg
 4.  mkdir build
 5.  cd build
-6.  cmake ..
+6.  cmake .. # or cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 7.  make
 8.  make check
 9.  sudo make install

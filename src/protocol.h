@@ -192,7 +192,7 @@ struct nn_socktype {
 
     /*  This member is owned by the core. Never touch it directly from inside
         the protocol implementation. */
-    struct nn_list_item list;
+    struct nn_list_item item;
 };
 
 #endif

@@ -252,7 +252,7 @@ static void nn_ctx_term (void)
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
         it = nn_list_begin (&self.transports);
-        nn_cont (it, struct nn_transport, list)->term ();
+        nn_cont (it, struct nn_transport, item)->term ();
         nn_list_erase (&self.transports, it);
     }
 
@@ -357,7 +357,7 @@ int nn_socket (int domain, int protocol)
     for (it = nn_list_begin (&self.socktypes);
           it != nn_list_end (&self.socktypes);
           it = nn_list_next (&self.socktypes, it)) {
-        socktype = nn_cont (it, struct nn_socktype, list);
+        socktype = nn_cont (it, struct nn_socktype, item);
         if (socktype->domain == domain && socktype->protocol == protocol) {
             rc = socktype->create ((struct nn_sockbase**) &self.socks [s]);
             if (rc < 0)
@@ -752,14 +752,14 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 static void nn_ctx_add_transport (struct nn_transport *transport)
 {
     transport->init ();
-    nn_list_insert (&self.transports, &transport->list,
+    nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
     
 }
 
 static void nn_ctx_add_socktype (struct nn_socktype *socktype)
 {
-    nn_list_insert (&self.socktypes, &socktype->list,
+    nn_list_insert (&self.socktypes, &socktype->item,
         nn_list_end (&self.socktypes));
 }
 
@@ -794,7 +794,7 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
     for (it = nn_list_begin (&self.transports);
           it != nn_list_end (&self.transports);
           it = nn_list_next (&self.transports, it)) {
-        tp = nn_cont (it, struct nn_transport, list);
+        tp = nn_cont (it, struct nn_transport, item);
         if (strlen (tp->name) == protosz &&
               memcmp (tp->name, proto, protosz) == 0)
             break;

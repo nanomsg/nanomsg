@@ -184,7 +184,7 @@ struct nn_transport {
 
     /*  This member is used exclusively by the core. Never touch it directly
         from the transport. */
-    struct nn_list_item list;
+    struct nn_list_item item;
 };
 
 #endif

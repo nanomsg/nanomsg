@@ -24,6 +24,8 @@
 
 #include "ipc.h"
 
+#include "../../ipc.h"
+
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
@@ -55,6 +57,7 @@ static int nn_ipc_connect (const char *addr, void *hint,
 
 static struct nn_transport nn_ipc_vfptr = {
     "ipc",
+    NN_IPC,
     nn_ipc_init,
     nn_ipc_term,
     nn_ipc_bind,

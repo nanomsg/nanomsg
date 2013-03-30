@@ -24,6 +24,7 @@
 #include "../transport.h"
 
 #include "sock.h"
+#include "ctx.h"
 #include "ep.h"
 
 #include "../utils/err.h"
@@ -47,11 +48,13 @@
 
 /*  Private functions. */
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
+struct nn_optset *nn_sockbase_optset (struct nn_sockbase *self, int id);
 
 int nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr)
 {
     int rc;
+    int i;
 
     /* Make sure that at least one message direction is supported. */
     nn_assert (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) ||
@@ -104,6 +107,11 @@ int nn_sockbase_init (struct nn_sockbase *self,
     self->reconnect_ivl_max = 0;
     self->sndprio = 8;
     self->rcvprio = 8;
+
+    /*  The transport-specific options are not initialised immediately,
+        rather, they are allocated later on when needed. */
+    for (i = 0; i != NN_MAX_TRANSPORT; ++i)
+        self->optsets [i] = NULL;
 
     return 0;
 }
@@ -202,10 +210,17 @@ int nn_sock_destroy (struct nn_sock *self)
 
 void nn_sockbase_term (struct nn_sockbase *self)
 {
+    int i;
+
     nn_assert (self->flags & NN_SOCK_FLAG_CLOSING);
 
     /*  The lock was done in nn_sock_destroy function. */
     nn_cp_unlock (&self->cp);
+
+    /*  Destroy any optsets associated with the socket. */
+    for (i = 0; i != NN_MAX_TRANSPORT; ++i)
+        if (self->optsets [i])
+            self->optsets [i]->vfptr->destroy (self->optsets [i]);
 
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
@@ -260,6 +275,7 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
+    struct nn_optset *optset;
     int val;
     int *dst;
 
@@ -285,8 +301,14 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
+        optset = nn_sockbase_optset (sockbase, level);
+        if (!optset) {
+            nn_cp_unlock (&sockbase->cp);
+            return -ENOPROTOOPT;
+        }
+        rc = optset->vfptr->setopt (optset, option, optval, optvallen);
         nn_cp_unlock (&sockbase->cp);
-        return -ENOPROTOOPT;
+        return rc;
     }
 
     /*  At this point we assume that all options are of type int. */
@@ -360,6 +382,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
+    struct nn_optset *optset;
     int intval;
     nn_fd fd;
 
@@ -459,9 +482,16 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
+        optset = nn_sockbase_optset (sockbase, level);
+        if (!optset) {
+            if (!internal)
+                nn_cp_unlock (&sockbase->cp);
+            return -ENOPROTOOPT;
+        }
+        rc = optset->vfptr->getopt (optset, option, optval, optvallen);
         if (!internal)
             nn_cp_unlock (&sockbase->cp);
-        return -ENOPROTOOPT;
+        return rc;
     }
 
     nn_assert (0);
@@ -794,5 +824,32 @@ void nn_sockbase_adjust_events (struct nn_sockbase *self)
             }
         }
     }
+}
+
+struct nn_optset *nn_sockbase_optset (struct nn_sockbase *self, int id)
+{
+    int index;
+    struct nn_transport *tp;
+
+    /*  Transport IDs are negative and start from -1. */
+    index = (-id) - 1;
+
+    /*  Check for invalid indices. */
+    if (nn_slow (index < 0 || index >= NN_MAX_TRANSPORT))
+        return NULL;
+
+    /*  If the option set already exists return it. */
+    if (nn_fast (self->optsets [index] != NULL))
+        return self->optsets [index];
+
+    /*  If the option set doesn't exist yet, create it. */
+    tp = nn_ctx_transport (id);
+    if (nn_slow (!tp))
+        return NULL;
+    if (nn_slow (!tp->optset))
+        return NULL;
+    self->optsets [index] = tp->optset ();
+
+    return self->optsets [index];
 }
 

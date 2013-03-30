@@ -22,6 +22,8 @@
 
 #include "tcp.h"
 
+#include "../../tcp.h"
+
 #include "../../utils/err.h"
 #include "../../utils/addr.h"
 #include "../../utils/alloc.h"
@@ -52,6 +54,7 @@ static int nn_tcp_connect (const char *addr, void *hint,
 
 static struct nn_transport nn_tcp_vfptr = {
     "tcp",
+    NN_TCP,
     nn_tcp_init,
     nn_tcp_term,
     nn_tcp_bind,

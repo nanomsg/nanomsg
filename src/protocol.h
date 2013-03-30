@@ -73,6 +73,9 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
 struct nn_sockbase;
 
+/*  The maximum implemented transport ID. */
+#define NN_MAX_TRANSPORT 3
+
 #define NN_SOCKBASE_EVENT_IN 1
 #define NN_SOCKBASE_EVENT_OUT 2
 
@@ -152,6 +155,7 @@ struct nn_sockbase
     int reconnect_ivl_max;
     int sndprio;
     int rcvprio;
+    struct nn_optset *optsets [NN_MAX_TRANSPORT];
 };
 
 /*  Initialise the socket. */

@@ -815,3 +815,24 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
     return rc;
 }
 
+struct nn_transport *nn_ctx_transport (int id)
+{
+    struct nn_transport *tp;
+    struct nn_list_item *it;
+
+    /*  Find the specified protocol. */
+    tp = NULL;
+    nn_glock_lock ();
+    for (it = nn_list_begin (&self.transports);
+          it != nn_list_end (&self.transports);
+          it = nn_list_next (&self.transports, it)) {
+        tp = nn_cont (it, struct nn_transport, item);
+        if (tp->id == id)
+            break;
+        tp = NULL;
+    }
+    nn_glock_unlock ();
+
+    return tp;
+}
+

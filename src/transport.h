@@ -190,6 +190,9 @@ struct nn_transport {
         "ipc", "inproc" etc. */
     const char *name;
 
+    /*  ID of the transport. */
+    int id;
+
     /*  Following methods are guarded by a global critical section. Two of these
         function will never be invoked in parallel. The first is called when
         the library is initialised, the second one when it is terminated, i.e.
@@ -208,7 +211,7 @@ struct nn_transport {
     /*  Create an object to hold transport-specific socket options.
         Set this member to NULL in case there are no transport-specific
         socket options available. */
-    int (*optset) (struct nn_optset **optset);
+    struct nn_optset *(*optset) ();
 
     /*  This member is used exclusively by the core. Never touch it directly
         from the transport. */

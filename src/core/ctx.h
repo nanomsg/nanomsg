@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,5 +22,7 @@
 
 #ifndef NN_CTX_INCLUDED
 #define NN_CTX_INCLUDED
+
+struct nn_transport *nn_ctx_transport (int id);
 
 #endif

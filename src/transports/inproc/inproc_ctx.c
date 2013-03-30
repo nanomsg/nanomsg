@@ -24,6 +24,8 @@
 #include "inproc_ctx.h"
 #include "msgpipe.h"
 
+#include "../../inproc.h"
+
 #include "../../utils/mutex.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
@@ -43,6 +45,7 @@ static int nn_inproc_ctx_connect (const char *addr, void *hint,
 
 static struct nn_transport nn_inproc_vfptr = {
     "inproc",
+    NN_INPROC,
     nn_inproc_ctx_init,
     nn_inproc_ctx_term,
     nn_inproc_ctx_bind,

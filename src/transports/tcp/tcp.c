@@ -28,6 +28,7 @@
 #include "../../utils/addr.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
+#include "../../utils/cont.h"
 #include "../../utils/bstream.h"
 #include "../../utils/cstream.h"
 #include "../../utils/list.h"
@@ -35,6 +36,22 @@
 #include <string.h>
 
 #define NN_TCP_BACKLOG 100
+
+struct nn_tcp_optset {
+    struct nn_optset base;
+    int nodelay;
+};
+
+static void nn_tcp_optset_destroy (struct nn_optset *self);
+static int nn_tcp_optset_setopt (struct nn_optset *self, int option,
+    const void *optval, size_t optvallen);
+static int nn_tcp_optset_getopt (struct nn_optset *self, int option,
+    void *optval, size_t *optvallen);
+static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
+    nn_tcp_optset_destroy,
+    nn_tcp_optset_setopt,
+    nn_tcp_optset_getopt
+};
 
 /*  Private functions. */
 static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
@@ -51,6 +68,7 @@ static int nn_tcp_bind (const char *addr, void *hint,
     struct nn_epbase **epbase);
 static int nn_tcp_connect (const char *addr, void *hint,
     struct nn_epbase **epbase);
+static struct nn_optset *nn_tcp_optset ();
 
 static struct nn_transport nn_tcp_vfptr = {
     "tcp",
@@ -59,7 +77,7 @@ static struct nn_transport nn_tcp_vfptr = {
     nn_tcp_term,
     nn_tcp_bind,
     nn_tcp_connect,
-    NULL,
+    nn_tcp_optset,
     NN_LIST_ITEM_INITIALIZER
 };
 
@@ -241,5 +259,70 @@ static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
         nn_assert (0);
 
     return res;
+}
+
+static struct nn_optset *nn_tcp_optset ()
+{
+    struct nn_tcp_optset *optset;
+
+    optset = nn_alloc (sizeof (struct nn_tcp_optset), "optset (tcp)");
+    alloc_assert (optset);
+    optset->base.vfptr = &nn_tcp_optset_vfptr;
+
+    /*  Default values for TCP socket options. */
+    optset->nodelay = 0;    
+}
+
+static void nn_tcp_optset_destroy (struct nn_optset *self)
+{
+    struct nn_tcp_optset *optset;
+
+    optset = nn_cont (self, struct nn_tcp_optset, base);
+    nn_free (optset);
+}
+
+static int nn_tcp_optset_setopt (struct nn_optset *self, int option,
+    const void *optval, size_t optvallen)
+{
+    struct nn_tcp_optset *optset;
+    int val;
+
+    optset = nn_cont (self, struct nn_tcp_optset, base);
+
+    /*  At this point we assume that all options are of type int. */
+    if (optvallen != sizeof (int))
+        return -EINVAL;
+    val = *(int*) optval;
+
+    switch (option) {
+    case NN_TCP_NODELAY:
+        if (nn_slow (val != 0 && val != 1))
+            return -EINVAL;
+        optset->nodelay = val;
+        return 0;
+    default:
+        return -ENOPROTOOPT;
+    }
+}
+
+static int nn_tcp_optset_getopt (struct nn_optset *self, int option,
+    void *optval, size_t *optvallen)
+{
+    struct nn_tcp_optset *optset;
+    int intval;
+
+    optset = nn_cont (self, struct nn_tcp_optset, base);
+
+    switch (option) {
+    case NN_TCP_NODELAY:
+        intval = optset->nodelay;
+        break;
+    default:
+        return -ENOPROTOOPT;
+    }
+    memcpy (optval, &intval,
+        *optvallen < sizeof (int) ? *optvallen : sizeof (int));
+    *optvallen = sizeof (int);
+    return 0;
 }
 

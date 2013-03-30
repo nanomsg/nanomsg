@@ -52,12 +52,7 @@ struct nn_optset_vfptr {
 };
 
 struct nn_optset {
-    struct nn_optset_vfptr *vfptr;
-
-    /*  This members are used exclusively by the core. Never touch them
-        directly from the transport. */
-    int id;
-    struct nn_list_item item;
+    const struct nn_optset_vfptr *vfptr;
 };
 
 /******************************************************************************/

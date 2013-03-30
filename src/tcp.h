@@ -29,6 +29,8 @@ extern "C" {
 
 #define NN_TCP -3
 
+#define NN_TCP_NODELAY 1
+
 #ifdef __cplusplus
 }
 #endif

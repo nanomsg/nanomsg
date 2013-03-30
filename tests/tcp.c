@@ -39,13 +39,15 @@ int main ()
     int sc;
     int i;
     char buf [3];
+    int opt;
+    size_t sz;
 
     /*  Try closing bound but unconnected socket. */
 #if 0
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb >= 0);
     rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    errno_assert (rc > 0);
     rc = nn_close (sb);
     errno_assert (rc == 0);
 #endif
@@ -63,7 +65,25 @@ int main ()
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
 
-    /* Try using invalid address strings. */
+    /*  Check NODELAY socket option. */
+    sz = sizeof (opt);
+    rc = nn_getsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, &sz);
+    errno_assert (rc == 0);
+    nn_assert (sz == sizeof (opt));
+    nn_assert (opt == 0);
+    opt = 2;
+    rc = nn_setsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, sizeof (opt));
+    nn_assert (rc < 0 && nn_errno () == EINVAL);
+    opt = 1;
+    rc = nn_setsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, sizeof (opt));
+    errno_assert (rc == 0);
+    sz = sizeof (opt);
+    rc = nn_getsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, &sz);
+    errno_assert (rc == 0);
+    nn_assert (sz == sizeof (opt));
+    nn_assert (opt == 1);
+
+    /*  Try using invalid address strings. */
     rc = nn_connect (sc, "tcp://*:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);

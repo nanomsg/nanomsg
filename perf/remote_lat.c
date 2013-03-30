@@ -21,6 +21,7 @@
 */
 
 #include "../src/nn.h"
+#include "../src/tcp.h"
 #include "../src/pair.h"
 
 #include <stdio.h>
@@ -40,6 +41,7 @@ int main (int argc, char *argv [])
     int s;
     int rc;
     int i;
+    int opt;
     struct nn_stopwatch sw;
     uint64_t total;
     double lat;
@@ -55,6 +57,9 @@ int main (int argc, char *argv [])
 
     s = nn_socket (AF_SP, NN_PAIR);
     assert (s != -1);
+    opt = 1;
+    rc = nn_setsockopt (s, NN_TCP, NN_TCP_NODELAY, &opt, sizeof (opt));
+    assert (rc == 0);
     rc = nn_connect (s, connect_to);
     assert (rc >= 0);
 

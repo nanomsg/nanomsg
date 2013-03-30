@@ -59,6 +59,7 @@ static struct nn_transport nn_ipc_vfptr = {
     nn_ipc_term,
     nn_ipc_bind,
     nn_ipc_connect,
+    NULL,
     NN_LIST_ITEM_INITIALIZER
 };
 

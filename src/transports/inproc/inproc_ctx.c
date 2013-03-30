@@ -47,6 +47,7 @@ static struct nn_transport nn_inproc_vfptr = {
     nn_inproc_ctx_term,
     nn_inproc_ctx_bind,
     nn_inproc_ctx_connect,
+    NULL,
     NN_LIST_ITEM_INITIALIZER
 };
 

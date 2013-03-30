@@ -38,6 +38,29 @@ struct nn_sock;
 struct nn_cp;
 
 /******************************************************************************/
+/*  Container for transport-specific socket options.                          */
+/******************************************************************************/
+
+struct nn_optset;
+
+struct nn_optset_vfptr {
+    void (*destroy) (struct nn_optset *self);
+    int (*setopt) (struct nn_optset *self, int option, const void *optval,
+        size_t optvallen);
+    int (*getopt) (struct nn_optset *self, int option, void *optval,
+        size_t *optvallen);
+};
+
+struct nn_optset {
+    struct nn_optset_vfptr *vfptr;
+
+    /*  This members are used exclusively by the core. Never touch them
+        directly from the transport. */
+    int id;
+    struct nn_list_item item;
+};
+
+/******************************************************************************/
 /*  The base class for endpoints.                                             */
 /******************************************************************************/
 
@@ -181,6 +204,11 @@ struct nn_transport {
         invoked in parallel on the same socket. */
     int (*bind) (const char *addr, void *hint, struct nn_epbase **epbase);
     int (*connect) (const char *addr, void *hint, struct nn_epbase **epbase);
+
+    /*  Create an object to hold transport-specific socket options.
+        Set this member to NULL in case there are no transport-specific
+        socket options available. */
+    int (*optset) (struct nn_optset **optset);
 
     /*  This member is used exclusively by the core. Never touch it directly
         from the transport. */

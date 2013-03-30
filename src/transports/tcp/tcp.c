@@ -56,6 +56,7 @@ static struct nn_transport nn_tcp_vfptr = {
     nn_tcp_term,
     nn_tcp_bind,
     nn_tcp_connect,
+    NULL,
     NN_LIST_ITEM_INITIALIZER
 };
 

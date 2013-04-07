@@ -33,7 +33,7 @@
 
 #include <string.h>
 
-static uint64_t nn_random_state = 0xfa9b23e307cc611fULL;
+static uint64_t nn_random_state;
 
 void nn_random_seed ()
 {
@@ -47,6 +47,7 @@ void nn_random_seed ()
 
     /*  The initial state for pseudo-random number generator is computer from
         the exact timestamp and process ID. */
+    memcpy (&nn_random_state, "\xfa\x9b\x23\xe3\x07\xcc\x61\x1f", 8);
     nn_random_state ^= pid + nn_clock_timestamp ();
 }
 

@@ -80,7 +80,7 @@ struct nn_trie_node
             uint16_t nbr;
             /*  There are 4 bytes of padding here. */
         } dense;
-    };
+    } u;
 };
 /*  The structure is followed by the array of pointers to children. */
 

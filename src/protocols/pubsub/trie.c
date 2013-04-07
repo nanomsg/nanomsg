@@ -95,20 +95,20 @@ void nn_node_dump (struct nn_trie_node *self, int indent)
         nn_node_indent (indent);
         printf ("sparse.children=\"");
         for (i = 0; i != self->type; ++i)
-            nn_node_putchar (self->sparse.children [i]);
+            nn_node_putchar (self->u.sparse.children [i]);
         printf ("\"\n");
         children = self->type;
     }
     else {
         nn_node_indent (indent);
-        printf ("dense.min='%c' (%d)\n", (char) self->dense.min,
-            (int) self->dense.min);
+        printf ("dense.min='%c' (%d)\n", (char) self->u.dense.min,
+            (int) self->u.dense.min);
         nn_node_indent (indent);
-        printf ("dense.max='%c' (%d)\n", (char) self->dense.max,
-            (int) self->dense.max);
+        printf ("dense.max='%c' (%d)\n", (char) self->u.dense.max,
+            (int) self->u.dense.max);
         nn_node_indent (indent);
-        printf ("dense.nbr=%d\n", (int) self->dense.nbr);
-        children = self->dense.max - self->dense.min + 1;
+        printf ("dense.nbr=%d\n", (int) self->u.dense.nbr);
+        children = self->u.dense.max - self->u.dense.min + 1;
     }
 
     for (i = 0; i != children; ++i)
@@ -145,7 +145,7 @@ void nn_node_term (struct nn_trie_node *self)
 
     /*  Recursively destroy the child nodes. */
     children = self->type <= NN_TRIE_SPARSE_MAX ?
-        self->type : (self->dense.max - self->dense.min + 1);
+        self->type : (self->u.dense.max - self->u.dense.min + 1);
     for (i = 0; i != children; ++i)
         nn_node_term (*nn_node_child (self, i));
 
@@ -189,15 +189,15 @@ struct nn_trie_node **nn_node_next (struct nn_trie_node *self, uint8_t c)
     /*  Sparse mode. */
     if (self->type <= 8) {
         for (i = 0; i != self->type; ++i)
-            if (self->sparse.children [i] == c)
+            if (self->u.sparse.children [i] == c)
                 return nn_node_child (self, i);
         return NULL;
     }
 
     /*  Dense mode. */
-    if (c < self->dense.min || c > self->dense.max)
+    if (c < self->u.dense.min || c > self->u.dense.max)
         return NULL;
-    return nn_node_child (self, c - self->dense.min);
+    return nn_node_child (self, c - self->u.dense.min);
 }
 
 struct nn_trie_node *nn_node_compact (struct nn_trie_node *self)
@@ -223,7 +223,7 @@ struct nn_trie_node *nn_node_compact (struct nn_trie_node *self)
     /*  Concatenate the prefixes. */
     memmove (ch->prefix + self->prefix_len + 1, ch->prefix, ch->prefix_len);
     memcpy (ch->prefix, self->prefix, self->prefix_len);
-    ch->prefix [self->prefix_len] = self->sparse.children [0];
+    ch->prefix [self->prefix_len] = self->u.sparse.children [0];
     ch->prefix_len += self->prefix_len + 1;
 
     /*  Get rid of the obsolete parent node. */
@@ -294,7 +294,7 @@ step2:
     (*node)->prefix_len = pos;
     (*node)->type = 1;
     memcpy ((*node)->prefix, ch->prefix, pos);
-    (*node)->sparse.children [0] = ch->prefix [pos];
+    (*node)->u.sparse.children [0] = ch->prefix [pos];
     ch->prefix_len -= (pos + 1);
     memmove (ch->prefix, ch->prefix + pos + 1, ch->prefix_len);
     ch = nn_node_compact (ch);
@@ -314,7 +314,7 @@ step3:
         *node = nn_realloc (*node, sizeof (struct nn_trie_node) +
             ((*node)->type + 1) * sizeof (struct nn_trie_node*));
         assert (*node);
-        (*node)->sparse.children [(*node)->type] = *data;
+        (*node)->u.sparse.children [(*node)->type] = *data;
         ++(*node)->type;
         node = nn_node_child (*node, (*node)->type - 1);
         *node = NULL;
@@ -327,16 +327,16 @@ step3:
         character. */
     if ((*node)->type == NN_TRIE_DENSE_TYPE) {
         c = *data;
-        if (c < (*node)->dense.min || c > (*node)->dense.max) {
-            new_min = (*node)->dense.min < c ? (*node)->dense.min : c;
-            new_max = (*node)->dense.max > c ? (*node)->dense.max : c;
+        if (c < (*node)->u.dense.min || c > (*node)->u.dense.max) {
+            new_min = (*node)->u.dense.min < c ? (*node)->u.dense.min : c;
+            new_max = (*node)->u.dense.max > c ? (*node)->u.dense.max : c;
             *node = nn_realloc (*node, sizeof (struct nn_trie_node) +
                 (new_max - new_min + 1) * sizeof (struct nn_trie_node*));
             assert (*node);
-            old_children = (*node)->dense.max - (*node)->dense.min + 1;
+            old_children = (*node)->u.dense.max - (*node)->u.dense.min + 1;
             new_children = new_max - new_min + 1;
-            if ((*node)->dense.min != new_min) {
-                inserted = (*node)->dense.min - new_min;
+            if ((*node)->u.dense.min != new_min) {
+                inserted = (*node)->u.dense.min - new_min;
                 memmove (nn_node_child (*node, inserted),
                     nn_node_child (*node, 0),
                     old_children * sizeof (struct nn_trie_node*));
@@ -348,11 +348,11 @@ step3:
                     (new_children - old_children) *
                     sizeof (struct nn_trie_node*));
             }
-            (*node)->dense.min = new_min;
-            (*node)->dense.max = new_max;
-            ++(*node)->dense.nbr;
+            (*node)->u.dense.min = new_min;
+            (*node)->u.dense.max = new_max;
+            ++(*node)->u.dense.nbr;
         }
-        node = nn_node_child (*node, c - (*node)->dense.min);
+        node = nn_node_child (*node, c - (*node)->u.dense.min);
         ++data;
         --size;
         goto step4;
@@ -365,7 +365,7 @@ step3:
         new_min = 255;
         new_max = 0;
         for (i = 0; i != (*node)->type; ++i) {
-            c2 = (*node)->sparse.children [i];
+            c2 = (*node)->u.sparse.children [i];
             new_min = new_min < c2 ? new_min : c2;
             new_max = new_max > c2 ? new_max : c2;
         }
@@ -384,13 +384,13 @@ step3:
         (*node)->prefix_len = old_node->prefix_len;
         (*node)->type = NN_TRIE_DENSE_TYPE;
         memcpy ((*node)->prefix, old_node->prefix, old_node->prefix_len);
-        (*node)->dense.min = new_min;
-        (*node)->dense.max = new_max;
-        (*node)->dense.nbr = old_node->type + 1;
+        (*node)->u.dense.min = new_min;
+        (*node)->u.dense.max = new_max;
+        (*node)->u.dense.nbr = old_node->type + 1;
         memset (*node + 1, 0, (new_max - new_min + 1) *
             sizeof (struct nn_trie_node*));
         for (i = 0; i != old_node->type; ++i)
-            *nn_node_child (*node, old_node->sparse.children [i] - new_min) =
+            *nn_node_child (*node, old_node->u.sparse.children [i] - new_min) =
                 *nn_node_child (old_node, i);
         node = nn_node_next (*node, *data);
         ++data;
@@ -422,7 +422,7 @@ step4:
         size -= (*node)->prefix_len;
         if (!more_nodes)
             break;
-        (*node)->sparse.children [0] = *data;
+        (*node)->u.sparse.children [0] = *data;
         node = nn_node_child (*node, 0);
         ++data;
         --size;
@@ -522,14 +522,14 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
 
         /*  Get the indices of the removed child. */
         for (index = 0; index != (*self)->type; ++index)
-            if ((*self)->sparse.children [index] == *data)
+            if ((*self)->u.sparse.children [index] == *data)
                 break;
         assert (index != (*self)->type);
 
         /*  Remove the destroyed child from both lists of children. */
         memmove (
-            (*self)->sparse.children + index,
-            (*self)->sparse.children + index + 1,
+            (*self)->u.sparse.children + index,
+            (*self)->u.sparse.children + index + 1,
             (*self)->type - index - 1);
         memmove (
             nn_node_child (*self, index),
@@ -558,23 +558,23 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
 
     /*  In this case the array stays dense. We have to adjust the limits of
         the array, if appropriate. */
-    if ((*self)->dense.nbr > NN_TRIE_SPARSE_MAX + 1) {
+    if ((*self)->u.dense.nbr > NN_TRIE_SPARSE_MAX + 1) {
 
         /*  If the removed item is the leftmost one, trim the array from
             the left side. */
-        if (*data == (*self)->dense.min) {
-             for (i = 0; i != (*self)->dense.max - (*self)->dense.min + 1;
+        if (*data == (*self)->u.dense.min) {
+             for (i = 0; i != (*self)->u.dense.max - (*self)->u.dense.min + 1;
                    ++i)
                  if (*nn_node_child (*self, i))
                      break;
-             new_min = i + (*self)->dense.min;
+             new_min = i + (*self)->u.dense.min;
              memmove (nn_node_child (*self, 0), nn_node_child (*self, i),
-                 ((*self)->dense.max - new_min + 1) *
+                 ((*self)->u.dense.max - new_min + 1) *
                  sizeof (struct nn_trie_node*));
-             (*self)->dense.min = new_min;
-             --(*self)->dense.nbr;
+             (*self)->u.dense.min = new_min;
+             --(*self)->u.dense.nbr;
              *self = nn_realloc (*self, sizeof (struct nn_trie_node) +
-                 ((*self)->dense.max - new_min + 1) *
+                 ((*self)->u.dense.max - new_min + 1) *
                  sizeof (struct nn_trie_node*));
              assert (*self);
              return 1;
@@ -582,21 +582,21 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
 
         /*  If the removed item is the rightmost one, trim the array from
             the right side. */
-        if (*data == (*self)->dense.max) {
-             for (i = (*self)->dense.max - (*self)->dense.min; i != 0; --i)
+        if (*data == (*self)->u.dense.max) {
+             for (i = (*self)->u.dense.max - (*self)->u.dense.min; i != 0; --i)
                  if (*nn_node_child (*self, i))
                      break;
-             (*self)->dense.max = i + (*self)->dense.min;
-             --(*self)->dense.nbr;
+             (*self)->u.dense.max = i + (*self)->u.dense.min;
+             --(*self)->u.dense.nbr;
              *self = nn_realloc (*self, sizeof (struct nn_trie_node) +
-                 ((*self)->dense.max - (*self)->dense.min + 1) *
+                 ((*self)->u.dense.max - (*self)->u.dense.min + 1) *
                  sizeof (struct nn_trie_node*));
              assert (*self);
              return 1;
         }
 
         /*  If the item is removed from the middle of the array, do nothing. */
-        --(*self)->dense.nbr;
+        --(*self)->u.dense.nbr;
         return 1;
     }
 
@@ -610,11 +610,11 @@ static int nn_node_unsubscribe (struct nn_trie_node **self,
         memcpy (new_node->prefix, (*self)->prefix, new_node->prefix_len);
         new_node->type = NN_TRIE_SPARSE_MAX;
         j = 0;
-        for (i = 0; i != (*self)->dense.max - (*self)->dense.min + 1;
+        for (i = 0; i != (*self)->u.dense.max - (*self)->u.dense.min + 1;
               ++i) {
             ch2 = *nn_node_child (*self, i);
             if (ch2) {
-                new_node->sparse.children [j] = i + (*self)->dense.min;
+                new_node->u.sparse.children [j] = i + (*self)->u.dense.min;
                 *nn_node_child (new_node, j) = ch2;
                 ++j;
             }

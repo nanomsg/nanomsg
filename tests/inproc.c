@@ -136,7 +136,7 @@ int main ()
     /*  Make sure that even a message that doesn't fit into the buffers
         gets across. */
     for (i = 0; i != sizeof (buf); ++i)
-        buf [i] = 0xab;
+        buf [i] = 'A';
     rc = nn_send (sc, buf, 256, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 256);

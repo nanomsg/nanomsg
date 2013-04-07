@@ -270,7 +270,9 @@ static struct nn_optset *nn_tcp_optset ()
     optset->base.vfptr = &nn_tcp_optset_vfptr;
 
     /*  Default values for TCP socket options. */
-    optset->nodelay = 0;    
+    optset->nodelay = 0;
+
+    return &optset->base;   
 }
 
 static void nn_tcp_optset_destroy (struct nn_optset *self)

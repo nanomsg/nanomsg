@@ -286,7 +286,7 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
 #endif
     }
 
-    /*  If applicable, disable delayed acknowledgements to improve latency. */
+    /*  If applicable, disable delayed acknowledgments to improve latency. */
 #if defined TCP_NODELACK
     opt = 1;
     rc = setsockopt (self->s, IPPROTO_TCP, TCP_NODELACK, &opt, sizeof (opt));

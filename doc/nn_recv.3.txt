@@ -77,7 +77,7 @@ nbytes = nn_recv (s, buf, sizeof (buf), 0);
 Receiving a message into a buffer allocated by _nanomsg_::
 
 The following will get a message from the pipe with a buffer allocated by
-the system. It is large enough to accomodate the entire message. This is a good
+the system. It is large enough to accommodate the entire message. This is a good
 way to get the entire message without truncating if the size of the message is
 unknown. It is the user's responsibility to call linknanomsg:nn_freemsg[3] after
 processing the message.

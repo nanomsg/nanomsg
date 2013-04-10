@@ -52,7 +52,7 @@ Socket Options
 
 NN_TCP_NODELAY::
     This option, when set to 1, disables Nagle's algorithm. It also disables
-    delaying of TCP acknowledgements. Using this option improves latency at
+    delaying of TCP acknowledgments. Using this option improves latency at
     the expense of throughput. Type of this option is int. Default value is 0.
 
 

@@ -20,6 +20,8 @@
     IN THE SOFTWARE.
 */
 
+#if !defined NN_HAVE_WINDOWS
+
 #include "worker.h"
 #include "err.h"
 #include "fast.h"
@@ -257,4 +259,6 @@ static void nn_worker_routine (void *arg)
         }
     }
 }
+
+#endif
 

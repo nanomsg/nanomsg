@@ -23,6 +23,8 @@
 #ifndef NN_WORKER_INCLUDED
 #define NN_WORKER_INCLUDED
 
+#if !defined NN_HAVE_WINDOWS
+
 #include "queue.h"
 #include "mutex.h"
 #include "thread.h"
@@ -121,6 +123,8 @@ struct nn_worker {
 int nn_worker_init (struct nn_worker *self);
 void nn_worker_term (struct nn_worker *self);
 void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task);
+
+#endif
 
 #endif
 

@@ -48,13 +48,13 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
 {
     self->sink = sink;
     self->cp = cp;
-    nn_timeout_hndl_init (&self->hndl);
+    nn_timerset_hndl_init (&self->hndl);
 }
 
 void nn_timer_term (struct nn_timer *self)
 {
     nn_timer_stop (self);
-    nn_timeout_hndl_term (&self->hndl);
+    nn_timerset_hndl_term (&self->hndl);
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)
@@ -62,10 +62,10 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     int rc;
 
     /*  If the timer is active, cancel it first. */
-    if (nn_timeout_hndl_isactive (&self->hndl))
+    if (nn_timerset_hndl_isactive (&self->hndl))
         nn_timer_stop (self);
 
-    rc = nn_timeout_add (&self->cp->timeout, timeout, &self->hndl);
+    rc = nn_timerset_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
 
     if (rc == 1 && !nn_thread_current (&self->cp->worker))
@@ -77,10 +77,10 @@ void nn_timer_stop (struct nn_timer *self)
     int rc;
 
     /*  If the timer is not active, do nothing. */
-    if (!nn_timeout_hndl_isactive (&self->hndl))
+    if (!nn_timerset_hndl_isactive (&self->hndl))
          return;
 
-    rc = nn_timeout_rm (&self->cp->timeout, &self->hndl);
+    rc = nn_timerset_rm (&self->cp->timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
     if (rc == 1 && !nn_thread_current (&self->cp->worker))
         nn_efd_signal (&self->cp->efd);
@@ -342,7 +342,7 @@ int nn_cp_init (struct nn_cp *self)
         return rc;
     }
     nn_mutex_init (&self->sync);
-    nn_timeout_init (&self->timeout);
+    nn_timerset_init (&self->timeout);
     nn_queue_init (&self->opqueue);
     nn_mutex_init (&self->events_sync);
     nn_queue_init (&self->events);
@@ -379,7 +379,7 @@ void nn_cp_term (struct nn_cp *self)
     nn_mutex_term (&self->events_sync);
     nn_poller_term (&self->poller);
     nn_efd_term (&self->efd);
-    nn_timeout_term (&self->timeout);
+    nn_timerset_term (&self->timeout);
     nn_mutex_term (&self->sync);
 }
 
@@ -400,7 +400,7 @@ static void nn_cp_worker (void *arg)
     int timeout;
     struct nn_queue_item *qit;
     struct nn_cp_op_hndl *ophndl;
-    struct nn_timeout_hndl *tohndl;
+    struct nn_timerset_hndl *tohndl;
     struct nn_timer *timer;
     int op;
     struct nn_poller_hndl *phndl;
@@ -417,7 +417,7 @@ static void nn_cp_worker (void *arg)
     while (1) {
 
         /*  Compute the time interval till next timer expiration. */
-        timeout = nn_timeout_timeout (&self->timeout);
+        timeout = nn_timerset_timeout (&self->timeout);
 
         /*  Wait for new events and/or timeouts. */
         nn_mutex_unlock (&self->sync);
@@ -466,7 +466,7 @@ if (rc == -EINTR) goto again;
 
         /*  Process any expired timers. */
         while (1) {
-            rc = nn_timeout_event (&self->timeout, &tohndl);
+            rc = nn_timerset_event (&self->timeout, &tohndl);
             if (rc == -EAGAIN)
                 break;
             errnum_assert (rc == 0, -rc);

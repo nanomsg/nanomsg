@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,28 +20,28 @@
     IN THE SOFTWARE.
 */
 
-#include "timeout.h"
+#include "timerset.h"
 #include "fast.h"
 #include "cont.h"
 #include "err.h"
 
-void nn_timeout_init (struct nn_timeout *self)
+void nn_timerset_init (struct nn_timerset *self)
 {
     nn_clock_init (&self->clock);
     nn_list_init (&self->timeouts);
 }
 
-void nn_timeout_term (struct nn_timeout *self)
+void nn_timerset_term (struct nn_timerset *self)
 {
     nn_list_term (&self->timeouts);
     nn_clock_term (&self->clock);
 }
 
-int nn_timeout_add (struct nn_timeout *self, int timeout,
-    struct nn_timeout_hndl *hndl)
+int nn_timerset_add (struct nn_timerset *self, int timeout,
+    struct nn_timerset_hndl *hndl)
 {
     struct nn_list_item *it;
-    struct nn_timeout_hndl *ith;
+    struct nn_timerset_hndl *ith;
     int first;
 
     /*  Compute the instant when the timeout will be due. */
@@ -51,7 +51,7 @@ int nn_timeout_add (struct nn_timeout *self, int timeout,
     for (it = nn_list_begin (&self->timeouts);
           it != nn_list_end (&self->timeouts);
           it = nn_list_next (&self->timeouts, it)) {
-        ith = nn_cont (it, struct nn_timeout_hndl, list);
+        ith = nn_cont (it, struct nn_timerset_hndl, list);
         if (hndl->timeout < ith->timeout)
             break;
     }
@@ -63,7 +63,7 @@ int nn_timeout_add (struct nn_timeout *self, int timeout,
     return first;
 }
 
-int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl)
+int nn_timerset_rm (struct nn_timerset *self, struct nn_timerset_hndl *hndl)
 {
     int first;
 
@@ -78,7 +78,7 @@ int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl)
     return first;
 }
 
-int nn_timeout_timeout (struct nn_timeout *self)
+int nn_timerset_timeout (struct nn_timerset *self)
 {
     int timeout;
 
@@ -86,13 +86,13 @@ int nn_timeout_timeout (struct nn_timeout *self)
         return -1;
 
     timeout = (int) (nn_cont (nn_list_begin (&self->timeouts),
-        struct nn_timeout_hndl, list)->timeout - nn_clock_now (&self->clock));
+        struct nn_timerset_hndl, list)->timeout - nn_clock_now (&self->clock));
     return timeout < 0 ? 0 : timeout;
 }
 
-int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl)
+int nn_timerset_event (struct nn_timerset *self, struct nn_timerset_hndl **hndl)
 {
-    struct nn_timeout_hndl *first;
+    struct nn_timerset_hndl *first;
 
     /*  If there's no timeout, there's no event to report. */
     if (nn_fast (nn_list_empty (&self->timeouts)))
@@ -100,7 +100,7 @@ int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl)
 
     /*  If no timeout have expired yet, there's no event to return. */
     first = nn_cont (nn_list_begin (&self->timeouts),
-        struct nn_timeout_hndl, list);
+        struct nn_timerset_hndl, list);
     if (first->timeout > nn_clock_now (&self->clock))
         return -EAGAIN;
 
@@ -111,17 +111,17 @@ int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl)
     return 0;
 }
 
-void nn_timeout_hndl_init (struct nn_timeout_hndl *self)
+void nn_timerset_hndl_init (struct nn_timerset_hndl *self)
 {
     nn_list_item_init (&self->list);
 }
 
-void nn_timeout_hndl_term (struct nn_timeout_hndl *self)
+void nn_timerset_hndl_term (struct nn_timerset_hndl *self)
 {
     nn_list_item_term (&self->list);
 }
 
-int nn_timeout_hndl_isactive (struct nn_timeout_hndl *self)
+int nn_timerset_hndl_isactive (struct nn_timerset_hndl *self)
 {
     return nn_list_item_isinlist (&self->list);
 }

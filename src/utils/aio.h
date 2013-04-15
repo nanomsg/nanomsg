@@ -103,14 +103,14 @@ void nn_cp_unlock (struct nn_cp *self);
 #if defined NN_HAVE_WINDOWS
 
 #include "win.h"
-#include "timeout.h"
+#include "timerset.h"
 #include "thread.h"
 #include "mutex.h"
 
 struct nn_timer {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
-    struct nn_timeout_hndl hndl;
+    struct nn_timerset_hndl hndl;
 };
 
 struct nn_event {
@@ -145,7 +145,7 @@ struct nn_usock {
 
 struct nn_cp {
     struct nn_mutex sync;
-    struct nn_timeout timeout;
+    struct nn_timerset timeout;
     HANDLE hndl;
 
     /*  The values of these members are never used. They serve just like
@@ -161,7 +161,7 @@ struct nn_cp {
 #include "efd.h"
 #include "poller.h"
 #include "queue.h"
-#include "timeout.h"
+#include "timerset.h"
 #include "thread.h"
 #include "mutex.h"
 
@@ -171,7 +171,7 @@ struct nn_cp {
 struct nn_timer {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
-    struct nn_timeout_hndl hndl;
+    struct nn_timerset_hndl hndl;
 };
 
 struct nn_event {
@@ -232,7 +232,7 @@ struct nn_usock {
 
 struct nn_cp {
     struct nn_mutex sync;
-    struct nn_timeout timeout;
+    struct nn_timerset timeout;
     struct nn_efd efd;
     struct nn_poller_hndl efd_hndl;
     struct nn_poller poller;

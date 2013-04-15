@@ -116,8 +116,8 @@ set (NN_SOURCES
     utils/stream.c
     utils/thread.h
     utils/thread.c
-    utils/timeout.h
-    utils/timeout.c
+    utils/timerset.h
+    utils/timerset.c
     utils/wire.h
     utils/wire.c
 

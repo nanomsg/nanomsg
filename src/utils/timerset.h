@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_TIMEOUT_INCLUDED
-#define NN_TIMEOUT_INCLUDED
+#ifndef NN_TIMERSET_INCLUDED
+#define NN_TIMERSET_INCLUDED
 
 #include "clock.h"
 #include "list.h"
@@ -29,27 +29,27 @@
 /*  This class stores a list of timeouts and reports the next one to expire
     along with the time till it happens. */
 
-struct nn_timeout_hndl {
+struct nn_timerset_hndl {
     struct nn_list_item list;
     uint64_t timeout;
 };
 
-struct nn_timeout {
+struct nn_timerset {
     struct nn_clock clock;
     struct nn_list timeouts;
 };
 
-void nn_timeout_init (struct nn_timeout *self);
-void nn_timeout_term (struct nn_timeout *self);
-int nn_timeout_add (struct nn_timeout *self, int timeout,
-    struct nn_timeout_hndl *hndl);
-int nn_timeout_rm (struct nn_timeout *self, struct nn_timeout_hndl *hndl);
-int nn_timeout_timeout (struct nn_timeout *self);
-int nn_timeout_event (struct nn_timeout *self, struct nn_timeout_hndl **hndl);
+void nn_timerset_init (struct nn_timerset *self);
+void nn_timerset_term (struct nn_timerset *self);
+int nn_timerset_add (struct nn_timerset *self, int timeout,
+    struct nn_timerset_hndl *hndl);
+int nn_timerset_rm (struct nn_timerset *self, struct nn_timerset_hndl *hndl);
+int nn_timerset_timeout (struct nn_timerset *self);
+int nn_timerset_event (struct nn_timerset *self, struct nn_timerset_hndl **hndl);
 
-void nn_timeout_hndl_init (struct nn_timeout_hndl *self);
-void nn_timeout_hndl_term (struct nn_timeout_hndl *self);
-int nn_timeout_hndl_isactive (struct nn_timeout_hndl *self);
+void nn_timerset_hndl_init (struct nn_timerset_hndl *self);
+void nn_timerset_hndl_term (struct nn_timerset_hndl *self);
+int nn_timerset_hndl_isactive (struct nn_timerset_hndl *self);
 
 #endif
 

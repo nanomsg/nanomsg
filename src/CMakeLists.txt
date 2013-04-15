@@ -120,6 +120,8 @@ set (NN_SOURCES
     utils/timerset.c
     utils/wire.h
     utils/wire.c
+    utils/worker.h
+    utils/worker.c
 
     protocols/bus/bus.h
     protocols/bus/bus.c

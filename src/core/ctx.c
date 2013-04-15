@@ -35,6 +35,7 @@
 #include "../utils/cont.h"
 #include "../utils/random.h"
 #include "../utils/latmon.h"
+#include "../utils/worker.h"
 #include "../utils/glock.h"
 #include "../utils/chunk.h"
 #include "../utils/msg.h"
@@ -113,6 +114,10 @@ struct nn_ctx {
 
     /*  List of all available socket types. */
     struct nn_list socktypes;
+
+    /*  TODO: At the moment we have one worker thread. In the future worker
+        thread pool may be implemented. */
+    struct nn_worker worker;
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -231,6 +236,8 @@ static void nn_ctx_init (void)
 #if defined NN_LATENCY_MONITOR
     nn_latmon_init ();
 #endif
+
+    nn_worker_init (&self.worker);
 }
 
 static void nn_ctx_term (void)
@@ -244,6 +251,8 @@ static void nn_ctx_term (void)
     nn_assert (self.socks);
     if (self.nsocks > 0)
         return;
+
+    nn_worker_term (&self.worker);
 
 #if defined NN_LATENCY_MONITOR
     nn_latmon_term ();
@@ -834,5 +843,10 @@ struct nn_transport *nn_ctx_transport (int id)
     nn_glock_unlock ();
 
     return tp;
+}
+
+struct nn_worker *nn_ctx_getworker ()
+{
+    return &self.worker;
 }
 

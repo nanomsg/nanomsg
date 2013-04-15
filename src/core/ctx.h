@@ -23,6 +23,10 @@
 #ifndef NN_CTX_INCLUDED
 #define NN_CTX_INCLUDED
 
+/*  Provides access to the list of available transports. */
 struct nn_transport *nn_ctx_transport (int id);
+
+/*  Returns a worker. Each call to this function may return different worker. */
+struct nn_worker *nn_ctx_getworker ();
 
 #endif

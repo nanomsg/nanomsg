@@ -254,6 +254,11 @@ struct nn_cp *nn_sock_getcp (struct nn_sock *self)
     return &((struct nn_sockbase*) self)->cp;
 }
 
+struct nn_worker *nn_sock_getworker (struct nn_sock *self)
+{
+    return nn_ctx_getworker ();
+}
+
 int nn_sock_ispeer (struct nn_sock *self, int socktype)
 {
     struct nn_sockbase *sockbase;

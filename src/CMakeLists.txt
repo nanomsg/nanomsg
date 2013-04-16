@@ -215,6 +215,7 @@ endif ()
 if (NN_HAVE_WINDOWS)
     target_link_libraries (nanomsg ws2_32)
     target_link_libraries (nanomsg Mswsock.lib)
+    target_link_libraries (nanomsg Advapi32.lib)
 endif ()
 
 if (NN_HAVE_SOLARIS)

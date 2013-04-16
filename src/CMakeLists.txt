@@ -97,8 +97,6 @@ set (NN_SOURCES
     utils/glock.c
     utils/hash.h
     utils/hash.c
-    utils/latmon.h
-    utils/latmon.c
     utils/lb.h
     utils/lb.c
     utils/list.h

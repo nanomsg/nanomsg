@@ -28,7 +28,6 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
-#include "../../utils/latmon.h"
 #include "../../utils/msg.h"
 
 #include <stddef.h>
@@ -307,12 +306,8 @@ static void nn_msgpipehalf_send (struct nn_msgpipehalf *self,
     errnum_assert (rc >= 0, -rc);
 
     /*  If the peer is sleeping, wake it up. */
-    if (rc & NN_MSGQUEUE_SIGNAL) {
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_EVENT_POST);
-#endif
+    if (rc & NN_MSGQUEUE_SIGNAL)
         nn_event_signal (&peer->inevent);
-    }
 
     /*  If the pipe is still writeable, make sure that it's not removed
         from the list of eligible outbound pipes. */
@@ -348,9 +343,6 @@ static void nn_msgpipehalf_event (const struct nn_cp_sink **self,
 
     /*  inevent handler. */
     if (event == &half->inevent) {
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_EVENT_EXIT);
-#endif
         nn_pipebase_received (&half->pipebase);
         return;
     }

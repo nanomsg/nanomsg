@@ -30,7 +30,6 @@
 #include "../utils/err.h"
 #include "../utils/cont.h"
 #include "../utils/fast.h"
-#include "../utils/latmon.h"
 #include "../utils/msg.h"
 
 /*  This flag is set, if nn_term() function was already called. All the socket
@@ -734,10 +733,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             now = nn_clock_now (&sockbase->clock);
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
-
-#if defined NN_LATENCY_MONITOR
-        nn_latmon_measure (NN_LATMON_COND_EXIT);
-#endif
     }  
 }
 

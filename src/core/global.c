@@ -28,7 +28,7 @@
 #include "sock.h"
 #include "ep.h"
 
-#include "../aio/worker.h"
+#include "../aio/pool.h"
 
 #include "../utils/err.h"
 #include "../utils/alloc.h"
@@ -115,9 +115,8 @@ struct nn_global {
     /*  List of all available socket types. */
     struct nn_list socktypes;
 
-    /*  TODO: At the moment we have one worker thread. In the future worker
-        thread pool may be implemented. */
-    struct nn_worker worker;
+    /*  Pool of worker threads. */
+    struct nn_pool pool;
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -233,7 +232,8 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_bus_socktype);
     nn_global_add_socktype (nn_xbus_socktype);
 
-    nn_worker_init (&self.worker);
+    /*  Start the worker threads. */
+    nn_pool_init (&self.pool);
 }
 
 static void nn_global_term (void)
@@ -248,7 +248,8 @@ static void nn_global_term (void)
     if (self.nsocks > 0)
         return;
 
-    nn_worker_term (&self.worker);
+    /*  Shut down the worker threads. */
+    nn_pool_term (&self.pool);
 
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
@@ -821,8 +822,8 @@ struct nn_transport *nn_global_transport (int id)
     return tp;
 }
 
-struct nn_worker *nn_global_getworker ()
+struct nn_worker *nn_global_choose_worker ()
 {
-    return &self.worker;
+    return nn_pool_choose_worker (&self.pool);
 }
 

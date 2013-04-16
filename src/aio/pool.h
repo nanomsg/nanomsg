@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,13 +20,24 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_GLOBAL_INCLUDED
-#define NN_GLOBAL_INCLUDED
+#ifndef NN_POOL_INCLUDED
+#define NN_POOL_INCLUDED
 
-/*  Provides access to the list of available transports. */
-struct nn_transport *nn_global_transport (int id);
+#if !defined NN_HAVE_WINDOWS
 
-/*  Returns a worker. Each call to this function may return different worker. */
-struct nn_worker *nn_global_choose_worker ();
+#include "worker.h"
+
+/*  Worker thread pool. */
+
+struct nn_pool {
+    struct nn_worker worker;
+};
+
+int nn_pool_init (struct nn_pool *self);
+void nn_pool_term (struct nn_pool *self);
+struct nn_worker *nn_pool_choose_worker (struct nn_pool *self);
 
 #endif
+
+#endif
+

@@ -98,7 +98,7 @@ void nn_epbase_term (struct nn_epbase *self);
 struct nn_cp *nn_epbase_getcp (struct nn_epbase *self);
 
 /*  Returns a worker. Each call to this function may return different worker. */
-struct nn_worker *nn_epbase_getworker (struct nn_epbase *self);
+struct nn_worker *nn_epbase_choose_worker (struct nn_epbase *self);
 
 /*  Returns the address string associated with this endpoint. */
 const char *nn_epbase_getaddr (struct nn_epbase *self);

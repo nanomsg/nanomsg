@@ -58,6 +58,8 @@ set (NN_SOURCES
     aio/poller_epoll.inc
     aio/poller_kqueue.inc
     aio/poller_poll.inc
+    aio/pool.h
+    aio/pool.c
     aio/timerset.h
     aio/timerset.c
     aio/worker.h

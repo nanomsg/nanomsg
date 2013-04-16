@@ -24,7 +24,7 @@
 #include "../transport.h"
 #include "../protocol.h"
 
-#include "ctx.h"
+#include "global.h"
 #include "sock.h"
 #include "ep.h"
 
@@ -92,7 +92,7 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 #define NN_CTX_FLAG_ZOMBIE 1
 
-struct nn_ctx {
+struct nn_global {
 
     /*  The global table of existing sockets. The descriptor representing
         the socket is the index to this table. This pointer is also used to
@@ -121,19 +121,19 @@ struct nn_ctx {
 };
 
 /*  Singleton object containing the global state of the library. */
-static struct nn_ctx self = {0};
+static struct nn_global self = {0};
 
 /*  Context creation- and termination-related private functions. */
-static void nn_ctx_init (void);
-static void nn_ctx_term (void);
+static void nn_global_init (void);
+static void nn_global_term (void);
 
 /*  Transport-related private functions. */
-static void nn_ctx_add_transport (struct nn_transport *transport);
-static void nn_ctx_add_socktype (struct nn_socktype *socktype);
+static void nn_global_add_transport (struct nn_transport *transport);
+static void nn_global_add_socktype (struct nn_socktype *socktype);
 
 /*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
-static int nn_ctx_create_ep (int fd, const char *addr, int bind);
+static int nn_global_create_ep (int fd, const char *addr, int bind);
 
 int nn_errno (void)
 {
@@ -157,7 +157,7 @@ struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
     return (struct nn_cmsghdr*) (((uint8_t*) cmsg) + sz);
 }
 
-static void nn_ctx_init (void)
+static void nn_global_init (void)
 {
     int i;
 #if defined NN_HAVE_WINDOWS
@@ -203,35 +203,35 @@ static void nn_ctx_init (void)
     nn_list_init (&self.socktypes);
 
     /*  Plug in individual transports. */
-    nn_ctx_add_transport (nn_inproc);
+    nn_global_add_transport (nn_inproc);
 #if !defined NN_HAVE_WINDOWS
-    nn_ctx_add_transport (nn_ipc);
+    nn_global_add_transport (nn_ipc);
 #endif
-    nn_ctx_add_transport (nn_tcp);
+    nn_global_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
-    nn_ctx_add_socktype (nn_pair_socktype);
-    nn_ctx_add_socktype (nn_xpair_socktype);
-    nn_ctx_add_socktype (nn_pub_socktype);
-    nn_ctx_add_socktype (nn_sub_socktype);
-    nn_ctx_add_socktype (nn_rep_socktype);
-    nn_ctx_add_socktype (nn_req_socktype);
-    nn_ctx_add_socktype (nn_xrep_socktype);
-    nn_ctx_add_socktype (nn_xreq_socktype);
-    nn_ctx_add_socktype (nn_sink_socktype);
-    nn_ctx_add_socktype (nn_source_socktype);
-    nn_ctx_add_socktype (nn_xsink_socktype);
-    nn_ctx_add_socktype (nn_xsource_socktype);
-    nn_ctx_add_socktype (nn_push_socktype);
-    nn_ctx_add_socktype (nn_xpush_socktype);
-    nn_ctx_add_socktype (nn_pull_socktype);
-    nn_ctx_add_socktype (nn_xpull_socktype);
-    nn_ctx_add_socktype (nn_respondent_socktype);
-    nn_ctx_add_socktype (nn_surveyor_socktype);
-    nn_ctx_add_socktype (nn_xrespondent_socktype);
-    nn_ctx_add_socktype (nn_xsurveyor_socktype);
-    nn_ctx_add_socktype (nn_bus_socktype);
-    nn_ctx_add_socktype (nn_xbus_socktype);
+    nn_global_add_socktype (nn_pair_socktype);
+    nn_global_add_socktype (nn_xpair_socktype);
+    nn_global_add_socktype (nn_pub_socktype);
+    nn_global_add_socktype (nn_sub_socktype);
+    nn_global_add_socktype (nn_rep_socktype);
+    nn_global_add_socktype (nn_req_socktype);
+    nn_global_add_socktype (nn_xrep_socktype);
+    nn_global_add_socktype (nn_xreq_socktype);
+    nn_global_add_socktype (nn_sink_socktype);
+    nn_global_add_socktype (nn_source_socktype);
+    nn_global_add_socktype (nn_xsink_socktype);
+    nn_global_add_socktype (nn_xsource_socktype);
+    nn_global_add_socktype (nn_push_socktype);
+    nn_global_add_socktype (nn_xpush_socktype);
+    nn_global_add_socktype (nn_pull_socktype);
+    nn_global_add_socktype (nn_xpull_socktype);
+    nn_global_add_socktype (nn_respondent_socktype);
+    nn_global_add_socktype (nn_surveyor_socktype);
+    nn_global_add_socktype (nn_xrespondent_socktype);
+    nn_global_add_socktype (nn_xsurveyor_socktype);
+    nn_global_add_socktype (nn_bus_socktype);
+    nn_global_add_socktype (nn_xbus_socktype);
 
 #if defined NN_LATENCY_MONITOR
     nn_latmon_init ();
@@ -240,7 +240,7 @@ static void nn_ctx_init (void)
     nn_worker_init (&self.worker);
 }
 
-static void nn_ctx_term (void)
+static void nn_global_term (void)
 {
 #if defined NN_HAVE_WINDOWS
     int rc;
@@ -270,7 +270,7 @@ static void nn_ctx_term (void)
     while (!nn_list_empty (&self.socktypes))
         nn_list_erase (&self.socktypes, nn_list_begin (&self.socktypes));
 
-    /*  Final deallocation of the nn_ctx object itself. */
+    /*  Final deallocation of the nn_global object itself. */
     nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_free (self.socks);
@@ -333,11 +333,11 @@ int nn_socket (int domain, int protocol)
     nn_glock_lock ();
 
     /*  Make sure that global state is initialised. */
-    nn_ctx_init ();
+    nn_global_init ();
 
     /*  If nn_term() was already called, return ETERM. */
     if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
-        nn_ctx_term ();
+        nn_global_term ();
         nn_glock_unlock ();
         errno = ETERM;
         return -1;
@@ -345,7 +345,7 @@ int nn_socket (int domain, int protocol)
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
-        nn_ctx_term ();
+        nn_global_term ();
         nn_glock_unlock ();
         errno = EAFNOSUPPORT;
         return -1;
@@ -353,7 +353,7 @@ int nn_socket (int domain, int protocol)
 
     /*  If socket limit was reached, report error. */
     if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
-        nn_ctx_term ();
+        nn_global_term ();
         nn_glock_unlock ();
         errno = EMFILE;
         return -1;
@@ -381,7 +381,7 @@ int nn_socket (int domain, int protocol)
 
     /*  Specified socket type wasn't found. */
 error:
-    nn_ctx_term ();
+    nn_global_term ();
     nn_glock_unlock ();
     errno = -rc;
     return -1;
@@ -409,7 +409,7 @@ int nn_close (int s)
     --self.nsocks;
 
     /*  Destroy the global context if there's no socket remaining. */
-    nn_ctx_term ();
+    nn_global_term ();
 
     nn_glock_unlock ();
 
@@ -466,7 +466,7 @@ int nn_bind (int s, const char *addr)
 
     NN_BASIC_CHECKS;
 
-    rc = nn_ctx_create_ep (s, addr, 1);
+    rc = nn_global_create_ep (s, addr, 1);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -481,7 +481,7 @@ int nn_connect (int s, const char *addr)
 
     NN_BASIC_CHECKS;
 
-    rc = nn_ctx_create_ep (s, addr, 0);
+    rc = nn_global_create_ep (s, addr, 0);
     if (rc < 0) {
         errno = -rc;
         return -1;
@@ -758,7 +758,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     return (int) sz;
 }
 
-static void nn_ctx_add_transport (struct nn_transport *transport)
+static void nn_global_add_transport (struct nn_transport *transport)
 {
     transport->init ();
     nn_list_insert (&self.transports, &transport->item,
@@ -766,13 +766,13 @@ static void nn_ctx_add_transport (struct nn_transport *transport)
     
 }
 
-static void nn_ctx_add_socktype (struct nn_socktype *socktype)
+static void nn_global_add_socktype (struct nn_socktype *socktype)
 {
     nn_list_insert (&self.socktypes, &socktype->item,
         nn_list_end (&self.socktypes));
 }
 
-static int nn_ctx_create_ep (int fd, const char *addr, int bind)
+static int nn_global_create_ep (int fd, const char *addr, int bind)
 {
     int rc;
     const char *proto;
@@ -824,7 +824,7 @@ static int nn_ctx_create_ep (int fd, const char *addr, int bind)
     return rc;
 }
 
-struct nn_transport *nn_ctx_transport (int id)
+struct nn_transport *nn_global_transport (int id)
 {
     struct nn_transport *tp;
     struct nn_list_item *it;
@@ -845,7 +845,7 @@ struct nn_transport *nn_ctx_transport (int id)
     return tp;
 }
 
-struct nn_worker *nn_ctx_getworker ()
+struct nn_worker *nn_global_getworker ()
 {
     return &self.worker;
 }

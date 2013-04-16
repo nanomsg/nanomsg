@@ -39,10 +39,10 @@ set (NN_SOURCES
     survey.h
     bus.h
 
-    core/ctx.h
-    core/ctx.c
     core/ep.h
     core/ep.c
+    core/global.h
+    core/global.c
     core/pipe.c
     core/sock.h
     core/sock.c

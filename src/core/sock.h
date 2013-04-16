@@ -74,6 +74,7 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen, int internal);
 
+/*  Used by pipes. */
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe);

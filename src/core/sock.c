@@ -24,7 +24,7 @@
 #include "../transport.h"
 
 #include "sock.h"
-#include "ctx.h"
+#include "global.h"
 #include "ep.h"
 
 #include "../utils/err.h"
@@ -256,7 +256,7 @@ struct nn_cp *nn_sock_getcp (struct nn_sock *self)
 
 struct nn_worker *nn_sock_getworker (struct nn_sock *self)
 {
-    return nn_ctx_getworker ();
+    return nn_global_getworker ();
 }
 
 int nn_sock_ispeer (struct nn_sock *self, int socktype)
@@ -848,7 +848,7 @@ struct nn_optset *nn_sockbase_optset (struct nn_sockbase *self, int id)
         return self->optsets [index];
 
     /*  If the option set doesn't exist yet, create it. */
-    tp = nn_ctx_transport (id);
+    tp = nn_global_transport (id);
     if (nn_slow (!tp))
         return NULL;
     if (nn_slow (!tp->optset))

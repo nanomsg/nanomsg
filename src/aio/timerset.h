@@ -23,8 +23,8 @@
 #ifndef NN_TIMERSET_INCLUDED
 #define NN_TIMERSET_INCLUDED
 
-#include "clock.h"
-#include "list.h"
+#include "../utils/clock.h"
+#include "../utils/list.h"
 
 /*  This class stores a list of timeouts and reports the next one to expire
     along with the time till it happens. */

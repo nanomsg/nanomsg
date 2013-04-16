@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "fast.h"
-#include "err.h"
+#include "../utils/fast.h"
+#include "../utils/err.h"
 
 #include <unistd.h>
 

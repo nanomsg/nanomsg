@@ -23,7 +23,7 @@
 #ifndef NN_AIO_INCLUDED
 #define NN_AIO_INCLUDED
 
-#include "addr.h"
+#include "../utils/addr.h"
 
 #include <stddef.h>
 
@@ -102,10 +102,11 @@ void nn_cp_unlock (struct nn_cp *self);
 
 #if defined NN_HAVE_WINDOWS
 
-#include "win.h"
+#include "../utils/win.h"
+#include "../utils/thread.h"
+#include "../utils/mutex.h"
+
 #include "timerset.h"
-#include "thread.h"
-#include "mutex.h"
 
 struct nn_timer {
     const struct nn_cp_sink **sink;
@@ -158,12 +159,13 @@ struct nn_cp {
 
 #else
 
-#include "efd.h"
+#include "../utils/efd.h"
+#include "../utils/queue.h"
+#include "../utils/thread.h"
+#include "../utils/mutex.h"
+
 #include "poller.h"
-#include "queue.h"
 #include "timerset.h"
-#include "thread.h"
-#include "mutex.h"
 
 #include <stdint.h>
 #include <sys/socket.h>

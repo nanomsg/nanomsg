@@ -27,7 +27,8 @@
 
 #include "msgqueue.h"
 
-#include "../../utils/aio.h"
+#include "../../aio/aio.h"
+
 #include "../../utils/mutex.h"
 
 struct nn_inprocb;

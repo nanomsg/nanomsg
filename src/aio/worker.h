@@ -25,10 +25,11 @@
 
 #if !defined NN_HAVE_WINDOWS
 
-#include "queue.h"
-#include "mutex.h"
-#include "thread.h"
-#include "efd.h"
+#include "../utils/queue.h"
+#include "../utils/mutex.h"
+#include "../utils/thread.h"
+#include "../utils/efd.h"
+
 #include "poller.h"
 #include "timerset.h"
 

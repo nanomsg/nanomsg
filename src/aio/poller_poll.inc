@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "alloc.h"
-#include "err.h"
+#include "../utils/alloc.h"
+#include "../utils/err.h"
 
 #define NN_POLLER_GRANULARITY 16
 

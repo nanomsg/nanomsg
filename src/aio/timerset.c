@@ -21,9 +21,10 @@
 */
 
 #include "timerset.h"
-#include "fast.h"
-#include "cont.h"
-#include "err.h"
+
+#include "../utils/fast.h"
+#include "../utils/cont.h"
+#include "../utils/err.h"
 
 void nn_timerset_init (struct nn_timerset *self)
 {

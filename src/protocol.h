@@ -23,7 +23,8 @@
 #ifndef NN_PROTOCOL_INCLUDED
 #define NN_PROTOCOL_INCLUDED
 
-#include "utils/aio.h"
+#include "aio/aio.h"
+
 #include "utils/list.h"
 #include "utils/clock.h"
 #include "utils/msg.h"

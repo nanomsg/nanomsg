@@ -49,12 +49,22 @@ set (NN_SOURCES
     core/device.c
     core/symbol.c
 
+    aio/aio.h
+    aio/aio.c
+    aio/aio_posix.inc
+    aio/aio_win.inc
+    aio/poller.h
+    aio/poller.c
+    aio/poller_epoll.inc
+    aio/poller_kqueue.inc
+    aio/poller_poll.inc
+    aio/timerset.h
+    aio/timerset.c
+    aio/worker.h
+    aio/worker.c
+
     utils/addr.h
     utils/addr.c
-    utils/aio.h
-    utils/aio.c
-    utils/aio_posix.inc
-    utils/aio_win.inc
     utils/alloc.h
     utils/alloc.c
     utils/astream.h
@@ -97,11 +107,6 @@ set (NN_SOURCES
     utils/msg.c
     utils/mutex.h
     utils/mutex.c
-    utils/poller.h
-    utils/poller.c
-    utils/poller_epoll.inc
-    utils/poller_kqueue.inc
-    utils/poller_poll.inc
     utils/priolist.h
     utils/priolist.c
     utils/queue.h
@@ -116,12 +121,8 @@ set (NN_SOURCES
     utils/stream.c
     utils/thread.h
     utils/thread.c
-    utils/timerset.h
-    utils/timerset.c
     utils/wire.h
     utils/wire.c
-    utils/worker.h
-    utils/worker.c
 
     protocols/bus/bus.h
     protocols/bus/bus.c

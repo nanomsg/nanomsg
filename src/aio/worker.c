@@ -23,9 +23,10 @@
 #if !defined NN_HAVE_WINDOWS
 
 #include "worker.h"
-#include "err.h"
-#include "fast.h"
-#include "cont.h"
+
+#include "../utils/err.h"
+#include "../utils/fast.h"
+#include "../utils/cont.h"
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);

@@ -28,6 +28,8 @@
 #include "sock.h"
 #include "ep.h"
 
+#include "../aio/worker.h"
+
 #include "../utils/err.h"
 #include "../utils/alloc.h"
 #include "../utils/mutex.h"
@@ -35,7 +37,6 @@
 #include "../utils/cont.h"
 #include "../utils/random.h"
 #include "../utils/latmon.h"
-#include "../utils/worker.h"
 #include "../utils/glock.h"
 #include "../utils/chunk.h"
 #include "../utils/msg.h"

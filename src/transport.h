@@ -25,8 +25,9 @@
 
 #include "nn.h"
 
+#include "aio/aio.h"
+
 #include "utils/list.h"
-#include "utils/aio.h"
 #include "utils/msg.h"
 
 #include <stddef.h>

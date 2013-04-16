@@ -21,10 +21,11 @@
 */
 
 #include "aio.h"
-#include "win.h"
-#include "cont.h"
-#include "fast.h"
-#include "err.h"
+
+#include "../utils/win.h"
+#include "../utils/cont.h"
+#include "../utils/fast.h"
+#include "../utils/err.h"
 
 /*  Private functions. */
 static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf);

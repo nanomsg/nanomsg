@@ -21,10 +21,11 @@
 */
 
 #include "aio.h"
-#include "err.h"
-#include "cont.h"
-#include "fast.h"
-#include "alloc.h"
+
+#include "../utils/err.h"
+#include "../utils/cont.h"
+#include "../utils/fast.h"
+#include "../utils/alloc.h"
 
 #define _GNU_SOURCE
 #include <string.h>

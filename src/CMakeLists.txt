@@ -53,6 +53,8 @@ set (NN_SOURCES
     aio/aio.c
     aio/aio_posix.inc
     aio/aio_win.inc
+    aio/callback.h
+    aio/callback.c
     aio/poller.h
     aio/poller.c
     aio/poller_epoll.inc

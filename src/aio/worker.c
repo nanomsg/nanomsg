@@ -31,18 +31,8 @@
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
-void nn_worker_callback_init (struct nn_worker_callback *self,
-    const struct nn_worker_callback_vfptr *vfptr)
-{
-    self->vfptr = vfptr;
-}
-
-void nn_worker_callback_term (struct nn_worker_callback *self)
-{
-}
-
 void nn_worker_fd_init (struct nn_worker_fd *self,
-    struct nn_worker_callback *callback)
+    struct nn_callback *callback)
 {
     self->callback = callback;
 }
@@ -52,7 +42,7 @@ void nn_worker_fd_term (struct nn_worker_fd *self)
 }
 
 void nn_worker_timer_init (struct nn_worker_timer *self,
-    struct nn_worker_callback *callback)
+    struct nn_callback *callback)
 {
     self->callback = callback;
     nn_timerset_hndl_init (&self->hndl);
@@ -63,57 +53,50 @@ void nn_worker_timer_term (struct nn_worker_timer *self)
     nn_timerset_hndl_term (&self->hndl);
 }
 
-void nn_worker_poller_add_fd (struct nn_worker_poller *self,
-    int s, struct nn_worker_fd *fd)
+void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd)
 {
     nn_poller_add (&((struct nn_worker*) self)->poller, s, &fd->hndl);
 }
 
-void nn_worker_poller_rm_fd (struct nn_worker_poller *self,
-    struct nn_worker_fd *fd)
+void nn_worker_rm_fd (struct nn_worker *self, struct nn_worker_fd *fd)
 {
     nn_poller_rm (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 
-void nn_worker_poller_set_in (struct nn_worker_poller *self,
-    struct nn_worker_fd *fd)
+void nn_worker_set_in (struct nn_worker *self, struct nn_worker_fd *fd)
 {
     nn_poller_set_in (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 
-void nn_worker_poller_reset_in (struct nn_worker_poller *self,
-    struct nn_worker_fd *fd)
+void nn_worker_reset_in (struct nn_worker *self, struct nn_worker_fd *fd)
 {
     nn_poller_reset_in (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 
-void nn_worker_poller_set_out (struct nn_worker_poller *self,
-    struct nn_worker_fd *fd)
+void nn_worker_set_out (struct nn_worker *self, struct nn_worker_fd *fd)
 {
     nn_poller_set_out (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 
-void nn_worker_poller_reset_out (struct nn_worker_poller *self,
-    struct nn_worker_fd *fd)
+void nn_worker_reset_out (struct nn_worker *self, struct nn_worker_fd *fd)
 {
     nn_poller_reset_out (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 
-void nn_worker_poller_add_timer (struct nn_worker_poller *self, 
-    int timeout, struct nn_worker_timer *timer)
+void nn_worker_add_timer (struct nn_worker *self, int timeout,
+    struct nn_worker_timer *timer)
 {
     nn_timerset_add (&((struct nn_worker*) self)->timerset, timeout,
         &timer->hndl);
 }
 
-void nn_worker_poller_rm_timer (struct nn_worker_poller *self,
-    struct nn_worker_timer *timer)
+void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer)
 {
     nn_timerset_rm (&((struct nn_worker*) self)->timerset, &timer->hndl);
 }
 
 void nn_worker_task_init (struct nn_worker_task *self,
-    struct nn_worker_callback *callback)
+    struct nn_callback *callback)
 {
     self->callback = callback;
     nn_queue_item_init (&self->item);
@@ -205,7 +188,7 @@ static void nn_worker_routine (void *arg)
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
             timer->callback->vfptr->callback (timer->callback, timer,
-                NN_WORKER_TIMER_TIMEOUT, (struct nn_worker_poller*) self);
+                NN_WORKER_TIMER_TIMEOUT);
         }
 
         /*  Process all events from the poller. */
@@ -246,8 +229,7 @@ static void nn_worker_routine (void *arg)
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
                     task->callback->vfptr->callback (task->callback,
-                        task, NN_WORKER_TASK_EXECUTE,
-                        (struct nn_worker_poller*) self);
+                        task, NN_WORKER_TASK_EXECUTE);
                 }
                 nn_queue_term (&tasks);
                 continue;
@@ -255,8 +237,7 @@ static void nn_worker_routine (void *arg)
 
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
-            fd->callback->vfptr->callback (fd->callback, fd, pevent,
-                (struct nn_worker_poller*) self);
+            fd->callback->vfptr->callback (fd->callback, fd, pevent);
         }
     }
 }

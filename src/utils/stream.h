@@ -44,7 +44,7 @@ struct nn_stream {
     struct nn_pipebase pipebase;
 
     /*  The underlying socket. */
-    struct nn_usock *usock;
+    struct nn_aio_usock *usock;
 
     /*  Protocol header. */
     uint8_t protohdr [8];
@@ -79,7 +79,7 @@ struct nn_stream {
 };
 
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 void nn_stream_term ();
 
 #endif

@@ -35,7 +35,7 @@ static const struct nn_cp_sink nn_astream_state_terminating;
 /*  In this state control is yielded to the 'stream' state machine. */
 
 static void nn_astream_connected_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum);
+    struct nn_aio_usock *usock, int errnum);
 static const struct nn_cp_sink nn_astream_state_connected = {
     NULL,
     NULL,
@@ -48,7 +48,7 @@ static const struct nn_cp_sink nn_astream_state_connected = {
 };
 
 void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
-    int s, struct nn_usock *usock, struct nn_bstream *bstream)
+    int s, struct nn_aio_usock *usock, struct nn_bstream *bstream)
 {
     int sndbuf;
     int rcvbuf;
@@ -72,8 +72,8 @@ void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
     nn_assert (sz == sizeof (rcvbuf));
 
     /*  Start the stream state machine. */
-    nn_usock_init_child (&self->usock, usock, s, &self->sink, sndbuf, rcvbuf,
-        usock->cp);
+    nn_aio_usock_init_child (&self->usock, usock, s, &self->sink,
+        sndbuf, rcvbuf, usock->cp);
     
     /*  Note: must add myself to the astreams list *before* initializing my
         stream, which may fail and terminate me. */
@@ -86,7 +86,7 @@ void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
 }
 
 static void nn_astream_connected_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum)
+    struct nn_aio_usock *usock, int errnum)
 {
     struct nn_astream *astream;
 
@@ -94,7 +94,7 @@ static void nn_astream_connected_err (const struct nn_cp_sink **self,
 
     /*  Ask the underlying socket to terminate. */
     astream->sink = &nn_astream_state_terminating;
-    nn_usock_close (&astream->usock);
+    nn_aio_usock_close (&astream->usock);
 }
 
 /******************************************************************************/
@@ -102,7 +102,7 @@ static void nn_astream_connected_err (const struct nn_cp_sink **self,
 /******************************************************************************/
 
 static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static const struct nn_cp_sink nn_astream_state_terminating = {
     NULL,
     NULL,
@@ -125,11 +125,11 @@ void nn_astream_close (struct nn_astream *self)
 
     /*  Ask the underlying socket to terminate. */
     self->sink = &nn_astream_state_terminating;
-    nn_usock_close (&self->usock);
+    nn_aio_usock_close (&self->usock);
 }
 
 static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_astream *astream;
 

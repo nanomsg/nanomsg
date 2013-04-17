@@ -28,11 +28,12 @@
 #include "../utils/err.h"
 
 /*  Private functions. */
-static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf);
+static void nn_aio_usock_tune (struct nn_aio_usock *self,
+    int sndbuf, int rcvbuf);
 static void nn_cp_worker (void *arg);
 
-void nn_aio_timer_init (struct nn_aio_timer *self, const struct nn_cp_sink **sink,
-    struct nn_cp *cp)
+void nn_aio_timer_init (struct nn_aio_timer *self,
+    const struct nn_cp_sink **sink, struct nn_cp *cp)
 {
     self->sink = sink;
     self->cp = cp;
@@ -105,7 +106,8 @@ void nn_event_signal (struct nn_event *self)
     win_assert (brc);
 }
 
-int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
+int nn_aio_usock_init (struct nn_aio_usock *self,
+    const struct nn_cp_sink **sink,
     int domain, int type, int protocol, int sndbuf, int rcvbuf,
     struct nn_cp *cp)
 {
@@ -122,7 +124,7 @@ int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     if (self->s == INVALID_SOCKET)
        return -nn_err_wsa_to_posix (WSAGetLastError ());
 
-    nn_usock_tune (self, sndbuf, rcvbuf);
+    nn_aio_usock_tune (self, sndbuf, rcvbuf);
 
     /*  On Windows platform, socket is assocaited with a completion port
         immediately after creation. */
@@ -133,7 +135,7 @@ int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     return 0;
 }
 
-const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
+const struct nn_cp_sink **nn_aio_usock_setsink (struct nn_aio_usock *self,
     const struct nn_cp_sink **sink)
 {
     const struct nn_cp_sink **original;
@@ -143,7 +145,8 @@ const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
     return original;
 }
 
-int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
+int nn_aio_usock_init_child (struct nn_aio_usock *self,
+    struct nn_aio_usock *parent,
     int s, const struct nn_cp_sink **sink, int sndbuf, int rcvbuf,
     struct nn_cp *cp)
 {
@@ -154,12 +157,13 @@ int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
     self->type = parent->type;
     self->protocol = parent->protocol;
 
-    nn_usock_tune (self, sndbuf, rcvbuf);
+    nn_aio_usock_tune (self, sndbuf, rcvbuf);
 
     return 0;
 }
 
-static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
+static void nn_aio_usock_tune (struct nn_aio_usock *self,
+    int sndbuf, int rcvbuf)
 {
     int rc;
     int opt;
@@ -267,8 +271,8 @@ static void nn_cp_worker (void *arg)
     struct nn_timerset_hndl *tohndl;
     struct nn_aio_timer *timer;
     struct nn_event *event;
-    struct nn_usock_op *op;
-    struct nn_usock *usock;
+    struct nn_aio_usock_op *op;
+    struct nn_aio_usock *usock;
 
     self = (struct nn_cp*) arg;
 
@@ -321,34 +325,34 @@ static void nn_cp_worker (void *arg)
         
         /*  I/O completion events */
         nn_assert (olpd);
-        op = nn_cont (olpd, struct nn_usock_op, olpd);
+        op = nn_cont (olpd, struct nn_aio_usock_op, olpd);
         switch (op->op) {
         case NN_USOCK_OP_RECV:
-            usock = nn_cont (op, struct nn_usock, in);
+            usock = nn_cont (op, struct nn_aio_usock, in);
             nn_assert ((*usock->sink)->received);
 printf ("received olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->received (usock->sink, usock);
             break;
         case NN_USOCK_OP_SEND:
-            usock = nn_cont (op, struct nn_usock, out);
+            usock = nn_cont (op, struct nn_aio_usock, out);
             nn_assert ((*usock->sink)->sent);
 printf ("sent olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->sent (usock->sink, usock);
             break;
         case NN_USOCK_OP_CONNECT:
-            usock = nn_cont (op, struct nn_usock, out);
+            usock = nn_cont (op, struct nn_aio_usock, out);
             nn_assert ((*usock->sink)->connected);
 printf ("connected olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->connected (usock->sink, usock);
             break;
         case NN_USOCK_OP_ACCEPT:
-            usock = nn_cont (op, struct nn_usock, in);
+            usock = nn_cont (op, struct nn_aio_usock, in);
             nn_assert ((*usock->sink)->accepted);
 printf ("accepted olpd=%p\n", (void*) &op->olpd);
             (*usock->sink)->accepted (usock->sink, usock, usock->newsock);
             break;
         case NN_USOCK_OP_CONN:
-            usock = nn_cont (op, struct nn_usock, conn);
+            usock = nn_cont (op, struct nn_aio_usock, conn);
             nn_assert (0);
         default:
             nn_assert (0);
@@ -356,7 +360,7 @@ printf ("accepted olpd=%p\n", (void*) &op->olpd);
     }
 }
 
-void nn_usock_close (struct nn_usock *self)
+void nn_aio_usock_close (struct nn_aio_usock *self)
 {
     int rc;
 
@@ -364,7 +368,7 @@ void nn_usock_close (struct nn_usock *self)
     wsa_assert (rc != SOCKET_ERROR);
 }
 
-int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+int nn_aio_usock_bind (struct nn_aio_usock *self, const struct sockaddr *addr,
     nn_socklen addrlen)
 {
     int rc;
@@ -384,7 +388,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     return 0;
 }
 
-int nn_usock_listen (struct nn_usock *self, int backlog)
+int nn_aio_usock_listen (struct nn_aio_usock *self, int backlog)
 {
     int rc;
 
@@ -394,8 +398,8 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     return 0;
 }
 
-void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
-    nn_socklen addrlen)
+void nn_aio_usock_connect (struct nn_aio_usock *self,
+    const struct sockaddr *addr, nn_socklen addrlen)
 {
     int rc;
     BOOL brc;
@@ -422,7 +426,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     nn_assert (nbytes == sizeof (pconnectex));
     self->out.op = NN_USOCK_OP_CONNECT;
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-printf ("nn_usock_connect olpd=%p\n", (void*) &self->out.olpd);
+printf ("nn_aio_usock_connect olpd=%p\n", (void*) &self->out.olpd);
     brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
         NULL, 0, NULL, &self->out.olpd);
     /*  TODO: It's not clear what happens when connect is immediately
@@ -436,7 +440,7 @@ printf ("connected immediately olpd=%p\n", (void*) &self->out.olpd);
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
 }
 
-void nn_usock_accept (struct nn_usock *self)
+void nn_aio_usock_accept (struct nn_aio_usock *self)
 {
     BOOL brc;
     char info [512];
@@ -453,7 +457,7 @@ void nn_usock_accept (struct nn_usock *self)
     /*  Asynchronously wait for new incoming connection. */
     self->in.op = NN_USOCK_OP_ACCEPT;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-printf ("nn_usock_accept olpd=%p\n", (void*) &self->in.olpd);
+printf ("nn_aio_usock_accept olpd=%p\n", (void*) &self->in.olpd);
     brc = AcceptEx (self->s, self->newsock, info, 0, 256, 256, &nbytes,
         &self->in.olpd);
     /*  TODO: It's not clear what happens when accept is immediately
@@ -467,7 +471,7 @@ printf ("accepted immediately olpd=%p\n", (void*) &self->in.olpd);
     wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
 }
 
-void nn_usock_send (struct nn_usock *self, const struct nn_iobuf *iov,
+void nn_aio_usock_send (struct nn_aio_usock *self, const struct nn_iobuf *iov,
     int iovcnt)
 {
     int rc;
@@ -484,12 +488,12 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iobuf *iov,
     /*  Start the send oprtation. */
     self->out.op = NN_USOCK_OP_SEND;
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-printf ("nn_usock_send olpd=%p\n", (void*) &self->out.olpd);
+printf ("nn_aio_usock_send olpd=%p\n", (void*) &self->out.olpd);
     rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
     wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
 
-void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
+void nn_aio_usock_recv (struct nn_aio_usock *self, void *buf, size_t len)
 {
     int rc;
     WSABUF wbuf;
@@ -500,7 +504,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wflags = MSG_WAITALL;
     self->in.op = NN_USOCK_OP_RECV;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-printf ("nn_usock_recv olpd=%p size=%d\n", (void*) &self->in.olpd, (int) len);
+printf ("nn_aio_usock_recv olpd=%p size=%d\n", (void*) &self->in.olpd, (int) len);
     rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
     wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }

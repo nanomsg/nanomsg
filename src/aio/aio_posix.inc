@@ -38,11 +38,14 @@
 
 /*  Private functions. */
 static void nn_cp_worker (void *arg);
-static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf);
-static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
-static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
-static int nn_usock_geterr (struct nn_usock *self);
-static void nn_uscok_term (struct nn_usock *self);
+static void nn_aio_usock_tune (struct nn_aio_usock *self, int sndbuf,
+    int rcvbuf);
+static int nn_aio_usock_send_raw (struct nn_aio_usock *self,
+    struct msghdr *hdr);
+static int nn_aio_usock_recv_raw (struct nn_aio_usock *self,
+    void *buf, size_t *len);
+static int nn_aio_usock_geterr (struct nn_aio_usock *self);
+static void nn_uscok_term (struct nn_aio_usock *self);
 
 void nn_aio_timer_init (struct nn_aio_timer *self,
     const struct nn_cp_sink **sink, struct nn_cp *cp)
@@ -109,7 +112,8 @@ void nn_event_signal (struct nn_event *self)
     nn_efd_signal (&self->cp->efd);
 }
 
-int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
+int nn_aio_usock_init (struct nn_aio_usock *self,
+    const struct nn_cp_sink **sink,
     int domain, int type, int protocol, int sndbuf, int rcvbuf,
     struct nn_cp *cp)
 {
@@ -159,12 +163,12 @@ int nn_usock_init (struct nn_usock *self, const struct nn_cp_sink **sink,
     errno_assert (rc != -1);
 #endif
 
-    nn_usock_tune (self, sndbuf, rcvbuf);
+    nn_aio_usock_tune (self, sndbuf, rcvbuf);
 
     return 0;
 }
 
-const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
+const struct nn_cp_sink **nn_aio_usock_setsink (struct nn_aio_usock *self,
     const struct nn_cp_sink **sink)
 {
     const struct nn_cp_sink **original;
@@ -174,7 +178,8 @@ const struct nn_cp_sink **nn_usock_setsink (struct nn_usock *self,
     return original;
 }
 
-int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
+int nn_aio_usock_init_child (struct nn_aio_usock *self,
+    struct nn_aio_usock *parent,
     int s, const struct nn_cp_sink **sink, int sndbuf, int rcvbuf,
     struct nn_cp *cp)
 {
@@ -200,7 +205,7 @@ int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
     self->protocol = parent->protocol;
     self->flags = 0;
 
-    nn_usock_tune (self, sndbuf, rcvbuf);
+    nn_aio_usock_tune (self, sndbuf, rcvbuf);
 
     /*  Register the new socket with the suplied completion port. 
         If the function is called from the worker thread, modify the pollset
@@ -216,7 +221,7 @@ int nn_usock_init_child (struct nn_usock *self, struct nn_usock *parent,
     return 0;
 }
 
-static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
+static void nn_aio_usock_tune (struct nn_aio_usock *self, int sndbuf, int rcvbuf)
 {
     int rc;
     int opt;
@@ -314,7 +319,7 @@ static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf)
 #endif
 }
 
-static void nn_usock_term (struct nn_usock *self)
+static void nn_aio_usock_term (struct nn_aio_usock *self)
 {
     int rc;
 
@@ -407,7 +412,7 @@ static void nn_cp_worker (void *arg)
     struct nn_poller_hndl *phndl;
     struct nn_queue_item *it;
     struct nn_event *event;
-    struct nn_usock *usock;
+    struct nn_aio_usock *usock;
     size_t sz;
     int newsock;
 
@@ -444,21 +449,21 @@ if (rc == -EINTR) goto again;
 
             switch (ophndl->op) {
             case NN_USOCK_OP_IN:
-                usock = nn_cont (ophndl, struct nn_usock, in.hndl);
+                usock = nn_cont (ophndl, struct nn_aio_usock, in.hndl);
                 nn_poller_set_in (&self->poller, &usock->hndl);
                 break;
             case NN_USOCK_OP_OUT:
-                usock = nn_cont (ophndl, struct nn_usock, out.hndl);
+                usock = nn_cont (ophndl, struct nn_aio_usock, out.hndl);
                 nn_poller_set_out (&self->poller, &usock->hndl);
                 break;
             case NN_USOCK_OP_ADD:
-                usock = nn_cont (ophndl, struct nn_usock, add_hndl);
+                usock = nn_cont (ophndl, struct nn_aio_usock, add_hndl);
                 nn_poller_add (&self->poller, usock->s, &usock->hndl);
                 break;
             case NN_USOCK_OP_RM:
-                usock = nn_cont (ophndl, struct nn_usock, rm_hndl);
+                usock = nn_cont (ophndl, struct nn_aio_usock, rm_hndl);
                 nn_poller_rm (&self->poller, &usock->hndl);
-                nn_usock_term (usock);
+                nn_aio_usock_term (usock);
                 break;
             default:
                 nn_assert (0);
@@ -495,13 +500,13 @@ if (rc == -EINTR) goto again;
             }
 
             /*  Process the I/O event. */
-            usock = nn_cont (phndl, struct nn_usock, hndl);
+            usock = nn_cont (phndl, struct nn_aio_usock, hndl);
             switch (op) {
             case NN_POLLER_IN:
                 switch (usock->in.op) {
                 case NN_USOCK_INOP_RECV:
                     sz = usock->in.len;
-                    rc = nn_usock_recv_raw (usock, usock->in.buf, &sz);
+                    rc = nn_aio_usock_recv_raw (usock, usock->in.buf, &sz);
                     if (rc < 0)
                         goto err;
                     usock->in.len -= sz;
@@ -546,7 +551,7 @@ if (rc == -EINTR) goto again;
             case NN_POLLER_OUT:
                 switch (usock->out.op) {
                 case NN_USOCK_OUTOP_SEND:
-                    rc = nn_usock_send_raw (usock, &usock->out.hdr);
+                    rc = nn_aio_usock_send_raw (usock, &usock->out.hdr);
                     if (nn_fast (rc == 0)) {
                         usock->out.op = NN_USOCK_OUTOP_NONE;
                         nn_poller_reset_out (&self->poller, &usock->hndl);
@@ -560,7 +565,7 @@ if (rc == -EINTR) goto again;
                 case NN_USOCK_OUTOP_CONNECT:
                     usock->out.op = NN_USOCK_OUTOP_NONE;
                     nn_poller_reset_out (&self->poller, &usock->hndl);
-                    rc = nn_usock_geterr (usock);
+                    rc = nn_aio_usock_geterr (usock);
                     if (rc != 0)
                         goto err;
                     nn_assert ((*usock->sink)->connected);
@@ -571,7 +576,7 @@ if (rc == -EINTR) goto again;
                 }
                 break;
             case NN_POLLER_ERR:
-                rc = nn_usock_geterr (usock);
+                rc = nn_aio_usock_geterr (usock);
 err:
                 nn_assert ((*usock->sink)->err);
                 (*usock->sink)->err (usock->sink, usock, rc);
@@ -595,14 +600,14 @@ err:
     }
 }
 
-void nn_usock_close (struct nn_usock *self)
+void nn_aio_usock_close (struct nn_aio_usock *self)
 {
     int rc;
 
     /*  If the underlying fd was not yet reigstered with the poller we can
         close the usock straight away. */
     if (!(self->flags & NN_USOCK_FLAG_REGISTERED)) {
-        nn_usock_term (self);
+        nn_aio_usock_term (self);
         return;
     }
 
@@ -610,7 +615,7 @@ void nn_usock_close (struct nn_usock *self)
         in a synchronous way. */
     if (nn_thread_current (&self->cp->worker)) {
         nn_poller_rm (&self->cp->poller, &self->hndl);
-        nn_usock_term (self);
+        nn_aio_usock_term (self);
         return;
     }
 
@@ -619,7 +624,7 @@ void nn_usock_close (struct nn_usock *self)
     nn_efd_signal (&self->cp->efd);
 }
 
-int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+int nn_aio_usock_bind (struct nn_aio_usock *self, const struct sockaddr *addr,
     nn_socklen addrlen)
 {
     int rc;
@@ -640,7 +645,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     return 0;
 }
 
-int nn_usock_listen (struct nn_usock *self, int backlog)
+int nn_aio_usock_listen (struct nn_aio_usock *self, int backlog)
 {
     int rc;
 
@@ -661,8 +666,8 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     return 0;
 }
 
-void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
-    nn_socklen addrlen)
+void nn_aio_usock_connect (struct nn_aio_usock *self,
+    const struct sockaddr *addr, nn_socklen addrlen)
 {
     int rc;
 
@@ -711,7 +716,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     }
 }
 
-void nn_usock_accept (struct nn_usock *self)
+void nn_aio_usock_accept (struct nn_aio_usock *self)
 {
     /*  Make sure that there's no inbound operation already in progress. */
     nn_assert (self->in.op == NN_USOCK_INOP_NONE);
@@ -729,7 +734,7 @@ void nn_usock_accept (struct nn_usock *self)
     }
 }
 
-void nn_usock_send (struct nn_usock *self,
+void nn_aio_usock_send (struct nn_aio_usock *self,
     const struct nn_iobuf *iov, int iovcnt)
 {
     int rc;
@@ -753,7 +758,7 @@ void nn_usock_send (struct nn_usock *self,
     self->out.hdr.msg_iovlen = out; 
     
     /*  Try to send the data immediately. */
-    rc = nn_usock_send_raw (self, &self->out.hdr);
+    rc = nn_aio_usock_send_raw (self, &self->out.hdr);
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
@@ -783,7 +788,7 @@ void nn_usock_send (struct nn_usock *self,
     }
 }
 
-void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
+void nn_aio_usock_recv (struct nn_aio_usock *self, void *buf, size_t len)
 {
     int rc;
     size_t nbytes;
@@ -793,7 +798,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 
     /*  Try to receive the data immediately. */
     nbytes = len;
-    rc = nn_usock_recv_raw (self, buf, &nbytes);
+    rc = nn_aio_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         nn_assert ((*self->sink)->err);
@@ -823,7 +828,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     }
 }
 
-static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
+static int nn_aio_usock_send_raw (struct nn_aio_usock *self, struct msghdr *hdr)
 {
     ssize_t nbytes;
 
@@ -871,7 +876,8 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
     return 0;
 }
 
-static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
+static int nn_aio_usock_recv_raw (struct nn_aio_usock *self,
+    void *buf, size_t *len)
 {
     size_t sz;
     size_t length;
@@ -948,7 +954,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     return 0;
 }
 
-static int nn_usock_geterr (struct nn_usock *self)
+static int nn_aio_usock_geterr (struct nn_aio_usock *self)
 {
     int rc;
     int err;

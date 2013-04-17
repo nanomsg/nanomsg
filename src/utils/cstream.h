@@ -41,7 +41,7 @@ struct nn_cstream {
     struct nn_epbase epbase;
 
     /*  The underlying socket. */
-    struct nn_usock usock;
+    struct nn_aio_usock usock;
 
     /*  There's at most one session per connecting endpoint, thus we can
         embed the session object directly into the connecter class. */
@@ -55,7 +55,7 @@ struct nn_cstream {
     struct nn_aio_timer retry_timer;
 
     /*  Virtual functions supplied by the specific transport type. */
-    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
+    int (*initsockfn) (struct nn_aio_usock *sock, int sndbuf, int rcvbuf,
         struct nn_cp *cp);
     int (*resolvefn) (const char *addr, struct sockaddr_storage *local,
         socklen_t *locallen, struct sockaddr_storage *remote,
@@ -63,7 +63,7 @@ struct nn_cstream {
 };
 
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
+    int (*initsockfn) (struct nn_aio_usock *sock, int sndbuf, int rcvbuf,
     struct nn_cp *cp), int (*resolvefn) (const char *addr,
     struct sockaddr_storage *local, socklen_t *locallen,
     struct sockaddr_storage *remote, socklen_t *remotelen));

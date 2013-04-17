@@ -32,17 +32,17 @@
 
 /*   Private functions. */
 static void nn_stream_hdr_received (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
     struct nn_aio_timer *timer);
 static void nn_stream_received (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static void nn_stream_sent (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static void nn_stream_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum);
+    struct nn_aio_usock *usock, int errnum);
 
 /*  START state. */
 static const struct nn_cp_sink nn_stream_state_start = {
@@ -89,7 +89,7 @@ const struct nn_pipebase_vfptr nn_stream_pipebase_vfptr = {
 };
 
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     int rc;
     int protocol;
@@ -99,7 +99,7 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
     self->sink = &nn_stream_state_start;
-    self->original_sink = nn_usock_setsink (usock, &self->sink);
+    self->original_sink = nn_aio_usock_setsink (usock, &self->sink);
 
     /*  Initialise the pipe to communicate with the user. */
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
@@ -121,7 +121,7 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_puts (self->protohdr + 4, (uint16_t) protocol);
     iobuf.iov_base = self->protohdr;
     iobuf.iov_len = 8;
-    nn_usock_send (usock, &iobuf, 1);
+    nn_aio_usock_send (usock, &iobuf, 1);
 }
 
 void nn_stream_term (struct nn_stream *self)
@@ -134,11 +134,11 @@ void nn_stream_term (struct nn_stream *self)
     nn_pipebase_term (&self->pipebase);
 
     /*  Return control to the parent state machine. */
-    nn_usock_setsink (self->usock, self->original_sink);
+    nn_aio_usock_setsink (self->usock, self->original_sink);
 }
 
 static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_stream *stream;
 
@@ -147,11 +147,11 @@ static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     stream->sink = &nn_stream_state_sent;
 
     /*  Receive the protocol header from the peer. */
-    nn_usock_recv (usock, stream->protohdr, 8);
+    nn_aio_usock_recv (usock, stream->protohdr, 8);
 }
 
 static void nn_stream_hdr_received (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_stream *stream;
     int protocol;
@@ -172,7 +172,7 @@ static void nn_stream_hdr_received (const struct nn_cp_sink **self,
 
     /*  Start waiting for incoming messages. First, read the 8-byte size. */
     stream->instate = NN_STREAM_INSTATE_HDR;
-    nn_usock_recv (stream->usock, stream->inhdr, 8);
+    nn_aio_usock_recv (stream->usock, stream->inhdr, 8);
 }
 
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
@@ -194,7 +194,7 @@ static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
 }
 
 static void nn_stream_received (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_stream *stream;
     uint64_t size;
@@ -210,8 +210,8 @@ static void nn_stream_received (const struct nn_cp_sink **self,
             break;
         }
         stream->instate = NN_STREAM_INSTATE_BODY;
-        nn_usock_recv (stream->usock, nn_chunkref_data (&stream->inmsg.body),
-            (size_t) size);
+        nn_aio_usock_recv (stream->usock,
+            nn_chunkref_data (&stream->inmsg.body), (size_t) size);
         break;
     case NN_STREAM_INSTATE_BODY:
         nn_pipebase_received (&stream->pipebase);
@@ -222,7 +222,7 @@ static void nn_stream_received (const struct nn_cp_sink **self,
 }
 
 static void nn_stream_sent (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_stream *stream;
 
@@ -233,7 +233,7 @@ static void nn_stream_sent (const struct nn_cp_sink **self,
 }
 
 static void nn_stream_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum)
+    struct nn_aio_usock *usock, int errnum)
 {
     struct nn_stream *stream;
     const struct nn_cp_sink **original_sink;
@@ -271,7 +271,7 @@ static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
     iov [1].iov_len = nn_chunkref_size (&stream->outmsg.hdr);
     iov [2].iov_base = nn_chunkref_data (&stream->outmsg.body);
     iov [2].iov_len = nn_chunkref_size (&stream->outmsg.body);;
-    nn_usock_send (stream->usock, iov, 3);
+    nn_aio_usock_send (stream->usock, iov, 3);
 
     return 0;
 }
@@ -288,7 +288,7 @@ static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /* Start receiving new message. */ 
     stream->instate = NN_STREAM_INSTATE_HDR;
-    nn_usock_recv (stream->usock, stream->inhdr, 8);
+    nn_aio_usock_recv (stream->usock, stream->inhdr, 8);
 
     return 0;
 }

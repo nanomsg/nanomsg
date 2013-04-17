@@ -36,7 +36,7 @@ struct nn_astream {
     const struct nn_cp_sink *sink;
 
     /*  The undelying TCP socket. */
-    struct nn_usock usock;
+    struct nn_aio_usock usock;
 
     /*  TCP session state machine. */
     struct nn_stream stream;
@@ -49,7 +49,7 @@ struct nn_astream {
 };
 
 void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
-    int s, struct nn_usock *usock, struct nn_bstream *bstream);
+    int s, struct nn_aio_usock *usock, struct nn_bstream *bstream);
 void nn_astream_close (struct nn_astream *self);
 
 #endif

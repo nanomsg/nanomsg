@@ -100,7 +100,7 @@ static const struct nn_cp_sink nn_cstream_state_waiting = {
 };
 
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,
+    int (*initsockfn) (struct nn_aio_usock *sock, int sndbuf, int rcvbuf,
     struct nn_cp *cp), int (*resolvefn) (const char *addr,
     struct sockaddr_storage *local, socklen_t *locallen,
     struct sockaddr_storage *remote, socklen_t *remotelen))
@@ -132,7 +132,7 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     rc = self->initsockfn (&self->usock, sndbuf, rcvbuf,
         nn_epbase_getcp (&self->epbase));
     errnum_assert (rc == 0, -rc);
-    nn_usock_setsink (&self->usock, &self->sink);
+    nn_aio_usock_setsink (&self->usock, &self->sink);
 
     /*  Initialise the retry timer. */
     self->retry_ivl = -1;
@@ -174,8 +174,10 @@ static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
     /*  Open the socket and start connecting. */
     cstream->sink = &nn_cstream_state_connecting;
     if (rc & NN_CSTREAM_DOBIND)
-        nn_usock_bind (&cstream->usock, (struct sockaddr*) &local, locallen);
-    nn_usock_connect (&cstream->usock, (struct sockaddr*) &remote, remotelen);
+        nn_aio_usock_bind (&cstream->usock,
+            (struct sockaddr*) &local, locallen);
+    nn_aio_usock_connect (&cstream->usock,
+        (struct sockaddr*) &remote, remotelen);
 }
 
 /******************************************************************************/
@@ -183,9 +185,9 @@ static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
 /******************************************************************************/
 
 static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum);
+    struct nn_aio_usock *usock, int errnum);
 static const struct nn_cp_sink nn_cstream_state_connecting = {
     NULL,
     NULL,
@@ -198,7 +200,7 @@ static const struct nn_cp_sink nn_cstream_state_connecting = {
 };
 
 static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_cstream *cstream;
 
@@ -213,7 +215,7 @@ static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
 }
 
 static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum)
+    struct nn_aio_usock *usock, int errnum)
 {
     struct nn_cstream *cstream;
 
@@ -221,7 +223,7 @@ static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
 
     /*  Connect failed. Close the underlying socket. */
     cstream->sink = &nn_cstream_state_closing;
-    nn_usock_close (&cstream->usock);
+    nn_aio_usock_close (&cstream->usock);
 }
 
 /******************************************************************************/
@@ -231,7 +233,7 @@ static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
 /*  In this state control is yielded to the 'stream' state machine. */
 
 static void nn_cstream_connected_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum);
+    struct nn_aio_usock *usock, int errnum);
 static const struct nn_cp_sink nn_cstream_state_connected = {
     NULL,
     NULL,
@@ -244,7 +246,7 @@ static const struct nn_cp_sink nn_cstream_state_connected = {
 };
 
 static void nn_cstream_connected_err (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int errnum)
+    struct nn_aio_usock *usock, int errnum)
 {
     struct nn_cstream *cstream;
 
@@ -260,7 +262,7 @@ static void nn_cstream_connected_err (const struct nn_cp_sink **self,
 /******************************************************************************/
 
 static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static const struct nn_cp_sink nn_cstream_state_closing = {
     NULL,
     NULL,
@@ -273,7 +275,7 @@ static const struct nn_cp_sink nn_cstream_state_closing = {
 };
 
 static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     int rc;
     struct nn_cstream *cstream;
@@ -295,7 +297,7 @@ static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
     rc = cstream->initsockfn (&cstream->usock, sndbuf, rcvbuf,
         nn_epbase_getcp (&cstream->epbase));
     errnum_assert (rc == 0, -rc);
-    nn_usock_setsink (&cstream->usock, &cstream->sink);
+    nn_aio_usock_setsink (&cstream->usock, &cstream->sink);
 
     /*  Wait for the specified period. */
     cstream->sink = &nn_cstream_state_waiting;
@@ -308,7 +310,7 @@ static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
 /******************************************************************************/
 
 static void nn_cstream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static const struct nn_cp_sink nn_cstream_state_terminating = {
     NULL,
     NULL,
@@ -339,13 +341,13 @@ static int nn_cstream_close (struct nn_epbase *self)
 
     /*  Close the socket, if needed. */
     cstream->sink = &nn_cstream_state_terminating;
-    nn_usock_close (&cstream->usock);
+    nn_aio_usock_close (&cstream->usock);
 
     return -EINPROGRESS;
 }
 
 static void nn_cstream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_cstream *cstream;
 

@@ -68,6 +68,8 @@ set (NN_SOURCES
     aio/timer.c
     aio/timerset.h
     aio/timerset.c
+    aio/usock.h
+    aio/usock.c
     aio/worker.h
     aio/worker.c
 

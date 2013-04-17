@@ -40,15 +40,15 @@ struct nn_bstream {
     struct nn_epbase epbase;
 
     /*  The listening socket. */
-    struct nn_usock usock;
+    struct nn_aio_usock usock;
 
     /*  List of all sockets accepted via this endpoint. */
     struct nn_list astreams;
 };
 
 int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct nn_usock *usock, struct nn_cp *cp,
-    int backlog), int backlog);
+    int (*initfn) (const char *addr, struct nn_aio_usock *usock,
+    struct nn_cp *cp, int backlog), int backlog);
 
 void nn_bstream_astream_closed (struct nn_bstream *self,
     struct nn_astream *astream);

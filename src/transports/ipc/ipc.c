@@ -40,9 +40,9 @@
 #define NN_IPC_BACKLOG 10
 
 /*  Private functions. */
-static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
+static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
     struct nn_cp *cp, int backlog);
-static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+static int nn_ipc_csockinit (struct nn_aio_usock *usock, int sndbuf, int rcvbuf,
     struct nn_cp *cp);
 static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *local,
     socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen);
@@ -115,7 +115,7 @@ static int nn_ipc_connect (const char *addr, void *hint,
     return 0;
 }
 
-static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
+static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
     struct nn_cp *cp, int backlog)
 {
     int rc;
@@ -138,20 +138,20 @@ static int nn_ipc_binit (const char *addr, struct nn_usock *usock,
     errno_assert (rc == 0 || errno == ENOENT);
 
     /*  Open the listening socket. */
-    rc = nn_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
+    rc = nn_aio_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
     errnum_assert (rc == 0, -rc);
-    rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
+    rc = nn_aio_usock_bind (usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);
-    rc = nn_usock_listen (usock, backlog);
+    rc = nn_aio_usock_listen (usock, backlog);
     errnum_assert (rc == 0, -rc);
 
     return 0;
 }
 
-static int nn_ipc_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
+static int nn_ipc_csockinit (struct nn_aio_usock *usock, int sndbuf, int rcvbuf,
     struct nn_cp *cp)
 {
-    return nn_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
+    return nn_aio_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
         sndbuf, rcvbuf, cp);
 }
 

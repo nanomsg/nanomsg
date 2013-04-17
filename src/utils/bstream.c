@@ -48,7 +48,7 @@ static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr =
 /******************************************************************************/
 
 static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int s);
+    struct nn_aio_usock *usock, int s);
 static const struct nn_cp_sink nn_bstream_state_listening = {
     NULL,
     NULL,
@@ -59,8 +59,8 @@ static const struct nn_cp_sink nn_bstream_state_listening = {
 };
 
 int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct nn_usock *usock, struct nn_cp *cp,
-    int backlog), int backlog)
+    int (*initfn) (const char *addr, struct nn_aio_usock *usock,
+    struct nn_cp *cp, int backlog), int backlog)
 {
     int rc;
 
@@ -71,7 +71,7 @@ int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
 
     /*  Open the listening socket. */
     rc = initfn (addr, &self->usock, nn_epbase_getcp (&self->epbase), backlog);
-    nn_usock_setsink (&self->usock, &self->sink);
+    nn_aio_usock_setsink (&self->usock, &self->sink);
     if (nn_slow (rc < 0)) {
         nn_epbase_term (&self->epbase);
         nn_list_term (&self->astreams);
@@ -79,13 +79,13 @@ int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
     }
 
     /*  Start waiting for incoming connection. */
-    nn_usock_accept (&self->usock);
+    nn_aio_usock_accept (&self->usock);
 
     return 0;
 }
 
 static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
-    struct nn_usock *usock, int s)
+    struct nn_aio_usock *usock, int s)
 {
     struct nn_bstream *bstream;
     struct nn_astream *astream;
@@ -105,7 +105,7 @@ static void nn_bstream_listening_accepted (const struct nn_cp_sink **self,
 /******************************************************************************/
 
 static void nn_bstream_terminating1_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock);
+    struct nn_aio_usock *usock);
 static const struct nn_cp_sink nn_bstream_state_terminating1 = {
     NULL,
     NULL,
@@ -125,13 +125,13 @@ static int nn_bstream_close (struct nn_epbase *self)
 
     /*  Close the listening socket itself. */
     bstream->sink = &nn_bstream_state_terminating1;
-    nn_usock_close (&bstream->usock);
+    nn_aio_usock_close (&bstream->usock);
 
     return -EINPROGRESS;
 }
 
 static void nn_bstream_terminating1_closed (const struct nn_cp_sink **self,
-    struct nn_usock *usock)
+    struct nn_aio_usock *usock)
 {
     struct nn_bstream *bstream;
     struct nn_list_item *it;

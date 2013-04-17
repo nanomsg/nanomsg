@@ -202,11 +202,11 @@ static void nn_global_init (void)
     nn_list_init (&self.socktypes);
 
     /*  Plug in individual transports. */
-    nn_global_add_transport (nn_inproc);
+//    nn_global_add_transport (nn_inproc);
 #if !defined NN_HAVE_WINDOWS
-    nn_global_add_transport (nn_ipc);
+//    nn_global_add_transport (nn_ipc);
 #endif
-    nn_global_add_transport (nn_tcp);
+//    nn_global_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
     nn_global_add_socktype (nn_pair_socktype);
@@ -214,7 +214,7 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_pub_socktype);
     nn_global_add_socktype (nn_sub_socktype);
     nn_global_add_socktype (nn_rep_socktype);
-    nn_global_add_socktype (nn_req_socktype);
+//    nn_global_add_socktype (nn_req_socktype);
     nn_global_add_socktype (nn_xrep_socktype);
     nn_global_add_socktype (nn_xreq_socktype);
     nn_global_add_socktype (nn_sink_socktype);
@@ -226,7 +226,7 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_pull_socktype);
     nn_global_add_socktype (nn_xpull_socktype);
     nn_global_add_socktype (nn_respondent_socktype);
-    nn_global_add_socktype (nn_surveyor_socktype);
+//    nn_global_add_socktype (nn_surveyor_socktype);
     nn_global_add_socktype (nn_xrespondent_socktype);
     nn_global_add_socktype (nn_xsurveyor_socktype);
     nn_global_add_socktype (nn_bus_socktype);

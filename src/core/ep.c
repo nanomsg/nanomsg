@@ -65,11 +65,6 @@ void nn_epbase_term (struct nn_epbase *self)
     nn_list_item_term (&self->item);
 }
 
-struct nn_cp *nn_epbase_getcp (struct nn_epbase *self)
-{
-    return nn_sock_getcp (self->sock);
-}
-
 struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self)
 {
     return nn_sock_getctx (self->sock);

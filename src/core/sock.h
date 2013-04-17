@@ -39,9 +39,6 @@ int nn_sock_destroy (struct nn_sock *self);
 /*  Called by nn_term() to let the socket know about the process shutdown. */
 void nn_sock_zombify (struct nn_sock *self);
 
-/*  Returns default completion port associated with the socket. */
-struct nn_cp *nn_sock_getcp (struct nn_sock *self);
-
 /*  Returns the AIO context associated with the socket. */
 struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
 

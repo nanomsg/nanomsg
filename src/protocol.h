@@ -23,7 +23,6 @@
 #ifndef NN_PROTOCOL_INCLUDED
 #define NN_PROTOCOL_INCLUDED
 
-#include "aio/aio.h"
 #include "aio/ctx.h"
 
 #include "utils/list.h"
@@ -140,7 +139,6 @@ struct nn_sockbase
     const struct nn_sockbase_vfptr *vfptr;
     int flags;
     struct nn_ctx ctx;
-    struct nn_cp cp;
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
     struct nn_sem termsem;
@@ -175,9 +173,6 @@ void nn_sockbase_term (struct nn_sockbase *self);
     core to check the new state and unblock any threads blocked in
     send/recv/poll functions as needed. */
 void nn_sockbase_changed (struct nn_sockbase *self);
-
-/*  Returns the completion port associated with the socket. */
-struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self);
 
 /*  Returns the AIO context associated with the socket. */
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self);

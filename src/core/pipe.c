@@ -91,11 +91,6 @@ void nn_pipebase_sent (struct nn_pipebase *self)
         nn_sock_out (self->sock, (struct nn_pipe*) self);
 }
 
-struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self)
-{
-    return nn_sock_getcp (self->sock);
-}
-
 struct nn_ctx *nn_pipebase_getctx (struct nn_pipebase *self)
 {
     return nn_sock_getctx (self->sock);

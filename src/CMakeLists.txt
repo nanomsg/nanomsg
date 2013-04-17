@@ -49,10 +49,6 @@ set (NN_SOURCES
     core/device.c
     core/symbol.c
 
-    aio/aio.h
-    aio/aio.c
-    aio/aio_posix.inc
-    aio/aio_win.inc
     aio/callback.h
     aio/callback.c
     aio/ctx.h
@@ -77,12 +73,12 @@ set (NN_SOURCES
     utils/addr.c
     utils/alloc.h
     utils/alloc.c
-    utils/astream.h
-    utils/astream.c
+#    utils/astream.h
+#    utils/astream.c
     utils/atomic.h
     utils/atomic.c
-    utils/bstream.h
-    utils/bstream.c
+#    utils/bstream.h
+#    utils/bstream.c
     utils/chunk.h
     utils/chunk.c
     utils/chunkref.h
@@ -90,8 +86,8 @@ set (NN_SOURCES
     utils/clock.h
     utils/clock.c
     utils/cont.h
-    utils/cstream.h
-    utils/cstream.c
+#    utils/cstream.h
+#    utils/cstream.c
     utils/dist.h
     utils/dist.c
     utils/efd.h
@@ -125,8 +121,8 @@ set (NN_SOURCES
     utils/sem.c
     utils/sleep.h
     utils/sleep.c
-    utils/stream.h
-    utils/stream.c
+#    utils/stream.h
+#    utils/stream.c
     utils/thread.h
     utils/thread.c
     utils/wire.h
@@ -167,8 +163,8 @@ set (NN_SOURCES
     protocols/pubsub/trie.h
     protocols/pubsub/trie.c
 
-    protocols/reqrep/req.h
-    protocols/reqrep/req.c
+#    protocols/reqrep/req.h
+#    protocols/reqrep/req.c
     protocols/reqrep/rep.h
     protocols/reqrep/rep.c
     protocols/reqrep/xrep.h
@@ -178,30 +174,30 @@ set (NN_SOURCES
 
     protocols/survey/respondent.h
     protocols/survey/respondent.c
-    protocols/survey/surveyor.h
-    protocols/survey/surveyor.c
+#    protocols/survey/surveyor.h
+#    protocols/survey/surveyor.c
     protocols/survey/xrespondent.h
     protocols/survey/xrespondent.c
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
 
-    transports/inproc/inproc.h
-    transports/inproc/inproc_ctx.h
-    transports/inproc/inproc_ctx.c
-    transports/inproc/inprocb.h
-    transports/inproc/inprocb.c
-    transports/inproc/inprocc.h
-    transports/inproc/inprocc.c
-    transports/inproc/msgpipe.h
-    transports/inproc/msgpipe.c
-    transports/inproc/msgqueue.h
-    transports/inproc/msgqueue.c
+#    transports/inproc/inproc.h
+#    transports/inproc/inproc_ctx.h
+#    transports/inproc/inproc_ctx.c
+#    transports/inproc/inprocb.h
+#    transports/inproc/inprocb.c
+#    transports/inproc/inprocc.h
+#    transports/inproc/inprocc.c
+#    transports/inproc/msgpipe.h
+#    transports/inproc/msgpipe.c
+#    transports/inproc/msgqueue.h
+#    transports/inproc/msgqueue.c
 
-    transports/ipc/ipc.h
-    transports/ipc/ipc.c
+#    transports/ipc/ipc.h
+#    transports/ipc/ipc.c
 
-    transports/tcp/tcp.h
-    transports/tcp/tcp.c
+#    transports/tcp/tcp.h
+#    transports/tcp/tcp.c
 )
 
 #  Here we cause symbols not to be exported from the library unless

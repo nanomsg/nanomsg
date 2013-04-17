@@ -25,8 +25,6 @@
 
 #include "nn.h"
 
-#include "aio/aio.h"
-
 #include "utils/list.h"
 #include "utils/msg.h"
 
@@ -93,9 +91,6 @@ void nn_epbase_init (struct nn_epbase *self,
 
 /*  Destroys the endpoint, unregisters it from the socket etc. */
 void nn_epbase_term (struct nn_epbase *self);
-
-/*  Returns the default completion port associated with the current socket. */
-struct nn_cp *nn_epbase_getcp (struct nn_epbase *self);
 
 /*  Returns the AIO context associated with the endpoint. */
 struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self);
@@ -171,9 +166,6 @@ void nn_pipebase_received (struct nn_pipebase *self);
 
 /*  Call this function when current outgoing message was fully sent. */
 void nn_pipebase_sent (struct nn_pipebase *self);
-
-/*  Returns the default completion port associated with the pipe. */
-struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self);
 
 /*  Returns the AIO context associated with the pipe. */
 struct nn_ctx *nn_pipebase_getctx (struct nn_pipebase *self);

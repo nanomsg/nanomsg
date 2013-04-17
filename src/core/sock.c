@@ -82,7 +82,6 @@ int nn_sockbase_init (struct nn_sockbase *self,
         }
     }
     memset (&self->termsem, 0xcd, sizeof (self->termsem));
-    rc = nn_cp_init (&self->cp);
     if (nn_slow (rc < 0)) {
         if (!(vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
             nn_efd_term (&self->rcvfd);
@@ -123,7 +122,7 @@ void nn_sock_zombify (struct nn_sock *self)
     struct nn_sockbase *sockbase;
 
     sockbase = (struct nn_sockbase*) self;
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_enter (&sockbase->ctx);
     sockbase->flags |= NN_SOCK_FLAG_ZOMBIE;
 
     /*  Reset IN and OUT events to unblock any polling function. */
@@ -140,7 +139,7 @@ void nn_sock_zombify (struct nn_sock *self)
         }
     }
 
-    nn_cp_unlock (&sockbase->cp);
+    nn_ctx_leave (&sockbase->ctx);
 }
 
 int nn_sock_destroy (struct nn_sock *self)
@@ -152,7 +151,7 @@ int nn_sock_destroy (struct nn_sock *self)
 
     sockbase = (struct nn_sockbase*) self;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_enter (&sockbase->ctx);
 
     /*  The call may have been interrupted by a singal and restarted afterwards.
         In such case don't do the following stuff again. */
@@ -190,12 +189,12 @@ int nn_sock_destroy (struct nn_sock *self)
     /*  Shutdown process was already started but some endpoints are still
         alive. Here we are going to wait till they are all closed. */
     if (!nn_list_empty (&sockbase->eps)) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         rc = nn_sem_wait (&sockbase->termsem);
         if (nn_slow (rc == -EINTR))
             return -EINTR;
         errnum_assert (rc == 0, -rc);
-        nn_cp_lock (&sockbase->cp);
+        nn_ctx_enter (&sockbase->ctx);
         nn_assert (nn_list_empty (&sockbase->eps));
     }
 
@@ -216,8 +215,8 @@ void nn_sockbase_term (struct nn_sockbase *self)
 
     nn_assert (self->flags & NN_SOCK_FLAG_CLOSING);
 
-    /*  The lock was done in nn_sock_destroy function. */
-    nn_cp_unlock (&self->cp);
+    /*  nn_ctx_enter() was done in nn_sock_destroy function. */
+    nn_ctx_leave (&self->ctx);
 
     /*  Destroy any optsets associated with the socket. */
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)
@@ -227,7 +226,6 @@ void nn_sockbase_term (struct nn_sockbase *self)
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
     nn_ctx_term (&self->ctx);
-    nn_cp_term (&self->cp);
 }
 
 void nn_sock_postinit (struct nn_sock *self, int domain, int protocol)
@@ -247,19 +245,9 @@ void nn_sockbase_changed (struct nn_sockbase *self)
     nn_sockbase_adjust_events (self);
 }
 
-struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self)
-{
-    return &self->cp;
-}
-
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
 {
     return &self->ctx;
-}
-
-struct nn_cp *nn_sock_getcp (struct nn_sock *self)
-{
-    return &((struct nn_sockbase*) self)->cp;
 }
 
 struct nn_ctx *nn_sock_getctx (struct nn_sock *self)
@@ -294,12 +282,12 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 
     sockbase = (struct nn_sockbase*) self;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_enter (&sockbase->ctx);
 
     /*  If nn_term() was already called, return ETERM. */
     if (nn_slow (sockbase->flags &
           (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return -ETERM;
     }
 
@@ -308,7 +296,7 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
         rc = sockbase->vfptr->setopt (sockbase, level, option,
             optval, optvallen);
         nn_sockbase_adjust_events (sockbase);
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 
@@ -316,17 +304,17 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     if (level < NN_SOL_SOCKET) {
         optset = nn_sockbase_optset (sockbase, level);
         if (!optset) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
         rc = optset->vfptr->setopt (optset, option, optval, optvallen);
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 
     /*  At this point we assume that all options are of type int. */
     if (optvallen != sizeof (int)) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return -EINVAL;
     }
     val = *(int*) optval;
@@ -339,14 +327,14 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
             break;
         case NN_SNDBUF:
             if (nn_slow (val <= 0)) {
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
                 return -EINVAL;
             }
             dst = &sockbase->sndbuf;
             break;
         case NN_RCVBUF:
             if (nn_slow (val <= 0)) {
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
                 return -EINVAL;
             }
             dst = &sockbase->rcvbuf;
@@ -359,31 +347,31 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
             break;
         case NN_RECONNECT_IVL:
             if (nn_slow (val < 0)) {
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
                 return -EINVAL;
             }
             dst = &sockbase->reconnect_ivl;
             break;
         case NN_RECONNECT_IVL_MAX:
             if (nn_slow (val < 0)) {
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
                 return -EINVAL;
             }
             dst = &sockbase->reconnect_ivl_max;
             break;
         case NN_SNDPRIO:
             if (nn_slow (val < 1 || val > 16)) {
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
                 return -EINVAL;
             }
             dst = &sockbase->sndprio;
             break;
         default:
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
         *dst = val;
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return 0;
     }
 
@@ -402,12 +390,12 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     sockbase = (struct nn_sockbase*) self;
 
     if (!internal)
-        nn_cp_lock (&sockbase->cp);
+        nn_ctx_enter (&sockbase->ctx);
 
     /*  If nn_term() was already called, return ETERM. */
     if (!internal && nn_slow (sockbase->flags &
           (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return -ETERM;
     }
 
@@ -447,7 +435,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
         case NN_SNDFD:
             if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) {
                 if (!internal)
-                    nn_cp_unlock (&sockbase->cp);
+                    nn_ctx_leave (&sockbase->ctx);
                 return -ENOPROTOOPT;
             }
             fd = nn_efd_getfd (&sockbase->sndfd);
@@ -455,12 +443,12 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
             if (!internal)
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
             return 0;
         case NN_RCVFD:
             if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV) {
                 if (!internal)
-                    nn_cp_unlock (&sockbase->cp);
+                    nn_ctx_leave (&sockbase->ctx);
                 return -ENOPROTOOPT;
             }
             fd = nn_efd_getfd (&sockbase->rcvfd);
@@ -468,18 +456,18 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
             if (!internal)
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
             return 0;
         default:
             if (!internal)
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
         memcpy (optval, &intval,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
         if (!internal)
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
         return 0;
     }
 
@@ -489,7 +477,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
             optval, optvallen);
         nn_sockbase_adjust_events (sockbase);
         if (!internal)
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 
@@ -498,12 +486,12 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
         optset = nn_sockbase_optset (sockbase, level);
         if (!optset) {
             if (!internal)
-                nn_cp_unlock (&sockbase->cp);
+                nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
         rc = optset->vfptr->getopt (optset, option, optval, optvallen);
         if (!internal)
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 
@@ -520,12 +508,12 @@ int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     
     sockbase = (struct nn_sockbase*) self;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_leave (&sockbase->ctx);
 
     /*  Create the transport-specific endpoint. */
     rc = factory (addr, (void*) self, &ep);
     if (nn_slow (rc < 0)) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 
@@ -536,7 +524,7 @@ int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     /*  Add it to the list of active endpoints. */
     nn_list_insert (&sockbase->eps, &ep->item, nn_list_end (&sockbase->eps));
 
-    nn_cp_unlock (&sockbase->cp);
+    nn_ctx_leave (&sockbase->ctx);
 
     return eid;
 }
@@ -550,7 +538,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     
     sockbase = (struct nn_sockbase*) self;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_leave (&sockbase->ctx);
 
     /*  Find the specified enpoint. */
     ep = NULL;
@@ -565,7 +553,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
 
     /*  The endpoint doesn't exist. */
     if (!ep) {
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         return -EINVAL;
     }
     
@@ -574,7 +562,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     rc = nn_ep_close ((void*) ep);
     errnum_assert (rc == 0 || rc == -EINPROGRESS, -rc);
 
-    nn_cp_unlock (&sockbase->cp);
+    nn_ctx_leave (&sockbase->ctx);
 
     return 0;
 }
@@ -609,7 +597,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
     if (nn_slow (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND))
         return -ENOTSUP;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_enter (&sockbase->ctx);
 
     /*  Compute the deadline for SNDTIMEO timer. */
     if (sockbase->sndtimeo < 0)
@@ -624,7 +612,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         /*  If nn_term() was already called, return ETERM. */
         if (nn_slow (sockbase->flags &
               (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -ETERM;
         }
 
@@ -632,34 +620,34 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         rc = sockbase->vfptr->send (sockbase, msg);
         nn_sockbase_adjust_events (sockbase);
         if (nn_fast (rc == 0)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return 0;
         }
         nn_assert (rc < 0);
 
         /*  Any unexpected error is forwarded to the caller. */
         if (nn_slow (rc != -EAGAIN)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return rc;
         }
 
         /*  If the message cannot be sent at the moment and the send call
             is non-blocking, return immediately. */
         if (nn_fast (flags & NN_DONTWAIT)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -EAGAIN;
         }
 
         /*  With blocking send, wait while there are new pipes available
             for sending. */
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         rc = nn_efd_wait (&sockbase->sndfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
             return -EAGAIN;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
         errnum_assert (rc == 0, rc);
-        nn_cp_lock (&sockbase->cp);
+        nn_ctx_enter (&sockbase->ctx);
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
@@ -684,7 +672,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     if (nn_slow (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV))
         return -ENOTSUP;
 
-    nn_cp_lock (&sockbase->cp);
+    nn_ctx_enter (&sockbase->ctx);
 
     /*  Compute the deadline for RCVTIMEO timer. */
     if (sockbase->rcvtimeo < 0)
@@ -699,7 +687,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         /*  If nn_term() was already called, return ETERM. */
         if (nn_slow (sockbase->flags &
               (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -ETERM;
         }
 
@@ -707,34 +695,34 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         rc = sockbase->vfptr->recv (sockbase, msg);
         nn_sockbase_adjust_events (sockbase);
         if (nn_fast (rc == 0)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return 0;
         }
         nn_assert (rc < 0);
 
         /*  Any unexpected error is forwarded to the caller. */
         if (nn_slow (rc != -EAGAIN)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return rc;
         }
 
         /*  If the message cannot be received at the moment and the recv call
             is non-blocking, return immediately. */
         if (nn_fast (flags & NN_DONTWAIT)) {
-            nn_cp_unlock (&sockbase->cp);
+            nn_ctx_leave (&sockbase->ctx);
             return -EAGAIN;
         }
 
         /*  With blocking recv, wait while there are new pipes available
             for receiving. */
-        nn_cp_unlock (&sockbase->cp);
+        nn_ctx_leave (&sockbase->ctx);
         rc = nn_efd_wait (&sockbase->rcvfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
             return -EAGAIN;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
         errnum_assert (rc == 0, rc);
-        nn_cp_lock (&sockbase->cp);
+        nn_ctx_enter (&sockbase->ctx);
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */

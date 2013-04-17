@@ -103,13 +103,20 @@ struct nn_usock {
         struct iovec iov [NN_USOCK_MAX_IOVCNT];
     } out;
 
-    /*  Asynchronous tasks. */
-    struct nn_worker_task connect_task;
-    struct nn_worker_task connected_task;
-    struct nn_worker_task accept_task;
-    struct nn_worker_task send_task;
-    struct nn_worker_task recv_task;
-    struct nn_worker_task close_task;
+    /*  Asynchronous tasks for the worker. */
+    struct nn_worker_task wtask_connect;
+    struct nn_worker_task wtask_connected;
+    struct nn_worker_task wtask_accept;
+    struct nn_worker_task wtask_send;
+    struct nn_worker_task wtask_recv;
+    struct nn_worker_task wtask_close;
+
+    /*  Asynchronous callback tasks. */ 
+    struct nn_ctx_task ctask_accepted;
+    struct nn_ctx_task ctask_connected;
+    struct nn_ctx_task ctask_sent;
+    struct nn_ctx_task ctask_received;
+    struct nn_ctx_task ctask_error;
 
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */

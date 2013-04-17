@@ -26,15 +26,13 @@
 #include "../utils/err.h"
 
 static void nn_timer_term (struct nn_timer *self);
-static void nn_timer_callback_handler (struct nn_callback *self, void *source,
+static void nn_timer_callback (struct nn_callback *self, void *source,
     int type);
-static const struct nn_callback_vfptr nn_timer_vfptr =
-    {nn_timer_callback_handler};
 
 void nn_timer_init (struct nn_timer *self, struct nn_ctx *ctx,
     struct nn_callback *callback)
 {
-    nn_callback_init (&self->in_callback, &nn_timer_vfptr);
+    nn_callback_init (&self->in_callback, nn_timer_callback);
     self->out_callback = callback;
     nn_worker_task_init (&self->start_task, &self->in_callback);
     nn_worker_task_init (&self->stop_task, &self->in_callback);
@@ -79,8 +77,7 @@ void nn_timer_stop (struct nn_timer *self)
     nn_worker_execute (self->worker, &self->start_task);
 }
 
-static void nn_timer_callback_handler (struct nn_callback *self, void *source,
-    int type)
+static void nn_timer_callback (struct nn_callback *self, void *source, int type)
 {
     struct nn_timer *timer;
     struct nn_callback *out_callback;
@@ -91,8 +88,7 @@ static void nn_timer_callback_handler (struct nn_callback *self, void *source,
         nn_assert (timer->timeout > 0);
         timer->timeout = -1;
         nn_ctx_enter (timer->ctx);
-        timer->out_callback->vfptr->callback (timer->out_callback,
-            timer, NN_TIMER_TIMEOUT);
+        timer->out_callback->fn (timer->out_callback, timer, NN_TIMER_TIMEOUT);
         nn_ctx_leave (timer->ctx);
         return;
     }
@@ -106,8 +102,7 @@ static void nn_timer_callback_handler (struct nn_callback *self, void *source,
         timer->timeout = -1;
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
         nn_ctx_enter (timer->ctx);
-        timer->out_callback->vfptr->callback (timer->out_callback,
-            timer, NN_TIMER_STOPPED);
+        timer->out_callback->fn (timer->out_callback, timer, NN_TIMER_STOPPED);
         nn_ctx_leave (timer->ctx);
         return;
     }
@@ -117,7 +112,7 @@ static void nn_timer_callback_handler (struct nn_callback *self, void *source,
         out_callback = timer->out_callback;
         nn_timer_term (timer);
         nn_ctx_enter (timer->ctx);
-        out_callback->vfptr->callback (out_callback, timer, NN_TIMER_CLOSED);
+        out_callback->fn (out_callback, timer, NN_TIMER_CLOSED);
         nn_ctx_leave (timer->ctx);
         return;
     }

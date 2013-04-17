@@ -40,10 +40,8 @@ static void nn_usock_term (struct nn_usock *self);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
-static void nn_usock_callback_handler (struct nn_callback *self, void *source,
+static void nn_usock_callback (struct nn_callback *self, void *source,
     int type);
-static const struct nn_callback_vfptr nn_usock_vfptr =
-    {nn_usock_callback_handler};
 
 static int nn_usock_init_from_fd (struct nn_usock *self,
     int fd, struct nn_worker *worker, struct nn_callback *callback)
@@ -52,7 +50,7 @@ static int nn_usock_init_from_fd (struct nn_usock *self,
     int opt;
 
     /*  Set up the callback pointers. */
-    nn_callback_init (&self->in_callback, &nn_usock_vfptr);
+    nn_callback_init (&self->in_callback, nn_usock_callback);
     self->out_callback = callback;
 
     /*  Store the reference to the worker the socket is associated with. */
@@ -238,16 +236,14 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
         nn_usock_init_from_fd (newsock, s, self->worker, newcallback);
-        self->out_callback->vfptr->callback (self->out_callback, self,
-            NN_USOCK_ACCEPTED);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_ACCEPTED);
         return;
     }
 
     /*  Unexpected failure. */
     if (nn_slow (errno != EAGAIN && errno != EWOULDBLOCK &&
           errno != ECONNABORTED)) {
-        self->out_callback->vfptr->callback (self->out_callback, self,
-            NN_USOCK_ERROR);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_ERROR);
         return;
     }
 
@@ -272,15 +268,13 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
         nn_worker_execute (self->worker, &self->connected_task);
 
         /*  Notify the user that the connection is established. */
-        self->out_callback->vfptr->callback (self->out_callback, self,
-            NN_USOCK_CONNECTED);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_CONNECTED);
         return;
     }
 
     /* Return unexpected errors to the caller. Notify the user about it. */
     if (nn_slow (errno != EINPROGRESS)) {
-        self->out_callback->vfptr->callback (self->out_callback, self,
-            NN_USOCK_ERROR);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_ERROR);
         return;
     }
 
@@ -313,16 +307,14 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
-        self->out_callback->vfptr->callback (self->out_callback,
-            self, NN_USOCK_SENT);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_SENT);
         return;
     }
 
     /*  Errors. */
     if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        self->out_callback->vfptr->callback (self->out_callback,
-            self, NN_USOCK_ERROR);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_ERROR);
         return;
     }
 
@@ -340,15 +332,13 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        self->out_callback->vfptr->callback (self->out_callback,
-            self, NN_USOCK_ERROR);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_ERROR);
         return;
     }
 
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        self->out_callback->vfptr->callback (self->out_callback,
-            self, NN_USOCK_RECEIVED);
+        self->out_callback->fn (self->out_callback, self, NN_USOCK_RECEIVED);
         return;
     }
 
@@ -360,8 +350,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     nn_worker_execute (self->worker, &self->recv_task);
 }
 
-static void nn_usock_callback_handler (struct nn_callback *self, void *source,
-    int type)
+static void nn_usock_callback (struct nn_callback *self, void *source, int type)
 {
     int rc;
     struct nn_usock *usock;
@@ -377,8 +366,7 @@ static void nn_usock_callback_handler (struct nn_callback *self, void *source,
         nn_worker_rm_fd (usock->worker, &usock->wfd);
         out_callback = usock->out_callback;
         nn_usock_term (usock);
-        out_callback->vfptr->callback (usock->out_callback,
-            usock, NN_USOCK_CLOSED);
+        out_callback->fn (usock->out_callback, usock, NN_USOCK_CLOSED);
         return;
     }
 
@@ -419,8 +407,8 @@ static void nn_usock_callback_handler (struct nn_callback *self, void *source,
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_CONNECTED;
-                usock->out_callback->vfptr->callback (usock->out_callback,
-                    usock, NN_USOCK_CONNECTED);
+                usock->out_callback->fn (usock->out_callback, usock,
+                    NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_FD_ERR:
                 nn_assert (0);
@@ -455,8 +443,8 @@ static void nn_usock_callback_handler (struct nn_callback *self, void *source,
                     usock->newcallback);
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
-                usock->out_callback->vfptr->callback (usock->out_callback,
-                    usock, NN_USOCK_ACCEPTED);
+                usock->out_callback->fn (usock->out_callback, usock,
+                    NN_USOCK_ACCEPTED);
                 usock->newsock = NULL;
                 usock->newcallback = NULL;
                 return;
@@ -489,28 +477,28 @@ static void nn_usock_callback_handler (struct nn_callback *self, void *source,
                     usock->in.len -= sz;
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
-                        usock->out_callback->vfptr->callback (
-                            usock->out_callback, usock, NN_USOCK_RECEIVED);
+                        usock->out_callback->fn (usock->out_callback, usock,
+                            NN_USOCK_RECEIVED);
                     }
                     return;
                 }
                 errnum_assert (rc == -ECONNRESET, -rc);
-                usock->out_callback->vfptr->callback (usock->out_callback,
-                    usock, NN_USOCK_ERROR);
+                usock->out_callback->fn (usock->out_callback, usock,
+                    NN_USOCK_ERROR);
                 return;
             case NN_WORKER_FD_OUT:
                 rc = nn_usock_send_raw (usock, &usock->out.hdr);
                 if (nn_fast (rc == 0)) {
                     nn_worker_reset_out (usock->worker, &usock->wfd);
-                    usock->out_callback->vfptr->callback (usock->out_callback,
-                        usock, NN_USOCK_SENT);
+                    usock->out_callback->fn (usock->out_callback, usock,
+                        NN_USOCK_SENT);
                     return;
                 }
                 if (nn_fast (rc == -EAGAIN))
                     return;
                 errnum_assert (rc == -ECONNRESET, -rc);
-                usock->out_callback->vfptr->callback (usock->out_callback,
-                    usock, NN_USOCK_ERROR);
+                usock->out_callback->fn (usock->out_callback, usock,
+                    NN_USOCK_ERROR);
                 return;
             case NN_WORKER_FD_ERR:
                 nn_assert (0);

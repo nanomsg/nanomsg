@@ -22,10 +22,9 @@
 
 #include "callback.h"
 
-void nn_callback_init (struct nn_callback *self,
-    const struct nn_callback_vfptr *vfptr)
+void nn_callback_init (struct nn_callback *self, nn_callback_fn fn)
 {
-    self->vfptr = vfptr;
+    self->fn = fn;
 }
 
 void nn_callback_term (struct nn_callback *self)

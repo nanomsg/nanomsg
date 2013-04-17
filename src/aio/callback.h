@@ -27,25 +27,22 @@
 
 struct nn_callback;
 
-struct nn_callback_vfptr {
-
-    /*  Virtual function to be implemented by the derived class to handle the
-        callbacks. 'source' parameter is pointer to the object that generated
-        the callback. As it can be any kind of object it is of type void*.
-        The user should check whether the pointer points to any source of
-        callbacks it is aware of and cast the pointer accordingly. If a single
-        object can generate different kinds of callbacks, 'type' parameter
-        specifies the callback type. Possible values are defined by the object
-        that is the source of callbacks. */
-    void (*callback) (struct nn_callback *self, void *source, int type);
-};
+/*  Virtual function to be implemented by the derived class to handle the
+    callbacks. 'source' parameter is pointer to the object that generated
+    the callback. As it can be any kind of object it is of type void*.
+    The user should check whether the pointer points to any source of
+    callbacks it is aware of and cast the pointer accordingly. If a single
+    object can generate different kinds of callbacks, 'type' parameter
+    specifies the callback type. Possible values are defined by the object
+    that is the source of callbacks. */
+typedef void (*nn_callback_fn) (struct nn_callback *self, void *source,
+    int type);
 
 struct nn_callback {
-    const struct nn_callback_vfptr *vfptr;
+    nn_callback_fn fn;
 };
 
-void nn_callback_init (struct nn_callback *self,
-    const struct nn_callback_vfptr *vfptr);
+void nn_callback_init (struct nn_callback *self, nn_callback_fn fn);
 void nn_callback_term (struct nn_callback *self);
 
 #endif

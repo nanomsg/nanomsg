@@ -44,27 +44,27 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
 static void nn_uscok_term (struct nn_usock *self);
 
-void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
-    struct nn_cp *cp)
+void nn_aio_timer_init (struct nn_aio_timer *self,
+    const struct nn_cp_sink **sink, struct nn_cp *cp)
 {
     self->sink = sink;
     self->cp = cp;
     nn_timerset_hndl_init (&self->hndl);
 }
 
-void nn_timer_term (struct nn_timer *self)
+void nn_aio_timer_term (struct nn_aio_timer *self)
 {
-    nn_timer_stop (self);
+    nn_aio_timer_stop (self);
     nn_timerset_hndl_term (&self->hndl);
 }
 
-void nn_timer_start (struct nn_timer *self, int timeout)
+void nn_aio_timer_start (struct nn_aio_timer *self, int timeout)
 {
     int rc;
 
     /*  If the timer is active, cancel it first. */
     if (nn_timerset_hndl_isactive (&self->hndl))
-        nn_timer_stop (self);
+        nn_aio_timer_stop (self);
 
     rc = nn_timerset_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
@@ -73,7 +73,7 @@ void nn_timer_start (struct nn_timer *self, int timeout)
         nn_efd_signal (&self->cp->efd);
 }
 
-void nn_timer_stop (struct nn_timer *self)
+void nn_aio_timer_stop (struct nn_aio_timer *self)
 {
     int rc;
 
@@ -402,7 +402,7 @@ static void nn_cp_worker (void *arg)
     struct nn_queue_item *qit;
     struct nn_cp_op_hndl *ophndl;
     struct nn_timerset_hndl *tohndl;
-    struct nn_timer *timer;
+    struct nn_aio_timer *timer;
     int op;
     struct nn_poller_hndl *phndl;
     struct nn_queue_item *it;
@@ -473,7 +473,7 @@ if (rc == -EINTR) goto again;
             errnum_assert (rc == 0, -rc);
 
             /*  Fire the timeout event. */
-            timer = nn_cont (tohndl, struct nn_timer, hndl);
+            timer = nn_cont (tohndl, struct nn_aio_timer, hndl);
             nn_assert ((*timer->sink)->timeout);
             (*timer->sink)->timeout (timer->sink, timer);
         }

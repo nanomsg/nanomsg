@@ -53,7 +53,7 @@ struct nn_stream {
         closed. This solves a rare race condition in TCP. It also minimises
         the usage of resources in case of erroneous connections. Also, it
         prevents a simple DoS attack. */
-    struct nn_timer hdr_timeout;
+    struct nn_aio_timer hdr_timeout;
 
     /*  State of the inbound state machine. */
     int instate;

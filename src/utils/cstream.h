@@ -52,7 +52,7 @@ struct nn_cstream {
     int retry_ivl;
 
     /*  Timer to wait before retrying to connect. */
-    struct nn_timer retry_timer;
+    struct nn_aio_timer retry_timer;
 
     /*  Virtual functions supplied by the specific transport type. */
     int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf,

@@ -20,28 +20,33 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CTX_INCLUDED
-#define NN_CTX_INCLUDED
+#ifndef NN_TIMER_INCLUDED
+#define NN_TIMER_INCLUDED
 
-#include "../utils/mutex.h"
+#include "callback.h"
+#include "ctx.h"
 
-#include "worker.h"
-#include "pool.h"
+#define NN_TIMER_TIMEOUT 1
+#define NN_TIMER_STOPPED 2
+#define NN_TIMER_CLOSED 3
 
-/*  AIO context for objects using AIO subsystem. */
-
-struct nn_ctx {
-    struct nn_mutex sync;
-    struct nn_pool *pool;
+struct nn_timer {
+    struct nn_callback in_callback;
+    struct nn_callback *out_callback;
+    struct nn_worker_task start_task;
+    struct nn_worker_task stop_task;
+    struct nn_worker_task close_task;
+    struct nn_worker_timer wtimer;
+    struct nn_ctx *ctx;
+    struct nn_worker *worker;
+    int timeout;
 };
 
-void nn_ctx_init (struct nn_ctx *self, struct nn_pool *pool);
-void nn_ctx_term (struct nn_ctx *self);
+void nn_timer_init (struct nn_timer *self, struct nn_ctx *ctx,
+    struct nn_callback *callback);
+void nn_timer_close (struct nn_timer *self);
 
-void nn_ctx_enter (struct nn_ctx *self);
-void nn_ctx_leave (struct nn_ctx *self);
-
-struct nn_worker *nn_ctx_choose_worker (struct nn_ctx *self);
+void nn_timer_start (struct nn_timer *self, int timeout);
+void nn_timer_stop (struct nn_timer *self);
 
 #endif
-

@@ -87,7 +87,7 @@ static const struct nn_epbase_vfptr nn_cstream_epbase_vfptr =
 /******************************************************************************/
 
 static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer);
+    struct nn_aio_timer *timer);
 static const struct nn_cp_sink nn_cstream_state_waiting = {
     NULL,
     NULL,
@@ -136,7 +136,7 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
 
     /*  Initialise the retry timer. */
     self->retry_ivl = -1;
-    nn_timer_init (&self->retry_timer, &self->sink,
+    nn_aio_timer_init (&self->retry_timer, &self->sink,
         nn_epbase_getcp (&self->epbase));
 
     /*  Pretend we were waiting for the re-connect timer and that the timer
@@ -148,7 +148,7 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
 }
 
 static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer)
+    struct nn_aio_timer *timer)
 {
     int rc;
     struct nn_cstream *cstream;
@@ -166,7 +166,7 @@ static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
     /*  If the address resolution have failed, wait and re-try. */
     if (rc < 0) {
         cstream->sink = &nn_cstream_state_waiting;
-        nn_timer_start (&cstream->retry_timer,
+        nn_aio_timer_start (&cstream->retry_timer,
             nn_cstream_compute_retry_ivl (cstream));
         return;
     }
@@ -299,7 +299,7 @@ static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
 
     /*  Wait for the specified period. */
     cstream->sink = &nn_cstream_state_waiting;
-    nn_timer_start (&cstream->retry_timer,
+    nn_aio_timer_start (&cstream->retry_timer,
         nn_cstream_compute_retry_ivl (cstream));
 }
 
@@ -335,7 +335,7 @@ static int nn_cstream_close (struct nn_epbase *self)
         nn_stream_term (&cstream->stream);
 
     /*  Deallocate resources. */
-    nn_timer_term (&cstream->retry_timer);
+    nn_aio_timer_term (&cstream->retry_timer);
 
     /*  Close the socket, if needed. */
     cstream->sink = &nn_cstream_state_terminating;

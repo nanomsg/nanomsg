@@ -36,7 +36,7 @@ static void nn_stream_hdr_received (const struct nn_cp_sink **self,
 static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     struct nn_usock *usock);
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer);
+    struct nn_aio_timer *timer);
 static void nn_stream_received (const struct nn_cp_sink **self,
     struct nn_usock *usock);
 static void nn_stream_sent (const struct nn_cp_sink **self,
@@ -109,8 +109,8 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_msg_init (&self->outmsg, 0);
 
     /*  Start the header timeout timer. */
-    nn_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
-    nn_timer_start (&self->hdr_timeout, 1000);
+    nn_aio_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
+    nn_aio_timer_start (&self->hdr_timeout, 1000);
 
     /*  Send the protocol header. */
     sz = sizeof (protocol);
@@ -130,7 +130,7 @@ void nn_stream_term (struct nn_stream *self)
     nn_msg_term (&self->inmsg);
     nn_msg_term (&self->outmsg);
 
-    nn_timer_term (&self->hdr_timeout);
+    nn_aio_timer_term (&self->hdr_timeout);
     nn_pipebase_term (&self->pipebase);
 
     /*  Return control to the parent state machine. */
@@ -159,7 +159,7 @@ static void nn_stream_hdr_received (const struct nn_cp_sink **self,
     stream = nn_cont (self, struct nn_stream, sink);
 
     stream->sink = &nn_stream_state_active;
-    nn_timer_stop (&stream->hdr_timeout);
+    nn_aio_timer_stop (&stream->hdr_timeout);
 
     /*  TODO: If it does not conform, drop the connection. */
     protocol = nn_gets (stream->protohdr + 4);
@@ -176,7 +176,7 @@ static void nn_stream_hdr_received (const struct nn_cp_sink **self,
 }
 
 static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer)
+    struct nn_aio_timer *timer)
 {
     struct nn_stream *stream;
     const struct nn_cp_sink **original_sink;

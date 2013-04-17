@@ -32,7 +32,7 @@
     called inside of the same critical section. */
 
 struct nn_cp;
-struct nn_timer;
+struct nn_aio_timer;
 struct nn_usock;
 struct nn_event;
 
@@ -57,16 +57,16 @@ struct nn_cp_sink {
     void (*closed) (const struct nn_cp_sink **self,
         struct nn_usock *usock);
     void (*timeout) (const struct nn_cp_sink **self,
-        struct nn_timer *timer);
+        struct nn_aio_timer *timer);
     void (*event) (const struct nn_cp_sink **self,
         struct nn_event *event);
 };
 
-void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
-    struct nn_cp *cp);
-void nn_timer_term (struct nn_timer *self);
-void nn_timer_start (struct nn_timer *self, int timeout);
-void nn_timer_stop (struct nn_timer *self);
+void nn_aio_timer_init (struct nn_aio_timer *self,
+    const struct nn_cp_sink **sink, struct nn_cp *cp);
+void nn_aio_timer_term (struct nn_aio_timer *self);
+void nn_aio_timer_start (struct nn_aio_timer *self, int timeout);
+void nn_aio_timer_stop (struct nn_aio_timer *self);
 
 void nn_event_init (struct nn_event *self, const struct nn_cp_sink **sink,
     struct nn_cp *cp);
@@ -108,7 +108,7 @@ void nn_cp_unlock (struct nn_cp *self);
 
 #include "timerset.h"
 
-struct nn_timer {
+struct nn_aio_timer {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
     struct nn_timerset_hndl hndl;
@@ -170,7 +170,7 @@ struct nn_cp {
 #include <stdint.h>
 #include <sys/socket.h>
 
-struct nn_timer {
+struct nn_aio_timer {
     const struct nn_cp_sink **sink;
     struct nn_cp *cp;
     struct nn_timerset_hndl hndl;

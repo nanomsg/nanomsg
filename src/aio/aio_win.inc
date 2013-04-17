@@ -31,7 +31,7 @@
 static void nn_usock_tune (struct nn_usock *self, int sndbuf, int rcvbuf);
 static void nn_cp_worker (void *arg);
 
-void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
+void nn_aio_timer_init (struct nn_aio_timer *self, const struct nn_cp_sink **sink,
     struct nn_cp *cp)
 {
     self->sink = sink;
@@ -39,20 +39,20 @@ void nn_timer_init (struct nn_timer *self, const struct nn_cp_sink **sink,
     nn_timerset_hndl_init (&self->hndl);
 }
 
-void nn_timer_term (struct nn_timer *self)
+void nn_aio_timer_term (struct nn_aio_timer *self)
 {
-    nn_timer_stop (self);
+    nn_aio_timer_stop (self);
     nn_timerset_hndl_term (&self->hndl);
 }
 
-void nn_timer_start (struct nn_timer *self, int timeout)
+void nn_aio_timer_start (struct nn_aio_timer *self, int timeout)
 {
     int rc;
     BOOL brc;
 
     /*  If the timer is active, cancel it first. */
     if (nn_timerset_hndl_isactive (&self->hndl))
-        nn_timer_stop (self);
+        nn_aio_timer_stop (self);
 
     rc = nn_timerset_add (&self->cp->timeout, timeout, &self->hndl);
     errnum_assert (rc >= 0, -rc);
@@ -64,7 +64,7 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     }
 }
 
-void nn_timer_stop (struct nn_timer *self)
+void nn_aio_timer_stop (struct nn_aio_timer *self)
 {
     int rc;
     BOOL brc;
@@ -265,7 +265,7 @@ static void nn_cp_worker (void *arg)
     ULONG_PTR key;
     LPOVERLAPPED olpd;
     struct nn_timerset_hndl *tohndl;
-    struct nn_timer *timer;
+    struct nn_aio_timer *timer;
     struct nn_event *event;
     struct nn_usock_op *op;
     struct nn_usock *usock;
@@ -296,7 +296,7 @@ static void nn_cp_worker (void *arg)
             errnum_assert (rc == 0, -rc);
 
             /*  Fire the timeout event. */
-            timer = nn_cont (tohndl, struct nn_timer, hndl);
+            timer = nn_cont (tohndl, struct nn_aio_timer, hndl);
             nn_assert ((*timer->sink)->timeout);
             (*timer->sink)->timeout (timer->sink, timer);
         }

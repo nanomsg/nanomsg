@@ -47,7 +47,7 @@ struct nn_surveyor {
     uint32_t flags;
     uint32_t surveyid;
     int deadline;
-    struct nn_timer deadline_timer;
+    struct nn_aio_timer deadline_timer;
 };
 
 /*  Private functions. */
@@ -81,7 +81,7 @@ static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
 
 /*  Event sink. */
 static void nn_surveyor_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer);
+    struct nn_aio_timer *timer);
 static const struct nn_cp_sink nn_surveyor_sink = {
     NULL,
     NULL,
@@ -109,7 +109,7 @@ static int nn_surveyor_init (struct nn_surveyor *self,
     nn_random_generate (&self->surveyid, sizeof (self->surveyid));
 
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
-    nn_timer_init (&self->deadline_timer, &self->sink,
+    nn_aio_timer_init (&self->deadline_timer, &self->sink,
         nn_sockbase_getcp (&self->xsurveyor.sockbase));
 
     return 0;
@@ -117,7 +117,7 @@ static int nn_surveyor_init (struct nn_surveyor *self,
 
 static void nn_surveyor_term (struct nn_surveyor *self)
 {
-    nn_timer_term (&self->deadline_timer);
+    nn_aio_timer_term (&self->deadline_timer);
     nn_xsurveyor_term (&self->xsurveyor);
 }
 
@@ -152,7 +152,7 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Cancel any ongoing survey. */
     if (nn_slow (surveyor->flags & NN_SURVEYOR_INPROGRESS)) {
         surveyor->flags &= ~NN_SURVEYOR_INPROGRESS;
-        nn_timer_stop (&surveyor->deadline_timer);
+        nn_aio_timer_stop (&surveyor->deadline_timer);
     }
 
     /*  Generate new survey ID. */
@@ -171,7 +171,7 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
     surveyor->flags |= NN_SURVEYOR_INPROGRESS;
 
     /*  Set up the re-send timer. */
-    nn_timer_start (&surveyor->deadline_timer, surveyor->deadline);
+    nn_aio_timer_start (&surveyor->deadline_timer, surveyor->deadline);
 
     return 0;
 }
@@ -217,7 +217,7 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 }
 
 static void nn_surveyor_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer)
+    struct nn_aio_timer *timer)
 {
     struct nn_surveyor *surveyor;
 

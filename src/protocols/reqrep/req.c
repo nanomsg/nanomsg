@@ -79,7 +79,7 @@ struct nn_req {
     int resend_ivl;
 
     /*  Timer used to wait till request resending should be done. */
-    struct nn_timer resend_timer;
+    struct nn_aio_timer resend_timer;
 };
 
 /*  Private functions. */
@@ -115,7 +115,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
 
 /*  Event sink. */
 static void nn_req_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer);
+    struct nn_aio_timer *timer);
 static const struct nn_cp_sink nn_req_sink = {
     NULL,
     NULL,
@@ -143,7 +143,7 @@ static int nn_req_init (struct nn_req *self,
 
     self->state = NN_REQ_STATE_IDLE;
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
-    nn_timer_init (&self->resend_timer, &self->sink,
+    nn_aio_timer_init (&self->resend_timer, &self->sink,
         nn_sockbase_getcp (&self->xreq.sockbase));
 
     return 0;
@@ -155,7 +155,7 @@ static void nn_req_term (struct nn_req *self)
         nn_msg_term (&self->request);
     if (self->state == NN_REQ_STATE_RECEIVED)
         nn_msg_term (&self->reply);
-    nn_timer_term (&self->resend_timer);
+    nn_aio_timer_term (&self->resend_timer);
     nn_xreq_term (&self->xreq);
 }
 
@@ -216,7 +216,7 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         nn_chunkref_init (&req->reply.hdr, 0);
 
         /*  Swtich to RECEIVED state. */
-        nn_timer_stop (&req->resend_timer);
+        nn_aio_timer_stop (&req->resend_timer);
         nn_msg_term (&req->request);
         req->state = NN_REQ_STATE_RECEIVED;
 
@@ -271,7 +271,7 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
             nn_msg_term (&req->request);
         if (req->state == NN_REQ_STATE_RECEIVED)
             nn_msg_term (&req->reply);
-        nn_timer_term (&req->resend_timer);
+        nn_aio_timer_term (&req->resend_timer);
         req->state = NN_REQ_STATE_IDLE;
     }
 
@@ -300,7 +300,7 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  If the request was successgfully sent set up the re-send timer in case
         it get lost somewhere further out in the topology. */
-    nn_timer_start (&req->resend_timer, req->resend_ivl);
+    nn_aio_timer_start (&req->resend_timer, req->resend_ivl);
     req->state = NN_REQ_STATE_SENT;
 
     return 0;
@@ -369,7 +369,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
 }
 
 static void nn_req_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer)
+    struct nn_aio_timer *timer)
 {
     int rc;
     struct nn_req *req;
@@ -386,7 +386,7 @@ static void nn_req_timeout (const struct nn_cp_sink **self,
         nn_msg_term (&msg);
 
     /*  Set up the next re-send timer. */
-    nn_timer_start (&req->resend_timer, req->resend_ivl);
+    nn_aio_timer_start (&req->resend_timer, req->resend_ivl);
 }
 
 static int nn_req_create (struct nn_sockbase **sockbase)

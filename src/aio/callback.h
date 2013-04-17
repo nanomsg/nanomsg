@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_ASYNC_INCLUDED
-#define NN_ASYNC_INCLUDED
+#ifndef NN_CALLBACK_INCLUDED
+#define NN_CALLBACK_INCLUDED
 
 /*  Base class for objects accepting callbacks. */
 

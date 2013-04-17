@@ -97,8 +97,8 @@ void nn_epbase_term (struct nn_epbase *self);
 /*  Returns the default completion port associated with the current socket. */
 struct nn_cp *nn_epbase_getcp (struct nn_epbase *self);
 
-/*  Returns a worker. Each call to this function may return different worker. */
-struct nn_worker *nn_epbase_choose_worker (struct nn_epbase *self);
+/*  Returns the AIO context associated with the endpoint. */
+struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self);
 
 /*  Returns the address string associated with this endpoint. */
 const char *nn_epbase_getaddr (struct nn_epbase *self);
@@ -174,6 +174,9 @@ void nn_pipebase_sent (struct nn_pipebase *self);
 
 /*  Returns the default completion port associated with the pipe. */
 struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self);
+
+/*  Returns the AIO context associated with the pipe. */
+struct nn_ctx *nn_pipebase_getctx (struct nn_pipebase *self);
 
 /*  Returns 1 is the specified socket type is a valid peer for this socket,
     or 0 otherwise. */

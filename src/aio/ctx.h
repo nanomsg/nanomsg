@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,13 +20,28 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_GLOBAL_INCLUDED
-#define NN_GLOBAL_INCLUDED
+#ifndef NN_CTX_INCLUDED
+#define NN_CTX_INCLUDED
 
-/*  Provides access to the list of available transports. */
-struct nn_transport *nn_global_transport (int id);
+#include "../utils/mutex.h"
 
-/*  Returns the global worker thread pool. */
-struct nn_pool *nn_global_getpool ();
+struct nn_pool;
+struct nn_worker;
+
+/*  AIO context for objects using AIO subsystem. */
+
+struct nn_ctx {
+    struct nn_mutex sync;
+    struct nn_pool *pool;
+};
+
+void nn_ctx_init (struct nn_ctx *self, struct nn_pool *pool);
+void nn_ctx_term (struct nn_ctx *self);
+
+void nn_ctx_enter (struct nn_ctx *self);
+void nn_ctx_leave (struct nn_ctx *self);
+
+struct nn_worker *nn_ctx_choose_worker (struct nn_ctx *self);
 
 #endif
+

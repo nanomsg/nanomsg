@@ -70,9 +70,9 @@ struct nn_cp *nn_epbase_getcp (struct nn_epbase *self)
     return nn_sock_getcp (self->sock);
 }
 
-struct nn_worker *nn_epbase_choose_worker (struct nn_epbase *self)
+struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self)
 {
-    return nn_sock_choose_worker (self->sock);
+    return nn_sock_getctx (self->sock);
 }
 
 const char *nn_epbase_getaddr (struct nn_epbase *self)

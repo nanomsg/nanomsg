@@ -822,8 +822,8 @@ struct nn_transport *nn_global_transport (int id)
     return tp;
 }
 
-struct nn_worker *nn_global_choose_worker ()
+struct nn_pool *nn_global_getpool ()
 {
-    return nn_pool_choose_worker (&self.pool);
+    return &self.pool;
 }
 

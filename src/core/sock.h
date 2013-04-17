@@ -42,8 +42,8 @@ void nn_sock_zombify (struct nn_sock *self);
 /*  Returns default completion port associated with the socket. */
 struct nn_cp *nn_sock_getcp (struct nn_sock *self);
 
-/*  Returns a worker. Each call to this function may return different worker. */
-struct nn_worker *nn_sock_choose_worker (struct nn_sock *self);
+/*  Returns the AIO context associated with the socket. */
+struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
 
 /*  Returns 1 if the specified socket type is a valid peer for this socket,
     0 otherwise. */

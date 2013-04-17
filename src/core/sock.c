@@ -59,6 +59,9 @@ int nn_sockbase_init (struct nn_sockbase *self,
     nn_assert (!(vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) ||
         !(vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
 
+    /*  Create the AIO context for the SP socket. */
+    nn_ctx_init (&self->ctx, nn_global_getpool ());
+
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
     if (vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)
@@ -223,6 +226,7 @@ void nn_sockbase_term (struct nn_sockbase *self)
 
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
+    nn_ctx_term (&self->ctx);
     nn_cp_term (&self->cp);
 }
 
@@ -248,14 +252,19 @@ struct nn_cp *nn_sockbase_getcp (struct nn_sockbase *self)
     return &self->cp;
 }
 
+struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
+{
+    return &self->ctx;
+}
+
 struct nn_cp *nn_sock_getcp (struct nn_sock *self)
 {
     return &((struct nn_sockbase*) self)->cp;
 }
 
-struct nn_worker *nn_sock_choose_worker (struct nn_sock *self)
+struct nn_ctx *nn_sock_getctx (struct nn_sock *self)
 {
-    return nn_global_choose_worker ();
+    return &((struct nn_sockbase*) self)->ctx;
 }
 
 int nn_sock_ispeer (struct nn_sock *self, int socktype)

@@ -48,6 +48,10 @@
 /*  Private functions. */
 void nn_sockbase_adjust_events (struct nn_sockbase *self);
 struct nn_optset *nn_sockbase_optset (struct nn_sockbase *self, int id);
+static int nn_sockbase_setopt_inner (struct nn_sockbase *self, int level,
+    int option, const void *optval, size_t optvallen);
+static int nn_sockbase_getopt_inner (struct nn_sockbase *self, int level,
+    int option, void *optval, size_t *optvallen);
 
 int nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr)
@@ -276,102 +280,90 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
-    struct nn_optset *optset;
-    int val;
-    int *dst;
 
     sockbase = (struct nn_sockbase*) self;
 
     nn_ctx_enter (&sockbase->ctx);
+    rc = nn_sockbase_setopt_inner (sockbase, level, option, optval, optvallen);
+    nn_ctx_leave (&sockbase->ctx);
+
+    return rc;
+}
+
+static int nn_sockbase_setopt_inner (struct nn_sockbase *self, int level,
+    int option, const void *optval, size_t optvallen)
+{
+    int rc;
+    struct nn_optset *optset;
+    int val;
+    int *dst;
 
     /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (sockbase->flags &
-          (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-        nn_ctx_leave (&sockbase->ctx);
+    if (nn_slow (self->flags & (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING)))
         return -ETERM;
-    }
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET) {
-        rc = sockbase->vfptr->setopt (sockbase, level, option,
-            optval, optvallen);
-        nn_sockbase_adjust_events (sockbase);
-        nn_ctx_leave (&sockbase->ctx);
+        rc = self->vfptr->setopt (self, level, option, optval, optvallen);
+        nn_sockbase_adjust_events (self);
         return rc;
     }
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
-        optset = nn_sockbase_optset (sockbase, level);
-        if (!optset) {
-            nn_ctx_leave (&sockbase->ctx);
+        optset = nn_sockbase_optset (self, level);
+        if (!optset)
             return -ENOPROTOOPT;
-        }
-        rc = optset->vfptr->setopt (optset, option, optval, optvallen);
-        nn_ctx_leave (&sockbase->ctx);
-        return rc;
+        return optset->vfptr->setopt (optset, option, optval, optvallen);
     }
 
     /*  At this point we assume that all options are of type int. */
-    if (optvallen != sizeof (int)) {
-        nn_ctx_leave (&sockbase->ctx);
+    if (optvallen != sizeof (int))
         return -EINVAL;
-    }
     val = *(int*) optval;
 
     /*  Generic socket-level options. */
     if (level == NN_SOL_SOCKET) {
         switch (option) {
         case NN_LINGER:
-            dst = &sockbase->linger;
+            dst = &self->linger;
             break;
         case NN_SNDBUF:
-            if (nn_slow (val <= 0)) {
-                nn_ctx_leave (&sockbase->ctx);
+            if (nn_slow (val <= 0))
                 return -EINVAL;
-            }
-            dst = &sockbase->sndbuf;
+            dst = &self->sndbuf;
             break;
         case NN_RCVBUF:
-            if (nn_slow (val <= 0)) {
-                nn_ctx_leave (&sockbase->ctx);
+            if (nn_slow (val <= 0))
                 return -EINVAL;
-            }
-            dst = &sockbase->rcvbuf;
+            dst = &self->rcvbuf;
             break;
         case NN_SNDTIMEO:
-            dst = &sockbase->sndtimeo;
+            dst = &self->sndtimeo;
             break;
         case NN_RCVTIMEO:
-            dst = &sockbase->rcvtimeo;
+            dst = &self->rcvtimeo;
             break;
         case NN_RECONNECT_IVL:
-            if (nn_slow (val < 0)) {
-                nn_ctx_leave (&sockbase->ctx);
+            if (nn_slow (val < 0))
                 return -EINVAL;
-            }
-            dst = &sockbase->reconnect_ivl;
+            dst = &self->reconnect_ivl;
             break;
         case NN_RECONNECT_IVL_MAX:
-            if (nn_slow (val < 0)) {
-                nn_ctx_leave (&sockbase->ctx);
+            if (nn_slow (val < 0))
                 return -EINVAL;
-            }
-            dst = &sockbase->reconnect_ivl_max;
+            dst = &self->reconnect_ivl_max;
             break;
         case NN_SNDPRIO:
-            if (nn_slow (val < 1 || val > 16)) {
-                nn_ctx_leave (&sockbase->ctx);
+            if (nn_slow (val < 1 || val > 16))
                 return -EINVAL;
-            }
-            dst = &sockbase->sndprio;
+            dst = &self->sndprio;
             break;
         default:
-            nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
         *dst = val;
-        nn_ctx_leave (&sockbase->ctx);
+
         return 0;
     }
 
@@ -383,115 +375,103 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 {
     int rc;
     struct nn_sockbase *sockbase;
-    struct nn_optset *optset;
-    int intval;
-    nn_fd fd;
 
     sockbase = (struct nn_sockbase*) self;
 
     if (!internal)
         nn_ctx_enter (&sockbase->ctx);
+    rc = nn_sockbase_getopt_inner (sockbase, level, option, optval, optvallen);
+    if (!internal)
+        nn_ctx_leave (&sockbase->ctx);
+
+    return rc;
+}
+
+static int nn_sockbase_getopt_inner (struct nn_sockbase *self, int level,
+    int option, void *optval, size_t *optvallen)
+{
+    int rc;
+    struct nn_optset *optset;
+    int intval;
+    nn_fd fd;
 
     /*  If nn_term() was already called, return ETERM. */
-    if (!internal && nn_slow (sockbase->flags &
-          (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
-        nn_ctx_leave (&sockbase->ctx);
+    if (nn_slow (self->flags & (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING)))
         return -ETERM;
-    }
 
     /*  Generic socket-level options. */
     if (level == NN_SOL_SOCKET) {
         switch (option) {
         case NN_DOMAIN:
-            intval = sockbase->domain;
+            intval = self->domain;
             break;
         case NN_PROTOCOL:
-            intval = sockbase->protocol;
+            intval = self->protocol;
             break;
         case NN_LINGER:
-            intval = sockbase->linger;
+            intval = self->linger;
             break;
         case NN_SNDBUF:
-            intval = sockbase->sndbuf;
+            intval = self->sndbuf;
             break;
         case NN_RCVBUF:
-            intval = sockbase->rcvbuf;
+            intval = self->rcvbuf;
             break;
         case NN_SNDTIMEO:
-            intval = sockbase->sndtimeo;
+            intval = self->sndtimeo;
             break;
         case NN_RCVTIMEO:
-            intval = sockbase->rcvtimeo;
+            intval = self->rcvtimeo;
             break;
         case NN_RECONNECT_IVL:
-            intval = sockbase->reconnect_ivl;
+            intval = self->reconnect_ivl;
             break;
         case NN_RECONNECT_IVL_MAX:
-            intval = sockbase->reconnect_ivl_max;
+            intval = self->reconnect_ivl_max;
             break;
         case NN_SNDPRIO:
-            intval = sockbase->sndprio;
+            intval = self->sndprio;
             break;
         case NN_SNDFD:
-            if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND) {
-                if (!internal)
-                    nn_ctx_leave (&sockbase->ctx);
+            if (self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)
                 return -ENOPROTOOPT;
-            }
-            fd = nn_efd_getfd (&sockbase->sndfd);
+            fd = nn_efd_getfd (&self->sndfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
-            if (!internal)
-                nn_ctx_leave (&sockbase->ctx);
             return 0;
         case NN_RCVFD:
-            if (sockbase->vfptr->flags & NN_SOCKBASE_FLAG_NORECV) {
-                if (!internal)
-                    nn_ctx_leave (&sockbase->ctx);
+            if (self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)
                 return -ENOPROTOOPT;
-            }
-            fd = nn_efd_getfd (&sockbase->rcvfd);
+            fd = nn_efd_getfd (&self->rcvfd);
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
-            if (!internal)
-                nn_ctx_leave (&sockbase->ctx);
             return 0;
         default:
-            if (!internal)
-                nn_ctx_leave (&sockbase->ctx);
             return -ENOPROTOOPT;
         }
+
         memcpy (optval, &intval,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
-        if (!internal)
-            nn_ctx_leave (&sockbase->ctx);
+
         return 0;
     }
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET) {
-        rc = sockbase->vfptr->getopt (sockbase, level, option,
-            optval, optvallen);
-        nn_sockbase_adjust_events (sockbase);
-        if (!internal)
-            nn_ctx_leave (&sockbase->ctx);
+        rc = self->vfptr->getopt (self, level, option, optval, optvallen);
+        nn_sockbase_adjust_events (self);
         return rc;
     }
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
-        optset = nn_sockbase_optset (sockbase, level);
-        if (!optset) {
-            if (!internal)
-                nn_ctx_leave (&sockbase->ctx);
+        optset = nn_sockbase_optset (self, level);
+        if (!optset)
             return -ENOPROTOOPT;
-        }
         rc = optset->vfptr->getopt (optset, option, optval, optvallen);
-        if (!internal)
-            nn_ctx_leave (&sockbase->ctx);
         return rc;
     }
 

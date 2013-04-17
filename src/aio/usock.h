@@ -28,6 +28,7 @@
 
 #include "callback.h"
 #include "worker.h"
+#include "ctx.h"
 
 #define _GNU_SOURCE
 #include <sys/types.h>
@@ -58,6 +59,9 @@ struct nn_usock {
 
     /*  This class is source of events. */
     struct nn_callback *out_callback;
+
+    /*  AIO context the socket belongs to. */
+    struct nn_ctx *ctx;
 
     /*  The worker thread the usock is associated with. */
     struct nn_worker *worker;
@@ -113,10 +117,8 @@ struct nn_usock {
     struct nn_callback *newcallback;
 };
 
-int nn_usock_init (struct nn_usock *self,
-    int domain, int type, int protocol,
-    struct nn_worker *worker,
-    struct nn_callback *callback);
+int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
+    struct nn_ctx *ctx, struct nn_callback *callback);
 void nn_usock_close (struct nn_usock *self);
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,

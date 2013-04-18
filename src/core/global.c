@@ -387,7 +387,7 @@ int nn_close (int s)
     NN_BASIC_CHECKS;
 
     /*  Deallocate the socket object. */
-    rc = nn_sock_destroy (self.socks [s]);
+    rc = nn_sock_term (self.socks [s]);
     if (nn_slow (rc == -EINTR)) {
         errno = EINTR;
         return -1;

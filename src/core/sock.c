@@ -146,7 +146,7 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_ctx_leave (&sockbase->ctx);
 }
 
-int nn_sock_destroy (struct nn_sock *self)
+int nn_sock_term (struct nn_sock *self)
 {
     int rc;
     struct nn_sockbase *sockbase;

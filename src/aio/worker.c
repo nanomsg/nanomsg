@@ -187,7 +187,7 @@ static void nn_worker_routine (void *arg)
                 break;
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
-            timer->callback->vfptr->callback (timer->callback, timer,
+            timer->callback->fn (timer->callback, timer,
                 NN_WORKER_TIMER_TIMEOUT);
         }
 
@@ -228,7 +228,7 @@ static void nn_worker_routine (void *arg)
                     /*  It's a user-defined task. Notify the user that it has
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
-                    task->callback->vfptr->callback (task->callback,
+                    task->callback->fn (task->callback,
                         task, NN_WORKER_TASK_EXECUTE);
                 }
                 nn_queue_term (&tasks);
@@ -237,7 +237,7 @@ static void nn_worker_routine (void *arg)
 
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
-            fd->callback->vfptr->callback (fd->callback, fd, pevent);
+            fd->callback->fn (fd->callback, fd, pevent);
         }
     }
 }

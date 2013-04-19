@@ -200,7 +200,7 @@ else ()
     add_definitions (-DNN_USE_LITERAL_IFADDR)
 endif ()
 
-#  Optional deugging/profiling tools to switch on.
+#  Optional debugging/profiling tools to switch on.
 
 option (ALLOC_MONITOR "Add memory allocation monitoring" OFF)
 if (ALLOC_MONITOR)

@@ -20,30 +20,55 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CALLBACK_INCLUDED
-#define NN_CALLBACK_INCLUDED
+#include "fsm.h"
+#include "ctx.h"
 
-/*  Base class for objects accepting callbacks. */
+#include <stddef.h>
 
-struct nn_callback;
+void nn_fsm_event_init (struct nn_fsm_event *self, void *source, int type)
+{
+    self->fsm = NULL;
+    self->source = source;
+    self->type = type;
+    nn_queue_item_init (&self->item);
+}
 
-/*  Virtual function to be implemented by the derived class to handle the
-    callbacks. 'source' parameter is pointer to the object that generated
-    the callback. As it can be any kind of object it is of type void*.
-    The user should check whether the pointer points to any source of
-    callbacks it is aware of and cast the pointer accordingly. If a single
-    object can generate different kinds of callbacks, 'type' parameter
-    specifies the callback type. Possible values are defined by the object
-    that is the source of callbacks. */
-typedef void (*nn_callback_fn) (struct nn_callback *self, void *source,
-    int type);
+void nn_fsm_event_term (struct nn_fsm_event *self)
+{
+    nn_queue_item_term (&self->item);
+}
 
-struct nn_callback {
-    nn_callback_fn fn;
-};
+void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
+{
+    self->fn = fn;
+    self->owner = NULL;
+    self->ctx = ctx;
+}
 
-void nn_callback_init (struct nn_callback *self, nn_callback_fn fn);
-void nn_callback_term (struct nn_callback *self);
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
+{
+    self->fn = fn;
+    self->owner = owner;
+    self->ctx = owner->ctx;
+}
 
-#endif
+void nn_fsm_term (struct nn_fsm *self)
+{
+}
+
+struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
+{
+    return nn_ctx_choose_worker (self->ctx);
+}
+
+void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event)
+{
+    event->fsm = self->owner;
+    nn_ctx_raise (self->ctx, event);
+}
+
+void nn_fsm_execute (struct nn_fsm *self, int type)
+{
+    self->fn (self, NULL, type);
+}
 

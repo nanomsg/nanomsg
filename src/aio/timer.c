@@ -26,30 +26,33 @@
 #include "../utils/err.h"
 
 static void nn_timer_term (struct nn_timer *self);
-static void nn_timer_callback (struct nn_callback *self, void *source,
+static void nn_timer_callback (struct nn_fsm *self, void *source,
     int type);
 
-void nn_timer_init (struct nn_timer *self, struct nn_ctx *ctx,
-    struct nn_callback *callback)
+void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner)
 {
-    nn_callback_init (&self->in_callback, nn_timer_callback);
-    self->out_callback = callback;
-    nn_worker_task_init (&self->start_task, &self->in_callback);
-    nn_worker_task_init (&self->stop_task, &self->in_callback);
-    nn_worker_task_init (&self->close_task, &self->in_callback);
-    nn_worker_timer_init (&self->wtimer, &self->in_callback);
-    self->ctx = ctx;
-    self->worker = nn_ctx_choose_worker (ctx);
+    nn_fsm_init (&self->fsm, nn_timer_callback, owner);
+    nn_worker_task_init (&self->start_task, &self->fsm);
+    nn_worker_task_init (&self->stop_task, &self->fsm);
+    nn_worker_task_init (&self->close_task, &self->fsm);
+    nn_worker_timer_init (&self->wtimer, &self->fsm);
+    nn_fsm_event_init (&self->timeout_event, self, NN_TIMER_TIMEOUT);
+    nn_fsm_event_init (&self->stopped_event, self, NN_TIMER_STOPPED);
+    nn_fsm_event_init (&self->closed_event, self, NN_TIMER_CLOSED);
+    self->worker = nn_fsm_choose_worker (&self->fsm);
     self->timeout = -1;
 }
 
 static void nn_timer_term (struct nn_timer *self)
 {
+    nn_fsm_event_term (&self->closed_event);
+    nn_fsm_event_term (&self->stopped_event);
+    nn_fsm_event_term (&self->timeout_event);
     nn_worker_timer_term (&self->wtimer);
     nn_worker_task_term (&self->close_task);
     nn_worker_task_term (&self->stop_task);
     nn_worker_task_term (&self->start_task);
-    nn_callback_term (&self->in_callback);
+    nn_fsm_term (&self->fsm);
 }
 
 void nn_timer_close (struct nn_timer *self)
@@ -77,19 +80,16 @@ void nn_timer_stop (struct nn_timer *self)
     nn_worker_execute (self->worker, &self->start_task);
 }
 
-static void nn_timer_callback (struct nn_callback *self, void *source, int type)
+static void nn_timer_callback (struct nn_fsm *self, void *source, int type)
 {
     struct nn_timer *timer;
-    struct nn_callback *out_callback;
 
-    timer = nn_cont (self, struct nn_timer, in_callback);
+    timer = nn_cont (self, struct nn_timer, fsm);
 
     if (source == &timer->wtimer) {
         nn_assert (timer->timeout > 0);
         timer->timeout = -1;
-        nn_ctx_enter (timer->ctx);
-        timer->out_callback->fn (timer->out_callback, timer, NN_TIMER_TIMEOUT);
-        nn_ctx_leave (timer->ctx);
+        nn_fsm_raise (&timer->fsm, &timer->timeout_event);
         return;
     }
     if (source == &timer->start_task) {
@@ -101,19 +101,14 @@ static void nn_timer_callback (struct nn_callback *self, void *source, int type)
         nn_assert (timer->timeout > 0);
         timer->timeout = -1;
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
-        nn_ctx_enter (timer->ctx);
-        timer->out_callback->fn (timer->out_callback, timer, NN_TIMER_STOPPED);
-        nn_ctx_leave (timer->ctx);
+        nn_fsm_raise (&timer->fsm, &timer->stopped_event);
         return;
     }
     if (source == &timer->close_task) {
         if (timer->timeout > 0)
             nn_worker_rm_timer (timer->worker, &timer->wtimer);
-        out_callback = timer->out_callback;
+        nn_fsm_raise (&timer->fsm, &timer->closed_event);
         nn_timer_term (timer);
-        nn_ctx_enter (timer->ctx);
-        out_callback->fn (out_callback, timer, NN_TIMER_CLOSED);
-        nn_ctx_leave (timer->ctx);
         return;
     }
     nn_assert (0);

@@ -49,10 +49,10 @@ set (NN_SOURCES
     core/device.c
     core/symbol.c
 
-    aio/callback.h
-    aio/callback.c
     aio/ctx.h
     aio/ctx.c
+    aio/fsm.h
+    aio/fsm.c
     aio/poller.h
     aio/poller.c
     aio/poller_epoll.inc

@@ -30,7 +30,7 @@
 #include "../utils/thread.h"
 #include "../utils/efd.h"
 
-#include "callback.h"
+#include "fsm.h"
 #include "poller.h"
 #include "timerset.h"
 
@@ -39,23 +39,21 @@
 #define NN_WORKER_FD_ERR NN_POLLER_ERR
 
 struct nn_worker_fd {
-    struct nn_callback *callback;
+    struct nn_fsm *owner;
     struct nn_poller_hndl hndl;
 };
 
-void nn_worker_fd_init (struct nn_worker_fd *self,
-    struct nn_callback *callback);
+void nn_worker_fd_init (struct nn_worker_fd *self, struct nn_fsm *owner);
 void nn_worker_fd_term (struct nn_worker_fd *self);
 
 #define NN_WORKER_TIMER_TIMEOUT 1
 
 struct nn_worker_timer {
-    struct nn_callback *callback;
+    struct nn_fsm *owner;
     struct nn_timerset_hndl hndl;
 };
 
-void nn_worker_timer_init (struct nn_worker_timer *self,
-    struct nn_callback *callback);
+void nn_worker_timer_init (struct nn_worker_timer *self, struct nn_fsm *owner);
 void nn_worker_timer_term (struct nn_worker_timer *self);
 
 
@@ -64,12 +62,11 @@ void nn_worker_timer_term (struct nn_worker_timer *self);
 #define NN_WORKER_TASK_EXECUTE 1
 
 struct nn_worker_task {
-    struct nn_callback *callback;
+    struct nn_fsm *owner;
     struct nn_queue_item item;
 };
 
-void nn_worker_task_init (struct nn_worker_task *self,
-    struct nn_callback *callback);
+void nn_worker_task_init (struct nn_worker_task *self, struct nn_fsm *owner);
 void nn_worker_task_term (struct nn_worker_task *self);
 
 struct nn_worker {

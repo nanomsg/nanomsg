@@ -31,20 +31,18 @@
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
-void nn_worker_fd_init (struct nn_worker_fd *self,
-    struct nn_callback *callback)
+void nn_worker_fd_init (struct nn_worker_fd *self, struct nn_fsm *owner)
 {
-    self->callback = callback;
+    self->owner = owner;
 }
 
 void nn_worker_fd_term (struct nn_worker_fd *self)
 {
 }
 
-void nn_worker_timer_init (struct nn_worker_timer *self,
-    struct nn_callback *callback)
+void nn_worker_timer_init (struct nn_worker_timer *self, struct nn_fsm *owner)
 {
-    self->callback = callback;
+    self->owner = owner;
     nn_timerset_hndl_init (&self->hndl);
 }
 
@@ -95,10 +93,9 @@ void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer)
     nn_timerset_rm (&((struct nn_worker*) self)->timerset, &timer->hndl);
 }
 
-void nn_worker_task_init (struct nn_worker_task *self,
-    struct nn_callback *callback)
+void nn_worker_task_init (struct nn_worker_task *self, struct nn_fsm *owner)
 {
-    self->callback = callback;
+    self->owner = owner;
     nn_queue_item_init (&self->item);
 }
 
@@ -187,8 +184,7 @@ static void nn_worker_routine (void *arg)
                 break;
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
-            timer->callback->fn (timer->callback, timer,
-                NN_WORKER_TIMER_TIMEOUT);
+            nn_fsm_execute (timer->owner, NN_WORKER_TIMER_TIMEOUT);
         }
 
         /*  Process all events from the poller. */
@@ -228,8 +224,7 @@ static void nn_worker_routine (void *arg)
                     /*  It's a user-defined task. Notify the user that it has
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
-                    task->callback->fn (task->callback,
-                        task, NN_WORKER_TASK_EXECUTE);
+                    nn_fsm_execute (task->owner, NN_WORKER_TASK_EXECUTE);
                 }
                 nn_queue_term (&tasks);
                 continue;
@@ -237,7 +232,7 @@ static void nn_worker_routine (void *arg)
 
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
-            fd->callback->fn (fd->callback, fd, pevent);
+            nn_fsm_execute (fd->owner, pevent);
         }
     }
 }

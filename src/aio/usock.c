@@ -40,22 +40,19 @@ static void nn_usock_term (struct nn_usock *self);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
-static void nn_usock_callback (struct nn_callback *self, void *source,
-    int type);
+static void nn_usock_callback (struct nn_fsm *self, void *source, int type);
 
 static int nn_usock_init_from_fd (struct nn_usock *self,
-    int fd, struct nn_ctx *ctx, struct nn_callback *callback)
+    int fd, struct nn_fsm *owner)
 {
     int rc;
     int opt;
 
-    /*  Set up the callback pointers. */
-    nn_callback_init (&self->in_callback, nn_usock_callback);
-    self->out_callback = callback;
+    /*  Initalise the state machine. */
+    nn_fsm_init (&self->fsm, nn_usock_callback, owner);
 
-    /*  Store the reference to the worker the socket is associated with. */
-    self->ctx = ctx;
-    self->worker = nn_ctx_choose_worker (ctx);
+    /*  Choose a worker thread to handle this socket. */
+    self->worker = nn_fsm_choose_worker (&self->fsm);
 
     /*  Store the file descriptor of the underlying socket. */
     self->s = fd;
@@ -110,35 +107,31 @@ static int nn_usock_init_from_fd (struct nn_usock *self,
     memset (&self->out.hdr, 0, sizeof (struct msghdr));
 
     /*  Initialise outgoing tasks. */
-    nn_worker_fd_init (&self->wfd, &self->in_callback);
-    nn_worker_task_init (&self->wtask_connect, &self->in_callback);
-    nn_worker_task_init (&self->wtask_connected, &self->in_callback);
-    nn_worker_task_init (&self->wtask_accept, &self->in_callback);
-    nn_worker_task_init (&self->wtask_send, &self->in_callback);
-    nn_worker_task_init (&self->wtask_recv, &self->in_callback);
-    nn_worker_task_init (&self->wtask_close, &self->in_callback);
+    nn_worker_fd_init (&self->wfd, &self->fsm);
+    nn_worker_task_init (&self->task_connect, &self->fsm);
+    nn_worker_task_init (&self->task_connected, &self->fsm);
+    nn_worker_task_init (&self->task_accept, &self->fsm);
+    nn_worker_task_init (&self->task_send, &self->fsm);
+    nn_worker_task_init (&self->task_recv, &self->fsm);
+    nn_worker_task_init (&self->task_close, &self->fsm);
 
     /*  Intialise incoming tasks. */
-    nn_ctx_task_init (&self->ctask_accepted, self->out_callback, self,
-        NN_USOCK_ACCEPTED);
-    nn_ctx_task_init (&self->ctask_connected, self->out_callback, self,
-        NN_USOCK_CONNECTED);
-    nn_ctx_task_init (&self->ctask_sent, self->out_callback, self,
-        NN_USOCK_SENT);
-    nn_ctx_task_init (&self->ctask_received, self->out_callback, self,
-        NN_USOCK_RECEIVED);
-    nn_ctx_task_init (&self->ctask_error, self->out_callback, self,
-        NN_USOCK_ERROR);
+    nn_fsm_event_init (&self->event_accepted, self, NN_USOCK_ACCEPTED);
+    nn_fsm_event_init (&self->event_connected, self, NN_USOCK_CONNECTED);
+    nn_fsm_event_init (&self->event_sent, self, NN_USOCK_SENT);
+    nn_fsm_event_init (&self->event_received, self, NN_USOCK_RECEIVED);
+    nn_fsm_event_init (&self->event_error, self, NN_USOCK_ERROR);
+    nn_fsm_event_init (&self->event_closed, self, NN_USOCK_CLOSED);
 
     /*  We are not accepting a connection at the moment. */
     self->newsock = NULL;
-    self->newcallback = NULL;
+    self->newowner = NULL;
 
     return 0;
 }
 
 int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
-    struct nn_ctx *ctx, struct nn_callback *callback)
+    struct nn_fsm *owner)
 {
     int s;
 
@@ -153,13 +146,13 @@ int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
     if (s < 0)
        return -errno;
 
-    return nn_usock_init_from_fd (self, s, ctx, callback);
+    return nn_usock_init_from_fd (self, s, owner);
 }
 
 void nn_usock_close (struct nn_usock *self)
 {
     /*  Ask socket to close asynchronously. */
-    nn_worker_execute (self->worker, &self->wtask_close);
+    nn_worker_execute (self->worker, &self->task_close);
 }
 
 static void nn_usock_term (struct nn_usock *self)
@@ -169,23 +162,24 @@ static void nn_usock_term (struct nn_usock *self)
     if (self->in.batch)
         nn_free (self->in.batch);
 
-    nn_ctx_task_term (&self->ctask_error);
-    nn_ctx_task_term (&self->ctask_received);
-    nn_ctx_task_term (&self->ctask_sent);
-    nn_ctx_task_term (&self->ctask_connected);
-    nn_ctx_task_term (&self->ctask_accepted);
-    nn_worker_task_term (&self->wtask_close);
-    nn_worker_task_term (&self->wtask_recv);
-    nn_worker_task_term (&self->wtask_send);
-    nn_worker_task_term (&self->wtask_accept);
-    nn_worker_task_term (&self->wtask_connected);
-    nn_worker_task_term (&self->wtask_connect);
+    nn_fsm_event_term (&self->event_closed);
+    nn_fsm_event_term (&self->event_error);
+    nn_fsm_event_term (&self->event_received);
+    nn_fsm_event_term (&self->event_sent);
+    nn_fsm_event_term (&self->event_connected);
+    nn_fsm_event_term (&self->event_accepted);
+    nn_worker_task_term (&self->task_close);
+    nn_worker_task_term (&self->task_recv);
+    nn_worker_task_term (&self->task_send);
+    nn_worker_task_term (&self->task_accept);
+    nn_worker_task_term (&self->task_connected);
+    nn_worker_task_term (&self->task_connect);
     nn_worker_fd_term (&self->wfd);
 
     rc = close (self->s);
     errno_assert (rc == 0);
 
-    nn_callback_term (&self->in_callback);
+    nn_fsm_term (&self->fsm);
 }
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
@@ -235,7 +229,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
 }
 
 void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
-    struct nn_callback *newcallback)
+    struct nn_fsm *newowner)
 {
     int s;
 
@@ -251,22 +245,22 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
 
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
-        nn_usock_init_from_fd (newsock, s, self->ctx, newcallback);
-        nn_ctx_execute (self->ctx, &self->ctask_accepted);
+        nn_usock_init_from_fd (newsock, s, self->newowner);
+        nn_fsm_raise (&self->fsm, &self->event_accepted);
         return;
     }
 
     /*  Unexpected failure. */
     if (nn_slow (errno != EAGAIN && errno != EWOULDBLOCK &&
           errno != ECONNABORTED)) {
-        nn_ctx_execute (self->ctx, &self->ctask_error);
+        nn_fsm_raise (&self->fsm, &self->event_error);
         return;
     }
 
     /*  Ask the worker thread to wait for the new connection. */
     self->newsock = newsock;
-    self->newcallback = newcallback;
-    nn_worker_execute (self->worker, &self->wtask_accept);
+    self->newowner = newowner;
+    nn_worker_execute (self->worker, &self->task_accept);
 }
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
@@ -281,21 +275,21 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     if (nn_fast (rc == 0)) {
 
         /*  Ask worker thread to start polling on the socket. */
-        nn_worker_execute (self->worker, &self->wtask_connected);
+        nn_worker_execute (self->worker, &self->task_connected);
 
         /*  Notify the user that the connection is established. */
-        nn_ctx_execute (self->ctx, &self->ctask_connected);
+        nn_fsm_raise (&self->fsm, &self->event_connected);
         return;
     }
 
     /* Return unexpected errors to the caller. Notify the user about it. */
     if (nn_slow (errno != EINPROGRESS)) {
-        nn_ctx_execute (self->ctx, &self->ctask_error);
+        nn_fsm_raise (&self->fsm, &self->event_error);
         return;
     }
 
     /*  Ask worker thread to start waiting for connection establishment. */
-    nn_worker_execute (self->worker, &self->wtask_connect);
+    nn_worker_execute (self->worker, &self->task_connect);
 }
 
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
@@ -323,19 +317,19 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
-        nn_ctx_execute (self->ctx, &self->ctask_sent);
+        nn_fsm_raise (&self->fsm, &self->event_sent);
         return;
     }
 
     /*  Errors. */
     if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_ctx_execute (self->ctx, &self->ctask_error);
+        nn_fsm_raise (&self->fsm, &self->event_error);
         return;
     }
 
     /*  Ask the worker thread to send the remaining data. */
-    nn_worker_execute (self->worker, &self->wtask_send);
+    nn_worker_execute (self->worker, &self->task_send);
 }
 
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
@@ -348,13 +342,13 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_ctx_execute (self->ctx, &self->ctask_error);
+        nn_fsm_raise (&self->fsm, &self->event_error);
         return;
     }
 
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        nn_ctx_execute (self->ctx, &self->ctask_received);
+        nn_fsm_raise (&self->fsm, &self->event_received);
         return;
     }
 
@@ -363,28 +357,24 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     self->in.len = len - nbytes;
 
     /*  Ask the worker thread to receive the remaining data. */
-    nn_worker_execute (self->worker, &self->wtask_recv);
+    nn_worker_execute (self->worker, &self->task_recv);
 }
 
-static void nn_usock_callback (struct nn_callback *self, void *source, int type)
+static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 {
     int rc;
     struct nn_usock *usock;
     int s;
     size_t sz;
-    struct nn_callback *out_callback;
 
-    usock = nn_cont (self, struct nn_usock, in_callback);
+    usock = nn_cont (self, struct nn_usock, fsm);
 
     /*  Close event is processed in the same way not depending on the state
         the usock is in. */
-    if (source == &usock->wtask_close) {
+    if (source == &usock->task_close) {
         nn_worker_rm_fd (usock->worker, &usock->wfd);
-        out_callback = usock->out_callback;
+        nn_fsm_raise (&usock->fsm, &usock->event_closed);
         nn_usock_term (usock);
-        nn_ctx_enter (usock->ctx);
-        out_callback->fn (usock->out_callback, usock, NN_USOCK_CLOSED);
-        nn_ctx_leave (usock->ctx);
         return;
     }
 
@@ -394,20 +384,20 @@ static void nn_usock_callback (struct nn_callback *self, void *source, int type)
 /*  STARTING                                                                  */
 /******************************************************************************/
     case NN_USOCK_STATE_STARTING:
-        if (source == &usock->wtask_connected) {
+        if (source == &usock->task_connected) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
             usock->state = NN_USOCK_STATE_CONNECTED;
             return;
         }
-        if (source == &usock->wtask_connect) {
+        if (source == &usock->task_connect) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
             nn_worker_set_out (usock->worker, &usock->wfd);
             usock->state = NN_USOCK_STATE_CONNECTING;
             return;
         }
-        if (source == &usock->wtask_accept) {
+        if (source == &usock->task_accept) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
             nn_worker_set_in (usock->worker, &usock->wfd);
@@ -425,10 +415,7 @@ static void nn_usock_callback (struct nn_callback *self, void *source, int type)
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_CONNECTED;
-                nn_ctx_enter (usock->ctx);
-                usock->out_callback->fn (usock->out_callback, usock,
-                    NN_USOCK_CONNECTED);
-                nn_ctx_leave (usock->ctx);
+                nn_fsm_raise (&usock->fsm, &usock->event_connected);
                 return;
             case NN_WORKER_FD_ERR:
                 nn_assert (0);
@@ -459,16 +446,12 @@ static void nn_usock_callback (struct nn_callback *self, void *source, int type)
                     errno_assert (0);
                 }
 
-                nn_usock_init_from_fd (usock->newsock, s, usock->ctx,
-                    usock->newcallback);
+                nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
-                nn_ctx_enter (usock->ctx);
-                usock->out_callback->fn (usock->out_callback, usock,
-                    NN_USOCK_ACCEPTED);
-                nn_ctx_leave (usock->ctx);
+                nn_fsm_raise (&usock->fsm, &usock->event_accepted);
                 usock->newsock = NULL;
-                usock->newcallback = NULL;
+                usock->newowner = NULL;
                 return;
             default:
                 nn_assert (0);
@@ -480,12 +463,12 @@ static void nn_usock_callback (struct nn_callback *self, void *source, int type)
 /*  CONNECTED                                                                 */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECTED:
-        if (source == &usock->wtask_send) {
+        if (source == &usock->task_send) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_set_out (usock->worker, &usock->wfd);
             return;
         }
-        if (source == &usock->wtask_recv) {
+        if (source == &usock->task_recv) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_set_in (usock->worker, &usock->wfd);
             return;
@@ -499,36 +482,24 @@ static void nn_usock_callback (struct nn_callback *self, void *source, int type)
                     usock->in.len -= sz;
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
-                        nn_ctx_enter (usock->ctx);
-                        usock->out_callback->fn (usock->out_callback, usock,
-                            NN_USOCK_RECEIVED);
-                        nn_ctx_leave (usock->ctx);
+                        nn_fsm_raise (&usock->fsm, &usock->event_received);
                     }
                     return;
                 }
                 errnum_assert (rc == -ECONNRESET, -rc);
-                nn_ctx_enter (usock->ctx);
-                usock->out_callback->fn (usock->out_callback, usock,
-                    NN_USOCK_ERROR);
-                nn_ctx_leave (usock->ctx);
+                nn_fsm_raise (&usock->fsm, &usock->event_error);
                 return;
             case NN_WORKER_FD_OUT:
                 rc = nn_usock_send_raw (usock, &usock->out.hdr);
                 if (nn_fast (rc == 0)) {
                     nn_worker_reset_out (usock->worker, &usock->wfd);
-                    nn_ctx_enter (usock->ctx);
-                    usock->out_callback->fn (usock->out_callback, usock,
-                        NN_USOCK_SENT);
-                    nn_ctx_leave (usock->ctx);
+                    nn_fsm_raise (&usock->fsm, &usock->event_sent);
                     return;
                 }
                 if (nn_fast (rc == -EAGAIN))
                     return;
                 errnum_assert (rc == -ECONNRESET, -rc);
-                nn_ctx_enter (usock->ctx);
-                usock->out_callback->fn (usock->out_callback, usock,
-                    NN_USOCK_ERROR);
-                nn_ctx_leave (usock->ctx);
+                nn_fsm_raise (&usock->fsm, &usock->event_error);
                 return;
             case NN_WORKER_FD_ERR:
                 nn_assert (0);

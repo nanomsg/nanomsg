@@ -27,26 +27,15 @@
 #include "../utils/queue.h"
 
 #include "worker.h"
-#include "callback.h"
 #include "pool.h"
+#include "fsm.h"
 
 /*  AIO context for objects using AIO subsystem. */
-
-struct nn_ctx_task {
-    struct nn_callback *callback;
-    void *source;
-    int type;
-    struct nn_queue_item item;
-};
-
-void nn_ctx_task_init (struct nn_ctx_task *self, struct nn_callback *callback,
-    void *source, int type);
-void nn_ctx_task_term (struct nn_ctx_task *self);
 
 struct nn_ctx {
     struct nn_mutex sync;
     struct nn_pool *pool;
-    struct nn_queue tasks;
+    struct nn_queue events;
 };
 
 void nn_ctx_init (struct nn_ctx *self, struct nn_pool *pool);
@@ -57,7 +46,7 @@ void nn_ctx_leave (struct nn_ctx *self);
 
 struct nn_worker *nn_ctx_choose_worker (struct nn_ctx *self);
 
-void nn_ctx_execute (struct nn_ctx *self, struct nn_ctx_task *task);
+void nn_ctx_raise (struct nn_ctx *self, struct nn_fsm_event *event);
 
 #endif
 

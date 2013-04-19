@@ -26,9 +26,8 @@
 /*  Import the definition of nn_iovec. */
 #include "../nn.h"
 
-#include "callback.h"
+#include "fsm.h"
 #include "worker.h"
-#include "ctx.h"
 
 #define _GNU_SOURCE
 #include <sys/types.h>
@@ -54,14 +53,8 @@
 
 struct nn_usock {
 
-    /*  This class is sink of events. */
-    struct nn_callback in_callback;
-
-    /*  This class is source of events. */
-    struct nn_callback *out_callback;
-
-    /*  AIO context the socket belongs to. */
-    struct nn_ctx *ctx;
+    /*  State machine base class. */
+    struct nn_fsm fsm;
 
     /*  The worker thread the usock is associated with. */
     struct nn_worker *worker;
@@ -104,28 +97,29 @@ struct nn_usock {
     } out;
 
     /*  Asynchronous tasks for the worker. */
-    struct nn_worker_task wtask_connect;
-    struct nn_worker_task wtask_connected;
-    struct nn_worker_task wtask_accept;
-    struct nn_worker_task wtask_send;
-    struct nn_worker_task wtask_recv;
-    struct nn_worker_task wtask_close;
+    struct nn_worker_task task_connect;
+    struct nn_worker_task task_connected;
+    struct nn_worker_task task_accept;
+    struct nn_worker_task task_send;
+    struct nn_worker_task task_recv;
+    struct nn_worker_task task_close;
 
-    /*  Asynchronous callback tasks. */ 
-    struct nn_ctx_task ctask_accepted;
-    struct nn_ctx_task ctask_connected;
-    struct nn_ctx_task ctask_sent;
-    struct nn_ctx_task ctask_received;
-    struct nn_ctx_task ctask_error;
+    /*  Events raised by the usock. */ 
+    struct nn_fsm_event event_accepted;
+    struct nn_fsm_event event_connected;
+    struct nn_fsm_event event_sent;
+    struct nn_fsm_event event_received;
+    struct nn_fsm_event event_error;
+    struct nn_fsm_event event_closed;
 
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */
     struct nn_usock *newsock;
-    struct nn_callback *newcallback;
+    struct nn_fsm *newowner;
 };
 
 int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
-    struct nn_ctx *ctx, struct nn_callback *callback);
+    struct nn_fsm *owner);
 void nn_usock_close (struct nn_usock *self);
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
@@ -135,7 +129,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 int nn_usock_listen (struct nn_usock *self, int backlog);
 void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
-    struct nn_callback *newcallback);
+    struct nn_fsm *newowner);
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 

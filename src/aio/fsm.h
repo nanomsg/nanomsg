@@ -64,9 +64,14 @@ void nn_fsm_term (struct nn_fsm *self);
 
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 
+/*  Send event from the state machine to its owner. */
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event);
 
+/*  Send event from the owner to the state machine. */
 void nn_fsm_execute (struct nn_fsm *self, int type);
+
+/*  Enter the context and send an event to the state machine. */
+void nn_fsm_enter (struct nn_fsm *self, void *source, int type);
 
 #endif
 

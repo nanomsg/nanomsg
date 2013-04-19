@@ -72,3 +72,10 @@ void nn_fsm_execute (struct nn_fsm *self, int type)
     self->fn (self, NULL, type);
 }
 
+void nn_fsm_enter (struct nn_fsm *self, void *source, int type)
+{
+    nn_ctx_enter (self->ctx);
+    self->fn (self, source, type);
+    nn_ctx_leave (self->ctx);
+}
+

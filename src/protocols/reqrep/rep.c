@@ -47,7 +47,7 @@ struct nn_rep {
 
 /*  Private functions. */
 static int nn_rep_init (struct nn_rep *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_rep_term (struct nn_rep *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -57,8 +57,6 @@ static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
 
 static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
-    0,
-    nn_xrep_ispeer,
     nn_rep_destroy,
     nn_xrep_add,
     nn_xrep_rm,
@@ -72,11 +70,11 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
 };
 
 static int nn_rep_init (struct nn_rep *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_xrep_init (&self->xrep, vfptr);
+    rc = nn_xrep_init (&self->xrep, vfptr, hint);
     if (rc < 0)
         return rc;
     self->flags = 0;
@@ -165,14 +163,14 @@ static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_rep_create (struct nn_sockbase **sockbase)
+static int nn_rep_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_rep *self;
 
     self = nn_alloc (sizeof (struct nn_rep), "socket (rep)");
     alloc_assert (self);
-    rc = nn_rep_init (self, &nn_rep_sockbase_vfptr);
+    rc = nn_rep_init (self, &nn_rep_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -185,7 +183,9 @@ static int nn_rep_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_rep_socktype_struct = {
     AF_SP,
     NN_REP,
+    0,
     nn_rep_create,
+    nn_xrep_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

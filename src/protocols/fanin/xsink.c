@@ -43,11 +43,10 @@ struct nn_xsink {
 
 /*  Private functions. */
 static int nn_xsink_init (struct nn_xsink *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xsink_term (struct nn_xsink *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_xsink_ispeer (int socktype);
 static void nn_xsink_destroy (struct nn_sockbase *self);
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -60,8 +59,6 @@ static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
-    NN_SOCKBASE_FLAG_NOSEND,
-    nn_xsink_ispeer,
     nn_xsink_destroy,
     nn_xsink_add,
     nn_xsink_rm,
@@ -74,17 +71,12 @@ static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
     nn_xsink_getopt
 };
 
-static int nn_xsink_ispeer (int socktype)
-{
-    return socktype == NN_SOURCE ? 1 : 0;
-}
-
 static int nn_xsink_init (struct nn_xsink *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -111,14 +103,16 @@ void nn_xsink_destroy (struct nn_sockbase *self)
 
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    int rc;
     struct nn_xsink *xsink;
     struct nn_xsink_data *data;
 
     xsink = nn_cont (self, struct nn_xsink, sockbase);
+
     data = nn_alloc (sizeof (struct nn_xsink_data), "pipe data (sink)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_fq_add (&xsink->fq, pipe, &data->fq, self->rcvprio);
+    nn_fq_add (&xsink->fq, pipe, &data->fq, 8);
 
     return 0;
 }
@@ -179,14 +173,14 @@ static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-int nn_xsink_create (struct nn_sockbase **sockbase)
+int nn_xsink_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xsink *self;
 
     self = nn_alloc (sizeof (struct nn_xsink), "socket (sink)");
     alloc_assert (self);
-    rc = nn_xsink_init (self, &nn_xsink_sockbase_vfptr);
+    rc = nn_xsink_init (self, &nn_xsink_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -196,10 +190,17 @@ int nn_xsink_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+int nn_xsink_ispeer (int socktype)
+{
+    return socktype == NN_SOURCE ? 1 : 0;
+}
+
 static struct nn_socktype nn_xsink_socktype_struct = {
     AF_SP_RAW,
     NN_SINK,
+    NN_SOCKTYPE_FLAG_NOSEND,
     nn_xsink_create,
+    nn_xsink_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

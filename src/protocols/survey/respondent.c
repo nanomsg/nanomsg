@@ -46,7 +46,7 @@ struct nn_respondent {
 
 /*  Private functions. */
 static int nn_respondent_init (struct nn_respondent *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_respondent_term (struct nn_respondent *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -55,8 +55,6 @@ static int nn_respondent_events (struct nn_sockbase *self);
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
-    0,
-    nn_xrespondent_ispeer,
     nn_respondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,
@@ -70,11 +68,11 @@ static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
 };
 
 static int nn_respondent_init (struct nn_respondent *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_xrespondent_init (&self->xrespondent, vfptr);
+    rc = nn_xrespondent_init (&self->xrespondent, vfptr, hint);
     if (rc < 0)
         return rc;
     self->flags = 0;
@@ -170,14 +168,14 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_respondent_create (struct nn_sockbase **sockbase)
+static int nn_respondent_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_respondent *self;
 
     self = nn_alloc (sizeof (struct nn_respondent), "socket (respondent)");
     alloc_assert (self);
-    rc = nn_respondent_init (self, &nn_respondent_sockbase_vfptr);
+    rc = nn_respondent_init (self, &nn_respondent_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -190,7 +188,9 @@ static int nn_respondent_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_respondent_socktype_struct = {
     AF_SP,
     NN_RESPONDENT,
+    0,
     nn_respondent_create,
+    nn_xrespondent_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

@@ -39,8 +39,6 @@
 static void nn_xrep_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
-    0,
-    nn_xrep_ispeer,
     nn_xrep_destroy,
     nn_xrep_add,
     nn_xrep_rm,
@@ -53,16 +51,12 @@ static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
     nn_xrep_getopt
 };
 
-int nn_xrep_ispeer (int socktype)
-{
-    return socktype == NN_REQ ? 1 : 0;
-}
-
-int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr)
+int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
+    void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -261,14 +255,14 @@ int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xrep_create (struct nn_sockbase **sockbase)
+static int nn_xrep_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xrep *self;
 
     self = nn_alloc (sizeof (struct nn_xrep), "socket (xrep)");
     alloc_assert (self);
-    rc = nn_xrep_init (self, &nn_xrep_sockbase_vfptr);
+    rc = nn_xrep_init (self, &nn_xrep_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -278,10 +272,17 @@ static int nn_xrep_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+int nn_xrep_ispeer (int socktype)
+{
+    return socktype == NN_REQ ? 1 : 0;
+}
+
 static struct nn_socktype nn_xrep_socktype_struct = {
     AF_SP_RAW,
     NN_REP,
+    0,
     nn_xrep_create,
+    nn_xrep_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

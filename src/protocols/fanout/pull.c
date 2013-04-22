@@ -30,7 +30,9 @@
 static struct nn_socktype nn_pull_socktype_struct = {
     AF_SP,
     NN_PULL,
+    NN_SOCKTYPE_FLAG_NOSEND,
     nn_xpull_create,
+    nn_xpull_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

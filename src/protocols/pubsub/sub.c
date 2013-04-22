@@ -41,11 +41,10 @@ struct nn_sub {
 
 /*  Private functions. */
 static int nn_sub_init (struct nn_sub *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_sub_term (struct nn_sub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_sub_ispeer (int socktype);
 static void nn_sub_destroy (struct nn_sockbase *self);
 static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -58,8 +57,6 @@ static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
-    NN_SOCKBASE_FLAG_NOSEND,
-    nn_sub_ispeer,
     nn_sub_destroy,
     nn_sub_add,
     nn_sub_rm,
@@ -72,17 +69,12 @@ static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
     nn_sub_getopt
 };
 
-static int nn_sub_ispeer (int socktype)
-{
-    return socktype == NN_PUB ? 1 : 0;
-}
-
 static int nn_sub_init (struct nn_sub *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -193,14 +185,14 @@ static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_sub_create (struct nn_sockbase **sockbase)
+static int nn_sub_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_sub *self;
 
     self = nn_alloc (sizeof (struct nn_sub), "socket (sub)");
     alloc_assert (self);
-    rc = nn_sub_init (self, &nn_sub_sockbase_vfptr);
+    rc = nn_sub_init (self, &nn_sub_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -210,10 +202,17 @@ static int nn_sub_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+static int nn_sub_ispeer (int socktype)
+{
+    return socktype == NN_PUB ? 1 : 0;
+}
+
 static struct nn_socktype nn_sub_socktype_struct = {
     AF_SP,
     NN_SUB,
+    NN_SOCKTYPE_FLAG_NOSEND,
     nn_sub_create,
+    nn_sub_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

@@ -184,7 +184,9 @@ static void nn_worker_routine (void *arg)
                 break;
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
-            nn_fsm_enter (timer->owner, timer, NN_WORKER_TIMER_TIMEOUT);
+            nn_ctx_enter (timer->owner->ctx);
+            timer->owner->fn (timer->owner, timer, NN_WORKER_TIMER_TIMEOUT);
+            nn_ctx_leave (timer->owner->ctx);
         }
 
         /*  Process all events from the poller. */
@@ -224,7 +226,10 @@ static void nn_worker_routine (void *arg)
                     /*  It's a user-defined task. Notify the user that it has
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
-                    nn_fsm_enter (task->owner, task, NN_WORKER_TASK_EXECUTE);
+                    nn_ctx_enter (task->owner->ctx);
+                    task->owner->fn (task->owner, task,
+                        NN_WORKER_TASK_EXECUTE);
+                    nn_ctx_leave (task->owner->ctx);
                 }
                 nn_queue_term (&tasks);
                 continue;
@@ -232,7 +237,9 @@ static void nn_worker_routine (void *arg)
 
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
-            nn_fsm_enter (fd->owner, fd, pevent);
+            nn_ctx_enter (fd->owner->ctx);
+            fd->owner->fn (fd->owner, fd, pevent);
+            nn_ctx_leave (fd->owner->ctx);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,21 +20,37 @@
     IN THE SOFTWARE.
 */
 
-#include "source.h"
-#include "xsource.h"
+#include "../protocol.h"
 
-#include "../../nn.h"
-#include "../../fanin.h"
-#include "../../utils/list.h"
+#include "sock.h"
 
-static struct nn_socktype nn_source_socktype_struct = {
-    AF_SP,
-    NN_SOURCE,
-    NN_SOCKTYPE_FLAG_NORECV,
-    nn_xsource_create,
-    nn_xsource_ispeer,
-    NN_LIST_ITEM_INITIALIZER
-};
+#include "../utils/err.h"
 
-struct nn_socktype *nn_source_socktype = &nn_source_socktype_struct;
+int nn_sockbase_init (struct nn_sockbase *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
+{
+    self->vfptr = vfptr;
+    self->sock = (struct nn_sock*) hint;
+}
+
+void nn_sockbase_term (struct nn_sockbase *self)
+{
+}
+
+void nn_sockbase_changed (struct nn_sockbase *self)
+{
+    nn_assert (0);
+}
+
+struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
+{
+    return nn_sock_getctx (self->sock);
+}
+
+int nn_sockbase_getopt (struct nn_sockbase *self, int option,
+    void *optval, size_t *optvallen)
+{
+    return nn_sock_getopt (self->sock, NN_SOL_SOCKET, option,
+        optval, optvallen, 1);
+}
 

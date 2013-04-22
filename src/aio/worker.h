@@ -66,7 +66,7 @@ struct nn_worker_task {
     struct nn_queue_item item;
 };
 
-void nn_worker_task_init (struct nn_worker_task *self, struct nn_fsm *owner);
+void nn_worker_task_init (struct nn_worker_task *self,struct nn_fsm *owner);
 void nn_worker_task_term (struct nn_worker_task *self);
 
 struct nn_worker {

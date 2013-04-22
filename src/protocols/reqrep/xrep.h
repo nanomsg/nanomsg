@@ -54,10 +54,10 @@ struct nn_xrep {
     struct nn_fq inpipes;
 };
 
-int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr);
+int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
+    void *hint);
 void nn_xrep_term (struct nn_xrep *self);
 
-int nn_xrep_ispeer (int socktype);
 int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -69,6 +69,8 @@ int nn_xrep_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+
+int nn_xrep_ispeer (int socktype);
 
 extern struct nn_socktype *nn_xrep_socktype;
 

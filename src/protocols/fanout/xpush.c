@@ -43,11 +43,10 @@ struct nn_xpush {
 
 /*  Private functions. */
 static int nn_xpush_init (struct nn_xpush *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xpush_term (struct nn_xpush *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_xpush_ispeer (int socktype);
 static void nn_xpush_destroy (struct nn_sockbase *self);
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -60,8 +59,6 @@ static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
-    NN_SOCKBASE_FLAG_NORECV,
-    nn_xpush_ispeer,
     nn_xpush_destroy,
     nn_xpush_add,
     nn_xpush_rm,
@@ -74,17 +71,12 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_getopt
 };
 
-static int nn_xpush_ispeer (int socktype)
-{
-    return socktype == NN_PULL ? 1 : 0;
-}
-
 static int nn_xpush_init (struct nn_xpush *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return -rc;
 
@@ -111,14 +103,23 @@ void nn_xpush_destroy (struct nn_sockbase *self)
 
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    int rc;
     struct nn_xpush *xpush;
     struct nn_xpush_data *data;
+    int sndprio;
+    size_t sz;
 
     xpush = nn_cont (self, struct nn_xpush, sockbase);
+
+    sz = sizeof (sndprio);
+    rc = nn_sockbase_getopt (&xpush->sockbase, NN_SNDPRIO, &sndprio, &sz);
+    errnum_assert (rc == 0, -rc);
+    nn_assert (sz == sizeof (sndprio));
+
     data = nn_alloc (sizeof (struct nn_xpush_data), "pipe data (push)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_lb_add (&xpush->lb, pipe, &data->lb, self->sndprio);
+    nn_lb_add (&xpush->lb, pipe, &data->lb, sndprio);
 
     return 0;
 }
@@ -173,14 +174,14 @@ static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-int nn_xpush_create (struct nn_sockbase **sockbase)
+int nn_xpush_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xpush *self;
 
     self = nn_alloc (sizeof (struct nn_xpush), "socket (push)");
     alloc_assert (self);
-    rc = nn_xpush_init (self, &nn_xpush_sockbase_vfptr);
+    rc = nn_xpush_init (self, &nn_xpush_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -190,10 +191,17 @@ int nn_xpush_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+int nn_xpush_ispeer (int socktype)
+{
+    return socktype == NN_PULL ? 1 : 0;
+}
+
 static struct nn_socktype nn_xpush_socktype_struct = {
     AF_SP_RAW,
     NN_PUSH,
+    NN_SOCKTYPE_FLAG_NORECV,
     nn_xpush_create,
+    nn_xpush_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

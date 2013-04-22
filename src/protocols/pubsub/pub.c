@@ -49,11 +49,10 @@ struct nn_pub {
 
 /*  Private functions. */
 static int nn_pub_init (struct nn_pub *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_pub_term (struct nn_pub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_pub_ispeer (int socktype);
 static void nn_pub_destroy (struct nn_sockbase *self);
 static int nn_pub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -66,8 +65,6 @@ static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
-    NN_SOCKBASE_FLAG_NORECV,
-    nn_pub_ispeer,
     nn_pub_destroy,
     nn_pub_add,
     nn_pub_rm,
@@ -80,17 +77,12 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_getopt
 };
 
-static int nn_pub_ispeer (int socktype)
-{
-     return socktype == NN_SUB ? 1 : 0;
-}
-
 static int nn_pub_init (struct nn_pub *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -183,14 +175,14 @@ static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_pub_create (struct nn_sockbase **sockbase)
+static int nn_pub_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_pub *self;
 
     self = nn_alloc (sizeof (struct nn_pub), "socket (pub)");
     alloc_assert (self);
-    rc = nn_pub_init (self, &nn_pub_sockbase_vfptr);
+    rc = nn_pub_init (self, &nn_pub_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -200,10 +192,17 @@ static int nn_pub_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+static int nn_pub_ispeer (int socktype)
+{
+     return socktype == NN_SUB ? 1 : 0;
+}
+
 static struct nn_socktype nn_pub_socktype_struct = {
     AF_SP,
     NN_PUB,
+    NN_SOCKTYPE_FLAG_NORECV,
     nn_pub_create,
+    nn_pub_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

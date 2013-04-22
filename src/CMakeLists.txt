@@ -46,6 +46,7 @@ set (NN_SOURCES
     core/pipe.c
     core/sock.h
     core/sock.c
+    core/sockbase.c
     core/device.c
     core/symbol.c
 

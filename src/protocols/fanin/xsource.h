@@ -27,6 +27,7 @@
 
 extern struct nn_socktype *nn_xsource_socktype;
 
-int nn_xsource_create (struct nn_sockbase **sockbase);
+int nn_xsource_create (void *hint, struct nn_sockbase **sockbase);
+int nn_xsource_ispeer (int socktype);
 
 #endif

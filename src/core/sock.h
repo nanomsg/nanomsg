@@ -23,14 +23,62 @@
 #ifndef NN_SOCK_INCLUDED
 #define NN_SOCK_INCLUDED
 
-struct nn_sock;
-struct nn_pipe;
-struct nn_msg;
-struct nn_cp;
+#include "../protocol.h"
+#include "../transport.h"
 
-/*  Called after the whole socket (including the derived class) is
-    intialised. */
-void nn_sock_postinit (struct nn_sock *self, int domain, int protocol);
+#include "../aio/ctx.h"
+
+#include "../utils/efd.h"
+#include "../utils/sem.h"
+#include "../utils/clock.h"
+#include "../utils/list.h"
+
+struct nn_pipe;
+
+/*  The maximum implemented transport ID. */
+#define NN_MAX_TRANSPORT 3
+
+struct nn_sock
+{
+    /*  Pointer to the instance of the specific socket type. */
+    struct nn_sockbase *sockbase;
+
+    /*  Pointer to the socket type metadata. */
+    struct nn_socktype *socktype;
+
+    int flags;
+
+    struct nn_ctx ctx;
+    struct nn_efd sndfd;
+    struct nn_efd rcvfd;
+    struct nn_sem termsem;
+
+    /*  TODO: This clock can be accessed from different threads. If RDTSC
+        is out-of-sync among different CPU cores, this can be a problem. */
+    struct nn_clock clock;
+
+    /*  List of all endpoints associated with the socket. */
+    struct nn_list eps;
+
+    /*  Next endpoint ID to assign to a new endpoint. */
+    int eid;
+
+    /*  Socket-level socket options. */
+    int linger;
+    int sndbuf;
+    int rcvbuf;
+    int sndtimeo;
+    int rcvtimeo;
+    int reconnect_ivl;
+    int reconnect_ivl_max;
+    int sndprio;
+
+    /*  Transport-specific socket options. */
+    struct nn_optset *optsets [NN_MAX_TRANSPORT];
+};
+
+/*  Initialise the socket. */
+int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype);
 
 /*  Called by nn_close() to deallocate the socket. It's a blocking function
     and can return -EINTR. */

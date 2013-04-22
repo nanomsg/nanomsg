@@ -322,6 +322,7 @@ int nn_socket (int domain, int protocol)
     int s;
     struct nn_list_item *it;
     struct nn_socktype *socktype;
+    struct nn_sock *sock;
 
     nn_glock_lock ();
 
@@ -355,16 +356,22 @@ int nn_socket (int domain, int protocol)
     /*  Find an empty socket slot. */
     s = self.unused [NN_MAX_SOCKETS - self.nsocks - 1];
 
-    /*  Find the appropriate socket type and instantiate it. */
+    /*  Find the appropriate socket type. */
     for (it = nn_list_begin (&self.socktypes);
           it != nn_list_end (&self.socktypes);
           it = nn_list_next (&self.socktypes, it)) {
         socktype = nn_cont (it, struct nn_socktype, item);
         if (socktype->domain == domain && socktype->protocol == protocol) {
-            rc = socktype->create ((struct nn_sockbase**) &self.socks [s]);
+
+            /*  Instantiate the socket. */
+            sock = nn_alloc (sizeof (struct nn_sock), "sock");
+            alloc_assert (sock);
+            rc = nn_sock_init (sock, socktype);
             if (rc < 0)
                 goto error;
-            nn_sock_postinit (self.socks [s], domain, protocol);
+
+            /*  Adjust the global socket table. */
+            self.socks [s] = sock;
             ++self.nsocks;
             nn_glock_unlock ();
             return s;

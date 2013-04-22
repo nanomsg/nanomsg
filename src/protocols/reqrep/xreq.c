@@ -40,8 +40,6 @@ struct nn_xreq_data {
 static void nn_xreq_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
-    0,
-    nn_xreq_ispeer,
     nn_xreq_destroy,
     nn_xreq_add,
     nn_xreq_rm,
@@ -54,15 +52,11 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_getopt
 };
 
-int nn_xreq_ispeer (int socktype)
-{
-    return socktype == NN_REP ? 1 : 0;
-}
-
-int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr)
+int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
+    void *hint)
 {
     int rc;
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -91,15 +85,24 @@ static void nn_xreq_destroy (struct nn_sockbase *self)
 
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
+    int rc;
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
+    int sndprio;
+    size_t sz;
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
+
+    sz = sizeof (sndprio);
+    rc = nn_sockbase_getopt (&xreq->sockbase, NN_SNDPRIO, &sndprio, &sz);
+    errnum_assert (rc == 0, -rc);
+    nn_assert (sz == sizeof (sndprio));
+
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_lb_add (&xreq->lb, pipe, &data->lb, self->sndprio);
-    nn_fq_add (&xreq->fq, pipe, &data->fq, self->rcvprio);
+    nn_lb_add (&xreq->lb, pipe, &data->lb, sndprio);
+    nn_fq_add (&xreq->fq, pipe, &data->fq, 8);
     return 0;
 }
 
@@ -199,14 +202,14 @@ int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xreq_create (struct nn_sockbase **sockbase)
+static int nn_xreq_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xreq *self;
 
     self = nn_alloc (sizeof (struct nn_xreq), "socket (xreq)");
     alloc_assert (self);
-    rc = nn_xreq_init (self, &nn_xreq_sockbase_vfptr);
+    rc = nn_xreq_init (self, &nn_xreq_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -216,10 +219,17 @@ static int nn_xreq_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+int nn_xreq_ispeer (int socktype)
+{
+    return socktype == NN_REP ? 1 : 0;
+}
+
 static struct nn_socktype nn_xreq_socktype_struct = {
     AF_SP_RAW,
     NN_REQ,
+    0,
     nn_xreq_create,
+    nn_xreq_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

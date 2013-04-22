@@ -26,6 +26,7 @@
 #include "../../nn.h"
 #include "../../reqrep.h"
 
+#include "../../utils/aio.h"
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -54,11 +55,10 @@
 
 struct nn_req {
 
+    struct nn_sink *sink;
+
     /*  The base class. Raw REQ socket. */
     struct nn_xreq xreq;
-
-    /*  The callbacks. */
-    const struct nn_cp_sink *sink;
 
     /*  ID of the request being currently processed. Replies for different
         requests are considered stale and simply dropped. */
@@ -79,12 +79,12 @@ struct nn_req {
     int resend_ivl;
 
     /*  Timer used to wait till request resending should be done. */
-    struct nn_aio_timer resend_timer;
+    struct nn_timer resend_timer;
 };
 
 /*  Private functions. */
 static int nn_req_init (struct nn_req *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_req_term (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -99,8 +99,6 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
-    0,
-    nn_xreq_ispeer,
     nn_req_destroy,
     nn_xreq_add,
     nn_xreq_rm,
@@ -113,29 +111,14 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_getopt
 };
 
-/*  Event sink. */
-static void nn_req_timeout (const struct nn_cp_sink **self,
-    struct nn_aio_timer *timer);
-static const struct nn_cp_sink nn_req_sink = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_req_timeout
-};
-
 static int nn_req_init (struct nn_req *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_xreq_init (&self->xreq, vfptr);
+    rc = nn_xreq_init (&self->xreq, vfptr, hint);
     if (rc < 0)
         return rc;
-
-    self->sink = &nn_req_sink;
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
@@ -409,7 +392,9 @@ static int nn_req_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_req_socktype_struct = {
     AF_SP,
     NN_REQ,
+    0,
     nn_req_create,
+    nn_xreq_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

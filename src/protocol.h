@@ -25,11 +25,7 @@
 
 #include "aio/ctx.h"
 
-#include "utils/list.h"
-#include "utils/clock.h"
 #include "utils/msg.h"
-#include "utils/efd.h"
-#include "utils/sem.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -74,29 +70,13 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
 struct nn_sockbase;
 
-/*  The maximum implemented transport ID. */
-#define NN_MAX_TRANSPORT 3
-
+/*  Any combination of these events can be returned from 'events' virtual
+    function. */
 #define NN_SOCKBASE_EVENT_IN 1
 #define NN_SOCKBASE_EVENT_OUT 2
 
-/*  Specifies that the socket type can be never used to receive messages. */
-#define NN_SOCKBASE_FLAG_NORECV 1
-
-/*  Specifies that the socket type can be never used to send messages. */
-#define NN_SOCKBASE_FLAG_NOSEND 2
-
 /*  To be implemented by individual socket types. */
 struct nn_sockbase_vfptr {
-
-    /*  Returns any combination of the flags defined above. */
-    int flags;
-
-    /*  Returns 1 if the supplied socket type is a valid peer for this socket,
-        0 otherwise. Note that the validation is done only within a single
-        SP protocol. Peers speaking ather SP protocols are discarded by the
-        core and socket is not even asked to validate them. */
-    int (*ispeer) (int socktype);
 
     /*  Deallocate the socket. */
     void (*destroy) (struct nn_sockbase *self);
@@ -132,36 +112,14 @@ struct nn_sockbase_vfptr {
         void *optval, size_t *optvallen);
 };
 
-/*  The members of this structure are used exclusively by the core. Never use
-    or modify them directly from the protocol implementation. */
-struct nn_sockbase
-{
+struct nn_sockbase {
     const struct nn_sockbase_vfptr *vfptr;
-    int flags;
-    struct nn_ctx ctx;
-    struct nn_efd sndfd;
-    struct nn_efd rcvfd;
-    struct nn_sem termsem;
-    struct nn_clock clock;
-    struct nn_list eps;
-    int eid;
-    int domain;
-    int protocol;
-    int linger;
-    int sndbuf;
-    int rcvbuf;
-    int sndtimeo;
-    int rcvtimeo;
-    int reconnect_ivl;
-    int reconnect_ivl_max;
-    int sndprio;
-    int rcvprio;
-    struct nn_optset *optsets [NN_MAX_TRANSPORT];
+    struct nn_sock *sock;
 };
 
 /*  Initialise the socket. */
 int nn_sockbase_init (struct nn_sockbase *self,
-    const struct nn_sockbase_vfptr *vfptr);
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 
 /*  Uninitialise the socket. */
 void nn_sockbase_term (struct nn_sockbase *self);
@@ -174,8 +132,14 @@ void nn_sockbase_term (struct nn_sockbase *self);
     send/recv/poll functions as needed. */
 void nn_sockbase_changed (struct nn_sockbase *self);
 
-/*  Returns the AIO context associated with the socket. */
+/*  Returns the AIO context associated with the socket. This function is
+    useful when socket type implementation needs to create async objects,
+    such as timers. */
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self);
+
+/*  Retrieve a NN_SOL_SOCKET-level option. */
+int nn_sockbase_getopt (struct nn_sockbase *self, int option,
+    void *optval, size_t *optvallen);
 
 /******************************************************************************/
 /*  The socktype class.                                                       */
@@ -183,17 +147,32 @@ struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self);
 
 /*  This structure defines a class factory for individual socket types. */
 
+/*  Specifies that the socket type can be never used to receive messages. */
+#define NN_SOCKTYPE_FLAG_NORECV 1
+
+/*  Specifies that the socket type can be never used to send messages. */
+#define NN_SOCKTYPE_FLAG_NOSEND 2
+
 struct nn_socktype {
 
     /*  Domain and protocol IDs as specified in nn_socket() function. */
     int domain;
     int protocol;
 
-    /*  Function to create the socket type. 'sockbase' is the output parameter
-        to return reference to newly created socket. This function is called
-        under global lock, so it is not possible that two sockets are being
-        created in parallel. */
-    int (*create) (struct nn_sockbase **sockbase);
+    /*  Any combination of the flags defined above. */
+    int flags;
+
+    /*  Function to create specific socket type. 'sockbase' is the output
+        parameter to return reference to newly created socket. This function
+        is called under global lock, so it is not possible that two sockets are
+        being created in parallel. */
+    int (*create) (void *hint, struct nn_sockbase **sockbase);
+
+    /*  Returns 1 if the supplied socket type is a valid peer for this socket,
+        0 otherwise. Note that the validation is done only within a single
+        SP protocol. Peers speaking other SP protocols are discarded by the
+        core and socket is not even asked to validate them. */
+    int (*ispeer) (int socktype);
 
     /*  This member is owned by the core. Never touch it directly from inside
         the protocol implementation. */

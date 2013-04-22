@@ -43,8 +43,6 @@ CT_ASSERT (sizeof (uint64_t) >= sizeof (struct nn_pipe*));
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_xbus_destroy (struct nn_sockbase *self);
 static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
-    0,
-    nn_xbus_ispeer,
     nn_xbus_destroy,
     nn_xbus_add,
     nn_xbus_rm,
@@ -57,17 +55,12 @@ static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
     nn_xbus_getopt
 };
 
-int nn_xbus_ispeer (int socktype)
-{
-    return socktype == NN_BUS ? 1 : 0;
-}
-
 int nn_xbus_init (struct nn_xbus *self,
-    const struct nn_sockbase_vfptr *vfptr)
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     int rc;
 
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
+    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
     if (rc < 0)
         return rc;
 
@@ -215,14 +208,14 @@ int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xbus_create (struct nn_sockbase **sockbase)
+static int nn_xbus_create (void *hint, struct nn_sockbase **sockbase)
 {
     int rc;
     struct nn_xbus *self;
 
     self = nn_alloc (sizeof (struct nn_xbus), "socket (bus)");
     alloc_assert (self);
-    rc = nn_xbus_init (self, &nn_xbus_sockbase_vfptr);
+    rc = nn_xbus_init (self, &nn_xbus_sockbase_vfptr, hint);
     if (rc < 0) {
         nn_free (self);
         return rc;
@@ -232,10 +225,17 @@ static int nn_xbus_create (struct nn_sockbase **sockbase)
     return 0;
 }
 
+int nn_xbus_ispeer (int socktype)
+{
+    return socktype == NN_BUS ? 1 : 0;
+}
+
 static struct nn_socktype nn_xbus_socktype_struct = {
     AF_SP_RAW,
     NN_BUS,
+    0,
     nn_xbus_create,
+    nn_xbus_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

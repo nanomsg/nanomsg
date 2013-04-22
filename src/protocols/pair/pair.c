@@ -30,7 +30,9 @@
 static struct nn_socktype nn_pair_socktype_struct = {
     AF_SP,
     NN_PAIR,
+    0,
     nn_xpair_create,
+    nn_xpair_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

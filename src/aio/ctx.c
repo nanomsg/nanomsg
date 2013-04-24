@@ -45,12 +45,13 @@ void nn_ctx_enter (struct nn_ctx *self)
 
 void nn_ctx_leave (struct nn_ctx *self)
 {
+    struct nn_queue_item *item;
     struct nn_fsm_event *event;
 
     /*  Process any queued events before leaving the AIO context. */
     while (1) {
-        event = nn_cont (nn_queue_pop (&self->events),
-            struct nn_fsm_event, item);
+        item = nn_queue_pop (&self->events);
+        event = nn_cont (item, struct nn_fsm_event, item);
         if (!event)
             break;
         event->fsm->fn (event->fsm, event->source, event->type);

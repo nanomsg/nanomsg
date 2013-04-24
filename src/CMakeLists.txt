@@ -74,12 +74,8 @@ set (NN_SOURCES
     utils/addr.c
     utils/alloc.h
     utils/alloc.c
-#    utils/astream.h
-#    utils/astream.c
     utils/atomic.h
     utils/atomic.c
-#    utils/bstream.h
-#    utils/bstream.c
     utils/chunk.h
     utils/chunk.c
     utils/chunkref.h
@@ -87,8 +83,6 @@ set (NN_SOURCES
     utils/clock.h
     utils/clock.c
     utils/cont.h
-#    utils/cstream.h
-#    utils/cstream.c
     utils/dist.h
     utils/dist.c
     utils/efd.h
@@ -122,8 +116,6 @@ set (NN_SOURCES
     utils/sem.c
     utils/sleep.h
     utils/sleep.c
-#    utils/stream.h
-#    utils/stream.c
     utils/thread.h
     utils/thread.c
     utils/wire.h
@@ -182,6 +174,8 @@ set (NN_SOURCES
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
 
+
+
 #    transports/inproc/inproc.h
 #    transports/inproc/inproc_ctx.h
 #    transports/inproc/inproc_ctx.c
@@ -194,8 +188,17 @@ set (NN_SOURCES
 #    transports/inproc/msgqueue.h
 #    transports/inproc/msgqueue.c
 
-#    transports/ipc/ipc.h
-#    transports/ipc/ipc.c
+    transports/utils/astream.h
+    transports/utils/astream.c
+    transports/utils/bstream.h
+    transports/utils/bstream.c
+    transports/utils/cstream.h
+    transports/utils/cstream.c
+    transports/utils/stream.h
+    transports/utils/stream.c
+
+    transports/ipc/ipc.h
+    transports/ipc/ipc.c
 
 #    transports/tcp/tcp.h
 #    transports/tcp/tcp.c

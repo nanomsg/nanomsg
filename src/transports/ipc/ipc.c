@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,11 +26,12 @@
 
 #include "../../ipc.h"
 
+#include "../utils/bstream.h"
+#include "../utils/cstream.h"
+
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/bstream.h"
-#include "../../utils/cstream.h"
 #include "../../utils/list.h"
 
 #include <string.h>
@@ -39,13 +40,18 @@
 
 #define NN_IPC_BACKLOG 10
 
-/*  Private functions. */
-static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
-    struct nn_cp *cp, int backlog);
-static int nn_ipc_csockinit (struct nn_aio_usock *usock, int sndbuf, int rcvbuf,
-    struct nn_cp *cp);
-static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *local,
-    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen);
+/*  Implementation of virtual functions from bstream. */
+static int nn_ipc_binit (const char *addr, struct nn_usock *usock, int backlog);
+
+/*  Implementation of virtual functions from cstream. */
+static int nn_ipc_cstream_open (struct nn_usock *usock, struct nn_fsm *owner);
+static int nn_ipc_cstream_resolve (const char *addr,
+    struct sockaddr_storage *local, socklen_t *locallen,
+    struct sockaddr_storage *remote, socklen_t *remotelen);
+const struct nn_cstream_vfptr nn_ipc_cstream_vfptr = {
+    nn_ipc_cstream_open,
+    nn_ipc_cstream_resolve
+};
 
 /*  nn_transport interface. */
 static void nn_ipc_init (void);
@@ -104,8 +110,7 @@ static int nn_ipc_connect (const char *addr, void *hint,
 
     cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (ipc)");
     alloc_assert (cstream);
-    rc = nn_cstream_init (cstream, addr, hint, nn_ipc_csockinit,
-        nn_ipc_cresolve);
+    rc = nn_cstream_init (cstream, addr, hint, &nn_ipc_cstream_vfptr);
     if (nn_slow (rc != 0)) {
         nn_free (cstream);
         return rc;
@@ -115,8 +120,7 @@ static int nn_ipc_connect (const char *addr, void *hint,
     return 0;
 }
 
-static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
-    struct nn_cp *cp, int backlog)
+static int nn_ipc_binit (const char *addr, struct nn_usock *usock, int backlog)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -137,6 +141,7 @@ static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
     rc = unlink (addr);
     errno_assert (rc == 0 || errno == ENOENT);
 
+#if 0
     /*  Open the listening socket. */
     rc = nn_aio_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
     errnum_assert (rc == 0, -rc);
@@ -144,19 +149,20 @@ static int nn_ipc_binit (const char *addr, struct nn_aio_usock *usock,
     errnum_assert (rc == 0, -rc);
     rc = nn_aio_usock_listen (usock, backlog);
     errnum_assert (rc == 0, -rc);
+#endif
+    nn_assert (0);
 
     return 0;
 }
 
-static int nn_ipc_csockinit (struct nn_aio_usock *usock, int sndbuf, int rcvbuf,
-    struct nn_cp *cp)
+static int nn_ipc_cstream_open (struct nn_usock *usock, struct nn_fsm *owner)
 {
-    return nn_aio_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0,
-        sndbuf, rcvbuf, cp);
+    return nn_usock_init (usock, AF_UNIX, SOCK_STREAM, 0, owner);
 }
 
-static int nn_ipc_cresolve (const char *addr, struct sockaddr_storage *local,
-    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen)
+static int nn_ipc_cstream_resolve (const char *addr,
+    struct sockaddr_storage *local, socklen_t *locallen,
+    struct sockaddr_storage *remote, socklen_t *remotelen)
 {
     struct sockaddr_un *un;
 

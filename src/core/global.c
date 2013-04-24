@@ -204,7 +204,7 @@ static void nn_global_init (void)
     /*  Plug in individual transports. */
 //    nn_global_add_transport (nn_inproc);
 #if !defined NN_HAVE_WINDOWS
-//    nn_global_add_transport (nn_ipc);
+    nn_global_add_transport (nn_ipc);
 #endif
 //    nn_global_add_transport (nn_tcp);
 

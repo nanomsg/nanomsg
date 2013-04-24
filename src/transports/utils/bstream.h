@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,37 +20,43 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_ASTREAM_INCLUDED
-#define NN_ASTREAM_INCLUDED
+#ifndef NN_BSTREAM_INCLUDED
+#define NN_BSTREAM_INCLUDED
 
-#include "aio.h"
-#include "bstream.h"
-#include "stream.h"
-#include "list.h"
+#include "../../transport.h"
 
-/*  Accepted stream socket. */
+#include "../../aio/fsm.h"
+#include "../../aio/usock.h"
 
-struct nn_astream {
+#include "../../utils/list.h"
 
-    /*  Event sink. */
-    const struct nn_cp_sink *sink;
+struct nn_astream;
 
-    /*  The undelying TCP socket. */
-    struct nn_aio_usock usock;
+/*  Bound stream socket. */
 
-    /*  TCP session state machine. */
-    struct nn_stream stream;
+#define NN_BSTREAM_STATE_ACTIVE 1
+#define NN_BSTREAM_STATE_CLOSING 2
+#define NN_BSTREAM_STATE_CLOSED 3
 
-    /*  Bound socket that created this connection. */
-    struct nn_bstream *bstream;
+struct nn_bstream {
 
-    /*  The object is part of nn_tcpb's list of accepted sockets. */
-    struct nn_list_item item;
+    /*  State machine. */
+    struct nn_fsm fsm;
+    int state;
+
+    /*  This object is an endpoint. */
+    struct nn_epbase epbase;
+
+    /*  The listening socket. */
+    struct nn_usock usock;
+
+    /*  List of all sockets accepted via this endpoint. */
+    struct nn_list astreams;
 };
 
-void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
-    int s, struct nn_aio_usock *usock, struct nn_bstream *bstream);
-void nn_astream_close (struct nn_astream *self);
+int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
+    int (*initfn) (const char *addr, struct nn_usock *usock, int backlog),
+    int backlog);
+void nn_bstream_term (struct nn_bstream *self);
 
 #endif
-

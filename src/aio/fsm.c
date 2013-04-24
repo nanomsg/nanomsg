@@ -56,6 +56,16 @@ void nn_fsm_term (struct nn_fsm *self)
 {
 }
 
+struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)
+{
+    struct nn_fsm *oldowner;
+
+    oldowner = self->owner;
+    self->owner = newowner;
+
+    return oldowner;
+}
+
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
 {
     return nn_ctx_choose_worker (self->ctx);

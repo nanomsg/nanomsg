@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,9 +21,28 @@
 */
 
 #include "astream.h"
-#include "err.h"
-#include "cont.h"
-#include "alloc.h"
+
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
+#include "../../utils/alloc.h"
+
+void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
+    int s, struct nn_usock *usock, struct nn_bstream *bstream)
+{
+    nn_assert (0);
+}
+
+void nn_astream_close (struct nn_astream *self)
+{
+    nn_assert (0);
+}
+
+void nn_astream_term (struct nn_astream *self)
+{
+    nn_assert (0);
+}
+
+#if 0
 
 static const struct nn_cp_sink nn_astream_state_connected;
 static const struct nn_cp_sink nn_astream_state_terminating;
@@ -143,3 +162,4 @@ static void nn_astream_terminating_closed (const struct nn_cp_sink **self,
     nn_free (astream);
 }
 
+#endif

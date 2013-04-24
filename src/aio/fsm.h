@@ -62,6 +62,8 @@ void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx);
 void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner);
 void nn_fsm_term (struct nn_fsm *self);
 
+struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
+
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 
 /*  Send event from the state machine to its owner. */

@@ -25,7 +25,6 @@
 #include "../utils/cont.h"
 #include "../utils/err.h"
 
-static void nn_timer_term (struct nn_timer *self);
 static void nn_timer_callback (struct nn_fsm *self, void *source,
     int type);
 
@@ -43,7 +42,7 @@ void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner)
     self->timeout = -1;
 }
 
-static void nn_timer_term (struct nn_timer *self)
+void nn_timer_term (struct nn_timer *self)
 {
     nn_fsm_event_term (&self->closed_event);
     nn_fsm_event_term (&self->stopped_event);
@@ -108,7 +107,6 @@ static void nn_timer_callback (struct nn_fsm *self, void *source, int type)
         if (timer->timeout > 0)
             nn_worker_rm_timer (timer->worker, &timer->wtimer);
         nn_fsm_raise (&timer->fsm, &timer->closed_event);
-        nn_timer_term (timer);
         return;
     }
     nn_assert (0);

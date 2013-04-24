@@ -45,6 +45,7 @@ struct nn_timer {
 
 void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner);
 void nn_timer_close (struct nn_timer *self);
+void nn_timer_term (struct nn_timer *self);
 
 void nn_timer_start (struct nn_timer *self, int timeout);
 void nn_timer_stop (struct nn_timer *self);

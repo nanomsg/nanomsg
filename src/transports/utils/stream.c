@@ -22,65 +22,34 @@
 
 #include "stream.h"
 
-#include "err.h"
-#include "cont.h"
-#include "wire.h"
-#include "fast.h"
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
+#include "../../utils/wire.h"
+#include "../../utils/fast.h"
 
 #include <string.h>
 #include <stdint.h>
 
-/*   Private functions. */
-static void nn_stream_hdr_received (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
-    struct nn_aio_timer *timer);
-static void nn_stream_received (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static void nn_stream_sent (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static void nn_stream_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum);
+/*  Possible states of object. */
+#define NN_STREAM_STATE_INIT 0
+#define NN_STREAM_STATE_SENDING_PROTOHDR 1
+#define NN_STREAM_STATE_RECEIVING_PROTOHDR 2
+#define NN_STREAM_STATE_CLOSING_TIMER 3
+#define NN_STREAM_STATE_CLOSING_TIMER_ERROR 4
+#define NN_STREAM_STATE_RECEIVING_MSGHDR 5
+#define NN_STREAM_STATE_RECEIVING_MSGBODY 6
+#define NN_STREAM_STATE_CLOSED 7
 
-/*  START state. */
-static const struct nn_cp_sink nn_stream_state_start = {
-    NULL,
-    nn_stream_hdr_sent,
-    NULL,
-    NULL,
-    nn_stream_err,
-    NULL,
-    nn_stream_hdr_timeout,
-    NULL
-};
+/*  Inbound events. */
+#define NN_STREAM_EVENT_START 1
+#define NN_STREAM_EVENT_SEND 2
+#define NN_STREAM_EVENT_RECV 3
+#define NN_STREAM_EVENT_CLOSE 4
 
-/*  SENT state. */
-static const struct nn_cp_sink nn_stream_state_sent = {
-    nn_stream_hdr_received,
-    NULL,
-    NULL,
-    NULL,
-    nn_stream_err,
-    NULL,
-    nn_stream_hdr_timeout,
-    NULL
-};
+/*  Private functions. */
+static void nn_stream_callback (struct nn_fsm *self, void *source, int type);
 
-/*  ACTIVE state. */
-static const struct nn_cp_sink nn_stream_state_active = {
-    nn_stream_received,
-    nn_stream_sent,
-    NULL,
-    NULL,
-    nn_stream_err,
-    NULL,
-    NULL,
-    NULL
-};
-
-/*  Pipe interface. */
+/*  Stream is a special type of pipe. Here it implements the pipe interface. */
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg);
 const struct nn_pipebase_vfptr nn_stream_pipebase_vfptr = {
@@ -89,17 +58,19 @@ const struct nn_pipebase_vfptr nn_stream_pipebase_vfptr = {
 };
 
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_aio_usock *usock)
+    struct nn_usock *usock, struct nn_fsm *owner)
 {
     int rc;
     int protocol;
     size_t sz;
-    struct nn_iobuf iobuf;
+
+    /*  Initialise the state machine. */
+    nn_fsm_init (&self->fsm, nn_stream_callback, owner);
+    self->state = NN_STREAM_STATE_INIT;
 
     /*  Redirect the underlying socket's events to this state machine. */
     self->usock = usock;
-    self->sink = &nn_stream_state_start;
-    self->original_sink = nn_aio_usock_setsink (usock, &self->sink);
+    self->usock_owner = nn_usock_swap_owner (self->usock, &self->fsm);
 
     /*  Initialise the pipe to communicate with the user. */
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
@@ -108,35 +79,40 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_msg_init (&self->inmsg, 0);
     nn_msg_init (&self->outmsg, 0);
 
-    /*  Start the header timeout timer. */
-    nn_aio_timer_init (&self->hdr_timeout, &self->sink, usock->cp);
-    nn_aio_timer_start (&self->hdr_timeout, 1000);
+    nn_timer_init (&self->hdr_timeout, &self->fsm);
 
-    /*  Send the protocol header. */
+    /*  Prepare the outgoing protocol header.  */
     sz = sizeof (protocol);
     nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_PROTOCOL, &protocol, &sz);
     errnum_assert (rc == 0, -rc);
     nn_assert (sz == sizeof (protocol));
     memcpy (self->protohdr, "\0\0SP\0\0\0\0", 8);
     nn_puts (self->protohdr + 4, (uint16_t) protocol);
-    iobuf.iov_base = self->protohdr;
-    iobuf.iov_len = 8;
-    nn_aio_usock_send (usock, &iobuf, 1);
+
+    /*  Pass the event to the state machine. */
+    nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_START);
+}
+
+void nn_stream_close (struct nn_stream *self)
+{
+    /*  Pass the appropriate event to the state machine. */
+    nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_CLOSE);
 }
 
 void nn_stream_term (struct nn_stream *self)
 {
-    /*  Close the messages in progress. */
+    /*  Sanity check. */
+    nn_assert (self->state == NN_STREAM_STATE_CLOSED);
+
     nn_msg_term (&self->inmsg);
     nn_msg_term (&self->outmsg);
-
-    nn_aio_timer_term (&self->hdr_timeout);
     nn_pipebase_term (&self->pipebase);
 
-    /*  Return control to the parent state machine. */
-    nn_aio_usock_setsink (self->usock, self->original_sink);
+    /*  Return control of the underlying socket to the parent state machine. */
+    nn_usock_swap_owner (self->usock, self->usock_owner);
 }
 
+#if 0
 static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
     struct nn_aio_usock *usock)
 {
@@ -248,17 +224,23 @@ static void nn_stream_err (const struct nn_cp_sink **self,
     nn_assert ((*original_sink)->err);
     (*original_sink)->err (original_sink, usock, errnum);
 }
+#endif
 
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
     struct nn_stream *stream;
-    struct nn_iobuf iov [3];
 
     stream = nn_cont (self, struct nn_stream, pipebase);
 
-    /*  Mave the message to the local storage. */
+    /*  Move the message to the local storage. */
     nn_msg_term (&stream->outmsg);
     nn_msg_mv (&stream->outmsg, msg);
+
+    /*  Pass the event to the state machine. */
+    nn_stream_callback (&stream->fsm, NULL, NN_STREAM_EVENT_SEND);
+
+#if 0
+    struct nn_iobuf iov [3];
 
     /*  Serialise the message header. */
     nn_putll (stream->outhdr, nn_chunkref_size (&stream->outmsg.hdr) +
@@ -272,6 +254,7 @@ static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
     iov [2].iov_base = nn_chunkref_data (&stream->outmsg.body);
     iov [2].iov_len = nn_chunkref_size (&stream->outmsg.body);;
     nn_aio_usock_send (stream->usock, iov, 3);
+#endif
 
     return 0;
 }
@@ -282,14 +265,123 @@ static int nn_stream_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     stream = nn_cont (self, struct nn_stream, pipebase);
 
-    /*  Move message content to the user-supplied structure. */
+    /*  Move received message to the user. */
     nn_msg_mv (msg, &stream->inmsg);
     nn_msg_init (&stream->inmsg, 0);
 
+    /*  We can start receiving a new message now. Pass the event to the
+        state machine. */
+    nn_stream_callback (&stream->fsm, NULL, NN_STREAM_EVENT_RECV);
+
+#if 0
     /* Start receiving new message. */ 
     stream->instate = NN_STREAM_INSTATE_HDR;
     nn_aio_usock_recv (stream->usock, stream->inhdr, 8);
+#endif
 
     return 0;
+}
+
+static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
+{
+    struct nn_stream *stream;
+    struct nn_iovec iovec;
+
+    stream = nn_cont (self, struct nn_stream, fsm);
+
+    switch (stream->state) {
+    case NN_STREAM_STATE_INIT:
+        if (source == NULL) {
+             switch (type) {
+             case NN_STREAM_EVENT_START:
+
+                /*  Start the header timeout timer. */
+                nn_timer_start (&stream->hdr_timeout, 1000);
+
+                /*  Send the protocol header. We don't event try to do sending
+                    and receiving the header in parallel. The rationale is that
+                    the outgoing header will fill into TCP tx buffer and thus
+                    will be sent asynchronously anyway. */
+                iovec.iov_base = stream->protohdr;
+                iovec.iov_len = 8;
+                nn_usock_send (stream->usock, &iovec, 1);
+                stream->state = NN_STREAM_STATE_SENDING_PROTOHDR;
+                return;
+
+             default:
+                 nn_assert (0);
+             }
+        }
+        nn_assert (0);
+/******************************************************************************/
+/*  SENDING_PROTOHDR state.                                                   */
+/******************************************************************************/
+    case NN_STREAM_STATE_SENDING_PROTOHDR:
+        if (source == stream->usock) {
+            switch (type) {
+            case NN_USOCK_SENT:
+                nn_assert (0);
+            case NN_USOCK_ERROR:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &stream->hdr_timeout) {
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+/******************************************************************************/
+/*  RECEIVING_PROTOHDR state.                                                 */
+/******************************************************************************/
+    case NN_STREAM_STATE_RECEIVING_PROTOHDR:
+        if (source == stream->usock) {
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+                nn_assert (0);
+            case NN_USOCK_ERROR:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &stream->hdr_timeout) {
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+/******************************************************************************/
+/*  CLOSING__TIMER state.                                                     */
+/******************************************************************************/
+    case NN_STREAM_STATE_CLOSING_TIMER:
+        nn_assert (0);
+/******************************************************************************/
+/*  CLOSING_TIMER_ERROR state.                                               */
+/******************************************************************************/
+    case NN_STREAM_STATE_CLOSING_TIMER_ERROR:
+        nn_assert (0);
+/******************************************************************************/
+/*  ACTIVE state (actually, it's a combination of two sub-states)             */
+/******************************************************************************/
+    case NN_STREAM_STATE_RECEIVING_MSGHDR:
+    case NN_STREAM_STATE_RECEIVING_MSGBODY:
+        nn_assert (0);
+/******************************************************************************/
+/*  CLOSED state.                                                             */
+/******************************************************************************/
+    case NN_STREAM_STATE_CLOSED:
+        nn_assert (0);
+    default:
+        nn_assert (0);
+    }
 }
 

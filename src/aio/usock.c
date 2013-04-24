@@ -34,22 +34,45 @@
 #define NN_USOCK_STATE_CONNECTING 2
 #define NN_USOCK_STATE_CONNECTED 3
 #define NN_USOCK_STATE_ACCEPTING 4
+#define NN_USOCK_STATE_CLOSING 5
+#define NN_USOCK_STATE_CLOSED 6
 
 /*  Private functions. */
-static void nn_usock_term (struct nn_usock *self);
+static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
+    struct nn_fsm *owner);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
 static void nn_usock_callback (struct nn_fsm *self, void *source, int type);
 
-static int nn_usock_init_from_fd (struct nn_usock *self,
-    int fd, struct nn_fsm *owner)
+int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
+    struct nn_fsm *owner)
+{
+    int s;
+
+    /*  If the operating system allows to directly open the socket with CLOEXEC
+        flag, do so. That way there are no race conditions. */
+#ifdef SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+
+    /* Open the underlying socket. */
+    s = socket (domain, type, protocol);
+    if (s < 0)
+       return -errno;
+
+    return nn_usock_init_from_fd (self, s, owner);
+}
+
+static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
+    struct nn_fsm *owner)
 {
     int rc;
     int opt;
 
     /*  Initalise the state machine. */
     nn_fsm_init (&self->fsm, nn_usock_callback, owner);
+    self->state = NN_USOCK_STATE_STARTING;
 
     /*  Choose a worker thread to handle this socket. */
     self->worker = nn_fsm_choose_worker (&self->fsm);
@@ -96,8 +119,6 @@ static int nn_usock_init_from_fd (struct nn_usock *self,
 #endif
     }
 
-    self->state = NN_USOCK_STATE_STARTING;
-
     self->in.buf = NULL;
     self->in.len = 0;
     self->in.batch = NULL;
@@ -130,32 +151,13 @@ static int nn_usock_init_from_fd (struct nn_usock *self,
     return 0;
 }
 
-int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
-    struct nn_fsm *owner)
-{
-    int s;
-
-    /*  If the operating system allows to directly open the socket with CLOEXEC
-        flag, do so. That way there are no race conditions. */
-#ifdef SOCK_CLOEXEC
-    type |= SOCK_CLOEXEC;
-#endif
-
-    /* Open the underlying socket. */
-    s = socket (domain, type, protocol);
-    if (s < 0)
-       return -errno;
-
-    return nn_usock_init_from_fd (self, s, owner);
-}
-
 void nn_usock_close (struct nn_usock *self)
 {
     /*  Ask socket to close asynchronously. */
     nn_worker_execute (self->worker, &self->task_close);
 }
 
-static void nn_usock_term (struct nn_usock *self)
+void nn_usock_term (struct nn_usock *self)
 {
     int rc;
 
@@ -180,6 +182,12 @@ static void nn_usock_term (struct nn_usock *self)
     errno_assert (rc == 0);
 
     nn_fsm_term (&self->fsm);
+}
+
+struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
+    struct nn_fsm *newowner)
+{
+    return nn_fsm_swap_owner (&self->fsm, newowner);
 }
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,

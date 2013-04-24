@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,13 +22,29 @@
 
 #include "bstream.h"
 #include "astream.h"
-#include "err.h"
-#include "cont.h"
-#include "addr.h"
-#include "alloc.h"
-#include "fast.h"
+
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
+#include "../../utils/addr.h"
+#include "../../utils/alloc.h"
+#include "../../utils/fast.h"
 
 #include <string.h>
+
+
+int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
+    int (*initfn) (const char *addr, struct nn_usock *usock, int backlog),
+    int backlog)
+{
+    nn_assert (0);
+}
+
+void nn_bstream_term (struct nn_bstream *self)
+{
+    nn_assert (0);
+}
+
+#if 0
 
 /*  Private functions. */
 static void nn_bstream_term (struct nn_bstream *self);
@@ -196,3 +212,4 @@ static void nn_bstream_term (struct nn_bstream *self)
     nn_epbase_term (&self->epbase);
 }
 
+#endif

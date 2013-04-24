@@ -55,6 +55,7 @@ struct nn_usock {
 
     /*  State machine base class. */
     struct nn_fsm fsm;
+    int state;
 
     /*  The worker thread the usock is associated with. */
     struct nn_worker *worker;
@@ -62,10 +63,6 @@ struct nn_usock {
     /*  The underlying OS socket and handle that represents it in the poller. */
     int s;
     struct nn_worker_fd wfd;
-
-    /*  The state the usock's state machine is in. This value is accessed
-        solely from the worker thread. */
-    int state;
 
     /*  Members related to receiving data. */
     struct {
@@ -121,6 +118,10 @@ struct nn_usock {
 int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
     struct nn_fsm *owner);
 void nn_usock_close (struct nn_usock *self);
+void nn_usock_term (struct nn_usock *self);
+
+struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
+    struct nn_fsm *newowner);
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
     const void *optval, size_t optlen);

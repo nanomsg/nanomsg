@@ -53,11 +53,13 @@ void nn_worker_timer_term (struct nn_worker_timer *self)
 
 void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd)
 {
+printf ("add %d\n", s);
     nn_poller_add (&((struct nn_worker*) self)->poller, s, &fd->hndl);
 }
 
 void nn_worker_rm_fd (struct nn_worker *self, struct nn_worker_fd *fd)
 {
+printf ("rm %d\n", fd->hndl.fd);
     nn_poller_rm (&((struct nn_worker*) self)->poller, &fd->hndl);
 }
 

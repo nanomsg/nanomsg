@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,25 +23,43 @@
 #ifndef NN_CSTREAM_INCLUDED
 #define NN_CSTREAM_INCLUDED
 
-#include "../transport.h"
-
-#include "aio.h"
 #include "stream.h"
 
+#include "../../transport.h"
+
+#include "../../aio/fsm.h"
+#include "../../aio/usock.h"
+#include "../../aio/timer.h"
+
 /*  Returned by the resolve function to indicate that the 'local' address
-    should be used. */
+    should be used. If the flag is not set, 'local' address should be
+    ignored. */
 #define NN_CSTREAM_DOBIND 1
+
+struct nn_cstream;
+
+/*  Virtual functions to be implemented by the specific stream type. */
+struct nn_cstream_vfptr {
+    int (*open) (struct nn_usock *usock, struct nn_fsm *owner);
+    int (*resolve) (const char *addr,
+        struct sockaddr_storage *local, socklen_t *locallen,
+        struct sockaddr_storage *remote, socklen_t *remotelen);
+};
 
 struct nn_cstream {
 
-    /*  Event sink. */
-    const struct nn_cp_sink *sink;
+    /*  The state machine. */
+    struct nn_fsm fsm;
+    int state;
+
+    /*  Virual functions to access specific transport type. */
+    const struct nn_cstream_vfptr *vfptr;
 
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
     /*  The underlying socket. */
-    struct nn_aio_usock usock;
+    struct nn_usock usock;
 
     /*  There's at most one session per connecting endpoint, thus we can
         embed the session object directly into the connecter class. */
@@ -52,21 +70,12 @@ struct nn_cstream {
     int retry_ivl;
 
     /*  Timer to wait before retrying to connect. */
-    struct nn_aio_timer retry_timer;
-
-    /*  Virtual functions supplied by the specific transport type. */
-    int (*initsockfn) (struct nn_aio_usock *sock, int sndbuf, int rcvbuf,
-        struct nn_cp *cp);
-    int (*resolvefn) (const char *addr, struct sockaddr_storage *local,
-        socklen_t *locallen, struct sockaddr_storage *remote,
-        socklen_t *remotelen);
+    struct nn_timer retry_timer;
 };
 
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct nn_aio_usock *sock, int sndbuf, int rcvbuf,
-    struct nn_cp *cp), int (*resolvefn) (const char *addr,
-    struct sockaddr_storage *local, socklen_t *locallen,
-    struct sockaddr_storage *remote, socklen_t *remotelen));
+    const struct nn_cstream_vfptr *vfptr);
+void nn_cstream_term (struct nn_cstream *self);
 
 #endif
 

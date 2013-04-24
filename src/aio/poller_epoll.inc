@@ -173,17 +173,13 @@ int nn_poller_wait (struct nn_poller *self, int timeout)
     self->index = 0;
 
     /*  Wait for new events. */
-#if defined NN_IGNORE_EINTR
-again:
-#endif
-    nevents = epoll_wait (self->ep, self->events,
-        NN_POLLER_MAX_EVENTS, timeout);
-    if (nn_slow (nevents == -1 && errno == EINTR))
-#if defined NN_IGNORE_EINTR
-        goto again;
-#else
-        return -EINTR;
-#endif
+    while (1) {
+        nevents = epoll_wait (self->ep, self->events,
+            NN_POLLER_MAX_EVENTS, timeout);
+        if (nn_slow (nevents == -1 && errno == EINTR))
+            continue;
+        break;
+    }
     errno_assert (self->nevents != -1);
     self->nevents = nevents;
     return 0;

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,37 +20,46 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_BSTREAM_INCLUDED
-#define NN_BSTREAM_INCLUDED
+#ifndef NN_ASTREAM_INCLUDED
+#define NN_ASTREAM_INCLUDED
 
-#include "../transport.h"
+#include "bstream.h"
+#include "stream.h"
 
-#include "aio.h"
+#include "../../aio/fsm.h"
+#include "../../aio/usock.h"
 
-struct nn_astream;
+#include "../../utils/list.h"
 
-/*  Bound stream socket. */
+/*  Accepted stream socket. */
 
-struct nn_bstream {
+#define NN_ASTREAM_STATE_ACTIVE 1
+#define NN_ASTREAM_STATE_CLOSING 2
+#define NN_ASTREAM_STATE_CLOSED 3
 
-    /*  Event sink. */
-    const struct nn_cp_sink *sink;
+struct nn_astream {
 
-    /*  This object is an endpoint. */
-    struct nn_epbase epbase;
+    /*  State machine. */
+    struct nn_fsm fsm;
+    int state;
 
-    /*  The listening socket. */
-    struct nn_aio_usock usock;
+    /*  The undelying TCP socket. */
+    struct nn_usock usock;
 
-    /*  List of all sockets accepted via this endpoint. */
-    struct nn_list astreams;
+    /*  TCP session state machine. */
+    struct nn_stream stream;
+
+    /*  Bound socket that created this connection. */
+    struct nn_bstream *bstream;
+
+    /*  The object is part of nn_tcpb's list of accepted sockets. */
+    struct nn_list_item item;
 };
 
-int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct nn_aio_usock *usock,
-    struct nn_cp *cp, int backlog), int backlog);
-
-void nn_bstream_astream_closed (struct nn_bstream *self,
-    struct nn_astream *astream);
+void nn_astream_init (struct nn_astream *self, struct nn_epbase *epbase,
+    int s, struct nn_usock *usock, struct nn_bstream *bstream);
+void nn_astream_close (struct nn_astream *self);
+void nn_astream_term (struct nn_astream *self);
 
 #endif
+

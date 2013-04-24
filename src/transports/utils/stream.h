@@ -23,28 +23,36 @@
 #ifndef NN_STREAM_INCLUDED
 #define NN_STREAM_INCLUDED
 
-#include "../transport.h"
+#include "../../transport.h"
 
-#include "aio.h"
-#include "msg.h"
+#include "../../aio/fsm.h"
+#include "../../aio/timer.h"
+#include "../../aio/usock.h"
+
+#include "../../utils/msg.h"
 
 #include <stdint.h>
 
 /*  Session object for stream-oriented transports (e.g. TCP or IPC). */
 
-#define NN_STREAM_INSTATE_HDR 1
-#define NN_STREAM_INSTATE_BODY 2
+/*  Events generate by the stream object. */
+#define NN_STREAM_CANSEND 1
+#define NN_STREAM_CANRECV 2
+#define NN_STREAM_ERROR 3
+#define NN_STREAM_CLOSED 4
 
 struct nn_stream {
 
-    /*  Event sink. */
-    const struct nn_cp_sink *sink;
+    /*  State machine. */
+    struct nn_fsm fsm;
+    int state;
 
     /*  Pipe to exchange messages with the user of the library. */
     struct nn_pipebase pipebase;
 
-    /*  The underlying socket. */
-    struct nn_aio_usock *usock;
+    /*  The underlying socket and its original owner. */
+    struct nn_usock *usock;
+    struct nn_fsm *usock_owner;
 
     /*  Protocol header. */
     uint8_t protohdr [8];
@@ -53,10 +61,7 @@ struct nn_stream {
         closed. This solves a rare race condition in TCP. It also minimises
         the usage of resources in case of erroneous connections. Also, it
         prevents a simple DoS attack. */
-    struct nn_aio_timer hdr_timeout;
-
-    /*  State of the inbound state machine. */
-    int instate;
+    struct nn_timer hdr_timeout;
 
     /*  Buffer used to store the header of incoming message. */
     uint8_t inhdr [8];
@@ -72,14 +77,19 @@ struct nn_stream {
 
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;
-
-    /*  Stores the sink of the parent state machine while this state machine
-        does its job. */
-    const struct nn_cp_sink **original_sink;
 };
 
+/*  The socket passed to this object has to be already connected. The object
+    will grab ownership of the socket and return it to the caller only once
+    the connection is closed. */
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_aio_usock *usock);
-void nn_stream_term ();
+    struct nn_usock *usock, struct nn_fsm *owner);
+
+/*  Ask object to close. When done, CLOSE event will be triggered. */
+void nn_stream_close (struct nn_stream *self);
+
+/*  Deallocate the object. Call this function only once the CLOSE or ERROR
+    event was received. */
+void nn_stream_term (struct nn_stream *self);
 
 #endif

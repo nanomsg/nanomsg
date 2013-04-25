@@ -94,7 +94,7 @@ struct nn_usock {
     } out;
 
     /*  Asynchronous tasks for the worker. */
-    struct nn_worker_task task_connect;
+    struct nn_worker_task task_connecting;
     struct nn_worker_task task_connected;
     struct nn_worker_task task_accept;
     struct nn_worker_task task_send;

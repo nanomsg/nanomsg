@@ -232,7 +232,8 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
             switch (type) {
             case NN_USOCK_CLOSED:
                 cstream->state = NN_CSTREAM_STATE_CLOSED;
-                /*  TODO: Notify the owner. */
+        
+                nn_assert (0);
                 return;
             default:
                 nn_assert (0);

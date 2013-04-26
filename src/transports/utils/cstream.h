@@ -75,7 +75,6 @@ struct nn_cstream {
 
 int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     const struct nn_cstream_vfptr *vfptr);
-void nn_cstream_term (struct nn_cstream *self);
 
 #endif
 

@@ -320,7 +320,12 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         if (source == stream->usock) {
             switch (type) {
             case NN_USOCK_SENT:
-                nn_assert (0);
+                
+                /*  Start receiving the protocol header from the peer. */
+                nn_usock_recv (stream->usock, stream->protohdr, 8);
+                stream->state = NN_STREAM_STATE_RECEIVING_PROTOHDR;
+                return;
+
             case NN_USOCK_ERROR:
                 nn_assert (0);
             default:

@@ -21,7 +21,7 @@
 */
 
 #include "bstream.h"
-#include "astream.h"
+#include "stream.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -31,17 +31,131 @@
 
 #include <string.h>
 
+/*  This an internal structure used by bstream to represent individual
+    accepted connections. Note that it is a POD, not a full-blown class. */
+struct nn_astream {
+    struct nn_usock usock;
+    struct nn_stream stream;
+    struct nn_list_item item;
+};
+
+#define NN_BSTREAM_STATE_INIT 1
+#define NN_BSTREAM_STATE_ACTIVE 2
+#define NN_BSTREAM_STATE_CLOSING 3
+
+#define NN_BSTREAM_EVENT_START 1
+
+/*  Private functions. */
+static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type);
+
+/*  Implementation of nn_epbase interface. */
+static int nn_bstream_close (struct nn_epbase *self);
+static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr =
+    {nn_bstream_close};
 
 int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct nn_usock *usock, int backlog),
-    int backlog)
+    const struct nn_bstream_vfptr *vfptr)
+{
+    int rc;
+
+    self->vfptr = vfptr;
+
+    nn_epbase_init (&self->epbase, &nn_bstream_epbase_vfptr, addr, hint);
+
+    nn_fsm_init_root (&self->fsm, nn_bstream_callback,
+        nn_epbase_getctx (&self->epbase));
+    self->state = NN_BSTREAM_STATE_INIT;
+
+    /*  Open the listening socket. */
+    rc = self->vfptr->open (addr, &self->usock, &self->fsm);
+    if (nn_slow (rc < 0)) {
+        nn_fsm_term (&self->fsm);
+        nn_epbase_term (&self->epbase);
+        return rc;
+    }
+
+    self->astream = NULL;
+    nn_list_init (&self->astreams);
+
+    /*  Notify the state machine. */
+    nn_bstream_callback (&self->fsm, NULL, NN_BSTREAM_EVENT_START);
+
+    return 0;
+}
+
+static int nn_bstream_close (struct nn_epbase *self)
 {
     nn_assert (0);
 }
 
-void nn_bstream_term (struct nn_bstream *self)
+static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
 {
-    nn_assert (0);
+    struct nn_bstream *bstream;
+
+    bstream = nn_cont (fsm, struct nn_bstream, fsm);
+
+    switch (bstream->state) {
+
+/******************************************************************************/
+/*  INIT state                                                                */
+/******************************************************************************/
+    case NN_BSTREAM_STATE_INIT:
+        if (source == NULL) {
+            switch (type) {
+            case NN_BSTREAM_EVENT_START:
+
+                /*  Start waiting for incoming connection. */
+                bstream->astream = nn_alloc (sizeof (struct nn_astream),
+                    "astream");
+                alloc_assert (bstream->astream);
+                nn_list_item_init (&bstream->astream->item);
+                nn_usock_accept (&bstream->usock, &bstream->astream->usock,
+                    &bstream->fsm);
+                bstream->state = NN_BSTREAM_STATE_ACTIVE;
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state                                                              */
+/******************************************************************************/
+    case NN_BSTREAM_STATE_ACTIVE:
+        if (source == &bstream->usock) {
+            switch (type) {
+            case NN_USOCK_ACCEPTED:
+
+                /*  New connecting arrived. Start its state machine. */
+                nn_stream_init (&bstream->astream->stream, &bstream->epbase,
+                    &bstream->astream->usock, &bstream->fsm);
+                nn_list_insert (&bstream->astreams, &bstream->astream->item,
+                    nn_list_end (&bstream->astreams));
+                bstream->astream = NULL;
+                bstream->state = NN_BSTREAM_STATE_INIT;
+                nn_bstream_callback (&bstream->fsm, NULL,
+                    NN_BSTREAM_EVENT_START);
+                return; 
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  CLOSING state                                                             */
+/******************************************************************************/
+    case NN_BSTREAM_STATE_CLOSING:
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state                                                             */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
 }
 
 #if 0

@@ -43,6 +43,7 @@
 #define NN_CSTREAM_EVENT_CLOSE 1
 
 /*  Private functions. */
+static void nn_cstream_term (struct nn_cstream *self);
 static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type);
 static int nn_cstream_compute_retry_ivl (struct nn_cstream *self);
 
@@ -55,9 +56,6 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     const struct nn_cstream_vfptr *vfptr)
 {
     int rc;
-    int sndbuf;
-    int rcvbuf;
-    size_t sz;
 
     self->vfptr = vfptr;
 
@@ -73,22 +71,6 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
         not a valid address string. Don't do any blocking DNS operations
         though! */
 
-    /*  Open a socket. */
-    rc = self->vfptr->open (&self->usock, &self->fsm);
-    errnum_assert (rc == 0, -rc);
-
-    /*  Apply current values of NN_SNDBUF and NN_RCVBUF options. */    
-    sz = sizeof (sndbuf);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_SNDBUF, &sndbuf, &sz);
-    nn_assert (sz == sizeof (sndbuf));
-    rc = nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_SNDBUF, &sndbuf, sz);
-    errnum_assert (rc == 0, -rc);
-    sz = sizeof (rcvbuf);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RCVBUF, &rcvbuf, &sz);
-    nn_assert (sz == sizeof (rcvbuf));
-    rc = nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sz);
-    errnum_assert (rc == 0, -rc);
-
     /*  Initialise the retry timer. */
     self->retry_ivl = -1;
     nn_timer_init (&self->retry_timer, &self->fsm);
@@ -99,9 +81,11 @@ int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
     return 0;
 }
 
-void nn_cstream_term (struct nn_cstream *self)
+static void nn_cstream_term (struct nn_cstream *self)
 {
-    nn_assert (0);
+    /*  At this point we assume that stream, usock and timer are already
+        closed. */
+    nn_epbase_term (&self->epbase);
 }
 
 static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
@@ -112,6 +96,9 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
     socklen_t locallen;
     struct sockaddr_storage remote;
     socklen_t remotelen;
+    int sndbuf;
+    int rcvbuf;
+    size_t sz;
 
     cstream = nn_cont (fsm, struct nn_cstream, fsm);
 
@@ -123,6 +110,26 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_CSTREAM_EVENT_START:
+
+                /*  Open the socket. */
+                rc = cstream->vfptr->open (&cstream->usock, &cstream->fsm);
+                errnum_assert (rc == 0, -rc);
+
+                /*  Apply current values of NN_SNDBUF and NN_RCVBUF options. */    
+                sz = sizeof (sndbuf);
+                nn_epbase_getopt (&cstream->epbase,
+                    NN_SOL_SOCKET, NN_SNDBUF, &sndbuf, &sz);
+                nn_assert (sz == sizeof (sndbuf));
+                rc = nn_usock_setsockopt (&cstream->usock,
+                    SOL_SOCKET, SO_SNDBUF, &sndbuf, sz);
+                errnum_assert (rc == 0, -rc);
+                sz = sizeof (rcvbuf);
+                nn_epbase_getopt (&cstream->epbase,
+                    NN_SOL_SOCKET, NN_RCVBUF, &rcvbuf, &sz);
+                nn_assert (sz == sizeof (rcvbuf));
+                rc = nn_usock_setsockopt (&cstream->usock,
+                    SOL_SOCKET, SO_RCVBUF, &rcvbuf, sz);
+                errnum_assert (rc == 0, -rc);
 
                 /* Try to resolve the address. */
                 rc = cstream->vfptr->resolve (
@@ -158,7 +165,13 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->retry_timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                nn_assert (0);
+                
+                /*  Timer expired. Let's start connecting once more. */
+                cstream->state = NN_CSTREAM_STATE_INIT;
+                nn_cstream_callback (&cstream->fsm, NULL,
+                    NN_CSTREAM_EVENT_START);
+                return;
+
             default:
                 nn_assert (0);
             }
@@ -190,7 +203,13 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->usock) {
             switch (type) {
             case NN_USOCK_CONNECTED:
-                nn_assert (0);
+
+                /*  Pass the control to the embedded 'stream' state machine. */
+                nn_stream_init (&cstream->stream, &cstream->epbase,
+                    &cstream->usock, &cstream->fsm);
+                cstream->state = NN_CSTREAM_STATE_CONNECTED;
+                return;
+
             case NN_USOCK_ERROR:
 
                 /* Connecting failed. Wait a while before re-connecting. */
@@ -232,8 +251,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
             switch (type) {
             case NN_USOCK_CLOSED:
                 cstream->state = NN_CSTREAM_STATE_CLOSED;
-        
-                nn_assert (0);
+                nn_cstream_term (cstream);
                 return;
             default:
                 nn_assert (0);

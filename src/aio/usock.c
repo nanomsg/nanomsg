@@ -521,7 +521,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 }
 
                 /*  Detect unexpected failure. */
-                errno_assert (errno == EAGAIN && errno == EWOULDBLOCK &&
+                errno_assert (errno == EAGAIN || errno == EWOULDBLOCK ||
                       errno == ECONNABORTED);
 
                 /*  Ask the worker thread to wait for the new connection. */
@@ -560,6 +560,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 }
 
                 nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
+                usock->newsock->state = NN_USOCK_STATE_CONNECTED;
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
                 nn_fsm_raise (&usock->fsm, &usock->event_accepted);
@@ -572,7 +573,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         }
         if (source == NULL) {
             nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            nn_assert (0);
+            usock->state = NN_USOCK_STATE_CLOSING;
+            nn_worker_execute (usock->worker, &usock->task_close);
+            return;
         }
         nn_assert (0);
 

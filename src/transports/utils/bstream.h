@@ -30,13 +30,16 @@
 
 #include "../../utils/list.h"
 
-struct nn_astream;
-
 /*  Bound stream socket. */
 
-#define NN_BSTREAM_STATE_ACTIVE 1
-#define NN_BSTREAM_STATE_CLOSING 2
-#define NN_BSTREAM_STATE_CLOSED 3
+struct nn_bstream;
+struct nn_astream;
+
+/*  Virtual functions to be implemented by the specific stream type. */
+struct nn_bstream_vfptr {
+    int (*open) (const char *addr, struct nn_usock *usock,
+        struct nn_fsm *owner);
+};
 
 struct nn_bstream {
 
@@ -44,19 +47,23 @@ struct nn_bstream {
     struct nn_fsm fsm;
     int state;
 
+    /*  Virual functions to access specific transport type. */
+    const struct nn_bstream_vfptr *vfptr;
+
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
     /*  The listening socket. */
     struct nn_usock usock;
 
+    /*  New connection being accepted at the moment. */
+    struct nn_astream *astream;
+
     /*  List of all sockets accepted via this endpoint. */
     struct nn_list astreams;
 };
 
 int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    int (*initfn) (const char *addr, struct nn_usock *usock, int backlog),
-    int backlog);
-void nn_bstream_term (struct nn_bstream *self);
+    const struct nn_bstream_vfptr *vfptr);
 
 #endif

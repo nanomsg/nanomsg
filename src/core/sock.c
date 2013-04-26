@@ -197,6 +197,10 @@ int nn_sock_term (struct nn_sock *self)
         nn_assert (nn_list_empty (&self->eps));
     }
 
+    /*  The socket is going to be deallocated. It is accessible only from
+        this thread. We can unlock the context at this point. */
+    nn_ctx_leave (&self->ctx);
+
     nn_sem_term (&self->termsem);
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
@@ -430,7 +434,7 @@ int nn_sock_add_ep (struct nn_sock *self, const char *addr,
     struct nn_epbase *ep;
     int eid;
     
-    nn_ctx_leave (&self->ctx);
+    nn_ctx_enter (&self->ctx);
 
     /*  Create the transport-specific endpoint. */
     rc = factory (addr, (void*) self, &ep);

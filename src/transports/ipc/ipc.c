@@ -41,7 +41,11 @@
 #define NN_IPC_BACKLOG 10
 
 /*  Implementation of virtual functions from bstream. */
-static int nn_ipc_binit (const char *addr, struct nn_usock *usock, int backlog);
+static int nn_ipc_bstream_open (const char *addr, struct nn_usock *usock,
+    struct nn_fsm *owner);
+const struct nn_bstream_vfptr nn_ipc_bstream_vfptr = {
+    nn_ipc_bstream_open
+};
 
 /*  Implementation of virtual functions from cstream. */
 static int nn_ipc_cstream_open (struct nn_usock *usock, struct nn_fsm *owner);
@@ -90,7 +94,7 @@ static int nn_ipc_bind (const char *addr, void *hint,
 
     bstream = nn_alloc (sizeof (struct nn_bstream), "bstream (ipc)");
     alloc_assert (bstream);
-    rc = nn_bstream_init (bstream, addr, hint, nn_ipc_binit, NN_IPC_BACKLOG);
+    rc = nn_bstream_init (bstream, addr, hint, &nn_ipc_bstream_vfptr);
     if (nn_slow (rc != 0)) {
         nn_free (bstream);
         return rc;
@@ -120,7 +124,8 @@ static int nn_ipc_connect (const char *addr, void *hint,
     return 0;
 }
 
-static int nn_ipc_binit (const char *addr, struct nn_usock *usock, int backlog)
+static int nn_ipc_bstream_open (const char *addr, struct nn_usock *usock,
+    struct nn_fsm *owner)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -141,18 +146,14 @@ static int nn_ipc_binit (const char *addr, struct nn_usock *usock, int backlog)
     rc = unlink (addr);
     errno_assert (rc == 0 || errno == ENOENT);
 
-#if 0
-    /*  Open the listening socket. */
-    rc = nn_aio_usock_init (usock, NULL, AF_UNIX, SOCK_STREAM, 0, -1, -1, cp);
+    /*  Open a listening socket. */
+    rc = nn_usock_init (usock, AF_UNIX, SOCK_STREAM, 0, owner);
+    if (nn_slow (rc < 0))
+        return rc;
+    rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);
-    rc = nn_aio_usock_bind (usock, (struct sockaddr*) &ss, sslen);
+    rc = nn_usock_listen (usock, NN_IPC_BACKLOG);
     errnum_assert (rc == 0, -rc);
-    rc = nn_aio_usock_listen (usock, backlog);
-    errnum_assert (rc == 0, -rc);
-#endif
-    nn_assert (0);
-
-    return 0;
 }
 
 static int nn_ipc_cstream_open (struct nn_usock *usock, struct nn_fsm *owner)

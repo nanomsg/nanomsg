@@ -188,8 +188,6 @@ set (NN_SOURCES
 #    transports/inproc/msgqueue.h
 #    transports/inproc/msgqueue.c
 
-    transports/utils/astream.h
-    transports/utils/astream.c
     transports/utils/bstream.h
     transports/utils/bstream.c
     transports/utils/cstream.h

@@ -36,11 +36,11 @@
 #define NN_CSTREAM_STATE_CONNECTING 4
 #define NN_CSTREAM_STATE_CONNECTED 5
 #define NN_CSTREAM_STATE_CLOSING_TIMER 6
-#define NN_CSTREAM_STATE_CLOSING_USOCK 7
-#define NN_CSTREAM_STATE_CLOSED 8
+#define NN_CSTREAM_STATE_CLOSING_STREAM 7
+#define NN_CSTREAM_STATE_CLOSING_USOCK 8
 
 #define NN_CSTREAM_EVENT_START 1
-#define NN_CSTREAM_EVENT_CLOSE 1
+#define NN_CSTREAM_EVENT_CLOSE 2
 
 /*  Private functions. */
 static void nn_cstream_term (struct nn_cstream *self);
@@ -235,6 +235,16 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
                 nn_assert (0);
             }
         }
+        if (source == NULL) {
+            switch (type) {
+            case NN_CSTREAM_EVENT_CLOSE:
+                nn_stream_close (&cstream->stream);
+                cstream->state = NN_CSTREAM_STATE_CLOSING_STREAM;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 /******************************************************************************/
 /*  CLOSING_TIMER state.                                                      */
@@ -252,25 +262,46 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         }
         nn_assert (0);
 /******************************************************************************/
-/*  CLOSING_USOCK state.                                                      */
+/*  CLOSING_STREAM state.                                                     */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSING_USOCK:
-        if (source == &cstream->usock) {
+    case NN_CSTREAM_STATE_CLOSING_STREAM:
+        if (source == &cstream->stream) {
             switch (type) {
-            case NN_USOCK_CLOSED:
-                cstream->state = NN_CSTREAM_STATE_CLOSED;
-                nn_cstream_term (cstream);
+            case NN_STREAM_CLOSED:
+
+                /*  Stream state machine is closed. We can deallocate it now. */
+                nn_stream_term (&cstream->stream);
+
+                /*  Start closing the underlying socket itself. */
+                nn_usock_close (&cstream->usock);
+                cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
+
                 return;
+
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
 /******************************************************************************/
-/*  CLOSED state.                                                             */
+/*  CLOSING_USOCK state.                                                      */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSED:
+    case NN_CSTREAM_STATE_CLOSING_USOCK:
+        if (source == &cstream->usock) {
+            switch (type) {
+            case NN_USOCK_CLOSED:
+                nn_cstream_term (cstream);
+                /*  TODO: cstream should be deallocated here. */
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
     default:
         nn_assert (0);
     }
@@ -327,248 +358,3 @@ static int nn_cstream_compute_retry_ivl (struct nn_cstream *self)
     return result;
 }
 
-#if 0
-
-/*  Private functions. */
-static int nn_cstream_compute_retry_ivl (struct nn_cstream *self);
-
-int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
-    int (*initsockfn) (struct nn_usock *sock, int sndbuf, int rcvbuf),
-    int (*resolvefn) (const char *addr,
-    struct sockaddr_storage *local, socklen_t *locallen,
-    struct sockaddr_storage *remote, socklen_t *remotelen))
-{
-    nn_assert (0);
-}
-
-#if 0
-/******************************************************************************/
-/*  State: WAITING                                                            */
-/******************************************************************************/
-
-static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
-    struct nn_aio_timer *timer);
-static const struct nn_cp_sink nn_cstream_state_waiting = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_cstream_waiting_timeout,
-    NULL
-};
-
-static void nn_cstream_waiting_timeout (const struct nn_cp_sink **self,
-    struct nn_aio_timer *timer)
-{
-    int rc;
-    struct nn_cstream *cstream;
-    struct sockaddr_storage local;
-    socklen_t locallen;
-    struct sockaddr_storage remote;
-    socklen_t remotelen;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    /*  Retry timer expired. Now we'll try to resolve the address. */
-    rc = cstream->resolvefn (nn_epbase_getaddr (&cstream->epbase),
-        &local, &locallen, &remote, &remotelen);
-
-    /*  If the address resolution have failed, wait and re-try. */
-    if (rc < 0) {
-        cstream->sink = &nn_cstream_state_waiting;
-        nn_aio_timer_start (&cstream->retry_timer,
-            nn_cstream_compute_retry_ivl (cstream));
-        return;
-    }
-
-    /*  Open the socket and start connecting. */
-    cstream->sink = &nn_cstream_state_connecting;
-    if (rc & NN_CSTREAM_DOBIND)
-        nn_aio_usock_bind (&cstream->usock,
-            (struct sockaddr*) &local, locallen);
-    nn_aio_usock_connect (&cstream->usock,
-        (struct sockaddr*) &remote, remotelen);
-}
-
-/******************************************************************************/
-/*  State: CONNECTING                                                         */
-/******************************************************************************/
-
-static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum);
-static const struct nn_cp_sink nn_cstream_state_connecting = {
-    NULL,
-    NULL,
-    nn_cstream_connecting_connected,
-    NULL,
-    nn_cstream_connecting_err,
-    NULL,
-    NULL,
-    NULL
-};
-
-static void nn_cstream_connecting_connected (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_cstream *cstream;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    /*  TODO: Set current reconnect interval to the value of
-        NN_RECONNECT_IVL. */
-
-    /*  Connect succeeded. Switch to the session state machine. */
-    cstream->sink = &nn_cstream_state_connected;
-    nn_stream_init (&cstream->stream, &cstream->epbase, &cstream->usock);
-}
-
-static void nn_cstream_connecting_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum)
-{
-    struct nn_cstream *cstream;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    /*  Connect failed. Close the underlying socket. */
-    cstream->sink = &nn_cstream_state_closing;
-    nn_aio_usock_close (&cstream->usock);
-}
-
-/******************************************************************************/
-/*  State: CONNECTED                                                          */
-/******************************************************************************/
-
-/*  In this state control is yielded to the 'stream' state machine. */
-
-static void nn_cstream_connected_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum);
-static const struct nn_cp_sink nn_cstream_state_connected = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_cstream_connected_err,
-    NULL,
-    NULL,
-    NULL
-};
-
-static void nn_cstream_connected_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum)
-{
-    struct nn_cstream *cstream;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    /*  The connection is broken. Reconnect. */
-    cstream->sink = &nn_cstream_state_waiting;
-    nn_cstream_waiting_timeout (&cstream->sink, &cstream->retry_timer);
-}
-
-/******************************************************************************/
-/*  State: CLOSING                                                            */
-/******************************************************************************/
-
-static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static const struct nn_cp_sink nn_cstream_state_closing = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_cstream_closing_closed,
-    NULL,
-    NULL
-};
-
-static void nn_cstream_closing_closed (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    int rc;
-    struct nn_cstream *cstream;
-    int sndbuf;
-    int rcvbuf;
-    size_t sz;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    /*  Get the current values of NN_SNDBUF and NN_RCVBUF options. */    
-    sz = sizeof (sndbuf);
-    nn_epbase_getopt (&cstream->epbase, NN_SOL_SOCKET, NN_SNDBUF, &sndbuf, &sz);
-    nn_assert (sz == sizeof (sndbuf));
-    sz = sizeof (rcvbuf);
-    nn_epbase_getopt (&cstream->epbase, NN_SOL_SOCKET, NN_RCVBUF, &rcvbuf, &sz);
-    nn_assert (sz == sizeof (rcvbuf));
-
-    /*  Create new socket. */
-    rc = cstream->initsockfn (&cstream->usock, sndbuf, rcvbuf,
-        nn_epbase_getcp (&cstream->epbase));
-    errnum_assert (rc == 0, -rc);
-    nn_aio_usock_setsink (&cstream->usock, &cstream->sink);
-
-    /*  Wait for the specified period. */
-    cstream->sink = &nn_cstream_state_waiting;
-    nn_aio_timer_start (&cstream->retry_timer,
-        nn_cstream_compute_retry_ivl (cstream));
-}
-
-/******************************************************************************/
-/*  State: TERMINATING                                                        */
-/******************************************************************************/
-
-static void nn_cstream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock);
-static const struct nn_cp_sink nn_cstream_state_terminating = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_cstream_terminating_closed,
-    NULL,
-    NULL
-};
-
-static int nn_cstream_close (struct nn_epbase *self)
-{
-    struct nn_cstream *cstream;
-
-    cstream = nn_cont (self, struct nn_cstream, epbase);
-
-    /*  If termination is already underway, do nothing and let it continue. */
-    if (cstream->sink == &nn_cstream_state_terminating)
-        return -EINPROGRESS;
-
-    /*  If the connection exists, stop the session state machine. */
-    if (cstream->sink == &nn_cstream_state_connected)
-        nn_stream_term (&cstream->stream);
-
-    /*  Deallocate resources. */
-    nn_aio_timer_term (&cstream->retry_timer);
-
-    /*  Close the socket, if needed. */
-    cstream->sink = &nn_cstream_state_terminating;
-    nn_aio_usock_close (&cstream->usock);
-
-    return -EINPROGRESS;
-}
-
-static void nn_cstream_terminating_closed (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_cstream *cstream;
-
-    cstream = nn_cont (self, struct nn_cstream, sink);
-
-    nn_epbase_term (&cstream->epbase);
-    nn_free (cstream);
-}
-
-#endif
-
-#endif

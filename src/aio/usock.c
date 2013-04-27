@@ -641,7 +641,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         }
         if (source == NULL) {
             nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            nn_assert (0);
+            nn_worker_execute (usock->worker, &usock->task_close);
+            usock->state = NN_USOCK_STATE_CLOSING;
+            return;
         }
         nn_assert (0);
 

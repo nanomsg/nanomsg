@@ -34,10 +34,10 @@
 #define NN_STREAM_STATE_INIT 0
 #define NN_STREAM_STATE_SENDING_PROTOHDR 1
 #define NN_STREAM_STATE_RECEIVING_PROTOHDR 2
-#define NN_STREAM_STATE_CLOSING_TIMER 3
-#define NN_STREAM_STATE_CLOSING_TIMER_FINAL 4
-#define NN_STREAM_STATE_ACTIVE 5
-#define NN_STREAM_STATE_CLOSED 6
+#define NN_STREAM_STATE_DISABLING_TIMER 3
+#define NN_STREAM_STATE_ACTIVE 4
+#define NN_STREAM_STATE_CLOSING_TIMER 6
+#define NN_STREAM_STATE_CLOSED 7
 
 /*  Possible states of the inbound part of the object. */
 #define NN_STREAM_INSTATE_HDR 1
@@ -125,120 +125,6 @@ void nn_stream_term (struct nn_stream *self)
     /*  Return control of the underlying socket to the parent state machine. */
     nn_usock_swap_owner (self->usock, self->usock_owner);
 }
-
-#if 0
-static void nn_stream_hdr_sent (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_stream *stream;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-
-    stream->sink = &nn_stream_state_sent;
-
-    /*  Receive the protocol header from the peer. */
-    nn_aio_usock_recv (usock, stream->protohdr, 8);
-}
-
-static void nn_stream_hdr_received (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_stream *stream;
-    int protocol;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-
-    stream->sink = &nn_stream_state_active;
-    nn_aio_timer_stop (&stream->hdr_timeout);
-
-    /*  TODO: If it does not conform, drop the connection. */
-    protocol = nn_gets (stream->protohdr + 4);
-    if (!nn_pipebase_ispeer (&stream->pipebase, protocol))
-        nn_assert (0);
-
-    /*  Connection is ready for sending. Make outpipe available
-        to the SP socket. */
-    nn_pipebase_activate (&stream->pipebase);
-
-    /*  Start waiting for incoming messages. First, read the 8-byte size. */
-    stream->instate = NN_STREAM_INSTATE_HDR;
-    nn_aio_usock_recv (stream->usock, stream->inhdr, 8);
-}
-
-static void nn_stream_hdr_timeout (const struct nn_cp_sink **self,
-    struct nn_aio_timer *timer)
-{
-    struct nn_stream *stream;
-    const struct nn_cp_sink **original_sink;
-
-    /*  The initial protocol header exchange have timed out. */
-    stream = nn_cont (self, struct nn_stream, sink);
-    original_sink = stream->original_sink;
-
-    /*  Terminate the session object. */
-    nn_stream_term (stream);
-
-    /*  Notify the parent state machine about the failure. */
-    nn_assert ((*original_sink)->err);
-    (*original_sink)->err (original_sink, stream->usock, ETIMEDOUT);
-}
-
-static void nn_stream_received (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_stream *stream;
-    uint64_t size;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-    switch (stream->instate) {
-    case NN_STREAM_INSTATE_HDR:
-        size = nn_getll (stream->inhdr);
-        nn_msg_term (&stream->inmsg);
-        nn_msg_init (&stream->inmsg, (size_t) size);
-        if (!size) {
-            nn_pipebase_received (&stream->pipebase);
-            break;
-        }
-        stream->instate = NN_STREAM_INSTATE_BODY;
-        nn_aio_usock_recv (stream->usock,
-            nn_chunkref_data (&stream->inmsg.body), (size_t) size);
-        break;
-    case NN_STREAM_INSTATE_BODY:
-        nn_pipebase_received (&stream->pipebase);
-        break;
-    default:
-        nn_assert (0);
-    }
-}
-
-static void nn_stream_sent (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock)
-{
-    struct nn_stream *stream;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-    nn_pipebase_sent (&stream->pipebase);
-    nn_msg_term (&stream->outmsg);
-    nn_msg_init (&stream->outmsg, 0);
-}
-
-static void nn_stream_err (const struct nn_cp_sink **self,
-    struct nn_aio_usock *usock, int errnum)
-{
-    struct nn_stream *stream;
-    const struct nn_cp_sink **original_sink;
-
-    stream = nn_cont (self, struct nn_stream, sink);
-    original_sink = stream->original_sink;
-
-    /*  Terminate the session object. */
-    nn_stream_term (stream);
-
-    /*  Notify the parent state machine about the failure. */
-    nn_assert ((*original_sink)->err);
-    (*original_sink)->err (original_sink, usock, errnum);
-}
-#endif
 
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
@@ -353,7 +239,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 
                 /*  Close the header exchange timer. */
                 nn_timer_close (&stream->hdr_timeout);
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_DISABLING_TIMER;
 
                 return;
 
@@ -373,11 +259,11 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         }
         nn_assert (0);
 /******************************************************************************/
-/*  CLOSING_TIMER state.                                                      */
+/*  DISABLING_TIMER state.                                                    */
 /*  After doing the initial protocol header exchange we don't need the timer  */
 /*  any more. Here we are closing it.                                         */
 /******************************************************************************/
-    case NN_STREAM_STATE_CLOSING_TIMER:
+    case NN_STREAM_STATE_DISABLING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
@@ -443,7 +329,15 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 return;
 
             case NN_STREAM_EVENT_CLOSE:
-                nn_assert (0);
+
+                /*  User asks the stream to close. No need to close the
+                    underlying socket as it is owned by the user. We can
+                    close the object straight away. */
+                stream->state = NN_STREAM_STATE_CLOSED;
+                nn_fsm_raise (&stream->fsm, &stream->event_closed);
+
+                return;
+
             default:
                 nn_assert (0);
             }
@@ -502,7 +396,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 /*  Protocol header exchange have failed. We are now closing the timer and    */
 /*  we will terminate the object once it is done.                             */
 /******************************************************************************/
-    case NN_STREAM_STATE_CLOSING_TIMER_FINAL:
+    case NN_STREAM_STATE_CLOSING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
@@ -521,6 +415,10 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
     case NN_STREAM_STATE_CLOSED:
         nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
     default:
         nn_assert (0);
     }

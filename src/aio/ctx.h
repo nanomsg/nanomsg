@@ -32,13 +32,17 @@
 
 /*  AIO context for objects using AIO subsystem. */
 
+typedef void (*nn_ctx_onleave) (struct nn_ctx *self);
+
 struct nn_ctx {
     struct nn_mutex sync;
     struct nn_pool *pool;
     struct nn_queue events;
+    nn_ctx_onleave onleave;
 };
 
-void nn_ctx_init (struct nn_ctx *self, struct nn_pool *pool);
+void nn_ctx_init (struct nn_ctx *self, struct nn_pool *pool,
+    nn_ctx_onleave onleave);
 void nn_ctx_term (struct nn_ctx *self);
 
 void nn_ctx_enter (struct nn_ctx *self);

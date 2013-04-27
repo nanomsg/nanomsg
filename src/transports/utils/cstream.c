@@ -227,6 +227,14 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
 /*  CONNECTED state.                                                          */
 /******************************************************************************/
     case NN_CSTREAM_STATE_CONNECTED:
+        if (source == &cstream->usock) {
+            switch (type) {
+            case NN_STREAM_ERROR:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 /******************************************************************************/
 /*  CLOSING_TIMER state.                                                      */

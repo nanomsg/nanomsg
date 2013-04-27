@@ -174,6 +174,7 @@ int nn_poller_wait (struct nn_poller *self, int timeout)
 
     /*  Wait for new events. */
     while (1) {
+printf ("+++ epoll_wait\n");
         nevents = epoll_wait (self->ep, self->events,
             NN_POLLER_MAX_EVENTS, timeout);
         if (nn_slow (nevents == -1 && errno == EINTR))

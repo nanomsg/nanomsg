@@ -52,6 +52,7 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
 static int nn_sock_getopt_inner (struct nn_sock *self, int level,
     int option, void *optval, size_t *optvallen);
+static void nn_sock_onleave (struct nn_ctx *self);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 {
@@ -63,7 +64,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
         !(socktype->flags & NN_SOCKTYPE_FLAG_NORECV));
 
     /*  Create the AIO context for the SP socket. */
-    nn_ctx_init (&self->ctx, nn_global_getpool ());
+    nn_ctx_init (&self->ctx, nn_global_getpool (), nn_sock_onleave);
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
@@ -666,55 +667,54 @@ void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)
     self->sockbase->vfptr->out (self->sockbase, pipe);
 }
 
-#if 0
-void nn_sockbase_adjust_events (struct nn_sockbase *self)
+static void nn_sock_onleave (struct nn_ctx *self)
 {
+    struct nn_sock *sock;
     int events;
+
+    sock = nn_cont (self, struct nn_sock, ctx);
 
     /*  If nn_close() was already called there's no point in adjusting the
         snd/rcv file descriptors. */
-    if (self->flags & NN_SOCK_FLAG_CLOSING)
+    if (sock->flags & NN_SOCK_FLAG_CLOSING)
         return;
 
     /*  Check whether socket is readable and/or writeable at the moment. */
-    events = self->vfptr->events (self);
+    events = sock->sockbase->vfptr->events (sock->sockbase);
     errnum_assert (events >= 0, -events);
 
     /*  Signal/unsignal IN as needed. */
-    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV)) {
+    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
         if (events & NN_SOCKBASE_EVENT_IN) {
-            nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NORECV));
-            if (!(self->flags & NN_SOCK_FLAG_IN)) {
-                self->flags |= NN_SOCK_FLAG_IN;
-                nn_efd_signal (&self->rcvfd);
+            if (!(sock->flags & NN_SOCK_FLAG_IN)) {
+                sock->flags |= NN_SOCK_FLAG_IN;
+                nn_efd_signal (&sock->rcvfd);
             }
         }
         else {
-            if (self->flags & NN_SOCK_FLAG_IN) {
-                self->flags &= ~NN_SOCK_FLAG_IN;
-                nn_efd_unsignal (&self->rcvfd);
+            if (sock->flags & NN_SOCK_FLAG_IN) {
+                sock->flags &= ~NN_SOCK_FLAG_IN;
+                nn_efd_unsignal (&sock->rcvfd);
             }
         }
     }
 
     /*  Signal/unsignal OUT as needed. */
-    if (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND)) {
+    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
         if (events & NN_SOCKBASE_EVENT_OUT) {
-            nn_assert (!(self->vfptr->flags & NN_SOCKBASE_FLAG_NOSEND));
-            if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-                self->flags |= NN_SOCK_FLAG_OUT;
-                nn_efd_signal (&self->sndfd);
+            if (!(sock->flags & NN_SOCK_FLAG_OUT)) {
+                sock->flags |= NN_SOCK_FLAG_OUT;
+                nn_efd_signal (&sock->sndfd);
             }
         }
         else {
-            if (self->flags & NN_SOCK_FLAG_OUT) {
-                self->flags &= ~NN_SOCK_FLAG_OUT;
-                nn_efd_unsignal (&self->sndfd);
+            if (sock->flags & NN_SOCK_FLAG_OUT) {
+                sock->flags &= ~NN_SOCK_FLAG_OUT;
+                nn_efd_unsignal (&sock->sndfd);
             }
         }
     }
 }
-#endif
 
 struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
 {

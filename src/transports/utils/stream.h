@@ -36,10 +36,8 @@
 /*  Session object for stream-oriented transports (e.g. TCP or IPC). */
 
 /*  Events generate by the stream object. */
-#define NN_STREAM_CANSEND 1
-#define NN_STREAM_CANRECV 2
-#define NN_STREAM_ERROR 3
-#define NN_STREAM_CLOSED 4
+#define NN_STREAM_ERROR 1
+#define NN_STREAM_CLOSED 2
 
 struct nn_stream {
 
@@ -63,6 +61,9 @@ struct nn_stream {
         prevents a simple DoS attack. */
     struct nn_timer hdr_timeout;
 
+    /*  State of inbound state machine. */
+    int instate;
+
     /*  Buffer used to store the header of incoming message. */
     uint8_t inhdr [8];
 
@@ -77,6 +78,10 @@ struct nn_stream {
 
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;
+
+    /*  Event to be sent to the owner. */
+    struct nn_fsm_event event_error;
+    struct nn_fsm_event event_closed;
 };
 
 /*  The socket passed to this object has to be already connected. The object

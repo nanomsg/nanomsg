@@ -350,6 +350,8 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     /*  Make sure that the socket is actually alive. */
     nn_assert (self->state == NN_USOCK_STATE_CONNECTED);
 
+printf ("+++ %p recv\n", self);
+
     /*  Try to receive the data immediately. */
     nbytes = len;
     rc = nn_usock_recv_raw (self, buf, &nbytes);
@@ -362,6 +364,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 
     /*  Success. */
     if (nn_fast (nbytes == len)) {
+printf ("+++ %p received (sync)\n", self);
         nn_fsm_raise (&self->fsm, &self->event_received);
         return;
     }
@@ -395,6 +398,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_assert (usock->state == NN_USOCK_STATE_CONNECTED ||
             usock->state == NN_USOCK_STATE_CLOSING);
+printf ("+++ %p set_in\n", usock);
         nn_worker_set_in (usock->worker, &usock->wfd);
         return;
     }
@@ -612,6 +616,8 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                     usock->in.len -= sz;
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
+printf ("+++ %p received\n", usock);
+printf ("+++ %p reset_in\n", usock);
                         nn_fsm_raise (&usock->fsm, &usock->event_received);
                     }
                     return;

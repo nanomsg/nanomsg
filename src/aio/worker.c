@@ -203,7 +203,8 @@ static void nn_worker_routine (void *arg)
 
                 /*  Make a local copy of the task queue. This way
                     the application threads are not blocked and can post new
-                    tasks while the existing tasks are being processed. */
+                    tasks while the existing tasks are being processed. Also,
+                    new tasks can be posted from within task handlers. */
                 nn_mutex_lock (&self->sync);
                 nn_efd_unsignal (&self->efd);
                 memcpy (&tasks, &self->tasks, sizeof (tasks));

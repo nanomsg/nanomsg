@@ -35,7 +35,7 @@
 #define NN_STREAM_STATE_SENDING_PROTOHDR 1
 #define NN_STREAM_STATE_RECEIVING_PROTOHDR 2
 #define NN_STREAM_STATE_CLOSING_TIMER 3
-#define NN_STREAM_STATE_CLOSING_TIMER_ERROR 4
+#define NN_STREAM_STATE_CLOSING_TIMER_FINAL 4
 #define NN_STREAM_STATE_RECEIVING_MSGHDR 5
 #define NN_STREAM_STATE_RECEIVING_MSGBODY 6
 #define NN_STREAM_STATE_CLOSED 7
@@ -286,10 +286,14 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 {
     struct nn_stream *stream;
     struct nn_iovec iovec;
+    uint16_t protocol;
 
     stream = nn_cont (self, struct nn_stream, fsm);
 
     switch (stream->state) {
+/******************************************************************************/
+/*  INIT state.                                                               */
+/******************************************************************************/
     case NN_STREAM_STATE_INIT:
         if (source == NULL) {
              switch (type) {
@@ -348,7 +352,18 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         if (source == stream->usock) {
             switch (type) {
             case NN_USOCK_RECEIVED:
-                nn_assert (0);
+
+                /*  TODO: If it does not conform, drop the connection. */
+                protocol = nn_gets (stream->protohdr + 4);
+                if (!nn_pipebase_ispeer (&stream->pipebase, protocol))
+                    nn_assert (0);
+
+                /*  Close the header exchange timer. */
+                nn_timer_close (&stream->hdr_timeout);
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+
+                return;
+
             case NN_USOCK_ERROR:
                 nn_assert (0);
             default:
@@ -365,20 +380,54 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         }
         nn_assert (0);
 /******************************************************************************/
-/*  CLOSING__TIMER state.                                                     */
+/*  CLOSING_TIMER state.                                                      */
+/*  After doing the initial protocol header exchange we don't need the timer  */
+/*  any more. Here we are closing it.                                         */
 /******************************************************************************/
     case NN_STREAM_STATE_CLOSING_TIMER:
-        nn_assert (0);
-/******************************************************************************/
-/*  CLOSING_TIMER_ERROR state.                                               */
-/******************************************************************************/
-    case NN_STREAM_STATE_CLOSING_TIMER_ERROR:
+        if (source == &stream->hdr_timeout) {
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                return;
+            case NN_TIMER_CLOSED:
+
+                /*  Connection is ready for sending. Make outpipe available
+                    to the SP socket. */
+                nn_pipebase_activate (&stream->pipebase);
+
+                /*  Start waiting for incoming messages.
+                    First, read the 8-byte size. */
+                stream->state = NN_STREAM_STATE_RECEIVING_MSGHDR;
+                nn_usock_recv (stream->usock, stream->inhdr, 8);
+
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 /******************************************************************************/
 /*  ACTIVE state (actually, it's a combination of two sub-states)             */
 /******************************************************************************/
     case NN_STREAM_STATE_RECEIVING_MSGHDR:
     case NN_STREAM_STATE_RECEIVING_MSGBODY:
+        nn_assert (0);
+/******************************************************************************/
+/*  CLOSING_TIMER_FINAL state.                                               */
+/******************************************************************************/
+    case NN_STREAM_STATE_CLOSING_TIMER_FINAL:
+        if (source == &stream->hdr_timeout) {
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                return;
+            case NN_TIMER_CLOSED:
+                stream->state = NN_STREAM_STATE_CLOSED;
+                /*  TODO: Raise the CLOSED event here. */
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 /******************************************************************************/
 /*  CLOSED state.                                                             */

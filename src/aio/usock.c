@@ -499,6 +499,8 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 
 /******************************************************************************/
 /*  LISTENING state                                                           */
+/*  Socket is listening for new incoming connections, however, user is not    */
+/*  accepting a new connection. */
 /******************************************************************************/ 
     case NN_USOCK_STATE_LISTENING:
 
@@ -516,6 +518,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 /*  Immediate success. */
                 if (nn_fast (s >= 0)) {
                     nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
+                    usock->newsock->state = NN_USOCK_STATE_CONNECTED;
+                    nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
+                        &usock->newsock->wfd);
                     nn_fsm_raise (&usock->fsm, &usock->event_accepted);
                     return;
                 }
@@ -540,33 +545,48 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 
 /******************************************************************************/
 /*  ACCEPTING state                                                           */
+/*  User is waiting asynchronouslyfor a new inbound connection                */
+/*  to be accepted.                                                           */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ACCEPTING:
         if (source == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_IN:
+
+                /*  New connection arrived. */
                 nn_assert (usock->newsock);
 #if NN_HAVE_ACCEPT4c
                 s = accept4 (usock->s, NULL, NULL, SOCK_CLOEXEC);
 #else
                 s = accept (usock->s, NULL, NULL);
 #endif
-                /*  ECONNABORTED is an valid error. If it happens do nothing
-                    and wait for next incoming connection to accept. */
+                /*  ECONNABORTED is an valid error. New connection was closed
+                    by the peer before we were able to accept it. If it happens
+                    do nothing and wait for next incoming connection to
+                    accept. */
                 if (s < 0) {
                     if (errno == ECONNABORTED)
                         return;
                     errno_assert (0);
                 }
 
+                /*  Initialise the new usock object. */
                 nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
                 usock->newsock->state = NN_USOCK_STATE_CONNECTED;
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
+
+                /*  Notify the user that connection was accepted. */
                 nn_fsm_raise (&usock->fsm, &usock->event_accepted);
+
+                /*  Wait till the user starts accepting once again. */
                 usock->newsock = NULL;
                 usock->newowner = NULL;
+                nn_worker_rm_fd (usock->worker, &usock->wfd);
+                usock->state = NN_USOCK_STATE_LISTENING;
+
                 return;
+
             default:
                 nn_assert (0);
             }

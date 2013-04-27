@@ -48,6 +48,7 @@ struct nn_astream {
 #define NN_BSTREAM_EVENT_CLOSE 2
 
 /*  Private functions. */
+static void nn_bstream_term (struct nn_bstream *self);
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type);
 
 /*  Implementation of nn_epbase interface. */
@@ -85,6 +86,15 @@ int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
     return 0;
 }
 
+static void nn_bstream_term (struct nn_bstream *self)
+{
+    nn_list_term (&self->astreams);
+    if (self->astream)
+       nn_free (self->astream);
+    nn_epbase_term (&self->epbase);
+    nn_fsm_term (&self->fsm);
+}
+
 static int nn_bstream_close (struct nn_epbase *self)
 {
     struct nn_bstream *bstream;
@@ -93,6 +103,8 @@ static int nn_bstream_close (struct nn_epbase *self)
 
     /*  Pass the event to the state machine. */
     nn_bstream_callback (&bstream->fsm, NULL, NN_BSTREAM_EVENT_CLOSE);
+
+    return 0;
 }
 
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
@@ -201,7 +213,30 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
 /*  CLOSING_STREAMS state                                                     */
 /******************************************************************************/
     case NN_BSTREAM_STATE_CLOSING_STREAMS:
-        nn_assert (0);
+
+        /*  At this point we assume that the event came either from one of the
+            streams or one of the sockets being shut down. We could actually
+            check whether that is the case, but the check would have O(n)
+            complexity. */
+        switch (type) {
+        case NN_STREAM_CLOSED:
+             astream = nn_cont (source, struct nn_astream, stream);
+             nn_stream_term (&astream->stream);
+             nn_usock_close (&astream->usock);
+             return;
+        case NN_USOCK_CLOSED:
+             astream = nn_cont (source, struct nn_astream, usock);
+             nn_usock_term (&astream->usock);
+             nn_list_erase (&bstream->astreams, &astream->item);
+             nn_free (astream);
+             if (nn_list_empty (&bstream->astreams)) {
+                 nn_bstream_term (bstream);
+                 /*  TODO: bstream should be deallocated here. */
+             }
+             return;
+        default:
+            nn_assert (0);
+        }
 
 /******************************************************************************/
 /*  Invalid state                                                             */

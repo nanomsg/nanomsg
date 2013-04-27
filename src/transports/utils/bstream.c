@@ -41,9 +41,11 @@ struct nn_astream {
 
 #define NN_BSTREAM_STATE_INIT 1
 #define NN_BSTREAM_STATE_ACTIVE 2
-#define NN_BSTREAM_STATE_CLOSING 3
+#define NN_BSTREAM_STATE_CLOSING_USOCK 3
+#define NN_BSTREAM_STATE_CLOSING_STREAMS 4
 
 #define NN_BSTREAM_EVENT_START 1
+#define NN_BSTREAM_EVENT_CLOSE 2
 
 /*  Private functions. */
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type);
@@ -85,12 +87,19 @@ int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
 
 static int nn_bstream_close (struct nn_epbase *self)
 {
-    nn_assert (0);
+    struct nn_bstream *bstream;
+
+    bstream = nn_cont (self, struct nn_bstream, epbase);
+
+    /*  Pass the event to the state machine. */
+    nn_bstream_callback (&bstream->fsm, NULL, NN_BSTREAM_EVENT_CLOSE);
 }
 
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
 {
     struct nn_bstream *bstream;
+    struct nn_list_item *it;
+    struct nn_astream *astream;
 
     bstream = nn_cont (fsm, struct nn_bstream, fsm);
 
@@ -142,12 +151,56 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
                 nn_assert (0);
             }
         }
+        if (source == NULL) {
+            switch (type) {
+            case NN_BSTREAM_EVENT_CLOSE:
+
+                /*  User asked the object to be closed. First we'll close
+                    the listening socket so that new connections cannot be
+                    accepted. */
+                nn_usock_close (&bstream->usock);
+                bstream->state = NN_BSTREAM_STATE_CLOSING_USOCK;
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING state                                                             */
+/*  CLOSING_USOCK state                                                       */
 /******************************************************************************/
-    case NN_BSTREAM_STATE_CLOSING:
+    case NN_BSTREAM_STATE_CLOSING_USOCK:
+        if (source == &bstream->usock) {
+            switch (type) {
+            case NN_USOCK_CLOSED:
+
+                /*  Deallocate the listening socket. */
+                nn_usock_term (&bstream->usock);
+
+                /*  Start shutting down individual accepted connections. */
+                for (it = nn_list_begin (&bstream->astreams);
+                      it != nn_list_end (&bstream->astreams);
+                      it = nn_list_next (&bstream->astreams, it)) {
+                    astream = nn_cont (it, struct nn_astream, item);
+                    nn_stream_close (&astream->stream);
+                }
+                bstream->state = NN_BSTREAM_STATE_CLOSING_STREAMS;
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  CLOSING_STREAMS state                                                     */
+/******************************************************************************/
+    case NN_BSTREAM_STATE_CLOSING_STREAMS:
         nn_assert (0);
 
 /******************************************************************************/

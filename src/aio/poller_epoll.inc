@@ -109,7 +109,7 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
         return;
 
     /*  Stop polling for IN. */
-    hndl->events & ~EPOLLIN;
+    hndl->events &= ~EPOLLIN;
     memset (&ev, 0, sizeof (ev));
     ev.events = hndl->events;
     ev.data.ptr = (void*) hndl;
@@ -174,7 +174,6 @@ int nn_poller_wait (struct nn_poller *self, int timeout)
 
     /*  Wait for new events. */
     while (1) {
-printf ("+++ epoll_wait\n");
         nevents = epoll_wait (self->ep, self->events,
             NN_POLLER_MAX_EVENTS, timeout);
         if (nn_slow (nevents == -1 && errno == EINTR))

@@ -37,11 +37,6 @@ void nn_sockbase_term (struct nn_sockbase *self)
 {
 }
 
-void nn_sockbase_changed (struct nn_sockbase *self)
-{
-    nn_assert (0);
-}
-
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
 {
     return nn_sock_getctx (self->sock);

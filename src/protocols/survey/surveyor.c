@@ -225,9 +225,6 @@ static void nn_surveyor_timeout (const struct nn_cp_sink **self,
 
     /*  Cancel the survey. */
     surveyor->flags &= ~NN_SURVEYOR_INPROGRESS;
-
-    /*  If there's a blocked recv/poll operation, unblock it. */
-    nn_sockbase_changed (&surveyor->xsurveyor.sockbase);
 }
 
 static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,

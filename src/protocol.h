@@ -124,14 +124,6 @@ int nn_sockbase_init (struct nn_sockbase *self,
 /*  Uninitialise the socket. */
 void nn_sockbase_term (struct nn_sockbase *self);
 
-/*  Call this function when the state of the socket changed asynchronously,
-    i.e. if the socket became (un)readable/(un)writeable outside of one of the
-    nn_sockbase_vfptr functions, for example, in a timer handler or in a worker
-    thread created by the protocol implementation. Calling it allows nanomsg
-    core to check the new state and unblock any threads blocked in
-    send/recv/poll functions as needed. */
-void nn_sockbase_changed (struct nn_sockbase *self);
-
 /*  Returns the AIO context associated with the socket. This function is
     useful when socket type implementation needs to create async objects,
     such as timers. */

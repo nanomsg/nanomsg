@@ -24,6 +24,7 @@
 #include "../protocol.h"
 
 #include "sock.h"
+#include "ep.h"
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
@@ -43,11 +44,11 @@
 int nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
 {
-    nn_assert (epbase->sock);
+    nn_assert (epbase->ep->sock);
     self->vfptr = vfptr;
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
-    self->sock = epbase->sock;
+    self->sock = epbase->ep->sock;
     return nn_sock_add (self->sock, (struct nn_pipe*) self);
 }
 

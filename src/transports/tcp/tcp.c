@@ -73,8 +73,8 @@ static struct nn_optset *nn_tcp_optset ();
 static struct nn_transport nn_tcp_vfptr = {
     "tcp",
     NN_TCP,
-    nn_tcp_init,
-    nn_tcp_term,
+    NULL,
+    NULL,
     nn_tcp_bind,
     nn_tcp_connect,
     nn_tcp_optset,
@@ -82,14 +82,6 @@ static struct nn_transport nn_tcp_vfptr = {
 };
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
-
-static void nn_tcp_init (void)
-{
-}
-
-static void nn_tcp_term (void)
-{
-}
 
 static int nn_tcp_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
@@ -161,7 +153,7 @@ static int nn_tcp_binit (const char *addr, struct nn_aio_usock *usock,
     struct sockaddr_storage ss;
     socklen_t sslen;
 
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    /*  Make sure we're working from a clean slate. */
     memset (&ss, 0, sizeof (ss));
 
     /*  Parse the port. */

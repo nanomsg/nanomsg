@@ -29,20 +29,17 @@
 
 #include <string.h>
 
-void nn_epbase_init (struct nn_epbase *self,
-    const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint)
+int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
+    struct nn_transport *transport, int bind, const char *addr)
 {
+    int rc;
 
-    /*  Set up the virtual functions table. */
-    self->vfptr = vfptr;
-
-    /*  Remember which socket the endpoint belongs to. */
-    self->sock = (struct nn_sock*) hint;
-
-    /*  This enpoint does not belong to any socket yet. */
+    self->epbase = NULL;
+    self->sock = sock;
+    self->eid = eid;
     nn_list_item_init (&self->item);
 
-    /*  Store the textual for of the address. */
+    /*  Store the textual form of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
 #if defined _MSC_VER
 #pragma warning (push)
@@ -52,48 +49,54 @@ void nn_epbase_init (struct nn_epbase *self,
 #if defined _MSC_VER
 #pragma warning (pop)
 #endif
+
+    /*  Create transport-specific part of the endpoint. */
+    if (bind)
+        rc = transport->bind ((void*) self, &self->epbase);
+    else
+        rc = transport->connect ((void*) self, &self->epbase);
+
+    /*  Endpoint creation failed. */
+    if (rc < 0) {
+        nn_list_item_term (&self->item);
+        return rc;
+    }
+
+    return 0;
 }
 
-void nn_epbase_term (struct nn_epbase *self)
+void nn_ep_term (struct nn_ep *self)
 {
-    /*  If we are shutting the endpoint down before it was added to the socket
-        (failure during initialisation), do nothing. */
-    if (nn_slow (!nn_list_item_isinlist (&self->item)))
-        return;
-
-    nn_sock_ep_closed (self->sock, self);
     nn_list_item_term (&self->item);
 }
 
-struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self)
+void nn_ep_close (struct nn_ep *self)
+{
+    /*  Perform transport-specific shutdown procedure. */
+    self->epbase->vfptr->close (self->epbase);
+}
+
+struct nn_ctx *nn_ep_getctx (struct nn_ep *self)
 {
     return nn_sock_getctx (self->sock);
 }
 
-const char *nn_epbase_getaddr (struct nn_epbase *self)
+const char *nn_ep_getaddr (struct nn_ep *self)
 {
     return self->addr;
 }
 
-void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
+void nn_ep_getopt (struct nn_ep *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     int rc;
 
-    rc = nn_sock_getopt (self->sock, level, option, optval, optvallen, 1);
+    rc = nn_sock_getopt_inner (self->sock, level, option, optval, optvallen);
     errnum_assert (rc == 0, -rc);
 }
 
-int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
+int nn_ep_ispeer (struct nn_ep *self, int socktype)
 {
     return nn_sock_ispeer (self->sock, socktype);
-}
-
-int nn_ep_close (struct nn_ep *self)
-{
-    struct nn_epbase *epbase;
-
-    epbase = (struct nn_epbase*) self;
-    return epbase->vfptr->close (epbase);
 }
 

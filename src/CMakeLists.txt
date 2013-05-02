@@ -41,6 +41,7 @@ set (NN_SOURCES
 
     core/ep.h
     core/ep.c
+    core/epbase.c
     core/global.h
     core/global.c
     core/pipe.c

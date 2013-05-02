@@ -43,6 +43,7 @@ static int nn_xpair_init (struct nn_xpair *self,
 static void nn_xpair_term (struct nn_xpair *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xpair_close (struct nn_sockbase *self);
 static void nn_xpair_destroy (struct nn_sockbase *self);
 static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -56,6 +57,7 @@ static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
+    nn_xpair_close,
     nn_xpair_destroy,
     nn_xpair_add,
     nn_xpair_rm,
@@ -86,6 +88,12 @@ static void nn_xpair_term (struct nn_xpair *self)
 {
     nn_excl_term (&self->excl);
     nn_sockbase_term (&self->sockbase);
+}
+
+static void nn_xpair_close (struct nn_sockbase *self)
+{
+    /*  Nothing special to do done. The object is closed straight away. */
+    nn_sockbase_closed (self);   
 }
 
 void nn_xpair_destroy (struct nn_sockbase *self)

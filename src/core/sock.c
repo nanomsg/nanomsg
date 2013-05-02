@@ -30,29 +30,35 @@
 #include "../utils/err.h"
 #include "../utils/cont.h"
 #include "../utils/fast.h"
+#include "../utils/alloc.h"
 #include "../utils/msg.h"
-
-/*  This flag is set, if nn_term() function was already called. All the socket
-    function, except for nn_close() should return ETERM error in such case. */
-#define NN_SOCK_FLAG_ZOMBIE 1
 
 /*  These bits specify whether individual efds are signalled or not at
     the moment. Storing this information allows us to avoid redundant signalling
     and unsignalling of the efd objects. */
-#define NN_SOCK_FLAG_IN 2
-#define NN_SOCK_FLAG_OUT 4
+#define NN_SOCK_FLAG_IN 1
+#define NN_SOCK_FLAG_OUT 2
 
-/*  Set if nn_close() is already in progress. */
-#define NN_SOCK_FLAG_CLOSING 8
+/*  Possible states of the socket. */
+#define NN_SOCK_STATE_INIT 1
+#define NN_SOCK_STATE_ACTIVE 2
+#define NN_SOCK_STATE_ZOMBIE 3
+#define NN_SOCK_STATE_CLOSING_EPS 4
+#define NN_SOCK_STATE_CLOSING 5
+#define NN_SOCK_STATE_CLOSED 6
+
+/*  Events sent to the state machine. */
+#define NN_SOCK_EVENT_START 1
+#define NN_SOCK_EVENT_ZOMBIFY 2
+#define NN_SOCK_EVENT_CLOSE 3
 
 /*  Private functions. */
 void nn_sock_adjust_events (struct nn_sock *self);
 struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
-static int nn_sock_getopt_inner (struct nn_sock *self, int level,
-    int option, void *optval, size_t *optvallen);
 static void nn_sock_onleave (struct nn_ctx *self);
+static void nn_sock_callback (struct nn_fsm *self, void *source, int type);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 {
@@ -65,6 +71,10 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 
     /*  Create the AIO context for the SP socket. */
     nn_ctx_init (&self->ctx, nn_global_getpool (), nn_sock_onleave);
+
+    /*  Initialise the state machine. */
+    nn_fsm_init_root (&self->fsm, nn_sock_callback, &self->ctx);
+    self->state = NN_SOCK_STATE_INIT;
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
@@ -119,28 +129,18 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     errnum_assert (rc == 0, -rc);
     self->socktype = socktype;
 
+    /*  Launch the state machine. */
+    nn_ctx_enter (&self->ctx);
+    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_START);
+    nn_ctx_leave (&self->ctx);
+
     return 0;
 }
 
 void nn_sock_zombify (struct nn_sock *self)
 {
     nn_ctx_enter (&self->ctx);
-    self->flags |= NN_SOCK_FLAG_ZOMBIE;
-
-    /*  Reset IN and OUT events to unblock any polling function. */
-    if (!(self->flags & NN_SOCK_FLAG_CLOSING)) {
-        if (!(self->flags & NN_SOCK_FLAG_IN)) {
-            self->flags |= NN_SOCK_FLAG_IN;
-            if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
-                nn_efd_signal (&self->rcvfd);
-        }
-        if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-            self->flags |= NN_SOCK_FLAG_OUT;
-            if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
-                nn_efd_signal (&self->sndfd);
-        }
-    }
-
+    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_ZOMBIFY);
     nn_ctx_leave (&self->ctx);
 }
 
@@ -151,57 +151,20 @@ int nn_sock_term (struct nn_sock *self)
     struct nn_epbase *ep;
     int i;
 
+    /*  Ask the state machine to start closing the socket. */
     nn_ctx_enter (&self->ctx);
-
-    /*  The call may have been interrupted by a singal and restarted afterwards.
-        In such case don't do the following stuff again. */
-    if (!(self->flags & NN_SOCK_FLAG_CLOSING)) {
-
-        /*  Mark the socket as being in process of shutting down. */
-        self->flags |= NN_SOCK_FLAG_CLOSING;
-
-        /*  Close sndfd and rcvfd. This should make any current select/poll
-            using SNDFD and/or RCVFD exit. */
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
-            nn_efd_term (&self->rcvfd);
-            memset (&self->rcvfd, 0xcd, sizeof (self->rcvfd));
-        }
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
-            nn_efd_term (&self->sndfd);
-            memset (&self->sndfd, 0xcd, sizeof (self->sndfd));
-        }
-
-        /*  Create a semaphore to wait on for all endpoint to terminate. */
-        nn_sem_init (&self->termsem);
-
-        /*  Ask all the associated endpoints to terminate. Call to nn_ep_close
-            can actually deallocate the endpoint, so take care to get pointer
-            to the next endpoint before the call. */
-        it = nn_list_begin (&self->eps);
-        while (it != nn_list_end (&self->eps)) {
-            ep = nn_cont (it, struct nn_epbase, item);
-            it = nn_list_next (&self->eps, it);
-            rc = nn_ep_close ((void*) ep);
-            errnum_assert (rc == 0 || rc == -EINPROGRESS, -rc);      
-        }
-    }
-
-    /*  Shutdown process was already started but some endpoints are still
-        alive. Here we are going to wait till they are all closed. */
-    if (!nn_list_empty (&self->eps)) {
-        nn_ctx_leave (&self->ctx);
-        rc = nn_sem_wait (&self->termsem);
-        if (nn_slow (rc == -EINTR))
-            return -EINTR;
-        errnum_assert (rc == 0, -rc);
-        nn_ctx_enter (&self->ctx);
-        nn_assert (nn_list_empty (&self->eps));
-    }
-
-    /*  The socket is going to be deallocated. It is accessible only from
-        this thread. We can unlock the context at this point. */
+    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_CLOSE);
     nn_ctx_leave (&self->ctx);
 
+    /*  Shutdown process was already started but some endpoints may still
+        alive. Here we are going to wait till they are all closed. */
+    rc = nn_sem_wait (&self->termsem);
+    if (nn_slow (rc == -EINTR))
+        return -EINTR;
+    errnum_assert (rc == 0, -rc);
+
+    /*  Deallocate the resources. */
+    nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
@@ -211,8 +174,6 @@ int nn_sock_term (struct nn_sock *self)
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)
         if (self->optsets [i])
             self->optsets [i]->vfptr->destroy (self->optsets [i]);
-
-    self->sockbase->vfptr->destroy (self->sockbase);
 
     return 0;
 }
@@ -242,6 +203,10 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     int rc;
 
     nn_ctx_enter (&self->ctx);
+    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
+        nn_ctx_leave (&self->ctx);
+        return -ETERM;
+    }
     rc = nn_sock_setopt_inner (self, level, option, optval, optvallen);
     nn_ctx_leave (&self->ctx);
 
@@ -255,10 +220,6 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     struct nn_optset *optset;
     int val;
     int *dst;
-
-    /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (self->flags & (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING)))
-        return -ETERM;
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
@@ -327,30 +288,28 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 }
 
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
-    void *optval, size_t *optvallen, int internal)
+    void *optval, size_t *optvallen)
 {
     int rc;
 
-    if (!internal)
-        nn_ctx_enter (&self->ctx);
-    rc = nn_sock_getopt_inner (self, level, option, optval, optvallen);
-    if (!internal)
+    nn_ctx_enter (&self->ctx);
+    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
         nn_ctx_leave (&self->ctx);
+        return -ETERM;
+    }
+    rc = nn_sock_getopt_inner (self, level, option, optval, optvallen);
+    nn_ctx_leave (&self->ctx);
 
     return rc;
 }
 
-static int nn_sock_getopt_inner (struct nn_sock *self, int level,
+int nn_sock_getopt_inner (struct nn_sock *self, int level,
     int option, void *optval, size_t *optvallen)
 {
     int rc;
     struct nn_optset *optset;
     int intval;
     nn_fd fd;
-
-    /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (self->flags & (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING)))
-        return -ETERM;
 
     /*  Generic socket-level options. */
     if (level == NN_SOL_SOCKET) {
@@ -428,24 +387,26 @@ static int nn_sock_getopt_inner (struct nn_sock *self, int level,
     nn_assert (0);
 }
 
-int nn_sock_add_ep (struct nn_sock *self, const char *addr,
-    int (*factory) (const char *addr, void *hint, struct nn_epbase **ep))
+int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
+    int bind, const char *addr)
 {
     int rc;
-    struct nn_epbase *ep;
+    struct nn_ep *ep;
     int eid;
     
     nn_ctx_enter (&self->ctx);
 
-    /*  Create the transport-specific endpoint. */
-    rc = factory (addr, (void*) self, &ep);
+    /*  Instantiate the endpoint. */
+    ep = nn_alloc (sizeof (struct nn_ep), "endpoint");
+    rc = nn_ep_init (ep, self, self->eid, transport, bind, addr);
     if (nn_slow (rc < 0)) {
+        nn_free (ep);
         nn_ctx_leave (&self->ctx);
         return rc;
     }
 
-    /*  Provide it with an unique endpoint ID. */
-    eid = ep->eid = self->eid;
+    /*  Increase the endpoint ID for the next endpoint. */
+    eid = self->eid;
     ++self->eid;
 
     /*  Add it to the list of active endpoints. */
@@ -458,9 +419,8 @@ int nn_sock_add_ep (struct nn_sock *self, const char *addr,
 
 int nn_sock_rm_ep (struct nn_sock *self, int eid)
 {
-    int rc;
     struct nn_list_item *it;
-    struct nn_epbase *ep;
+    struct nn_ep *ep;
 
     nn_ctx_leave (&self->ctx);
 
@@ -469,7 +429,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     for (it = nn_list_begin (&self->eps);
           it != nn_list_end (&self->eps);
           it = nn_list_next (&self->eps, it)) {
-        ep = nn_cont (it, struct nn_epbase, item);
+        ep = nn_cont (it, struct nn_ep, item);
         if (ep->eid == eid)
             break;
         ep = NULL;
@@ -483,23 +443,11 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     
     /*  Ask the endpoint to shutdown. Actual terminatation may be delayed
         by the transport. */
-    rc = nn_ep_close ((void*) ep);
-    errnum_assert (rc == 0 || rc == -EINPROGRESS, -rc);
+    nn_ep_close (ep);
 
     nn_ctx_leave (&self->ctx);
 
     return 0;
-}
-
-void nn_sock_ep_closed (struct nn_sock *self, struct nn_epbase *ep)
-{
-    /*  Remove the endpoint from the list of active endpoints. */
-    nn_list_erase (&self->eps, &ep->item);
-
-    /*  nn_close() may be waiting for termination of this endpoint.
-        Send it a signal. */
-    if (self->flags & NN_SOCK_FLAG_CLOSING && nn_list_empty (&self->eps))
-        nn_sem_post (&self->termsem);
 }
 
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
@@ -526,8 +474,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
     while (1) {
 
         /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (self->flags &
-              (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
+        if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
             nn_ctx_leave (&self->ctx);
             return -ETERM;
         }
@@ -600,8 +547,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     while (1) {
 
         /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (self->flags &
-              (NN_SOCK_FLAG_ZOMBIE | NN_SOCK_FLAG_CLOSING))) {
+        if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
             nn_ctx_leave (&self->ctx);
             return -ETERM;
         }
@@ -676,7 +622,9 @@ static void nn_sock_onleave (struct nn_ctx *self)
 
     /*  If nn_close() was already called there's no point in adjusting the
         snd/rcv file descriptors. */
-    if (sock->flags & NN_SOCK_FLAG_CLOSING)
+    if (sock->state == NN_SOCK_STATE_CLOSING_EPS ||
+          sock->state == NN_SOCK_STATE_CLOSING ||
+          sock->state == NN_SOCK_STATE_CLOSED)
         return;
 
     /*  Check whether socket is readable and/or writeable at the moment. */
@@ -741,5 +689,199 @@ struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
     self->optsets [index] = tp->optset ();
 
     return self->optsets [index];
+}
+
+static void nn_sock_callback (struct nn_fsm *self, void *source, int type)
+{
+    struct nn_sock *sock;
+    struct nn_list_item *it;
+    struct nn_ep *ep;
+
+    sock = nn_cont (self, struct nn_sock, fsm);
+
+    switch (sock->state) {
+
+/******************************************************************************/
+/*  INIT state.                                                               */
+/******************************************************************************/
+    case NN_SOCK_STATE_INIT:
+        if (source == NULL) {
+            switch (type) {
+            case NN_SOCK_EVENT_START:
+                sock->state = NN_SOCK_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/******************************************************************************/
+    case NN_SOCK_STATE_ACTIVE:
+        if (source == NULL) {
+            switch (type) {
+            case NN_SOCK_EVENT_CLOSE:
+
+                /*  Close sndfd and rcvfd. This should make any current
+                    select/poll using SNDFD and/or RCVFD exit. */
+                if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
+                    nn_efd_term (&sock->rcvfd);
+                    memset (&sock->rcvfd, 0xcd, sizeof (sock->rcvfd));
+                }
+                if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
+                    nn_efd_term (&sock->sndfd);
+                    memset (&sock->sndfd, 0xcd, sizeof (sock->sndfd));
+                }
+
+                /*  Create a semaphore to wait on for all endpoint
+                    to terminate. */
+                nn_sem_init (&sock->termsem);
+
+                /*  Ask all the associated endpoints to terminate. */
+                for (it = nn_list_begin (&sock->eps);
+                      it != nn_list_end (&sock->eps);
+                      it = nn_list_next (&sock->eps, it))
+                    nn_ep_close (nn_cont (it, struct nn_ep, item));
+                sock->state = NN_SOCK_STATE_CLOSING_EPS;
+
+                return;
+
+            case NN_SOCK_EVENT_ZOMBIFY:
+
+                /*  Switch to the zombie state. From now on all the socket
+                    functions will return ETERM. */
+                sock->state = NN_SOCK_STATE_ZOMBIE;
+
+                /*  Set IN and OUT events to unblock any polling function. */
+                if (!(sock->flags & NN_SOCK_FLAG_IN)) {
+                    sock->flags |= NN_SOCK_FLAG_IN;
+                    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
+                        nn_efd_signal (&sock->rcvfd);
+                }
+                if (!(sock->flags & NN_SOCK_FLAG_OUT)) {
+                    sock->flags |= NN_SOCK_FLAG_OUT;
+                    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
+                        nn_efd_signal (&sock->sndfd);
+                }
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ZOMBIE state.                                                             */
+/******************************************************************************/
+    case NN_SOCK_STATE_ZOMBIE:
+        if (source == NULL) {
+            switch (type) {
+            case NN_SOCK_EVENT_CLOSE:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  CLOSING_EPS state.                                                        */
+/******************************************************************************/
+    case NN_SOCK_STATE_CLOSING_EPS:
+        if (source == NULL) {
+            switch (type) {
+            case NN_SOCK_EVENT_CLOSE:
+
+                 /*  nn_close() invocation may have been interrupted by
+                     a signal. When it is restarted no special action has to
+                     be taken. */
+                 return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        
+        /*  For all non-NULL sources, we assume it's an event from one of
+            the endpoints associated with the socket. In theory we could
+            double-check that that is the case, however, it would be an O(n)
+            operations, so we'll just skip it. */
+        switch (type) {
+        case NN_EP_CLOSED:
+            
+            /*  Endpoint is closed. Now we can safely deallocate it. */
+            ep = (struct nn_ep*) source;
+            nn_list_erase (&sock->eps, &ep->item);
+            nn_ep_term (ep);
+            nn_free (ep);
+
+            if (!nn_list_empty (&sock->eps))
+                return;
+
+            /*  If all the endpoints are closed, we can start closing
+                protocol-specific part of the socket. */
+            sock->state = NN_SOCK_STATE_CLOSING;
+            sock->sockbase->vfptr->close (sock->sockbase);
+
+            return;
+
+        default:
+            nn_assert (0);
+        }
+            
+/******************************************************************************/
+/*  CLOSING state.                                                            */
+/******************************************************************************/
+    case NN_SOCK_STATE_CLOSING:
+        if (source == sock->sockbase) {
+            switch (type) {
+            case NN_SOCKBASE_CLOSED:
+
+                /*  Protocol-specific part of the socket is closed.
+                    We can safely deallocate it. */
+                sock->sockbase->vfptr->destroy (sock->sockbase);
+                sock->state = NN_SOCK_STATE_CLOSED;
+
+                /*  Now we can unblock the application thread blocked in
+                    the nn_close() call. */
+                nn_sem_post (&sock->termsem);
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == NULL) {
+            switch (type) {
+            case NN_SOCK_EVENT_CLOSE:
+
+                 /*  nn_close() invocation may have been interrupted by
+                     a signal. When it is restarted no special action has to
+                     be taken. */
+                 return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  CLOSED state.                                                             */
+/******************************************************************************/
+    case NN_SOCK_STATE_CLOSED:
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
 }
 

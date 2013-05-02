@@ -63,7 +63,7 @@ struct nn_bstream {
     struct nn_list astreams;
 };
 
-int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    const struct nn_bstream_vfptr *vfptr);
+int nn_bstream_create (const struct nn_bstream_vfptr *vfptr, void *hint,
+    struct nn_epbase **epbase);
 
 #endif

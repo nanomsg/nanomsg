@@ -27,6 +27,7 @@
 #include "../transport.h"
 
 #include "../aio/ctx.h"
+#include "../aio/fsm.h"
 
 #include "../utils/efd.h"
 #include "../utils/sem.h"
@@ -40,6 +41,10 @@ struct nn_pipe;
 
 struct nn_sock
 {
+    /*  Socket state machine. */
+    struct nn_fsm fsm;
+    int state;
+
     /*  Pointer to the instance of the specific socket type. */
     struct nn_sockbase *sockbase;
 
@@ -95,8 +100,8 @@ struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
 int nn_sock_ispeer (struct nn_sock *self, int socktype);
 
 /*  Add new endpoint to the socket. */
-int nn_sock_add_ep (struct nn_sock *self, const char *addr,
-    int (*factory) (const char *addr, void *hint, struct nn_epbase **ep));
+int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
+    int bind, const char *addr);
 
 /*  Remove the endpoint with the specified ID from the socket. */
 int nn_sock_rm_ep (struct nn_sock *self, int eid);
@@ -114,10 +119,14 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags);
 int nn_sock_setopt (struct nn_sock *self, int level, int option,
     const void *optval, size_t optvallen); 
 
-/*  Retrieve a socket option. 'internal' is set to 1 when called from within
-    nanomsg rather than from the API (nn_getsockopt). */
+/*  Retrieve a socket option. This function is to be called from the API. */
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
-    void *optval, size_t *optvallen, int internal);
+    void *optval, size_t *optvallen);
+
+/*  Retrieve a socket option. This function is to be called from within
+    the socket. */
+int nn_sock_getopt_internal (struct nn_sock *self, int level, int option,
+    void *optval, size_t *optvallen);
 
 /*  Used by pipes. */
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);

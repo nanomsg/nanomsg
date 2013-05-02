@@ -43,6 +43,7 @@ struct nn_astream {
 #define NN_BSTREAM_STATE_ACTIVE 2
 #define NN_BSTREAM_STATE_CLOSING_USOCK 3
 #define NN_BSTREAM_STATE_CLOSING_STREAMS 4
+#define NN_BSTREAM_STATE_CLOSED 5
 
 #define NN_BSTREAM_EVENT_START 1
 #define NN_BSTREAM_EVENT_CLOSE 2
@@ -51,26 +52,34 @@ struct nn_astream {
 static void nn_bstream_term (struct nn_bstream *self);
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type);
 
-/*  Implementation of nn_epbase interface. */
-static int nn_bstream_close (struct nn_epbase *self);
-static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr =
-    {nn_bstream_close};
+/*  Implementation of nn_epbase virtual interface. */
+static void nn_bstream_close (struct nn_epbase *self);
+static void nn_bstream_destroy (struct nn_epbase *self);
+static const struct nn_epbase_vfptr nn_bstream_epbase_vfptr = {
+     nn_bstream_close,
+     nn_bstream_destroy
+};
 
-int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
-    const struct nn_bstream_vfptr *vfptr)
+int nn_bstream_create (const struct nn_bstream_vfptr *vfptr, void *hint,
+    struct nn_epbase **epbase)
 {
     int rc;
+    struct nn_bstream *self;
+
+    self = nn_alloc (sizeof (struct nn_bstream), "bstream (ipc)");
+    alloc_assert (self);
 
     self->vfptr = vfptr;
 
-    nn_epbase_init (&self->epbase, &nn_bstream_epbase_vfptr, addr, hint);
+    nn_epbase_init (&self->epbase, &nn_bstream_epbase_vfptr, hint);
 
     nn_fsm_init_root (&self->fsm, nn_bstream_callback,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BSTREAM_STATE_INIT;
 
     /*  Open the listening socket. */
-    rc = self->vfptr->open (addr, &self->usock, &self->fsm);
+    rc = self->vfptr->open (nn_epbase_getaddr (&self->epbase), &self->usock,
+        &self->fsm);
     if (nn_slow (rc < 0)) {
         nn_fsm_term (&self->fsm);
         nn_epbase_term (&self->epbase);
@@ -83,11 +92,14 @@ int nn_bstream_init (struct nn_bstream *self, const char *addr, void *hint,
     /*  Notify the state machine. */
     nn_bstream_callback (&self->fsm, NULL, NN_BSTREAM_EVENT_START);
 
+    *epbase = &self->epbase;
     return 0;
 }
 
 static void nn_bstream_term (struct nn_bstream *self)
 {
+    nn_assert (self->state == NN_BSTREAM_STATE_CLOSED);
+
     nn_list_term (&self->astreams);
     if (self->astream)
        nn_free (self->astream);
@@ -95,7 +107,7 @@ static void nn_bstream_term (struct nn_bstream *self)
     nn_fsm_term (&self->fsm);
 }
 
-static int nn_bstream_close (struct nn_epbase *self)
+static void nn_bstream_close (struct nn_epbase *self)
 {
     struct nn_bstream *bstream;
 
@@ -103,8 +115,11 @@ static int nn_bstream_close (struct nn_epbase *self)
 
     /*  Pass the event to the state machine. */
     nn_bstream_callback (&bstream->fsm, NULL, NN_BSTREAM_EVENT_CLOSE);
+}
 
-    return 0;
+static void nn_bstream_destroy (struct nn_epbase *self)
+{
+    nn_assert (0);
 }
 
 static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
@@ -229,14 +244,23 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
              nn_usock_term (&astream->usock);
              nn_list_erase (&bstream->astreams, &astream->item);
              nn_free (astream);
-             if (nn_list_empty (&bstream->astreams)) {
-                 nn_bstream_term (bstream);
-                 /*  TODO: bstream should be deallocated here. */
-             }
+             if (!nn_list_empty (&bstream->astreams))
+                 return;
+
+             bstream->state = NN_BSTREAM_STATE_CLOSED;
+             nn_epbase_closed (&bstream->epbase);
+             
              return;
+
         default:
             nn_assert (0);
         }
+
+/******************************************************************************/
+/*  CLOSED state                                                              */
+/******************************************************************************/
+    case NN_BSTREAM_STATE_CLOSED:
+        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state                                                             */

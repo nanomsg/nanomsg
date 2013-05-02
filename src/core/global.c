@@ -132,7 +132,7 @@ static void nn_global_add_socktype (struct nn_socktype *socktype);
 
 /*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
-static int nn_global_create_ep (int fd, const char *addr, int bind);
+static int nn_global_create_ep (int s, const char *addr, int bind);
 
 int nn_errno (void)
 {
@@ -242,6 +242,7 @@ static void nn_global_term (void)
     int rc;
 #endif
     struct nn_list_item *it;
+    struct nn_transport *tp;
 
     /*  If there are no sockets remaining, uninitialise the global context. */
     nn_assert (self.socks);
@@ -254,7 +255,9 @@ static void nn_global_term (void)
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
         it = nn_list_begin (&self.transports);
-        nn_cont (it, struct nn_transport, item)->term ();
+        tp = nn_cont (it, struct nn_transport, item);
+        if (tp->term)
+            tp->term ();
         nn_list_erase (&self.transports, it);
     }
 
@@ -450,7 +453,7 @@ int nn_getsockopt (int s, int level, int option, void *optval,
         return -1;
     }
 
-    rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen, 0);
+    rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen);
     if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
@@ -744,7 +747,8 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
 static void nn_global_add_transport (struct nn_transport *transport)
 {
-    transport->init ();
+    if (transport->init)
+        transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
     
@@ -756,7 +760,7 @@ static void nn_global_add_socktype (struct nn_socktype *socktype)
         nn_list_end (&self.socktypes));
 }
 
-static int nn_global_create_ep (int fd, const char *addr, int bind)
+static int nn_global_create_ep (int s, const char *addr, int bind)
 {
     int rc;
     const char *proto;
@@ -764,6 +768,7 @@ static int nn_global_create_ep (int fd, const char *addr, int bind)
     size_t protosz;
     struct nn_transport *tp;
     struct nn_list_item *it;
+    struct nn_ep *ep;
 
     /*  Check whether address is valid. */
     if (!addr)
@@ -800,10 +805,8 @@ static int nn_global_create_ep (int fd, const char *addr, int bind)
         return -EPROTONOSUPPORT;
     }
 
-    /*  Ask socket to create the endpoint. Pass it the class factory
-        function. */
-    rc = nn_sock_add_ep (self.socks [fd], addr,
-        bind ? tp->bind : tp->connect);
+    /*  Ask the socket to create the endpoint. */
+    rc = nn_sock_add_ep (self.socks [s], tp, bind, addr);
     nn_glock_unlock ();
     return rc;
 }

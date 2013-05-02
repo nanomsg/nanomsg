@@ -25,6 +25,8 @@
 
 #include "nn.h"
 
+#include "aio/fsm.h"
+
 #include "utils/list.h"
 #include "utils/msg.h"
 
@@ -67,29 +69,29 @@ struct nn_epbase;
 struct nn_epbase_vfptr {
 
     /*  Ask the endpoint to terminate itself. The endpoint is allowed to linger
-        to send the pending outbound data. In such case the function returns
-        -EINPROGRESS error. */
-    int (*close) (struct nn_epbase *self);
+        to send the pending outbound data. When done, it reports the fact by
+        invoking nn_epbase_closed() function. */
+    void (*close) (struct nn_epbase *self);
+
+    /*  Deallocate the endpoint object. */
+    void (*destroy) (struct nn_epbase *self);
 };
 
-/*  The members of this structure are used exclusively by the core. Never use
-    or modify them directly from the transport. */
 struct nn_epbase {
     const struct nn_epbase_vfptr *vfptr;
-    struct nn_sock *sock;
-    int eid;
-    struct nn_list_item item;
-    char addr [NN_SOCKADDR_MAX + 1];
+    struct nn_ep *ep;
+    struct nn_fsm_event event_closed;
 };
 
-/*  Creates a new endpoint. 'addr' parameter is the address string supplied
-    by the user with the transport prefix chopped off. E.g. "127.0.0.1:5555"
-    rather than "tcp://127.0.0.1:5555". 'hint' parameter is an opaque value that
+/*  Creates a new endpoint. 'hint' parameter is an opaque value that
     was passed to transport's bind or connect function. */
 void nn_epbase_init (struct nn_epbase *self,
-    const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint);
+    const struct nn_epbase_vfptr *vfptr, void *hint);
 
-/*  Destroys the endpoint, unregisters it from the socket etc. */
+/*  Notify the user that closing is done. */
+void nn_epbase_closed (struct nn_epbase *self);
+
+/*  Terminate the epbase object. */
 void nn_epbase_term (struct nn_epbase *self);
 
 /*  Returns the AIO context associated with the endpoint. */
@@ -190,17 +192,18 @@ struct nn_transport {
     /*  Following methods are guarded by a global critical section. Two of these
         function will never be invoked in parallel. The first is called when
         the library is initialised, the second one when it is terminated, i.e.
-        when there are no more open sockets. */
+        when there are no more open sockets. Either of them can be set to NULL
+        if no specific initialisation/termination is needed. */
     void (*init) (void);
     void (*term) (void);
 
     /*  Each of these functions creates an endpoint and returns the newly
-        create endpoint in 'epbase' parameter. 'hint' is in opaque pointer
+        created endpoint in 'epbase' parameter. 'hint' is in opaque pointer
         to be passed to nn_epbase_init().  These functions are guarded by
         a socket-wide critical section. Two of these function will never be
         invoked in parallel on the same socket. */
-    int (*bind) (const char *addr, void *hint, struct nn_epbase **epbase);
-    int (*connect) (const char *addr, void *hint, struct nn_epbase **epbase);
+    int (*bind) (void *hint, struct nn_epbase **epbase);
+    int (*connect) (void *hint, struct nn_epbase **epbase);
 
     /*  Create an object to hold transport-specific socket options.
         Set this member to NULL in case there are no transport-specific

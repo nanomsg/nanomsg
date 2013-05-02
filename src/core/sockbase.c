@@ -31,10 +31,18 @@ int nn_sockbase_init (struct nn_sockbase *self,
 {
     self->vfptr = vfptr;
     self->sock = (struct nn_sock*) hint;
+    nn_fsm_event_init (&self->event_closed, self, NN_SOCKBASE_CLOSED);
 }
 
 void nn_sockbase_term (struct nn_sockbase *self)
 {
+}
+
+void nn_sockbase_closed (struct nn_sockbase *self)
+{
+    /*  TODO: Do the following in more sane way. */
+    self->event_closed.fsm = &self->sock->fsm;
+    nn_ctx_raise (self->sock->fsm.ctx, &self->event_closed);
 }
 
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
@@ -45,7 +53,7 @@ struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)
 int nn_sockbase_getopt (struct nn_sockbase *self, int option,
     void *optval, size_t *optvallen)
 {
-    return nn_sock_getopt (self->sock, NN_SOL_SOCKET, option,
-        optval, optvallen, 1);
+    return nn_sock_getopt_inner (self->sock, NN_SOL_SOCKET, option,
+        optval, optvallen);
 }
 

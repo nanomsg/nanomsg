@@ -58,18 +58,14 @@ const struct nn_cstream_vfptr nn_ipc_cstream_vfptr = {
 };
 
 /*  nn_transport interface. */
-static void nn_ipc_init (void);
-static void nn_ipc_term (void);
-static int nn_ipc_bind (const char *addr, void *hint,
-    struct nn_epbase **epbase);
-static int nn_ipc_connect (const char *addr, void *hint,
-    struct nn_epbase **epbase);
+static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
+static int nn_ipc_connect (void *hint, struct nn_epbase **epbase);
 
 static struct nn_transport nn_ipc_vfptr = {
     "ipc",
     NN_IPC,
-    nn_ipc_init,
-    nn_ipc_term,
+    NULL,
+    NULL,
     nn_ipc_bind,
     nn_ipc_connect,
     NULL,
@@ -78,50 +74,15 @@ static struct nn_transport nn_ipc_vfptr = {
 
 struct nn_transport *nn_ipc = &nn_ipc_vfptr;
 
-static void nn_ipc_init (void)
+static int nn_ipc_bind (void *hint, struct nn_epbase **epbase)
 {
+    return nn_bstream_create (&nn_ipc_bstream_vfptr, hint, epbase);
 }
 
-static void nn_ipc_term (void)
+static int nn_ipc_connect (void *hint, struct nn_epbase **epbase)
 {
-}
-
-static int nn_ipc_bind (const char *addr, void *hint,
-    struct nn_epbase **epbase)
-{
-    int rc;
-    struct nn_bstream *bstream;
-
-    bstream = nn_alloc (sizeof (struct nn_bstream), "bstream (ipc)");
-    alloc_assert (bstream);
-    rc = nn_bstream_init (bstream, addr, hint, &nn_ipc_bstream_vfptr);
-    if (nn_slow (rc != 0)) {
-        nn_free (bstream);
-        return rc;
-    }
-    *epbase = &bstream->epbase;
-
-    return 0;
-}
-
-static int nn_ipc_connect (const char *addr, void *hint,
-    struct nn_epbase **epbase)
-{
-    int rc;
-    struct nn_cstream *cstream;
-
     /*  TODO: Check the syntax of the address here! */
-
-    cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (ipc)");
-    alloc_assert (cstream);
-    rc = nn_cstream_init (cstream, addr, hint, &nn_ipc_cstream_vfptr);
-    if (nn_slow (rc != 0)) {
-        nn_free (cstream);
-        return rc;
-    }
-    *epbase = &cstream->epbase;
-
-    return 0;
+    return nn_cstream_create (&nn_ipc_cstream_vfptr, hint, epbase);
 }
 
 static int nn_ipc_bstream_open (const char *addr, struct nn_usock *usock,
@@ -167,7 +128,7 @@ static int nn_ipc_cstream_resolve (const char *addr,
 {
     struct sockaddr_un *un;
 
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
+    /*  Make sure we're working from a clean slate. */
     memset (remote, 0, sizeof (struct sockaddr_storage));
 
     /*  Fill in the address. */

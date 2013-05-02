@@ -73,8 +73,8 @@ struct nn_cstream {
     struct nn_timer retry_timer;
 };
 
-int nn_cstream_init (struct nn_cstream *self, const char *addr, void *hint,
-    const struct nn_cstream_vfptr *vfptr);
+int nn_cstream_create (const struct nn_cstream_vfptr *vfptr, void *hint,
+    struct nn_epbase **epbase);
 
 #endif
 

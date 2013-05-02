@@ -80,7 +80,6 @@ int main ()
     rc = nn_close (pair);
     errno_assert (rc == 0);
 
-#if 0
     /*  IPC */
     pair = nn_socket (AF_SP, NN_PAIR);
     errno_assert (pair != -1);
@@ -118,7 +117,6 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);
-#endif
 
     return 0;
 }

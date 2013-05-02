@@ -407,6 +407,7 @@ int nn_close (int s)
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */
+    nn_free (self.socks [s]);
     self.socks [s] = NULL;
     self.unused [NN_MAX_SOCKETS - self.nsocks] = s;
     --self.nsocks;

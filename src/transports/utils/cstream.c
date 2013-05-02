@@ -309,6 +309,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->usock) {
             switch (type) {
             case NN_USOCK_CLOSED:
+                nn_usock_term (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSED;
                 nn_epbase_closed (&cstream->epbase);
                 return;
@@ -344,7 +345,12 @@ static void nn_cstream_close (struct nn_epbase *self)
 
 static void nn_cstream_destroy (struct nn_epbase *self)
 {
-    nn_assert (0);
+    struct nn_cstream *cstream;
+
+    cstream = nn_cont (self, struct nn_cstream, epbase);
+
+    nn_cstream_term (cstream);
+    nn_free (cstream);
 }
 
 static int nn_cstream_compute_retry_ivl (struct nn_cstream *self)

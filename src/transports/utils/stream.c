@@ -66,7 +66,7 @@ const struct nn_pipebase_vfptr nn_stream_pipebase_vfptr = {
 };
 
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_usock *usock, struct nn_fsm *owner)
+    struct nn_fsm *owner)
 {
     int rc;
     int protocol;
@@ -76,9 +76,8 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_fsm_init (&self->fsm, nn_stream_callback, owner);
     self->state = NN_STREAM_STATE_INIT;
 
-    /*  Redirect the underlying socket's events to this state machine. */
-    self->usock = usock;
-    self->usock_owner = nn_usock_swap_owner (self->usock, &self->fsm);
+    self->usock = NULL;
+    self->usock_owner = NULL;
 
     /*  Initialise the pipe to communicate with the user. */
     rc = nn_pipebase_init (&self->pipebase, &nn_stream_pipebase_vfptr, epbase);
@@ -99,6 +98,27 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
     nn_assert (sz == sizeof (protocol));
     memcpy (self->protohdr, "\0\0SP\0\0\0\0", 8);
     nn_puts (self->protohdr + 4, (uint16_t) protocol);
+}
+
+void nn_stream_term (struct nn_stream *self)
+{
+    /*  Sanity check. */
+    nn_assert (self->state = NN_STREAM_STATE_INIT ||
+        self->state == NN_STREAM_STATE_CLOSED);
+
+    nn_fsm_event_term (&self->event_closed);
+    nn_fsm_event_term (&self->event_error);
+
+    nn_msg_term (&self->inmsg);
+    nn_msg_term (&self->outmsg);
+    nn_pipebase_term (&self->pipebase);
+}
+
+void nn_stream_start (struct nn_stream *self, struct nn_usock *usock)
+{
+    /*  Redirect the underlying socket's events to this state machine. */
+    self->usock = usock;
+    self->usock_owner = nn_usock_swap_owner (self->usock, &self->fsm);
 
     /*  Pass the event to the state machine. */
     nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_START);
@@ -108,22 +128,6 @@ void nn_stream_close (struct nn_stream *self)
 {
     /*  Pass the appropriate event to the state machine. */
     nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_CLOSE);
-}
-
-void nn_stream_term (struct nn_stream *self)
-{
-    /*  Sanity check. */
-    nn_assert (self->state == NN_STREAM_STATE_CLOSED);
-
-    nn_fsm_event_term (&self->event_closed);
-    nn_fsm_event_term (&self->event_error);
-
-    nn_msg_term (&self->inmsg);
-    nn_msg_term (&self->outmsg);
-    nn_pipebase_term (&self->pipebase);
-
-    /*  Return control of the underlying socket to the parent state machine. */
-    nn_usock_swap_owner (self->usock, self->usock_owner);
 }
 
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
@@ -330,9 +334,12 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 
             case NN_STREAM_EVENT_CLOSE:
 
-                /*  User asks the stream to close. No need to close the
-                    underlying socket as it is owned by the user. We can
-                    close the object straight away. */
+                /*  User asks the stream to close. Return control of
+                    the underlying socket to the owner and notify it about
+                    the fact. */
+                nn_usock_swap_owner (stream->usock, stream->usock_owner);
+                stream->usock = NULL;
+                stream->usock_owner = NULL;
                 stream->state = NN_STREAM_STATE_CLOSED;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
 
@@ -402,6 +409,9 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
             case NN_TIMER_TIMEOUT:
                 return;
             case NN_TIMER_CLOSED:
+                nn_usock_swap_owner (stream->usock, stream->usock_owner);
+                stream->usock = NULL;
+                stream->usock_owner = NULL;
                 stream->state = NN_STREAM_STATE_CLOSED;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
                 nn_assert (0);

@@ -79,6 +79,9 @@ int nn_cstream_create (const struct nn_cstream_vfptr *vfptr, void *hint,
         not a valid address string. Don't do any blocking DNS operations
         though! */
 
+    /*  Initialise the child state machine. */
+    nn_stream_init (&self->stream, &self->epbase, &self->fsm);
+
     /*  Initialise the retry timer. */
     self->retry_ivl = -1;
     nn_timer_init (&self->retry_timer, &self->fsm);
@@ -221,8 +224,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
             case NN_USOCK_CONNECTED:
 
                 /*  Pass the control to the embedded 'stream' state machine. */
-                nn_stream_init (&cstream->stream, &cstream->epbase,
-                    &cstream->usock, &cstream->fsm);
+                nn_stream_start (&cstream->stream, &cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CONNECTED;
                 return;
 

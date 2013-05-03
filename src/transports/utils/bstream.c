@@ -171,7 +171,9 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
 
                 /*  New connecting arrived. Start its state machine. */
                 nn_stream_init (&bstream->astream->stream, &bstream->epbase,
-                    &bstream->astream->usock, &bstream->fsm);
+                    &bstream->fsm);
+                nn_stream_start (&bstream->astream->stream,
+                    &bstream->astream->usock);
                 nn_list_insert (&bstream->astreams, &bstream->astream->item,
                     nn_list_end (&bstream->astreams));
                 bstream->astream = NULL;

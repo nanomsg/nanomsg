@@ -86,11 +86,14 @@ struct nn_stream {
     struct nn_fsm_event event_closed;
 };
 
-/*  The socket passed to this object has to be already connected. The object
-    will grab ownership of the socket and return it to the caller only once
-    the connection is closed. */
+/*  Initialise the object. */
 void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
-    struct nn_usock *usock, struct nn_fsm *owner);
+    struct nn_fsm *owner);
+
+/*  Starts the state machine. The socket passed to this function has to be
+    already connected. The object will grab ownership of the socket and return
+    it to the caller only once the connection is closed. */
+void nn_stream_start (struct nn_stream *self, struct nn_usock *usock);
 
 /*  Ask object to close. When done, CLOSE event will be triggered. */
 void nn_stream_close (struct nn_stream *self);

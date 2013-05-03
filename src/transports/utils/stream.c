@@ -174,8 +174,10 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
     stream = nn_cont (self, struct nn_stream, fsm);
 
     switch (stream->state) {
+
 /******************************************************************************/
 /*  INIT state.                                                               */
+/*  Object is initialised, but the state machine wasn't yet started.          */
 /******************************************************************************/
     case NN_STREAM_STATE_INIT:
         if (source == NULL) {
@@ -200,8 +202,10 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
              }
         }
         nn_assert (0);
+
 /******************************************************************************/
 /*  SENDING_PROTOHDR state.                                                   */
+/*  Protocol header is being sent to the peer. Waiting till it's done.        */
 /******************************************************************************/
     case NN_STREAM_STATE_SENDING_PROTOHDR:
         if (source == stream->usock) {
@@ -214,7 +218,13 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 return;
 
             case NN_USOCK_ERROR:
-                nn_assert (0);
+
+                /*  Close the header exchange timer and proceed with stream
+                    shutdown. */
+                nn_timer_close (&stream->hdr_timeout);
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                return;
+
             default:
                 nn_assert (0);
             }
@@ -222,14 +232,22 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         if (source == &stream->hdr_timeout) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                nn_assert (0);
+
+                /*  Close the header exchange timer and proceed with stream
+                    shutdown. */
+                nn_timer_close (&stream->hdr_timeout);
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                return;
+
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
+
 /******************************************************************************/
 /*  RECEIVING_PROTOHDR state.                                                 */
+/*  Waiting for protocol header from the peer.                                */
 /******************************************************************************/
     case NN_STREAM_STATE_RECEIVING_PROTOHDR:
         if (source == stream->usock) {
@@ -248,7 +266,13 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 return;
 
             case NN_USOCK_ERROR:
-                nn_assert (0);
+
+                /*  Close the header exchange timer and proceed with stream
+                    shutdown. */
+                nn_timer_close (&stream->hdr_timeout);
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                return;
+
             default:
                 nn_assert (0);
             }
@@ -256,22 +280,28 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         if (source == &stream->hdr_timeout) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                nn_assert (0);
+
+                /*  Close the header exchange timer and proceed with stream
+                    shutdown. */
+                nn_timer_close (&stream->hdr_timeout);
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                return;
+
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
+
 /******************************************************************************/
 /*  DISABLING_TIMER state.                                                    */
 /*  After doing the initial protocol header exchange we don't need the timer  */
-/*  any more. Here we are closing it.                                         */
+/*  any more. Here we are closing it. Afterwards we'll proceed to ACTIVE      */
+/*  state.                                                                    */
 /******************************************************************************/
     case NN_STREAM_STATE_DISABLING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
-            case NN_TIMER_TIMEOUT:
-                return;
             case NN_TIMER_CLOSED:
 
                 /*  Connection is ready for sending. Make outpipe available
@@ -291,7 +321,22 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
+        if (source == stream->usock) {
+            switch (type) {
+            case NN_USOCK_ERROR:
+
+                /*  We'll continue closing the timer, but now we'll proceed
+                    with the shutdown afterwards, instead of switching to the
+                    ACTIVE state. */
+                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
+
 /******************************************************************************/
 /*  ACTIVE state                                                              */
 /*  In this state the object is actively sending and receiving messages.      */
@@ -392,22 +437,29 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                     nn_assert (0);
                 }
             case NN_USOCK_ERROR:
-                nn_assert (0);
+
+                /*  Close the stream. */
+                nn_usock_swap_owner (stream->usock, stream->usock_owner);
+                stream->usock = NULL;
+                stream->usock_owner = NULL;
+                stream->state = NN_STREAM_STATE_CLOSED;
+                nn_fsm_raise (&stream->fsm, &stream->event_closed);
+                return;
+
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
+
 /******************************************************************************/
-/*  CLOSING_TIMER_FINAL state.                                                */
+/*  CLOSING_TIMER state.                                                      */
 /*  Protocol header exchange have failed. We are now closing the timer and    */
-/*  we will terminate the object once it is done.                             */
+/*  we will proceed to the CLOSED state once it is done.                      */
 /******************************************************************************/
     case NN_STREAM_STATE_CLOSING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
-            case NN_TIMER_TIMEOUT:
-                return;
             case NN_TIMER_CLOSED:
                 nn_usock_swap_owner (stream->usock, stream->usock_owner);
                 stream->usock = NULL;
@@ -415,6 +467,17 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 stream->state = NN_STREAM_STATE_CLOSED;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
                 nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == stream->usock) {
+            switch (type) {
+            case NN_USOCK_ERROR:
+
+                /*  We are closing the stream anyway. Nothing to do here. */
+                return;
+
             default:
                 nn_assert (0);
             }

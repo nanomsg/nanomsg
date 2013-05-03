@@ -94,8 +94,9 @@ static void nn_cstream_term (struct nn_cstream *self)
 {
     nn_assert (self->state == NN_CSTREAM_STATE_CLOSED);
 
-    /*  At this point we assume that stream, usock and timer are already
-        closed. */
+    nn_timer_term (&self->retry_timer);
+    nn_stream_term (&self->stream);
+    nn_usock_term (&self->usock);
     nn_epbase_term (&self->epbase);
 }
 
@@ -286,16 +287,9 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->stream) {
             switch (type) {
             case NN_STREAM_CLOSED:
-
-                /*  Stream state machine is closed. We can deallocate it now. */
-                nn_stream_term (&cstream->stream);
-
-                /*  Start closing the underlying socket itself. */
                 nn_usock_close (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
-
                 return;
-
             default:
                 nn_assert (0);
             }
@@ -309,7 +303,6 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->usock) {
             switch (type) {
             case NN_USOCK_CLOSED:
-                nn_usock_term (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSED;
                 nn_epbase_closed (&cstream->epbase);
                 return;

@@ -65,9 +65,9 @@ int nn_inprocc_socktype (struct nn_inprocc *self)
     return socktype;
 }
 
-int nn_inprocc_ispeer (struct nn_inprocc *self, int socktype)
+int nn_inprocc_ispeer (struct nn_inprocc *self, int protocol)
 {
-    return nn_epbase_ispeer (&self->epbase, socktype);
+    return nn_epbase_ispeer (&self->epbase, protocol);
 }
 
 void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe)

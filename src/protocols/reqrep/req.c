@@ -88,6 +88,7 @@ static int nn_req_init (struct nn_req *self,
 static void nn_req_term (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_req_close (struct nn_sockbase *self);
 static void nn_req_destroy (struct nn_sockbase *self);
 static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -99,6 +100,7 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
+    nn_req_close,
     nn_req_destroy,
     nn_xreq_add,
     nn_xreq_rm,
@@ -140,6 +142,11 @@ static void nn_req_term (struct nn_req *self)
         nn_msg_term (&self->reply);
     nn_aio_timer_term (&self->resend_timer);
     nn_xreq_term (&self->xreq);
+}
+
+static void nn_req_close (struct nn_sockbase *self)
+{
+    nn_assert (0);
 }
 
 static void nn_req_destroy (struct nn_sockbase *self)

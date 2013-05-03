@@ -43,6 +43,7 @@ static int nn_xpull_init (struct nn_xpull *self,
 static void nn_xpull_term (struct nn_xpull *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xpull_close (struct nn_sockbase *self);
 static void nn_xpull_destroy (struct nn_sockbase *self);
 static int nn_xpull_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -55,6 +56,7 @@ static int nn_xpull_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
+    nn_xpull_close,
     nn_xpull_destroy,
     nn_xpull_add,
     nn_xpull_rm,
@@ -85,6 +87,12 @@ static void nn_xpull_term (struct nn_xpull *self)
 {
     nn_excl_term (&self->excl);
     nn_sockbase_term (&self->sockbase);
+}
+
+void nn_xpull_close (struct nn_sockbase *self)
+{
+    /*  Nothing special to do done. The object is closed straight away. */
+    nn_sockbase_closed (self);
 }
 
 void nn_xpull_destroy (struct nn_sockbase *self)

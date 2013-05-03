@@ -47,6 +47,7 @@ static int nn_xpush_init (struct nn_xpush *self,
 static void nn_xpush_term (struct nn_xpush *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_xpush_close (struct nn_sockbase *self);
 static void nn_xpush_destroy (struct nn_sockbase *self);
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -59,6 +60,7 @@ static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
+    nn_xpush_close,
     nn_xpush_destroy,
     nn_xpush_add,
     nn_xpush_rm,
@@ -89,6 +91,12 @@ static void nn_xpush_term (struct nn_xpush *self)
 {
     nn_lb_term (&self->lb);
     nn_sockbase_term (&self->sockbase);
+}
+
+void nn_xpush_close (struct nn_sockbase *self)
+{
+    /*  Nothing special to do done. The object is closed straight away. */
+    nn_sockbase_closed (self);
 }
 
 void nn_xpush_destroy (struct nn_sockbase *self)

@@ -56,6 +56,7 @@ static int nn_surveyor_init (struct nn_surveyor *self,
 static void nn_surveyor_term (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_surveyor_close (struct nn_sockbase *self);
 static void nn_surveyor_destroy (struct nn_sockbase *self);
 static int nn_surveyor_events (struct nn_sockbase *self);
 static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg);
@@ -65,8 +66,7 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
-    0,
-    nn_xsurveyor_ispeer,
+    nn_surveyor_close,
     nn_surveyor_destroy,
     nn_xsurveyor_add,
     nn_xsurveyor_rm,
@@ -119,6 +119,11 @@ static void nn_surveyor_term (struct nn_surveyor *self)
 {
     nn_aio_timer_term (&self->deadline_timer);
     nn_xsurveyor_term (&self->xsurveyor);
+}
+
+void nn_surveyor_destroy (struct nn_sockbase *self)
+{
+    nn_assert (0);
 }
 
 void nn_surveyor_destroy (struct nn_sockbase *self)

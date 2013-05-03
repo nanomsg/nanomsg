@@ -50,11 +50,13 @@ static int nn_respondent_init (struct nn_respondent *self,
 static void nn_respondent_term (struct nn_respondent *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_respondent_close (struct nn_sockbase *self);
 static void nn_respondent_destroy (struct nn_sockbase *self);
 static int nn_respondent_events (struct nn_sockbase *self);
 static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
+    nn_respondent_close,
     nn_respondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,
@@ -83,6 +85,12 @@ static int nn_respondent_init (struct nn_respondent *self,
 static void nn_respondent_term (struct nn_respondent *self)
 {
     nn_xrespondent_term (&self->xrespondent);
+}
+
+void nn_respondent_close (struct nn_sockbase *self)
+{
+    /*  Nothing special to do done. The object is closed straight away. */
+    nn_sockbase_closed (self);
 }
 
 void nn_respondent_destroy (struct nn_sockbase *self)

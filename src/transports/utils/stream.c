@@ -31,13 +31,12 @@
 #include <stdint.h>
 
 /*  Possible states of object. */
-#define NN_STREAM_STATE_INIT 1
+#define NN_STREAM_STATE_IDLE 1
 #define NN_STREAM_STATE_SENDING_PROTOHDR 2
 #define NN_STREAM_STATE_RECEIVING_PROTOHDR 3
 #define NN_STREAM_STATE_DISABLING_TIMER 4
 #define NN_STREAM_STATE_ACTIVE 5
-#define NN_STREAM_STATE_CLOSING_TIMER 6
-#define NN_STREAM_STATE_CLOSED 7
+#define NN_STREAM_STATE_STOPPING_TIMER 6
 
 /*  Possible states of the inbound part of the object. */
 #define NN_STREAM_INSTATE_HDR 1
@@ -52,7 +51,7 @@
 #define NN_STREAM_EVENT_START 1
 #define NN_STREAM_EVENT_SEND 2
 #define NN_STREAM_EVENT_RECV 3
-#define NN_STREAM_EVENT_CLOSE 4
+#define NN_STREAM_EVENT_STOP 4
 
 /*  Private functions. */
 static void nn_stream_callback (struct nn_fsm *self, void *source, int type);
@@ -74,7 +73,7 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
 
     /*  Initialise the state machine. */
     nn_fsm_init (&self->fsm, nn_stream_callback, owner);
-    self->state = NN_STREAM_STATE_INIT;
+    self->state = NN_STREAM_STATE_IDLE;
 
     self->usock = NULL;
     self->usock_owner = NULL;
@@ -103,8 +102,7 @@ void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
 void nn_stream_term (struct nn_stream *self)
 {
     /*  Sanity check. */
-    nn_assert (self->state = NN_STREAM_STATE_INIT ||
-        self->state == NN_STREAM_STATE_CLOSED);
+    nn_assert (self->state = NN_STREAM_STATE_IDLE);
 
     nn_fsm_event_term (&self->event_closed);
     nn_fsm_event_term (&self->event_error);
@@ -126,8 +124,8 @@ void nn_stream_start (struct nn_stream *self, struct nn_usock *usock)
 
 void nn_stream_close (struct nn_stream *self)
 {
-    /*  Pass the appropriate event to the state machine. */
-    nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_CLOSE);
+    /*  Pass the event to the state machine. */
+    nn_stream_callback (&self->fsm, NULL, NN_STREAM_EVENT_STOP);
 }
 
 static int nn_stream_send (struct nn_pipebase *self, struct nn_msg *msg)
@@ -176,10 +174,10 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
     switch (stream->state) {
 
 /******************************************************************************/
-/*  INIT state.                                                               */
-/*  Object is initialised, but the state machine wasn't yet started.          */
+/*  IDLE state.                                                               */
+/*  Object is initialised, but the state machine isn't started.               */
 /******************************************************************************/
-    case NN_STREAM_STATE_INIT:
+    case NN_STREAM_STATE_IDLE:
         if (source == NULL) {
              switch (type) {
              case NN_STREAM_EVENT_START:
@@ -222,7 +220,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
                 nn_timer_stop (&stream->hdr_timeout);
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_STOPPING_TIMER;
                 return;
 
             default:
@@ -236,7 +234,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
                 nn_timer_stop (&stream->hdr_timeout);
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_STOPPING_TIMER;
                 return;
 
             default:
@@ -270,7 +268,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
                 nn_timer_stop (&stream->hdr_timeout);
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_STOPPING_TIMER;
                 return;
 
             default:
@@ -284,7 +282,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
                 nn_timer_stop (&stream->hdr_timeout);
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_STOPPING_TIMER;
                 return;
 
             default:
@@ -328,7 +326,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 /*  We'll continue closing the timer, but now we'll proceed
                     with the shutdown afterwards, instead of switching to the
                     ACTIVE state. */
-                stream->state = NN_STREAM_STATE_CLOSING_TIMER;
+                stream->state = NN_STREAM_STATE_STOPPING_TIMER;
                 return;
 
             default:
@@ -377,15 +375,15 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 
                 return;
 
-            case NN_STREAM_EVENT_CLOSE:
+            case NN_STREAM_EVENT_STOP:
 
-                /*  User asks the stream to close. Return control of
+                /*  User asks the stream to stop. Return control of
                     the underlying socket to the owner and notify it about
                     the fact. */
                 nn_usock_swap_owner (stream->usock, stream->usock_owner);
                 stream->usock = NULL;
                 stream->usock_owner = NULL;
-                stream->state = NN_STREAM_STATE_CLOSED;
+                stream->state = NN_STREAM_STATE_IDLE;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
 
                 return;
@@ -442,7 +440,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 nn_usock_swap_owner (stream->usock, stream->usock_owner);
                 stream->usock = NULL;
                 stream->usock_owner = NULL;
-                stream->state = NN_STREAM_STATE_CLOSED;
+                stream->state = NN_STREAM_STATE_IDLE;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
                 return;
 
@@ -453,18 +451,18 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING_TIMER state.                                                      */
+/*  STOPPING_TIMER state.                                                     */
 /*  Protocol header exchange have failed. We are now closing the timer and    */
-/*  we will proceed to the CLOSED state once it is done.                      */
+/*  we will proceed to the IDLE state once it is done.                        */
 /******************************************************************************/
-    case NN_STREAM_STATE_CLOSING_TIMER:
+    case NN_STREAM_STATE_STOPPING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_usock_swap_owner (stream->usock, stream->usock_owner);
                 stream->usock = NULL;
                 stream->usock_owner = NULL;
-                stream->state = NN_STREAM_STATE_CLOSED;
+                stream->state = NN_STREAM_STATE_IDLE;
                 nn_fsm_raise (&stream->fsm, &stream->event_closed);
                 nn_assert (0);
             default:
@@ -482,11 +480,6 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        nn_assert (0);
-/******************************************************************************/
-/*  CLOSED state.                                                             */
-/******************************************************************************/
-    case NN_STREAM_STATE_CLOSED:
         nn_assert (0);
 
 /******************************************************************************/

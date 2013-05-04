@@ -30,18 +30,17 @@
 
 #include <string.h>
 
-#define NN_CSTREAM_STATE_INIT 1
+#define NN_CSTREAM_STATE_IDLE 1
 #define NN_CSTREAM_STATE_WAITING 2
 #define NN_CSTREAM_STATE_FINISHING_WAITING 3
 #define NN_CSTREAM_STATE_CONNECTING 4
-#define NN_CSTREAM_STATE_CONNECTED 5
-#define NN_CSTREAM_STATE_CLOSING_TIMER 6
-#define NN_CSTREAM_STATE_CLOSING_STREAM 7
-#define NN_CSTREAM_STATE_CLOSING_USOCK 8
-#define NN_CSTREAM_STATE_CLOSED 9
+#define NN_CSTREAM_STATE_ACTIVE 5
+#define NN_CSTREAM_STATE_STOPPING_TIMER 6
+#define NN_CSTREAM_STATE_STOPPING_STREAM 7
+#define NN_CSTREAM_STATE_STOPPING_USOCK 8
 
 #define NN_CSTREAM_EVENT_START 1
-#define NN_CSTREAM_EVENT_CLOSE 2
+#define NN_CSTREAM_EVENT_STOP 2
 
 /*  Private functions. */
 static void nn_cstream_term (struct nn_cstream *self);
@@ -73,7 +72,7 @@ int nn_cstream_create (const struct nn_cstream_vfptr *vfptr, void *hint,
     /*  Initialise the state machine. */
     nn_fsm_init_root (&self->fsm, nn_cstream_callback,
         nn_epbase_getctx (&self->epbase));
-    self->state = NN_CSTREAM_STATE_INIT;
+    self->state = NN_CSTREAM_STATE_IDLE;
 
     /*  TODO: Check the syntax of the address and return error if it is
         not a valid address string. Don't do any blocking DNS operations
@@ -95,7 +94,7 @@ int nn_cstream_create (const struct nn_cstream_vfptr *vfptr, void *hint,
 
 static void nn_cstream_term (struct nn_cstream *self)
 {
-    nn_assert (self->state == NN_CSTREAM_STATE_CLOSED);
+    nn_assert (self->state == NN_CSTREAM_STATE_IDLE);
 
     nn_timer_term (&self->retry_timer);
     nn_stream_term (&self->stream);
@@ -120,9 +119,9 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
     switch (cstream->state) {
 
 /******************************************************************************/
-/*  INIT state.                                                               */
+/*  IDLE state.                                                               */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_INIT:
+    case NN_CSTREAM_STATE_IDLE:
         if (source == NULL) {
             switch (type) {
             case NN_CSTREAM_EVENT_START:
@@ -185,7 +184,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
             case NN_TIMER_TIMEOUT:
                 
                 /*  Timer expired. Let's start connecting once more. */
-                cstream->state = NN_CSTREAM_STATE_INIT;
+                cstream->state = NN_CSTREAM_STATE_IDLE;
                 nn_cstream_callback (&cstream->fsm, NULL,
                     NN_CSTREAM_EVENT_START);
                 return;
@@ -196,12 +195,12 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         }
         if (source == NULL) {
             switch (type) {
-            case NN_CSTREAM_EVENT_CLOSE:
+            case NN_CSTREAM_EVENT_STOP:
 
-                /*  User is closing the object while waiting for reconnection.
+                /*  User is stopping the object while waiting for reconnection.
                     Cancel the timer and proceed with shutdown. */
                 nn_timer_stop (&cstream->retry_timer);
-                cstream->state = NN_CSTREAM_STATE_CLOSING_TIMER;
+                cstream->state = NN_CSTREAM_STATE_STOPPING_TIMER;
 
                 return;
             default:
@@ -226,7 +225,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
 
                 /*  Pass the control to the embedded 'stream' state machine. */
                 nn_stream_start (&cstream->stream, &cstream->usock);
-                cstream->state = NN_CSTREAM_STATE_CONNECTED;
+                cstream->state = NN_CSTREAM_STATE_ACTIVE;
                 return;
 
             case NN_USOCK_ERROR:
@@ -244,9 +243,9 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CONNECTED state.                                                          */
+/*  ACTIVE state.                                                             */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CONNECTED:
+    case NN_CSTREAM_STATE_ACTIVE:
         if (source == &cstream->usock) {
             switch (type) {
             case NN_STREAM_ERROR:
@@ -257,9 +256,9 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         }
         if (source == NULL) {
             switch (type) {
-            case NN_CSTREAM_EVENT_CLOSE:
+            case NN_CSTREAM_EVENT_STOP:
                 nn_stream_close (&cstream->stream);
-                cstream->state = NN_CSTREAM_STATE_CLOSING_STREAM;
+                cstream->state = NN_CSTREAM_STATE_STOPPING_STREAM;
                 return;
             default:
                 nn_assert (0);
@@ -268,14 +267,14 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING_TIMER state.                                                      */
+/*  STOPPING_TIMER state.                                                     */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSING_TIMER:
+    case NN_CSTREAM_STATE_STOPPING_TIMER:
         if (source == &cstream->retry_timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_usock_stop (&cstream->usock);
-                cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
+                cstream->state = NN_CSTREAM_STATE_STOPPING_USOCK;
                 return;
             default:
                 nn_assert (0);
@@ -284,14 +283,14 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING_STREAM state.                                                     */
+/*  STOPPING_STREAM state.                                                    */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSING_STREAM:
+    case NN_CSTREAM_STATE_STOPPING_STREAM:
         if (source == &cstream->stream) {
             switch (type) {
             case NN_STREAM_CLOSED:
                 nn_usock_stop (&cstream->usock);
-                cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
+                cstream->state = NN_CSTREAM_STATE_STOPPING_USOCK;
                 return;
             default:
                 nn_assert (0);
@@ -300,25 +299,19 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING_USOCK state.                                                      */
+/*  STOPPING_USOCK state.                                                     */
 /******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSING_USOCK:
+    case NN_CSTREAM_STATE_STOPPING_USOCK:
         if (source == &cstream->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
-                cstream->state = NN_CSTREAM_STATE_CLOSED;
+                cstream->state = NN_CSTREAM_STATE_IDLE;
                 nn_epbase_closed (&cstream->epbase);
                 return;
             default:
                 nn_assert (0);
             }
         }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  CLOSED state.                                                             */
-/******************************************************************************/
-    case NN_CSTREAM_STATE_CLOSED:
         nn_assert (0);
 
 /******************************************************************************/
@@ -336,7 +329,7 @@ static void nn_cstream_close (struct nn_epbase *self)
     cstream = nn_cont (self, struct nn_cstream, epbase);
 
     /*  Pass the event to the state machine. */
-    nn_cstream_callback (&cstream->fsm, NULL, NN_CSTREAM_EVENT_CLOSE);
+    nn_cstream_callback (&cstream->fsm, NULL, NN_CSTREAM_EVENT_STOP);
 }
 
 static void nn_cstream_destroy (struct nn_epbase *self)

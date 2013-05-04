@@ -199,7 +199,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
 
                 /*  User is closing the object while waiting for reconnection.
                     Cancel the timer and proceed with shutdown. */
-                nn_timer_close (&cstream->retry_timer);
+                nn_timer_stop (&cstream->retry_timer);
                 cstream->state = NN_CSTREAM_STATE_CLOSING_TIMER;
 
                 return;
@@ -272,7 +272,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
     case NN_CSTREAM_STATE_CLOSING_TIMER:
         if (source == &cstream->retry_timer) {
             switch (type) {
-            case NN_TIMER_CLOSED:
+            case NN_TIMER_STOPPED:
                 nn_usock_close (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
                 return;

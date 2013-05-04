@@ -219,9 +219,9 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
 
             case NN_USOCK_ERROR:
 
-                /*  Close the header exchange timer and proceed with stream
+                /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
-                nn_timer_close (&stream->hdr_timeout);
+                nn_timer_stop (&stream->hdr_timeout);
                 stream->state = NN_STREAM_STATE_CLOSING_TIMER;
                 return;
 
@@ -233,9 +233,9 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_TIMER_TIMEOUT:
 
-                /*  Close the header exchange timer and proceed with stream
+                /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
-                nn_timer_close (&stream->hdr_timeout);
+                nn_timer_stop (&stream->hdr_timeout);
                 stream->state = NN_STREAM_STATE_CLOSING_TIMER;
                 return;
 
@@ -259,17 +259,17 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
                 if (!nn_pipebase_ispeer (&stream->pipebase, protocol))
                     nn_assert (0);
 
-                /*  Close the header exchange timer. */
-                nn_timer_close (&stream->hdr_timeout);
+                /*  Stop the header exchange timer. */
+                nn_timer_stop (&stream->hdr_timeout);
                 stream->state = NN_STREAM_STATE_DISABLING_TIMER;
 
                 return;
 
             case NN_USOCK_ERROR:
 
-                /*  Close the header exchange timer and proceed with stream
+                /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
-                nn_timer_close (&stream->hdr_timeout);
+                nn_timer_stop (&stream->hdr_timeout);
                 stream->state = NN_STREAM_STATE_CLOSING_TIMER;
                 return;
 
@@ -281,9 +281,9 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_TIMER_TIMEOUT:
 
-                /*  Close the header exchange timer and proceed with stream
+                /*  Stop the header exchange timer and proceed with stream
                     shutdown. */
-                nn_timer_close (&stream->hdr_timeout);
+                nn_timer_stop (&stream->hdr_timeout);
                 stream->state = NN_STREAM_STATE_CLOSING_TIMER;
                 return;
 
@@ -302,7 +302,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
     case NN_STREAM_STATE_DISABLING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
-            case NN_TIMER_CLOSED:
+            case NN_TIMER_STOPPED:
 
                 /*  Connection is ready for sending. Make outpipe available
                     to the SP socket. */
@@ -460,7 +460,7 @@ static void nn_stream_callback (struct nn_fsm *self, void *source, int type)
     case NN_STREAM_STATE_CLOSING_TIMER:
         if (source == &stream->hdr_timeout) {
             switch (type) {
-            case NN_TIMER_CLOSED:
+            case NN_TIMER_STOPPED:
                 nn_usock_swap_owner (stream->usock, stream->usock_owner);
                 stream->usock = NULL;
                 stream->usock_owner = NULL;

@@ -130,6 +130,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
                 /*  Open the socket. */
                 rc = cstream->vfptr->open (&cstream->usock, &cstream->fsm);
                 errnum_assert (rc == 0, -rc);
+                nn_usock_start (&cstream->usock);
 
                 /*  Apply current values of NN_SNDBUF and NN_RCVBUF options. */    
                 sz = sizeof (sndbuf);
@@ -273,7 +274,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->retry_timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
-                nn_usock_close (&cstream->usock);
+                nn_usock_stop (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
                 return;
             default:
@@ -289,7 +290,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
         if (source == &cstream->stream) {
             switch (type) {
             case NN_STREAM_CLOSED:
-                nn_usock_close (&cstream->usock);
+                nn_usock_stop (&cstream->usock);
                 cstream->state = NN_CSTREAM_STATE_CLOSING_USOCK;
                 return;
             default:
@@ -304,7 +305,7 @@ static void nn_cstream_callback (struct nn_fsm *fsm, void *source, int type)
     case NN_CSTREAM_STATE_CLOSING_USOCK:
         if (source == &cstream->usock) {
             switch (type) {
-            case NN_USOCK_CLOSED:
+            case NN_USOCK_STOPPED:
                 cstream->state = NN_CSTREAM_STATE_CLOSED;
                 nn_epbase_closed (&cstream->epbase);
                 return;

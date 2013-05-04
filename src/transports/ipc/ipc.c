@@ -111,6 +111,7 @@ static int nn_ipc_bstream_open (const char *addr, struct nn_usock *usock,
     rc = nn_usock_init (usock, AF_UNIX, SOCK_STREAM, 0, owner);
     if (nn_slow (rc < 0))
         return rc;
+    nn_usock_start (usock);
     rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
     errnum_assert (rc == 0, -rc);
     rc = nn_usock_listen (usock, NN_IPC_BACKLOG);

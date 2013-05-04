@@ -192,7 +192,7 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
                 /*  User asked the object to be closed. First we'll close
                     the listening socket so that new connections cannot be
                     accepted. */
-                nn_usock_close (&bstream->usock);
+                nn_usock_stop (&bstream->usock);
                 bstream->state = NN_BSTREAM_STATE_CLOSING_USOCK;
 
                 return;
@@ -209,7 +209,7 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
     case NN_BSTREAM_STATE_CLOSING_USOCK:
         if (source == &bstream->usock) {
             switch (type) {
-            case NN_USOCK_CLOSED:
+            case NN_USOCK_STOPPED:
 
                 /*  Deallocate the listening socket. */
                 nn_usock_term (&bstream->usock);
@@ -244,9 +244,9 @@ static void nn_bstream_callback (struct nn_fsm *fsm, void *source, int type)
         case NN_STREAM_CLOSED:
              astream = nn_cont (source, struct nn_astream, stream);
              nn_stream_term (&astream->stream);
-             nn_usock_close (&astream->usock);
+             nn_usock_stop (&astream->usock);
              return;
-        case NN_USOCK_CLOSED:
+        case NN_USOCK_STOPPED:
              astream = nn_cont (source, struct nn_astream, usock);
              nn_usock_term (&astream->usock);
              nn_list_erase (&bstream->astreams, &astream->item);

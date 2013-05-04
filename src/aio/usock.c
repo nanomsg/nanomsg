@@ -30,22 +30,23 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define NN_USOCK_STATE_STARTING 1
-#define NN_USOCK_STATE_CONNECTING 2
-#define NN_USOCK_STATE_CONNECTED 3
-#define NN_USOCK_STATE_CONNECT_ERROR 4
-#define NN_USOCK_STATE_LISTENING 5
-#define NN_USOCK_STATE_ACCEPTING 6
-#define NN_USOCK_STATE_ERROR 7
-#define NN_USOCK_STATE_CLOSING 8
-#define NN_USOCK_STATE_CLOSED 9
+#define NN_USOCK_STATE_IDLE 1
+#define NN_USOCK_STATE_STARTING 2
+#define NN_USOCK_STATE_CONNECTING 3
+#define NN_USOCK_STATE_CONNECTED 4
+#define NN_USOCK_STATE_CONNECT_ERROR 5
+#define NN_USOCK_STATE_LISTENING 6
+#define NN_USOCK_STATE_ACCEPTING 7
+#define NN_USOCK_STATE_ERROR 8
+#define NN_USOCK_STATE_STOPPING 9
 
-#define NN_USOCK_EVENT_CLOSE 1
-#define NN_USOCK_EVENT_ACCEPT 2
-#define NN_USOCK_EVENT_LISTEN 3
-#define NN_USOCK_EVENT_CONNECTED 4
-#define NN_USOCK_EVENT_CONNECT_ERROR 5
-#define NN_USOCK_EVENT_CONNECTING 6
+#define NN_USOCK_EVENT_START 1
+#define NN_USOCK_EVENT_STOP 2
+#define NN_USOCK_EVENT_ACCEPT 3
+#define NN_USOCK_EVENT_LISTEN 4
+#define NN_USOCK_EVENT_CONNECTED 5
+#define NN_USOCK_EVENT_CONNECT_ERROR 6
+#define NN_USOCK_EVENT_CONNECTING 7
 
 /*  Private functions. */
 static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
@@ -82,7 +83,7 @@ static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
 
     /*  Initalise the state machine. */
     nn_fsm_init (&self->fsm, nn_usock_callback, owner);
-    self->state = NN_USOCK_STATE_STARTING;
+    self->state = NN_USOCK_STATE_IDLE;
 
     /*  Choose a worker thread to handle this socket. */
     self->worker = nn_fsm_choose_worker (&self->fsm);
@@ -144,7 +145,7 @@ static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
     nn_worker_task_init (&self->task_accept, &self->fsm);
     nn_worker_task_init (&self->task_send, &self->fsm);
     nn_worker_task_init (&self->task_recv, &self->fsm);
-    nn_worker_task_init (&self->task_close, &self->fsm);
+    nn_worker_task_init (&self->task_stop, &self->fsm);
 
     /*  Intialise incoming tasks. */
     nn_fsm_event_init (&self->event_accepted, self, NN_USOCK_ACCEPTED);
@@ -152,7 +153,7 @@ static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
     nn_fsm_event_init (&self->event_sent, self, NN_USOCK_SENT);
     nn_fsm_event_init (&self->event_received, self, NN_USOCK_RECEIVED);
     nn_fsm_event_init (&self->event_error, self, NN_USOCK_ERROR);
-    nn_fsm_event_init (&self->event_closed, self, NN_USOCK_CLOSED);
+    nn_fsm_event_init (&self->event_stopped, self, NN_USOCK_STOPPED);
 
     /*  We are not listening at the moment. */
     self->newsock = NULL;
@@ -165,18 +166,18 @@ void nn_usock_term (struct nn_usock *self)
 {
     int rc;
 
-    nn_assert (self->state == NN_USOCK_STATE_CLOSED);
+    nn_assert (self->state == NN_USOCK_STATE_IDLE);
 
     if (self->in.batch)
         nn_free (self->in.batch);
 
-    nn_fsm_event_term (&self->event_closed);
+    nn_fsm_event_term (&self->event_stopped);
     nn_fsm_event_term (&self->event_error);
     nn_fsm_event_term (&self->event_received);
     nn_fsm_event_term (&self->event_sent);
     nn_fsm_event_term (&self->event_connected);
     nn_fsm_event_term (&self->event_accepted);
-    nn_worker_task_term (&self->task_close);
+    nn_worker_task_term (&self->task_stop);
     nn_worker_task_term (&self->task_recv);
     nn_worker_task_term (&self->task_send);
     nn_worker_task_term (&self->task_accept);
@@ -190,16 +191,22 @@ void nn_usock_term (struct nn_usock *self)
     nn_fsm_term (&self->fsm);
 }
 
+void nn_usock_start (struct nn_usock *self)
+{
+    nn_assert (self->state == NN_USOCK_STATE_IDLE);
+    self->state = NN_USOCK_STATE_STARTING;
+}
+
+void nn_usock_stop (struct nn_usock *self)
+{
+    /*  Ask socket to close asynchronously. */
+    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_STOP);
+}
+
 struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
     struct nn_fsm *newowner)
 {
     return nn_fsm_swap_owner (&self->fsm, newowner);
-}
-
-void nn_usock_close (struct nn_usock *self)
-{
-    /*  Ask socket to close asynchronously. */
-    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_CLOSE);
 }
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
@@ -386,37 +393,27 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
     /*  Internal tasks sent from the user thread to the worker thread. */
     if (source == &usock->task_send) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (usock->state == NN_USOCK_STATE_CONNECTED ||
-            usock->state == NN_USOCK_STATE_CLOSING);
         nn_worker_set_out (usock->worker, &usock->wfd);
         return;
     }
     if (source == &usock->task_recv) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (usock->state == NN_USOCK_STATE_CONNECTED ||
-            usock->state == NN_USOCK_STATE_CLOSING);
         nn_worker_set_in (usock->worker, &usock->wfd);
         return;
     }
     if (source == &usock->task_connected) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (usock->state == NN_USOCK_STATE_CONNECTED ||
-            usock->state == NN_USOCK_STATE_CLOSING);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         return;
     }
     if (source == &usock->task_connecting) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (usock->state == NN_USOCK_STATE_CONNECTING ||
-            usock->state == NN_USOCK_STATE_CLOSING);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_out (usock->worker, &usock->wfd);
         return;
     }
     if (source == &usock->task_accept) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (usock->state == NN_USOCK_STATE_ACCEPTING ||
-            usock->state == NN_USOCK_STATE_CLOSING);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_in (usock->worker, &usock->wfd);
         return;
@@ -449,9 +446,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 usock->state = NN_USOCK_STATE_CONNECTING;
                 nn_worker_execute (usock->worker, &usock->task_connecting);
                 return;
-            case NN_USOCK_EVENT_CLOSE:
-                usock->state = NN_USOCK_STATE_CLOSED;
-                nn_fsm_raise (&usock->fsm, &usock->event_closed);
+            case NN_USOCK_EVENT_STOP:
+                usock->state = NN_USOCK_STATE_IDLE;
+                nn_fsm_raise (&usock->fsm, &usock->event_stopped);
                 return;
             default:
                 nn_assert (0);
@@ -477,7 +474,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
             }
         }
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_CLOSE);
+            nn_assert (type == NN_USOCK_EVENT_STOP);
             nn_assert (0);
         }
         nn_assert (0);
@@ -490,9 +487,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECT_ERROR:
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            usock->state = NN_USOCK_STATE_CLOSED;
-            nn_fsm_raise (&usock->fsm, &usock->event_closed);
+            nn_assert (type == NN_USOCK_EVENT_STOP);
+            usock->state = NN_USOCK_STATE_IDLE;
+            nn_fsm_raise (&usock->fsm, &usock->event_stopped);
             return;
         }
         nn_assert (0);
@@ -535,7 +532,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 
                 return;
 
-            case NN_USOCK_EVENT_CLOSE:
+            case NN_USOCK_EVENT_STOP:
                 nn_assert (0);
             default:
                 nn_assert (0);
@@ -592,9 +589,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
             }
         }
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            usock->state = NN_USOCK_STATE_CLOSING;
-            nn_worker_execute (usock->worker, &usock->task_close);
+            nn_assert (type == NN_USOCK_EVENT_STOP);
+            usock->state = NN_USOCK_STATE_STOPPING;
+            nn_worker_execute (usock->worker, &usock->task_stop);
             return;
         }
         nn_assert (0);
@@ -640,9 +637,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
             }
         }
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            nn_worker_execute (usock->worker, &usock->task_close);
-            usock->state = NN_USOCK_STATE_CLOSING;
+            nn_assert (type == NN_USOCK_EVENT_STOP);
+            nn_worker_execute (usock->worker, &usock->task_stop);
+            usock->state = NN_USOCK_STATE_STOPPING;
             return;
         }
         nn_assert (0);
@@ -652,26 +649,25 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/ 
     case NN_USOCK_STATE_ERROR:
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_CLOSE);
-            usock->state = NN_USOCK_STATE_CLOSING;
-            nn_worker_execute (usock->worker, &usock->task_close);
+            nn_assert (type == NN_USOCK_EVENT_STOP);
+            usock->state = NN_USOCK_STATE_STOPPING;
+            nn_worker_execute (usock->worker, &usock->task_stop);
             return;
         }
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING state                                                             */
+/*  STOPPING state                                                            */
 /******************************************************************************/ 
-    case NN_USOCK_STATE_CLOSING:
+    case NN_USOCK_STATE_STOPPING:
 
-        /*  The close request was delivered to the worker thread. We can now
+        /*  The stop request was delivered to the worker thread. We can now
             remove the fd from the poller and notify user that the socket is
-            actually closed. */
-        if (source == &usock->task_close) {
-            nn_assert (usock->state == NN_USOCK_STATE_CLOSING);
+            actually stopped. */
+        if (source == &usock->task_stop) {
             nn_worker_rm_fd (usock->worker, &usock->wfd);
-            usock->state = NN_USOCK_STATE_CLOSED;
-            nn_fsm_raise (&usock->fsm, &usock->event_closed);
+            usock->state = NN_USOCK_STATE_IDLE;
+            nn_fsm_raise (&usock->fsm, &usock->event_stopped);
             return;
         }
 
@@ -680,14 +676,6 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         if (source == &usock->wfd)
             return;
 
-        nn_assert (0);
-
-/******************************************************************************/
-/*  CLOSED state                                                               */
-/******************************************************************************/ 
-    case NN_USOCK_STATE_CLOSED:
-
-        /*  Nothing should happen in the CLOSED state. */
         nn_assert (0);
 
 /******************************************************************************/

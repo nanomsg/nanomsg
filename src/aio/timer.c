@@ -84,42 +84,24 @@ static void nn_timer_callback (struct nn_fsm *self, void *source, int type)
 
     timer = nn_cont (self, struct nn_timer, fsm);
 
-/******************************************************************************/
-/*  Following events are processed in the same way irrespective of the state  */
-/*  the object is in.                                                         */
-/******************************************************************************/
+    /*  Internal tasks sent from the user thread to the worker thread. */
     if (source == &timer->start_task) {
-        switch (type) {
-        case NN_WORKER_TASK_EXECUTE:
-
-            /*  Start event have arrived in the worker thread.
-                Launch the timer. */
-            nn_assert (timer->timeout >= 0);
-            nn_worker_add_timer (timer->worker, timer->timeout,
-                &timer->wtimer);
-            timer->timeout = -1;
-            return;
-
-        default:
-            nn_assert (0);
-        }
+        nn_assert (type == NN_WORKER_TASK_EXECUTE);
+        nn_assert (timer->timeout >= 0);
+        nn_worker_add_timer (timer->worker, timer->timeout,
+            &timer->wtimer);
+        timer->timeout = -1;
+        return;
     }
     if (source == &timer->stop_task) {
-        switch (type) {
-        case NN_WORKER_TASK_EXECUTE:
-
-            /*  Stop event have arrived in the worker thread.
-                Cancel the timer. */
-            nn_worker_rm_timer (timer->worker, &timer->wtimer);
-            timer->state = NN_TIMER_STATE_IDLE;
-            nn_fsm_raise (&timer->fsm, &timer->stopped_event);
-            return;
-
-        default:
-            nn_assert (0);
-        }
+        nn_assert (type == NN_WORKER_TASK_EXECUTE);        
+        nn_worker_rm_timer (timer->worker, &timer->wtimer);
+        timer->state = NN_TIMER_STATE_IDLE;
+        nn_fsm_raise (&timer->fsm, &timer->stopped_event);
+        return;
     }
 
+    /*  The state machine itself. */
     switch (timer->state) {
 
 /******************************************************************************/

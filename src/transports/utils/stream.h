@@ -35,11 +35,9 @@
 
 /*  Session object for stream-oriented transports (e.g. TCP or IPC). */
 
-/*  Events generate by the stream object. CLOSED event has deliberately
-    complex code so that bstream can better detect possible invalid events
-    when waiting for shut down of all associated streams. */
+/*  Events generate by the stream object. */
 #define NN_STREAM_ERROR 1
-#define NN_STREAM_CLOSED 10283
+#define NN_STREAM_CLOSED 2
 
 struct nn_stream {
 

@@ -30,32 +30,60 @@
 #include "../utils/fast.h"
 
 /*  Internal pipe states. */
+#define NN_PIPEBASE_STATE_IDLE 1
+#define NN_PIPEBASE_STATE_ACTIVE 2
+
 #define NN_PIPEBASE_INSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_INSTATE_IDLE 1
 #define NN_PIPEBASE_INSTATE_RECEIVING 2
 #define NN_PIPEBASE_INSTATE_RECEIVED 3
 #define NN_PIPEBASE_INSTATE_ASYNC 4
+
 #define NN_PIPEBASE_OUTSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_OUTSTATE_IDLE 1
 #define NN_PIPEBASE_OUTSTATE_SENDING 2
 #define NN_PIPEBASE_OUTSTATE_SENT 3
 #define NN_PIPEBASE_OUTSTATE_ASYNC 4
 
-int nn_pipebase_init (struct nn_pipebase *self,
+void nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
 {
     nn_assert (epbase->ep->sock);
     self->vfptr = vfptr;
+    self->state = NN_PIPEBASE_STATE_IDLE;
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
     self->sock = epbase->ep->sock;
-    return nn_sock_add (self->sock, (struct nn_pipe*) self);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
+    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE); 
+}
+
+int nn_pipebase_start (struct nn_pipebase *self)
+{
+    int rc;
+
+    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+
+    self->state = NN_PIPEBASE_STATE_ACTIVE;
+    self->instate = NN_PIPEBASE_INSTATE_ASYNC;
+    self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
+    rc = nn_sock_add (self->sock, (struct nn_pipe*) self);
+    if (nn_slow (rc < 0))
+        return rc;
     if (self->sock)
-        nn_sock_rm (self->sock, (struct nn_pipe*) self);
+        nn_sock_out (self->sock, (struct nn_pipe*) self);
+
+    return 0;
+}
+
+void nn_pipebase_stop (struct nn_pipebase *self)
+{
+    nn_assert (self->state == NN_PIPEBASE_STATE_ACTIVE); 
+    nn_sock_rm (self->sock, (struct nn_pipe*) self);
+    self->state = NN_PIPEBASE_STATE_IDLE;
 }
 
 void nn_pipebase_activate (struct nn_pipebase *self)

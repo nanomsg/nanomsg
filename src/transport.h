@@ -146,6 +146,7 @@ struct nn_pipebase_vfptr {
     or modify them directly from the transport. */
 struct nn_pipebase {
     const struct nn_pipebase_vfptr *vfptr;
+    uint8_t state;
     uint8_t instate;
     uint8_t outstate;
     struct nn_sock *sock;
@@ -153,15 +154,17 @@ struct nn_pipebase {
 };
 
 /*  Initialise the pipe.  */
-int nn_pipebase_init (struct nn_pipebase *self,
+void nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase);
 
 /*  Terminate the pipe. */
 void nn_pipebase_term (struct nn_pipebase *self);
 
-/*  Informs the user that the pipe is ready for sending and that asynchronous
-    receiving of messages have already started. */
-void nn_pipebase_activate (struct nn_pipebase *self);
+/*  Call this function once the connection is established. */
+int nn_pipebase_start (struct nn_pipebase *self);
+
+/*  Call this function once the connection is broken. */
+void nn_pipbase_stop (struct nn_pipebase *self);
 
 /*  Call this function when new message was fully received. */
 void nn_pipebase_received (struct nn_pipebase *self);

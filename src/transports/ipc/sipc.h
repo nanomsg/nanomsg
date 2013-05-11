@@ -55,11 +55,14 @@ struct nn_sipc {
     /*  The original owner of the underlying socket. */
     struct nn_fsm *usock_owner;
 
+    /*  Pipe connecting this IPC connection to the nanomsg core. */
+    struct nn_pipebase pipebase;
+
     /*  State of inbound state machine. */
     int instate;
 
     /*  Buffer used to store the header of incoming message. */
-    uint8_t inhdr [8];
+    uint8_t inhdr [9];
 
     /*  Message being received at the moment. */
     struct nn_msg inmsg;
@@ -68,7 +71,7 @@ struct nn_sipc {
     int outstate;
 
     /*  Buffer used to store the header of outgoing message. */
-    uint8_t outhdr [8];
+    uint8_t outhdr [9];
 
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;

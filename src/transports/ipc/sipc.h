@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,46 +20,40 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_STREAM_INCLUDED
-#define NN_STREAM_INCLUDED
+#ifndef NN_SIPC_INCLUDED
+#define NN_SIPC_INCLUDED
+
+#if !defined NN_HAVE_WINDOWS
 
 #include "../../transport.h"
 
 #include "../../aio/fsm.h"
-#include "../../aio/timer.h"
 #include "../../aio/usock.h"
+
+#include "../utils/streamhdr.h"
 
 #include "../../utils/msg.h"
 
-#include <stdint.h>
+/*  This state machine handles IPC connection from the point where it is
+    established to the point when it is broken. */
 
-/*  Session object for stream-oriented transports (e.g. TCP or IPC). */
+#define NN_SIPC_ERROR 1
+#define NN_SIPC_STOPPED 2
 
-/*  Events generate by the stream object. */
-#define NN_STREAM_ERROR 1
-#define NN_STREAM_CLOSED 2
+struct nn_sipc {
 
-struct nn_stream {
-
-    /*  State machine. */
+    /*  The state machine. */
     struct nn_fsm fsm;
     int state;
 
-    /*  Pipe to exchange messages with the user of the library. */
-    struct nn_pipebase pipebase;
-
-    /*  The underlying socket and its original owner. */
+    /*  The undelrying socket. */
     struct nn_usock *usock;
+
+    /*  Child state machine to do protocol header exchange. */
+    struct nn_streamhdr streamhdr;
+
+    /*  The original owner of the underlying socket. */
     struct nn_fsm *usock_owner;
-
-    /*  Protocol header. */
-    uint8_t protohdr [8];
-
-    /*  If header is not received in certain amount of time, connection is
-        closed. This solves a rare race condition in TCP. It also minimises
-        the usage of resources in case of erroneous connections. Also, it
-        prevents a simple DoS attack. */
-    struct nn_timer hdr_timeout;
 
     /*  State of inbound state machine. */
     int instate;
@@ -79,25 +73,17 @@ struct nn_stream {
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;
 
-    /*  Event to be sent to the owner. */
+    struct nn_fsm_event event_stopped;
     struct nn_fsm_event event_error;
-    struct nn_fsm_event event_closed;
 };
 
-/*  Initialise the object. */
-void nn_stream_init (struct nn_stream *self, struct nn_epbase *epbase,
+void nn_sipc_init (struct nn_sipc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner);
+void nn_sipc_term (struct nn_sipc *self);
 
-/*  Starts the state machine. The socket passed to this function has to be
-    already connected. The object will grab ownership of the socket and return
-    it to the caller only once the connection is closed. */
-void nn_stream_start (struct nn_stream *self, struct nn_usock *usock);
+void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock);
+void nn_sipc_stop (struct nn_sipc *self);
 
-/*  Ask object to close. When done, CLOSE event will be triggered. */
-void nn_stream_close (struct nn_stream *self);
-
-/*  Deallocate the object. Call this function only once the CLOSE or ERROR
-    event was received. */
-void nn_stream_term (struct nn_stream *self);
+#endif
 
 #endif

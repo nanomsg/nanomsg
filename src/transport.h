@@ -68,10 +68,10 @@ struct nn_epbase;
 
 struct nn_epbase_vfptr {
 
-    /*  Ask the endpoint to terminate itself. The endpoint is allowed to linger
+    /*  Ask the endpoint to stop itself. The endpoint is allowed to linger
         to send the pending outbound data. When done, it reports the fact by
-        invoking nn_epbase_closed() function. */
-    void (*close) (struct nn_epbase *self);
+        invoking nn_epbase_stopped() function. */
+    void (*stop) (struct nn_epbase *self);
 
     /*  Deallocate the endpoint object. */
     void (*destroy) (struct nn_epbase *self);
@@ -80,7 +80,7 @@ struct nn_epbase_vfptr {
 struct nn_epbase {
     const struct nn_epbase_vfptr *vfptr;
     struct nn_ep *ep;
-    struct nn_fsm_event event_closed;
+    struct nn_fsm_event event_stopped;
 };
 
 /*  Creates a new endpoint. 'hint' parameter is an opaque value that
@@ -88,8 +88,8 @@ struct nn_epbase {
 void nn_epbase_init (struct nn_epbase *self,
     const struct nn_epbase_vfptr *vfptr, void *hint);
 
-/*  Notify the user that closing is done. */
-void nn_epbase_closed (struct nn_epbase *self);
+/*  Notify the user that stopping is done. */
+void nn_epbase_stopped (struct nn_epbase *self);
 
 /*  Terminate the epbase object. */
 void nn_epbase_term (struct nn_epbase *self);

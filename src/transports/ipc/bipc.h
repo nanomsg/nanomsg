@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,53 +20,17 @@
     IN THE SOFTWARE.
 */
 
+#ifndef NN_BIPC_INCLUDED
+#define NN_BIPC_INCLUDED
+
 #if !defined NN_HAVE_WINDOWS
 
-#include "ipc.h"
-#include "bipc.h"
-#include "cipc.h"
+#include "../../transport.h"
 
-#include "../../ipc.h"
+/*  State machine managing bound IPC socket. */
 
-#include "../../utils/err.h"
-#include "../../utils/alloc.h"
-#include "../../utils/fast.h"
-#include "../../utils/list.h"
-
-#include <string.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-#define NN_IPC_BACKLOG 10
-
-/*  nn_transport interface. */
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase);
-
-static struct nn_transport nn_ipc_vfptr = {
-    "ipc",
-    NN_IPC,
-    NULL,
-    NULL,
-    nn_ipc_bind,
-    nn_ipc_connect,
-    NULL,
-    NN_LIST_ITEM_INITIALIZER
-};
-
-struct nn_transport *nn_ipc = &nn_ipc_vfptr;
-
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase)
-{
-    /*  TODO: Check the syntax of the address here! */
-    return nn_bipc_create (hint, epbase);
-}
-
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase)
-{
-    /*  TODO: Check the syntax of the address here! */
-    return nn_cipc_create (hint, epbase);
-}
+int nn_bipc_create (void *hint, struct nn_epbase **epbase);
 
 #endif
 
+#endif

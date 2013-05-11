@@ -71,10 +71,10 @@ void nn_ep_term (struct nn_ep *self)
     nn_list_item_term (&self->item);
 }
 
-void nn_ep_close (struct nn_ep *self)
+void nn_ep_stop (struct nn_ep *self)
 {
     /*  Perform transport-specific shutdown procedure. */
-    self->epbase->vfptr->close (self->epbase);
+    self->epbase->vfptr->stop (self->epbase);
 }
 
 struct nn_ctx *nn_ep_getctx (struct nn_ep *self)

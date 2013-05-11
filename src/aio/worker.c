@@ -51,6 +51,11 @@ void nn_worker_timer_term (struct nn_worker_timer *self)
     nn_timerset_hndl_term (&self->hndl);
 }
 
+int nn_worker_timer_isactive (struct nn_worker_timer *self)
+{
+    return nn_timerset_hndl_isactive (&self->hndl);
+}
+
 void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd)
 {
     nn_poller_add (&((struct nn_worker*) self)->poller, s, &fd->hndl);

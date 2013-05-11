@@ -189,15 +189,21 @@ set (NN_SOURCES
 #    transports/inproc/msgqueue.h
 #    transports/inproc/msgqueue.c
 
-    transports/utils/bstream.h
-    transports/utils/bstream.c
-    transports/utils/cstream.h
-    transports/utils/cstream.c
-    transports/utils/stream.h
-    transports/utils/stream.c
+    transports/utils/backoff.h
+    transports/utils/backoff.c
+    transports/utils/streamhdr.h
+    transports/utils/streamhdr.c
 
+    transports/ipc/aipc.h
+    transports/ipc/aipc.c
+    transports/ipc/bipc.h
+    transports/ipc/bipc.c
+    transports/ipc/cipc.h
+    transports/ipc/cipc.c
     transports/ipc/ipc.h
     transports/ipc/ipc.c
+    transports/ipc/sipc.h
+    transports/ipc/sipc.c
 
 #    transports/tcp/tcp.h
 #    transports/tcp/tcp.c

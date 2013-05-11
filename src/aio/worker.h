@@ -55,6 +55,7 @@ struct nn_worker_timer {
 
 void nn_worker_timer_init (struct nn_worker_timer *self, struct nn_fsm *owner);
 void nn_worker_timer_term (struct nn_worker_timer *self);
+int nn_worker_timer_isactive (struct nn_worker_timer *self);
 
 
 /*  The worker object itself. */

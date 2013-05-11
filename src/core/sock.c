@@ -441,9 +441,9 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
         return -EINVAL;
     }
     
-    /*  Ask the endpoint to shutdown. Actual terminatation may be delayed
+    /*  Ask the endpoint to stop. Actual terminatation may be delayed
         by the transport. */
-    nn_ep_close (ep);
+    nn_ep_stop (ep);
 
     nn_ctx_leave (&self->ctx);
 
@@ -739,11 +739,11 @@ static void nn_sock_callback (struct nn_fsm *self, void *source, int type)
                     to terminate. */
                 nn_sem_init (&sock->termsem);
 
-                /*  Ask all the associated endpoints to terminate. */
+                /*  Ask all the associated endpoints to stop. */
                 for (it = nn_list_begin (&sock->eps);
                       it != nn_list_end (&sock->eps);
                       it = nn_list_next (&sock->eps, it))
-                    nn_ep_close (nn_cont (it, struct nn_ep, item));
+                    nn_ep_stop (nn_cont (it, struct nn_ep, item));
                 sock->state = NN_SOCK_STATE_CLOSING_EPS;
 
                 return;
@@ -811,9 +811,9 @@ static void nn_sock_callback (struct nn_fsm *self, void *source, int type)
             double-check that that is the case, however, it would be an O(n)
             operations, so we'll just skip it. */
         switch (type) {
-        case NN_EP_CLOSED:
-            
-            /*  Endpoint is closed. Now we can safely deallocate it. */
+        case NN_EP_STOPPED:
+
+            /*  Endpoint is stopped. Now we can safely deallocate it. */
             ep = (struct nn_ep*) source;
             nn_list_erase (&sock->eps, &ep->item);
             nn_ep_term (ep);
@@ -822,7 +822,7 @@ static void nn_sock_callback (struct nn_fsm *self, void *source, int type)
             if (!nn_list_empty (&sock->eps))
                 return;
 
-            /*  If all the endpoints are closed, we can start closing
+            /*  If all the endpoints are deallocated, we can start closing
                 protocol-specific part of the socket. */
             sock->state = NN_SOCK_STATE_CLOSING;
             sock->sockbase->vfptr->close (sock->sockbase);

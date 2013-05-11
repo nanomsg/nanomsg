@@ -35,11 +35,11 @@
 #define NN_TIMER_EVENT_STOP 2
 
 /*  Private functions. */
-static void nn_timer_callback (struct nn_fsm *self, void *source, int type);
+static void nn_timer_handler (struct nn_fsm *self, void *source, int type);
 
 void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_timer_callback, owner);
+    nn_fsm_init (&self->fsm, nn_timer_handler, owner);
     self->state = NN_TIMER_STATE_IDLE;
     nn_worker_task_init (&self->start_task, &self->fsm);
     nn_worker_task_init (&self->stop_task, &self->fsm);
@@ -69,16 +69,16 @@ void nn_timer_start (struct nn_timer *self, int timeout)
 
     /*  Pass the event to the state machine. */
     self->timeout = timeout;
-    nn_timer_callback (&self->fsm, NULL, NN_TIMER_EVENT_START);
+    nn_timer_handler (&self->fsm, NULL, NN_TIMER_EVENT_START);
 }
 
 void nn_timer_stop (struct nn_timer *self)
 {
     /*  Pass the event to the state machine. */
-    nn_timer_callback (&self->fsm, NULL, NN_TIMER_EVENT_STOP);
+    nn_timer_handler (&self->fsm, NULL, NN_TIMER_EVENT_STOP);
 }
 
-static void nn_timer_callback (struct nn_fsm *self, void *source, int type)
+static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_timer *timer;
 
@@ -132,7 +132,6 @@ static void nn_timer_callback (struct nn_fsm *self, void *source, int type)
 
                 /*  Notify the user about the timeout. */
                 nn_assert (timer->timeout == -1);
-                timer->state = NN_TIMER_STATE_IDLE;
                 nn_fsm_raise (&timer->fsm, &timer->timeout_event);
                 return;
 

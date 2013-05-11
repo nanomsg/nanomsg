@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,53 +20,43 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
+#include "backoff.h"
 
-#include "ipc.h"
-#include "bipc.h"
-#include "cipc.h"
-
-#include "../../ipc.h"
-
-#include "../../utils/err.h"
-#include "../../utils/alloc.h"
-#include "../../utils/fast.h"
-#include "../../utils/list.h"
-
-#include <string.h>
-#include <sys/un.h>
-#include <unistd.h>
-
-#define NN_IPC_BACKLOG 10
-
-/*  nn_transport interface. */
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase);
-
-static struct nn_transport nn_ipc_vfptr = {
-    "ipc",
-    NN_IPC,
-    NULL,
-    NULL,
-    nn_ipc_bind,
-    nn_ipc_connect,
-    NULL,
-    NN_LIST_ITEM_INITIALIZER
-};
-
-struct nn_transport *nn_ipc = &nn_ipc_vfptr;
-
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase)
+void nn_backoff_init (struct nn_backoff *self, int minivl, int maxivl,
+    struct nn_fsm *owner)
 {
-    /*  TODO: Check the syntax of the address here! */
-    return nn_bipc_create (hint, epbase);
+    nn_timer_init (&self->timer, owner);
+    self->minivl = minivl;
+    self->maxivl = maxivl;
+    self->n = 1;
 }
 
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase)
+void nn_backoff_term (struct nn_backoff *self)
 {
-    /*  TODO: Check the syntax of the address here! */
-    return nn_cipc_create (hint, epbase);
+    nn_timer_term (&self->timer);
 }
 
-#endif
+void nn_backoff_start (struct nn_backoff *self)
+{
+     int timeout;
+
+     /*  Start the timer for the actual n value. If the interval haven't yet
+         exceeded the maximum, double the next timeout value. */
+     timeout = (self->n - 1) * self->minivl;
+     if (timeout > self->maxivl)
+         timeout = self->maxivl;
+     else
+         self->n *= 2;
+     nn_timer_start (&self->timer, timeout);
+}
+
+void nn_backoff_stop (struct nn_backoff *self)
+{
+    nn_timer_stop (&self->timer);
+}
+
+void nn_backoff_reset (struct nn_backoff *self)
+{
+    self->n = 1;
+}
 

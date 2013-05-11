@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,50 +20,32 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_BSTREAM_INCLUDED
-#define NN_BSTREAM_INCLUDED
+#ifndef NN_BACKOFF_INCLUDED
+#define NN_BACKOFF_INCLUDED
 
-#include "../../transport.h"
+#include "../../aio/timer.h"
 
-#include "../../aio/fsm.h"
-#include "../../aio/usock.h"
+/*  Timer with exponential backoff. Actual wating time is (2^n-1)*minivl,
+    meaning that first wait is 0 ms long, second one is minivl ms long etc. */
 
-#include "../../utils/list.h"
+#define NN_BACKOFF_TIMEOUT NN_TIMER_TIMEOUT
+#define NN_BACKOFF_STOPPED NN_TIMER_STOPPED
 
-/*  Bound stream socket. */
-
-struct nn_bstream;
-struct nn_astream;
-
-/*  Virtual functions to be implemented by the specific stream type. */
-struct nn_bstream_vfptr {
-    int (*open) (const char *addr, struct nn_usock *usock,
-        struct nn_fsm *owner);
+struct nn_backoff {
+    struct nn_timer timer;
+    int minivl;
+    int maxivl;
+    int n;
 };
 
-struct nn_bstream {
+void nn_backoff_init (struct nn_backoff *self, int minivl, int maxivl,
+    struct nn_fsm *owner);
+void nn_backoff_term (struct nn_backoff *self);
 
-    /*  State machine. */
-    struct nn_fsm fsm;
-    int state;
+void nn_backoff_start (struct nn_backoff *self);
+void nn_backoff_stop (struct nn_backoff *self);
 
-    /*  Virual functions to access specific transport type. */
-    const struct nn_bstream_vfptr *vfptr;
-
-    /*  This object is an endpoint. */
-    struct nn_epbase epbase;
-
-    /*  The listening socket. */
-    struct nn_usock usock;
-
-    /*  New connection being accepted at the moment. */
-    struct nn_astream *astream;
-
-    /*  List of all sockets accepted via this endpoint. */
-    struct nn_list astreams;
-};
-
-int nn_bstream_create (const struct nn_bstream_vfptr *vfptr, void *hint,
-    struct nn_epbase **epbase);
+void nn_backoff_reset (struct nn_backoff *self);
 
 #endif
+

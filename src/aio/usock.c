@@ -24,6 +24,7 @@
 
 #include "../utils/alloc.h"
 #include "../utils/cont.h"
+#include "../utils/fast.h"
 #include "../utils/err.h"
 
 #include <string.h>
@@ -49,86 +50,23 @@
 #define NN_USOCK_EVENT_CONNECTING 7
 
 /*  Private functions. */
-static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
-    struct nn_fsm *owner);
+static void nn_usock_start_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
-static void nn_usock_callback (struct nn_fsm *self, void *source, int type);
+static void nn_usock_handler (struct nn_fsm *self, void *source, int type);
 
-int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
-    struct nn_fsm *owner)
+void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
 {
-    int s;
-
-    /*  If the operating system allows to directly open the socket with CLOEXEC
-        flag, do so. That way there are no race conditions. */
-#ifdef SOCK_CLOEXEC
-    type |= SOCK_CLOEXEC;
-#endif
-
-    /* Open the underlying socket. */
-    s = socket (domain, type, protocol);
-    if (s < 0)
-       return -errno;
-
-    return nn_usock_init_from_fd (self, s, owner);
-}
-
-static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
-    struct nn_fsm *owner)
-{
-    int rc;
-    int opt;
-
     /*  Initalise the state machine. */
-    nn_fsm_init (&self->fsm, nn_usock_callback, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, owner);
     self->state = NN_USOCK_STATE_IDLE;
 
     /*  Choose a worker thread to handle this socket. */
     self->worker = nn_fsm_choose_worker (&self->fsm);
 
-    /*  Store the file descriptor of the underlying socket. */
-    self->s = fd;
-
-    /* Setting FD_CLOEXEC option immediately after socket creation is the
-        second best option after using SOCK_CLOEXEC. There is a race condition
-        here (if process is forked between socket creation and setting
-        the option) but the problem is pretty unlikely to happen. */
-#if defined FD_CLOEXEC
-    rc = fcntl (self->s, F_SETFD, FD_CLOEXEC);
-#if defined NN_HAVE_OSX
-    errno_assert (rc != -1 || errno == EINVAL);
-#else
-    errno_assert (rc != -1);
-#endif
-#endif
-
-    /* If applicable, prevent SIGPIPE signal when writing to the connection
-        already closed by the peer. */
-#ifdef SO_NOSIGPIPE
-    opt = 1;
-    rc = setsockopt (self, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof (opt));
-#if defined NN_HAVE_OSX
-    errno_assert (rc == 0 || errno == EINVAL);
-#else
-    errno_assert (rc == 0);
-#endif
-#endif
-
-    /* Switch the socket to the non-blocking mode. All underlying sockets
-        are always used in the callbackhronous mode. */
-    opt = fcntl (self->s, F_GETFL, 0);
-    if (opt == -1)
-        opt = 0;
-    if (!(opt & O_NONBLOCK)) {
-        rc = fcntl (self->s, F_SETFL, opt | O_NONBLOCK);
-#if defined NN_HAVE_OSX
-        errno_assert (rc != -1 || errno == EINVAL);
-#else
-        errno_assert (rc != -1);
-#endif
-    }
+    /*  Actual file descriptor will be generated during 'start' step. */
+    self->s = -1;
 
     self->in.buf = NULL;
     self->in.len = 0;
@@ -157,9 +95,6 @@ static int nn_usock_init_from_fd (struct nn_usock *self, int fd,
 
     /*  We are not listening at the moment. */
     self->newsock = NULL;
-    self->newowner = NULL;
-
-    return 0;
 }
 
 void nn_usock_term (struct nn_usock *self)
@@ -185,22 +120,86 @@ void nn_usock_term (struct nn_usock *self)
     nn_worker_task_term (&self->task_connecting);
     nn_worker_fd_term (&self->wfd);
 
-    rc = close (self->s);
-    errno_assert (rc == 0);
-
     nn_fsm_term (&self->fsm);
 }
 
-void nn_usock_start (struct nn_usock *self)
+int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 {
+    int s;
+
+    /*  If the operating system allows to directly open the socket with CLOEXEC
+        flag, do so. That way there are no race conditions. */
+#ifdef SOCK_CLOEXEC
+    type |= SOCK_CLOEXEC;
+#endif
+
+    /* Open the underlying socket. */
+    s = socket (domain, type, protocol);
+    if (nn_slow (s < 0))
+       return -errno;
+
+    nn_usock_start_from_fd (self, s);
+
+    return 0;
+}
+
+static void nn_usock_start_from_fd (struct nn_usock *self, int s)
+{
+    int rc;
+    int opt;
+
     nn_assert (self->state == NN_USOCK_STATE_IDLE);
-    self->state = NN_USOCK_STATE_STARTING;
+
+    /*  Store the file descriptor. */
+    nn_assert (self->s == -1);
+    self->s = s;
+
+    /* Setting FD_CLOEXEC option immediately after socket creation is the
+        second best option after using SOCK_CLOEXEC. There is a race condition
+        here (if process is forked between socket creation and setting
+        the option) but the problem is pretty unlikely to happen. */
+#if defined FD_CLOEXEC
+    rc = fcntl (self->s, F_SETFD, FD_CLOEXEC);
+#if defined NN_HAVE_OSX
+    errno_assert (rc != -1 || errno == EINVAL);
+#else
+    errno_assert (rc != -1);
+#endif
+#endif
+
+    /* If applicable, prevent SIGPIPE signal when writing to the connection
+        already closed by the peer. */
+#ifdef SO_NOSIGPIPE
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof (opt));
+#if defined NN_HAVE_OSX
+    errno_assert (rc == 0 || errno == EINVAL);
+#else
+    errno_assert (rc == 0);
+#endif
+#endif
+
+    /* Switch the socket to the non-blocking mode. All underlying sockets
+        are always used in the callbackhronous mode. */
+    opt = fcntl (self->s, F_GETFL, 0);
+    if (opt == -1)
+        opt = 0;
+    if (!(opt & O_NONBLOCK)) {
+        rc = fcntl (self->s, F_SETFL, opt | O_NONBLOCK);
+#if defined NN_HAVE_OSX
+        errno_assert (rc != -1 || errno == EINVAL);
+#else
+        errno_assert (rc != -1);
+#endif
+    }
+
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_START);
 }
 
 void nn_usock_stop (struct nn_usock *self)
 {
     /*  Ask socket to close asynchronously. */
-    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_STOP);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_STOP);
 }
 
 struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
@@ -265,17 +264,15 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
         return -errno;
 
     /*  Notify the state machine. */
-    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_LISTEN);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_LISTEN);
 
     return 0;
 }
 
-void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
-    struct nn_fsm *newowner)
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock)
 {
     self->newsock = newsock;
-    self->newowner = newowner;
-    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
 }
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
@@ -291,18 +288,18 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /* Immediate success. */
     if (nn_fast (rc == 0)) {
-        nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTED);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTED);
         return;
     }
 
     /*  Error. */
     if (nn_slow (errno != EINPROGRESS)) {
-        nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_CONNECT_ERROR);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECT_ERROR);
         return;
     }
 
     /*  Async connect. */
-    nn_usock_callback (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTING);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTING);
 }
 
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
@@ -381,7 +378,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     nn_worker_execute (self->worker, &self->task_recv);
 }
 
-static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
+static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 {
     int rc;
     struct nn_usock *usock;
@@ -423,7 +420,27 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
     switch (usock->state) {
 
 /******************************************************************************/
-/*  STARTING state                                                            */
+/*  IDLE state.                                                               */
+/*  nn_usock object is initialised, but underlying OS socket is not yet       */
+/*  created.                                                                  */
+/******************************************************************************/
+    case NN_USOCK_STATE_IDLE:
+        if (source == NULL) {
+            switch (type) {
+            case NN_USOCK_EVENT_START:
+                usock->state = NN_USOCK_STATE_STARTING;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STARTING state.                                                           */
+/*  Underlying OS socket is created, but it's not yet passed to the worker    */
+/*  thread. In this state we can set socket options, local and remote         */
+/*  address etc.                                                              */
 /******************************************************************************/
     case NN_USOCK_STATE_STARTING:
 
@@ -447,6 +464,9 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 nn_worker_execute (usock->worker, &usock->task_connecting);
                 return;
             case NN_USOCK_EVENT_STOP:
+                rc = close (usock->s);
+                errno_assert (rc == 0);
+                usock->s = -1;
                 usock->state = NN_USOCK_STATE_IDLE;
                 nn_fsm_raise (&usock->fsm, &usock->event_stopped);
                 return;
@@ -457,7 +477,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CONNECTING state                                                          */
+/*  CONNECTING state.                                                         */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECTING:
         if (source == &usock->wfd) {
@@ -480,24 +500,31 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CONNECT_ERROR state                                                       */
+/*  CONNECT_ERROR state.                                                      */
 /*  This state means that the connect have failed synchronously and thus,     */
 /*  the socket is not registered with the worker thread. The only thing that  */
 /*  can be done in this state is closing the socket.                          */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECT_ERROR:
         if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_STOP);
-            usock->state = NN_USOCK_STATE_IDLE;
-            nn_fsm_raise (&usock->fsm, &usock->event_stopped);
-            return;
+            switch (type) {
+            case NN_USOCK_EVENT_STOP:
+                rc = close (usock->s);
+                errno_assert (rc == 0);
+                usock->s = -1;
+                usock->state = NN_USOCK_STATE_IDLE;
+                nn_fsm_raise (&usock->fsm, &usock->event_stopped);
+                return;
+            default:
+                nn_assert (0);
+            }
         }
         nn_assert (0);
 
 /******************************************************************************/
-/*  LISTENING state                                                           */
+/*  LISTENING state.                                                          */
 /*  Socket is listening for new incoming connections, however, user is not    */
-/*  accepting a new connection. */
+/*  accepting a new connection.                                               */
 /******************************************************************************/ 
     case NN_USOCK_STATE_LISTENING:
 
@@ -514,7 +541,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 #endif
                 /*  Immediate success. */
                 if (nn_fast (s >= 0)) {
-                    nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
+                    nn_usock_start_from_fd (usock->newsock, s);
                     usock->newsock->state = NN_USOCK_STATE_CONNECTED;
                     nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                         &usock->newsock->wfd);
@@ -541,7 +568,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  ACCEPTING state                                                           */
+/*  ACCEPTING state.                                                          */
 /*  User is waiting asynchronouslyfor a new inbound connection                */
 /*  to be accepted.                                                           */
 /******************************************************************************/ 
@@ -568,7 +595,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
                 }
 
                 /*  Initialise the new usock object. */
-                nn_usock_init_from_fd (usock->newsock, s, usock->newowner);
+                nn_usock_start_from_fd (usock->newsock, s);
                 usock->newsock->state = NN_USOCK_STATE_CONNECTED;
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
@@ -578,7 +605,6 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
 
                 /*  Wait till the user starts accepting once again. */
                 usock->newsock = NULL;
-                usock->newowner = NULL;
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_LISTENING;
 
@@ -597,7 +623,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CONNECTED state                                                           */
+/*  CONNECTED state.                                                          */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECTED:
         if (source == &usock->wfd) {
@@ -645,7 +671,7 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  ERROR state                                                               */
+/*  ERROR state.                                                              */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ERROR:
         if (source == NULL) {
@@ -657,15 +683,18 @@ static void nn_usock_callback (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  STOPPING state                                                            */
+/*  STOPPING state.                                                           */
 /******************************************************************************/ 
     case NN_USOCK_STATE_STOPPING:
 
         /*  The stop request was delivered to the worker thread. We can now
-            remove the fd from the poller and notify user that the socket is
-            actually stopped. */
+            remove the fd from the poller, close it and notify user that the
+            socket is actually stopped. */
         if (source == &usock->task_stop) {
             nn_worker_rm_fd (usock->worker, &usock->wfd);
+            rc = close (usock->s);
+            errno_assert (rc == 0);
+            usock->s = -1;
             usock->state = NN_USOCK_STATE_IDLE;
             nn_fsm_raise (&usock->fsm, &usock->event_stopped);
             return;

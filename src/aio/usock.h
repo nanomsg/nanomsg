@@ -112,14 +112,12 @@ struct nn_usock {
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */
     struct nn_usock *newsock;
-    struct nn_fsm *newowner;
 };
 
-int nn_usock_init (struct nn_usock *self, int domain, int type, int protocol,
-    struct nn_fsm *owner);
+void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner);
 void nn_usock_term (struct nn_usock *self);
 
-void nn_usock_start (struct nn_usock *self);
+int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol);
 void nn_usock_stop (struct nn_usock *self);
 
 struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
@@ -131,8 +129,11 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
 int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 int nn_usock_listen (struct nn_usock *self, int backlog);
-void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock,
-    struct nn_fsm *newowner);
+
+/*  Accept a new connection. The 'newsock' is the resulting accepted socket.
+    It should be initialised before the call. The call itself will start it. */
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock);
+
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 

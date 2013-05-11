@@ -1,0 +1,176 @@
+/*
+    Copyright (c) 2012-2013 250bpm s.r.o.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom
+    the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+*/
+
+#if !defined NN_HAVE_WINDOWS
+
+#include "aipc.h"
+
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
+
+#define NN_AIPC_STATE_IDLE 1
+#define NN_AIPC_STATE_ACCEPTING 2
+#define NN_AIPC_STATE_ACTIVE 3
+#define NN_AIPC_STATE_STOPPING 4
+
+#define NN_AIPC_EVENT_START 1
+
+/*  Private functions. */
+static void nn_aipc_handler (struct nn_fsm *self, void *source, int type);
+
+void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
+    struct nn_fsm *owner)
+{
+    nn_fsm_init (&self->fsm, nn_aipc_handler, owner);
+    self->state = NN_AIPC_STATE_IDLE;
+    nn_usock_init (&self->usock, &self->fsm);
+    self->listener = NULL;
+    self->listener_owner = NULL;
+    nn_sipc_init (&self->sipc, epbase, &self->fsm);
+    nn_fsm_event_init (&self->event_accepted, self, NN_AIPC_ACCEPTED);
+    nn_fsm_event_init (&self->event_error, self, NN_AIPC_ERROR);
+    nn_fsm_event_init (&self->event_stopped, self, NN_AIPC_STOPPED);
+    nn_list_item_init (&self->item);
+}
+
+void nn_aipc_term (struct nn_aipc *self)
+{
+    nn_assert (self->state == NN_AIPC_STATE_IDLE);
+
+    nn_list_item_term (&self->item);
+    nn_fsm_event_term (&self->event_stopped);
+    nn_fsm_event_term (&self->event_error);
+    nn_fsm_event_term (&self->event_accepted);
+    nn_sipc_term (&self->sipc);
+    nn_usock_term (&self->usock);
+    nn_fsm_term (&self->fsm);    
+}
+
+void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
+{
+    nn_assert (self->state == NN_AIPC_STATE_IDLE);
+
+    /*  Take ownership of the listener socket. */
+    self->listener = listener;
+    self->listener_owner = nn_usock_swap_owner (listener, &self->fsm);
+
+    /*  Start the state machine. */
+    nn_aipc_handler (&self->fsm, NULL, NN_AIPC_EVENT_START);
+}
+
+void nn_aipc_stop (struct nn_aipc *self)
+{
+    nn_assert (0);
+}
+
+static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
+{
+    struct nn_aipc *aipc;
+
+    aipc = nn_cont (self, struct nn_aipc, fsm);
+
+    switch (aipc->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/******************************************************************************/
+    case NN_AIPC_STATE_IDLE:
+        if (source == NULL) {
+            switch (type) {
+            case NN_AIPC_EVENT_START:
+                nn_usock_accept (aipc->listener, &aipc->usock);
+                aipc->state = NN_AIPC_STATE_ACCEPTING;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACCEPTING state.                                                          */
+/******************************************************************************/
+    case NN_AIPC_STATE_ACCEPTING:
+        if (source == aipc->listener) {
+            switch (type) {
+            case NN_USOCK_ACCEPTED:
+
+                /*  Return ownership of the listening socket to the parent. */
+                nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
+                aipc->listener = NULL;
+                aipc->listener_owner = NULL;
+                nn_fsm_raise (&aipc->fsm, &aipc->event_accepted);
+
+                /*  Start sipc state machine. */
+                nn_sipc_start (&aipc->sipc, &aipc->usock);
+                aipc->state = NN_AIPC_STATE_ACTIVE;
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/******************************************************************************/
+    case NN_AIPC_STATE_ACTIVE:
+        if (source == &aipc->sipc) {
+            switch (type) {
+            case NN_SIPC_ERROR:
+                nn_sipc_stop (&aipc->sipc);
+                aipc->state = NN_AIPC_STATE_STOPPING;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING state.                                                           */
+/******************************************************************************/
+    case NN_AIPC_STATE_STOPPING:
+        if (source == &aipc->sipc) {
+            switch (type) {
+            case NN_SIPC_STOPPED:
+                aipc->state = NN_AIPC_STATE_IDLE;
+                nn_fsm_raise (&aipc->fsm, &aipc->event_error);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
+}
+
+#endif
+

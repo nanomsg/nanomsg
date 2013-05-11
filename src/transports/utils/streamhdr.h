@@ -20,49 +20,49 @@
     IN THE SOFTWARE.
 */
 
-#include "../transport.h"
+#ifndef NN_STREAMHDR_INCLUDED
+#define NN_STREAMHDR_INCLUDED
 
-#include "ep.h"
-#include "sock.h"
+#include "../../aio/fsm.h"
+#include "../../aio/usock.h"
+#include "../../aio/timer.h"
 
-void nn_epbase_init (struct nn_epbase *self,
-    const struct nn_epbase_vfptr *vfptr, void *hint)
-{
-    self->vfptr = vfptr;
-    self->ep = (struct nn_ep*) hint;
-    nn_fsm_event_init (&self->event_stopped, self->ep, NN_EP_STOPPED);
-}
+#include <stdint.h>
 
-void nn_epbase_term (struct nn_epbase *self)
-{
-    nn_fsm_event_term (&self->event_stopped);
-}
+/*  This state machine exchanges protocol headers on top of
+    a stream-based bi-directional connection. */
 
-void nn_epbase_stopped (struct nn_epbase *self)
-{
-    /*  TODO: Do the following in more sane way. */
-    self->event_stopped.fsm = &self->ep->sock->fsm;
-    nn_ctx_raise (self->ep->sock->fsm.ctx, &self->event_stopped);
-}
+#define NN_STREAMHDR_ERROR 1
+#define NN_STREAMHDR_DONE 2
+#define NN_STREAMHDR_STOPPED 3
 
-struct nn_ctx *nn_epbase_getctx (struct nn_epbase *self)
-{
-    return nn_ep_getctx (self->ep);
-}
+struct nn_streamhdr {
 
-const char *nn_epbase_getaddr (struct nn_epbase *self)
-{
-    return nn_ep_getaddr (self->ep);
-}
+    /*  The state machine. */
+    struct nn_fsm fsm;
+    int state;
 
-void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
-    void *optval, size_t *optvallen)
-{
-    return nn_ep_getopt (self->ep, level, option, optval, optvallen);
-}
+    /*  Used to timeout the protocol header exchange. */
+    struct nn_timer timer;
 
-int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
-{
-    return nn_ep_ispeer (self->ep, socktype);
-}
+    /*  The undelrying socket. */
+    struct nn_usock *usock;
+
+    /*  The original owner of the underlying socket. */
+    struct nn_fsm *usock_owner;
+
+    /*  Protocol header. */
+    uint8_t protohdr [8];
+
+    struct nn_fsm_event event_done;
+    struct nn_fsm_event event_error;
+};
+
+void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner);
+void nn_streamhdr_term (struct nn_streamhdr *self);
+
+void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock);
+void nn_streamhdr_stop (struct nn_streamhdr *self);
+
+#endif
 

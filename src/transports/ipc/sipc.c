@@ -48,6 +48,7 @@
 #define NN_SIPC_OUTSTATE_SENDING 2
 
 #define NN_SIPC_EVENT_START 1
+#define NN_SIPC_EVENT_STOP 2
 
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg);
@@ -103,7 +104,7 @@ void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
 
 void nn_sipc_stop (struct nn_sipc *self)
 {
-    nn_assert (0);
+    nn_sipc_handler (&self->fsm, NULL, NN_SIPC_EVENT_STOP);
 }
 
 static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
@@ -131,7 +132,7 @@ static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
     iov [1].iov_base = nn_chunkref_data (&sipc->outmsg.hdr);
     iov [1].iov_len = nn_chunkref_size (&sipc->outmsg.hdr);
     iov [2].iov_base = nn_chunkref_data (&sipc->outmsg.body);
-    iov [2].iov_len = nn_chunkref_size (&sipc->outmsg.body);;
+    iov [2].iov_len = nn_chunkref_size (&sipc->outmsg.body);
     nn_usock_send (sipc->usock, iov, 3);
 
     sipc->outstate = NN_SIPC_OUTSTATE_SENDING;
@@ -154,7 +155,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Start receiving new message. */
     sipc->instate = NN_SIPC_INSTATE_HDR;
-    nn_usock_recv (sipc->usock, sipc->inhdr, 8);
+    nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr));
 
     return 0;
 }
@@ -281,6 +282,18 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
+
+        if (source == NULL) {
+            switch (type) {
+            case NN_SIPC_EVENT_STOP:
+                nn_usock_swap_owner (sipc->usock, sipc->usock_owner);
+                nn_fsm_raise (&sipc->fsm, &sipc->event_stopped);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+
         nn_assert (0);
 
 /******************************************************************************/

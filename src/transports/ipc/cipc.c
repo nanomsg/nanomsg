@@ -46,6 +46,7 @@
 #define NN_CIPC_STATE_STOPPING_USOCK_FINAL 6
 #define NN_CIPC_STATE_STOPPING_TIMER_FINAL 7
 #define NN_CIPC_STATE_ACTIVE 8
+#define NN_CIPC_STATE_STOPPING_SIPC 9
 
 #define NN_CIPC_EVENT_CONNECTING 1
 #define NN_CIPC_EVENT_STOP 2
@@ -307,8 +308,8 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &cipc->sipc) {
             switch (type) {
             case NN_SIPC_ERROR:
-                nn_usock_stop (&cipc->usock);
-                cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
+                nn_sipc_stop (&cipc->sipc);
+                cipc->state = NN_CIPC_STATE_STOPPING_SIPC;
                 return;
             default:
                 nn_assert (0);
@@ -317,7 +318,25 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_CIPC_EVENT_STOP:
+                nn_sipc_stop (&cipc->sipc);
+                cipc->state = NN_CIPC_STATE_STOPPING_SIPC;
+                return;
+            default:
                 nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_SIPC state.                                                      */
+/******************************************************************************/
+    case NN_CIPC_STATE_STOPPING_SIPC:
+        if (source == &cipc->sipc) {
+            switch (type) {
+            case NN_SIPC_STOPPED:
+                nn_usock_stop (&cipc->usock);
+                cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
+                return;
             default:
                 nn_assert (0);
             }

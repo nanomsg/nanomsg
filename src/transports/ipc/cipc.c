@@ -33,6 +33,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
+#include "../../utils/fast.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -40,15 +41,15 @@
 
 #define NN_CIPC_STATE_IDLE 1
 #define NN_CIPC_STATE_CONNECTING 2
-#define NN_CIPC_STATE_STOPPING_USOCK 3
-#define NN_CIPC_STATE_WAITING 4
-#define NN_CIPC_STATE_STOPPING_TIMER 5
-#define NN_CIPC_STATE_STOPPING_USOCK_FINAL 6
-#define NN_CIPC_STATE_STOPPING_TIMER_FINAL 7
-#define NN_CIPC_STATE_ACTIVE 8
-#define NN_CIPC_STATE_STOPPING_SIPC 9
+#define NN_CIPC_STATE_ACTIVE 3
+#define NN_CIPC_STATE_STOPPING_SIPC 4
+#define NN_CIPC_STATE_STOPPING_USOCK 5
+#define NN_CIPC_STATE_WAITING 6
+#define NN_CIPC_STATE_STOPPING_BACKOFF 7
+#define NN_CIPC_STATE_STOPPING_SIPC_FINAL 8
+#define NN_CIPC_STATE_STOPPING 9
 
-#define NN_CIPC_EVENT_CONNECTING 1
+#define NN_CIPC_EVENT_START 1
 #define NN_CIPC_EVENT_STOP 2
 
 struct nn_cipc {
@@ -82,7 +83,7 @@ const struct nn_epbase_vfptr nn_cipc_epbase_vfptr = {
 
 /*  Private functions. */
 static void nn_cipc_handler (struct nn_fsm *self, void *source, int type);
-static void nn_cipc_enter_connecting (struct nn_cipc *self);
+static void nn_cipc_start_connecting (struct nn_cipc *self);
 
 int nn_cipc_create (void *hint, struct nn_epbase **epbase)
 {
@@ -102,7 +103,7 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     nn_sipc_init (&self->sipc, &self->epbase, &self->fsm);
 
     /*  Start the state machine. */
-    nn_cipc_enter_connecting (self);
+    nn_cipc_start_connecting (self);
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -140,15 +141,50 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 
     cipc = nn_cont (self, struct nn_cipc, fsm);
 
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == NULL && type == NN_CIPC_EVENT_STOP)) {
+        if (!nn_sipc_isidle (&cipc->sipc)) {
+            nn_sipc_stop (&cipc->sipc);
+            cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
+            return;
+        }
+        nn_assert (cipc->state != NN_CIPC_STATE_STOPPING);
+stop:
+        nn_assert (nn_sipc_isidle (&cipc->sipc));
+        if (!nn_backoff_isidle (&cipc->retry))
+            nn_backoff_stop (&cipc->retry);
+        if (!nn_usock_isidle (&cipc->usock))
+            nn_usock_stop (&cipc->usock);
+        cipc->state == NN_CIPC_STATE_STOPPING;
+        return;
+    }
+    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {
+        if (source == &cipc->sipc && type == NN_SIPC_STOPPED)
+            goto stop;
+        return;
+    }
+    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING)) {
+        if (nn_backoff_isidle (&cipc->retry) &&
+                nn_usock_isidle (&cipc->usock)) {
+            cipc->state = NN_CIPC_STATE_IDLE;
+            nn_epbase_stopped (&cipc->epbase);
+            return;
+        }
+        return;
+    }
+
     switch (cipc->state) {
 
 /******************************************************************************/
 /*  IDLE state.                                                               */
+/*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CIPC_STATE_IDLE:
         if (source == NULL) {
             switch (type) {
-            case NN_CIPC_EVENT_CONNECTING:
+            case NN_CIPC_EVENT_START:
                 cipc->state = NN_CIPC_STATE_CONNECTING;
                 return;
             default:
@@ -159,6 +195,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
+/*  Non-blocking connect is under way.                                        */
 /******************************************************************************/
     case NN_CIPC_STATE_CONNECTING:
         if (source == &cipc->usock) {
@@ -170,129 +207,6 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
             case NN_USOCK_ERROR:
                 nn_usock_stop (&cipc->usock);
                 cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_CIPC_EVENT_STOP:
-                nn_usock_stop (&cipc->usock);
-                cipc->state = NN_CIPC_STATE_STOPPING_USOCK_FINAL;
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/*****************************************************************************/
-/*  STOPPING_USOCK state.                                                     */
-/******************************************************************************/
-    case NN_CIPC_STATE_STOPPING_USOCK:
-        if (source == &cipc->usock) {
-            switch (type) {
-            case NN_USOCK_STOPPED:
-                nn_backoff_start (&cipc->retry);
-                cipc->state = NN_CIPC_STATE_WAITING;
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_CIPC_EVENT_STOP:
-                cipc->state = NN_CIPC_STATE_STOPPING_USOCK_FINAL;
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  WAITING state.                                                            */
-/*  Waiting before re-connection is attempted. This way we want exhaust       */
-/*  the system by continuous re-connection attemps.                           */
-/******************************************************************************/
-    case NN_CIPC_STATE_WAITING:
-        if (source == &cipc->retry) {
-            switch (type) {
-            case NN_TIMER_TIMEOUT:
-                nn_backoff_stop (&cipc->retry);
-                cipc->state = NN_CIPC_STATE_STOPPING_TIMER;
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_CIPC_EVENT_STOP:
-                nn_backoff_stop (&cipc->retry);
-                cipc->state = NN_CIPC_STATE_STOPPING_TIMER_FINAL;
-                return;
-
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  STOPPING_TIMER state.                                                     */
-/*  Waiting before re-connecting is done. We are now cancelling the re-try    */
-/*  timer.                                                                    */
-/******************************************************************************/
-    case NN_CIPC_STATE_STOPPING_TIMER:
-        if (source == &cipc->retry) {
-            switch (type) {
-            case NN_BACKOFF_STOPPED:
-                nn_cipc_enter_connecting (cipc);
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_CIPC_EVENT_STOP:
-                cipc->state = NN_CIPC_STATE_STOPPING_TIMER_FINAL;
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  STOPPING_USOCK_FINAL state.                                               */
-/*  Stopping the timer before cipc object itself is stopped.                  */
-/******************************************************************************/
-    case NN_CIPC_STATE_STOPPING_USOCK_FINAL:
-        if (source == &cipc->usock) {
-            switch (type) {
-            case NN_USOCK_STOPPED:
-                cipc->state = NN_CIPC_STATE_IDLE;
-                nn_epbase_stopped (&cipc->epbase);
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  STOPPING_TIMER_FINAL state.                                               */
-/*  Stopping the timer before cipc object itself is stopped.                  */
-/******************************************************************************/
-    case NN_CIPC_STATE_STOPPING_TIMER_FINAL:
-        if (source == &cipc->retry) {
-            switch (type) {
-            case NN_BACKOFF_STOPPED:
-                cipc->state = NN_CIPC_STATE_IDLE;
-                nn_epbase_stopped (&cipc->epbase);
                 return;
             default:
                 nn_assert (0);
@@ -315,11 +229,18 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_SIPC state.                                                      */
+/*  sipc object was asked to stop but it haven't stopped yet.                 */
+/******************************************************************************/
+    case NN_CIPC_STATE_STOPPING_SIPC:
+        if (source == &cipc->sipc) {
             switch (type) {
-            case NN_CIPC_EVENT_STOP:
-                nn_sipc_stop (&cipc->sipc);
-                cipc->state = NN_CIPC_STATE_STOPPING_SIPC;
+            case NN_SIPC_STOPPED:
+                nn_usock_stop (&cipc->usock);
+                cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
                 return;
             default:
                 nn_assert (0);
@@ -328,14 +249,49 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  STOPPING_SIPC state.                                                      */
+/*  STOPPING_USOCK state.                                                     */
+/*  usock object was asked to stop but it haven't stopped yet.                */
 /******************************************************************************/
-    case NN_CIPC_STATE_STOPPING_SIPC:
-        if (source == &cipc->sipc) {
+    case NN_CIPC_STATE_STOPPING_USOCK:
+        if (source == &cipc->usock) {
             switch (type) {
-            case NN_SIPC_STOPPED:
-                nn_usock_stop (&cipc->usock);
-                cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
+            case NN_USOCK_STOPPED:
+                nn_backoff_start (&cipc->retry);
+                cipc->state = NN_CIPC_STATE_WAITING;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  WAITING state.                                                            */
+/*  Waiting before re-connection is attempted. This way we won't overload     */
+/*  the system by continuous re-connection attemps.                           */
+/******************************************************************************/
+    case NN_CIPC_STATE_WAITING:
+        if (source == &cipc->retry) {
+            switch (type) {
+            case NN_BACKOFF_TIMEOUT:
+                nn_backoff_stop (&cipc->retry);
+                cipc->state = NN_CIPC_STATE_STOPPING_BACKOFF;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_BACKOFF state.                                                   */
+/*  backoff object was asked to stop, but it haven't stopped yet.             */
+/******************************************************************************/
+    case NN_CIPC_STATE_STOPPING_BACKOFF:
+        if (source == &cipc->retry) {
+            switch (type) {
+            case NN_BACKOFF_STOPPED:
+                nn_cipc_start_connecting (cipc);
                 return;
             default:
                 nn_assert (0);
@@ -355,7 +311,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /*  State machine actions.                                                    */
 /******************************************************************************/
 
-static void nn_cipc_enter_connecting (struct nn_cipc *self)
+static void nn_cipc_start_connecting (struct nn_cipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -381,6 +337,7 @@ static void nn_cipc_enter_connecting (struct nn_cipc *self)
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
         sizeof (struct sockaddr_un));
+
     self->state = NN_CIPC_STATE_CONNECTING;
 }
 

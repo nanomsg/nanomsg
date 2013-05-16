@@ -32,6 +32,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/fast.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -41,8 +42,12 @@
 
 #define NN_BIPC_STATE_IDLE 1
 #define NN_BIPC_STATE_ACTIVE 2
+#define NN_BIPC_STATE_STOPPING_AIPC 3
+#define NN_BIPC_STATE_STOPPING_USOCK 4
+#define NN_BIPC_STATE_STOPPING_AIPCS 5
 
 #define NN_BIPC_EVENT_START 1
+#define NN_BIPC_EVENT_STOP 2
 
 struct nn_bipc {
 
@@ -105,19 +110,91 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
 
 static void nn_bipc_stop (struct nn_epbase *self)
 {
-    nn_assert (0);
+    struct nn_bipc *bipc;
+
+    bipc = nn_cont (self, struct nn_bipc, epbase);
+
+    nn_bipc_handler (&bipc->fsm, NULL, NN_BIPC_EVENT_STOP);
 }
 
 static void nn_bipc_destroy (struct nn_epbase *self)
 {
-    nn_assert (0);
+    struct nn_bipc *bipc;
+
+    bipc = nn_cont (self, struct nn_bipc, epbase);
+
+    nn_assert (bipc->state == NN_BIPC_STATE_IDLE);
+    nn_list_term (&bipc->aipcs);
+    nn_assert (bipc->aipc == NULL);
+    nn_usock_term (&bipc->usock);
+    nn_epbase_term (&bipc->epbase);
+    nn_fsm_term (&bipc->fsm);
+
+    nn_free (bipc);
 }
 
 static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_bipc *bipc;
+    struct nn_list_item *it;
+    struct nn_aipc *aipc;
 
     bipc = nn_cont (self, struct nn_bipc, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == NULL && type == NN_BIPC_EVENT_STOP)) {
+        nn_assert (bipc->state == NN_BIPC_STATE_ACTIVE);
+        nn_assert (bipc->aipc);
+        nn_assert (!nn_aipc_isidle (bipc->aipc));
+        nn_aipc_stop (bipc->aipc);
+        bipc->state == NN_BIPC_STATE_STOPPING_AIPC;
+        return;
+    }
+    if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPC)) {
+        if (source == bipc->aipc && type == NN_AIPC_STOPPED) {
+            nn_aipc_term (bipc->aipc);
+            nn_free (bipc->aipc);
+            bipc->aipc = NULL;
+            nn_usock_stop (&bipc->usock);
+            bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
+            return;
+        }
+        return;
+    }
+    if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_USOCK)) {
+        if (source == &bipc->usock && type == NN_USOCK_STOPPED) {
+            for (it = nn_list_begin (&bipc->aipcs);
+                  it != nn_list_end (&bipc->aipcs);
+                  it == nn_list_next (&bipc->aipcs, it))
+                nn_aipc_stop (nn_cont (it, struct nn_aipc, item));
+            bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;
+            return;
+        }
+        return;
+    }
+    if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPCS)) {
+
+        /*  The assumption here is that the events here are generated only
+            by child aipc state machines. We could programatically test the
+            assumption, but it would be O(n)-complex, so we'll skip the test. */
+        nn_assert (type == NN_AIPC_STOPPED);
+        aipc = (struct nn_aipc *) source;
+        nn_list_erase (&bipc->aipcs, &aipc->item);
+        nn_aipc_term (aipc);
+        nn_free (aipc);
+        
+        /*  If there are no more aipc state machines, we can stop the whole
+            bipc object. */
+        if (nn_list_empty (&bipc->aipcs)) {
+            bipc->state = NN_BIPC_STATE_IDLE;
+            nn_epbase_stopped (&bipc->epbase);
+            return;
+        }
+
+        return;
+    }
 
     switch (bipc->state) {
 

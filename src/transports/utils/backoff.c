@@ -36,6 +36,11 @@ void nn_backoff_term (struct nn_backoff *self)
     nn_timer_term (&self->timer);
 }
 
+int nn_backoff_isidle (struct nn_backoff *self)
+{
+    return nn_timer_isidle (&self->timer);
+}
+
 void nn_backoff_start (struct nn_backoff *self)
 {
      int timeout;

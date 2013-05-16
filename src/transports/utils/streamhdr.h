@@ -56,11 +56,13 @@ struct nn_streamhdr {
 
     struct nn_fsm_event event_done;
     struct nn_fsm_event event_error;
+    struct nn_fsm_event event_stopped;
 };
 
 void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner);
 void nn_streamhdr_term (struct nn_streamhdr *self);
 
+int nn_streamhdr_isidle (struct nn_streamhdr *self);
 void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock);
 void nn_streamhdr_stop (struct nn_streamhdr *self);
 

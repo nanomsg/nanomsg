@@ -62,6 +62,11 @@ void nn_timer_term (struct nn_timer *self)
     nn_fsm_term (&self->fsm);
 }
 
+int nn_timer_isidle (struct nn_timer *self)
+{
+    return self->state == NN_TIMER_STATE_IDLE ? 1 : 0;
+}
+
 void nn_timer_start (struct nn_timer *self, int timeout)
 {
     /*  Negative timeout make no sense. */

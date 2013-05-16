@@ -26,17 +26,21 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/fast.h"
 
 #include <stdint.h>
 
-/*  Types of messages passed via IPC transpoort. */
+/*  Types of messages passed via IPC transport. */
 #define NN_SIPC_MSG_NORMAL 1
 #define NN_SIPC_MSG_SHMEM 2
 
 /*  States of the object as a whole. */
 #define NN_SIPC_STATE_IDLE 1
 #define NN_SIPC_STATE_PROTOHDR 2
-#define NN_SIPC_STATE_ACTIVE 3
+#define NN_SIPC_STATE_STOPPING_STREAMHDR 3
+#define NN_SIPC_STATE_ACTIVE 4
+#define NN_SIPC_STATE_DONE 5
+#define NN_SIPC_STATE_STOPPING 6
 
 /*  Possible states of the inbound part of the object. */
 #define NN_SIPC_INSTATE_HDR 1
@@ -89,6 +93,11 @@ void nn_sipc_term (struct nn_sipc *self)
     nn_pipebase_term (&self->pipebase);
     nn_streamhdr_term (&self->streamhdr);
     nn_fsm_term (&self->fsm);
+}
+
+int nn_sipc_isidle (struct nn_sipc *self)
+{
+    return self->state == NN_SIPC_STATE_IDLE ? 1 : 0;
 }
 
 void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
@@ -168,6 +177,28 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 
     sipc = nn_cont (self, struct nn_sipc, fsm);
 
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == NULL && type == NN_SIPC_EVENT_STOP)) {
+        nn_assert (sipc->state != NN_SIPC_STATE_STOPPING);
+        if (!nn_streamhdr_isidle (&sipc->streamhdr))
+            nn_streamhdr_stop (&sipc->streamhdr);
+        sipc->state == NN_SIPC_STATE_STOPPING;
+        return;
+    }
+    if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {
+        if (nn_streamhdr_isidle (&sipc->streamhdr)) {
+            nn_usock_swap_owner (sipc->usock, sipc->usock_owner);
+            sipc->usock = NULL;
+            sipc->usock_owner = NULL;
+            sipc->state = NN_SIPC_STATE_IDLE;
+            nn_fsm_raise (&sipc->fsm, &sipc->event_stopped);
+            return;
+        }
+        return;
+    }
+
     switch (sipc->state) {
 
 /******************************************************************************/
@@ -191,8 +222,36 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
     case NN_SIPC_STATE_PROTOHDR:
         if (source == &sipc->streamhdr) {
-             switch (type) {
-             case NN_STREAMHDR_DONE:
+            switch (type) {
+            case NN_STREAMHDR_DONE:
+
+                /*  Before moving to the active state stop the streamhdr
+                    state machine. */
+                nn_streamhdr_stop (&sipc->streamhdr);
+                sipc->state = NN_SIPC_STATE_STOPPING_STREAMHDR;
+                return;
+
+            case NN_STREAMHDR_ERROR:
+
+                /* Raise the error and move directly to the DONE state.
+                   streamhdr object will be stopped later on. */
+                sipc->state == NN_SIPC_STATE_DONE;
+                nn_fsm_raise (&sipc->fsm, &sipc->event_error);
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_STREAMHDR state.                                                 */
+/******************************************************************************/
+    case NN_SIPC_STATE_STOPPING_STREAMHDR:
+        if (source == &sipc->streamhdr) {
+            switch (type) {
+            case NN_STREAMHDR_STOPPED:
 
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&sipc->pipebase);
@@ -209,16 +268,9 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
                  sipc->state = NN_SIPC_STATE_ACTIVE;
                  return;
 
-             case NN_STREAMHDR_ERROR:
-                 nn_usock_swap_owner (sipc->usock, sipc->usock_owner);
-                 sipc->usock = NULL;
-                 sipc->usock_owner = NULL;
-                 sipc->state = NN_SIPC_STATE_IDLE;
-                 nn_fsm_raise (&sipc->fsm, &sipc->event_error);
-                 return;
-             default:
-                 nn_assert (0);
-             }
+            default:
+                nn_assert (0);
+            }
         }
         nn_assert (0);
 
@@ -282,18 +334,14 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
+        nn_assert (0);
 
-        if (source == NULL) {
-            switch (type) {
-            case NN_SIPC_EVENT_STOP:
-                nn_usock_swap_owner (sipc->usock, sipc->usock_owner);
-                nn_fsm_raise (&sipc->fsm, &sipc->event_stopped);
-                return;
-            default:
-                nn_assert (0);
-            }
-        }
-
+/******************************************************************************/
+/*  DONE state.                                                               */
+/*  The underlying connection is closed. There's nothing that can be done in  */
+/*  this state except stopping the object.                                    */
+/******************************************************************************/
+    case NN_SIPC_STATE_DONE:
         nn_assert (0);
 
 /******************************************************************************/

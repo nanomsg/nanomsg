@@ -28,14 +28,18 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/fast.h"
 
 #define NN_STREAMHDR_STATE_IDLE 1
 #define NN_STREAMHDR_STATE_SENDING 2
 #define NN_STREAMHDR_STATE_RECEIVING 3
 #define NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR 4
 #define NN_STREAMHDR_STATE_STOPPING_TIMER_DONE 5
+#define NN_STREAMHDR_STATE_DONE 6
+#define NN_STREAMHDR_STATE_STOPPING 7
 
 #define NN_STREAMHDR_EVENT_START 1
+#define NN_STREAMHDR_EVENT_STOP 2
 
 /*  Private functions. */
 static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type);
@@ -47,6 +51,7 @@ void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
     nn_timer_init (&self->timer, &self->fsm);
     nn_fsm_event_init (&self->event_done, self, NN_STREAMHDR_DONE);
     nn_fsm_event_init (&self->event_error, self, NN_STREAMHDR_ERROR);
+    nn_fsm_event_init (&self->event_stopped, self, NN_STREAMHDR_STOPPED);
 
     /*  TODO: Prepare the outgoing protocol header.  */
 
@@ -58,10 +63,16 @@ void nn_streamhdr_term (struct nn_streamhdr *self)
 {
     nn_assert (self->state == NN_STREAMHDR_STATE_IDLE);
 
+    nn_fsm_event_term (&self->event_stopped);
     nn_fsm_event_term (&self->event_error);
     nn_fsm_event_term (&self->event_done);
     nn_timer_term (&self->timer);
     nn_fsm_term (&self->fsm);
+}
+
+int nn_streamhdr_isidle (struct nn_streamhdr *self)
+{
+    return self->state == NN_STREAMHDR_STATE_IDLE ? 1 : 0;
 }
 
 void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
@@ -77,7 +88,7 @@ void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
 
 void nn_streamhdr_stop (struct nn_streamhdr *self)
 {
-    nn_assert (0);
+    nn_streamhdr_handler (&self->fsm, NULL, NN_STREAMHDR_EVENT_STOP);
 }
 
 static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
@@ -86,6 +97,25 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
     struct nn_iovec iovec;
 
     streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == NULL && type == NN_STREAMHDR_EVENT_STOP)) {
+        nn_assert (streamhdr->state != NN_STREAMHDR_STATE_STOPPING);
+        if (!nn_timer_isidle (&streamhdr->timer))
+            nn_timer_stop (&streamhdr->timer);
+        streamhdr->state == NN_STREAMHDR_STATE_STOPPING;
+        return;
+    }
+    if (nn_slow (streamhdr->state == NN_STREAMHDR_STATE_STOPPING)) {
+        if (nn_timer_isidle (&streamhdr->timer)) {
+            streamhdr->state = NN_STREAMHDR_STATE_IDLE;
+            nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_stopped);
+            return;
+        }
+        return;
+    }
 
     switch (streamhdr->state) {
 
@@ -172,7 +202,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                 nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);
                 streamhdr->usock = NULL;
                 streamhdr->usock_owner = NULL;
-                streamhdr->state = NN_STREAMHDR_STATE_IDLE;
+                streamhdr->state = NN_STREAMHDR_STATE_DONE;
                 nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_error);
                 return;
             default:
@@ -191,13 +221,21 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                 nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);
                 streamhdr->usock = NULL;
                 streamhdr->usock_owner = NULL;
-                streamhdr->state = NN_STREAMHDR_STATE_IDLE;
+                streamhdr->state = NN_STREAMHDR_STATE_DONE;
                 nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_done);
                 return;
             default:
                 nn_assert (0);
             }
         }        
+        nn_assert (0);
+
+/******************************************************************************/
+/*  DONE state.                                                               */
+/*  The header exchange was either done successfully of failed. There's       */
+/*  nothing that can be done in this state except stopping the object.        */
+/******************************************************************************/
+    case NN_STREAMHDR_STATE_DONE:
         nn_assert (0);
 
 /******************************************************************************/

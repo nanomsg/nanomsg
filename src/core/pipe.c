@@ -81,7 +81,8 @@ int nn_pipebase_start (struct nn_pipebase *self)
 
 void nn_pipebase_stop (struct nn_pipebase *self)
 {
-    nn_assert (self->state == NN_PIPEBASE_STATE_ACTIVE); 
+    if (self->state != NN_PIPEBASE_STATE_ACTIVE)
+        return;
     nn_sock_rm (self->sock, (struct nn_pipe*) self);
     self->state = NN_PIPEBASE_STATE_IDLE;
 }

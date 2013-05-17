@@ -184,7 +184,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (sipc->state != NN_SIPC_STATE_STOPPING);
         if (!nn_streamhdr_isidle (&sipc->streamhdr))
             nn_streamhdr_stop (&sipc->streamhdr);
-        sipc->state == NN_SIPC_STATE_STOPPING;
+        sipc->state = NN_SIPC_STATE_STOPPING;
         return;
     }
     if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {

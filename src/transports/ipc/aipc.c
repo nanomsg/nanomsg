@@ -112,7 +112,7 @@ stop:
         nn_assert (nn_sipc_isidle (&aipc->sipc));
         if (!nn_usock_isidle (&aipc->usock))
             nn_usock_stop (&aipc->usock);
-        aipc->state == NN_AIPC_STATE_STOPPING;
+        aipc->state = NN_AIPC_STATE_STOPPING;
         return;
     }
     if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {

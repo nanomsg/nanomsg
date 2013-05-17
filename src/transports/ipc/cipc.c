@@ -157,7 +157,7 @@ stop:
             nn_backoff_stop (&cipc->retry);
         if (!nn_usock_isidle (&cipc->usock))
             nn_usock_stop (&cipc->usock);
-        cipc->state == NN_CIPC_STATE_STOPPING;
+        cipc->state = NN_CIPC_STATE_STOPPING;
         return;
     }
     if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {

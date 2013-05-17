@@ -149,7 +149,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (bipc->aipc);
         nn_assert (!nn_aipc_isidle (bipc->aipc));
         nn_aipc_stop (bipc->aipc);
-        bipc->state == NN_BIPC_STATE_STOPPING_AIPC;
+        bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
         return;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPC)) {

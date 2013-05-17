@@ -147,8 +147,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
     if (nn_slow (source == NULL && type == NN_BIPC_EVENT_STOP)) {
         nn_assert (bipc->state == NN_BIPC_STATE_ACTIVE);
         nn_assert (bipc->aipc);
-        nn_assert (!nn_aipc_isidle (bipc->aipc));
-        nn_assert (!nn_aipc_isstopping (bipc->aipc));
+        nn_assert (!nn_aipc_isstopped (bipc->aipc));
         nn_aipc_stop (bipc->aipc);
         bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
         return;
@@ -170,7 +169,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
                   it != nn_list_end (&bipc->aipcs);
                   it = nn_list_next (&bipc->aipcs, it)) {
                 aipc = nn_cont (it, struct nn_aipc, item);
-                if (!nn_aipc_isstopping (aipc))
+                if (!nn_aipc_isstopped (aipc))
                     nn_aipc_stop (aipc);
             }
             bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;

@@ -44,6 +44,7 @@ void nn_backoff_term (struct nn_backoff *self);
 
 
 int nn_backoff_isidle (struct nn_backoff *self);
+int nn_backoff_isstopped (struct nn_backoff *self);
 void nn_backoff_start (struct nn_backoff *self);
 void nn_backoff_stop (struct nn_backoff *self);
 

@@ -88,6 +88,12 @@ int nn_streamhdr_isidle (struct nn_streamhdr *self)
     return self->state == NN_STREAMHDR_STATE_IDLE ? 1 : 0;
 }
 
+int nn_streamhdr_isstopped (struct nn_streamhdr *self)
+{
+    return self->state == NN_STREAMHDR_STATE_IDLE ||
+        self->state == NN_STREAMHDR_STATE_STOPPING ? 1 : 0;
+}
+
 void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
 {
     /*  Take ownership of the underlying socket. */
@@ -116,7 +122,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
     if (nn_slow (source == NULL && type == NN_STREAMHDR_EVENT_STOP)) {
         nn_assert (streamhdr->state != NN_STREAMHDR_STATE_STOPPING);
-        if (!nn_timer_isidle (&streamhdr->timer))
+        if (!nn_timer_isstopped (&streamhdr->timer))
             nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
     }

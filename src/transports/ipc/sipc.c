@@ -100,6 +100,12 @@ int nn_sipc_isidle (struct nn_sipc *self)
     return self->state == NN_SIPC_STATE_IDLE ? 1 : 0;
 }
 
+int nn_sipc_isstopped (struct nn_sipc *self)
+{
+    return self->state == NN_SIPC_STATE_IDLE ||
+        self->state == NN_SIPC_STATE_STOPPING ? 1 : 0;
+}
+
 void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
 {
     /*  Take ownership of the underlying socket. */
@@ -182,9 +188,9 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
     if (nn_slow (source == NULL && type == NN_SIPC_EVENT_STOP)) {
         nn_assert (sipc->state != NN_SIPC_STATE_STOPPING);
-        if (!nn_streamhdr_isidle (&sipc->streamhdr))
-            nn_streamhdr_stop (&sipc->streamhdr);
         nn_pipebase_stop (&sipc->pipebase);
+        if (!nn_streamhdr_isstopped (&sipc->streamhdr))
+            nn_streamhdr_stop (&sipc->streamhdr);
         sipc->state = NN_SIPC_STATE_STOPPING;
     }
     if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {

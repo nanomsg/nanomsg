@@ -67,6 +67,12 @@ int nn_timer_isidle (struct nn_timer *self)
     return self->state == NN_TIMER_STATE_IDLE ? 1 : 0;
 }
 
+int nn_timer_isstopped (struct nn_timer *self)
+{
+    return self->state == NN_TIMER_STATE_IDLE ||
+        self->state == NN_TIMER_STATE_STOPPING ? 1 : 0;
+}
+
 void nn_timer_start (struct nn_timer *self, int timeout)
 {
     /*  Negative timeout make no sense. */
@@ -80,6 +86,7 @@ void nn_timer_start (struct nn_timer *self, int timeout)
 void nn_timer_stop (struct nn_timer *self)
 {
     /*  Pass the event to the state machine. */
+    nn_assert (self->state != NN_TIMER_STATE_STOPPING);
     nn_timer_handler (&self->fsm, NULL, NN_TIMER_EVENT_STOP);
 }
 

@@ -145,17 +145,17 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == NULL && type == NN_CIPC_EVENT_STOP)) {
-        if (!nn_sipc_isidle (&cipc->sipc)) {
+        nn_assert (cipc->state != NN_CIPC_STATE_STOPPING &&
+            cipc->state != NN_CIPC_STATE_STOPPING_SIPC_FINAL);
+        if (!nn_sipc_isstopped (&cipc->sipc)) {
             nn_sipc_stop (&cipc->sipc);
             cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
             return;
         }
-        nn_assert (cipc->state != NN_CIPC_STATE_STOPPING);
 stop:
-        nn_assert (nn_sipc_isidle (&cipc->sipc));
-        if (!nn_backoff_isidle (&cipc->retry))
+        if (!nn_backoff_isstopped (&cipc->retry))
             nn_backoff_stop (&cipc->retry);
-        if (!nn_usock_isidle (&cipc->usock))
+        if (!nn_usock_isstopped (&cipc->usock))
             nn_usock_stop (&cipc->usock);
         cipc->state = NN_CIPC_STATE_STOPPING;
     }

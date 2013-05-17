@@ -118,6 +118,7 @@ void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner);
 void nn_usock_term (struct nn_usock *self);
 
 int nn_usock_isidle (struct nn_usock *self);
+int nn_usock_isstopped (struct nn_usock *self);
 int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol);
 void nn_usock_stop (struct nn_usock *self);
 

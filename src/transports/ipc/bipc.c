@@ -173,7 +173,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
                     nn_aipc_stop (aipc);
             }
             bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;
-            return;
+            goto aipcs_stopping;
         }
         return;
     }
@@ -190,6 +190,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
         
         /*  If there are no more aipc state machines, we can stop the whole
             bipc object. */
+aipcs_stopping:
         if (nn_list_empty (&bipc->aipcs)) {
             bipc->state = NN_BIPC_STATE_IDLE;
             nn_epbase_stopped (&bipc->epbase);

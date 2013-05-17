@@ -86,16 +86,6 @@ void nn_pipebase_stop (struct nn_pipebase *self)
     self->state = NN_PIPEBASE_STATE_IDLE;
 }
 
-void nn_pipebase_activate (struct nn_pipebase *self)
-{
-    self->instate = NN_PIPEBASE_INSTATE_ASYNC;
-    self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
-
-    /*  Provide the outgoing pipe to the SP socket. */
-    if (self->sock)
-        nn_sock_out (self->sock, (struct nn_pipe*) self);
-}
-
 void nn_pipebase_received (struct nn_pipebase *self)
 {
     if (nn_fast (self->instate == NN_PIPEBASE_INSTATE_RECEIVING)) {

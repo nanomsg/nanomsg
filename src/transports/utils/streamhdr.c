@@ -77,6 +77,7 @@ int nn_streamhdr_isidle (struct nn_streamhdr *self)
 
 void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
 {
+printf ("%p: STREAMHDR START\n", self);
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner == NULL);
     self->usock_owner = nn_usock_swap_owner (usock, &self->fsm);
@@ -88,6 +89,7 @@ void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
 
 void nn_streamhdr_stop (struct nn_streamhdr *self)
 {
+printf ("%p: STREAMHDR STOP\n", self);
     nn_streamhdr_handler (&self->fsm, NULL, NN_STREAMHDR_EVENT_STOP);
 }
 
@@ -105,8 +107,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (streamhdr->state != NN_STREAMHDR_STATE_STOPPING);
         if (!nn_timer_isidle (&streamhdr->timer))
             nn_timer_stop (&streamhdr->timer);
-        streamhdr->state == NN_STREAMHDR_STATE_STOPPING;
-        return;
+        streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
     }
     if (nn_slow (streamhdr->state == NN_STREAMHDR_STATE_STOPPING)) {
         if (nn_timer_isidle (&streamhdr->timer)) {

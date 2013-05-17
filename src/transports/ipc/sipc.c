@@ -185,7 +185,6 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
         if (!nn_streamhdr_isidle (&sipc->streamhdr))
             nn_streamhdr_stop (&sipc->streamhdr);
         sipc->state = NN_SIPC_STATE_STOPPING;
-        return;
     }
     if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {
         if (nn_streamhdr_isidle (&sipc->streamhdr)) {
@@ -208,6 +207,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_SIPC_EVENT_START:
+printf ("%p: SIPC START\n", sipc);
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock);
                 sipc->state = NN_SIPC_STATE_PROTOHDR;
                 return;
@@ -227,12 +227,14 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 
                 /*  Before moving to the active state stop the streamhdr
                     state machine. */
+printf ("%p: SIPC STREAMHDR DONE\n", sipc);
                 nn_streamhdr_stop (&sipc->streamhdr);
                 sipc->state = NN_SIPC_STATE_STOPPING_STREAMHDR;
                 return;
 
             case NN_STREAMHDR_ERROR:
 
+printf ("%p: SIPC STREAMHDR ERROR\n", sipc);
                 /* Raise the error and move directly to the DONE state.
                    streamhdr object will be stopped later on. */
                 sipc->state == NN_SIPC_STATE_DONE;
@@ -253,6 +255,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_STREAMHDR_STOPPED:
 
+printf ("%p: SIPC ACTIVE\n", sipc);
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&sipc->pipebase);
                  errnum_assert (rc == 0, -rc);

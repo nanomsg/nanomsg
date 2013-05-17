@@ -113,12 +113,6 @@ stop:
         if (!nn_usock_isidle (&aipc->usock))
             nn_usock_stop (&aipc->usock);
         aipc->state = NN_AIPC_STATE_STOPPING;
-        return;
-    }
-    if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {
-        if (source == &aipc->sipc && type == NN_SIPC_STOPPED)
-            goto stop;
-        return;
     }
     if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING)) {
         if (nn_usock_isidle (&aipc->usock)) {
@@ -132,6 +126,11 @@ stop:
             nn_fsm_raise (&aipc->fsm, &aipc->event_stopped);
             return;
         }
+        return;
+    }
+    if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {
+        if (source == &aipc->sipc && type == NN_SIPC_STOPPED)
+            goto stop;
         return;
     }
 

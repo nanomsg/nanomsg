@@ -158,12 +158,6 @@ stop:
         if (!nn_usock_isidle (&cipc->usock))
             nn_usock_stop (&cipc->usock);
         cipc->state = NN_CIPC_STATE_STOPPING;
-        return;
-    }
-    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {
-        if (source == &cipc->sipc && type == NN_SIPC_STOPPED)
-            goto stop;
-        return;
     }
     if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING)) {
         if (nn_backoff_isidle (&cipc->retry) &&
@@ -172,6 +166,11 @@ stop:
             nn_epbase_stopped (&cipc->epbase);
             return;
         }
+        return;
+    }
+    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {
+        if (source == &cipc->sipc && type == NN_SIPC_STOPPED)
+            goto stop;
         return;
     }
 

@@ -163,6 +163,13 @@ int nn_sock_term (struct nn_sock *self)
         return -EINTR;
     errnum_assert (rc == 0, -rc);
 
+    /*  The thread that posted the semaphore can still have the ctx locked
+        for a short while. By simply entering the context and exiting it
+        immediately we can be sure that the said thread have already exited
+        the context. */
+    nn_ctx_enter (&self->ctx);
+    nn_ctx_leave (&self->ctx);
+
     /*  Deallocate the resources. */
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);

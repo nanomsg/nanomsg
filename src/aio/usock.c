@@ -204,6 +204,7 @@ static void nn_usock_start_from_fd (struct nn_usock *self, int s)
 void nn_usock_stop (struct nn_usock *self)
 {
     /*  Ask socket to close asynchronously. */
+    nn_assert (self->state != NN_USOCK_STATE_STOPPING);
     nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_STOP);
 }
 
@@ -710,6 +711,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         if (source == &usock->wfd)
             return;
 
+printf ("source = %p type = %d\n", source, type);
         nn_assert (0);
 
 /******************************************************************************/

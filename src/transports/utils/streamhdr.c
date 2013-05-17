@@ -29,6 +29,9 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
+#include "../../utils/wire.h"
+
+#include <string.h>
 
 #define NN_STREAMHDR_STATE_IDLE 1
 #define NN_STREAMHDR_STATE_SENDING 2
@@ -54,6 +57,16 @@ void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
     nn_fsm_event_init (&self->event_stopped, self, NN_STREAMHDR_STOPPED);
 
     /*  TODO: Prepare the outgoing protocol header.  */
+#if 0
+    sz = sizeof (protocol);
+    nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_PROTOCOL, &protocol, &sz);
+    errnum_assert (rc == 0, -rc);
+    nn_assert (sz == sizeof (protocol));
+#endif
+    memcpy (self->protohdr, "\0\0SP\0\0\0\0", 8);
+#if 0
+    nn_puts (self->protohdr + 4, (uint16_t) protocol);
+#endif
 
     self->usock = NULL;
     self->usock_owner = NULL;

@@ -148,6 +148,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (bipc->state == NN_BIPC_STATE_ACTIVE);
         nn_assert (bipc->aipc);
         nn_assert (!nn_aipc_isidle (bipc->aipc));
+        nn_assert (!nn_aipc_isstopping (bipc->aipc));
         nn_aipc_stop (bipc->aipc);
         bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
         return;
@@ -167,8 +168,11 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &bipc->usock && type == NN_USOCK_STOPPED) {
             for (it = nn_list_begin (&bipc->aipcs);
                   it != nn_list_end (&bipc->aipcs);
-                  it == nn_list_next (&bipc->aipcs, it))
-                nn_aipc_stop (nn_cont (it, struct nn_aipc, item));
+                  it = nn_list_next (&bipc->aipcs, it)) {
+                aipc = nn_cont (it, struct nn_aipc, item);
+                if (!nn_aipc_isstopping (aipc))
+                    nn_aipc_stop (aipc);
+            }
             bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;
             return;
         }
@@ -239,7 +243,22 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        nn_assert (0);
+
+        /*  For all remaining events we'll assume they are coming from one
+            of remaining child aipc objects. */
+        aipc = (struct nn_aipc*) source;
+        switch (type) {
+        case NN_AIPC_ERROR:
+            nn_aipc_stop (aipc);
+            return;
+        case NN_AIPC_STOPPED:
+            nn_list_erase (&bipc->aipcs, &aipc->item);
+            nn_aipc_term (aipc);
+            nn_free (aipc);
+            return;
+        default:
+            nn_assert (0);
+        }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

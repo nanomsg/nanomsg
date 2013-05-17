@@ -36,9 +36,12 @@
 
 /*  State machine handling accepted IPC sockets. */
 
-#define NN_AIPC_ACCEPTED 1
-#define NN_AIPC_ERROR 2
-#define NN_AIPC_STOPPED 3
+/*  In bipc, some events are just *assumed* to come from a child aipc object.
+    By using non-trivial event codes, we can do more reliable sanity checking
+    in such scenarios. */
+#define NN_AIPC_ACCEPTED 34231
+#define NN_AIPC_ERROR 34232
+#define NN_AIPC_STOPPED 34233
 
 struct nn_aipc {
 
@@ -70,6 +73,7 @@ void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
 void nn_aipc_term (struct nn_aipc *self);
 
 int nn_aipc_isidle (struct nn_aipc *self);
+int nn_aipc_isstopping (struct nn_aipc *self);
 void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener);
 void nn_aipc_stop (struct nn_aipc *self);
 

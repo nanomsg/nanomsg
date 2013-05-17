@@ -75,6 +75,12 @@ int nn_aipc_isidle (struct nn_aipc *self)
     return self->state == NN_AIPC_STATE_IDLE ? 1 : 0;
 }
 
+int nn_aipc_isstopping (struct nn_aipc *self)
+{
+    return self->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL ||
+        self->state == NN_AIPC_STATE_STOPPING ? 1 : 0;
+}
+
 void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 {
     nn_assert (self->state == NN_AIPC_STATE_IDLE);

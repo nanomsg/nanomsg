@@ -167,6 +167,10 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                     sizeof (streamhdr->protohdr));
                 streamhdr->state = NN_STREAMHDR_STATE_RECEIVING;
                 return;
+            case NN_USOCK_ERROR:
+                nn_timer_stop (&streamhdr->timer);
+                streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
+                return;
             default:
                 nn_assert (0);
             }
@@ -174,7 +178,9 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
         if (source == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                nn_assert (0);
+                nn_timer_stop (&streamhdr->timer);
+                streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
+                return;
             default:
                 nn_assert (0);
             }
@@ -193,6 +199,10 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 
                 nn_timer_stop (&streamhdr->timer);
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_DONE;
+                return;
+            case NN_USOCK_ERROR:
+                nn_timer_stop (&streamhdr->timer);
+                streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
                 return;
             default:
                 nn_assert (0);

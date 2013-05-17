@@ -34,7 +34,7 @@ struct nn_xreq {
     struct nn_fq fq;
 };
 
-int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
+void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
     void *hint);
 void nn_xreq_term (struct nn_xreq *self);
 

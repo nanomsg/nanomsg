@@ -51,7 +51,7 @@ struct nn_surveyor {
 };
 
 /*  Private functions. */
-static int nn_surveyor_init (struct nn_surveyor *self,
+static void nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr);
 static void nn_surveyor_term (struct nn_surveyor *self);
 
@@ -92,15 +92,10 @@ static const struct nn_cp_sink nn_surveyor_sink = {
     nn_surveyor_timeout
 };
 
-static int nn_surveyor_init (struct nn_surveyor *self,
+static void nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr)
 {
-    int rc;
-
-    rc = nn_xsurveyor_init (&self->xsurveyor, vfptr);
-    if (rc < 0)
-        return rc;
-
+    nn_xsurveyor_init (&self->xsurveyor, vfptr);
     self->sink = &nn_surveyor_sink;
     self->flags = 0;
 
@@ -111,8 +106,6 @@ static int nn_surveyor_init (struct nn_surveyor *self,
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
     nn_aio_timer_init (&self->deadline_timer, &self->sink,
         nn_sockbase_getcp (&self->xsurveyor.sockbase));
-
-    return 0;
 }
 
 static void nn_surveyor_term (struct nn_surveyor *self)
@@ -275,16 +268,11 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
 
 static int nn_surveyor_create (struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_surveyor *self;
 
     self = nn_alloc (sizeof (struct nn_surveyor), "socket (surveyor)");
     alloc_assert (self);
-    rc = nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr);
     *sockbase = &self->xsurveyor.sockbase;
 
     return 0;

@@ -34,7 +34,7 @@ struct nn_xrespondent {
     struct nn_excl excl;
 };
 
-int nn_xrespondent_init (struct nn_xrespondent *self,
+void nn_xrespondent_init (struct nn_xrespondent *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 void nn_xrespondent_term (struct nn_xrespondent *self);
 

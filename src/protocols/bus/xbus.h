@@ -41,7 +41,7 @@ struct nn_xbus {
     struct nn_fq inpipes;
 };
 
-int nn_xbus_init (struct nn_xbus *self,
+void nn_xbus_init (struct nn_xbus *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 void nn_xbus_term (struct nn_xbus *self);
 

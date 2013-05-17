@@ -38,7 +38,7 @@ struct nn_xpair {
 };
 
 /*  Private functions. */
-static int nn_xpair_init (struct nn_xpair *self,
+static void nn_xpair_init (struct nn_xpair *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xpair_term (struct nn_xpair *self);
 
@@ -70,18 +70,11 @@ static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_getopt
 };
 
-static int nn_xpair_init (struct nn_xpair *self,
+static void nn_xpair_init (struct nn_xpair *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
-    if (rc < 0)
-        return rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_excl_init (&self->excl);
-
-    return 0;
 }
 
 static void nn_xpair_term (struct nn_xpair *self)
@@ -171,16 +164,11 @@ static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
 
 int nn_xpair_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xpair *self;
 
     self = nn_alloc (sizeof (struct nn_xpair), "socket (pair)");
     alloc_assert (self);
-    rc = nn_xpair_init (self, &nn_xpair_sockbase_vfptr, hint);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xpair_init (self, &nn_xpair_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;

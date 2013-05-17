@@ -83,7 +83,7 @@ struct nn_req {
 };
 
 /*  Private functions. */
-static int nn_req_init (struct nn_req *self,
+static void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_req_term (struct nn_req *self);
 
@@ -113,14 +113,10 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_getopt
 };
 
-static int nn_req_init (struct nn_req *self,
+static void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_xreq_init (&self->xreq, vfptr, hint);
-    if (rc < 0)
-        return rc;
+    nn_xreq_init (&self->xreq, vfptr, hint);
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
@@ -130,8 +126,6 @@ static int nn_req_init (struct nn_req *self,
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
     nn_aio_timer_init (&self->resend_timer, &self->sink,
         nn_sockbase_getcp (&self->xreq.sockbase));
-
-    return 0;
 }
 
 static void nn_req_term (struct nn_req *self)
@@ -381,16 +375,11 @@ static void nn_req_timeout (const struct nn_cp_sink **self,
 
 static int nn_req_create (struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_req *self;
 
     self = nn_alloc (sizeof (struct nn_req), "socket (req)");
     alloc_assert (self);
-    rc = nn_req_init (self, &nn_req_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_req_init (self, &nn_req_sockbase_vfptr);
     *sockbase = &self->xreq.sockbase;
 
     return 0;

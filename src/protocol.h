@@ -127,7 +127,7 @@ struct nn_sockbase {
 
 /*  Initialise the socket base class. 'hint' is the opaque value passed to the
     nn_transport's 'create' function. */
-int nn_sockbase_init (struct nn_sockbase *self,
+void nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 
 /*  Terminate the socket base class. */

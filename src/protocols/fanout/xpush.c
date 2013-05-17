@@ -42,7 +42,7 @@ struct nn_xpush {
 };
 
 /*  Private functions. */
-static int nn_xpush_init (struct nn_xpush *self,
+static void nn_xpush_init (struct nn_xpush *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xpush_term (struct nn_xpush *self);
 
@@ -73,18 +73,11 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_getopt
 };
 
-static int nn_xpush_init (struct nn_xpush *self,
+static void nn_xpush_init (struct nn_xpush *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
-    if (rc < 0)
-        return -rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_lb_init (&self->lb);
-
-    return 0;
 }
 
 static void nn_xpush_term (struct nn_xpush *self)
@@ -184,16 +177,11 @@ static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
 
 int nn_xpush_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xpush *self;
 
     self = nn_alloc (sizeof (struct nn_xpush), "socket (push)");
     alloc_assert (self);
-    rc = nn_xpush_init (self, &nn_xpush_sockbase_vfptr, hint);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xpush_init (self, &nn_xpush_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;

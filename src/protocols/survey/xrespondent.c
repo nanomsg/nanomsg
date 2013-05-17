@@ -50,18 +50,11 @@ static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
     nn_xrespondent_getopt
 };
 
-int nn_xrespondent_init (struct nn_xrespondent *self,
+void nn_xrespondent_init (struct nn_xrespondent *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
-    if (rc < 0)
-         return rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_excl_init (&self->excl);
-
-    return 0;
 }
 
 void nn_xrespondent_term (struct nn_xrespondent *self)
@@ -174,16 +167,11 @@ int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
 
 static int nn_xrespondent_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xrespondent *self;
 
     self = nn_alloc (sizeof (struct nn_xrespondent), "socket (xrespondent)");
     alloc_assert (self);
-    rc = nn_xrespondent_init (self, &nn_xrespondent_sockbase_vfptr, hint);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xrespondent_init (self, &nn_xrespondent_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;

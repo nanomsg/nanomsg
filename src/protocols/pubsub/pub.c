@@ -48,7 +48,7 @@ struct nn_pub {
 };
 
 /*  Private functions. */
-static int nn_pub_init (struct nn_pub *self,
+static void nn_pub_init (struct nn_pub *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_pub_term (struct nn_pub *self);
 
@@ -79,18 +79,11 @@ static const struct nn_sockbase_vfptr nn_pub_sockbase_vfptr = {
     nn_pub_getopt
 };
 
-static int nn_pub_init (struct nn_pub *self,
+static void nn_pub_init (struct nn_pub *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr, hint);
-    if (rc < 0)
-        return rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_dist_init (&self->outpipes);
-
-    return 0;
 }
 
 static void nn_pub_term (struct nn_pub *self)
@@ -185,16 +178,11 @@ static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
 
 static int nn_pub_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_pub *self;
 
     self = nn_alloc (sizeof (struct nn_pub), "socket (pub)");
     alloc_assert (self);
-    rc = nn_pub_init (self, &nn_pub_sockbase_vfptr, hint);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_pub_init (self, &nn_pub_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;

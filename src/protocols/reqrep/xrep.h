@@ -54,7 +54,7 @@ struct nn_xrep {
     struct nn_fq inpipes;
 };
 
-int nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
+void nn_xrep_init (struct nn_xrep *self, const struct nn_sockbase_vfptr *vfptr,
     void *hint);
 void nn_xrep_term (struct nn_xrep *self);
 

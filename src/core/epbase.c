@@ -30,7 +30,7 @@ void nn_epbase_init (struct nn_epbase *self,
 {
     self->vfptr = vfptr;
     self->ep = (struct nn_ep*) hint;
-    nn_fsm_event_init (&self->event_stopped, self->ep, NN_EP_STOPPED);
+    nn_fsm_event_init (&self->event_stopped, self->ep);
 }
 
 void nn_epbase_term (struct nn_epbase *self)
@@ -40,8 +40,9 @@ void nn_epbase_term (struct nn_epbase *self)
 
 void nn_epbase_stopped (struct nn_epbase *self)
 {
-    /*  TODO: Do the following in more sane way. */
+    /*  TODO: Do the following in a more sane way. */
     self->event_stopped.fsm = &self->ep->sock->fsm;
+    self->event_stopped.type = NN_EP_STOPPED;
     nn_ctx_raise (self->ep->sock->fsm.ctx, &self->event_stopped);
 }
 

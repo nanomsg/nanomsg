@@ -48,9 +48,9 @@ void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
     self->listener = NULL;
     self->listener_owner = NULL;
     nn_sipc_init (&self->sipc, epbase, &self->fsm);
-    nn_fsm_event_init (&self->event_accepted, self, NN_AIPC_ACCEPTED);
-    nn_fsm_event_init (&self->event_error, self, NN_AIPC_ERROR);
-    nn_fsm_event_init (&self->event_stopped, self, NN_AIPC_STOPPED);
+    nn_fsm_event_init (&self->event_accepted, self);
+    nn_fsm_event_init (&self->event_error, self);
+    nn_fsm_event_init (&self->event_stopped, self);
     nn_list_item_init (&self->item);
 }
 
@@ -127,7 +127,7 @@ stop:
                 aipc->listener_owner = NULL;
             }
             aipc->state = NN_AIPC_STATE_IDLE;
-            nn_fsm_raise (&aipc->fsm, &aipc->event_stopped);
+            nn_fsm_raise (&aipc->fsm, &aipc->event_stopped, NN_AIPC_STOPPED);
             return;
         }
         return;
@@ -170,7 +170,8 @@ stop:
                 nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
                 aipc->listener = NULL;
                 aipc->listener_owner = NULL;
-                nn_fsm_raise (&aipc->fsm, &aipc->event_accepted);
+                nn_fsm_raise (&aipc->fsm, &aipc->event_accepted,
+                    NN_AIPC_ACCEPTED);
 
                 /*  Start the sipc state machine. */
                 nn_sipc_start (&aipc->sipc, &aipc->usock);
@@ -223,7 +224,7 @@ stop:
         if (source == &aipc->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
-                nn_fsm_raise (&aipc->fsm, &aipc->event_error);
+                nn_fsm_raise (&aipc->fsm, &aipc->event_error, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;
                 return;
             default:

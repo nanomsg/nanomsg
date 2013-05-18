@@ -23,19 +23,31 @@
 #include "fsm.h"
 #include "ctx.h"
 
+#include "../utils/err.h"
+
 #include <stddef.h>
 
-void nn_fsm_event_init (struct nn_fsm_event *self, void *source, int type)
+void nn_fsm_event_init (struct nn_fsm_event *self, void *source)
 {
     self->fsm = NULL;
     self->source = source;
-    self->type = type;
+    self->type = -1;
     nn_queue_item_init (&self->item);
 }
 
 void nn_fsm_event_term (struct nn_fsm_event *self)
 {
+    nn_assert (self->type == -1);
     nn_queue_item_term (&self->item);
+}
+
+void nn_fsm_event_process (struct nn_fsm_event *self)
+{
+    int type;
+
+    type = self->type;
+    self->type = -1;
+    self->fsm->fn (self->fsm, self->source, type);
 }
 
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
@@ -81,8 +93,10 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
     return nn_ctx_choose_worker (self->ctx);
 }
 
-void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event)
+void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
 {
+    nn_assert (event->type == -1);
+    event->type = type;
     event->fsm = self->owner;
     nn_ctx_raise (self->ctx, event);
 }

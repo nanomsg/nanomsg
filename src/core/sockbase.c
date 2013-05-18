@@ -31,7 +31,7 @@ void nn_sockbase_init (struct nn_sockbase *self,
 {
     self->vfptr = vfptr;
     self->sock = (struct nn_sock*) hint;
-    nn_fsm_event_init (&self->event_closed, self, NN_SOCKBASE_CLOSED);
+    nn_fsm_event_init (&self->event_closed, self);
 }
 
 void nn_sockbase_term (struct nn_sockbase *self)
@@ -40,8 +40,9 @@ void nn_sockbase_term (struct nn_sockbase *self)
 
 void nn_sockbase_closed (struct nn_sockbase *self)
 {
-    /*  TODO: Do the following in more sane way. */
+    /*  TODO: Do the following in a more sane way. */
     self->event_closed.fsm = &self->sock->fsm;
+    self->event_closed.type = NN_SOCKBASE_CLOSED;
     nn_ctx_raise (self->sock->fsm.ctx, &self->event_closed);
 }
 

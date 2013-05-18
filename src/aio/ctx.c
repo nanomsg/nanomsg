@@ -57,7 +57,7 @@ void nn_ctx_leave (struct nn_ctx *self)
         event = nn_cont (item, struct nn_fsm_event, item);
         if (!event)
             break;
-        event->fsm->fn (event->fsm, event->source, event->type);
+        nn_fsm_event_process (event);
     }
 
     /*  Notify the owner that we are leaving the context. */

@@ -31,9 +31,6 @@
 #define NN_TIMER_STATE_ACTIVE 2
 #define NN_TIMER_STATE_STOPPING 3
 
-#define NN_TIMER_EVENT_START 1
-#define NN_TIMER_EVENT_STOP 2
-
 /*  Private functions. */
 static void nn_timer_handler (struct nn_fsm *self, void *source, int type);
 
@@ -78,16 +75,13 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     /*  Negative timeout make no sense. */
     nn_assert (timeout >= 0);
 
-    /*  Pass the event to the state machine. */
     self->timeout = timeout;
-    nn_timer_handler (&self->fsm, NULL, NN_TIMER_EVENT_START);
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_timer_stop (struct nn_timer *self)
 {
-    /*  Pass the event to the state machine. */
-    nn_assert (self->state != NN_TIMER_STATE_STOPPING);
-    nn_timer_handler (&self->fsm, NULL, NN_TIMER_EVENT_STOP);
+    nn_fsm_stop (&self->fsm);
 }
 
 static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
@@ -120,9 +114,9 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_TIMER_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &timer->fsm) {
             switch (type) {
-            case NN_TIMER_EVENT_START:
+            case NN_FSM_START:
 
                 /*  Send start event to the worker thread. */
                 nn_worker_execute (timer->worker, &timer->start_task);
@@ -151,9 +145,9 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
+        if (source == &timer->fsm) {
             switch (type) {
-            case NN_TIMER_EVENT_STOP:
+            case NN_FSM_STOP:
 
                 /*  Send stop event to the worker thread. */
                 nn_worker_execute (timer->worker, &timer->stop_task);

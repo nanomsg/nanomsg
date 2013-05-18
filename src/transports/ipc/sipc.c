@@ -51,9 +51,6 @@
 #define NN_SIPC_OUTSTATE_IDLE 1
 #define NN_SIPC_OUTSTATE_SENDING 2
 
-#define NN_SIPC_EVENT_START 1
-#define NN_SIPC_EVENT_STOP 2
-
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -114,12 +111,12 @@ void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
     self->usock = usock;
 
     /*  Launch the state machine. */
-    nn_sipc_handler (&self->fsm, NULL, NN_SIPC_EVENT_START);
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_sipc_stop (struct nn_sipc *self)
 {
-    nn_sipc_handler (&self->fsm, NULL, NN_SIPC_EVENT_STOP);
+    nn_fsm_stop (&self->fsm);
 }
 
 static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
@@ -186,7 +183,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_SIPC_EVENT_STOP)) {
+    if (nn_slow (source == &sipc->fsm && type == NN_FSM_STOP)) {
         nn_assert (sipc->state != NN_SIPC_STATE_STOPPING);
         nn_pipebase_stop (&sipc->pipebase);
         if (!nn_streamhdr_isstopped (&sipc->streamhdr))
@@ -211,9 +208,9 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SIPC_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &sipc->fsm) {
             switch (type) {
-            case NN_SIPC_EVENT_START:
+            case NN_FSM_START:
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock);
                 sipc->state = NN_SIPC_STATE_PROTOHDR;
                 return;

@@ -46,9 +46,6 @@
 #define NN_BIPC_STATE_STOPPING_USOCK 4
 #define NN_BIPC_STATE_STOPPING_AIPCS 5
 
-#define NN_BIPC_EVENT_START 1
-#define NN_BIPC_EVENT_STOP 2
-
 struct nn_bipc {
 
     /*  The state machine. */
@@ -100,7 +97,7 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
     nn_list_init (&self->aipcs);
 
     /*  Start the state machine. */
-    nn_bipc_handler (&self->fsm, NULL, NN_BIPC_EVENT_START);
+    nn_fsm_start (&self->fsm);
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -114,7 +111,7 @@ static void nn_bipc_stop (struct nn_epbase *self)
 
     bipc = nn_cont (self, struct nn_bipc, epbase);
 
-    nn_bipc_handler (&bipc->fsm, NULL, NN_BIPC_EVENT_STOP);
+    nn_fsm_stop (&bipc->fsm);
 }
 
 static void nn_bipc_destroy (struct nn_epbase *self)
@@ -144,7 +141,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_BIPC_EVENT_STOP)) {
+    if (nn_slow (source == &bipc->fsm && type == NN_FSM_STOP)) {
         nn_assert (bipc->state == NN_BIPC_STATE_ACTIVE);
         nn_assert (bipc->aipc);
         nn_assert (!nn_aipc_isstopped (bipc->aipc));
@@ -206,9 +203,9 @@ aipcs_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BIPC_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &bipc->fsm) {
             switch (type) {
-            case NN_BIPC_EVENT_START:
+            case NN_FSM_START:
                 nn_bipc_start_listening (bipc);
                 nn_bipc_start_accepting (bipc);
                 bipc->state = NN_BIPC_STATE_ACTIVE;

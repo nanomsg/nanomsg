@@ -41,13 +41,11 @@
 #define NN_USOCK_STATE_ERROR 8
 #define NN_USOCK_STATE_STOPPING 9
 
-#define NN_USOCK_EVENT_START 1
-#define NN_USOCK_EVENT_STOP 2
-#define NN_USOCK_EVENT_ACCEPT 3
-#define NN_USOCK_EVENT_LISTEN 4
-#define NN_USOCK_EVENT_CONNECTED 5
-#define NN_USOCK_EVENT_CONNECT_ERROR 6
-#define NN_USOCK_EVENT_CONNECTING 7
+#define NN_USOCK_EVENT_ACCEPT 1
+#define NN_USOCK_EVENT_LISTEN 2
+#define NN_USOCK_EVENT_CONNECTED 3
+#define NN_USOCK_EVENT_CONNECT_ERROR 4
+#define NN_USOCK_EVENT_CONNECTING 5
 
 /*  Private functions. */
 static void nn_usock_start_from_fd (struct nn_usock *self, int s);
@@ -204,14 +202,13 @@ static void nn_usock_start_from_fd (struct nn_usock *self, int s)
 #endif
     }
 
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_START);
+    /*  Start the state machine. */
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_usock_stop (struct nn_usock *self)
 {
-    /*  Ask socket to close asynchronously. */
-    nn_assert (self->state != NN_USOCK_STATE_STOPPING);
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_STOP);
+    nn_fsm_stop (&self->fsm);
 }
 
 struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
@@ -437,9 +434,9 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /*  created.                                                                  */
 /******************************************************************************/
     case NN_USOCK_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &usock->fsm) {
             switch (type) {
-            case NN_USOCK_EVENT_START:
+            case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;
                 return;
             default:
@@ -475,7 +472,13 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 usock->state = NN_USOCK_STATE_CONNECTING;
                 nn_worker_execute (usock->worker, &usock->task_connecting);
                 return;
-            case NN_USOCK_EVENT_STOP:
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &usock->fsm) {
+            switch (type) {
+            case NN_FSM_STOP:
                 rc = close (usock->s);
                 errno_assert (rc == 0);
                 usock->s = -1;
@@ -505,8 +508,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_STOP);
+        if (source == &usock->fsm) {
+            nn_assert (type == NN_FSM_STOP);
             nn_assert (0);
         }
         nn_assert (0);
@@ -518,9 +521,9 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /*  can be done in this state is closing the socket.                          */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECT_ERROR:
-        if (source == NULL) {
+        if (source == &usock->fsm) {
             switch (type) {
-            case NN_USOCK_EVENT_STOP:
+            case NN_FSM_STOP:
                 rc = close (usock->s);
                 errno_assert (rc == 0);
                 usock->s = -1;
@@ -570,8 +573,13 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 usock->state = NN_USOCK_STATE_ACCEPTING;
 
                 return;
-
-            case NN_USOCK_EVENT_STOP:
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &usock->fsm) {
+            switch (type) {
+            case NN_FSM_STOP:
                 nn_assert (0);
             default:
                 nn_assert (0);
@@ -626,8 +634,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_STOP);
+        if (source == &usock->fsm) {
+            nn_assert (type == NN_FSM_STOP);
             usock->state = NN_USOCK_STATE_STOPPING;
             nn_worker_execute (usock->worker, &usock->task_stop);
             return;
@@ -674,8 +682,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_STOP);
+        if (source == &usock->fsm) {
+            nn_assert (type == NN_FSM_STOP);
             nn_worker_execute (usock->worker, &usock->task_stop);
             usock->state = NN_USOCK_STATE_STOPPING;
             return;
@@ -686,8 +694,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /*  ERROR state.                                                              */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ERROR:
-        if (source == NULL) {
-            nn_assert (type == NN_USOCK_EVENT_STOP);
+        if (source == &usock->fsm) {
+            nn_assert (type == NN_FSM_STOP);
             usock->state = NN_USOCK_STATE_STOPPING;
             nn_worker_execute (usock->worker, &usock->task_stop);
             return;
@@ -717,7 +725,6 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         if (source == &usock->wfd)
             return;
 
-printf ("source = %p type = %d\n", source, type);
         nn_assert (0);
 
 /******************************************************************************/

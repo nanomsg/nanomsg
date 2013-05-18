@@ -56,6 +56,16 @@ void nn_fsm_term (struct nn_fsm *self)
 {
 }
 
+void nn_fsm_start (struct nn_fsm *self)
+{
+    self->fn (self, self, NN_FSM_START);
+}
+
+void nn_fsm_stop (struct nn_fsm *self)
+{
+    self->fn (self, self, NN_FSM_STOP);
+}
+
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)
 {
     struct nn_fsm *oldowner;

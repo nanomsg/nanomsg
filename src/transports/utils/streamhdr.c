@@ -41,9 +41,6 @@
 #define NN_STREAMHDR_STATE_DONE 6
 #define NN_STREAMHDR_STATE_STOPPING 7
 
-#define NN_STREAMHDR_EVENT_START 1
-#define NN_STREAMHDR_EVENT_STOP 2
-
 /*  Private functions. */
 static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type);
 
@@ -102,12 +99,12 @@ void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
     self->usock = usock;
 
     /*  Launch the state machine. */
-    nn_streamhdr_handler (&self->fsm, NULL, NN_STREAMHDR_EVENT_START);
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_streamhdr_stop (struct nn_streamhdr *self)
 {
-    nn_streamhdr_handler (&self->fsm, NULL, NN_STREAMHDR_EVENT_STOP);
+    nn_fsm_stop (&self->fsm);
 }
 
 static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
@@ -120,7 +117,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_STREAMHDR_EVENT_STOP)) {
+    if (nn_slow (source == &streamhdr->fsm && type == NN_FSM_STOP)) {
         nn_assert (streamhdr->state != NN_STREAMHDR_STATE_STOPPING);
         if (!nn_timer_isstopped (&streamhdr->timer))
             nn_timer_stop (&streamhdr->timer);
@@ -141,9 +138,9 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &streamhdr->fsm) {
             switch (type) {
-            case NN_STREAMHDR_EVENT_START:
+            case NN_FSM_START:
                 nn_timer_start (&streamhdr->timer, 1000);
                 iovec.iov_base = streamhdr->protohdr;
                 iovec.iov_len = sizeof (streamhdr->protohdr);

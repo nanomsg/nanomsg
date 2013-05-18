@@ -49,9 +49,6 @@
 #define NN_CIPC_STATE_STOPPING_SIPC_FINAL 8
 #define NN_CIPC_STATE_STOPPING 9
 
-#define NN_CIPC_EVENT_START 1
-#define NN_CIPC_EVENT_STOP 2
-
 struct nn_cipc {
 
     /*  The state machine. */
@@ -104,6 +101,7 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
 
     /*  Start the state machine. */
     nn_cipc_start_connecting (self);
+    nn_fsm_start (&self->fsm);
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -117,7 +115,7 @@ static void nn_cipc_stop (struct nn_epbase *self)
 
     cipc = nn_cont (self, struct nn_cipc, epbase);
 
-    nn_cipc_handler (&cipc->fsm, NULL, NN_CIPC_EVENT_STOP);
+    nn_fsm_stop (&cipc->fsm);
 }
 
 static void nn_cipc_destroy (struct nn_epbase *self)
@@ -144,7 +142,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_CIPC_EVENT_STOP)) {
+    if (nn_slow (source == &cipc->fsm && type == NN_FSM_STOP)) {
         nn_assert (cipc->state != NN_CIPC_STATE_STOPPING &&
             cipc->state != NN_CIPC_STATE_STOPPING_SIPC_FINAL);
         if (!nn_sipc_isstopped (&cipc->sipc)) {
@@ -181,9 +179,9 @@ stop:
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CIPC_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &cipc->fsm) {
             switch (type) {
-            case NN_CIPC_EVENT_START:
+            case NN_FSM_START:
                 cipc->state = NN_CIPC_STATE_CONNECTING;
                 return;
             default:
@@ -291,6 +289,7 @@ stop:
             switch (type) {
             case NN_BACKOFF_STOPPED:
                 nn_cipc_start_connecting (cipc);
+                cipc->state = NN_CIPC_STATE_CONNECTING;
                 return;
             default:
                 nn_assert (0);
@@ -336,8 +335,6 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
         sizeof (struct sockaddr_un));
-
-    self->state = NN_CIPC_STATE_CONNECTING;
 }
 
 #endif

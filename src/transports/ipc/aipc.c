@@ -36,9 +36,6 @@
 #define NN_AIPC_STATE_STOPPING_SIPC_FINAL 7
 #define NN_AIPC_STATE_STOPPING 8
 
-#define NN_AIPC_EVENT_START 1
-#define NN_AIPC_EVENT_STOP 2
-
 /*  Private functions. */
 static void nn_aipc_handler (struct nn_fsm *self, void *source, int type);
 
@@ -91,12 +88,12 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
     self->listener_owner = nn_usock_swap_owner (listener, &self->fsm);
 
     /*  Start the state machine. */
-    nn_aipc_handler (&self->fsm, NULL, NN_AIPC_EVENT_START);
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_aipc_stop (struct nn_aipc *self)
 {
-    nn_aipc_handler (&self->fsm, NULL, NN_AIPC_EVENT_STOP);
+    nn_fsm_stop (&self->fsm);
 }
 
 static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
@@ -108,7 +105,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_AIPC_EVENT_STOP)) {
+    if (nn_slow (source == &aipc->fsm && type == NN_FSM_STOP)) {
         nn_assert (aipc->state != NN_AIPC_STATE_STOPPING &&
             aipc->state != NN_AIPC_STATE_STOPPING_SIPC_FINAL);
         if (!nn_sipc_isstopped (&aipc->sipc)) {
@@ -148,9 +145,9 @@ stop:
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_AIPC_STATE_IDLE:
-        if (source == NULL) {
+        if (source == &aipc->fsm) {
             switch (type) {
-            case NN_AIPC_EVENT_START:
+            case NN_FSM_START:
                 nn_usock_accept (aipc->listener, &aipc->usock);
                 aipc->state = NN_AIPC_STATE_ACCEPTING;
                 return;

@@ -38,7 +38,7 @@ struct nn_fsm_event {
     struct nn_queue_item item;
 };
 
-void nn_fsm_event_init (struct nn_fsm_event *self, void *source);
+void nn_fsm_event_init (struct nn_fsm_event *self);
 void nn_fsm_event_term (struct nn_fsm_event *self);
 void nn_fsm_event_process (struct nn_fsm_event *self);
 
@@ -75,7 +75,8 @@ struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 
 /*  Send event from the state machine to its owner. */
-void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
+void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event,
+    void *source, int type);
 
 #endif
 

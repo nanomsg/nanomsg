@@ -84,12 +84,12 @@ void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
     nn_worker_task_init (&self->task_stop, &self->fsm);
 
     /*  Intialise incoming tasks. */
-    nn_fsm_event_init (&self->event_accepted, self);
-    nn_fsm_event_init (&self->event_connected, self);
-    nn_fsm_event_init (&self->event_sent, self);
-    nn_fsm_event_init (&self->event_received, self);
-    nn_fsm_event_init (&self->event_error, self);
-    nn_fsm_event_init (&self->event_stopped, self);
+    nn_fsm_event_init (&self->event_accepted);
+    nn_fsm_event_init (&self->event_connected);
+    nn_fsm_event_init (&self->event_sent);
+    nn_fsm_event_init (&self->event_received);
+    nn_fsm_event_init (&self->event_error);
+    nn_fsm_event_init (&self->event_stopped);
 
     /*  We are not listening at the moment. */
     self->newsock = NULL;
@@ -339,7 +339,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
-        nn_fsm_raise (&self->fsm, &self->event_sent, NN_USOCK_SENT);
+        nn_fsm_raise (&self->fsm, &self->event_sent, self, NN_USOCK_SENT);
         return;
     }
 
@@ -347,7 +347,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         self->state = NN_USOCK_STATE_ERROR;
-        nn_fsm_raise (&self->fsm, &self->event_error, NN_USOCK_ERROR);
+        nn_fsm_raise (&self->fsm, &self->event_error, self, NN_USOCK_ERROR);
         return;
     }
 
@@ -369,13 +369,14 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
         self->state = NN_USOCK_STATE_ERROR;
-        nn_fsm_raise (&self->fsm, &self->event_error, NN_USOCK_ERROR);
+        nn_fsm_raise (&self->fsm, &self->event_error, self, NN_USOCK_ERROR);
         return;
     }
 
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        nn_fsm_raise (&self->fsm, &self->event_received, NN_USOCK_RECEIVED);
+        nn_fsm_raise (&self->fsm, &self->event_received, self,
+            NN_USOCK_RECEIVED);
         return;
     }
 
@@ -462,12 +463,12 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
             case NN_USOCK_EVENT_CONNECTED:
                 usock->state = NN_USOCK_STATE_CONNECTED;
                 nn_worker_execute (usock->worker, &usock->task_connected);
-                nn_fsm_raise (&usock->fsm, &usock->event_connected,
+                nn_fsm_raise (&usock->fsm, &usock->event_connected, usock,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_EVENT_CONNECT_ERROR:
                 usock->state = NN_USOCK_STATE_CONNECT_ERROR;
-                nn_fsm_raise (&usock->fsm, &usock->event_error,
+                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
                     NN_USOCK_ERROR);
                 return;
             case NN_USOCK_EVENT_CONNECTING:
@@ -485,7 +486,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 errno_assert (rc == 0);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_IDLE;
-                nn_fsm_raise (&usock->fsm, &usock->event_stopped,
+                nn_fsm_raise (&usock->fsm, &usock->event_stopped, usock,
                     NN_USOCK_STOPPED);
                 return;
             default:
@@ -503,7 +504,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_CONNECTED;
-                nn_fsm_raise (&usock->fsm, &usock->event_connected,
+                nn_fsm_raise (&usock->fsm, &usock->event_connected, usock,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_FD_ERR:
@@ -532,7 +533,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 errno_assert (rc == 0);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_IDLE;
-                nn_fsm_raise (&usock->fsm, &usock->event_stopped,
+                nn_fsm_raise (&usock->fsm, &usock->event_stopped, usock,
                     NN_USOCK_STOPPED);
                 return;
             default:
@@ -565,7 +566,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                     usock->newsock->state = NN_USOCK_STATE_CONNECTED;
                     nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                         &usock->newsock->wfd);
-                    nn_fsm_raise (&usock->fsm, &usock->event_accepted,
+                    nn_fsm_raise (&usock->fsm, &usock->event_accepted, usock,
                         NN_USOCK_ACCEPTED);
                     return;
                 }
@@ -627,7 +628,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                     &usock->newsock->wfd);
 
                 /*  Notify the user that connection was accepted. */
-                nn_fsm_raise (&usock->fsm, &usock->event_accepted,
+                nn_fsm_raise (&usock->fsm, &usock->event_accepted, usock,
                     NN_USOCK_ACCEPTED);
 
                 /*  Wait till the user starts accepting once again. */
@@ -663,20 +664,20 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
                         nn_fsm_raise (&usock->fsm, &usock->event_received,
-                            NN_USOCK_RECEIVED);
+                            usock, NN_USOCK_RECEIVED);
                     }
                     return;
                 }
                 errnum_assert (rc == -ECONNRESET, -rc);
                 usock->state = NN_USOCK_STATE_ERROR;
-                nn_fsm_raise (&usock->fsm, &usock->event_error,
+                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
                     NN_USOCK_ERROR);
                 return;
             case NN_WORKER_FD_OUT:
                 rc = nn_usock_send_raw (usock, &usock->out.hdr);
                 if (nn_fast (rc == 0)) {
                     nn_worker_reset_out (usock->worker, &usock->wfd);
-                    nn_fsm_raise (&usock->fsm, &usock->event_sent,
+                    nn_fsm_raise (&usock->fsm, &usock->event_sent, usock,
                         NN_USOCK_SENT);
                     return;
                 }
@@ -684,7 +685,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                     return;
                 errnum_assert (rc == -ECONNRESET, -rc);
                 usock->state = NN_USOCK_STATE_ERROR;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
+                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
+                    NN_USOCK_ERROR);
                 return;
             case NN_WORKER_FD_ERR:
                 nn_assert (0);
@@ -726,7 +728,8 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
             errno_assert (rc == 0);
             usock->s = -1;
             usock->state = NN_USOCK_STATE_IDLE;
-            nn_fsm_raise (&usock->fsm, &usock->event_stopped, NN_USOCK_STOPPED);
+            nn_fsm_raise (&usock->fsm, &usock->event_stopped, usock,
+                NN_USOCK_STOPPED);
             return;
         }
 

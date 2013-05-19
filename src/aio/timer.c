@@ -41,8 +41,8 @@ void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner)
     nn_worker_task_init (&self->start_task, &self->fsm);
     nn_worker_task_init (&self->stop_task, &self->fsm);
     nn_worker_timer_init (&self->wtimer, &self->fsm);
-    nn_fsm_event_init (&self->timeout_event, self);
-    nn_fsm_event_init (&self->stopped_event, self);
+    nn_fsm_event_init (&self->timeout_event);
+    nn_fsm_event_init (&self->stopped_event);
     self->worker = nn_fsm_choose_worker (&self->fsm);
     self->timeout = -1;
 }
@@ -103,7 +103,8 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (type == NN_WORKER_TASK_EXECUTE);        
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
         timer->state = NN_TIMER_STATE_IDLE;
-        nn_fsm_raise (&timer->fsm, &timer->stopped_event, NN_TIMER_STOPPED);
+        nn_fsm_raise (&timer->fsm, &timer->stopped_event, timer,
+            NN_TIMER_STOPPED);
         return;
     }
 
@@ -138,7 +139,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 
                 /*  Notify the user about the timeout. */
                 nn_assert (timer->timeout == -1);
-                nn_fsm_raise (&timer->fsm, &timer->timeout_event,
+                nn_fsm_raise (&timer->fsm, &timer->timeout_event, timer,
                     NN_TIMER_TIMEOUT);
                 return;
 

@@ -60,4 +60,7 @@ void nn_queue_item_init (struct nn_queue_item *self);
     this call. */
 void nn_queue_item_term (struct nn_queue_item *self);
 
+/*  Returns 1 if item is a part of a queue. 0 otherwise. */
+int nn_queue_item_isinqueue (struct nn_queue_item *self);
+
 #endif

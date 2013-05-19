@@ -73,3 +73,8 @@ void nn_queue_item_term (struct nn_queue_item *self)
     nn_assert (self->next == NN_QUEUE_NOTINQUEUE);
 }
 
+int nn_queue_item_isinqueue (struct nn_queue_item *self)
+{
+    return self->next == NN_QUEUE_NOTINQUEUE ? 0 : 1;
+}
+

@@ -227,7 +227,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
     case NN_SIPC_STATE_PROTOHDR:
         if (source == &sipc->streamhdr) {
             switch (type) {
-            case NN_STREAMHDR_DONE:
+            case NN_STREAMHDR_OK:
 
                 /*  Before moving to the active state stop the streamhdr
                     state machine. */

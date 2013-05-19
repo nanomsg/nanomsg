@@ -32,8 +32,8 @@
 /*  This state machine exchanges protocol headers on top of
     a stream-based bi-directional connection. */
 
-#define NN_STREAMHDR_ERROR 1
-#define NN_STREAMHDR_DONE 2
+#define NN_STREAMHDR_OK 1
+#define NN_STREAMHDR_ERROR 2
 #define NN_STREAMHDR_STOPPED 3
 
 struct nn_streamhdr {
@@ -55,7 +55,6 @@ struct nn_streamhdr {
     uint8_t protohdr [8];
 
     struct nn_fsm_event event_done;
-    struct nn_fsm_event event_error;
     struct nn_fsm_event event_stopped;
 };
 

@@ -50,7 +50,6 @@ void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
     self->state = NN_STREAMHDR_STATE_IDLE;
     nn_timer_init (&self->timer, &self->fsm);
     nn_fsm_event_init (&self->event_done);
-    nn_fsm_event_init (&self->event_error);
     nn_fsm_event_init (&self->event_stopped);
 
     /*  TODO: Prepare the outgoing protocol header.  */
@@ -74,7 +73,6 @@ void nn_streamhdr_term (struct nn_streamhdr *self)
     nn_assert (self->state == NN_STREAMHDR_STATE_IDLE);
 
     nn_fsm_event_term (&self->event_stopped);
-    nn_fsm_event_term (&self->event_error);
     nn_fsm_event_term (&self->event_done);
     nn_timer_term (&self->timer);
     nn_fsm_term (&self->fsm);
@@ -229,7 +227,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                 streamhdr->usock = NULL;
                 streamhdr->usock_owner = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
-                nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_error,
+                nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_done,
                     streamhdr, NN_STREAMHDR_ERROR);
                 return;
             default:
@@ -250,7 +248,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                 streamhdr->usock_owner = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
                 nn_fsm_raise (&streamhdr->fsm, &streamhdr->event_done,
-                    streamhdr, NN_STREAMHDR_DONE);
+                    streamhdr, NN_STREAMHDR_OK);
                 return;
             default:
                 nn_assert (0);

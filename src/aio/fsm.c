@@ -52,6 +52,7 @@ void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
     self->fn = fn;
     self->owner = NULL;
     self->ctx = ctx;
+    nn_fsm_event_init (&self->stopped);
 }
 
 void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
@@ -59,10 +60,12 @@ void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
     self->fn = fn;
     self->owner = owner;
     self->ctx = owner->ctx;
+    nn_fsm_event_init (&self->stopped);
 }
 
 void nn_fsm_term (struct nn_fsm *self)
 {
+    nn_fsm_event_term (&self->stopped);
 }
 
 void nn_fsm_start (struct nn_fsm *self)
@@ -73,6 +76,11 @@ void nn_fsm_start (struct nn_fsm *self)
 void nn_fsm_stop (struct nn_fsm *self)
 {
     self->fn (self, self, NN_FSM_STOP);
+}
+
+void nn_fsm_stopped (struct nn_fsm *self, void *source, int type)
+{
+    nn_fsm_raise (self, &self->stopped, source, type);
 }
 
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)

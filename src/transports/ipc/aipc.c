@@ -48,9 +48,8 @@ void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
     self->listener = NULL;
     self->listener_owner = NULL;
     nn_sipc_init (&self->sipc, epbase, &self->fsm);
-    nn_fsm_event_init (&self->event_accepted);
-    nn_fsm_event_init (&self->event_error);
-    nn_fsm_event_init (&self->event_stopped);
+    nn_fsm_event_init (&self->accepted);
+    nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);
 }
 
@@ -59,9 +58,8 @@ void nn_aipc_term (struct nn_aipc *self)
     nn_assert (self->state == NN_AIPC_STATE_IDLE);
 
     nn_list_item_term (&self->item);
-    nn_fsm_event_term (&self->event_stopped);
-    nn_fsm_event_term (&self->event_error);
-    nn_fsm_event_term (&self->event_accepted);
+    nn_fsm_event_term (&self->done);
+    nn_fsm_event_term (&self->accepted);
     nn_sipc_term (&self->sipc);
     nn_usock_term (&self->usock);
     nn_fsm_term (&self->fsm);    
@@ -127,8 +125,7 @@ stop:
                 aipc->listener_owner = NULL;
             }
             aipc->state = NN_AIPC_STATE_IDLE;
-            nn_fsm_raise (&aipc->fsm, &aipc->event_stopped, aipc,
-                NN_AIPC_STOPPED);
+            nn_fsm_stopped (&aipc->fsm, aipc, NN_AIPC_STOPPED);
             return;
         }
         return;
@@ -171,7 +168,7 @@ stop:
                 nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
                 aipc->listener = NULL;
                 aipc->listener_owner = NULL;
-                nn_fsm_raise (&aipc->fsm, &aipc->event_accepted, aipc,
+                nn_fsm_raise (&aipc->fsm, &aipc->accepted, aipc,
                     NN_AIPC_ACCEPTED);
 
                 /*  Start the sipc state machine. */
@@ -225,8 +222,7 @@ stop:
         if (source == &aipc->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
-                nn_fsm_raise (&aipc->fsm, &aipc->event_error, aipc,
-                    NN_AIPC_ERROR);
+                nn_fsm_raise (&aipc->fsm, &aipc->done, aipc, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;
                 return;
             default:

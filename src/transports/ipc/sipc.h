@@ -76,8 +76,8 @@ struct nn_sipc {
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;
 
-    struct nn_fsm_event event_stopped;
-    struct nn_fsm_event event_error;
+    /*  Event raised when the state machine ends. */
+    struct nn_fsm_event done;
 };
 
 void nn_sipc_init (struct nn_sipc *self, struct nn_epbase *epbase,

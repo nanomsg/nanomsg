@@ -35,8 +35,7 @@ struct nn_timer {
     struct nn_worker_task start_task;
     struct nn_worker_task stop_task;
     struct nn_worker_timer wtimer;
-    struct nn_fsm_event timeout_event;
-    struct nn_fsm_event stopped_event;
+    struct nn_fsm_event done;
     struct nn_worker *worker;
     int timeout;
 };

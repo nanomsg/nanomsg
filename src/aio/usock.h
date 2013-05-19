@@ -102,12 +102,10 @@ struct nn_usock {
     struct nn_worker_task task_stop;
 
     /*  Events raised by the usock. */ 
-    struct nn_fsm_event event_accepted;
-    struct nn_fsm_event event_connected;
+    struct nn_fsm_event event_established;
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
-    struct nn_fsm_event event_error;
-    struct nn_fsm_event event_stopped;
+    struct nn_fsm_event event_done;
 
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */

@@ -54,8 +54,8 @@ struct nn_streamhdr {
     /*  Protocol header. */
     uint8_t protohdr [8];
 
-    struct nn_fsm_event event_done;
-    struct nn_fsm_event event_stopped;
+    /*  Event fired when the state machine ends. */
+    struct nn_fsm_event done;
 };
 
 void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner);

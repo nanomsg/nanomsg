@@ -23,7 +23,12 @@
 #include "fsm.h"
 #include "ctx.h"
 
+#include "../utils/err.h"
+
 #include <stddef.h>
+
+#define NN_FSM_STATE_IDLE 1
+#define NN_FSM_STATE_ACTIVE 2
 
 void nn_fsm_event_init (struct nn_fsm_event *self)
 {
@@ -38,6 +43,11 @@ void nn_fsm_event_term (struct nn_fsm_event *self)
     nn_queue_item_term (&self->item);
 }
 
+int nn_fsm_event_active (struct nn_fsm_event *self)
+{
+    return nn_queue_item_isinqueue (&self->item);
+}
+
 void nn_fsm_event_process (struct nn_fsm_event *self)
 {
     int type;
@@ -50,6 +60,7 @@ void nn_fsm_event_process (struct nn_fsm_event *self)
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
 {
     self->fn = fn;
+    self->state = NN_FSM_STATE_IDLE;
     self->owner = NULL;
     self->ctx = ctx;
     nn_fsm_event_init (&self->stopped);
@@ -58,6 +69,7 @@ void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
 void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
 {
     self->fn = fn;
+    self->state = NN_FSM_STATE_IDLE;
     self->owner = owner;
     self->ctx = owner->ctx;
     nn_fsm_event_init (&self->stopped);
@@ -65,17 +77,27 @@ void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
 
 void nn_fsm_term (struct nn_fsm *self)
 {
+    nn_assert (self->state == NN_FSM_STATE_IDLE &&
+        !nn_fsm_event_active (&self->stopped));
     nn_fsm_event_term (&self->stopped);
 }
 
 void nn_fsm_start (struct nn_fsm *self)
 {
+    nn_assert (self->state == NN_FSM_STATE_IDLE &&
+        !nn_fsm_event_active (&self->stopped));
     self->fn (self, self, NN_FSM_START);
+    self->state = NN_FSM_STATE_ACTIVE;
 }
 
 void nn_fsm_stop (struct nn_fsm *self)
 {
+    /*  If stopping of the state machine was already requested, do nothing. */
+    if (self->state == NN_FSM_STATE_IDLE)
+        return;
+
     self->fn (self, self, NN_FSM_STOP);
+    self->state = NN_FSM_STATE_IDLE;
 }
 
 void nn_fsm_stopped (struct nn_fsm *self, void *source, int type)

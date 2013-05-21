@@ -23,6 +23,7 @@
 #include "timer.h"
 
 #include "../utils/cont.h"
+#include "../utils/fast.h"
 #include "../utils/err.h"
 
 /*  Timer state reflects the state as seen by the user thread. It says nothing
@@ -59,13 +60,8 @@ void nn_timer_term (struct nn_timer *self)
 
 int nn_timer_isidle (struct nn_timer *self)
 {
-    return self->state == NN_TIMER_STATE_IDLE ? 1 : 0;
-}
-
-int nn_timer_isstopped (struct nn_timer *self)
-{
-    return self->state == NN_TIMER_STATE_IDLE ||
-        self->state == NN_TIMER_STATE_STOPPING ? 1 : 0;
+     return self->state == NN_TIMER_STATE_IDLE &&
+         nn_fsm_isidle (&self->fsm) ? 1 : 0;
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)
@@ -88,24 +84,24 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 
     timer = nn_cont (self, struct nn_timer, fsm);
 
-    /*  Internal tasks sent from the user thread to the worker thread. */
-    if (source == &timer->start_task) {
-        nn_assert (type == NN_WORKER_TASK_EXECUTE);
-        nn_assert (timer->timeout >= 0);
-        nn_worker_add_timer (timer->worker, timer->timeout,
-            &timer->wtimer);
-        timer->timeout = -1;
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == &timer->fsm && type == NN_FSM_STOP)) {
+        nn_worker_execute (timer->worker, &timer->stop_task);
+        timer->state = NN_TIMER_STATE_STOPPING;
         return;
     }
-    if (source == &timer->stop_task) {
-        nn_assert (type == NN_WORKER_TASK_EXECUTE);        
+    if (nn_slow (timer->state == NN_TIMER_STATE_STOPPING)) {
+        if (source != &timer->stop_task)
+            return;
+        nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
         timer->state = NN_TIMER_STATE_IDLE;
         nn_fsm_stopped (&timer->fsm, timer, NN_TIMER_STOPPED);
         return;
     }
 
-    /*  The state machine itself. */
     switch (timer->state) {
 
 /******************************************************************************/
@@ -130,6 +126,14 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_TIMER_STATE_ACTIVE:
+        if (source == &timer->start_task) {
+            nn_assert (type == NN_WORKER_TASK_EXECUTE);
+            nn_assert (timer->timeout >= 0);
+            nn_worker_add_timer (timer->worker, timer->timeout,
+                &timer->wtimer);
+            timer->timeout = -1;
+            return;
+        }
         if (source == &timer->wtimer) {
             switch (type) {
             case NN_WORKER_TIMER_TIMEOUT:
@@ -138,37 +142,6 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (timer->timeout == -1);
                 nn_fsm_raise (&timer->fsm, &timer->done, timer,
                     NN_TIMER_TIMEOUT);
-                return;
-
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == &timer->fsm) {
-            switch (type) {
-            case NN_FSM_STOP:
-
-                /*  Send stop event to the worker thread. */
-                nn_worker_execute (timer->worker, &timer->stop_task);
-                timer->state = NN_TIMER_STATE_STOPPING;
-                return;
-
-            default:
-                nn_assert (0);
-            }
-        }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  STOPPING state.                                                           */
-/******************************************************************************/
-    case NN_TIMER_STATE_STOPPING:
-        if (source == &timer->wtimer) {
-            switch (type) {
-            case NN_WORKER_TIMER_TIMEOUT:
-
-                /*  Timer is being shut down anyway.
-                    We can safely ignore the timeout. */
                 return;
 
             default:

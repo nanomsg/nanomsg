@@ -143,32 +143,22 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &cipc->fsm && type == NN_FSM_STOP)) {
-        nn_assert (cipc->state != NN_CIPC_STATE_STOPPING &&
-            cipc->state != NN_CIPC_STATE_STOPPING_SIPC_FINAL);
-        if (!nn_sipc_isstopped (&cipc->sipc)) {
-            nn_sipc_stop (&cipc->sipc);
-            cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
+        nn_sipc_stop (&cipc->sipc);
+        cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
+    }
+    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {
+        if (!nn_sipc_isidle (&cipc->sipc))
             return;
-        }
-stop:
-        if (!nn_backoff_isstopped (&cipc->retry))
-            nn_backoff_stop (&cipc->retry);
-        if (!nn_usock_isstopped (&cipc->usock))
-            nn_usock_stop (&cipc->usock);
+        nn_backoff_stop (&cipc->retry);
+        nn_usock_stop (&cipc->usock);
         cipc->state = NN_CIPC_STATE_STOPPING;
     }
     if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING)) {
-        if (nn_backoff_isidle (&cipc->retry) &&
-                nn_usock_isidle (&cipc->usock)) {
-            cipc->state = NN_CIPC_STATE_IDLE;
-            nn_epbase_stopped (&cipc->epbase);
+        if (!nn_backoff_isidle (&cipc->retry) ||
+              !nn_usock_isidle (&cipc->usock))
             return;
-        }
-        return;
-    }
-    if (nn_slow (cipc->state == NN_CIPC_STATE_STOPPING_SIPC_FINAL)) {
-        if (source == &cipc->sipc && type == NN_SIPC_STOPPED)
-            goto stop;
+        cipc->state = NN_CIPC_STATE_IDLE;
+        nn_epbase_stopped (&cipc->epbase);
         return;
     }
 

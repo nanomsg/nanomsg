@@ -78,13 +78,7 @@ void nn_streamhdr_term (struct nn_streamhdr *self)
 
 int nn_streamhdr_isidle (struct nn_streamhdr *self)
 {
-    return self->state == NN_STREAMHDR_STATE_IDLE ? 1 : 0;
-}
-
-int nn_streamhdr_isstopped (struct nn_streamhdr *self)
-{
-    return self->state == NN_STREAMHDR_STATE_IDLE ||
-        self->state == NN_STREAMHDR_STATE_STOPPING ? 1 : 0;
+    return nn_fsm_isidle (&self->fsm);
 }
 
 void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
@@ -114,17 +108,14 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &streamhdr->fsm && type == NN_FSM_STOP)) {
-        nn_assert (streamhdr->state != NN_STREAMHDR_STATE_STOPPING);
-        if (!nn_timer_isstopped (&streamhdr->timer))
-            nn_timer_stop (&streamhdr->timer);
+        nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
     }
     if (nn_slow (streamhdr->state == NN_STREAMHDR_STATE_STOPPING)) {
-        if (nn_timer_isidle (&streamhdr->timer)) {
-            streamhdr->state = NN_STREAMHDR_STATE_IDLE;
-            nn_fsm_stopped (&streamhdr->fsm, streamhdr, NN_STREAMHDR_STOPPED);
+        if (!nn_timer_isidle (&streamhdr->timer))
             return;
-        }
+        streamhdr->state = NN_STREAMHDR_STATE_IDLE;
+        nn_fsm_stopped (&streamhdr->fsm, streamhdr, NN_STREAMHDR_STOPPED);
         return;
     }
 

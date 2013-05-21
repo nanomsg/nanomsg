@@ -119,13 +119,8 @@ void nn_usock_term (struct nn_usock *self)
 
 int nn_usock_isidle (struct nn_usock *self)
 {
-    return self->state == NN_USOCK_STATE_IDLE ? 1 : 0;
-}
-
-int nn_usock_isstopped (struct nn_usock *self)
-{
-    return self->state == NN_USOCK_STATE_IDLE ||
-        self->state == NN_USOCK_STATE_STOPPING ? 1 : 0;
+    return self->state == NN_USOCK_STATE_IDLE &&
+        nn_fsm_isidle (&self->fsm) ? 1 : 0;
 }
 
 int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)

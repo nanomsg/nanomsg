@@ -142,37 +142,29 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &bipc->fsm && type == NN_FSM_STOP)) {
-        nn_assert (bipc->state == NN_BIPC_STATE_ACTIVE);
-        nn_assert (bipc->aipc);
-        nn_assert (!nn_aipc_isstopped (bipc->aipc));
         nn_aipc_stop (bipc->aipc);
         bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
-        return;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPC)) {
-        if (source == bipc->aipc && type == NN_AIPC_STOPPED) {
-            nn_aipc_term (bipc->aipc);
-            nn_free (bipc->aipc);
-            bipc->aipc = NULL;
-            nn_usock_stop (&bipc->usock);
-            bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
+        if (!nn_aipc_isidle (bipc->aipc))
             return;
-        }
-        return;
+        nn_aipc_term (bipc->aipc);
+        nn_free (bipc->aipc);
+        bipc->aipc = NULL;
+        nn_usock_stop (&bipc->usock);
+        bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_USOCK)) {
-        if (source == &bipc->usock && type == NN_USOCK_STOPPED) {
-            for (it = nn_list_begin (&bipc->aipcs);
-                  it != nn_list_end (&bipc->aipcs);
-                  it = nn_list_next (&bipc->aipcs, it)) {
-                aipc = nn_cont (it, struct nn_aipc, item);
-                if (!nn_aipc_isstopped (aipc))
-                    nn_aipc_stop (aipc);
-            }
-            bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;
-            goto aipcs_stopping;
+       if (!nn_usock_isidle (&bipc->usock))
+            return;
+        for (it = nn_list_begin (&bipc->aipcs);
+              it != nn_list_end (&bipc->aipcs);
+              it = nn_list_next (&bipc->aipcs, it)) {
+            aipc = nn_cont (it, struct nn_aipc, item);
+            nn_aipc_stop (aipc);
         }
-        return;
+        bipc->state = NN_BIPC_STATE_STOPPING_AIPCS;
+        goto aipcs_stopping;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPCS)) {
 

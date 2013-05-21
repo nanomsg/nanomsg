@@ -67,14 +67,7 @@ void nn_aipc_term (struct nn_aipc *self)
 
 int nn_aipc_isidle (struct nn_aipc *self)
 {
-    return self->state == NN_AIPC_STATE_IDLE ? 1 : 0;
-}
-
-int nn_aipc_isstopped (struct nn_aipc *self)
-{
-    return self->state == NN_AIPC_STATE_IDLE ||
-        self->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL ||
-        self->state == NN_AIPC_STATE_STOPPING ? 1 : 0;
+    return nn_fsm_isidle (&self->fsm);
 }
 
 void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
@@ -104,35 +97,26 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &aipc->fsm && type == NN_FSM_STOP)) {
-        nn_assert (aipc->state != NN_AIPC_STATE_STOPPING &&
-            aipc->state != NN_AIPC_STATE_STOPPING_SIPC_FINAL);
-        if (!nn_sipc_isstopped (&aipc->sipc)) {
-            nn_sipc_stop (&aipc->sipc);
-            aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
+        nn_sipc_stop (&aipc->sipc);
+        aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
+    }
+    if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {
+        if (!nn_sipc_isidle (&aipc->sipc))
             return;
-        }
-stop:
-        if (!nn_usock_isstopped (&aipc->usock))
-            nn_usock_stop (&aipc->usock);
+        nn_usock_stop (&aipc->usock);
         aipc->state = NN_AIPC_STATE_STOPPING;
     }
     if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING)) {
-        if (nn_usock_isidle (&aipc->usock)) {
-           if (aipc->listener) {
-                nn_assert (aipc->listener_owner);
-                nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
-                aipc->listener = NULL;
-                aipc->listener_owner = NULL;
-            }
-            aipc->state = NN_AIPC_STATE_IDLE;
-            nn_fsm_stopped (&aipc->fsm, aipc, NN_AIPC_STOPPED);
+        if (!nn_usock_isidle (&aipc->usock))
             return;
+       if (aipc->listener) {
+            nn_assert (aipc->listener_owner);
+            nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
+            aipc->listener = NULL;
+            aipc->listener_owner = NULL;
         }
-        return;
-    }
-    if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {
-        if (source == &aipc->sipc && type == NN_SIPC_STOPPED)
-            goto stop;
+        aipc->state = NN_AIPC_STATE_IDLE;
+        nn_fsm_stopped (&aipc->fsm, aipc, NN_AIPC_STOPPED);
         return;
     }
 

@@ -92,13 +92,7 @@ void nn_sipc_term (struct nn_sipc *self)
 
 int nn_sipc_isidle (struct nn_sipc *self)
 {
-    return self->state == NN_SIPC_STATE_IDLE ? 1 : 0;
-}
-
-int nn_sipc_isstopped (struct nn_sipc *self)
-{
-    return self->state == NN_SIPC_STATE_IDLE ||
-        self->state == NN_SIPC_STATE_STOPPING ? 1 : 0;
+    return nn_fsm_isidle (&self->fsm);
 }
 
 void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
@@ -182,10 +176,8 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &sipc->fsm && type == NN_FSM_STOP)) {
-        nn_assert (sipc->state != NN_SIPC_STATE_STOPPING);
         nn_pipebase_stop (&sipc->pipebase);
-        if (!nn_streamhdr_isstopped (&sipc->streamhdr))
-            nn_streamhdr_stop (&sipc->streamhdr);
+        nn_streamhdr_stop (&sipc->streamhdr);
         sipc->state = NN_SIPC_STATE_STOPPING;
     }
     if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {

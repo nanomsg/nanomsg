@@ -47,7 +47,7 @@ static void nn_xsink_init (struct nn_xsink *self,
 static void nn_xsink_term (struct nn_xsink *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_xsink_close (struct nn_sockbase *self);
+static void nn_xsink_stop (struct nn_sockbase *self);
 static void nn_xsink_destroy (struct nn_sockbase *self);
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsink_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -60,7 +60,7 @@ static int nn_xsink_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xsink_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsink_sockbase_vfptr = {
-    nn_xsink_close,
+    nn_xsink_stop,
     nn_xsink_destroy,
     nn_xsink_add,
     nn_xsink_rm,
@@ -86,10 +86,10 @@ static void nn_xsink_term (struct nn_xsink *self)
     nn_sockbase_term (&self->sockbase);
 }
 
-void nn_xsink_close (struct nn_sockbase *self)
+void nn_xsink_stop (struct nn_sockbase *self)
 {
     /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_closed (self); 
+    nn_sockbase_stopped (self); 
 }
 
 void nn_xsink_destroy (struct nn_sockbase *self)

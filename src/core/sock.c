@@ -43,8 +43,8 @@
 #define NN_SOCK_STATE_INIT 1
 #define NN_SOCK_STATE_ACTIVE 2
 #define NN_SOCK_STATE_ZOMBIE 3
-#define NN_SOCK_STATE_CLOSING_EPS 4
-#define NN_SOCK_STATE_CLOSING 5
+#define NN_SOCK_STATE_STOPPING_EPS 4
+#define NN_SOCK_STATE_STOPPING 5
 #define NN_SOCK_STATE_CLOSED 6
 
 /*  Events sent to the state machine. */
@@ -630,8 +630,8 @@ static void nn_sock_onleave (struct nn_ctx *self)
 
     /*  If nn_close() was already called there's no point in adjusting the
         snd/rcv file descriptors. */
-    if (sock->state == NN_SOCK_STATE_CLOSING_EPS ||
-          sock->state == NN_SOCK_STATE_CLOSING ||
+    if (sock->state == NN_SOCK_STATE_STOPPING_EPS ||
+          sock->state == NN_SOCK_STATE_STOPPING ||
           sock->state == NN_SOCK_STATE_CLOSED)
         return;
 
@@ -752,7 +752,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
                       it != nn_list_end (&sock->eps);
                       it = nn_list_next (&sock->eps, it))
                     nn_ep_stop (nn_cont (it, struct nn_ep, item));
-                sock->state = NN_SOCK_STATE_CLOSING_EPS;
+                sock->state = NN_SOCK_STATE_STOPPING_EPS;
 
                 return;
 
@@ -799,7 +799,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  CLOSING_EPS state.                                                        */
 /******************************************************************************/
-    case NN_SOCK_STATE_CLOSING_EPS:
+    case NN_SOCK_STATE_STOPPING_EPS:
         if (source == NULL) {
             switch (type) {
             case NN_SOCK_EVENT_CLOSE:
@@ -832,8 +832,8 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 
             /*  If all the endpoints are deallocated, we can start closing
                 protocol-specific part of the socket. */
-            sock->state = NN_SOCK_STATE_CLOSING;
-            sock->sockbase->vfptr->close (sock->sockbase);
+            sock->state = NN_SOCK_STATE_STOPPING;
+            sock->sockbase->vfptr->stop (sock->sockbase);
 
             return;
 
@@ -844,7 +844,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  CLOSING state.                                                            */
 /******************************************************************************/
-    case NN_SOCK_STATE_CLOSING:
+    case NN_SOCK_STATE_STOPPING:
         if (source == sock->sockbase) {
             switch (type) {
             case NN_SOCKBASE_CLOSED:

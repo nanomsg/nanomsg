@@ -82,8 +82,8 @@ struct nn_sockbase;
 /*  To be implemented by individual socket types. */
 struct nn_sockbase_vfptr {
 
-    /*  Ask socket to close. */
-    void (*close) (struct nn_sockbase *self);
+    /*  Ask socket to stop. */
+    void (*stop) (struct nn_sockbase *self);
 
     /*  Deallocate the socket. */
     void (*destroy) (struct nn_sockbase *self);
@@ -133,8 +133,8 @@ void nn_sockbase_init (struct nn_sockbase *self,
 /*  Terminate the socket base class. */
 void nn_sockbase_term (struct nn_sockbase *self);
 
-/*  Call this function when closing is done. */
-void nn_sockbase_closed (struct nn_sockbase *self);
+/*  Call this function when stopping is done. */
+void nn_sockbase_stopped (struct nn_sockbase *self);
 
 /*  Returns the AIO context associated with the socket. This function is
     useful when socket type implementation needs to create async objects,

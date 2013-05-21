@@ -41,12 +41,12 @@ static void nn_bus_init (struct nn_bus *self,
 static void nn_bus_term (struct nn_bus *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_bus_close (struct nn_sockbase *self);
+static void nn_bus_stop (struct nn_sockbase *self);
 static void nn_bus_destroy (struct nn_sockbase *self);
 static int nn_bus_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
-    nn_bus_close,
+    nn_bus_stop,
     nn_bus_destroy,
     nn_xbus_add,
     nn_xbus_rm,
@@ -70,10 +70,10 @@ static void nn_bus_term (struct nn_bus *self)
     nn_xbus_term (&self->xbus);
 }
 
-static void nn_bus_close (struct nn_sockbase *self)
+static void nn_bus_stop (struct nn_sockbase *self)
 {
     /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_closed (self);   
+    nn_sockbase_stopped (self);   
 }
 
 static void nn_bus_destroy (struct nn_sockbase *self)

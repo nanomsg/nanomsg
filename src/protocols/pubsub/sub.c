@@ -45,7 +45,7 @@ static void nn_sub_init (struct nn_sub *self,
 static void nn_sub_term (struct nn_sub *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_sub_close (struct nn_sockbase *self);
+static void nn_sub_stop (struct nn_sockbase *self);
 static void nn_sub_destroy (struct nn_sockbase *self);
 static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -58,7 +58,7 @@ static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_sub_sockbase_vfptr = {
-    nn_sub_close,
+    nn_sub_stop,
     nn_sub_destroy,
     nn_sub_add,
     nn_sub_rm,
@@ -86,10 +86,10 @@ static void nn_sub_term (struct nn_sub *self)
     nn_sockbase_term (&self->sockbase);
 }
 
-void nn_sub_close (struct nn_sockbase *self)
+void nn_sub_stop (struct nn_sockbase *self)
 {
     /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_closed (self);
+    nn_sockbase_stopped (self);
 }
 
 void nn_sub_destroy (struct nn_sockbase *self)

@@ -38,7 +38,7 @@ void nn_sockbase_term (struct nn_sockbase *self)
 {
 }
 
-void nn_sockbase_closed (struct nn_sockbase *self)
+void nn_sockbase_stopped (struct nn_sockbase *self)
 {
     /*  TODO: Do the following in a more sane way. */
     self->event_closed.fsm = &self->sock->fsm;

@@ -37,11 +37,11 @@ struct nn_xreq_data {
 };
 
 /*  Private functions. */
-static void nn_xreq_close (struct nn_sockbase *self);
+static void nn_xreq_stop (struct nn_sockbase *self);
 static void nn_xreq_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
-    nn_xreq_close,
+    nn_xreq_stop,
     nn_xreq_destroy,
     nn_xreq_add,
     nn_xreq_rm,
@@ -69,10 +69,10 @@ void nn_xreq_term (struct nn_xreq *self)
     nn_sockbase_term (&self->sockbase);
 }
 
-static void nn_xreq_close (struct nn_sockbase *self)
+static void nn_xreq_stop (struct nn_sockbase *self)
 {
     /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_closed (self);
+    nn_sockbase_stopped (self);
 }
 
 static void nn_xreq_destroy (struct nn_sockbase *self)

@@ -51,14 +51,14 @@ static void nn_rep_init (struct nn_rep *self,
 static void nn_rep_term (struct nn_rep *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_rep_close (struct nn_sockbase *self);
+static void nn_rep_stop (struct nn_sockbase *self);
 static void nn_rep_destroy (struct nn_sockbase *self);
 static int nn_rep_events (struct nn_sockbase *self);
 static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
 
 static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
-    nn_rep_close,
+    nn_rep_stop,
     nn_rep_destroy,
     nn_xrep_add,
     nn_xrep_rm,
@@ -85,10 +85,10 @@ static void nn_rep_term (struct nn_rep *self)
     nn_xrep_term (&self->xrep);
 }
 
-static void nn_rep_close (struct nn_sockbase *self)
+static void nn_rep_stop (struct nn_sockbase *self)
 {
     /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_closed (self);
+    nn_sockbase_stopped (self);
 }
 
 static void nn_rep_destroy (struct nn_sockbase *self)

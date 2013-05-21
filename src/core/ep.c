@@ -26,13 +26,29 @@
 #include "sock.h"
 
 #include "../utils/err.h"
+#include "../utils/cont.h"
+#include "../utils/fast.h"
 
 #include <string.h>
+
+#define NN_EP_STATE_IDLE 1
+#define NN_EP_STATE_ACTIVE 2
+#define NN_EP_STATE_STOPPING 3
+
+#define NN_EP_EVENT_STOPPED 1
+
+/*  Private functions. */
+static void nn_ep_handler (struct nn_fsm *self, void *source, int type);
 
 int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
     struct nn_transport *transport, int bind, const char *addr)
 {
     int rc;
+
+    /*  TODO: Accessing sock's internal member is not nice. Can it be done
+        in a better way? */
+    nn_fsm_init (&self->fsm, nn_ep_handler, &sock->fsm);
+    self->state = NN_EP_STATE_IDLE;
 
     self->epbase = NULL;
     self->sock = sock;
@@ -67,14 +83,26 @@ int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
 
 void nn_ep_term (struct nn_ep *self)
 {
+    nn_assert (self->state == NN_EP_STATE_IDLE);
+
     self->epbase->vfptr->destroy (self->epbase);
     nn_list_item_term (&self->item);
+    nn_fsm_term (&self->fsm);
+}
+
+void nn_ep_start (struct nn_ep *self)
+{
+    nn_fsm_start (&self->fsm);
 }
 
 void nn_ep_stop (struct nn_ep *self)
 {
-    /*  Perform transport-specific shutdown procedure. */
-    self->epbase->vfptr->stop (self->epbase);
+    nn_fsm_stop (&self->fsm);
+}
+
+void nn_ep_stopped (struct nn_ep *self)
+{
+    nn_ep_handler (&self->fsm, NULL, NN_EP_EVENT_STOPPED);
 }
 
 struct nn_ctx *nn_ep_getctx (struct nn_ep *self)
@@ -99,5 +127,60 @@ void nn_ep_getopt (struct nn_ep *self, int level, int option,
 int nn_ep_ispeer (struct nn_ep *self, int socktype)
 {
     return nn_sock_ispeer (self->sock, socktype);
+}
+
+static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
+{
+    struct nn_ep *ep;
+
+    ep = nn_cont (self, struct nn_ep, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == &ep->fsm && type == NN_FSM_STOP)) {
+        ep->epbase->vfptr->stop (ep->epbase);
+        ep->state = NN_EP_STATE_STOPPING;
+        return;
+    }
+    if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
+        if (source != NULL || type != NN_EP_EVENT_STOPPED)
+            return;
+        ep->state = NN_EP_STATE_IDLE;
+        nn_fsm_stopped (&ep->fsm, ep, NN_EP_STOPPED);
+        return;
+    }
+
+    switch (self->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/******************************************************************************/
+    case NN_EP_STATE_IDLE:
+        if (source == &ep->fsm) {
+            switch (type) {
+            case NN_FSM_START:
+                ep->state = NN_EP_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/*  We don't expect any events in this state. The only thing that can be done */
+/*  is closing the endpoint.                                                  */
+/******************************************************************************/
+    case NN_EP_STATE_ACTIVE:
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
 }
 

@@ -58,7 +58,7 @@ struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
 static void nn_sock_onleave (struct nn_ctx *self);
-static void nn_sock_callback (struct nn_fsm *self, void *source, int type);
+static void nn_sock_handler (struct nn_fsm *self, void *source, int type);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 {
@@ -73,7 +73,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     nn_ctx_init (&self->ctx, nn_global_getpool (), nn_sock_onleave);
 
     /*  Initialise the state machine. */
-    nn_fsm_init_root (&self->fsm, nn_sock_callback, &self->ctx);
+    nn_fsm_init_root (&self->fsm, nn_sock_handler, &self->ctx);
     self->state = NN_SOCK_STATE_INIT;
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
@@ -131,7 +131,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 
     /*  Launch the state machine. */
     nn_ctx_enter (&self->ctx);
-    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_START);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_START);
     nn_ctx_leave (&self->ctx);
 
     return 0;
@@ -140,7 +140,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 void nn_sock_zombify (struct nn_sock *self)
 {
     nn_ctx_enter (&self->ctx);
-    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_ZOMBIFY);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_ZOMBIFY);
     nn_ctx_leave (&self->ctx);
 }
 
@@ -153,7 +153,7 @@ int nn_sock_term (struct nn_sock *self)
 
     /*  Ask the state machine to start closing the socket. */
     nn_ctx_enter (&self->ctx);
-    nn_sock_callback (&self->fsm, NULL, NN_SOCK_EVENT_CLOSE);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_CLOSE);
     nn_ctx_leave (&self->ctx);
 
     /*  Shutdown process was already started but some endpoints may still
@@ -411,6 +411,7 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
         nn_ctx_leave (&self->ctx);
         return rc;
     }
+    nn_ep_start (ep);
 
     /*  Increase the endpoint ID for the next endpoint. */
     eid = self->eid;
@@ -698,7 +699,7 @@ struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
     return self->optsets [index];
 }
 
-static void nn_sock_callback (struct nn_fsm *self, void *source, int type)
+static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_sock *sock;
     struct nn_list_item *it;

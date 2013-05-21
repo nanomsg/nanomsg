@@ -29,6 +29,7 @@
 
 #define NN_FSM_STATE_IDLE 1
 #define NN_FSM_STATE_ACTIVE 2
+#define NN_FSM_STATE_STOPPING 3
 
 void nn_fsm_event_init (struct nn_fsm_event *self)
 {
@@ -100,13 +101,21 @@ void nn_fsm_stop (struct nn_fsm *self)
     if (self->state == NN_FSM_STATE_IDLE)
         return;
 
+    self->state = NN_FSM_STATE_STOPPING;
     self->fn (self, self, NN_FSM_STOP);
-    self->state = NN_FSM_STATE_IDLE;
 }
 
 void nn_fsm_stopped (struct nn_fsm *self, void *source, int type)
 {
+    nn_assert (self->state == NN_FSM_STATE_STOPPING);
     nn_fsm_raise (self, &self->stopped, source, type);
+    self->state = NN_FSM_STATE_IDLE;
+}
+
+void nn_fsm_stopped_noevent (struct nn_fsm *self)
+{
+    nn_assert (self->state == NN_FSM_STATE_STOPPING);
+    self->state = NN_FSM_STATE_IDLE;
 }
 
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)

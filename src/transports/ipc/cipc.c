@@ -158,6 +158,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
               !nn_usock_isidle (&cipc->usock))
             return;
         cipc->state = NN_CIPC_STATE_IDLE;
+        nn_fsm_stopped_noevent (&cipc->fsm);
         nn_epbase_stopped (&cipc->epbase);
         return;
     }

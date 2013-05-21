@@ -182,6 +182,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
 aipcs_stopping:
         if (nn_list_empty (&bipc->aipcs)) {
             bipc->state = NN_BIPC_STATE_IDLE;
+            nn_fsm_stopped_noevent (&bipc->fsm);
             nn_epbase_stopped (&bipc->epbase);
             return;
         }

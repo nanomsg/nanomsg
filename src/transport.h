@@ -25,8 +25,6 @@
 
 #include "nn.h"
 
-#include "aio/fsm.h"
-
 #include "utils/list.h"
 #include "utils/msg.h"
 
@@ -80,7 +78,6 @@ struct nn_epbase_vfptr {
 struct nn_epbase {
     const struct nn_epbase_vfptr *vfptr;
     struct nn_ep *ep;
-    struct nn_fsm_event event_stopped;
 };
 
 /*  Creates a new endpoint. 'hint' parameter is an opaque value that

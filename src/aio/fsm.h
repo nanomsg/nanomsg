@@ -73,6 +73,7 @@ void nn_fsm_term (struct nn_fsm *self);
 void nn_fsm_start (struct nn_fsm *self);
 void nn_fsm_stop (struct nn_fsm *self);
 void nn_fsm_stopped (struct nn_fsm *self, void *source, int type);
+int nn_fsm_isstopped (struct nn_fsm *self);
 
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
 

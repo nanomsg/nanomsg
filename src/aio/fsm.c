@@ -77,15 +77,13 @@ void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
 
 void nn_fsm_term (struct nn_fsm *self)
 {
-    nn_assert (self->state == NN_FSM_STATE_IDLE &&
-        !nn_fsm_event_active (&self->stopped));
+    nn_assert (nn_fsm_isstopped (self));
     nn_fsm_event_term (&self->stopped);
 }
 
 void nn_fsm_start (struct nn_fsm *self)
 {
-    nn_assert (self->state == NN_FSM_STATE_IDLE &&
-        !nn_fsm_event_active (&self->stopped));
+    nn_assert (nn_fsm_isstopped (self));
     self->fn (self, self, NN_FSM_START);
     self->state = NN_FSM_STATE_ACTIVE;
 }
@@ -103,6 +101,12 @@ void nn_fsm_stop (struct nn_fsm *self)
 void nn_fsm_stopped (struct nn_fsm *self, void *source, int type)
 {
     nn_fsm_raise (self, &self->stopped, source, type);
+}
+
+int nn_fsm_isstopped (struct nn_fsm *self)
+{
+    return self->state == NN_FSM_STATE_IDLE &&
+        !nn_fsm_event_active (&self->stopped) ? 1 : 0;
 }
 
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)

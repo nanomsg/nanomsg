@@ -60,8 +60,7 @@ void nn_timer_term (struct nn_timer *self)
 
 int nn_timer_isidle (struct nn_timer *self)
 {
-     return self->state == NN_TIMER_STATE_IDLE &&
-         nn_fsm_isidle (&self->fsm) ? 1 : 0;
+     return nn_fsm_isidle (&self->fsm);
 }
 
 void nn_timer_start (struct nn_timer *self, int timeout)

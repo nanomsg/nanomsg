@@ -44,7 +44,7 @@
 #define NN_USOCK_EVENT_ACCEPT 1
 #define NN_USOCK_EVENT_LISTEN 2
 #define NN_USOCK_EVENT_CONNECTED 3
-#define NN_USOCK_EVENT_CONNECT_ERROR 4
+#define NN_USOCK_EVENT_CONNECT_FAILED 4
 #define NN_USOCK_EVENT_CONNECTING 5
 
 /*  Private functions. */
@@ -291,13 +291,13 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
         return;
     }
 
-    /*  Error. */
+    /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECT_ERROR);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECT_FAILED);
         return;
     }
 
-    /*  Async connect. */
+    /*  Asyncgronous connect. */
     nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTING);
 }
 
@@ -456,7 +456,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
                     NN_USOCK_CONNECTED);
                 return;
-            case NN_USOCK_EVENT_CONNECT_ERROR:
+            case NN_USOCK_EVENT_CONNECT_FAILED:
                 usock->state = NN_USOCK_STATE_CONNECT_ERROR;
                 nn_fsm_raise (&usock->fsm, &usock->event_done, usock,
                     NN_USOCK_ERROR);
@@ -594,7 +594,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 
                 /*  New connection arrived. */
                 nn_assert (usock->newsock);
-#if NN_HAVE_ACCEPT4c
+#if NN_HAVE_ACCEPT4
                 s = accept4 (usock->s, NULL, NULL, SOCK_CLOEXEC);
 #else
                 s = accept (usock->s, NULL, NULL);

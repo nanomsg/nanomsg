@@ -34,7 +34,7 @@
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
 #define NN_USOCK_STATE_CONNECTING 3
-#define NN_USOCK_STATE_CONNECTED 4
+#define NN_USOCK_STATE_ACTIVE 4
 #define NN_USOCK_STATE_CONNECT_ERROR 5
 #define NN_USOCK_STATE_LISTENING 6
 #define NN_USOCK_STATE_ACCEPTING 7
@@ -310,7 +310,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int out;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_CONNECTED);
+    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
 
     /*  Copy the iovecs to the socket. */
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
@@ -352,7 +352,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     size_t nbytes;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_CONNECTED);
+    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
 
     /*  Try to receive the data immediately. */
     nbytes = len;
@@ -452,7 +452,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_EVENT_CONNECTED:
-                usock->state = NN_USOCK_STATE_CONNECTED;
+                usock->state = NN_USOCK_STATE_ACTIVE;
                 nn_worker_execute (usock->worker, &usock->task_connected);
                 nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
                     NN_USOCK_CONNECTED);
@@ -493,7 +493,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
-                usock->state = NN_USOCK_STATE_CONNECTED;
+                usock->state = NN_USOCK_STATE_ACTIVE;
                 nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
                     NN_USOCK_CONNECTED);
                 return;
@@ -552,7 +552,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
                 /*  Immediate success. */
                 if (nn_fast (s >= 0)) {
                     nn_usock_start_from_fd (usock->newsock, s);
-                    usock->newsock->state = NN_USOCK_STATE_CONNECTED;
+                    usock->newsock->state = NN_USOCK_STATE_ACTIVE;
                     nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                         &usock->newsock->wfd);
                     nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
@@ -612,7 +612,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 
                 /*  Initialise the new usock object. */
                 nn_usock_start_from_fd (usock->newsock, s);
-                usock->newsock->state = NN_USOCK_STATE_CONNECTED;
+                usock->newsock->state = NN_USOCK_STATE_ACTIVE;
                 nn_worker_add_fd (usock->newsock->worker, usock->newsock->s,
                     &usock->newsock->wfd);
 
@@ -640,9 +640,9 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CONNECTED state.                                                          */
+/*  ACTIVE state.                                                             */
 /******************************************************************************/ 
-    case NN_USOCK_STATE_CONNECTED:
+    case NN_USOCK_STATE_ACTIVE:
         if (source == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_IN:

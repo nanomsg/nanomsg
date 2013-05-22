@@ -36,11 +36,10 @@
 #include <string.h>
 
 /*  Private functions. */
-static void nn_xrep_stop (struct nn_sockbase *self);
 static void nn_xrep_destroy (struct nn_sockbase *self);
 
 static const struct nn_sockbase_vfptr nn_xrep_sockbase_vfptr = {
-    nn_xrep_stop,
+    NULL,
     nn_xrep_destroy,
     nn_xrep_add,
     nn_xrep_rm,
@@ -71,12 +70,6 @@ void nn_xrep_term (struct nn_xrep *self)
     nn_fq_term (&self->inpipes);
     nn_hash_term (&self->outpipes);
     nn_sockbase_term (&self->sockbase);
-}
-
-static void nn_xrep_stop (struct nn_sockbase *self)
-{
-    /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_stopped (self);
 }
 
 static void nn_xrep_destroy (struct nn_sockbase *self)

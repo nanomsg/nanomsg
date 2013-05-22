@@ -842,10 +842,14 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
             if (!nn_list_empty (&sock->eps))
                 return;
 
-            /*  If all the endpoints are deallocated, we can start closing
-                protocol-specific part of the socket. */
+            /*  If all the endpoints are deallocated, we can start stopping
+                protocol-specific part of the socket. If there' no stop function
+                we can consider it stopped straight away. */
             sock->state = NN_SOCK_STATE_STOPPING;
-            sock->sockbase->vfptr->stop (sock->sockbase);
+            if (sock->sockbase->vfptr->stop)
+                sock->sockbase->vfptr->stop (sock->sockbase);
+            else
+                nn_sock_stopped (sock);
 
             return;
 

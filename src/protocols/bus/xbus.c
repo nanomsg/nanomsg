@@ -41,10 +41,9 @@
 CT_ASSERT (sizeof (uint64_t) >= sizeof (struct nn_pipe*));
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_xbus_stop (struct nn_sockbase *self);
 static void nn_xbus_destroy (struct nn_sockbase *self);
 static const struct nn_sockbase_vfptr nn_xbus_sockbase_vfptr = {
-    nn_xbus_stop,
+    NULL,
     nn_xbus_destroy,
     nn_xbus_add,
     nn_xbus_rm,
@@ -70,12 +69,6 @@ void nn_xbus_term (struct nn_xbus *self)
     nn_fq_term (&self->inpipes);
     nn_dist_term (&self->outpipes);
     nn_sockbase_term (&self->sockbase);
-}
-
-static void nn_xbus_stop (struct nn_sockbase *self)
-{
-    /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_stopped (self);   
 }
 
 static void nn_xbus_destroy (struct nn_sockbase *self)

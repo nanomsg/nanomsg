@@ -43,7 +43,6 @@ static void nn_xsource_init (struct nn_xsource *self,
 static void nn_xsource_term (struct nn_xsource *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_xsource_stop (struct nn_sockbase *self);
 static void nn_xsource_destroy (struct nn_sockbase *self);
 static int nn_xsource_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -56,7 +55,7 @@ static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
-    nn_xsource_stop,
+    NULL,
     nn_xsource_destroy,
     nn_xsource_add,
     nn_xsource_rm,
@@ -80,12 +79,6 @@ static void nn_xsource_term (struct nn_xsource *self)
 {
     nn_excl_term (&self->excl);
     nn_sockbase_term (&self->sockbase);
-}
-
-void nn_xsource_stop (struct nn_sockbase *self)
-{
-    /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_stopped (self); 
 }
 
 void nn_xsource_destroy (struct nn_sockbase *self)

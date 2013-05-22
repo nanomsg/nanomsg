@@ -32,12 +32,11 @@
 #include "../../utils/list.h"
 
 /*  Private functions. */
-static void nn_xrespondent_stop (struct nn_sockbase *self);
 static void nn_xrespondent_destroy (struct nn_sockbase *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static const struct nn_sockbase_vfptr nn_xrespondent_sockbase_vfptr = {
-    nn_xrespondent_stop,
+    NULL,
     nn_xrespondent_destroy,
     nn_xrespondent_add,
     nn_xrespondent_rm,
@@ -61,12 +60,6 @@ void nn_xrespondent_term (struct nn_xrespondent *self)
 {
     nn_excl_term (&self->excl);
     nn_sockbase_term (&self->sockbase);
-}
-
-static void nn_xrespondent_stop (struct nn_sockbase *self)
-{
-    /*  Nothing special to do done. The object is closed straight away. */
-    nn_sockbase_stopped (self);
 }
 
 static void nn_xrespondent_destroy (struct nn_sockbase *self)

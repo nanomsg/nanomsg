@@ -98,7 +98,7 @@ int nn_fsm_isidle (struct nn_fsm *self)
 void nn_fsm_stop (struct nn_fsm *self)
 {
     /*  If stopping of the state machine was already requested, do nothing. */
-    if (self->state == NN_FSM_STATE_IDLE)
+    if (self->state != NN_FSM_STATE_ACTIVE)
         return;
 
     self->state = NN_FSM_STATE_STOPPING;

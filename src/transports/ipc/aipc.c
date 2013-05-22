@@ -156,6 +156,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
                     NN_AIPC_ACCEPTED);
 
                 /*  Start the sipc state machine. */
+                nn_usock_activate (&aipc->usock);
                 nn_sipc_start (&aipc->sipc, &aipc->usock);
                 aipc->state = NN_AIPC_STATE_ACTIVE;
 

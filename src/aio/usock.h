@@ -105,7 +105,7 @@ struct nn_usock {
     struct nn_fsm_event event_established;
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
-    struct nn_fsm_event event_done;
+    struct nn_fsm_event event_error;
 
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */
@@ -132,6 +132,10 @@ int nn_usock_listen (struct nn_usock *self, int backlog);
 /*  Accept a new connection. The 'newsock' is the resulting accepted socket.
     It should be initialised before the call. The call itself will start it. */
 void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock);
+
+/*  When all the tuning is done on the accepted socket, call this function
+    to start polling on it. */
+void nn_usock_activate (struct nn_usock *self);
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,11 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_TCP_INCLUDED
-#define NN_TCP_INCLUDED
+#ifndef NN_BTCP_INCLUDED
+#define NN_BTCP_INCLUDED
 
 #include "../../transport.h"
 
-extern struct nn_transport *nn_tcp;
+/*  State machine managing bound IPC socket. */
+
+int nn_btcp_create (void *hint, struct nn_epbase **epbase);
 
 #endif
+

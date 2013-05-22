@@ -206,7 +206,7 @@ static void nn_global_init (void)
 #if !defined NN_HAVE_WINDOWS
     nn_global_add_transport (nn_ipc);
 #endif
-//    nn_global_add_transport (nn_tcp);
+    nn_global_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
     nn_global_add_socktype (nn_pair_socktype);

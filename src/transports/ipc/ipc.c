@@ -37,8 +37,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define NN_IPC_BACKLOG 10
-
 /*  nn_transport interface. */
 static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
 static int nn_ipc_connect (void *hint, struct nn_epbase **epbase);

@@ -205,8 +205,16 @@ set (NN_SOURCES
     transports/ipc/sipc.h
     transports/ipc/sipc.c
 
-#    transports/tcp/tcp.h
-#    transports/tcp/tcp.c
+    transports/tcp/atcp.h
+    transports/tcp/atcp.c
+    transports/tcp/btcp.h
+    transports/tcp/btcp.c
+    transports/tcp/ctcp.h
+    transports/tcp/ctcp.c
+    transports/tcp/stcp.h
+    transports/tcp/stcp.c
+    transports/tcp/tcp.h
+    transports/tcp/tcp.c
 )
 
 #  Here we cause symbols not to be exported from the library unless

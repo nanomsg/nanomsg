@@ -21,9 +21,10 @@
 */
 
 #include "dist.h"
-#include "err.h"
-#include "cont.h"
-#include "fast.h"
+
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
+#include "../../utils/fast.h"
 
 #include <stddef.h>
 

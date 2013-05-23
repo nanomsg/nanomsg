@@ -20,38 +20,32 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_DIST_INCLUDED
-#define NN_DIST_INCLUDED
+#ifndef NN_LB_INCLUDED
+#define NN_LB_INCLUDED
 
-#include "../protocol.h"
+#include "../../protocol.h"
 
-#include "list.h"
+#include "priolist.h"
 
-/*  Distributor. Sends messages to all the pipes. */
+/*  A load balancer. Round-robins messages to a set of pipes. */
 
-struct nn_dist_data {
-    struct nn_list_item item;
-    struct nn_pipe *pipe;
+struct nn_lb_data {
+    struct nn_priolist_data priolist;
 };
 
-struct nn_dist {
-    size_t count;
-    struct nn_list pipes;
+struct nn_lb {
+    struct nn_priolist priolist;
 };
 
-void nn_dist_init (struct nn_dist *self);
-void nn_dist_term (struct nn_dist *self);
-void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
-void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
-void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
-
-/*  Sends the message to all the attached pipes except the one specified
-    by 'exclude' parameter. If 'exclude' is NULL, message is sent to all
-    attached pipes. */
-int nn_dist_send (struct nn_dist *self, struct nn_msg *msg,
-    struct nn_pipe *exclude);
+void nn_lb_init (struct nn_lb *self);
+void nn_lb_term (struct nn_lb *self);
+void nn_lb_add (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data, int priority);
+void nn_lb_rm (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data);
+void nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data);
+int nn_lb_can_send (struct nn_lb *self);
+int nn_lb_send (struct nn_lb *self, struct nn_msg *msg);
 
 #endif

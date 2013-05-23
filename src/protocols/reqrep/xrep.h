@@ -26,7 +26,8 @@
 #include "../../protocol.h"
 
 #include "../../utils/hash.h"
-#include "../../utils/fq.h"
+
+#include "../utils/fq.h"
 
 #include <stddef.h>
 #include <stdint.h>

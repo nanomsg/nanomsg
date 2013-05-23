@@ -23,7 +23,7 @@
 #ifndef NN_FQ_INCLUDED
 #define NN_FQ_INCLUDED
 
-#include "../protocol.h"
+#include "../../protocol.h"
 
 #include "priolist.h"
 

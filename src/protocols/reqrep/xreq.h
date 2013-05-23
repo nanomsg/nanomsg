@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/lb.h"
-#include "../../utils/fq.h"
+#include "../utils/lb.h"
+#include "../utils/fq.h"
 
 struct nn_xreq {
     struct nn_sockbase sockbase;

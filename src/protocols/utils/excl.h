@@ -23,7 +23,7 @@
 #ifndef NN_EXCL_INCLUDED
 #define NN_EXCL_INCLUDED
 
-#include "../protocol.h"
+#include "../../protocol.h"
 
 #include <stddef.h>
 

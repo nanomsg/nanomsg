@@ -25,11 +25,12 @@
 #include "../../nn.h"
 #include "../../fanout.h"
 
+#include "../utils/lb.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/lb.h"
 #include "../../utils/list.h"
 
 struct nn_xpush_data {

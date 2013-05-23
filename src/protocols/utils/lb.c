@@ -20,62 +20,59 @@
     IN THE SOFTWARE.
 */
 
-#include "fq.h"
-#include "err.h"
-#include "cont.h"
+#include "lb.h"
+
+#include "../../utils/err.h"
+#include "../../utils/cont.h"
 
 #include <stddef.h>
 
-void nn_fq_init (struct nn_fq *self)
+void nn_lb_init (struct nn_lb *self)
 {
     nn_priolist_init (&self->priolist);
 }
 
-void nn_fq_term (struct nn_fq *self)
+void nn_lb_term (struct nn_lb *self)
 {
     nn_priolist_term (&self->priolist);
 }
 
-void nn_fq_add (struct nn_fq *self, struct nn_pipe *pipe,
-    struct nn_fq_data *data, int priority)
+void nn_lb_add (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data, int priority)
 {
     nn_priolist_add (&self->priolist, pipe, &data->priolist, priority);
 }
 
-void nn_fq_rm (struct nn_fq *self, struct nn_pipe *pipe,
-    struct nn_fq_data *data)
+void nn_lb_rm (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data)
 {
     nn_priolist_rm (&self->priolist, pipe, &data->priolist);
 }
 
-void nn_fq_in (struct nn_fq *self, struct nn_pipe *pipe,
-    struct nn_fq_data *data)
+void nn_lb_out (struct nn_lb *self, struct nn_pipe *pipe,
+    struct nn_lb_data *data)
 {
     nn_priolist_activate (&self->priolist, pipe, &data->priolist);
 }
 
-int nn_fq_can_recv (struct nn_fq *self)
+int nn_lb_can_send (struct nn_lb *self)
 {
     return nn_priolist_is_active (&self->priolist);
 }
 
-int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg, struct nn_pipe **pipe)
+int nn_lb_send (struct nn_lb *self, struct nn_msg *msg)
 {
     int rc;
-    struct nn_pipe *p;
+    struct nn_pipe *pipe;
 
     /*  Pipe is NULL only when there are no avialable pipes. */
-    p = nn_priolist_getpipe (&self->priolist);
-    if (nn_slow (!p))
+    pipe = nn_priolist_getpipe (&self->priolist);
+    if (nn_slow (!pipe))
         return -EAGAIN;
 
-    /*  Receive the messsage. */
-    rc = nn_pipe_recv (p, msg);
+    /*  Send the messsage. */
+    rc = nn_pipe_send (pipe, msg);
     errnum_assert (rc >= 0, -rc);
-
-    /*  Return the pipe data to the user, if required. */
-    if (pipe)
-        *pipe = p;
 
     /*  Move to the next pipe. */
     nn_priolist_advance (&self->priolist, rc & NN_PIPE_RELEASE);

@@ -22,8 +22,8 @@
 
 #include "excl.h"
 
-#include "fast.h"
-#include "err.h"
+#include "../../utils/fast.h"
+#include "../../utils/err.h"
 
 void nn_excl_init (struct nn_excl *self)
 {

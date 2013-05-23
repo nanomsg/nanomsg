@@ -25,7 +25,7 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/excl.h"
+#include "../utils/excl.h"
 
 extern struct nn_socktype *nn_xrespondent_socktype;
 

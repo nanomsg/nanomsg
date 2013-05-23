@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/dist.h"
-#include "../../utils/fq.h"
+#include "../utils/dist.h"
+#include "../utils/fq.h"
 
 extern struct nn_socktype *nn_xsurveyor_socktype;
 

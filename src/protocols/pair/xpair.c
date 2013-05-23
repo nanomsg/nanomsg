@@ -25,11 +25,12 @@
 #include "../../nn.h"
 #include "../../pair.h"
 
+#include "../utils/excl.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/excl.h"
 #include "../../utils/list.h"
 
 struct nn_xpair {

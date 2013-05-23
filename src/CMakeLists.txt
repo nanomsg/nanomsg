@@ -82,31 +82,21 @@ set (NN_SOURCES
     utils/clock.h
     utils/clock.c
     utils/cont.h
-    utils/dist.h
-    utils/dist.c
     utils/efd.h
     utils/efd.c
     utils/err.h
     utils/err.c
-    utils/excl.h
-    utils/excl.c
     utils/fast.h
-    utils/fq.h
-    utils/fq.c
     utils/glock.h
     utils/glock.c
     utils/hash.h
     utils/hash.c
-    utils/lb.h
-    utils/lb.c
     utils/list.h
     utils/list.c
     utils/msg.h
     utils/msg.c
     utils/mutex.h
     utils/mutex.c
-    utils/priolist.h
-    utils/priolist.c
     utils/queue.h
     utils/queue.c
     utils/random.h
@@ -119,6 +109,17 @@ set (NN_SOURCES
     utils/thread.c
     utils/wire.h
     utils/wire.c
+
+    protocols/utils/dist.h
+    protocols/utils/dist.c
+    protocols/utils/excl.h
+    protocols/utils/excl.c
+    protocols/utils/fq.h
+    protocols/utils/fq.c
+    protocols/utils/lb.h
+    protocols/utils/lb.c
+    protocols/utils/priolist.h
+    protocols/utils/priolist.c
 
     protocols/bus/bus.h
     protocols/bus/bus.c

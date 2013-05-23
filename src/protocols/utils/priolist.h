@@ -23,9 +23,9 @@
 #ifndef NN_PRIOLIST_INCLUDED
 #define NN_PRIOLIST_INCLUDED
 
-#include "../protocol.h"
+#include "../../protocol.h"
 
-#include "list.h"
+#include "../../utils/list.h"
 
 /*  Prioritised list of pipes. */
 

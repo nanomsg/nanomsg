@@ -25,7 +25,7 @@
 
 #include "../../transport.h"
 
-/*  State machine managing bound IPC socket. */
+/*  State machine managing bound TCP socket. */
 
 int nn_btcp_create (void *hint, struct nn_epbase **epbase);
 

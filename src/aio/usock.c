@@ -742,7 +742,7 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
 
             /*  If the connection fails, return ECONNRESET. */
             errno_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
-                errno == EPIPE);
+                errno == EPIPE ||  errno == ECONNREFUSED);
             return -ECONNRESET;
         }
     }

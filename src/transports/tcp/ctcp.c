@@ -32,10 +32,11 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
+#include "../../utils/addr.h"
 
 #include <string.h>
 #include <unistd.h>
-#include <sys/un.h>
+#include <stdint.h>
 
 #define NN_CTCP_STATE_IDLE 1
 #define NN_CTCP_STATE_CONNECTING 2
@@ -57,7 +58,7 @@ struct nn_ctcp {
         Thus it is derived from epbase. */
     struct nn_epbase epbase;
 
-    /*  The underlying IPC socket. */
+    /*  The underlying TCP socket. */
     struct nn_usock usock;
 
     /*  Used to wait before retrying to connect. */
@@ -301,28 +302,69 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 static void nn_ctcp_start_connecting (struct nn_ctcp *self)
 {
     int rc;
-    struct sockaddr_storage ss;
-    struct sockaddr_un *un;
+    struct sockaddr_storage remote;
+    nn_socklen remotelen;
+    int uselocal;
+    struct sockaddr_storage local;
+    nn_socklen locallen;
     const char *addr;
+    const char *end;
+    const char *colon;
+    const char *semicolon;
+    uint16_t port;
+
+    /*  Create IP address from the address string. */
+    addr = nn_epbase_getaddr (&self->epbase);
+    memset (&remote, 0, sizeof (remote));
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    colon = strrchr (addr, ':');
+    rc = nn_addr_parse_port (colon + 1, end - colon - 1);
+    errnum_assert (rc > 0, -rc);
+    port = rc;
+
+    /*  Parse the local address, if any. */
+    uselocal = 0;
+    semicolon = strchr (addr, ';');
+    if (semicolon) {
+        memset (&local, 0, sizeof (local));
+        rc = nn_addr_parse_local (addr, semicolon - addr, NN_ADDR_IPV4ONLY,
+            &local, &locallen);
+        errnum_assert (rc == 0, -rc);
+        addr = semicolon + 1;
+        uselocal = 1;
+    }
+
+    /*  Parse the remote address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = nn_addr_parse_remote (addr, colon - addr, NN_ADDR_IPV4ONLY,
+        &remote, &remotelen);
+    errnum_assert (rc == 0, -rc);
+
+    /*  Combine the remote address and the port. */
+    if (remote.ss_family == AF_INET)
+        ((struct sockaddr_in*) &remote)->sin_port = htons (port);
+    else if (remote.ss_family == AF_INET6)
+        ((struct sockaddr_in6*) &remote)->sin6_port = htons (port);
+    else
+        nn_assert (0);
 
     /*  Try to start the underlying socket. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start (&self->usock, remote.ss_family, SOCK_STREAM, 0);
     if (nn_slow (rc < 0)) {
         nn_backoff_start (&self->retry);
         self->state = NN_CTCP_STATE_WAITING;
         return;
     }
 
-    /*  Create the IPC address from the address string. */
-    addr = nn_epbase_getaddr (&self->epbase);
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    /*  Bind the socket to the local network interface, if specified. */
+    if (uselocal) {
+        rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
+        errnum_assert (rc == 0, -rc);
+    }
 
     /*  Start connecting. */
-    nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
-        sizeof (struct sockaddr_un));
+    nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
 }
 

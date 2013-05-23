@@ -32,9 +32,9 @@
 
 #include "../../utils/list.h"
 
-/*  State machine handling accepted IPC sockets. */
+/*  State machine handling accepted TCP sockets. */
 
-/*  In bipc, some events are just *assumed* to come from a child atcp object.
+/*  In btcp, some events are just *assumed* to come from a child atcp object.
     By using non-trivial event codes, we can do more reliable sanity checking
     in such scenarios. */
 #define NN_ATCP_ACCEPTED 34231

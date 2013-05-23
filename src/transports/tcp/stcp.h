@@ -53,7 +53,7 @@ struct nn_stcp {
     /*  The original owner of the underlying socket. */
     struct nn_fsm *usock_owner;
 
-    /*  Pipe connecting this IPC connection to the nanomsg core. */
+    /*  Pipe connecting this TCP connection to the nanomsg core. */
     struct nn_pipebase pipebase;
 
     /*  State of inbound state machine. */

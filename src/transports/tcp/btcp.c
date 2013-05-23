@@ -31,12 +31,15 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/fast.h"
+#include "../../utils/addr.h"
 
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
-#include <sys/un.h>
 
-#define NN_BTCP_BACKLOG 10
+/*  The backlog is set relatively high so that there are not to many failed
+    connection attemps during re-connection storms. */
+#define NN_BTCP_BACKLOG 100
 
 #define NN_BTCP_STATE_IDLE 1
 #define NN_BTCP_STATE_ACTIVE 2
@@ -54,7 +57,7 @@ struct nn_btcp {
         Thus it is derived from epbase. */
     struct nn_epbase epbase;
 
-    /*  The underlying listening IPC socket. */
+    /*  The underlying listening TCP socket. */
     struct nn_usock usock;
 
     /*  The connection being accepted at the moment. */
@@ -264,28 +267,51 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    struct sockaddr_un *un;
+    nn_socklen sslen;
     const char *addr;
+    const char *end;
+    const char *pos;
+    uint16_t port;
 
-    /*  First, create the AF_UNIX address. */
+    /*  First, resolve the IP address. */
     addr = nn_epbase_getaddr (&self->epbase);
     memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
 
-    /*  Delete the IPC file left over by eventual previous runs of
-        the application. */
-    rc = unlink (addr);
-    errno_assert (rc == 0 || errno == ENOENT);
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    nn_assert (pos);
+    ++pos;
+    rc = nn_addr_parse_port (pos, end - pos);
+    nn_assert (rc >= 0);
+    port = rc;
+
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = nn_addr_parse_local (addr, pos - addr - 1, NN_ADDR_IPV4ONLY,
+        &ss, &sslen);
+
+    /*  TODO: In theory we could re-try in case of error, just in case the user
+        configures new network interface while the application is running. */
+    errnum_assert (rc == 0, -rc);
+
+    /*  Combine the port and the address. */
+    if (ss.ss_family == AF_INET) {
+        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
+        sslen = sizeof (struct sockaddr_in);
+    }
+    else if (ss.ss_family == AF_INET6) {
+        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
+        sslen = sizeof (struct sockaddr_in6);
+    }
+    else
+        nn_assert (0);
 
     /*  Start listening for incoming connections. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
     /*  TODO: EMFILE error can happen here. We can wait a bit and re-try. */
     errnum_assert (rc == 0, -rc);
-    rc = nn_usock_bind (&self->usock,
-        (struct sockaddr*) &ss, sizeof (struct sockaddr_un));
+    rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     errnum_assert (rc == 0, -rc);
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     errnum_assert (rc == 0, -rc);

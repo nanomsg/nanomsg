@@ -208,7 +208,7 @@ struct nn_transport {
     /*  Create an object to hold transport-specific socket options.
         Set this member to NULL in case there are no transport-specific
         socket options available. */
-    struct nn_optset *(*optset) ();
+    struct nn_optset *(*optset) (void);
 
     /*  This member is used exclusively by the core. Never touch it directly
         from the transport. */

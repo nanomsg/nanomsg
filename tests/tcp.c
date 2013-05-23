@@ -82,7 +82,6 @@ int main ()
     nn_assert (opt == 1);
 
     /*  Try using invalid address strings. */
-#if 0
     rc = nn_connect (sc, "tcp://*:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
@@ -103,7 +102,6 @@ int main ()
     rc = nn_bind (sc, "tcp://eth10000:5555");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == ENODEV);
-#endif
 
     /*  Connect correctly. Do so before binding the peer socket. */
     rc = nn_connect (sc, SOCKET_ADDRESS);

@@ -26,6 +26,9 @@
 
 #include "../../tcp.h"
 
+#include "../utils/port.h"
+#include "../utils/iface.h"
+
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
@@ -33,7 +36,6 @@
 #include "../../utils/cont.h"
 
 #include <string.h>
-#include <sys/un.h>
 #include <unistd.h>
 
 /*  TCP-specific socket options. */
@@ -55,8 +57,10 @@ static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
 };
 
 /*  nn_transport interface. */
-static int nn_tcp_bind (void *hint, struct nn_epbase **epbase);
-static int nn_tcp_connect (void *hint, struct nn_epbase **epbase);
+static int nn_tcp_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase);
+static int nn_tcp_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase);
 static struct nn_optset *nn_tcp_optset (void);
 
 static struct nn_transport nn_tcp_vfptr = {
@@ -72,15 +76,64 @@ static struct nn_transport nn_tcp_vfptr = {
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
-static int nn_tcp_bind (void *hint, struct nn_epbase **epbase)
+static int nn_tcp_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
-    /*  TODO: Check the syntax of the address here! */
+    int rc;
+    const char *end;
+    const char *pos;
+    int port;
+    struct sockaddr_storage ss;
+    size_t sslen;
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    nn_assert (pos);
+    ++pos;
+    rc = nn_port_resolve (pos, end - pos);
+    if (rc < 0)
+        return -EINVAL;
+    port = rc;
+
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = nn_iface_resolve (addr, pos - addr - 1, 1, &ss, &sslen);
+    if (rc < 0)
+        return -ENODEV;
+
     return nn_btcp_create (hint, epbase);
 }
 
-static int nn_tcp_connect (void *hint, struct nn_epbase **epbase)
+static int nn_tcp_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
-    /*  TODO: Check the syntax of the address here! */
+    int rc;
+    const char *end;
+    const char *pos;
+    int port;
+    struct sockaddr_storage ss;
+    size_t sslen;
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    nn_assert (pos);
+    ++pos;
+    rc = nn_port_resolve (pos, end - pos);
+    if (rc < 0)
+        return -EINVAL;
+    port = rc;
+
+    /*  If local address is specified, check whether it is valid. */
+    pos = strchr (addr, ';');
+    if (pos) {
+        /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+        rc = nn_iface_resolve (addr, pos - addr, 1, &ss, &sslen);
+        if (rc < 0)
+            return -ENODEV;
+    }
+
     return nn_ctcp_create (hint, epbase);
 }
 

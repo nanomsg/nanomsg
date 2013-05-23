@@ -68,9 +68,9 @@ int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
 
     /*  Create transport-specific part of the endpoint. */
     if (bind)
-        rc = transport->bind ((void*) self, &self->epbase);
+        rc = transport->bind (addr, (void*) self, &self->epbase);
     else
-        rc = transport->connect ((void*) self, &self->epbase);
+        rc = transport->connect (addr, (void*) self, &self->epbase);
 
     /*  Endpoint creation failed. */
     if (rc < 0) {

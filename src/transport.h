@@ -202,8 +202,8 @@ struct nn_transport {
         to be passed to nn_epbase_init().  These functions are guarded by
         a socket-wide critical section. Two of these function will never be
         invoked in parallel on the same socket. */
-    int (*bind) (void *hint, struct nn_epbase **epbase);
-    int (*connect) (void *hint, struct nn_epbase **epbase);
+    int (*bind) (const char *addr, void *hint, struct nn_epbase **epbase);
+    int (*connect) (const char *addr, void *hint, struct nn_epbase **epbase);
 
     /*  Create an object to hold transport-specific socket options.
         Set this member to NULL in case there are no transport-specific

@@ -38,8 +38,10 @@
 #include <unistd.h>
 
 /*  nn_transport interface. */
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase);
+static int nn_ipc_bind (const char *addr, void *hint,
+   struct nn_epbase **epbase);
+static int nn_ipc_connect (const char *addr, void *hint,
+   struct nn_epbase **epbase);
 
 static struct nn_transport nn_ipc_vfptr = {
     "ipc",
@@ -54,15 +56,15 @@ static struct nn_transport nn_ipc_vfptr = {
 
 struct nn_transport *nn_ipc = &nn_ipc_vfptr;
 
-static int nn_ipc_bind (void *hint, struct nn_epbase **epbase)
+static int nn_ipc_bind (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
-    /*  TODO: Check the syntax of the address here! */
     return nn_bipc_create (hint, epbase);
 }
 
-static int nn_ipc_connect (void *hint, struct nn_epbase **epbase)
+static int nn_ipc_connect (const char *addr, void *hint,
+    struct nn_epbase **epbase)
 {
-    /*  TODO: Check the syntax of the address here! */
     return nn_cipc_create (hint, epbase);
 }
 

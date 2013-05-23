@@ -71,8 +71,6 @@ set (NN_SOURCES
     aio/worker.h
     aio/worker.c
 
-    utils/addr.h
-    utils/addr.c
     utils/alloc.h
     utils/alloc.c
     utils/atomic.h
@@ -175,8 +173,6 @@ set (NN_SOURCES
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
 
-
-
 #    transports/inproc/inproc.h
 #    transports/inproc/inproc_ctx.h
 #    transports/inproc/inproc_ctx.c
@@ -186,11 +182,19 @@ set (NN_SOURCES
 #    transports/inproc/inprocc.c
 #    transports/inproc/msgpipe.h
 #    transports/inproc/msgpipe.c
-#    transports/inproc/msgqueue.h
-#    transports/inproc/msgqueue.c
+    transports/inproc/msgqueue.h
+    transports/inproc/msgqueue.c
 
     transports/utils/backoff.h
     transports/utils/backoff.c
+    transports/utils/dns.h
+    transports/utils/dns.c
+    transports/utils/iface.h
+    transports/utils/iface.c
+    transports/utils/literal.h
+    transports/utils/literal.c
+    transports/utils/port.h
+    transports/utils/port.c
     transports/utils/streamhdr.h
     transports/utils/streamhdr.c
 

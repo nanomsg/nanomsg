@@ -23,6 +23,9 @@
 #include "btcp.h"
 #include "atcp.h"
 
+#include "../utils/port.h"
+#include "../utils/iface.h"
+
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
@@ -31,11 +34,11 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/fast.h"
-#include "../../utils/addr.h"
 
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <netinet/in.h>
 
 /*  The backlog is set relatively high so that there are not to many failed
     connection attemps during re-connection storms. */
@@ -267,7 +270,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    nn_socklen sslen;
+    size_t sslen;
     const char *addr;
     const char *end;
     const char *pos;
@@ -282,14 +285,13 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     pos = strrchr (addr, ':');
     nn_assert (pos);
     ++pos;
-    rc = nn_addr_parse_port (pos, end - pos);
+    rc = nn_port_parse (pos, end - pos);
     nn_assert (rc >= 0);
     port = rc;
 
     /*  Parse the address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_local (addr, pos - addr - 1, NN_ADDR_IPV4ONLY,
-        &ss, &sslen);
+    rc = nn_iface_parse (addr, pos - addr - 1, 1, &ss, &sslen);
 
     /*  TODO: In theory we could re-try in case of error, just in case the user
         configures new network interface while the application is running. */

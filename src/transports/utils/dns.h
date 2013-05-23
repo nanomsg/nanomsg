@@ -20,36 +20,21 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_ADDR_INCLUDED
-#define NN_ADDR_INCLUDED
+#ifndef NN_DNS_INCLUDED
+#define NN_DNS_INCLUDED
 
 #if defined NN_HAVE_WINDOWS
 #include "win.h"
-typedef int nn_socklen;
 #else
 #include <sys/socket.h>
-#include <netinet/in.h>
-typedef socklen_t nn_socklen;
 #endif
 
-/*  Helper functions for parsing addresses in form "host:port" where host is
-    either an IP address literal, a hostname or a network interface name and
-    port is a numeric decimal value. */
-
-#define NN_ADDR_IPV4ONLY 1
-
-/*  Parse are return port number. */
-int nn_addr_parse_port (const char *port, size_t portlen);
-
-/*  Resolves name of a local network interface into the address itself.
-    Name '*' is resolved as 'all interfaces'. */
-int nn_addr_parse_local (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, nn_socklen *resultlen);
+#include <stddef.h>
 
 /*  Resolves name of a local address into the address itself.
     TODO:  This should be an asynchronous operation. This way a DNS failure
     can block the whole system. */
-int nn_addr_parse_remote (const char *addr, size_t addrlen, int flags,
-    struct sockaddr_storage *result, nn_socklen *resultlen);
+int nn_addr_parse_remote (const char *addr, size_t addrlen, int ipv4only,
+    struct sockaddr_storage *result, size_t *resultlen);
 
 #endif

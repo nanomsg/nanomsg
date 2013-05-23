@@ -23,20 +23,23 @@
 #include "ctcp.h"
 #include "stcp.h"
 
+#include "../utils/dns.h"
+#include "../utils/port.h"
+#include "../utils/iface.h"
+#include "../utils/backoff.h"
+
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
-
-#include "../utils/backoff.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/addr.h"
 
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <netinet/in.h>
 
 #define NN_CTCP_STATE_IDLE 1
 #define NN_CTCP_STATE_CONNECTING 2
@@ -303,10 +306,10 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
 {
     int rc;
     struct sockaddr_storage remote;
-    nn_socklen remotelen;
+    size_t remotelen;
     int uselocal;
     struct sockaddr_storage local;
-    nn_socklen locallen;
+    size_t locallen;
     const char *addr;
     const char *end;
     const char *colon;
@@ -320,7 +323,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
     /*  Parse the port. */
     end = addr + strlen (addr);
     colon = strrchr (addr, ':');
-    rc = nn_addr_parse_port (colon + 1, end - colon - 1);
+    rc = nn_port_parse (colon + 1, end - colon - 1);
     errnum_assert (rc > 0, -rc);
     port = rc;
 
@@ -329,8 +332,8 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
     semicolon = strchr (addr, ';');
     if (semicolon) {
         memset (&local, 0, sizeof (local));
-        rc = nn_addr_parse_local (addr, semicolon - addr, NN_ADDR_IPV4ONLY,
-            &local, &locallen);
+        /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+        rc = nn_iface_parse (addr, semicolon - addr, 1, &local, &locallen);
         errnum_assert (rc == 0, -rc);
         addr = semicolon + 1;
         uselocal = 1;
@@ -338,8 +341,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
 
     /*  Parse the remote address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_remote (addr, colon - addr, NN_ADDR_IPV4ONLY,
-        &remote, &remotelen);
+    rc = nn_addr_parse_remote (addr, colon - addr, 1, &remote, &remotelen);
     errnum_assert (rc == 0, -rc);
 
     /*  Combine the remote address and the port. */

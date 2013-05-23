@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -40,7 +40,7 @@ static void nn_iface_any (int ipv4only, struct sockaddr_storage *result,
 
 #include <ifaddrs.h>
 
-int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
+int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen)
 {
     int rc;
@@ -57,7 +57,7 @@ int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
     }
 
     /*  Try to resolve the supplied string as a literal address. */
-    rc = nn_literal_parse (addr, addrlen, ipv4only, result, resultlen);
+    rc = nn_literal_resolve (addr, addrlen, ipv4only, result, resultlen);
     if (rc == 0)
         return 0;
     errnum_assert (rc == -EINVAL, -rc);
@@ -127,7 +127,7 @@ int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
 #include <sys/ioctl.h>
 #include <net/if.h>
 
-int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
+int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen)
 {
     int rc;
@@ -185,7 +185,7 @@ int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
 /*  The last resort case. If we haven't found any mechanism for turning
     NIC names into addresses, we'll try to resolve the string as an address
     literal. */
-int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
+int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen)
 {
     int rc;
@@ -198,7 +198,7 @@ int nn_iface_parse (const char *addr, size_t addrlen, int ipv4only,
 
     /*  On Windows there are no sane network interface names. We'll treat the
         name as a IP address literal. */
-    rc = nn_literal_parse (addr, addrlen, ipv4only, result, resultlen);
+    rc = nn_literal_resolve (addr, addrlen, ipv4only, result, resultlen);
     if (rc == -EINVAL)
         return -ENODEV;
     errnum_assert (rc == 0, -rc);

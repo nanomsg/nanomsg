@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@
 #include <netdb.h>
 #endif
 
-int nn_addr_parse_remote (const char *addr, size_t addrlen, int ipv4only,
+int nn_dns_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen)
 {
     int rc;
@@ -43,7 +43,7 @@ int nn_addr_parse_remote (const char *addr, size_t addrlen, int ipv4only,
 
     /*  Try to resolve the supplied string as a literal address. Note that
         in this case, there's no DNS lookup involved. */
-    rc = nn_literal_parse (addr, addrlen, ipv4only, result, resultlen);
+    rc = nn_literal_resolve (addr, addrlen, ipv4only, result, resultlen);
     if (rc == 0)
         return 0;
     errnum_assert (rc == -EINVAL, -rc);

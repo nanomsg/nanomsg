@@ -323,7 +323,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
     /*  Parse the port. */
     end = addr + strlen (addr);
     colon = strrchr (addr, ':');
-    rc = nn_port_parse (colon + 1, end - colon - 1);
+    rc = nn_port_resolve (colon + 1, end - colon - 1);
     errnum_assert (rc > 0, -rc);
     port = rc;
 
@@ -333,7 +333,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
     if (semicolon) {
         memset (&local, 0, sizeof (local));
         /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-        rc = nn_iface_parse (addr, semicolon - addr, 1, &local, &locallen);
+        rc = nn_iface_resolve (addr, semicolon - addr, 1, &local, &locallen);
         errnum_assert (rc == 0, -rc);
         addr = semicolon + 1;
         uselocal = 1;
@@ -341,7 +341,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
 
     /*  Parse the remote address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_remote (addr, colon - addr, 1, &remote, &remotelen);
+    rc = nn_dns_resolve (addr, colon - addr, 1, &remote, &remotelen);
     errnum_assert (rc == 0, -rc);
 
     /*  Combine the remote address and the port. */

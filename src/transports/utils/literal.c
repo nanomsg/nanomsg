@@ -31,7 +31,7 @@
 #include <netinet/in.h>
 #endif
 
-int nn_literal_parse (const char *addr, size_t addrlen,
+int nn_literal_resolve (const char *addr, size_t addrlen,
     int ipv4only, struct sockaddr_storage *result, size_t *resultlen)
 {
     int rc;

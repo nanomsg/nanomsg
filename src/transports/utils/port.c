@@ -24,7 +24,7 @@
 
 #include "../../utils/err.h"
 
-int nn_port_parse (const char *port, size_t portlen)
+int nn_port_resolve (const char *port, size_t portlen)
 {
     int res;
     size_t i;

@@ -285,13 +285,13 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     pos = strrchr (addr, ':');
     nn_assert (pos);
     ++pos;
-    rc = nn_port_parse (pos, end - pos);
+    rc = nn_port_resolve (pos, end - pos);
     nn_assert (rc >= 0);
     port = rc;
 
     /*  Parse the address. */
     /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_iface_parse (addr, pos - addr - 1, 1, &ss, &sslen);
+    rc = nn_iface_resolve (addr, pos - addr - 1, 1, &ss, &sslen);
 
     /*  TODO: In theory we could re-try in case of error, just in case the user
         configures new network interface while the application is running. */

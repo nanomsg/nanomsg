@@ -27,6 +27,6 @@
 
 /*  Parse the string containing a port number. Returns port number in integer
     form or -EINVAL if the string doesn't contain a port number. */
-int nn_port_parse (const char *port, size_t portlen);
+int nn_port_resolve (const char *port, size_t portlen);
 
 #endif

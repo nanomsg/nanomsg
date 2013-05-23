@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,10 +31,8 @@
 
 #include <stddef.h>
 
-/*  Resolves name of a local address into the address itself.
-    TODO:  This should be an asynchronous operation. This way a DNS failure
-    can block the whole system. */
-int nn_addr_parse_remote (const char *addr, size_t addrlen, int ipv4only,
+/*  Resolves a name using DNS. Returns IPv4 or IPv6 address. */
+int nn_dns_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen);
 
 #endif

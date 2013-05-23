@@ -32,7 +32,7 @@
 #include <stddef.h>
 
 /*  Resolves a literal IPv4 or IPv6 address. */
-int nn_literal_parse (const char *addr, size_t addrlen, int ipv4only,
+int nn_literal_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen);
 
 #endif

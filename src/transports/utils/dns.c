@@ -24,6 +24,7 @@
 #include "literal.h"
 
 #include "../../utils/err.h"
+#include "../../utils/cont.h"
 
 #include <string.h>
 
@@ -33,22 +34,52 @@
 #include <netdb.h>
 #endif
 
-int nn_dns_resolve (const char *addr, size_t addrlen, int ipv4only,
-    struct sockaddr_storage *result, size_t *resultlen)
+#define NN_DNS_STATE_IDLE 1
+#define NN_DNS_STATE_DONE 2
+
+/*  Private functions. */
+static void nn_dns_handler (struct nn_fsm *self, void *source, int type);
+
+void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner)
+{
+    nn_fsm_init (&self->fsm, nn_dns_handler, owner);
+    self->state = NN_DNS_STATE_IDLE;
+    self->error = -1;
+    nn_fsm_event_init (&self->done);
+}
+
+void nn_dns_term (struct nn_dns *self)
+{
+    nn_assert (self->state == NN_DNS_STATE_IDLE);
+
+    nn_fsm_event_term (&self->done);
+    nn_fsm_term (&self->fsm);
+}
+
+int nn_dns_isidle (struct nn_dns *self)
+{
+    return nn_fsm_isidle (&self->fsm);
+}
+
+void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
+    int ipv4only)
 {
     int rc;
     struct addrinfo query;
     struct addrinfo *reply;
     char hostname [NN_SOCKADDR_MAX];
 
-    /*  Try to resolve the supplied string as a literal address. Note that
-        in this case, there's no DNS lookup involved. */
-    rc = nn_literal_resolve (addr, addrlen, ipv4only, result, resultlen);
-    if (rc == 0)
-        return 0;
+    /*  Try to resolve the supplied string as a literal address. In this case,
+        there's no DNS lookup involved. */
+    rc = nn_literal_resolve (addr, addrlen, ipv4only, &self->ss, &self->sslen);
+    if (rc == 0) {
+        self->error = 0;
+        nn_fsm_start (&self->fsm);
+        return;
+    }
     errnum_assert (rc == -EINVAL, -rc);
 
-    /*  The name is not a literal.*/
+    /*  The name is not a literal. Let's do an actual DNS lookup. */
     memset (&query, 0, sizeof (query));
     if (ipv4only)
         query.ai_family = AF_INET;
@@ -64,20 +95,82 @@ int nn_dns_resolve (const char *addr, size_t addrlen, int ipv4only,
     hostname [addrlen] = 0;
 
     /*  Perform the DNS lookup itself. */
-    rc = getaddrinfo (hostname, NULL, &query, &reply);
-    if (rc)
-        return -EFAULT;
+    self->error = getaddrinfo (hostname, NULL, &query, &reply);
+    if (self->error) {
+        nn_fsm_start (&self->fsm);
+        return;
+    }
 
-    /*  Check that exactly one address is returned and return it to
-        the caller. */
+    /*  Check that exactly one address is returned and store it. */
     nn_assert (reply && !reply->ai_next);
-    if (result)
-        memcpy (result, reply->ai_addr, reply->ai_addrlen);
-    if (resultlen)
-        *resultlen = reply->ai_addrlen;
+    memcpy (&self->ss, reply->ai_addr, reply->ai_addrlen);
+    self->sslen = reply->ai_addrlen;
 
     freeaddrinfo (reply);
     
+    nn_fsm_start (&self->fsm);
+}
+
+void nn_dns_stop (struct nn_dns *self)
+{
+    nn_fsm_stop (&self->fsm);
+}
+
+int nn_dns_getaddr (struct nn_dns *self, struct sockaddr_storage **result,
+    size_t *resultlen)
+{
+    if (nn_slow (self->error != 0))
+        return -EFAULT;
+
+    *result = &self->ss;
+    *resultlen = self->sslen;
     return 0;
+}
+
+static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
+{
+    struct nn_dns *dns;
+
+    dns = nn_cont (self, struct nn_dns, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (source == &dns->fsm && type == NN_FSM_STOP)) {
+        nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
+        dns->state = NN_DNS_STATE_IDLE;
+        return;
+    }
+
+    switch (dns->state) {
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/******************************************************************************/
+    case NN_DNS_STATE_IDLE:
+        if (source == &dns->fsm) {
+            switch (type) {
+            case NN_FSM_START:
+                nn_fsm_raise (&dns->fsm, &dns->done, dns,
+                    dns->error ? NN_DNS_ERROR : NN_DNS_DONE);
+                self->state = NN_DNS_STATE_DONE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  DONE state.                                                               */
+/******************************************************************************/
+    case NN_DNS_STATE_DONE:
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
 }
 

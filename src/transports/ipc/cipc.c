@@ -100,7 +100,6 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     nn_sipc_init (&self->sipc, &self->epbase, &self->fsm);
 
     /*  Start the state machine. */
-    nn_cipc_start_connecting (self);
     nn_fsm_start (&self->fsm);
 
     /*  Return the base class as an out parameter. */
@@ -173,7 +172,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &cipc->fsm) {
             switch (type) {
             case NN_FSM_START:
-                cipc->state = NN_CIPC_STATE_CONNECTING;
+                nn_cipc_start_connecting (cipc);
                 return;
             default:
                 nn_assert (0);
@@ -280,7 +279,6 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_BACKOFF_STOPPED:
                 nn_cipc_start_connecting (cipc);
-                cipc->state = NN_CIPC_STATE_CONNECTING;
                 return;
             default:
                 nn_assert (0);
@@ -326,6 +324,7 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
         sizeof (struct sockaddr_un));
+    self->state  = NN_CIPC_STATE_CONNECTING;
 }
 
 #endif

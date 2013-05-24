@@ -42,14 +42,16 @@
 #include <netinet/in.h>
 
 #define NN_CTCP_STATE_IDLE 1
-#define NN_CTCP_STATE_CONNECTING 2
-#define NN_CTCP_STATE_ACTIVE 3
-#define NN_CTCP_STATE_STOPPING_STCP 4
-#define NN_CTCP_STATE_STOPPING_USOCK 5
-#define NN_CTCP_STATE_WAITING 6
-#define NN_CTCP_STATE_STOPPING_BACKOFF 7
-#define NN_CTCP_STATE_STOPPING_STCP_FINAL 8
-#define NN_CTCP_STATE_STOPPING 9
+#define NN_CTCP_STATE_RESOLVING 2
+#define NN_CTCP_STATE_STOPPING_DNS 3
+#define NN_CTCP_STATE_CONNECTING 4
+#define NN_CTCP_STATE_ACTIVE 5
+#define NN_CTCP_STATE_STOPPING_STCP 6
+#define NN_CTCP_STATE_STOPPING_USOCK 7
+#define NN_CTCP_STATE_WAITING 8
+#define NN_CTCP_STATE_STOPPING_BACKOFF 9
+#define NN_CTCP_STATE_STOPPING_STCP_FINAL 10
+#define NN_CTCP_STATE_STOPPING 11
 
 struct nn_ctcp {
 
@@ -70,6 +72,9 @@ struct nn_ctcp {
     /*  State machine that handles the active part of the connection
         lifetime. */
     struct nn_stcp stcp;
+
+    /*  DNS resolver used to convert textual address into actual IP address. */
+    struct nn_dns dns;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -82,7 +87,9 @@ const struct nn_epbase_vfptr nn_ctcp_epbase_vfptr = {
 
 /*  Private functions. */
 static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type);
-static void nn_ctcp_start_connecting (struct nn_ctcp *self);
+static void nn_ctcp_start_resolving (struct nn_ctcp *self);
+static void nn_ctcp_start_connecting (struct nn_ctcp *self,
+    struct sockaddr_storage *ss, size_t sslen);
 
 int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
 {
@@ -100,9 +107,9 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     nn_usock_init (&self->usock, &self->fsm);
     nn_backoff_init (&self->retry, 1000, 1000, &self->fsm);
     nn_stcp_init (&self->stcp, &self->epbase, &self->fsm);
+    nn_dns_init (&self->dns, &self->fsm);
 
     /*  Start the state machine. */
-    nn_ctcp_start_connecting (self);
     nn_fsm_start (&self->fsm);
 
     /*  Return the base class as an out parameter. */
@@ -126,6 +133,7 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
 
     ctcp = nn_cont (self, struct nn_ctcp, epbase);
 
+    nn_dns_term (&ctcp->dns);
     nn_stcp_term (&ctcp->stcp);
     nn_backoff_term (&ctcp->retry);
     nn_usock_term (&ctcp->usock);
@@ -137,7 +145,10 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
 
 static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 {
+    int rc;
     struct nn_ctcp *ctcp;
+    struct sockaddr_storage *ss;
+    size_t sslen;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
 
@@ -153,11 +164,13 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
             return;
         nn_backoff_stop (&ctcp->retry);
         nn_usock_stop (&ctcp->usock);
+        nn_dns_stop (&ctcp->dns);
         ctcp->state = NN_CTCP_STATE_STOPPING;
     }
     if (nn_slow (ctcp->state == NN_CTCP_STATE_STOPPING)) {
         if (!nn_backoff_isidle (&ctcp->retry) ||
-              !nn_usock_isidle (&ctcp->usock))
+              !nn_usock_isidle (&ctcp->usock) ||
+              !nn_dns_isidle (&ctcp->dns))
             return;
         ctcp->state = NN_CTCP_STATE_IDLE;
         nn_fsm_stopped_noevent (&ctcp->fsm);
@@ -175,13 +188,58 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &ctcp->fsm) {
             switch (type) {
             case NN_FSM_START:
-                ctcp->state = NN_CTCP_STATE_CONNECTING;
+                nn_ctcp_start_resolving (ctcp);
                 return;
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
+
+/******************************************************************************/
+/*  RESOLVING state.                                                          */
+/*  Name of the host to connect to is being resolved to get an IP address.    */
+/******************************************************************************/
+    case NN_CTCP_STATE_RESOLVING:
+        if (source == &ctcp->dns) {
+            switch (type) {
+            case NN_DNS_DONE:
+            case NN_DNS_ERROR:
+                nn_dns_stop (&ctcp->dns);
+                ctcp->state = NN_CTCP_STATE_STOPPING_DNS;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_DNS state.                                                       */
+/*  dns object was asked to stop but it haven't stopped yet.                  */
+/******************************************************************************/
+    case NN_CTCP_STATE_STOPPING_DNS:
+        if (source == &ctcp->dns) {
+            switch (type) {
+            case NN_DNS_STOPPED:
+                rc = nn_dns_getaddr (&ctcp->dns, &ss, &sslen);
+
+                /*  If hostname resolution failed, wait a while and re-try. */
+                if (rc < 0) {
+                    nn_backoff_start (&ctcp->retry);
+                    ctcp->state = NN_CTCP_STATE_WAITING;
+                    return;
+                }
+
+                /*  Hostname was successfully resolved. We can start
+                    connecting now. */
+                nn_ctcp_start_connecting (ctcp, ss, sslen);
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
@@ -281,8 +339,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &ctcp->retry) {
             switch (type) {
             case NN_BACKOFF_STOPPED:
-                nn_ctcp_start_connecting (ctcp);
-                ctcp->state = NN_CTCP_STATE_CONNECTING;
+                nn_ctcp_start_resolving (ctcp);
                 return;
             default:
                 nn_assert (0);
@@ -302,7 +359,28 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  State machine actions.                                                    */
 /******************************************************************************/
 
-static void nn_ctcp_start_connecting (struct nn_ctcp *self)
+static void nn_ctcp_start_resolving (struct nn_ctcp *self)
+{
+    const char *addr;
+    const char *begin;
+    const char *end;
+
+    /*  Extract the hostname part from address string. */
+    addr = nn_epbase_getaddr (&self->epbase);
+    begin = strchr (addr, ';');
+    if (!begin)
+        begin = addr;
+    end = strrchr (addr, ':');
+    nn_assert (end);
+
+    /*  TODO: Get the actual value of IPV4ONLY option. */
+    nn_dns_start (&self->dns, begin, end - begin, 1);
+
+    self->state = NN_CTCP_STATE_RESOLVING;
+}
+
+static void nn_ctcp_start_connecting (struct nn_ctcp *self,
+    struct sockaddr_storage *ss, size_t sslen)
 {
     int rc;
     struct sockaddr_storage remote;
@@ -339,12 +417,9 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
         uselocal = 1;
     }
 
-    /*  Parse the remote address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_dns_resolve (addr, colon - addr, 1, &remote, &remotelen);
-    errnum_assert (rc == 0, -rc);
-
     /*  Combine the remote address and the port. */
+    remote = *ss;
+    remotelen = sslen;
     if (remote.ss_family == AF_INET)
         ((struct sockaddr_in*) &remote)->sin_port = htons (port);
     else if (remote.ss_family == AF_INET6)
@@ -368,5 +443,6 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self)
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
+    self->state = NN_CTCP_STATE_CONNECTING;
 }
 

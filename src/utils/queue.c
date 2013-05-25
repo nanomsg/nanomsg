@@ -37,6 +37,11 @@ void nn_queue_term (struct nn_queue *self)
     self->tail = NULL;
 }
 
+int nn_queue_empty (struct nn_queue *self)
+{
+    return self->head ? 0 : 1;
+}
+
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
 {
     nn_assert (item->next == NN_QUEUE_NOTINQUEUE);

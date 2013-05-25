@@ -46,6 +46,9 @@ void nn_queue_init (struct nn_queue *self);
     termination. */
 void nn_queue_term (struct nn_queue *self);
 
+/*  Returns 1 if there are no items in the queue, 0 otherwise. */
+int nn_queue_empty (struct nn_queue *self);
+
 /*  Inserts one element into the queue. */
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
 

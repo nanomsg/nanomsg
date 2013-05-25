@@ -38,6 +38,7 @@ struct nn_ctx {
     struct nn_mutex sync;
     struct nn_pool *pool;
     struct nn_queue events;
+    struct nn_queue eventsto;
     nn_ctx_onleave onleave;
 };
 
@@ -51,6 +52,7 @@ void nn_ctx_leave (struct nn_ctx *self);
 struct nn_worker *nn_ctx_choose_worker (struct nn_ctx *self);
 
 void nn_ctx_raise (struct nn_ctx *self, struct nn_fsm_event *event);
+void nn_ctx_raiseto (struct nn_ctx *self, struct nn_fsm_event *event);
 
 #endif
 

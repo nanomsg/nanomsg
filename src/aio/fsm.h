@@ -84,5 +84,13 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event,
     void *source, int type);
 
+/*  Send event to the specified state machine. It's caller's responsibility
+    to ensure that the destination state machine will still exist when the
+    event is delivered. NOTE: This function is a hack to make inproc transport
+    work in the most efficient manner. Do not use it outside of inproc
+    transport! */
+void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
+    struct nn_fsm_event *event, void *source, int type);
+
 #endif
 

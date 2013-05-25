@@ -142,3 +142,12 @@ void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event,
     nn_ctx_raise (self->ctx, event);
 }
 
+void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
+    struct nn_fsm_event *event, void *source, int type)
+{
+    event->fsm = dst;
+    event->source = source;
+    event->type = type;
+    nn_ctx_raiseto (self->ctx, event);
+}
+

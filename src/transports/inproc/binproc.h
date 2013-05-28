@@ -20,24 +20,39 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_MSGPIPE_INCLUDED
-#define NN_MSGPIPE_INCLUDED
+#ifndef NN_BINPROC_INCLUDED
+#define NN_BINPROC_INCLUDED
 
-#include "msgqueue.h"
+#include "msgpipe.h"
+
+#include "../../transport.h"
 
 #include "../../aio/fsm.h"
 
-struct nn_msgpipe {
+#include "../../utils/list.h"
+
+struct nn_binproc {
+
+    /*  The state machine. */
     struct nn_fsm fsm;
     int state;
-    struct nn_msgqueue in;
+
+    /*  This object is an endpoint. */
+    struct nn_epbase epbase;
+
+    /*  The list of pipes associated with the endpoint. */
+    struct nn_list msgpipes;
+
+    /*  This object is an element in the list of all bound endpoints managed
+        by nn_inproc object. */
+    struct nn_list_item item;
 };
 
-void nn_msgpipe_init (struct nn_msgpipe *self, struct nn_fsm *owner);
-void nn_msgpipe_term (struct nn_msgpipe *self);
+struct nn_binproc *nn_binproc_create (void *hint);
 
-int nn_msgpipe_isidle (struct nn_msgpipe *self);
-void nn_msgpipe_start (struct nn_msgpipe *self);
-void nn_msgpipe_stop (struct nn_msgpipe *self);
+const char *nn_binproc_getaddr (struct nn_binproc *self);
+
+struct nn_msgpipe *nn_binproc_connect (struct nn_binproc *self,
+    struct nn_msgpipe *peer);
 
 #endif

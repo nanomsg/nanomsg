@@ -174,18 +174,6 @@ set (NN_SOURCES
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
 
-#    transports/inproc/inproc.h
-#    transports/inproc/inproc_ctx.h
-#    transports/inproc/inproc_ctx.c
-#    transports/inproc/inprocb.h
-#    transports/inproc/inprocb.c
-#    transports/inproc/inprocc.h
-#    transports/inproc/inprocc.c
-#    transports/inproc/msgpipe.h
-#    transports/inproc/msgpipe.c
-    transports/inproc/msgqueue.h
-    transports/inproc/msgqueue.c
-
     transports/utils/backoff.h
     transports/utils/backoff.c
     transports/utils/dns.h
@@ -198,6 +186,17 @@ set (NN_SOURCES
     transports/utils/port.c
     transports/utils/streamhdr.h
     transports/utils/streamhdr.c
+
+    transports/inproc/binproc.h
+    transports/inproc/binproc.c
+    transports/inproc/cinproc.h
+    transports/inproc/cinproc.c
+    transports/inproc/inproc.h
+    transports/inproc/inproc.c
+    transports/inproc/msgpipe.h
+    transports/inproc/msgpipe.c
+    transports/inproc/msgqueue.h
+    transports/inproc/msgqueue.c
 
     transports/ipc/aipc.h
     transports/ipc/aipc.c

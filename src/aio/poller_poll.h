@@ -20,24 +20,38 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_MSGPIPE_INCLUDED
-#define NN_MSGPIPE_INCLUDED
+#include <poll.h>
 
-#include "msgqueue.h"
+#define NN_POLLER_HAVE_ASYNC_ADD 0
 
-#include "../../aio/fsm.h"
-
-struct nn_msgpipe {
-    struct nn_fsm fsm;
-    int state;
-    struct nn_msgqueue in;
+struct nn_poller_hndl {
+    int index;
 };
 
-void nn_msgpipe_init (struct nn_msgpipe *self, struct nn_fsm *owner);
-void nn_msgpipe_term (struct nn_msgpipe *self);
+struct nn_poller {
 
-int nn_msgpipe_isidle (struct nn_msgpipe *self);
-void nn_msgpipe_start (struct nn_msgpipe *self);
-void nn_msgpipe_stop (struct nn_msgpipe *self);
+    /*  Actual number of elements in the pollset. */
+    int size;
 
-#endif
+    /*  Index of the event being processed at the moment. */
+    int index;
+
+    /*  Number of allocated elements in the pollset. */
+    int capacity;
+
+    /*  The pollset. */
+    struct pollfd *pollset;
+
+    /*  List of handles associated with elements in the pollset. Either points
+        to the handle associated with the file descriptor (hndl) or is part
+        of the list of removed pollitems (removed). */
+    struct nn_hndls_item {
+        struct nn_poller_hndl *hndl;
+        int prev;
+        int next;
+    } *hndls;
+
+    /*  List of removed pollitems, linked by indices. -1 means empty list. */
+    int removed;
+};
+

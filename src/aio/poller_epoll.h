@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,17 +20,29 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_INPROC_CTX_INCLUDED
-#define NN_INPROC_CTX_INCLUDED
+#include <sys/epoll.h>
 
-#include "inprocb.h"
-#include "inprocc.h"
+#define NN_POLLER_HAVE_ASYNC_ADD 1
 
-/*  Inproc context is accessed from the outside via nn_transport virtual
-    interface. Following functions are for internal use from within the
-    transport. */
+#define NN_POLLER_MAX_EVENTS 32
 
-void nn_inproc_ctx_unbind (struct nn_inprocb *inprocb);
-void nn_inproc_ctx_disconnect (struct nn_inprocc *inprocc);
+struct nn_poller_hndl {
+    int fd;
+    uint32_t events;
+};
 
-#endif
+struct nn_poller {
+
+    /*  Current pollset. */
+    int ep;
+
+    /*  Number of events being processed at the moment. */
+    int nevents;
+
+    /*  Index of the event being processed at the moment. */
+    int index;
+
+    /*  Events being processed at the moment. */
+    struct epoll_event events [NN_POLLER_MAX_EVENTS];
+};
+

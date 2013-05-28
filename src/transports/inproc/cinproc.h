@@ -20,38 +20,43 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_INPROCB_INCLUDED
-#define NN_INPROCB_INCLUDED
+#ifndef NN_CINPROC_INCLUDED
+#define NN_CINPROC_INCLUDED
+
+#include "msgpipe.h"
+#include "binproc.h"
 
 #include "../../transport.h"
 
+#include "../../aio/fsm.h"
+
 #include "../../utils/list.h"
 
-#include "msgpipe.h"
+struct nn_cinproc {
 
-#define NN_INPROCB_FLAG_TERMINATING 1
-
-struct nn_inprocb {
+    /*  The state machine. */
+    struct nn_fsm fsm;
+    int state;
 
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
-    /*  This object is an element in the list of all bound endpoints managed
+    /*  Local end of the message pipe. */
+    struct nn_msgpipe local;
+
+    /*  Remote end of the message pipe. */
+    struct nn_msgpipe *remote;
+
+    /*  This object is an element in the list of all connected endpoints managed
         by nn_inproc_ctx object. */
-    struct nn_list_item list;
-
-    /*  List of all message pipes attached to this endpoint. */
-    struct nn_list pipes;
-
-    /*  Any combination of the flags defined above. */
-    int flags;
+    struct nn_list_item item;
 };
 
-int nn_inprocb_init (struct nn_inprocb *self, const char *addr, void *hint);
-const char *nn_inprocb_getaddr (struct nn_inprocb *self);
-int nn_inprocb_socktype (struct nn_inprocb *self);
-int nn_inprocb_ispeer (struct nn_inprocb *self, int socktype);
-void nn_inprocb_add_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
-void nn_inprocb_rm_pipe (struct nn_inprocb *self, struct nn_msgpipe *pipe);
+struct nn_cinproc *nn_cinproc_create (void *hint);
+
+const char *nn_cinproc_getaddr (struct nn_cinproc *self);
+
+void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer);
 
 #endif
+

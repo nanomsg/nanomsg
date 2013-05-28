@@ -38,7 +38,7 @@
 #define NN_MSGQUEUE_SIGNAL 2
 
 /*  It's not 128 so that chunk including its footer fits into a memory page. */
-#define NN_MSGQUEUE_GRANULARITY 127
+#define NN_MSGQUEUE_GRANULARITY 126
 
 struct nn_msgqueue_chunk {
     struct nn_msg msgs [NN_MSGQUEUE_GRANULARITY];

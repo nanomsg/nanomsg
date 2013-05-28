@@ -20,39 +20,32 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_INPROCC_INCLUDED
-#define NN_INPROCC_INCLUDED
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/event.h>
 
-#include "../../transport.h"
+#define NN_POLLER_MAX_EVENTS 32
 
-#include "../../utils/list.h"
+#define NN_POLLER_EVENT_IN 1
+#define NN_POLLER_EVENT_OUT 2
 
-#include "msgpipe.h"
-
-#define NN_INPROCC_FLAG_TERMINATING 1
-
-struct nn_inprocc {
-
-    /*  This object is an endpoint. */
-    struct nn_epbase epbase;
-
-    /*  This object is an element in the list of all connected endpoints managed
-        by nn_inproc_ctx object. */
-    struct nn_list_item list;
-
-    /*  If the endpoint is connected this is the pointer to the associated
-        message pipe. If it's not, the field is set to NULL. */
-    struct nn_msgpipe *pipe;
-
-    /*  Any combination of the flags defined above. */
-    int flags;
+struct nn_poller_hndl {
+    int fd;
+    int events;
 };
 
-int nn_inprocc_init (struct nn_inprocc *self, const char *addr, void *hint);
-const char *nn_inprocc_getaddr (struct nn_inprocc *self);
-int nn_inprocc_socktype (struct nn_inprocc *self);
-int nn_inprocc_ispeer (struct nn_inprocc *self, int socktype);
-void nn_inprocc_add_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
-void nn_inprocc_rm_pipe (struct nn_inprocc *self, struct nn_msgpipe *pipe);
+struct nn_poller {
 
-#endif
+    /*  Current pollset. */
+    int kq;
+
+    /*  Number of events being processed at the moment. */
+    int nevents;
+
+    /*  Index of the event being processed at the moment. */
+    int index;
+
+    /*  Cached events. */
+    struct kevent events [NN_POLLER_MAX_EVENTS];
+};
+

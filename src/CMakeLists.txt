@@ -57,8 +57,11 @@ set (NN_SOURCES
     aio/fsm.c
     aio/poller.h
     aio/poller.c
+    aio/poller_epoll.h
     aio/poller_epoll.inc
+    aio/poller_kqueue.h
     aio/poller_kqueue.inc
+    aio/poller_poll.h
     aio/poller_poll.inc
     aio/pool.h
     aio/pool.c
@@ -84,6 +87,14 @@ set (NN_SOURCES
     utils/cont.h
     utils/efd.h
     utils/efd.c
+    utils/efd_eventfd.h
+    utils/efd_eventfd.inc
+    utils/efd_pipe.h
+    utils/efd_pipe.inc
+    utils/efd_socketpair.h
+    utils/efd_socketpair.inc
+    utils/efd_win.h
+    utils/efd_win.inc
     utils/err.h
     utils/err.c
     utils/fast.h

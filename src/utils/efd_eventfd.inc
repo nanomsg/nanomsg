@@ -20,60 +20,61 @@
     IN THE SOFTWARE.
 */
 
-#include "efd.h"
+#include "err.h"
 
-#if defined NN_HAVE_WINDOWS
-#include "efd_win.inc"
-#elif defined NN_HAVE_EVENTFD
-#include "efd_eventfd.inc"
-#elif defined NN_HAVE_PIPE
-#include "efd_pipe.inc"
-#elif defined NN_HAVE_SOCKETPAIR
-#include "efd_socketpair.inc"
-#else
-#error
-#endif
+#include <stdint.h>
+#include <sys/eventfd.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-#if defined NN_HAVE_POLL
-
-#include <poll.h>
-
-int nn_efd_wait (struct nn_efd *self, int timeout)
+int nn_efd_init (struct nn_efd *self)
 {
     int rc;
-    struct pollfd pfd;
+    int flags;
 
-    pfd.fd = nn_efd_getfd (self);
-    pfd.events = POLLIN;
-    rc = poll (&pfd, 1, timeout);
-    if (nn_slow (rc < 0 && errno == EINTR))
-        return -EINTR;
-    errno_assert (rc >= 0);
-    if (nn_slow (rc == 0))
-        return -ETIMEDOUT;
+    self->efd = eventfd (0, EFD_CLOEXEC);
+    if (self->efd == -1 && (errno == EMFILE || errno == ENFILE))
+        return -EMFILE;
+    errno_assert (self->efd != -1);
+
+    flags = fcntl (self->efd, F_GETFL, 0);
+	if (flags == -1)
+        flags = 0;
+	rc = fcntl (self->efd, F_SETFL, flags | O_NONBLOCK);
+    errno_assert (rc != -1);
+
     return 0;
 }
 
-#elif defined NN_HAVE_WINDOWS
-
-int nn_efd_wait (struct nn_efd *self, int timeout)
+void nn_efd_term (struct nn_efd *self)
 {
     int rc;
-    struct timeval tv;
 
-    FD_SET (self->r, &self->fds);
-    if (timeout >= 0) {
-        tv.tv_sec = timeout / 1000;
-        tv.tv_usec = timeout % 1000 * 1000;
-    }
-    rc = select (0, &self->fds, NULL, NULL, timeout >= 0 ? &tv : NULL);
-    wsa_assert (rc != SOCKET_ERROR);
-    if (nn_slow (rc == 0))
-        return -ETIMEDOUT;
-    return 0;
+    rc = close (self->efd);
+    errno_assert (rc == 0);
 }
 
-#else
-#error
-#endif
+nn_fd nn_efd_getfd (struct nn_efd *self)
+{
+    return self->efd;
+}
+
+void nn_efd_signal (struct nn_efd *self)
+{
+    const uint64_t one = 1;
+    ssize_t nbytes;
+
+    nbytes = write (self->efd, &one, sizeof (one));
+    errno_assert (nbytes == sizeof (one));
+}
+
+void nn_efd_unsignal (struct nn_efd *self)
+{
+    uint64_t count;
+
+    /*  Extract all the signals from the eventfd. */
+    ssize_t sz = read (self->efd, &count, sizeof (count));
+    errno_assert (sz >= 0);
+    nn_assert (sz == sizeof (count));
+}
 

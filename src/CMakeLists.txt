@@ -67,10 +67,6 @@ set (NN_SOURCES
     aio/pool.c
     aio/timer.h
     aio/timer.c
-    aio/timer_posix.h
-    aio/timer_posix.inc
-    aio/timer_win.h
-    aio/timer_win.inc
     aio/timerset.h
     aio/timerset.c
     aio/usock.h

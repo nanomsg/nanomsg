@@ -20,6 +20,8 @@
     IN THE SOFTWARE.
 */
 
+#include "ctx.h"
+
 #include "../utils/err.h"
 #include "../utils/fast.h"
 #include "../utils/cont.h"
@@ -34,22 +36,6 @@ void nn_worker_fd_init (struct nn_worker_fd *self, struct nn_fsm *owner)
 
 void nn_worker_fd_term (struct nn_worker_fd *self)
 {
-}
-
-void nn_worker_timer_init (struct nn_worker_timer *self, struct nn_fsm *owner)
-{
-    self->owner = owner;
-    nn_timerset_hndl_init (&self->hndl);
-}
-
-void nn_worker_timer_term (struct nn_worker_timer *self)
-{
-    nn_timerset_hndl_term (&self->hndl);
-}
-
-int nn_worker_timer_isactive (struct nn_worker_timer *self)
-{
-    return nn_timerset_hndl_isactive (&self->hndl);
 }
 
 void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd)
@@ -172,8 +158,7 @@ static void nn_worker_routine (void *arg)
         shut down. */
     while (1) {
 
-        /*  Wait for any activity. */
-        
+        /*  Wait for new events and/or timeouts. */
         rc = nn_poller_wait (&self->poller,
             nn_timerset_timeout (&self->timerset));
         errnum_assert (rc == 0, -rc);

@@ -20,6 +20,18 @@
     IN THE SOFTWARE.
 */
 
+#include "fsm.h"
+#include "timerset.h"
+
+#include "../utils/win.h"
+#include "../utils/thread.h"
+
+struct nn_worker_task {
+    struct nn_fsm *owner;
+};
+
 struct nn_worker {
-    int dummy;
+    HANDLE hndl;
+    struct nn_timerset timerset;
+    struct nn_thread thread;
 };

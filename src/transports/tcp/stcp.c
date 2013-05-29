@@ -25,6 +25,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
+#include "../../utils/wire.h"
 
 #include <stdint.h>
 
@@ -221,7 +222,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 
                 /* Raise the error and move directly to the DONE state.
                    streamhdr object will be stopped later on. */
-                stcp->state == NN_STCP_STATE_DONE;
+                stcp->state = NN_STCP_STATE_DONE;
                 nn_fsm_raise (&stcp->fsm, &stcp->done, stcp, NN_STCP_ERROR);
                 return;
 
@@ -315,7 +316,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&stcp->pipebase);
-                stcp->state == NN_STCP_STATE_DONE;
+                stcp->state = NN_STCP_STATE_DONE;
                 nn_fsm_raise (&stcp->fsm, &stcp->done, stcp, NN_STCP_ERROR);
                 return;
 

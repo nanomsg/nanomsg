@@ -24,7 +24,7 @@
 #define NN_LITERAL_INCLUDED
 
 #if defined NN_HAVE_WINDOWS
-#include "win.h"
+#include "../../utils/win.h"
 #else
 #include <sys/socket.h>
 #endif

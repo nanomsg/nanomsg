@@ -769,7 +769,6 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
     size_t protosz;
     struct nn_transport *tp;
     struct nn_list_item *it;
-    struct nn_ep *ep;
 
     /*  Check whether address is valid. */
     if (!addr)

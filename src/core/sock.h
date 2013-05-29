@@ -129,7 +129,7 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 
 /*  Retrieve a socket option. This function is to be called from within
     the socket. */
-int nn_sock_getopt_internal (struct nn_sock *self, int level, int option,
+int nn_sock_getopt_inner (struct nn_sock *self, int level, int option,
     void *optval, size_t *optvallen);
 
 /*  Used by pipes. */

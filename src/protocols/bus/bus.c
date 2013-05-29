@@ -120,7 +120,6 @@ static int nn_bus_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
 static int nn_bus_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_bus *self;
 
     self = nn_alloc (sizeof (struct nn_bus), "socket (bus)");

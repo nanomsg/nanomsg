@@ -20,24 +20,34 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_TIMER_INCLUDED
-#define NN_TIMER_INCLUDED
+#include "err.h"
 
-#if defined NN_HAVE_WINDOWS
-#include "timer_win.h"
-#else
-#include "timer_posix.h"
-#endif
+static unsigned int __stdcall nn_thread_main_routine (void *arg)
+{
+    struct nn_thread *self;
 
-#define NN_TIMER_TIMEOUT 1
-#define NN_TIMER_STOPPED 2
+    self = (struct nn_thread*) arg;
+    self->routine (self->arg);
+    return 0;
+}
 
-void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner);
-void nn_timer_term (struct nn_timer *self);
+void nn_thread_init (struct nn_thread *self,
+    nn_thread_routine *routine, void *arg)
+{
+    self->routine = routine;
+    self->arg = arg;
+    self->handle = (HANDLE) _beginthreadex (NULL, 0,
+        nn_thread_main_routine, (void*) self, 0 , NULL);
+    win_assert (self->handle != NULL);
+}
 
-int nn_timer_isidle (struct nn_timer *self);
-void nn_timer_start (struct nn_timer *self, int timeout);
-void nn_timer_stop (struct nn_timer *self);
+void nn_thread_term (struct nn_thread *self)
+{
+    DWORD rc;
+    BOOL brc;
 
-#endif
-
+    rc = WaitForSingleObject (self->handle, INFINITE);
+    win_assert (rc != WAIT_FAILED);
+    brc = CloseHandle (self->handle);
+    win_assert (brc != 0);
+}

@@ -37,9 +37,14 @@
 #include "../../utils/fast.h"
 
 #include <string.h>
-#include <unistd.h>
 #include <stdint.h>
+
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
+#include <unistd.h>
 #include <netinet/in.h>
+#endif
 
 #define NN_CTCP_STATE_IDLE 1
 #define NN_CTCP_STATE_RESOLVING 2

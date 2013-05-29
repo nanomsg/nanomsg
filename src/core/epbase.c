@@ -54,7 +54,7 @@ const char *nn_epbase_getaddr (struct nn_epbase *self)
 void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
-    return nn_ep_getopt (self->ep, level, option, optval, optvallen);
+    nn_ep_getopt (self->ep, level, option, optval, optvallen);
 }
 
 int nn_epbase_ispeer (struct nn_epbase *self, int socktype)

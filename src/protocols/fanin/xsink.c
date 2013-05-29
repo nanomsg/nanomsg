@@ -98,7 +98,6 @@ void nn_xsink_destroy (struct nn_sockbase *self)
 
 static int nn_xsink_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_xsink *xsink;
     struct nn_xsink_data *data;
 

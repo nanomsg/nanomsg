@@ -67,12 +67,24 @@ set (NN_SOURCES
     aio/pool.c
     aio/timer.h
     aio/timer.c
+    aio/timer_posix.h
+    aio/timer_posix.inc
+    aio/timer_win.h
+    aio/timer_win.inc
     aio/timerset.h
     aio/timerset.c
     aio/usock.h
     aio/usock.c
+    aio/usock_posix.h
+    aio/usock_posix.inc
+    aio/usock_win.h
+    aio/usock_win.inc
     aio/worker.h
     aio/worker.c
+    aio/worker_posix.h
+    aio/worker_posix.inc
+    aio/worker_win.h
+    aio/worker_win.inc
 
     utils/alloc.h
     utils/alloc.c
@@ -118,6 +130,10 @@ set (NN_SOURCES
     utils/sleep.c
     utils/thread.h
     utils/thread.c
+    utils/thread_posix.h
+    utils/thread_posix.inc
+    utils/thread_win.h
+    utils/thread_win.inc
     utils/wire.h
     utils/wire.c
 

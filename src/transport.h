@@ -161,7 +161,7 @@ void nn_pipebase_term (struct nn_pipebase *self);
 int nn_pipebase_start (struct nn_pipebase *self);
 
 /*  Call this function once the connection is broken. */
-void nn_pipbase_stop (struct nn_pipebase *self);
+void nn_pipebase_stop (struct nn_pipebase *self);
 
 /*  Call this function when new message was fully received. */
 void nn_pipebase_received (struct nn_pipebase *self);

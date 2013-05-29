@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,24 +20,47 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_TIMER_INCLUDED
-#define NN_TIMER_INCLUDED
+#include "err.h"
 
-#if defined NN_HAVE_WINDOWS
-#include "timer_win.h"
-#else
-#include "timer_posix.h"
-#endif
+#include <signal.h>
 
-#define NN_TIMER_TIMEOUT 1
-#define NN_TIMER_STOPPED 2
+static void *nn_thread_main_routine (void *arg)
+{
+    int rc;
+    sigset_t sigset;
+    struct nn_thread *self;
 
-void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner);
-void nn_timer_term (struct nn_timer *self);
+    self = (struct nn_thread*) arg;
+   
+    /*  No signals should be processed by this thread. The library doesn't
+        use signals and thus all the signals should be delivered to application
+        threads, not to worker threads. */
+    rc = sigfillset (&sigset);
+    errno_assert (rc == 0);
+    rc = pthread_sigmask (SIG_BLOCK, &sigset, NULL);
+    errnum_assert (rc == 0, rc);
 
-int nn_timer_isidle (struct nn_timer *self);
-void nn_timer_start (struct nn_timer *self, int timeout);
-void nn_timer_stop (struct nn_timer *self);
+    /*  Run the thread routine. */
+    self->routine (self->arg);
+    return NULL;
+}
 
-#endif
+void nn_thread_init (struct nn_thread *self,
+    nn_thread_routine *routine, void *arg)
+{
+    int rc;
 
+    self->routine = routine;
+    self->arg = arg;
+    rc = pthread_create (&self->handle, NULL, nn_thread_main_routine,
+        (void*) self);
+    errnum_assert (rc == 0, rc);
+}
+
+void nn_thread_term (struct nn_thread *self)
+{
+    int rc;
+
+    rc = pthread_join (self->handle, NULL);
+    errnum_assert (rc == 0, rc);
+}

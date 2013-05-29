@@ -20,24 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_TIMER_INCLUDED
-#define NN_TIMER_INCLUDED
+#include <pthread.h>
 
-#if defined NN_HAVE_WINDOWS
-#include "timer_win.h"
-#else
-#include "timer_posix.h"
-#endif
-
-#define NN_TIMER_TIMEOUT 1
-#define NN_TIMER_STOPPED 2
-
-void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner);
-void nn_timer_term (struct nn_timer *self);
-
-int nn_timer_isidle (struct nn_timer *self);
-void nn_timer_start (struct nn_timer *self, int timeout);
-void nn_timer_stop (struct nn_timer *self);
-
-#endif
-
+struct nn_thread
+{
+    nn_thread_routine *routine;
+    void *arg;
+    pthread_t handle;
+};

@@ -158,8 +158,6 @@ void nn_sock_zombify (struct nn_sock *self)
 int nn_sock_term (struct nn_sock *self)
 {
     int rc;
-    struct nn_list_item *it;
-    struct nn_epbase *ep;
     int i;
 
     /*  Ask the state machine to start closing the socket. */
@@ -235,7 +233,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen)
 {
-    int rc;
     struct nn_optset *optset;
     int val;
     int *dst;

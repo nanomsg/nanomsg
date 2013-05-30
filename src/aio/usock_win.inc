@@ -19,3 +19,80 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
     IN THE SOFTWARE.
 */
+
+#include "../utils/err.h"
+
+void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
+{
+    nn_assert (0);
+}
+
+void nn_usock_term (struct nn_usock *self)
+{
+    nn_assert (0);
+}
+
+int nn_usock_isidle (struct nn_usock *self)
+{
+    nn_assert (0);
+}
+
+int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
+{
+    nn_assert (0);
+}
+
+void nn_usock_stop (struct nn_usock *self)
+{
+    nn_assert (0);
+}
+
+struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
+    struct nn_fsm *newowner)
+{
+    nn_assert (0);
+}
+
+int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
+    const void *optval, size_t optlen)
+{
+    nn_assert (0);
+}
+
+int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
+    size_t addrlen)
+{
+    nn_assert (0);
+}
+
+int nn_usock_listen (struct nn_usock *self, int backlog)
+{
+    nn_assert (0);
+}
+
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock)
+{
+    nn_assert (0);
+}
+
+void nn_usock_activate (struct nn_usock *self)
+{
+    nn_assert (0);
+}
+
+void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
+    size_t addrlen)
+{
+    nn_assert (0);
+}
+
+void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
+    int iovcnt)
+{
+    nn_assert (0);
+}
+
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
+{
+    nn_assert (0);
+}

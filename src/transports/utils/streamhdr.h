@@ -66,4 +66,3 @@ void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock);
 void nn_streamhdr_stop (struct nn_streamhdr *self);
 
 #endif
-

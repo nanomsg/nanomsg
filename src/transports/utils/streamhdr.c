@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "streamhdr.h"
 
 #include "../../aio/timer.h"
@@ -260,5 +258,4 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
     }
 }
 
-#endif
 

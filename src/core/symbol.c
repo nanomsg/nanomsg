@@ -39,7 +39,7 @@ struct sym_value_name {
     const char* name;
 };
 
-static const struct sym_value_name sym_value_names[] = {
+static const struct sym_value_name sym_value_names [] = {
 
     {NN_VERSION_MAJOR, "NN_VERSION_MAJOR"},
     {NN_VERSION_MINOR, "NN_VERSION_MINOR"},
@@ -129,7 +129,7 @@ static const struct sym_value_name sym_value_names[] = {
 const int SYM_VALUE_NAMES_LEN = (sizeof (sym_value_names) /
     sizeof (sym_value_names [0]));
 
-const char *nn_symbol (int i, int* value)
+const char *nn_symbol (int i, int *value)
 {
     const struct sym_value_name *svn;
     if (i < 0 || i >= SYM_VALUE_NAMES_LEN) {

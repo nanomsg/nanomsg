@@ -29,9 +29,7 @@
 struct nn_dns {
     struct nn_fsm fsm;
     int state;
-    int error;
-    struct sockaddr_storage ss;
-    size_t sslen;
+    struct nn_dns_result *result;
     struct nn_fsm_event done;
 };
 

@@ -43,7 +43,6 @@ void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_dns_handler, owner);
     self->state = NN_DNS_STATE_IDLE;
-    self->error = -1;
     nn_fsm_event_init (&self->done);
 }
 
@@ -61,18 +60,23 @@ int nn_dns_isidle (struct nn_dns *self)
 }
 
 void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
-    int ipv4only)
+    int ipv4only, struct nn_dns_result *result)
 {
     int rc;
     struct addrinfo query;
     struct addrinfo *reply;
     char hostname [NN_SOCKADDR_MAX];
 
+    nn_assert (self->state == NN_DNS_STATE_IDLE);
+
+    self->result = result;
+
     /*  Try to resolve the supplied string as a literal address. In this case,
         there's no DNS lookup involved. */
-    rc = nn_literal_resolve (addr, addrlen, ipv4only, &self->ss, &self->sslen);
+    rc = nn_literal_resolve (addr, addrlen, ipv4only, &self->result->addr,
+        &self->result->addrlen);
     if (rc == 0) {
-        self->error = 0;
+        self->result->error = 0;
         nn_fsm_start (&self->fsm);
         return;
     }
@@ -94,36 +98,25 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     hostname [addrlen] = 0;
 
     /*  Perform the DNS lookup itself. */
-    self->error = getaddrinfo (hostname, NULL, &query, &reply);
-    if (self->error) {
+    self->result->error = getaddrinfo (hostname, NULL, &query, &reply);
+    if (self->result->error) {
         nn_fsm_start (&self->fsm);
         return;
     }
 
     /*  Check that exactly one address is returned and store it. */
     nn_assert (reply && !reply->ai_next);
-    memcpy (&self->ss, reply->ai_addr, reply->ai_addrlen);
-    self->sslen = reply->ai_addrlen;
-
+    self->result->error = 0;
+    memcpy (&self->result->addr, reply->ai_addr, reply->ai_addrlen);
+    self->result->addrlen = reply->ai_addrlen;
     freeaddrinfo (reply);
-    
+
     nn_fsm_start (&self->fsm);
 }
 
 void nn_dns_stop (struct nn_dns *self)
 {
     nn_fsm_stop (&self->fsm);
-}
-
-int nn_dns_getaddr (struct nn_dns *self, struct sockaddr_storage **result,
-    size_t *resultlen)
-{
-    if (nn_slow (self->error != 0))
-        return -EFAULT;
-
-    *result = &self->ss;
-    *resultlen = self->sslen;
-    return 0;
 }
 
 static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
@@ -149,8 +142,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
         if (source == &dns->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_fsm_raise (&dns->fsm, &dns->done, dns,
-                    dns->error ? NN_DNS_ERROR : NN_DNS_DONE);
+                nn_fsm_raise (&dns->fsm, &dns->done, dns, NN_DNS_DONE);
                 self->state = NN_DNS_STATE_DONE;
                 return;
             default:

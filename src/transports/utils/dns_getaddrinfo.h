@@ -20,10 +20,18 @@
     IN THE SOFTWARE.
 */
 
-#include "dns.h"
-
-#if defined NN_HAVE_GETADDRINFO_A
-#include "dns_getaddrinfo_a.inc"
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
 #else
-#include "dns_getaddrinfo.inc"
+#include <sys/socket.h>
 #endif
+
+struct nn_dns {
+    struct nn_fsm fsm;
+    int state;
+    int error;
+    struct sockaddr_storage ss;
+    size_t sslen;
+    struct nn_fsm_event done;
+};
+

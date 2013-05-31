@@ -23,7 +23,6 @@
 #include "err.h"
 #include "fast.h"
 
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/socket.h>

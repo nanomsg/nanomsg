@@ -201,6 +201,10 @@ set (NN_SOURCES
     transports/utils/backoff.c
     transports/utils/dns.h
     transports/utils/dns.c
+    transports/utils/dns_getaddrinfo.h
+    transports/utils/dns_getaddrinfo.inc
+    transports/utils/dns_getaddrinfo_a.h
+    transports/utils/dns_getaddrinfo_a.inc
     transports/utils/iface.h
     transports/utils/iface.c
     transports/utils/literal.h
@@ -270,6 +274,10 @@ endif ()
 if (NN_HAVE_SOLARIS)
     target_link_libraries (nanomsg socket)
     target_link_libraries (nanomsg nsl)
+endif ()
+
+if (NN_HAVE_GETADDRINFO_A)
+    target_link_libraries (nanomsg anl)
 endif ()
 
 target_link_libraries (nanomsg ${CMAKE_THREAD_LIBS_INIT})

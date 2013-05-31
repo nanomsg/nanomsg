@@ -78,8 +78,10 @@ struct nn_ctcp {
         lifetime. */
     struct nn_stcp stcp;
 
-    /*  DNS resolver used to convert textual address into actual IP address. */
+    /*  DNS resolver used to convert textual address into actual IP address
+        along with the variable to hold the result. */
     struct nn_dns dns;
+    struct nn_dns_result dns_result;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -209,7 +211,6 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &ctcp->dns) {
             switch (type) {
             case NN_DNS_DONE:
-            case NN_DNS_ERROR:
                 nn_dns_stop (&ctcp->dns);
                 ctcp->state = NN_CTCP_STATE_STOPPING_DNS;
                 return;
@@ -227,20 +228,14 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &ctcp->dns) {
             switch (type) {
             case NN_DNS_STOPPED:
-                rc = nn_dns_getaddr (&ctcp->dns, &ss, &sslen);
-
-                /*  If hostname resolution failed, wait a while and re-try. */
-                if (rc < 0) {
-                    nn_backoff_start (&ctcp->retry);
-                    ctcp->state = NN_CTCP_STATE_WAITING;
+                if (ctcp->dns_result.error == 0) {
+                    nn_ctcp_start_connecting (ctcp, &ctcp->dns_result.addr,
+                        ctcp->dns_result.addrlen);
                     return;
                 }
-
-                /*  Hostname was successfully resolved. We can start
-                    connecting now. */
-                nn_ctcp_start_connecting (ctcp, ss, sslen);
+                nn_backoff_start (&ctcp->retry);
+                ctcp->state = NN_CTCP_STATE_WAITING;
                 return;
-
             default:
                 nn_assert (0);
             }
@@ -375,11 +370,13 @@ static void nn_ctcp_start_resolving (struct nn_ctcp *self)
     begin = strchr (addr, ';');
     if (!begin)
         begin = addr;
+    else
+        ++begin;
     end = strrchr (addr, ':');
     nn_assert (end);
 
     /*  TODO: Get the actual value of IPV4ONLY option. */
-    nn_dns_start (&self->dns, begin, end - begin, 1);
+    nn_dns_start (&self->dns, begin, end - begin, 1, &self->dns_result);
 
     self->state = NN_CTCP_STATE_RESOLVING;
 }

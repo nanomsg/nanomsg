@@ -120,11 +120,6 @@ static int nn_inproc_bind (const char *addr, void *hint,
         cinproc = nn_cont (it, struct nn_cinproc, item);
         if (strncmp (addr, nn_cinproc_getaddr (cinproc),
               NN_SOCKADDR_MAX) == 0) {
-#if 0
-            if (!nn_binproc_ispeer (binproc, nn_cinproc_socktype (cinproc)) ||
-                  !nn_cinproc_ispeer (cinproc, nn_binproc_socktype (binproc)))
-                continue;
-#endif
             /*  TODO: Create the pipe here. */
             nn_assert (0);
         }
@@ -157,16 +152,10 @@ static int nn_inproc_connect (const char *addr, void *hint,
           it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         binproc = nn_cont (it, struct nn_binproc, item);
-        if (strcmp (addr, nn_binproc_getaddr (binproc)) == 0) {
-#if 0
-            if (nn_binproc_ispeer (binproc, nn_cinproc_socktype (cinproc)) &&
-                  nn_cinproc_ispeer (cinproc, nn_binproc_socktype (binproc))) {
-#endif
-                /*  TODO: Create the pipe here. */
-                nn_assert (0);
-#if 0
-            }
-#endif
+        if (strncmp (addr, nn_binproc_getaddr (binproc),
+              NN_SOCKADDR_MAX) == 0) {
+            /*  TODO: Create the pipe here. */
+            nn_assert (0);
             break;
         }
     }

@@ -22,6 +22,36 @@
 
 #include "fsm.h"
 
+#include "../utils/win.h"
+
+struct nn_usock;
+
+struct nn_usock_op {
+    struct nn_usock *usock;
+    OVERLAPPED olpd;
+};
+
 struct nn_usock {
+
+    /*  The state machine. */
     struct nn_fsm fsm;
+    int state;
+
+    /*  The actual underlying socket. */
+    SOCKET s;
+
+    /*  Handles for asynchronous operations being executed. */
+    struct nn_usock_op in;
+    struct nn_usock_op out;
+
+    /*  When accepting new socket, they have to be created with same
+        type as the listening socket. Thus, in listening socket we
+        have to store its exact type. */
+    int domain;
+    int type;
+    int protocol;
+
+    /*  When accepting a new connection, the pointer to the object to associate
+        the new connection with is stored here. */
+    struct nn_usock *newsock;
 };

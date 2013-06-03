@@ -30,8 +30,12 @@ struct nn_worker_task {
     struct nn_fsm *owner;
 };
 
+#define NN_WORKER_IO_EVENT 1
+
 struct nn_worker {
-    HANDLE hndl;
+    HANDLE cp;
     struct nn_timerset timerset;
     struct nn_thread thread;
 };
+
+HANDLE nn_worker_getcp (struct nn_worker *self);

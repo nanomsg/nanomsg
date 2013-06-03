@@ -300,7 +300,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
         return;
     }
 
-    /*  Asyncgronous connect. */
+    /*  Asynchronous connect. */
     nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECTING);
 }
 
@@ -629,8 +629,6 @@ error:
 /*  accepting a new connection.                                               */
 /******************************************************************************/ 
     case NN_USOCK_STATE_LISTENING:
-
-        /*  Events from the owner of the usock. */
         if (source == NULL) {
             switch (type) {
             case NN_USOCK_EVENT_ACCEPT:
@@ -684,8 +682,7 @@ error:
 #endif
                 /*  ECONNABORTED is an valid error. New connection was closed
                     by the peer before we were able to accept it. If it happens
-                    do nothing and wait for next incoming connection to
-                    accept. */
+                    do nothing and wait for next incoming connection. */
                 if (s < 0) {
                     if (errno == ECONNABORTED)
                         return;

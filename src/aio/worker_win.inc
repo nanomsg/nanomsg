@@ -21,28 +21,34 @@
 */
 
 #include "ctx.h"
+#include "usock.h"
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
+#include "../utils/fast.h"
+
+#define NN_WORKER_MAX_EVENTS 32
+
+/*  The value of this variable is irrelevant. It's used only as a placeholder
+    for the address that is used as the 'stop' event ID. */
+const int nn_worker_stop = 0;
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
 void nn_worker_task_init (struct nn_worker_task *self,struct nn_fsm *owner)
 {
-    nn_assert (0);
+    self->owner = owner;
 }
 
 void nn_worker_task_term (struct nn_worker_task *self)
 {
-    nn_assert (0);
 }
-
 
 int nn_worker_init (struct nn_worker *self)
 {
-    self->hndl = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
-    win_assert (self->hndl);
+    self->cp = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
+    win_assert (self->cp);
     nn_timerset_init (&self->timerset);
     nn_thread_init (&self->thread, nn_worker_routine, self);
 
@@ -53,15 +59,25 @@ void nn_worker_term (struct nn_worker *self)
 {
     BOOL brc;
 
+    /*  Ask worker thread to terminate. */
+    brc = PostQueuedCompletionStatus (self->cp, 0,
+        (ULONG_PTR) &nn_worker_stop, NULL);
+    win_assert (brc);
+
+    /*  Wait till worker thread terminates. */
     nn_thread_term (&self->thread);
+
     nn_timerset_term (&self->timerset);
-    brc = CloseHandle (self->hndl);
+    brc = CloseHandle (self->cp);
     win_assert (brc);
 }
 
 void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
 {
-    nn_assert (0);
+    BOOL brc;
+
+    brc = PostQueuedCompletionStatus (self->cp, 0, (ULONG_PTR) task, NULL);
+    win_assert (brc);
 }
 
 void nn_worker_add_timer (struct nn_worker *self, int timeout,
@@ -76,43 +92,33 @@ void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer)
     nn_timerset_rm (&((struct nn_worker*) self)->timerset, &timer->hndl);
 }
 
+HANDLE nn_worker_getcp (struct nn_worker *self)
+{
+    return self->cp;
+}
+
 static void nn_worker_routine (void *arg)
 {
     int rc;
     BOOL brc;
     struct nn_worker *self;
     int timeout;
-
-    DWORD nbytes;
-    ULONG_PTR key;
-    LPOVERLAPPED olpd;
+    ULONG count;
+    ULONG i;
     struct nn_timerset_hndl *thndl;
     struct nn_worker_timer *timer;
-
-#if 0
-    struct nn_event *event;
+    struct nn_worker_task *task;
     struct nn_usock_op *op;
-    struct nn_usock *usock;
-#endif
+    OVERLAPPED_ENTRY entries [NN_WORKER_MAX_EVENTS];
 
     self = (struct nn_worker*) arg;
 
     while (1) {
 
-        /*  Compute the time interval till next timer expiration. */
-        timeout = nn_timerset_timeout (&self->timerset);
-
-        /*  Wait for new events and/or timeouts. */
-        /*  TODO: In theory we may gain some performance by getting multiple
-            events at once via GetQueuedCompletionStatusEx function. */
-        brc = GetQueuedCompletionStatus (self->hndl, &nbytes, &key,
-            &olpd, timeout < 0 ? INFINITE : timeout);
-        win_assert (brc || !olpd);
-
         /*  Process all expired timers. */
         while (1) {
             rc = nn_timerset_event (&self->timerset, &thndl);
-            if (rc == -EAGAIN)
+            if (nn_fast (rc == -EAGAIN))
                 break;
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
@@ -121,63 +127,37 @@ static void nn_worker_routine (void *arg)
             nn_ctx_leave (timer->owner->ctx);
         }
 
+        /*  Compute the time interval till next timer expiration. */
+        timeout = nn_timerset_timeout (&self->timerset);
 
+        /*  Wait for new events and/or timeouts. */
+        brc = GetQueuedCompletionStatusEx (self->cp, entries,
+            NN_WORKER_MAX_EVENTS, &count, timeout < 0 ? INFINITE : timeout,
+            FALSE);
+        win_assert (brc);
 
+        for (i = 0; i != count; ++i) {
 
+            /*  Process I/O completion events. */
+            if (nn_fast (entries [i].lpOverlapped)) {
+                op = nn_cont (entries [i].lpOverlapped,
+                    struct nn_usock_op, olpd);
+                nn_ctx_enter (op->usock->fsm.ctx);
+                op->usock->fsm.fn (&op->usock->fsm, op, NN_WORKER_IO_EVENT);
+                nn_ctx_leave (op->usock->fsm.ctx);
+                continue;
+            }
 
-#if 0
-        /*  Timer event requires no processing. Its sole intent is to
-            interrupt the polling in the worker thread. */
-        if (nn_slow ((char*) key == &self->timer_event))
-            continue;
+            /*  Worker thread shutdown is requested. */
+            if (nn_slow (entries [i].lpCompletionKey ==
+                  (ULONG_PTR) &nn_worker_stop))
+                return;
 
-        /*  Completion port shutdown is underway. Exit the worker thread. */
-        if (nn_slow ((char*) key == &self->stop_event))
-            break;
-
-        /*  Custom events are reported via callback. */
-        if (key) {
-            event = (struct nn_event*) key;
-            nn_assert ((*event->sink)->event);
-            (*event->sink)->event (event->sink, event);
-            event->active = 0;
-            continue;
+            /*  Process tasks. */
+            task = (struct nn_worker_task*) entries [i].lpCompletionKey;
+            nn_ctx_enter (task->owner->ctx);
+            task->owner->fn (task->owner, task, NN_WORKER_TASK_EXECUTE);
+            nn_ctx_leave (task->owner->ctx);
         }
-        
-        /*  I/O completion events */
-        nn_assert (olpd);
-        op = nn_cont (olpd, struct nn_usock_op, olpd);
-        switch (op->op) {
-        case NN_USOCK_OP_RECV:
-            usock = nn_cont (op, struct nn_usock, in);
-            nn_assert ((*usock->sink)->received);
-printf ("received olpd=%p\n", (void*) &op->olpd);
-            (*usock->sink)->received (usock->sink, usock);
-            break;
-        case NN_USOCK_OP_SEND:
-            usock = nn_cont (op, struct nn_usock, out);
-            nn_assert ((*usock->sink)->sent);
-printf ("sent olpd=%p\n", (void*) &op->olpd);
-            (*usock->sink)->sent (usock->sink, usock);
-            break;
-        case NN_USOCK_OP_CONNECT:
-            usock = nn_cont (op, struct nn_usock, out);
-            nn_assert ((*usock->sink)->connected);
-printf ("connected olpd=%p\n", (void*) &op->olpd);
-            (*usock->sink)->connected (usock->sink, usock);
-            break;
-        case NN_USOCK_OP_ACCEPT:
-            usock = nn_cont (op, struct nn_usock, in);
-            nn_assert ((*usock->sink)->accepted);
-printf ("accepted olpd=%p\n", (void*) &op->olpd);
-            (*usock->sink)->accepted (usock->sink, usock, usock->newsock);
-            break;
-        case NN_USOCK_OP_CONN:
-            usock = nn_cont (op, struct nn_usock, conn);
-            nn_assert (0);
-        default:
-            nn_assert (0);
-        }
-#endif
     }
 }

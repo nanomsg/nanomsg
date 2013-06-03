@@ -152,10 +152,7 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
 
 static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 {
-    int rc;
     struct nn_ctcp *ctcp;
-    struct sockaddr_storage *ss;
-    size_t sslen;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
 

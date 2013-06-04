@@ -237,9 +237,15 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen)
 {
     int rc;
+    int opt;
 
     /*  The socket can be bound only before it's connected. */
     nn_assert (self->state == NN_USOCK_STATE_STARTING);
+
+    /*  Allow re-using the address. */
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof (opt));
+    errno_assert (rc == 0);
 
     rc = bind (self->s, addr, (socklen_t) addrlen);
     if (nn_slow (rc != 0))

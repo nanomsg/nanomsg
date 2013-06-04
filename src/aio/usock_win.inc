@@ -146,12 +146,18 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen)
 {
     int rc;
-    int opt;
+    ULONG opt;
 
     /*  On Windows, the bound port can be hijacked
         if SO_EXCLUSIVEADDRUSE is not set. */
     opt = 1;
     rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+        (const char*) &opt, sizeof (opt));
+    wsa_assert (rc != SOCKET_ERROR);
+
+    /*  Allow re-using the address. */
+    opt = 1;
+    rc = setsockopt (self->s, SOL_SOCKET, SO_REUSEADDR,
         (const char*) &opt, sizeof (opt));
     wsa_assert (rc != SOCKET_ERROR);
 

@@ -226,7 +226,7 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_pull_socktype);
     nn_global_add_socktype (nn_xpull_socktype);
     nn_global_add_socktype (nn_respondent_socktype);
-//    nn_global_add_socktype (nn_surveyor_socktype);
+    nn_global_add_socktype (nn_surveyor_socktype);
     nn_global_add_socktype (nn_xrespondent_socktype);
     nn_global_add_socktype (nn_xsurveyor_socktype);
     nn_global_add_socktype (nn_bus_socktype);

@@ -190,8 +190,8 @@ set (NN_SOURCES
 
     protocols/survey/respondent.h
     protocols/survey/respondent.c
-#    protocols/survey/surveyor.h
-#    protocols/survey/surveyor.c
+    protocols/survey/surveyor.h
+    protocols/survey/surveyor.c
     protocols/survey/xrespondent.h
     protocols/survey/xrespondent.c
     protocols/survey/xsurveyor.h

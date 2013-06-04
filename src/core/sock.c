@@ -143,7 +143,7 @@ void nn_sock_stopped (struct nn_sock *self)
 {
     /*  TODO: Do the following in a more sane way. */
     self->stopped.fsm = &self->fsm;
-    self->stopped.source = self;
+    self->stopped.source = NULL;
     self->stopped.type = NN_SOCK_EVENT_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->stopped);
 }
@@ -858,8 +858,15 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /*  CLOSING state.                                                            */
 /******************************************************************************/
     case NN_SOCK_STATE_STOPPING:
-        if (source == sock) {
+        if (source == NULL) {
             switch (type) {
+            case NN_SOCK_EVENT_CLOSE:
+
+                 /*  nn_close() invocation may have been interrupted by
+                     a signal. When it is restarted no special action has to
+                     be taken. */
+                 return;
+
             case NN_SOCK_EVENT_STOPPED:
 
                 /*  Protocol-specific part of the socket is stopped.
@@ -872,19 +879,6 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
                 nn_sem_post (&sock->termsem);
 
                 return;
-
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
-
-                 /*  nn_close() invocation may have been interrupted by
-                     a signal. When it is restarted no special action has to
-                     be taken. */
-                 return;
 
             default:
                 nn_assert (0);

@@ -135,7 +135,5 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level, int option,
 /*  Used by pipes. */
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
-void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe);
-void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe);
 
 #endif

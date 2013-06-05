@@ -25,6 +25,8 @@
 
 #include "nn.h"
 
+#include "aio/fsm.h"
+
 #include "utils/list.h"
 #include "utils/msg.h"
 
@@ -142,12 +144,15 @@ struct nn_pipebase_vfptr {
 /*  The member of this structure are used internally by the core. Never use
     or modify them directly from the transport. */
 struct nn_pipebase {
+    struct nn_fsm fsm;
     const struct nn_pipebase_vfptr *vfptr;
     uint8_t state;
     uint8_t instate;
     uint8_t outstate;
     struct nn_sock *sock;
     void *data;
+    struct nn_fsm_event in;
+    struct nn_fsm_event out;
 };
 
 /*  Initialise the pipe.  */

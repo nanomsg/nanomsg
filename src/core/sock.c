@@ -620,16 +620,6 @@ void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
     self->sockbase->vfptr->rm (self->sockbase, pipe);
 }
 
-void nn_sock_in (struct nn_sock *self, struct nn_pipe *pipe)
-{
-    self->sockbase->vfptr->in (self->sockbase, pipe);
-}
-
-void nn_sock_out (struct nn_sock *self, struct nn_pipe *pipe)
-{
-    self->sockbase->vfptr->out (self->sockbase, pipe);
-}
-
 static void nn_sock_onleave (struct nn_ctx *self)
 {
     struct nn_sock *sock;
@@ -789,7 +779,20 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        nn_assert (0);
+
+        /*  The assumption is that all the other events come from pipes. */
+        switch (type) {
+        case NN_PIPE_IN:
+            sock->sockbase->vfptr->in (sock->sockbase,
+                (struct nn_pipe*) source);
+            return;
+        case NN_PIPE_OUT:
+            sock->sockbase->vfptr->out (sock->sockbase,
+                (struct nn_pipe*) source);
+            return;
+        default:
+            nn_assert (0);
+        }
 
 /******************************************************************************/
 /*  ZOMBIE state.                                                             */

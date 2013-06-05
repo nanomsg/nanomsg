@@ -47,10 +47,11 @@
 #define NN_REQ_STATE_PASSIVE 2
 #define NN_REQ_STATE_DELAYED 3
 #define NN_REQ_STATE_ACTIVE 4
-#define NN_REQ_STATE_CANCELLING 5
-#define NN_REQ_STATE_STOPPING_TIMER 6
-#define NN_REQ_STATE_DONE 7
-#define NN_REQ_STATE_STOPPING 8
+#define NN_REQ_STATE_TIMED_OUT 5
+#define NN_REQ_STATE_CANCELLING 6
+#define NN_REQ_STATE_STOPPING_TIMER 7
+#define NN_REQ_STATE_DONE 8
+#define NN_REQ_STATE_STOPPING 9
 
 #define NN_REQ_EVENT_START 1
 #define NN_REQ_EVENT_IN 2
@@ -90,6 +91,7 @@ static void nn_req_init (struct nn_req *self,
 static void nn_req_term (struct nn_req *self);
 static int nn_req_inprogress (struct nn_req *self);
 static void nn_req_handler (struct nn_fsm *self, void *source, int type);
+static void nn_req_action_send (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static void nn_req_stop (struct nn_sockbase *self);
@@ -151,7 +153,7 @@ static void nn_req_stop (struct nn_sockbase *self)
 {
     struct nn_req *req;
 
-    req = nn_cont (self, struct nn_req, fsm);
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
 
     nn_fsm_stop (&req->fsm);
 }
@@ -279,7 +281,6 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Store the message so that it can be re-sent if there's no reply. */
     nn_msg_term (&req->request);
     nn_msg_mv (&req->request, msg);
-    nn_msg_init (msg, 0);
 
     /*  Notify the state machine. */
     nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_SENT);
@@ -302,7 +303,6 @@ static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
         return -EAGAIN;
 
     /*  If the reply was already received, just pass it to the caller. */
-    nn_msg_term (msg);
     nn_msg_mv (msg, &req->reply);
     nn_msg_init (&req->reply, 0);
 
@@ -355,9 +355,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
 
 static void nn_req_handler (struct nn_fsm *self, void *source, int type)
 {
-    int rc;
     struct nn_req *req;
-    struct nn_msg msg;
 
     req = nn_cont (self, struct nn_req, fsm);
 
@@ -404,27 +402,8 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_REQ_EVENT_SENT:
-
-                /*  Send the request. */
-                nn_msg_cp (&msg, &req->request);
-                rc = nn_xreq_send (&req->xreq.sockbase, &msg);
-                nn_msg_term (&msg);
-                errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
-
-                /*  If the request cannot be sent at the moment wait till
-                    new outbound pipe arrives. */
-                if (nn_slow (rc == -EAGAIN)) {
-                    req->state = NN_REQ_STATE_DELAYED;
-                    return;
-                }
-
-                /*  Request was successfully sent. Set up the re-send timer
-                    in case the request gets lost somewhere further out
-                    in the topology. */
-                nn_timer_start (&req->timer, req->resend_ivl);
-                req->state = NN_REQ_STATE_ACTIVE;
+                nn_req_action_send (req);
                 return;
-
             default:
                 nn_assert (0);
             }
@@ -441,17 +420,13 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_REQ_EVENT_OUT:
-
-                /*  New outbound pipe have arrived. Send the delayed request. */
-                nn_msg_cp (&msg, &req->request);
-                rc = nn_xreq_send (&req->xreq.sockbase, &msg);
-                nn_msg_term (&msg);
-                errnum_assert (rc == 0, -rc);
-                nn_timer_start (&req->timer, req->resend_ivl);
-                req->state = NN_REQ_STATE_ACTIVE;
+                nn_req_action_send (req);
                 return;
 
             case NN_REQ_EVENT_SENT:
+
+                /*  New request was sent while the old one was still being
+                    processed. Cancel the old request first. */
                 nn_timer_stop (&req->timer);
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
@@ -470,13 +445,20 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_REQ_EVENT_IN:
+
+                /*  Reply arrived. */
                 nn_timer_stop (&req->timer);
                 req->state = NN_REQ_STATE_STOPPING_TIMER;
                 return;
+
             case NN_REQ_EVENT_SENT:
+
+                /*  New request was sent while the old one was still being
+                    processed. Cancel the old request first. */
                 nn_timer_stop (&req->timer);
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
+
             default:
                 nn_assert (0);
             }
@@ -484,8 +466,35 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == &req->timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                /*  TODO:  Resend! */
+                nn_timer_stop (&req->timer);
+                req->state = NN_REQ_STATE_TIMED_OUT;
+                return;
+            default:
                 nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  TIMED_OUT state.                                                          */
+/*  Waiting for reply has timer out. Stopping the timer. Afterwards, we'll    */
+/*  re-send the request.                                                      */
+/******************************************************************************/
+    case NN_REQ_STATE_TIMED_OUT:
+        if (source == &req->timer) {
+            switch (type) {
+            case NN_TIMER_STOPPED:
+                nn_req_action_send (req);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == NULL) {
+            switch (type) {
+            case NN_REQ_EVENT_SENT:
+                req->state = NN_REQ_STATE_CANCELLING;
+                return;
             default:
                 nn_assert (0);
             }
@@ -500,8 +509,8 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == &req->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
-                /*  TODO: Enter active. */
-                nn_assert (0);
+                nn_req_action_send (req);
+                return;
             default:
                 nn_assert (0);
             }
@@ -509,10 +518,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
              switch (type) {
              case NN_REQ_EVENT_SENT:
-
-                 /* Cancelling was cancelled. There's nothing to do here. */
                  return;
-
              default:
                  nn_assert (0);
              }
@@ -536,8 +542,8 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
              switch (type) {
              case NN_REQ_EVENT_SENT:
-                 /*  TODO: !!! */
-                 nn_assert (0);
+                 req->state = NN_REQ_STATE_CANCELLING;
+                 return;
              default:
                  nn_assert (0);
              }
@@ -555,8 +561,8 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
                  req->state = NN_REQ_STATE_PASSIVE;
                  return;
              case NN_REQ_EVENT_SENT:
-                 /*  TODO: Enter active! */
-                 nn_assert (0);
+                 nn_req_action_send (req);
+                 return;
              default:
                  nn_assert (0);
              }
@@ -569,6 +575,40 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
     default:
         nn_assert (0);
     }
+}
+
+/******************************************************************************/
+/*  State machine actions.                                                    */
+/******************************************************************************/
+
+static void nn_req_action_send (struct nn_req *self)
+{
+    int rc;
+    struct nn_msg msg;
+
+    /*  Send the request. */
+    nn_msg_cp (&msg, &self->request);
+    rc = nn_xreq_send (&self->xreq.sockbase, &msg);
+    nn_msg_term (&msg);
+
+    /*  If the request cannot be sent at the moment wait till
+        new outbound pipe arrives. */
+    if (nn_slow (rc == -EAGAIN)) {
+        self->state = NN_REQ_STATE_DELAYED;
+        return;
+    }
+
+    /*  Request was successfully sent. Set up the re-send timer
+        in case the request gets lost somewhere further out
+        in the topology. */
+    if (nn_fast (rc == 0)) {
+        nn_timer_start (&self->timer, self->resend_ivl);
+        self->state = NN_REQ_STATE_ACTIVE;
+        return;
+    }
+
+    /*  Unexpected error. */
+    errnum_assert (0, -rc);
 }
 
 static int nn_req_create (void *hint, struct nn_sockbase **sockbase)

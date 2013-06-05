@@ -26,6 +26,8 @@
 #include "utils/msg.h"
 #include "utils/list.h"
 
+#include "aio/fsm.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -116,9 +118,13 @@ struct nn_sockbase_vfptr {
         void *optval, size_t *optvallen);
 };
 
+#define NN_SOCKBASE_STOPPED 1
+
 struct nn_sockbase {
+    struct nn_fsm fsm;
     const struct nn_sockbase_vfptr *vfptr;
     struct nn_sock *sock;
+    struct nn_fsm_event stopped;
 };
 
 /*  Initialise the socket base class. 'hint' is the opaque value passed to the

@@ -29,17 +29,21 @@
 void nn_sockbase_init (struct nn_sockbase *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    self->vfptr = vfptr;
     self->sock = (struct nn_sock*) hint;
+    nn_fsm_init (&self->fsm, NULL, &self->sock->fsm);
+    self->vfptr = vfptr;
+    nn_fsm_event_init (&self->stopped);
 }
 
 void nn_sockbase_term (struct nn_sockbase *self)
 {
+    nn_fsm_event_term (&self->stopped);
+    nn_fsm_term (&self->fsm);
 }
 
 void nn_sockbase_stopped (struct nn_sockbase *self)
 {
-    nn_sock_stopped (self->sock);
+    nn_fsm_raise (&self->fsm, &self->stopped, self, NN_SOCKBASE_STOPPED);
 }
 
 struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self)

@@ -214,7 +214,7 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_pub_socktype);
     nn_global_add_socktype (nn_sub_socktype);
     nn_global_add_socktype (nn_rep_socktype);
-//    nn_global_add_socktype (nn_req_socktype);
+    nn_global_add_socktype (nn_req_socktype);
     nn_global_add_socktype (nn_xrep_socktype);
     nn_global_add_socktype (nn_xreq_socktype);
     nn_global_add_socktype (nn_sink_socktype);

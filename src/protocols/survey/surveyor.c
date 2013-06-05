@@ -239,6 +239,7 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
         errnum_assert (rc == 0, -rc);
 
         /*  Get the survey ID. Ignore any stale responses. */
+        /*  TODO: This should be done asynchronously! */
         if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t)))
             continue;
         surveyid = nn_getl (nn_chunkref_data (&msg->hdr));
@@ -322,7 +323,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 
 /******************************************************************************/
 /*  IDLE state.                                                               */
-/*  The socket was recently created.                                          */
+/*  The socket was created recently.                                          */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_IDLE:
         if (source == &surveyor->fsm) {

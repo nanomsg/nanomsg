@@ -179,8 +179,8 @@ set (NN_SOURCES
     protocols/pubsub/trie.h
     protocols/pubsub/trie.c
 
-#    protocols/reqrep/req.h
-#    protocols/reqrep/req.c
+    protocols/reqrep/req.h
+    protocols/reqrep/req.c
     protocols/reqrep/rep.h
     protocols/reqrep/rep.c
     protocols/reqrep/xrep.h

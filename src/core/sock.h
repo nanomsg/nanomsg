@@ -51,6 +51,10 @@ struct nn_sock
     /*  Pointer to the socket type metadata. */
     struct nn_socktype *socktype;
 
+    /*  Event sent to itself when stopping of the protocol-specific part of
+        the socket is done. */
+    struct nn_fsm_event stopped;
+
     int flags;
 
     struct nn_ctx ctx;
@@ -88,6 +92,9 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype);
 /*  Called by nn_close() to deallocate the socket. It's a blocking function
     and can return -EINTR. */
 int nn_sock_term (struct nn_sock *self);
+
+/*  Called by sockbase when stopping is done. */
+void nn_sock_stopped (struct nn_sock *self);
 
 /*  Called by nn_term() to let the socket know about the process shutdown. */
 void nn_sock_zombify (struct nn_sock *self);

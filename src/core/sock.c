@@ -51,6 +51,7 @@
 #define NN_SOCK_EVENT_START 1
 #define NN_SOCK_EVENT_ZOMBIFY 2
 #define NN_SOCK_EVENT_CLOSE 3
+#define NN_SOCK_EVENT_STOPPED 4
 
 /*  Private functions. */
 void nn_sock_adjust_events (struct nn_sock *self);
@@ -75,6 +76,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     /*  Initialise the state machine. */
     nn_fsm_init_root (&self->fsm, nn_sock_handler, &self->ctx);
     self->state = NN_SOCK_STATE_INIT;
+    nn_fsm_event_init (&self->stopped);
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
         supports send/recv, as appropriate. */
@@ -137,6 +139,15 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     return 0;
 }
 
+void nn_sock_stopped (struct nn_sock *self)
+{
+    /*  TODO: Do the following in a more sane way. */
+    self->stopped.fsm = &self->fsm;
+    self->stopped.source = NULL;
+    self->stopped.type = NN_SOCK_EVENT_STOPPED;
+    nn_ctx_raise (self->fsm.ctx, &self->stopped);
+}
+
 void nn_sock_zombify (struct nn_sock *self)
 {
     nn_ctx_enter (&self->ctx);
@@ -169,6 +180,7 @@ int nn_sock_term (struct nn_sock *self)
     nn_ctx_leave (&self->ctx);
 
     /*  Deallocate the resources. */
+    nn_fsm_event_term (&self->stopped);
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
     nn_list_term (&self->eps);
@@ -833,11 +845,8 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
             sock->state = NN_SOCK_STATE_STOPPING;
             if (sock->sockbase->vfptr->stop)
                 sock->sockbase->vfptr->stop (sock->sockbase);
-            else {
-                sock->sockbase->vfptr->destroy (sock->sockbase);
-                sock->state = NN_SOCK_STATE_CLOSED;
-                nn_sem_post (&sock->termsem);
-            }
+            else
+                nn_sock_stopped (sock);
 
             return;
 
@@ -849,9 +858,16 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /*  CLOSING state.                                                            */
 /******************************************************************************/
     case NN_SOCK_STATE_STOPPING:
-        if (source == sock->sockbase) {
+        if (source == NULL) {
             switch (type) {
-            case NN_SOCKBASE_STOPPED:
+            case NN_SOCK_EVENT_CLOSE:
+
+                 /*  nn_close() invocation may have been interrupted by
+                     a signal. When it is restarted no special action has to
+                     be taken. */
+                 return;
+
+            case NN_SOCK_EVENT_STOPPED:
 
                 /*  Protocol-specific part of the socket is stopped.
                     We can safely deallocate it. */
@@ -864,18 +880,6 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 
                 return;
 
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == NULL) {
-            switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
-
-                 /*  nn_close() invocation may have been interrupted by
-                     a signal. When it is restarted no special action has to
-                     be taken. */
-                 return;
             default:
                 nn_assert (0);
             }

@@ -134,12 +134,15 @@ static void nn_worker_routine (void *arg)
         brc = GetQueuedCompletionStatusEx (self->cp, entries,
             NN_WORKER_MAX_EVENTS, &count, timeout < 0 ? INFINITE : timeout,
             FALSE);
+        if (nn_slow (!brc && GetLastError () == WAIT_TIMEOUT))
+            continue;
         win_assert (brc);
 
         for (i = 0; i != count; ++i) {
 
             /*  Process I/O completion events. */
             if (nn_fast (entries [i].lpOverlapped)) {
+printf ("completion\n");
                 op = nn_cont (entries [i].lpOverlapped,
                     struct nn_usock_op, olpd);
                 nn_ctx_enter (op->usock->fsm.ctx);
@@ -154,6 +157,7 @@ static void nn_worker_routine (void *arg)
                 return;
 
             /*  Process tasks. */
+printf ("task\n");
             task = (struct nn_worker_task*) entries [i].lpCompletionKey;
             nn_ctx_enter (task->owner->ctx);
             task->owner->fn (task->owner, task, NN_WORKER_TASK_EXECUTE);

@@ -26,8 +26,14 @@
 
 struct nn_usock;
 
+#define NN_USOCK_OP_STATE_IDLE 1
+#define NN_USOCK_OP_STATE_ACTIVE 2
+#define NN_USOCK_OP_STATE_DONE 3
+#define NN_USOCK_OP_STATE_ERROR 4
+
 struct nn_usock_op {
     struct nn_usock *usock;
+    int state;
     OVERLAPPED olpd;
 };
 
@@ -54,4 +60,10 @@ struct nn_usock {
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */
     struct nn_usock *newsock;
+
+    /*  Events raised by the usock. */ 
+    struct nn_fsm_event event_established;
+    struct nn_fsm_event event_sent;
+    struct nn_fsm_event event_received;
+    struct nn_fsm_event event_error;
 };

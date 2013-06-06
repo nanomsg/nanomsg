@@ -74,7 +74,7 @@ void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
 
     memset (&self->out.hdr, 0, sizeof (struct msghdr));
 
-    /*  Initialise outgoing tasks. */
+    /*  Initialise tasks for the worker thread. */
     nn_worker_fd_init (&self->wfd, &self->fsm);
     nn_worker_task_init (&self->task_connecting, &self->fsm);
     nn_worker_task_init (&self->task_connected, &self->fsm);
@@ -83,7 +83,7 @@ void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
     nn_worker_task_init (&self->task_recv, &self->fsm);
     nn_worker_task_init (&self->task_stop, &self->fsm);
 
-    /*  Intialise incoming tasks. */
+    /*  Intialise events raised by usock. */
     nn_fsm_event_init (&self->event_established);
     nn_fsm_event_init (&self->event_sent);
     nn_fsm_event_init (&self->event_received);

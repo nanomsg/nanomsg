@@ -384,7 +384,6 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     int rc;
     struct sockaddr_storage remote;
     size_t remotelen;
-    int uselocal;
     struct sockaddr_storage local;
     size_t locallen;
     const char *addr;
@@ -405,16 +404,14 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     port = rc;
 
     /*  Parse the local address, if any. */
-    uselocal = 0;
     semicolon = strchr (addr, ';');
-    if (semicolon) {
-        memset (&local, 0, sizeof (local));
-        /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    memset (&local, 0, sizeof (local));
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    if (semicolon) 
         rc = nn_iface_resolve (addr, semicolon - addr, 1, &local, &locallen);
-        errnum_assert (rc == 0, -rc);
-        addr = semicolon + 1;
-        uselocal = 1;
-    }
+    else
+        rc = nn_iface_resolve ("*", 1, 1, &local, &locallen);
+    errnum_assert (rc == 0, -rc);
 
     /*  Combine the remote address and the port. */
     remote = *ss;
@@ -434,11 +431,9 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
         return;
     }
 
-    /*  Bind the socket to the local network interface, if specified. */
-    if (uselocal) {
-        rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-        errnum_assert (rc == 0, -rc);
-    }
+    /*  Bind the socket to the local network interface. */
+    rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
+    errnum_assert (rc == 0, -rc);
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);

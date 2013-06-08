@@ -29,6 +29,9 @@
 
 #define NN_WORKER_MAX_EVENTS 32
 
+#define NN_WORKER_OP_STATE_IDLE 1
+#define NN_WORKER_OP_STATE_ACTIVE 2
+
 /*  The value of this variable is irrelevant. It's used only as a placeholder
     for the address that is used as the 'stop' event ID. */
 const int nn_worker_stop = 0;
@@ -43,6 +46,28 @@ void nn_worker_task_init (struct nn_worker_task *self,struct nn_fsm *owner)
 
 void nn_worker_task_term (struct nn_worker_task *self)
 {
+}
+
+void nn_worker_op_init (struct nn_worker_op *self, struct nn_fsm *owner)
+{
+    self->owner = owner;
+    self->state = NN_WORKER_OP_STATE_IDLE;
+}
+
+void nn_worker_op_term (struct nn_worker_op *self)
+{
+    nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
+}
+
+void nn_worker_op_start (struct nn_worker_op *self)
+{
+    nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
+    self->state = NN_WORKER_OP_STATE_ACTIVE;
+}
+
+int nn_worker_op_isidle (struct nn_worker_op *self)
+{
+    return self->state == NN_WORKER_OP_STATE_IDLE ? 1 : 0;
 }
 
 int nn_worker_init (struct nn_worker *self)
@@ -60,6 +85,7 @@ void nn_worker_term (struct nn_worker *self)
     BOOL brc;
 
     /*  Ask worker thread to terminate. */
+Sleep(1000);
     brc = PostQueuedCompletionStatus (self->cp, 0,
         (ULONG_PTR) &nn_worker_stop, NULL);
     win_assert (brc);
@@ -108,7 +134,7 @@ static void nn_worker_routine (void *arg)
     struct nn_timerset_hndl *thndl;
     struct nn_worker_timer *timer;
     struct nn_worker_task *task;
-    struct nn_usock_op *op;
+    struct nn_worker_op *op;
     OVERLAPPED_ENTRY entries [NN_WORKER_MAX_EVENTS];
 
     self = (struct nn_worker*) arg;
@@ -142,12 +168,22 @@ static void nn_worker_routine (void *arg)
 
             /*  Process I/O completion events. */
             if (nn_fast (entries [i].lpOverlapped)) {
-printf ("completion\n");
                 op = nn_cont (entries [i].lpOverlapped,
-                    struct nn_usock_op, olpd);
-                nn_ctx_enter (op->usock->fsm.ctx);
-                op->usock->fsm.fn (&op->usock->fsm, op, NN_WORKER_IO_EVENT);
-                nn_ctx_leave (op->usock->fsm.ctx);
+                    struct nn_worker_op, olpd);
+
+                /*  The 'Internal' field is actually an NTSTATUS.
+                    Two highest bits set means it's an error. */
+                rc = (op->olpd.Internal & 0xc0000000) == 0xc0000000 ?
+                    NN_WORKER_OP_ERROR : NN_WORKER_OP_DONE;
+
+                /*  Switch the operation into the idle state. */
+                op->state = NN_WORKER_OP_STATE_IDLE;
+
+                /*  Raise the completion event. */
+                nn_ctx_enter (op->owner->ctx);
+                op->owner->fn (op->owner, op, rc);
+                nn_ctx_leave (op->owner->ctx);
+
                 continue;
             }
 
@@ -157,7 +193,6 @@ printf ("completion\n");
                 return;
 
             /*  Process tasks. */
-printf ("task\n");
             task = (struct nn_worker_task*) entries [i].lpCompletionKey;
             nn_ctx_enter (task->owner->ctx);
             task->owner->fn (task->owner, task, NN_WORKER_TASK_EXECUTE);

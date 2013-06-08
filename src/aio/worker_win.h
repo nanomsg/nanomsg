@@ -30,7 +30,25 @@ struct nn_worker_task {
     struct nn_fsm *owner;
 };
 
-#define NN_WORKER_IO_EVENT 1
+#define NN_WORKER_OP_DONE 1
+#define NN_WORKER_OP_ERROR 2
+
+struct nn_worker_op {
+    struct nn_fsm *owner;
+    int state;
+
+    /*  This structure is to be used by the user, not nn_worker_op itself.
+        Actual usage is specific to the asynchronous operation in question. */
+    OVERLAPPED olpd;
+};
+
+void nn_worker_op_init (struct nn_worker_op *self, struct nn_fsm *owner);
+void nn_worker_op_term (struct nn_worker_op *self);
+
+/*  Call this function when asynchronous operation is started. */
+void nn_worker_op_start (struct nn_worker_op *self);
+
+int nn_worker_op_isidle (struct nn_worker_op *self);
 
 struct nn_worker {
     HANDLE cp;

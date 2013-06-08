@@ -21,21 +21,9 @@
 */
 
 #include "fsm.h"
+#include "worker.h"
 
 #include "../utils/win.h"
-
-struct nn_usock;
-
-#define NN_USOCK_OP_STATE_IDLE 1
-#define NN_USOCK_OP_STATE_ACTIVE 2
-#define NN_USOCK_OP_STATE_DONE 3
-#define NN_USOCK_OP_STATE_ERROR 4
-
-struct nn_usock_op {
-    struct nn_usock *usock;
-    int state;
-    OVERLAPPED olpd;
-};
 
 struct nn_usock {
 
@@ -46,9 +34,9 @@ struct nn_usock {
     /*  The actual underlying socket. */
     SOCKET s;
 
-    /*  Handles for asynchronous operations being executed. */
-    struct nn_usock_op in;
-    struct nn_usock_op out;
+    /*  Asynchronous operations being executed on the socket. */
+    struct nn_worker_op in;
+    struct nn_worker_op out;
 
     /*  When accepting new socket, they have to be created with same
         type as the listening socket. Thus, in listening socket we
@@ -60,6 +48,10 @@ struct nn_usock {
     /*  When accepting a new connection, the pointer to the object to associate
         the new connection with is stored here. */
     struct nn_usock *newsock;
+
+    /*  Buffer allocated for output of AcceptEx function. If accepting is not
+        done on this socket, the field is set to NULL. */
+    void *info;
 
     /*  Events raised by the usock. */ 
     struct nn_fsm_event event_established;

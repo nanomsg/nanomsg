@@ -76,6 +76,9 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener);
     to activate standard data transfer phase. */
 void nn_usock_activate (struct nn_usock *self);
 
+/*  Start connecting. Prior to this call the socket has to be bound to a local
+    address. When connecting is done NN_USOCK_CONNECTED event will be reaised.
+    If connecting fails NN_USOCK_ERROR event will be raised. */
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 

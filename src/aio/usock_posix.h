@@ -82,7 +82,7 @@ struct nn_usock {
     struct nn_fsm_event event_received;
     struct nn_fsm_event event_error;
 
-    /*  When accepting a new connection, the pointer to the object to associate
-        the new connection with is stored here. */
-    struct nn_usock *newsock;
+    /*  In ACCEPTING state points to the socket being accepted.
+        In BEING_ACCEPTED state points to the listener socket. */
+    struct nn_usock *asock;
 };

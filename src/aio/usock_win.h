@@ -45,17 +45,17 @@ struct nn_usock {
     int type;
     int protocol;
 
-    /*  When accepting a new connection, the pointer to the object to associate
-        the new connection with is stored here. */
-    struct nn_usock *newsock;
-
-    /*  Buffer allocated for output of AcceptEx function. If accepting is not
-        done on this socket, the field is set to NULL. */
-    void *info;
-
     /*  Events raised by the usock. */ 
     struct nn_fsm_event event_established;
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
     struct nn_fsm_event event_error;
+
+    /*  In ACCEPTING state points to the socket being accepted.
+        In BEING_ACCEPTED state points to the listener socket. */
+    struct nn_usock *asock;
+
+    /*  Buffer allocated for output of AcceptEx function. If accepting is not
+        done on this socket, the field is set to NULL. */
+    void *ainfo;
 };

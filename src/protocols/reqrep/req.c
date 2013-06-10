@@ -264,7 +264,6 @@ static int nn_req_events (struct nn_sockbase *self)
 
 static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    int rc;
     struct nn_req *req;
 
     req = nn_cont (self, struct nn_req, xreq.sockbase);

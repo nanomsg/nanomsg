@@ -30,22 +30,26 @@
 #include <string.h>
 
 #define NN_USOCK_STATE_IDLE 1
-#define NN_USOCK_STATE_CONNECTING 2
-#define NN_USOCK_STATE_STARTING 3
-#define NN_USOCK_STATE_LISTENING 4
-#define NN_USOCK_STATE_ACCEPTING 5
-#define NN_USOCK_STATE_BEING_ACCEPTED 6
-#define NN_USOCK_STATE_ACCEPTED 7
-#define NN_USOCK_STATE_DONE 8
-#define NN_USOCK_STATE_STOPPING 9
+#define NN_USOCK_STATE_STARTING 2
+#define NN_USOCK_STATE_BEING_ACCEPTED 3
+#define NN_USOCK_STATE_ACCEPTED 4
+#define NN_USOCK_STATE_CONNECTING 5
+#define NN_USOCK_STATE_ACTIVE 6
+#define NN_USOCK_STATE_DONE 7
+#define NN_USOCK_STATE_LISTENING 8
+#define NN_USOCK_STATE_ACCEPTING 9
+#define NN_USOCK_STATE_CANCELLING 10
+#define NN_USOCK_STATE_STOPPING 11
+#define NN_USOCK_STATE_STOPPING_ACCEPT 12
 
-#define NN_USOCK_EVENT_CONNECT 1
-#define NN_USOCK_EVENT_LISTEN 2
-#define NN_USOCK_EVENT_ACCEPT 3
-#define NN_USOCK_EVENT_BEING_ACCEPTED 4
-#define NN_USOCK_EVENT_ACTIVATE 5
-#define NN_USOCK_EVENT_DONE 5
-#define NN_USOCK_EVENT_ERROR 6
+#define NN_USOCK_EVENT_ACCEPT 1
+#define NN_USOCK_EVENT_BEING_ACCEPTED 2
+#define NN_USOCK_EVENT_CANCEL 3
+#define NN_USOCK_EVENT_LISTEN 4
+#define NN_USOCK_EVENT_CONNECT 5
+#define NN_USOCK_EVENT_ACTIVATE 6
+#define NN_USOCK_EVENT_DONE 7
+#define NN_USOCK_EVENT_ERROR 8
 
 /*  Private functions. */
 void nn_usock_handler (struct nn_fsm *self, void *source, int type);
@@ -60,22 +64,24 @@ void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
     self->domain = -1;
     self->type = -1;
     self->protocol = -1;
-    self->newsock = NULL;
-    self->info = NULL;
 
     /*  Intialise events raised by usock. */
     nn_fsm_event_init (&self->event_established);
     nn_fsm_event_init (&self->event_sent);
     nn_fsm_event_init (&self->event_received);
     nn_fsm_event_init (&self->event_error);
+
+    /*  No accepting is going on at the moment. */
+    self->asock = NULL;
+    self->ainfo = NULL;
 }
 
 void nn_usock_term (struct nn_usock *self)
 {
     nn_assert (self->state == NN_USOCK_STATE_IDLE);
 
-    if (self->info)
-        nn_free (self->info);
+    if (self->ainfo)
+        nn_free (self->ainfo);
     nn_fsm_event_term (&self->event_error);
     nn_fsm_event_term (&self->event_received);
     nn_fsm_event_term (&self->event_sent);
@@ -173,6 +179,9 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     int rc;
     ULONG opt;
 
+    /*  You can set socket options only before the socket is connected. */
+    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+
     /*  On Windows, the bound port can be hijacked
         if SO_EXCLUSIVEADDRUSE is not set. */
     opt = 1;
@@ -211,24 +220,22 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     BOOL brc;
     DWORD nbytes;
 
-    nn_assert (listener->state == NN_USOCK_STATE_LISTENING);
-    nn_assert (self->state = NN_USOCK_STATE_IDLE);
-    nn_assert (!self->self);
-    
     rc = nn_usock_start (self, listener->domain, listener->type,
         listener->protocol);
     /*  TODO: EMFILE can be returned here. */
     errnum_assert (rc == 0, -rc);
     nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
     nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_BEING_ACCEPTED);
-    
-    /*  Wait for the incoming connection. */
-    if (!listener->info) {
-        listener->info = nn_alloc (512, "accept info");
-        alloc_assert (listener->info);
+
+    /*  If the memory for accept information is not yet allocated, do so.  */
+    if (!listener->ainfo) {
+        listener->ainfo = nn_alloc (512, "accept info");
+        alloc_assert (listener->ainfo);
     }
+
+    /*  Wait for the incoming connection. */
     memset (&listener->in.olpd, 0, sizeof (listener->in.olpd));
-    brc = AcceptEx (listener->s, self->s, listener->info, 0, 256, 256, &nbytes,
+    brc = AcceptEx (listener->s, self->s, listener->ainfo, 0, 256, 256, &nbytes,
         &listener->in.olpd);
 
     /*  Immediate success. */
@@ -238,15 +245,16 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
         return;
     }
 
-    /*  Immediate failure. */
-    if (nn_slow (WSAGetLastError () != WSA_IO_PENDING)) {
-        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ERROR);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
-        return;
-    }
+    /*  We don't expect a synchronous failure at this point. */
+    wsa_assert (nn_slow (WSAGetLastError () == WSA_IO_PENDING));
+
+    /*  Pair the two sockets. */
+    nn_assert (!self->asock);
+    self->asock = listener;
+    nn_assert (!listener->asock);
+    listener->asock = self;
 
     /*  Asynchronous accept. */
-    listener->newsock = self;
     nn_worker_op_start (&listener->in);
 }
 
@@ -301,17 +309,24 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int iovcnt)
 {
+    /*  Make sure that the socket is actually alive. */
+    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+
     nn_assert (0);
 }
 
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 {
+    /*  Make sure that the socket is actually alive. */
+    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+
     nn_assert (0);
 }
 
 void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 {
     int rc;
+    BOOL brc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -323,30 +338,50 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 
 printf ("%p stop\n", usock);
 
-        /*  Socket cannot be stopped while it is being accepted.
-            Stop the accepting socket first. */
-        nn_assert (usock->state != NN_USOCK_STATE_BEING_ACCEPTED);
+        /*  Socket in ACCEPTING state cannot be closed.
+            Stop the socket being accepted first. */
+        nn_assert (usock->state != NN_USOCK_STATE_ACCEPTING);
 
+        /*  Synchronous stop. */
         if (usock->state == NN_USOCK_STATE_IDLE)
+            goto finish3;
+        if (usock->state == NN_USOCK_STATE_DONE)
+            goto finish2;
+        if (usock->state == NN_USOCK_STATE_STARTING ||
+              usock->state == NN_USOCK_STATE_ACCEPTED ||
+              usock->state == NN_USOCK_STATE_LISTENING)
             goto finish1;
-        rc = closesocket (usock->s);
-        wsa_assert (rc == 0);
+
+        /*  When socket that's being accepted is asked to stop, we have to
+            ask the listener socket to stop accepting first. */
+        if (usock->state == NN_USOCK_STATE_BEING_ACCEPTED) {
+            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_EVENT_CANCEL);
+            usock->state = NN_USOCK_STATE_STOPPING_ACCEPT;
+            return;
+        }
+
+        /*  Ask system to cancel any asynchronous operations on the socket. */
+        brc = CancelIo ((HANDLE) usock->s);
+        win_assert (brc);
         usock->state = NN_USOCK_STATE_STOPPING;
+        return;
     } 
+    if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
+        nn_assert (source == NULL && type == NN_USOCK_EVENT_DONE);
+        goto finish2;
+    }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
         if (!nn_worker_op_isidle (&usock->in) ||
               !nn_worker_op_isidle (&usock->out))
             return;
-        usock->state = NN_USOCK_STATE_IDLE;
 finish1:
-        /*  If the socket was closed while accepting new socket
-            we'll notify the latter about the fact. */
-        if (usock->newsock)
-            nn_usock_handler (&usock->newsock->fsm, NULL,
-                NN_USOCK_EVENT_ERROR);
-
-printf ("%p stopped\n", usock);
+        rc = closesocket (usock->s);
+        wsa_assert (rc == 0);
+finish2:
+        usock->state = NN_USOCK_STATE_IDLE;
+        printf ("%p stopped\n", usock);
         nn_fsm_stopped (&usock->fsm, usock, NN_USOCK_STOPPED);
+finish3:
         return;
     }
 
@@ -393,6 +428,94 @@ printf ("%p being accepted\n", usock);
         nn_assert (0);
 
 /*****************************************************************************/
+/*  BEING_ACCEPTED state.                                                    */
+/*****************************************************************************/
+    case NN_USOCK_STATE_BEING_ACCEPTED:
+        if (source == NULL) {
+            switch (type) {
+            case NN_USOCK_EVENT_DONE:
+                usock->state = NN_USOCK_STATE_ACCEPTED;
+                nn_fsm_raise (&usock->fsm, &usock->event_established,
+                    usock, NN_USOCK_ACCEPTED);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/*****************************************************************************/
+/*  ACCEPTED state.                                                          */
+/*****************************************************************************/
+    case NN_USOCK_STATE_ACCEPTED:
+        if (source == NULL) {
+            switch (type) {
+            case NN_USOCK_EVENT_ACTIVATE:
+                usock->state = NN_USOCK_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/*****************************************************************************/
+/*  CONNECTING state.                                                        */
+/*****************************************************************************/
+    case NN_USOCK_STATE_CONNECTING:
+        if (source == NULL) {
+            switch (type) {
+            case NN_USOCK_EVENT_DONE:
+                usock->state = NN_USOCK_STATE_ACTIVE;
+                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                    NN_USOCK_CONNECTED);
+                return;
+            case NN_USOCK_EVENT_ERROR:
+                rc = closesocket (usock->s);
+                wsa_assert (rc == 0);
+                usock->s = INVALID_SOCKET;
+                usock->state = NN_USOCK_STATE_DONE;
+                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
+                    NN_USOCK_ERROR);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &usock->out) {
+            switch (type) {
+            case NN_WORKER_OP_DONE:
+                usock->state = NN_USOCK_STATE_ACTIVE;
+                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                    NN_USOCK_CONNECTED);
+                return;
+            case NN_WORKER_OP_ERROR:
+                rc = closesocket (usock->s);
+                wsa_assert (rc == 0);
+                usock->s = INVALID_SOCKET;
+                usock->state = NN_USOCK_STATE_DONE;
+                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
+                    NN_USOCK_ERROR);
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/*****************************************************************************/
+/*  ACTIVE state.                                                            */
+/*****************************************************************************/
+    case NN_USOCK_STATE_ACTIVE:
+        nn_assert (0);
+
+/*****************************************************************************/
+/*  DONE state.                                                              */
+/*****************************************************************************/
+    case NN_USOCK_STATE_DONE:
+        nn_assert (0);
+
+/*****************************************************************************/
 /*  LISTENING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_LISTENING:
@@ -411,49 +534,40 @@ printf ("%p being accepted\n", usock);
 /*  ACCEPTING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
-        nn_assert (0);
-
-/*****************************************************************************/
-/*  BEING_ACCEPTED state.                                                    */
-/*****************************************************************************/
-    case NN_USOCK_STATE_BEING_ACCEPTED:
         if (source == NULL) {
             switch (type) {
             case NN_USOCK_EVENT_DONE:
-                nn_assert (0);
-            case NN_USOCK_EVENT_ERROR:
-printf ("%p: accepting cancelled\n", usock);
-                rc = closesocket (usock->s);
-                wsa_assert (rc == 0);
-                usock->s = INVALID_SOCKET;
-                usock->state = NN_USOCK_STATE_IDLE;
+                usock->state = NN_USOCK_STATE_LISTENING;
+                return;
+            case NN_USOCK_EVENT_CANCEL:
+                brc = CancelIo ((HANDLE) usock->s);
+                win_assert (brc);
+                usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:
                 nn_assert (0);
             }
         }
-        nn_assert (0);
-
-/*****************************************************************************/
-/*  CONNECTING state.                                                        */
-/*****************************************************************************/
-    case NN_USOCK_STATE_CONNECTING:
-        if (source == NULL) {
-            switch (type) {
-            case NN_USOCK_EVENT_DONE:
-                nn_assert (0);
-            case NN_USOCK_EVENT_ERROR:
-                nn_assert (0);
-            default:
-                nn_assert (0);
-            }
-        }
-        if (source == &usock->out) {
+        if (source == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_DONE:
-                nn_assert (0);
-            case NN_WORKER_OP_ERROR:
-                nn_assert (0);
+                
+                /*  Adjust the new usock object. */
+                usock->asock->state = NN_USOCK_STATE_ACCEPTED;
+
+                /*  Notify the user that connection was accepted. */
+                nn_fsm_raise (&usock->asock->fsm,
+                    &usock->asock->event_established, usock->asock,
+                    NN_USOCK_ACCEPTED);
+
+                /*  Disassociate the listener socket from the accepted
+                    socket. */
+                usock->asock->asock = NULL;
+                usock->asock = NULL;
+
+                /*  Wait till the user starts accepting once again. */
+                usock->state = NN_USOCK_STATE_LISTENING;
+
             default:
                 nn_assert (0);
             }
@@ -461,9 +575,23 @@ printf ("%p: accepting cancelled\n", usock);
         nn_assert (0);
 
 /*****************************************************************************/
-/*  DONE state.                                                              */
+/*  CANCELLING state.                                                        */
 /*****************************************************************************/
-    case NN_USOCK_STATE_DONE:
+    case NN_USOCK_STATE_CANCELLING:
+        if (source == &usock->in) {
+            switch (type) {
+            case NN_WORKER_OP_ERROR:
+                usock->state = NN_USOCK_STATE_LISTENING;
+
+                /*  Notify the accepted socket that it was stopped. */
+                nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_EVENT_DONE);
+
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 
 /*****************************************************************************/

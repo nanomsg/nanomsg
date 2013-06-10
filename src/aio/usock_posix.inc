@@ -827,7 +827,7 @@ error:
         if (source == &usock->task_stop) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_rm_fd (usock->worker, &usock->wfd);
-            usock->state =  NN_USOCK_STATE_LISTENING;
+            usock->state = NN_USOCK_STATE_LISTENING;
 
             /*  Notify the accepted socket that it was stopped. */
             nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_EVENT_DONE);

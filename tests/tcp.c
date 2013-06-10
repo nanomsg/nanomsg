@@ -51,7 +51,7 @@ int main ()
     errno_assert (rc == 0);
 
     /*  Try closing a TCP socket while it not connected. At the same time
-        test specifying the local address for connection. */
+        test specifying the local address for the connection. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
     rc = nn_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");

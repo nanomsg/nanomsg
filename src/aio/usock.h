@@ -66,12 +66,14 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen);
 int nn_usock_listen (struct nn_usock *self, int backlog);
 
-/*  Accept a new connection. The 'newsock' is the resulting accepted socket.
-    It should be initialised before the call. The call itself will start it. */
-void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock);
+/*  Accept a new connection from a listener. When done, NN_USOCK_ACCEPTED
+    event will be delivered to the accepted socket. To cancel the operation,
+    stop the socket being accepted. Listening socket should not be stopped
+    while accepting a new socket is underway. */
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener);
 
 /*  When all the tuning is done on the accepted socket, call this function
-    to start polling on it. */
+    to activate standard data transfer phase. */
 void nn_usock_activate (struct nn_usock *self);
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,

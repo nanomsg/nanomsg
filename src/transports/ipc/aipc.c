@@ -130,7 +130,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &aipc->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_usock_accept (aipc->listener, &aipc->usock);
+                nn_usock_accept (&aipc->usock, aipc->listener);
                 aipc->state = NN_AIPC_STATE_ACCEPTING;
                 return;
             default:
@@ -144,7 +144,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_AIPC_STATE_ACCEPTING:
-        if (source == aipc->listener) {
+        if (source == &aipc->usock) {
             switch (type) {
             case NN_USOCK_ACCEPTED:
 

@@ -272,10 +272,10 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     return 0;
 }
 
-void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock)
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 {
-    self->newsock = newsock;
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
+    listener->newsock = self;
+    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
 }
 
 void nn_usock_activate (struct nn_usock *self)
@@ -649,7 +649,8 @@ error:
                 if (nn_fast (s >= 0)) {
                     nn_usock_start_from_fd (usock->newsock, s);
                     usock->newsock->state = NN_USOCK_STATE_ACCEPTED;
-                    nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                    nn_fsm_raise (&usock->newsock->fsm,
+                        &usock->newsock->event_established, usock->newsock,
                         NN_USOCK_ACCEPTED);
                     return;
                 }
@@ -700,7 +701,8 @@ error:
                 usock->newsock->state = NN_USOCK_STATE_ACCEPTED;
 
                 /*  Notify the user that connection was accepted. */
-                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                nn_fsm_raise (&usock->newsock->fsm,
+                    &usock->newsock->event_established, usock->newsock,
                     NN_USOCK_ACCEPTED);
 
                 /*  Wait till the user starts accepting once again. */

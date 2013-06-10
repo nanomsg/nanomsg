@@ -205,48 +205,49 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     return 0;
 }
 
-void nn_usock_accept (struct nn_usock *self, struct nn_usock *newsock)
+void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 {
     int rc;
     BOOL brc;
     DWORD nbytes;
 
-    nn_assert (self->state == NN_USOCK_STATE_LISTENING);
-    nn_assert (newsock->state = NN_USOCK_STATE_IDLE);
-    nn_assert (!self->newsock);
+    nn_assert (listener->state == NN_USOCK_STATE_LISTENING);
+    nn_assert (self->state = NN_USOCK_STATE_IDLE);
+    nn_assert (!self->self);
     
-    rc = nn_usock_start (newsock, self->domain, self->type, self->protocol);
+    rc = nn_usock_start (self, listener->domain, listener->type,
+        listener->protocol);
     /*  TODO: EMFILE can be returned here. */
     errnum_assert (rc == 0, -rc);
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
-    nn_usock_handler (&newsock->fsm, NULL, NN_USOCK_EVENT_BEING_ACCEPTED);
+    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_BEING_ACCEPTED);
     
     /*  Wait for the incoming connection. */
-    if (!self->info) {
-        self->info = nn_alloc (512, "accept info");
-        alloc_assert (self->info);
+    if (!listener->info) {
+        listener->info = nn_alloc (512, "accept info");
+        alloc_assert (listener->info);
     }
-    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-    brc = AcceptEx (self->s, newsock->s, self->info, 0, 256, 256, &nbytes,
-        &self->in.olpd);
+    memset (&listener->in.olpd, 0, sizeof (listener->in.olpd));
+    brc = AcceptEx (listener->s, self->s, listener->info, 0, 256, 256, &nbytes,
+        &listener->in.olpd);
 
     /*  Immediate success. */
     if (nn_fast (brc == TRUE)) {
+        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_DONE);
         nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_DONE);
-        nn_usock_handler (&newsock->fsm, NULL, NN_USOCK_EVENT_DONE);
         return;
     }
 
     /*  Immediate failure. */
     if (nn_slow (WSAGetLastError () != WSA_IO_PENDING)) {
+        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ERROR);
         nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
-        nn_usock_handler (&newsock->fsm, NULL, NN_USOCK_EVENT_ERROR);
         return;
     }
 
     /*  Asynchronous accept. */
-    self->newsock = newsock;
-    nn_worker_op_start (&self->in);
+    listener->newsock = self;
+    nn_worker_op_start (&listener->in);
 }
 
 void nn_usock_activate (struct nn_usock *self)

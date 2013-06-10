@@ -128,7 +128,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &atcp->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_usock_accept (atcp->listener, &atcp->usock);
+                nn_usock_accept (&atcp->usock, atcp->listener);
                 atcp->state = NN_ATCP_STATE_ACCEPTING;
                 return;
             default:
@@ -142,7 +142,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_ATCP_STATE_ACCEPTING:
-        if (source == atcp->listener) {
+        if (source == &atcp->usock) {
             switch (type) {
             case NN_USOCK_ACCEPTED:
 

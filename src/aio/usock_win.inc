@@ -35,12 +35,13 @@
 #define NN_USOCK_STATE_ACCEPTED 4
 #define NN_USOCK_STATE_CONNECTING 5
 #define NN_USOCK_STATE_ACTIVE 6
-#define NN_USOCK_STATE_DONE 7
-#define NN_USOCK_STATE_LISTENING 8
-#define NN_USOCK_STATE_ACCEPTING 9
-#define NN_USOCK_STATE_CANCELLING 10
-#define NN_USOCK_STATE_STOPPING 11
-#define NN_USOCK_STATE_STOPPING_ACCEPT 12
+#define NN_USOCK_STATE_CANCELLING_IO 7
+#define NN_USOCK_STATE_DONE 8
+#define NN_USOCK_STATE_LISTENING 9
+#define NN_USOCK_STATE_ACCEPTING 10
+#define NN_USOCK_STATE_CANCELLING 11
+#define NN_USOCK_STATE_STOPPING 12
+#define NN_USOCK_STATE_STOPPING_ACCEPT 13
 
 #define NN_USOCK_EVENT_ACCEPT 1
 #define NN_USOCK_EVENT_BEING_ACCEPTED 2
@@ -326,7 +327,20 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     /*  Start the send opertation. */
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
     rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
-    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
+    if (nn_fast (rc == 0))
+        return;
+    rc = WSAGetLastError ();
+    if (nn_fast (rc == WSA_IO_PENDING))
+        return;
+
+    if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
+          rc == WSAENETDOWN || rc == WSAENETRESET ||
+          rc == WSAENOBUFS || rc == WSAEWOULDBLOCK) {
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
+        return;
+   }
+
+   wsa_assert (0);
 }
 
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
@@ -344,7 +358,20 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wflags = MSG_WAITALL;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
     rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
-    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
+    if (nn_fast (rc == 0))
+        return;
+    rc = WSAGetLastError ();
+    if (nn_fast (rc == WSA_IO_PENDING))
+        return;
+
+    if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
+          rc == WSAENETDOWN || rc == WSAENETRESET ||
+          rc == WSAETIMEDOUT || rc == WSAEWOULDBLOCK) {
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
+        return;
+   }
+
+    wsa_assert (0);
 }
 
 void nn_usock_handler (struct nn_fsm *self, void *source, int type)
@@ -538,7 +565,14 @@ printf ("%p being accepted\n", usock);
                     usock, NN_USOCK_RECEIVED);
                 return;
             case NN_WORKER_OP_ERROR:
-                nn_assert (0);
+                if (nn_worker_op_isidle (&usock->out)) {
+                    usock->state = NN_USOCK_STATE_DONE;
+                    return;
+                }
+                brc = CancelIo ((HANDLE) usock->s);
+                win_assert (brc);
+                usock->state = NN_USOCK_STATE_CANCELLING_IO;
+                return;
             default:
                 nn_assert (0);
             }
@@ -550,10 +584,46 @@ printf ("%p being accepted\n", usock);
                     usock, NN_USOCK_SENT);
                 return;
             case NN_WORKER_OP_ERROR:
-                nn_assert (0);
+                if (nn_worker_op_isidle (&usock->in)) {
+                    usock->state = NN_USOCK_STATE_DONE;
+                    return;
+                }
+                brc = CancelIo ((HANDLE) usock->s);
+                win_assert (brc);
+                usock->state = NN_USOCK_STATE_CANCELLING_IO;
+                return;
             default:
                 nn_assert (0);
             }
+        }
+        if (source == NULL) {
+            switch (type) {
+            case NN_USOCK_EVENT_ERROR:
+                if (nn_worker_op_isidle (&usock->in) &&
+                      nn_worker_op_isidle (&usock->out)) {
+                    usock->state = NN_USOCK_STATE_DONE;
+                    return;
+                }
+                brc = CancelIo ((HANDLE) usock->s);
+                win_assert (brc);
+                usock->state = NN_USOCK_STATE_CANCELLING_IO;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/*****************************************************************************/
+/*  CANCELLING_IO state.                                                     */
+/*****************************************************************************/
+    case NN_USOCK_STATE_CANCELLING_IO:
+        if (source == &usock->in || source == &usock->out) {
+            if (!nn_worker_op_isidle (&usock->in) ||
+                  !nn_worker_op_isidle (&usock->out))
+                return;
+            usock->state = NN_USOCK_STATE_DONE;
+            return;
         }
         nn_assert (0);
 

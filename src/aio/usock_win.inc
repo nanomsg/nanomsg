@@ -309,18 +309,42 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int iovcnt)
 {
+    int rc;
+    WSABUF wbuf [NN_USOCK_MAX_IOVCNT];
+    int i;
+
     /*  Make sure that the socket is actually alive. */
     nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
 
-    nn_assert (0);
+    /*  Create a WinAPI-style iovec. */
+    nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
+    for (i = 0; i != iovcnt; ++i) {
+        wbuf [i].buf = (char FAR*) iov [i].iov_base;
+        wbuf [i].len = (u_long) iov [i].iov_len;
+    }
+
+    /*  Start the send opertation. */
+    memset (&self->out.olpd, 0, sizeof (self->out.olpd));
+    rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
+    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
 
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 {
+    int rc;
+    WSABUF wbuf;
+    DWORD wflags;
+
     /*  Make sure that the socket is actually alive. */
     nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
 
-    nn_assert (0);
+    /*  Start the receive operation. */
+    wbuf.len = (u_long) len;
+    wbuf.buf = (char FAR*) buf;
+    wflags = MSG_WAITALL;
+    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+    rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
+    wsa_assert (rc == 0 || WSAGetLastError () == WSA_IO_PENDING);
 }
 
 void nn_usock_handler (struct nn_fsm *self, void *source, int type)
@@ -507,6 +531,30 @@ printf ("%p being accepted\n", usock);
 /*  ACTIVE state.                                                            */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACTIVE:
+        if (source == &usock->in) {
+            switch (type) {
+            case NN_WORKER_OP_DONE:
+                nn_fsm_raise (&usock->fsm, &usock->event_received,
+                    usock, NN_USOCK_RECEIVED);
+                return;
+            case NN_WORKER_OP_ERROR:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
+        if (source == &usock->out) {
+            switch (type) {
+            case NN_WORKER_OP_DONE:
+                nn_fsm_raise (&usock->fsm, &usock->event_sent,
+                    usock, NN_USOCK_SENT);
+                return;
+            case NN_WORKER_OP_ERROR:
+                nn_assert (0);
+            default:
+                nn_assert (0);
+            }
+        }
         nn_assert (0);
 
 /*****************************************************************************/
@@ -567,6 +615,8 @@ printf ("%p being accepted\n", usock);
 
                 /*  Wait till the user starts accepting once again. */
                 usock->state = NN_USOCK_STATE_LISTENING;
+
+                return;
 
             default:
                 nn_assert (0);

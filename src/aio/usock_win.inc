@@ -391,8 +391,6 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
     if (nn_slow (source == &usock->fsm && type == NN_FSM_STOP)) {
 
-printf ("%p stop\n", usock);
-
         /*  Socket in ACCEPTING state cannot be closed.
             Stop the socket being accepted first. */
         nn_assert (usock->state != NN_USOCK_STATE_ACCEPTING);
@@ -446,7 +444,6 @@ finish1:
         wsa_assert (rc == 0);
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
-        printf ("%p stopped\n", usock);
         nn_fsm_stopped (&usock->fsm, usock, NN_USOCK_STOPPED);
 finish3:
         return;
@@ -461,7 +458,6 @@ finish3:
         if (source == &usock->fsm) {
             switch (type) {
             case NN_FSM_START:
-printf ("%p started\n", usock);
                 usock->state = NN_USOCK_STATE_STARTING;
                 return;
             default:
@@ -477,15 +473,12 @@ printf ("%p started\n", usock);
         if (source == NULL) {
             switch (type) {
             case NN_USOCK_EVENT_LISTEN:
-printf ("%p listen\n", usock);
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_EVENT_CONNECT:
-printf ("%p connect\n", usock);
                 usock->state = NN_USOCK_STATE_CONNECTING;
                 return;
             case NN_USOCK_EVENT_BEING_ACCEPTED:
-printf ("%p being accepted\n", usock);
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
                 return;
             default:
@@ -678,6 +671,10 @@ printf ("%p being accepted\n", usock);
                 /*  For some reason simple CancelIo doesn't seem to work here.
                     We have to use CancelIoEx instead. */
                 brc = CancelIoEx ((HANDLE) usock->s, &usock->in.olpd);
+                if (brc == FALSE && GetLastError () == ERROR_NOT_FOUND) {
+                    usock->state = NN_USOCK_STATE_CANCELLING;
+                    return;
+                }
                 win_assert (brc);
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
@@ -719,7 +716,10 @@ printf ("%p being accepted\n", usock);
     case NN_USOCK_STATE_CANCELLING:
         if (source == &usock->in) {
             switch (type) {
+            case NN_WORKER_OP_DONE:
             case NN_WORKER_OP_ERROR:
+
+                /*  TODO: The socket being accepted should be closed here. */
 
                 usock->state = NN_USOCK_STATE_LISTENING;
 

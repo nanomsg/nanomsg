@@ -174,13 +174,11 @@ static void nn_worker_routine (void *arg)
                 /*  The 'Internal' field is actually an NTSTATUS.
                     Two highest bits set means it's an error. */
                 rc = (op->olpd.Internal & 0xc0000000) == 0xc0000000 ?
-                    NN_WORKER_OP_ERROR : NN_WORKER_OP_DONE;
-
-                /*  Switch the operation into the idle state. */
-                op->state = NN_WORKER_OP_STATE_IDLE;
+                    NN_WORKER_OP_ERROR : NN_WORKER_OP_DONE;                
 
                 /*  Raise the completion event. */
                 nn_ctx_enter (op->owner->ctx);
+                op->state = NN_WORKER_OP_STATE_IDLE;
                 op->owner->fn (op->owner, op, rc);
                 nn_ctx_leave (op->owner->ctx);
 

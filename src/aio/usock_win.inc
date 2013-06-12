@@ -330,8 +330,10 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     if (nn_fast (rc == 0))
         return;
     rc = WSAGetLastError ();
-    if (nn_fast (rc == WSA_IO_PENDING))
+    if (nn_fast (rc == WSA_IO_PENDING)) {
+        nn_worker_op_start (&self->out);
         return;
+    }
 
     if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
           rc == WSAENETDOWN || rc == WSAENETRESET ||
@@ -361,8 +363,10 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     if (nn_fast (rc == 0))
         return;
     rc = WSAGetLastError ();
-    if (nn_fast (rc == WSA_IO_PENDING))
+    if (nn_fast (rc == WSA_IO_PENDING)) {
+        nn_worker_op_start (&self->in);
         return;
+    }
 
     if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
           rc == WSAENETDOWN || rc == WSAENETRESET ||
@@ -411,7 +415,19 @@ printf ("%p stop\n", usock);
             return;
         }
 
-        /*  Ask system to cancel any asynchronous operations on the socket. */
+        /*  If we were already in the process of cancelling overlapped
+            operations, we don't have to do anything. Continue waiting
+            till cancelling is finished. */
+        if (usock->state == NN_USOCK_STATE_CANCELLING_IO) {
+            usock->state = NN_USOCK_STATE_STOPPING;
+            return;
+        }
+
+        /*  In all remaining states we'll simply cancel all overlapped
+            operations. */
+        if (nn_worker_op_isidle (&usock->in) &&
+                nn_worker_op_isidle (&usock->out))
+            goto finish1;
         brc = CancelIo ((HANDLE) usock->s);
         win_assert (brc);
         usock->state = NN_USOCK_STATE_STOPPING;
@@ -658,7 +674,10 @@ printf ("%p being accepted\n", usock);
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_EVENT_CANCEL:
-                brc = CancelIo ((HANDLE) usock->s);
+
+                /*  For some reason simple CancelIo doesn't seem to work here.
+                    We have to use CancelIoEx instead. */
+                brc = CancelIoEx ((HANDLE) usock->s, &usock->in.olpd);
                 win_assert (brc);
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
@@ -669,7 +688,7 @@ printf ("%p being accepted\n", usock);
         if (source == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_DONE:
-                
+
                 /*  Adjust the new usock object. */
                 usock->asock->state = NN_USOCK_STATE_ACCEPTED;
 
@@ -701,6 +720,7 @@ printf ("%p being accepted\n", usock);
         if (source == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_ERROR:
+
                 usock->state = NN_USOCK_STATE_LISTENING;
 
                 /*  Notify the accepted socket that it was stopped. */

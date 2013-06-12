@@ -97,7 +97,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
             return rc;
         }
     }
-    memset (&self->termsem, 0xcd, sizeof (self->termsem));
+    nn_sem_init (&self->termsem);
     if (nn_slow (rc < 0)) {
         if (!(socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
             nn_efd_term (&self->rcvfd);
@@ -174,8 +174,8 @@ int nn_sock_term (struct nn_sock *self)
 
     /*  The thread that posted the semaphore can still have the ctx locked
         for a short while. By simply entering the context and exiting it
-        immediately we can be sure that the said thread have already exited
-        the context. */
+        immediately we can be sure that the thread in question have already
+        exited the context. */
     nn_ctx_enter (&self->ctx);
     nn_ctx_leave (&self->ctx);
 
@@ -741,10 +741,6 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
                     nn_efd_term (&sock->sndfd);
                     memset (&sock->sndfd, 0xcd, sizeof (sock->sndfd));
                 }
-
-                /*  Create a semaphore to wait on for all endpoint
-                    to terminate. */
-                nn_sem_init (&sock->termsem);
 
                 /*  Ask all the associated endpoints to stop. */
                 for (it = nn_list_begin (&sock->eps);

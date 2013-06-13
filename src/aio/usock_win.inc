@@ -256,7 +256,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     listener->asock = self;
 
     /*  Asynchronous accept. */
-    nn_worker_op_start (&listener->in);
+    nn_worker_op_start (&listener->in, 0);
 }
 
 void nn_usock_activate (struct nn_usock *self)
@@ -304,7 +304,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     }
 
     /*  Asynchronous connect. */
-    nn_worker_op_start (&self->out);
+    nn_worker_op_start (&self->out, 0);
 }
 
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
@@ -327,11 +327,13 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     /*  Start the send opertation. */
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
     rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
-    if (nn_fast (rc == 0))
+    if (nn_fast (rc == 0)) {
+        nn_worker_op_start (&self->out, 0);
         return;
+    }
     rc = WSAGetLastError ();
     if (nn_fast (rc == WSA_IO_PENDING)) {
-        nn_worker_op_start (&self->out);
+        nn_worker_op_start (&self->out, 0);
         return;
     }
 
@@ -360,11 +362,13 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wflags = MSG_WAITALL;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
     rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
-    if (nn_fast (rc == 0))
+    if (nn_fast (rc == 0)) {
+        nn_worker_op_start (&self->in, 1);
         return;
+    }
     rc = WSAGetLastError ();
     if (nn_fast (rc == WSA_IO_PENDING)) {
-        nn_worker_op_start (&self->in);
+        nn_worker_op_start (&self->in, 1);
         return;
     }
 

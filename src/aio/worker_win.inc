@@ -31,6 +31,7 @@
 
 #define NN_WORKER_OP_STATE_IDLE 1
 #define NN_WORKER_OP_STATE_ACTIVE 2
+#define NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR 3
 
 /*  The value of this variable is irrelevant. It's used only as a placeholder
     for the address that is used as the 'stop' event ID. */
@@ -59,10 +60,11 @@ void nn_worker_op_term (struct nn_worker_op *self)
     nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
 }
 
-void nn_worker_op_start (struct nn_worker_op *self)
+void nn_worker_op_start (struct nn_worker_op *self, int zeroiserror)
 {
     nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
-    self->state = NN_WORKER_OP_STATE_ACTIVE;
+    self->state = zeroiserror ? NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR :
+        NN_WORKER_OP_STATE_ACTIVE;
 }
 
 int nn_worker_op_isidle (struct nn_worker_op *self)
@@ -171,13 +173,28 @@ static void nn_worker_routine (void *arg)
                 op = nn_cont (entries [i].lpOverlapped,
                     struct nn_worker_op, olpd);
 
-                /*  The 'Internal' field is actually an NTSTATUS.
-                    Two highest bits set means it's an error. */
-                rc = (op->olpd.Internal & 0xc0000000) == 0xc0000000 ?
-                    NN_WORKER_OP_ERROR : NN_WORKER_OP_DONE;                
+                /*  The 'Internal' field is actually an NTSTATUS. Report
+                    success and error. Ignore warnings and informational
+                    messages.*/
+                rc = entries [i].Internal & 0xc0000000;
+                switch (rc) {
+                case 0x00000000:
+                     rc = NN_WORKER_OP_DONE;
+                     break;
+                case 0xc0000000:
+                     rc = NN_WORKER_OP_ERROR;
+                     break;
+                default:
+                     continue;
+                }
 
                 /*  Raise the completion event. */
                 nn_ctx_enter (op->owner->ctx);
+                nn_assert (op->state != NN_WORKER_OP_STATE_IDLE);
+                if (rc != NN_WORKER_OP_ERROR &&
+                      op->state == NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR &&
+                      entries [i].dwNumberOfBytesTransferred == 0)
+                    rc = NN_WORKER_OP_ERROR;
                 op->state = NN_WORKER_OP_STATE_IDLE;
                 op->owner->fn (op->owner, op, rc);
                 nn_ctx_leave (op->owner->ctx);

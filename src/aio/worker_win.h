@@ -45,8 +45,10 @@ struct nn_worker_op {
 void nn_worker_op_init (struct nn_worker_op *self, struct nn_fsm *owner);
 void nn_worker_op_term (struct nn_worker_op *self);
 
-/*  Call this function when asynchronous operation is started. */
-void nn_worker_op_start (struct nn_worker_op *self);
+/*  Call this function when asynchronous operation is started.
+    If 'zeroiserror' is set to 1, zero bytes transferred will be treated
+    as an error. */
+void nn_worker_op_start (struct nn_worker_op *self, int zeroiserror);
 
 int nn_worker_op_isidle (struct nn_worker_op *self);
 

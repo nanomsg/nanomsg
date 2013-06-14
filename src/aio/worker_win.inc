@@ -87,7 +87,6 @@ void nn_worker_term (struct nn_worker *self)
     BOOL brc;
 
     /*  Ask worker thread to terminate. */
-Sleep(1000);
     brc = PostQueuedCompletionStatus (self->cp, 0,
         (ULONG_PTR) &nn_worker_stop, NULL);
     win_assert (brc);

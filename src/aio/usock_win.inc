@@ -54,6 +54,7 @@
 
 /*  Private functions. */
 void nn_usock_handler (struct nn_fsm *self, void *source, int type);
+int nn_usock_cancel_io (struct nn_usock *self);
 
 void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
 {
@@ -385,7 +386,6 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 {
     int rc;
-    BOOL brc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -427,17 +427,14 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 
         /*  In all remaining states we'll simply cancel all overlapped
             operations. */
-        if (nn_worker_op_isidle (&usock->in) &&
-                nn_worker_op_isidle (&usock->out))
+        if (nn_usock_cancel_io (usock) == 0)
             goto finish1;
-        brc = CancelIo ((HANDLE) usock->s);
-        win_assert (brc);
         usock->state = NN_USOCK_STATE_STOPPING;
         return;
     } 
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
         nn_assert (source == NULL && type == NN_USOCK_EVENT_DONE);
-        goto finish2;
+        goto finish1;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
         if (!nn_worker_op_isidle (&usock->in) ||
@@ -578,12 +575,10 @@ finish3:
                     usock, NN_USOCK_RECEIVED);
                 return;
             case NN_WORKER_OP_ERROR:
-                if (nn_worker_op_isidle (&usock->out)) {
+                if (nn_usock_cancel_io (usock) == 0) {
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
-                brc = CancelIo ((HANDLE) usock->s);
-                win_assert (brc);
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
@@ -597,12 +592,10 @@ finish3:
                     usock, NN_USOCK_SENT);
                 return;
             case NN_WORKER_OP_ERROR:
-                if (nn_worker_op_isidle (&usock->in)) {
+                if (nn_usock_cancel_io (usock) == 0) {
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
-                brc = CancelIo ((HANDLE) usock->s);
-                win_assert (brc);
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
@@ -612,13 +605,10 @@ finish3:
         if (source == NULL) {
             switch (type) {
             case NN_USOCK_EVENT_ERROR:
-                if (nn_worker_op_isidle (&usock->in) &&
-                      nn_worker_op_isidle (&usock->out)) {
+                if (nn_usock_cancel_io (usock) == 0) {
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
-                brc = CancelIo ((HANDLE) usock->s);
-                win_assert (brc);
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
@@ -671,15 +661,7 @@ finish3:
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_EVENT_CANCEL:
-
-                /*  For some reason simple CancelIo doesn't seem to work here.
-                    We have to use CancelIoEx instead. */
-                brc = CancelIoEx ((HANDLE) usock->s, &usock->in.olpd);
-                if (brc == FALSE && GetLastError () == ERROR_NOT_FOUND) {
-                    usock->state = NN_USOCK_STATE_CANCELLING;
-                    return;
-                }
-                win_assert (brc);
+                nn_usock_cancel_io (usock);
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:
@@ -744,4 +726,31 @@ finish3:
     default:
         nn_assert (0);
     }
+}
+
+/*****************************************************************************/
+/*  State machine actions.                                                   */
+/*****************************************************************************/
+
+/*  Returns 0 if there's nothing to cancel or 1 otherwise. */
+int nn_usock_cancel_io (struct nn_usock *self)
+{
+    int rc;
+    BOOL brc;
+
+    /*  For some reason simple CancelIo doesn't seem to work here.
+        We have to use CancelIoEx instead. */
+    rc = 0;
+    if (!nn_worker_op_isidle (&self->in)) {
+        brc = CancelIoEx ((HANDLE) self->s, &self->in.olpd);
+        win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
+        rc = 1;
+    }
+    if (!nn_worker_op_isidle (&self->out)) {
+        brc = CancelIoEx ((HANDLE) self->s, &self->out.olpd);
+        win_assert (brc || ERROR_NOT_FOUND);
+        rc = 1;
+    }
+
+    return rc;
 }

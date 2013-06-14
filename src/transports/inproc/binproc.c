@@ -21,7 +21,6 @@
 */
 
 #include "binproc.h"
-#include "msgpipe.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -29,8 +28,6 @@
 #include "../../utils/alloc.h"
 
 #define NN_BINPROC_STATE_IDLE 1
-#define NN_BINPROC_STATE_ACTIVE 2
-#define NN_BINPROC_STATE_STOPPING 3
 
 /*  Implementation of nn_epbase interface. */
 static void nn_binproc_stop (struct nn_epbase *self);
@@ -54,7 +51,6 @@ struct nn_binproc *nn_binproc_create (void *hint)
     nn_fsm_init_root (&self->fsm, nn_binproc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BINPROC_STATE_IDLE;
-    nn_list_init (&self->msgpipes);
     nn_list_item_init (&self->item);
 
     /*  Start the state machine. */
@@ -79,7 +75,6 @@ static void nn_binproc_destroy (struct nn_epbase *self)
     binproc = nn_cont (self, struct nn_binproc, epbase);
 
     nn_list_item_term (&binproc->item);
-    nn_list_term (&binproc->msgpipes);
     nn_fsm_term (&binproc->fsm);
     nn_epbase_term (&binproc->epbase);
 
@@ -89,12 +84,6 @@ static void nn_binproc_destroy (struct nn_epbase *self)
 const char *nn_binproc_getaddr (struct nn_binproc *self)
 {
     return nn_epbase_getaddr (&self->epbase);
-}
-
-struct nn_msgpipe *nn_binproc_connect (struct nn_binproc *self,
-    struct nn_msgpipe *peer)
-{
-    nn_assert (0);
 }
 
 static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
@@ -107,8 +96,6 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &binproc->fsm && type == NN_FSM_STOP))
-        nn_assert (0);
-    if (nn_slow (binproc->state == NN_BINPROC_STATE_STOPPING))
         nn_assert (0);
 
     switch (binproc->state) {
@@ -125,12 +112,6 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  ACTIVE state.                                                             */
-/******************************************************************************/
-    case NN_BINPROC_STATE_ACTIVE:
         nn_assert (0);
 
 /******************************************************************************/

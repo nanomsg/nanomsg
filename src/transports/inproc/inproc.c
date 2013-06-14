@@ -58,7 +58,8 @@ struct nn_transport *nn_inproc = &nn_inproc_vfptr;
 
 struct nn_inproc {
 
-    /*  Synchronises access to this object. */
+    /*  Synchronises access to this object. Note that 'connected' members in
+        sinproc object are synchronised by this mutex as well. */
     struct nn_mutex sync;
 
     /*  List of all bound inproc endpoints. */
@@ -90,6 +91,7 @@ static void nn_inproc_term (void)
 static int nn_inproc_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
+#if 0
     struct nn_list_item *it;
     struct nn_binproc *binproc;
     struct nn_cinproc *cinproc;
@@ -128,13 +130,14 @@ static int nn_inproc_bind (const char *addr, void *hint,
     nn_assert (epbase);
     *epbase = &binproc->epbase;
     nn_mutex_unlock (&self.sync);
-
+#endif
     return 0;
 }
 
 static int nn_inproc_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
+#if 0
     struct nn_list_item *it;
     struct nn_cinproc *cinproc;
     struct nn_binproc *binproc;
@@ -163,21 +166,8 @@ static int nn_inproc_connect (const char *addr, void *hint,
     nn_assert (epbase);
     *epbase = &cinproc->epbase;
     nn_mutex_unlock (&self.sync);
-
+#endif
     return 0;
 }
 
-void nn_inproc_unbind (struct nn_binproc *binproc)
-{
-    nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.bound, &binproc->item);
-    nn_mutex_unlock (&self.sync);
-}
-
-void nn_inproc_disconnect (struct nn_cinproc *cinproc)
-{
-    nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.connected, &cinproc->item);
-    nn_mutex_unlock (&self.sync);
-}
 

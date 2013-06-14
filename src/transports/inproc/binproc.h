@@ -23,8 +23,6 @@
 #ifndef NN_BINPROC_INCLUDED
 #define NN_BINPROC_INCLUDED
 
-#include "msgpipe.h"
-
 #include "../../transport.h"
 
 #include "../../aio/fsm.h"
@@ -40,9 +38,6 @@ struct nn_binproc {
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
-    /*  The list of pipes associated with the endpoint. */
-    struct nn_list msgpipes;
-
     /*  This object is an element in the list of all bound endpoints managed
         by nn_inproc object. */
     struct nn_list_item item;
@@ -51,8 +46,5 @@ struct nn_binproc {
 struct nn_binproc *nn_binproc_create (void *hint);
 
 const char *nn_binproc_getaddr (struct nn_binproc *self);
-
-struct nn_msgpipe *nn_binproc_connect (struct nn_binproc *self,
-    struct nn_msgpipe *peer);
 
 #endif

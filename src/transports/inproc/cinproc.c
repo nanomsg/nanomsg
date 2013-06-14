@@ -29,8 +29,6 @@
 #include <stddef.h>
 
 #define NN_CINPROC_STATE_IDLE 1
-#define NN_CINPROC_STATE_ACTIVE 2
-#define NN_CINPROC_STATE_STOPPING 3
 
 /*  Implementation of nn_epbase callback interface. */
 static void nn_cinproc_stop (struct nn_epbase *self);
@@ -54,8 +52,6 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CINPROC_STATE_IDLE;
-    nn_msgpipe_init (&self->local, &self->fsm);
-    self->remote = NULL;
     nn_list_item_init (&self->item);
 
     /*  Start the state machine. */
@@ -80,8 +76,6 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
     cinproc = nn_cont (self, struct nn_cinproc, epbase);
 
     nn_list_item_term (&cinproc->item);
-    nn_assert (!cinproc->remote);
-    nn_msgpipe_term (&cinproc->local);
     nn_epbase_term (&cinproc->epbase);
     nn_fsm_term (&cinproc->fsm);
 
@@ -91,12 +85,6 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
 const char *nn_cinproc_getaddr (struct nn_cinproc *self)
 {
     return nn_epbase_getaddr (&self->epbase);
-}
-
-void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
-{
-    nn_assert (!self->remote);
-    self->remote = nn_binproc_connect (peer, &self->local);
 }
 
 static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
@@ -109,8 +97,6 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &cinproc->fsm && type == NN_FSM_STOP))
-        nn_assert (0);
-    if (nn_slow (cinproc->state == NN_CINPROC_STATE_STOPPING))
         nn_assert (0);
 
     switch (cinproc->state) {
@@ -127,12 +113,6 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        nn_assert (0);
-
-/******************************************************************************/
-/*  ACTIVE state.                                                             */
-/******************************************************************************/
-    case NN_CINPROC_STATE_ACTIVE:
         nn_assert (0);
 
 /******************************************************************************/

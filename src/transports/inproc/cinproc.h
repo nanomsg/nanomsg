@@ -23,9 +23,6 @@
 #ifndef NN_CINPROC_INCLUDED
 #define NN_CINPROC_INCLUDED
 
-#include "msgpipe.h"
-#include "binproc.h"
-
 #include "../../transport.h"
 
 #include "../../aio/fsm.h"
@@ -41,22 +38,14 @@ struct nn_cinproc {
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
-    /*  Local end of the message pipe. */
-    struct nn_msgpipe local;
-
-    /*  Remote end of the message pipe. */
-    struct nn_msgpipe *remote;
-
-    /*  This object is an element in the list of all connected endpoints managed
-        by nn_inproc_ctx object. */
+    /*  This object is an element in the list of all connected endpoints
+        managed by nn_inproc object. */
     struct nn_list_item item;
 };
 
 struct nn_cinproc *nn_cinproc_create (void *hint);
 
 const char *nn_cinproc_getaddr (struct nn_cinproc *self);
-
-void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer);
 
 #endif
 

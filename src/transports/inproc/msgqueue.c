@@ -72,23 +72,25 @@ void nn_msgqueue_term (struct nn_msgqueue *self)
         nn_free (self->cache);
 }
 
+int nn_msgqueue_empty (struct nn_msgqueue *self)
+{
+    return self->count == 0 ? 1 : 0;
+}
+
 int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
 {
     size_t msgsz;
-    int result;
 
+    /*  By allowing one message of arbitrary size to be written to the queue,
+        we allow even messages that exceed max buffer size to pass through.
+        Beyond that we'll apply the buffer limit as specified by the user. */
     msgsz = nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body);
+    if (nn_slow (self->count > 0 && self->mem + msgsz >= self->maxmem))
+        return -EAGAIN;
 
     /*  Adjust the statistics. */
-    result = self->count ? 0 : NN_MSGQUEUE_SIGNAL;
     ++self->count;
     self->mem += msgsz;
-
-    /*  To mimic other transports, it should be always possible to store two
-        messages in the queue. Beyond that we'll apply the queue limit specified
-        by the user (SNDBUF on the sender side + RCVBUF on the receiver side. */
-    if (self->count >= 2 && self->mem >= self->maxmem)
-        result |= NN_MSGQUEUE_RELEASE;
 
     /*  Move the content of the message to the pipe. */
     nn_msg_mv (&self->out.chunk->msgs [self->out.pos], msg);
@@ -109,12 +111,11 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
         self->out.pos = 0;
     }
 
-    return result;
+    return 0;
 }
 
 int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
 {
-    int result;
     struct nn_msgqueue_chunk *o;
 
     /*  If there is no message in the queue. */
@@ -137,17 +138,9 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
     }
 
     /*  Adjust the statistics. */
-    result = 0;
-    if (self->count >= 2 && self->mem >= self->maxmem)
-        result |= NN_MSGQUEUE_SIGNAL;
     --self->count;
     self->mem -= (nn_chunkref_size (&msg->hdr) + nn_chunkref_size (&msg->body));
-    if (self->count >= 2 && self->mem >= self->maxmem)
-        result &= ~NN_MSGQUEUE_SIGNAL;
 
-    if (!self->count)
-        result |= NN_MSGQUEUE_RELEASE;
-
-    return result;
+    return 0;
 }
 

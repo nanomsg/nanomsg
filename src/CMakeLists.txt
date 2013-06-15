@@ -222,6 +222,8 @@ set (NN_SOURCES
     transports/inproc/inproc.c
     transports/inproc/msgqueue.h
     transports/inproc/msgqueue.c
+    transports/inproc/sinproc.h
+    transports/inproc/sinproc.c
 
     transports/ipc/aipc.h
     transports/ipc/aipc.c

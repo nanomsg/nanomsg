@@ -91,7 +91,6 @@ static void nn_inproc_term (void)
 static int nn_inproc_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-#if 0
     struct nn_list_item *it;
     struct nn_binproc *binproc;
     struct nn_cinproc *cinproc;
@@ -122,22 +121,22 @@ static int nn_inproc_bind (const char *addr, void *hint,
         cinproc = nn_cont (it, struct nn_cinproc, item);
         if (strncmp (addr, nn_cinproc_getaddr (cinproc),
               NN_SOCKADDR_MAX) == 0) {
-            /*  TODO: Create the pipe here. */
-            nn_assert (0);
+            nn_assert (cinproc->connects == 0);
+            cinproc->connects = 1;
+            nn_binproc_connect (binproc, cinproc);
         }
     }
 
     nn_assert (epbase);
     *epbase = &binproc->epbase;
     nn_mutex_unlock (&self.sync);
-#endif
+
     return 0;
 }
 
 static int nn_inproc_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-#if 0
     struct nn_list_item *it;
     struct nn_cinproc *cinproc;
     struct nn_binproc *binproc;
@@ -157,8 +156,8 @@ static int nn_inproc_connect (const char *addr, void *hint,
         binproc = nn_cont (it, struct nn_binproc, item);
         if (strncmp (addr, nn_binproc_getaddr (binproc),
               NN_SOCKADDR_MAX) == 0) {
-            /*  TODO: Create the pipe here. */
-            nn_assert (0);
+            ++binproc->connects;
+            nn_cinproc_connect (cinproc, binproc);
             break;
         }
     }
@@ -166,7 +165,7 @@ static int nn_inproc_connect (const char *addr, void *hint,
     nn_assert (epbase);
     *epbase = &cinproc->epbase;
     nn_mutex_unlock (&self.sync);
-#endif
+
     return 0;
 }
 

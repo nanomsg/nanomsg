@@ -29,14 +29,6 @@
 
 /*  This class is a simple uni-directional message queue. */
 
-/*  This flag is returned from send/recv functions to let the user know that
-    more sends/recvs are not possible. */
-#define NN_MSGQUEUE_RELEASE 1
-
-/*  This flag is returned from send/recv functions to let the user know that
-    other side of the pipe should be re-activated. */
-#define NN_MSGQUEUE_SIGNAL 2
-
 /*  It's not 128 so that chunk including its footer fits into a memory page. */
 #define NN_MSGQUEUE_GRANULARITY 126
 
@@ -72,7 +64,6 @@ struct nn_msgqueue {
     /*  One empty chunk is always cached so that in case of steady stream
         of messages through the pipe there are no memory allocations. */
     struct nn_msgqueue_chunk *cache;
-
 };
 
 /*  Initialise the message pipe. maxmem is the maximal queue size in bytes. */
@@ -81,14 +72,15 @@ void nn_msgqueue_init (struct nn_msgqueue *self, size_t maxmem);
 /*  Terminate the message pipe. */
 void nn_msgqueue_term (struct nn_msgqueue *self);
 
+/*  Returns 1 if there are no messages in the queue, 0 otherwise. */
+int nn_msgqueue_empty (struct nn_msgqueue *self);
+
 /*  Writes a message to the pipe. -EAGAIN is returned if the message cannot
-    be sent because the queue is full. Any combination of NN_MSGQUEUE_RELEASE
-    and NN_MSGQUEUE_SIGNAL flags is return in case of success. */
+    be sent because the queue is full. */
 int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg);
 
 /*  Reads a message from the pipe. -EAGAIN is returned if there's no message
-    to receive. Any combination of NN_MSGQUEUE_RELEASE and NN_MSGQUEUE_SIGNAL
-    flags is return in case of success. */
+    to receive. */
 int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg);
 
 #endif

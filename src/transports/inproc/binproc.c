@@ -21,6 +21,8 @@
 */
 
 #include "binproc.h"
+#include "sinproc.h"
+#include "cinproc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -28,6 +30,7 @@
 #include "../../utils/alloc.h"
 
 #define NN_BINPROC_STATE_IDLE 1
+#define NN_BINPROC_STATE_ACTIVE 2
 
 /*  Implementation of nn_epbase interface. */
 static void nn_binproc_stop (struct nn_epbase *self);
@@ -51,7 +54,9 @@ struct nn_binproc *nn_binproc_create (void *hint)
     nn_fsm_init_root (&self->fsm, nn_binproc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BINPROC_STATE_IDLE;
+    nn_list_init (&self->sinprocs);
     nn_list_item_init (&self->item);
+    self->connects = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -75,6 +80,7 @@ static void nn_binproc_destroy (struct nn_epbase *self)
     binproc = nn_cont (self, struct nn_binproc, epbase);
 
     nn_list_item_term (&binproc->item);
+    nn_list_term (&binproc->sinprocs);
     nn_fsm_term (&binproc->fsm);
     nn_epbase_term (&binproc->epbase);
 
@@ -84,6 +90,20 @@ static void nn_binproc_destroy (struct nn_epbase *self)
 const char *nn_binproc_getaddr (struct nn_binproc *self)
 {
     return nn_epbase_getaddr (&self->epbase);
+}
+
+void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
+{
+    struct nn_sinproc *sinproc;
+
+    nn_assert (self->state == NN_BINPROC_STATE_ACTIVE);
+
+    sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
+    alloc_assert (sinproc);
+    nn_sinproc_init (sinproc, &self->epbase, &self->fsm);
+    nn_list_insert (&self->sinprocs, &sinproc->item,
+        nn_list_end (&self->sinprocs));
+    nn_sinproc_start (sinproc, &peer->fsm);
 }
 
 static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
@@ -107,11 +127,18 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &binproc->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_assert (0);
+                binproc->state = NN_BINPROC_STATE_ACTIVE;
+                return;
             default:
                 nn_assert (0);
             }
         }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/******************************************************************************/
+    case NN_BINPROC_STATE_ACTIVE:
         nn_assert (0);
 
 /******************************************************************************/

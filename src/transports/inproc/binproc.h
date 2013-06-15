@@ -29,6 +29,8 @@
 
 #include "../../utils/list.h"
 
+struct nn_cinproc;
+
 struct nn_binproc {
 
     /*  The state machine. */
@@ -38,13 +40,22 @@ struct nn_binproc {
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
+    /*  The list of inproc sessions owned by this object. */
+    struct nn_list sinprocs;
+
     /*  This object is an element in the list of all bound endpoints managed
         by nn_inproc object. */
     struct nn_list_item item;
+
+    /*  Number of connects underway. We cannot deallocate this object until
+        the value drops to zero. Note that this member is sychronised using
+        inproc obejct's global critical section. */
+    int connects;
 };
 
 struct nn_binproc *nn_binproc_create (void *hint);
 
 const char *nn_binproc_getaddr (struct nn_binproc *self);
+void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer);
 
 #endif

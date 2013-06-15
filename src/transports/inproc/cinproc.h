@@ -23,11 +23,15 @@
 #ifndef NN_CINPROC_INCLUDED
 #define NN_CINPROC_INCLUDED
 
+#include "sinproc.h"
+
 #include "../../transport.h"
 
 #include "../../aio/fsm.h"
 
 #include "../../utils/list.h"
+
+struct nn_binproc;
 
 struct nn_cinproc {
 
@@ -38,14 +42,23 @@ struct nn_cinproc {
     /*  This object is an endpoint. */
     struct nn_epbase epbase;
 
+    /*  The actual inproc session. */
+    struct nn_sinproc sinproc;
+
     /*  This object is an element in the list of all connected endpoints
         managed by nn_inproc object. */
     struct nn_list_item item;
+
+    /*  Number of connects underway. We cannot deallocate this object until
+        the value drops to zero. Note that this member is sychronised using
+        inproc obejct's global critical section. */
+    int connects;
 };
 
 struct nn_cinproc *nn_cinproc_create (void *hint);
 
 const char *nn_cinproc_getaddr (struct nn_cinproc *self);
+void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer);
 
 #endif
 

@@ -21,6 +21,7 @@
 */
 
 #include "cinproc.h"
+#include "binproc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -29,6 +30,8 @@
 #include <stddef.h>
 
 #define NN_CINPROC_STATE_IDLE 1
+#define NN_CINPROC_STATE_DISCONNECTED 2
+#define NN_CINPROC_STATE_ACTIVE 3
 
 /*  Implementation of nn_epbase callback interface. */
 static void nn_cinproc_stop (struct nn_epbase *self);
@@ -52,7 +55,9 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CINPROC_STATE_IDLE;
+    nn_sinproc_init (&self->sinproc, &self->epbase, &self->fsm);
     nn_list_item_init (&self->item);
+    self->connects = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -76,6 +81,7 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
     cinproc = nn_cont (self, struct nn_cinproc, epbase);
 
     nn_list_item_term (&cinproc->item);
+    nn_sinproc_term (&cinproc->sinproc);
     nn_epbase_term (&cinproc->epbase);
     nn_fsm_term (&cinproc->fsm);
 
@@ -87,9 +93,16 @@ const char *nn_cinproc_getaddr (struct nn_cinproc *self)
     return nn_epbase_getaddr (&self->epbase);
 }
 
+void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
+{
+    nn_assert (self->state == NN_CINPROC_STATE_DISCONNECTED);
+    nn_assert (0);
+}
+
 static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_cinproc *cinproc;
+    struct nn_sinproc *sinproc;
 
     cinproc = nn_cont (self, struct nn_cinproc, fsm);
 
@@ -108,12 +121,37 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &cinproc->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_assert (0);
+                cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
+                return;
             default:
                 nn_assert (0);
             }
         }
         nn_assert (0);
+
+/******************************************************************************/
+/*  DISCONNECTED state.                                                       */
+/******************************************************************************/
+    case NN_CINPROC_STATE_DISCONNECTED:
+        if (source == NULL) {
+            switch (type) {
+            default:
+                nn_assert (0);
+            }
+        }
+
+        /*  Here we assume that all other events are raised by the peer
+            sinproc object. */
+        sinproc = (struct nn_sinproc*) source;
+        switch (type) {
+        case NN_SINPROC_CONNECT:
+printf ("%p CONNECT received (by cinproc)\n", sinproc);
+            nn_sinproc_start_accept (&cinproc->sinproc, sinproc);
+            cinproc->state = NN_CINPROC_STATE_ACTIVE;
+            return;
+        default:
+            nn_assert (0);
+        }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

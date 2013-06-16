@@ -40,7 +40,7 @@ struct nn_msg {
 void nn_msg_init (struct nn_msg *self, size_t size);
 
 /*  Initialise message with body provided in the form of chunk pointer. */
-void nn_msg_init_chunk (struct nn_msg *self, struct nn_chunk *chunk);
+void nn_msg_init_chunk (struct nn_msg *self, void *chunk);
 
 /*  Frees resources allocate with the message. */
 void nn_msg_term (struct nn_msg *self);

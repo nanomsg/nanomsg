@@ -305,17 +305,12 @@ void nn_term (void)
 
 void *nn_allocmsg (size_t size, int type)
 {
-    struct nn_chunk *ch;
-
-    ch = nn_chunk_alloc (size, type);
-    if (nn_slow (!ch))
-        return NULL;
-    return (void*) (ch + 1);
+    return nn_chunk_alloc (size, type);
 }
 
 int nn_freemsg (void *msg)
 {
-    nn_chunk_free (((struct nn_chunk*) msg) - 1);
+    nn_chunk_free (msg);
     return 0;
 }
 
@@ -514,7 +509,7 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 {
     int rc;
     struct nn_msg msg;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -525,13 +520,13 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 
     /*  Create a message object. */
     if (len == NN_MSG) {
-        ch = nn_chunk_from_data (*(void**) buf);
-        if (nn_slow (ch == NULL)) {
+        chunk = *(void**) buf;
+        if (nn_slow (chunk == NULL)) {
             errno = EFAULT;
             return -1;
         }
-        len = nn_chunk_size (ch);
-        nn_msg_init_chunk (&msg, ch);
+        len = nn_chunk_size (chunk);
+        nn_msg_init_chunk (&msg, chunk);
     }
     else {
         nn_msg_init (&msg, len);
@@ -554,7 +549,7 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     int rc;
     struct nn_msg msg;
     size_t sz;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -570,9 +565,9 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     }
 
     if (len == NN_MSG) {
-        ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) buf = nn_chunk_data (ch);
-        sz = nn_chunk_size (ch);
+        chunk = nn_chunkref_getchunk (&msg.body);
+        *(void**) buf = chunk;
+        sz = nn_chunk_size (chunk);
     }
     else {
         sz = nn_chunkref_size (&msg.body);
@@ -590,7 +585,7 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     int i;
     struct nn_iovec *iov;
     struct nn_msg msg;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -605,13 +600,13 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        ch = nn_chunk_from_data (*(void**) msghdr->msg_iov [0].iov_base);
-        if (nn_slow (ch == NULL)) {
+        chunk = *(void**) msghdr->msg_iov [0].iov_base;
+        if (nn_slow (chunk == NULL)) {
             errno = EFAULT;
             return -1;
         }
-        sz = nn_chunk_size (ch);
-        nn_msg_init_chunk (&msg, ch);
+        sz = nn_chunk_size (chunk);
+        nn_msg_init_chunk (&msg, chunk);
     }
     else {
 
@@ -648,9 +643,9 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     /*  Add ancillary data to the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            ch = nn_chunk_from_data (*((void**) msghdr->msg_control));
+            chunk = *((void**) msghdr->msg_control);
             nn_chunkref_term (&msg.hdr);
-            nn_chunkref_init_chunk (&msg.hdr, ch);
+            nn_chunkref_init_chunk (&msg.hdr, chunk);
         }
         else {
 
@@ -678,7 +673,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     size_t sz;
     int i;
     struct nn_iovec *iov;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -700,9 +695,9 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) (msghdr->msg_iov [0].iov_base) = nn_chunk_data (ch);
-        sz = nn_chunk_size (ch);
+        chunk = nn_chunkref_getchunk (&msg.body);
+        *(void**) (msghdr->msg_iov [0].iov_base) = chunk;
+        sz = nn_chunk_size (chunk);
     }
     else {
 
@@ -730,8 +725,8 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            ch = nn_chunkref_getchunk (&msg.hdr);
-            *((void**) msghdr->msg_control) = nn_chunk_data (ch);
+            chunk = nn_chunkref_getchunk (&msg.hdr);
+            *((void**) msghdr->msg_control) = chunk;
         }
         else {
 

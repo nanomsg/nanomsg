@@ -29,7 +29,7 @@
     byte ('tag') is 0xff. */
 struct nn_chunkref_chunk {
     uint8_t tag;
-    struct nn_chunk *chunk;
+    void *chunk;
 };
 
 /*  Check whether VSM are small enough for size to fit into the first byte
@@ -54,7 +54,7 @@ void nn_chunkref_init (struct nn_chunkref *self, size_t size)
     alloc_assert (ch->chunk);
 }
 
-void nn_chunkref_init_chunk (struct nn_chunkref *self, struct nn_chunk *chunk)
+void nn_chunkref_init_chunk (struct nn_chunkref *self, void *chunk)
 {
     struct nn_chunkref_chunk *ch;
 
@@ -73,10 +73,10 @@ void nn_chunkref_term (struct nn_chunkref *self)
     }
 }
 
-struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self)
+void *nn_chunkref_getchunk (struct nn_chunkref *self)
 {
     struct nn_chunkref_chunk *ch;
-    struct nn_chunk *chunk;
+    void *chunk;
 
     if (self->ref [0] == 0xff) {
         ch = (struct nn_chunkref_chunk*) self;
@@ -86,7 +86,7 @@ struct nn_chunk *nn_chunkref_getchunk (struct nn_chunkref *self)
 
     chunk = nn_chunk_alloc (self->ref [0], 0);
     alloc_assert (chunk);
-    memcpy (nn_chunk_data (chunk), &self->ref [1], self->ref [0]);
+    memcpy (chunk, &self->ref [1], self->ref [0]);
     self->ref [0] = 0;
     return chunk;
 }
@@ -111,7 +111,7 @@ void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
 void *nn_chunkref_data (struct nn_chunkref *self)
 {
     return self->ref [0] == 0xff ?
-        nn_chunk_data (((struct nn_chunkref_chunk*) self)->chunk) :
+        ((struct nn_chunkref_chunk*) self)->chunk :
         &self->ref [1];
 }
 

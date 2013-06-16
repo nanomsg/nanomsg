@@ -21,26 +21,46 @@
 */
 
 #include "chunk.h"
+#include "atomic.h"
 #include "alloc.h"
 #include "fast.h"
+#include "wire.h"
 #include "err.h"
 
 #include <string.h>
+#include <stdint.h>
 
 #define NN_CHUNK_TAG 0xdeadcafe
 
-static void nn_chunk_default_free (void *p);
-static const struct nn_chunk_vfptr nn_chunk_default_vfptr = {
-    nn_chunk_default_free
+typedef void (*nn_chunk_free_fn) (void *p);
+
+struct nn_chunk {
+
+    /*  Number of places the chunk is referenced from. */
+    struct nn_atomic refcount;
+
+    /*  Size of the message in bytes. */
+    size_t size;
+
+    /*  Deallocation function. */
+    nn_chunk_free_fn ffn;
+
+    /*  The structure if followed by optional empty space, a 32 bit unsigned
+        integer specifying the size of said empty space, a 32 bit tag and
+        the message data itself. */
 };
 
-struct nn_chunk *nn_chunk_alloc (size_t size, int type)
+/*  Private functions. */
+static struct nn_chunk *nn_chunk_getptr (void *p);
+static void nn_chunk_default_free (void *p);
+
+void *nn_chunk_alloc (size_t size, int type)
 {
     size_t sz;
     struct nn_chunk *self;
 
     /*  Allocate the actual memory depending on the type. */
-    sz = size + sizeof (struct nn_chunk);
+    sz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t) + size;
     switch (type) {
     case 0:
         self = nn_alloc (sz, "message chunk");
@@ -51,82 +71,91 @@ struct nn_chunk *nn_chunk_alloc (size_t size, int type)
     alloc_assert (self);
 
     /*  Fill in the chunk header. */
-    self->tag = NN_CHUNK_TAG;
-    self->offset = 0;
     nn_atomic_init (&self->refcount, 1);
-    self->vfptr = &nn_chunk_default_vfptr;
     self->size = size;
+    self->ffn = nn_chunk_default_free;
+
+    /*  Fill in the size of the empty space between the chunk header
+        and the message. */
+    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
+
+    /*  Fill in the tag. */
+    nn_putl ((uint8_t*) (((uint32_t*) (self + 1))) + 1, NN_CHUNK_TAG);
 
     return self;
 }
 
-void nn_chunk_free (struct nn_chunk *self)
+void nn_chunk_free (void *p)
 {
-    nn_assert (self->tag == NN_CHUNK_TAG);
+    struct nn_chunk *self;
+
+    self = nn_chunk_getptr (p);
 
     /*  Decrement the reference count. Actual deallocation happens only if
         it drops to zero. */
     if (nn_atomic_dec (&self->refcount, 1) <= 1) {
         
         /*  Mark chunk as deallocated. */
-        self->tag = 0;
+        nn_putl ((uint8_t*) (((uint32_t*) p) - 1), 0);
 
+        /*  Deallocate the resources held by the chunk. */
         nn_atomic_term (&self->refcount);
 
-        /*  Compute the beginning of the allocated block and deallocate it
-            according to the allocation mechanism specified. */
-        self->vfptr->free (((uint8_t*) self) - self->offset);
+        /*  Deallocate the memory block according to the allocation
+            mechanism specified. */
+        self->ffn (self);
     }
 }
 
-void nn_chunk_addref (struct nn_chunk *self, uint32_t n)
+void nn_chunk_addref (void *p, int n)
 {
-    nn_assert (self->tag == NN_CHUNK_TAG);
+    struct nn_chunk *self;
+
+    self = nn_chunk_getptr (p);
+
     nn_atomic_inc (&self->refcount, n);
+}
+
+
+size_t nn_chunk_size (void *p)
+{
+    return nn_chunk_getptr (p)->size;
+}
+
+void *nn_chunk_trim (void *p, size_t n)
+{
+    struct nn_chunk *self;
+
+    self = nn_chunk_getptr (p);
+
+    /*  Sanity check. We cannot trim more bytes than there are in the chunk. */
+    nn_assert (n >= 0 && n <= self->size);
+
+    /*  Adjust the chunk header. */
+    p = ((uint8_t*) p) + n;
+    nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG);
+    nn_putl ((uint8_t*) (((uint32_t*) p) - 2), (uint8_t*) p - (uint8_t*) self -
+        2 * sizeof (uint32_t));
+
+    /*  Adjust the size of the message. */
+    self->size -= n;
+
+    return p;
+}
+
+static struct nn_chunk *nn_chunk_getptr (void *p)
+{
+    uint32_t off;
+
+    nn_assert (nn_getl ((uint8_t*) p - sizeof (uint32_t)) == NN_CHUNK_TAG);
+    off = nn_getl ((uint8_t*) p - 2 * sizeof (uint32_t));
+
+    return (struct  nn_chunk*) ((uint8_t*) p - 2 *sizeof (uint32_t) - off -
+        sizeof (struct nn_chunk));
 }
 
 static void nn_chunk_default_free (void *p)
 {
     nn_free (p);
-}
-
-struct nn_chunk *nn_chunk_from_data (void *data)
-{
-    struct nn_chunk *chunk;
-
-    if (nn_slow (!data))
-        return NULL;
-    chunk = ((struct nn_chunk*) data) - 1;
-    if (nn_slow (chunk->tag != NN_CHUNK_TAG))
-        return NULL;
-    return chunk;
-}
-
-void *nn_chunk_data (struct nn_chunk *self)
-{
-    return (void*) (self + 1);
-}
-
-size_t nn_chunk_size (struct nn_chunk *self)
-{
-    return self->size;
-}
-
-struct nn_chunk *nn_chunk_trim (struct nn_chunk *self, size_t n)
-{
-    struct nn_chunk *newself;
-
-    /*  Sanity check. We cannot trim more bytes than there are in the chunk. */
-    nn_assert (self->size >= n);
-
-    /*  Move the chunk header to the new place. */
-    newself = (struct nn_chunk*) (((uint8_t*) self) + n);
-    memmove (newself, self, sizeof (struct nn_chunk));
-
-    /*  Adjust the header. */
-    newself->offset += n;
-    newself->size -= n;
-
-    return newself;
 }
 

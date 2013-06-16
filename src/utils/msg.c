@@ -30,7 +30,7 @@ void nn_msg_init (struct nn_msg *self, size_t size)
     nn_chunkref_init (&self->body, size);
 }
 
-void nn_msg_init_chunk (struct nn_msg *self, struct nn_chunk *chunk)
+void nn_msg_init_chunk (struct nn_msg *self, void *chunk)
 {
     nn_chunkref_init (&self->hdr, 0);
     nn_chunkref_init_chunk (&self->body, chunk);

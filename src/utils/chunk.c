@@ -80,9 +80,9 @@ void *nn_chunk_alloc (size_t size, int type)
     nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
 
     /*  Fill in the tag. */
-    nn_putl ((uint8_t*) (((uint32_t*) (self + 1))) + 1, NN_CHUNK_TAG);
+    nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), NN_CHUNK_TAG);
 
-    return self;
+    return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
 }
 
 void nn_chunk_free (void *p)

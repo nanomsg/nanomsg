@@ -222,6 +222,8 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         nn_chunkref_term (&req->reply.hdr);
         nn_chunkref_init (&req->reply.hdr, 0);
 
+        /*  TODO: Deallocate the request here? */
+
         /*  Notify the state machine. */
         if (req->state == NN_REQ_STATE_ACTIVE)
             nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_IN);
@@ -588,11 +590,11 @@ static void nn_req_action_send (struct nn_req *self)
     /*  Send the request. */
     nn_msg_cp (&msg, &self->request);
     rc = nn_xreq_send (&self->xreq.sockbase, &msg);
-    nn_msg_term (&msg);
 
     /*  If the request cannot be sent at the moment wait till
         new outbound pipe arrives. */
     if (nn_slow (rc == -EAGAIN)) {
+        nn_msg_term (&msg);
         self->state = NN_REQ_STATE_DELAYED;
         return;
     }

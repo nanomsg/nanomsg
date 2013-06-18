@@ -31,6 +31,7 @@
 #include <stdint.h>
 
 #define NN_CHUNK_TAG 0xdeadcafe
+#define NN_CHUNK_TAG_DEALLOCATED 0xbeadfeed
 
 typedef void (*nn_chunk_free_fn) (void *p);
 
@@ -96,7 +97,7 @@ void nn_chunk_free (void *p)
     if (nn_atomic_dec (&self->refcount, 1) <= 1) {
         
         /*  Mark chunk as deallocated. */
-        nn_putl ((uint8_t*) (((uint32_t*) p) - 1), 0);
+        nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG_DEALLOCATED);
 
         /*  Deallocate the resources held by the chunk. */
         nn_atomic_term (&self->refcount);
@@ -135,7 +136,7 @@ void *nn_chunk_trim (void *p, size_t n)
     p = ((uint8_t*) p) + n;
     nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG);
     nn_putl ((uint8_t*) (((uint32_t*) p) - 2), (uint8_t*) p - (uint8_t*) self -
-        2 * sizeof (uint32_t));
+        2 * sizeof (uint32_t) - sizeof (struct nn_chunk));
 
     /*  Adjust the size of the message. */
     self->size -= n;

@@ -35,7 +35,7 @@
 #define NN_EP_STATE_ACTIVE 2
 #define NN_EP_STATE_STOPPING 3
 
-#define NN_EP_EVENT_STOPPED 1
+#define NN_EP_ACTION_STOPPED 1
 
 /*  Private functions. */
 static void nn_ep_handler (struct nn_fsm *self, void *source, int type);
@@ -102,7 +102,7 @@ void nn_ep_stop (struct nn_ep *self)
 
 void nn_ep_stopped (struct nn_ep *self)
 {
-    nn_ep_handler (&self->fsm, NULL, NN_EP_EVENT_STOPPED);
+    nn_ep_handler (&self->fsm, NULL, NN_EP_ACTION_STOPPED);
 }
 
 struct nn_ctx *nn_ep_getctx (struct nn_ep *self)
@@ -144,7 +144,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
     if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
-        if (source != NULL || type != NN_EP_EVENT_STOPPED)
+        if (source != NULL || type != NN_EP_ACTION_STOPPED)
             return;
         ep->state = NN_EP_STATE_IDLE;
         nn_fsm_stopped (&ep->fsm, ep, NN_EP_STOPPED);

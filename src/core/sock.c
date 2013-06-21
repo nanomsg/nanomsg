@@ -48,10 +48,10 @@
 #define NN_SOCK_STATE_CLOSED 6
 
 /*  Events sent to the state machine. */
-#define NN_SOCK_EVENT_START 1
-#define NN_SOCK_EVENT_ZOMBIFY 2
-#define NN_SOCK_EVENT_CLOSE 3
-#define NN_SOCK_EVENT_STOPPED 4
+#define NN_SOCK_ACTION_START 1
+#define NN_SOCK_ACTION_ZOMBIFY 2
+#define NN_SOCK_ACTION_CLOSE 3
+#define NN_SOCK_ACTION_STOPPED 4
 
 /*  Private functions. */
 void nn_sock_adjust_events (struct nn_sock *self);
@@ -133,7 +133,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 
     /*  Launch the state machine. */
     nn_ctx_enter (&self->ctx);
-    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_START);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_ACTION_START);
     nn_ctx_leave (&self->ctx);
 
     return 0;
@@ -144,14 +144,14 @@ void nn_sock_stopped (struct nn_sock *self)
     /*  TODO: Do the following in a more sane way. */
     self->stopped.fsm = &self->fsm;
     self->stopped.source = NULL;
-    self->stopped.type = NN_SOCK_EVENT_STOPPED;
+    self->stopped.type = NN_SOCK_ACTION_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->stopped);
 }
 
 void nn_sock_zombify (struct nn_sock *self)
 {
     nn_ctx_enter (&self->ctx);
-    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_ZOMBIFY);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_ACTION_ZOMBIFY);
     nn_ctx_leave (&self->ctx);
 }
 
@@ -162,7 +162,7 @@ int nn_sock_term (struct nn_sock *self)
 
     /*  Ask the state machine to start closing the socket. */
     nn_ctx_enter (&self->ctx);
-    nn_sock_handler (&self->fsm, NULL, NN_SOCK_EVENT_CLOSE);
+    nn_sock_handler (&self->fsm, NULL, NN_SOCK_ACTION_CLOSE);
     nn_ctx_leave (&self->ctx);
 
     /*  Shutdown process was already started but some endpoints may still
@@ -714,7 +714,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
     case NN_SOCK_STATE_INIT:
         if (source == NULL) {
             switch (type) {
-            case NN_SOCK_EVENT_START:
+            case NN_SOCK_ACTION_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
                 return;
             default:
@@ -729,7 +729,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
     case NN_SOCK_STATE_ACTIVE:
         if (source == NULL) {
             switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
+            case NN_SOCK_ACTION_CLOSE:
 
                 /*  Close sndfd and rcvfd. This should make any current
                     select/poll using SNDFD and/or RCVFD exit. */
@@ -751,7 +751,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 
                 return;
 
-            case NN_SOCK_EVENT_ZOMBIFY:
+            case NN_SOCK_ACTION_ZOMBIFY:
 
                 /*  Switch to the zombie state. From now on all the socket
                     functions will return ETERM. */
@@ -796,7 +796,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
     case NN_SOCK_STATE_ZOMBIE:
         if (source == NULL) {
             switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
+            case NN_SOCK_ACTION_CLOSE:
                 nn_assert (0);
             default:
                 nn_assert (0);
@@ -810,7 +810,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
     case NN_SOCK_STATE_STOPPING_EPS:
         if (source == NULL) {
             switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
+            case NN_SOCK_ACTION_CLOSE:
 
                  /*  nn_close() invocation may have been interrupted by
                      a signal. When it is restarted no special action has to
@@ -859,14 +859,14 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
     case NN_SOCK_STATE_STOPPING:
         if (source == NULL) {
             switch (type) {
-            case NN_SOCK_EVENT_CLOSE:
+            case NN_SOCK_ACTION_CLOSE:
 
                  /*  nn_close() invocation may have been interrupted by
                      a signal. When it is restarted no special action has to
                      be taken. */
                  return;
 
-            case NN_SOCK_EVENT_STOPPED:
+            case NN_SOCK_ACTION_STOPPED:
 
                 /*  Protocol-specific part of the socket is stopped.
                     We can safely deallocate it. */

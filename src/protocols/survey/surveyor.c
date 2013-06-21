@@ -49,8 +49,8 @@
 #define NN_SURVEYOR_STATE_STOPPING_TIMER 5
 #define NN_SURVEYOR_STATE_STOPPING 6
 
-#define NN_SURVEYOR_EVENT_START 1
-#define NN_SURVEYOR_EVENT_CANCEL 2
+#define NN_SURVEYOR_ACTION_START 1
+#define NN_SURVEYOR_ACTION_CANCEL 2
 
 struct nn_surveyor {
 
@@ -207,13 +207,13 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
             return -EAGAIN;
 
         /*  Cancel the current survey. */
-        nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_EVENT_CANCEL);
+        nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_ACTION_CANCEL);
 
         return 0;
     }
 
     /*  Notify the state machine that the survey was started. */
-    nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_EVENT_START);
+    nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_ACTION_START);
 
     return 0;
 }
@@ -344,7 +344,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
     case NN_SURVEYOR_STATE_PASSIVE:
         if (source == NULL) {
             switch (type) {
-            case NN_SURVEYOR_EVENT_START:
+            case NN_SURVEYOR_ACTION_START:
                 rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase,
                     &surveyor->tosend);
                 errnum_assert (rc == 0, -rc);
@@ -364,7 +364,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
     case NN_SURVEYOR_STATE_ACTIVE:
         if (source == NULL) {
             switch (type) {
-            case NN_SURVEYOR_EVENT_CANCEL:
+            case NN_SURVEYOR_ACTION_CANCEL:
                 nn_timer_stop (&surveyor->timer);
                 surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
                 return;
@@ -392,7 +392,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
     case NN_SURVEYOR_STATE_CANCELLING:
         if (source == NULL) {
             switch (type) {
-            case NN_SURVEYOR_EVENT_CANCEL:
+            case NN_SURVEYOR_ACTION_CANCEL:
                 return;
             default:
                 nn_assert (0);

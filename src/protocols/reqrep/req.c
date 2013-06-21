@@ -53,11 +53,11 @@
 #define NN_REQ_STATE_DONE 8
 #define NN_REQ_STATE_STOPPING 9
 
-#define NN_REQ_EVENT_START 1
-#define NN_REQ_EVENT_IN 2
-#define NN_REQ_EVENT_OUT 3
-#define NN_REQ_EVENT_SENT 4
-#define NN_REQ_EVENT_RECEIVED 5
+#define NN_REQ_ACTION_START 1
+#define NN_REQ_ACTION_IN 2
+#define NN_REQ_ACTION_OUT 3
+#define NN_REQ_ACTION_SENT 4
+#define NN_REQ_ACTION_RECEIVED 5
 
 struct nn_req {
 
@@ -226,7 +226,7 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 
         /*  Notify the state machine. */
         if (req->state == NN_REQ_STATE_ACTIVE)
-            nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_IN);
+            nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_IN);
 
         return;
     }
@@ -243,7 +243,7 @@ static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     /*  Notify the state machine. */
     if (req->state == NN_REQ_STATE_DELAYED)
-        nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_OUT);
+        nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_OUT);
 }
 
 static int nn_req_events (struct nn_sockbase *self)
@@ -284,7 +284,7 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
     nn_msg_mv (&req->request, msg);
 
     /*  Notify the state machine. */
-    nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_SENT);
+    nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_SENT);
 
     return 0;
 }
@@ -308,7 +308,7 @@ static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
     nn_msg_init (&req->reply, 0);
 
     /*  Notify the state machine. */
-    nn_req_handler (&req->fsm, NULL, NN_REQ_EVENT_RECEIVED);
+    nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_RECEIVED);
 
     return 0;
 }
@@ -402,7 +402,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
     case NN_REQ_STATE_PASSIVE:
         if (source == NULL) {
             switch (type) {
-            case NN_REQ_EVENT_SENT:
+            case NN_REQ_ACTION_SENT:
                 nn_req_action_send (req);
                 return;
             default:
@@ -420,11 +420,11 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
     case NN_REQ_STATE_DELAYED:
         if (source == NULL) {
             switch (type) {
-            case NN_REQ_EVENT_OUT:
+            case NN_REQ_ACTION_OUT:
                 nn_req_action_send (req);
                 return;
 
-            case NN_REQ_EVENT_SENT:
+            case NN_REQ_ACTION_SENT:
 
                 /*  New request was sent while the old one was still being
                     processed. Cancel the old request first. */
@@ -445,14 +445,14 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
     case NN_REQ_STATE_ACTIVE:
         if (source == NULL) {
             switch (type) {
-            case NN_REQ_EVENT_IN:
+            case NN_REQ_ACTION_IN:
 
                 /*  Reply arrived. */
                 nn_timer_stop (&req->timer);
                 req->state = NN_REQ_STATE_STOPPING_TIMER;
                 return;
 
-            case NN_REQ_EVENT_SENT:
+            case NN_REQ_ACTION_SENT:
 
                 /*  New request was sent while the old one was still being
                     processed. Cancel the old request first. */
@@ -493,7 +493,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         }
         if (source == NULL) {
             switch (type) {
-            case NN_REQ_EVENT_SENT:
+            case NN_REQ_ACTION_SENT:
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
             default:
@@ -518,7 +518,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         }
         if (source == NULL) {
              switch (type) {
-             case NN_REQ_EVENT_SENT:
+             case NN_REQ_ACTION_SENT:
                  return;
              default:
                  nn_assert (0);
@@ -542,7 +542,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
         }
         if (source == NULL) {
              switch (type) {
-             case NN_REQ_EVENT_SENT:
+             case NN_REQ_ACTION_SENT:
                  req->state = NN_REQ_STATE_CANCELLING;
                  return;
              default:
@@ -558,10 +558,10 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
     case NN_REQ_STATE_DONE:
         if (source == NULL) {
              switch (type) {
-             case NN_REQ_EVENT_RECEIVED:
+             case NN_REQ_ACTION_RECEIVED:
                  req->state = NN_REQ_STATE_PASSIVE;
                  return;
-             case NN_REQ_EVENT_SENT:
+             case NN_REQ_ACTION_SENT:
                  nn_req_action_send (req);
                  return;
              default:

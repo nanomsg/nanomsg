@@ -43,14 +43,14 @@
 #define NN_USOCK_STATE_STOPPING 12
 #define NN_USOCK_STATE_STOPPING_ACCEPT 13
 
-#define NN_USOCK_EVENT_ACCEPT 1
-#define NN_USOCK_EVENT_BEING_ACCEPTED 2
-#define NN_USOCK_EVENT_CANCEL 3
-#define NN_USOCK_EVENT_LISTEN 4
-#define NN_USOCK_EVENT_CONNECT 5
-#define NN_USOCK_EVENT_ACTIVATE 6
-#define NN_USOCK_EVENT_DONE 7
-#define NN_USOCK_EVENT_ERROR 8
+#define NN_USOCK_ACTION_ACCEPT 1
+#define NN_USOCK_ACTION_BEING_ACCEPTED 2
+#define NN_USOCK_ACTION_CANCEL 3
+#define NN_USOCK_ACTION_LISTEN 4
+#define NN_USOCK_ACTION_CONNECT 5
+#define NN_USOCK_ACTION_ACTIVATE 6
+#define NN_USOCK_ACTION_DONE 7
+#define NN_USOCK_ACTION_ERROR 8
 
 /*  Private functions. */
 static void nn_usock_init_from_fd (struct nn_usock *self, int s);
@@ -273,7 +273,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
         return -errno;
 
     /*  Notify the state machine. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_LISTEN);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_LISTEN);
 
     return 0;
 }
@@ -284,8 +284,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Start the actual accepting. */
     nn_fsm_start (&self->fsm);
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_BEING_ACCEPTED);
-    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_ACCEPT);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_BEING_ACCEPTED);
+    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_ACCEPT);
 
     /*  Try to accept new connection in synchronous manner. */
 #if NN_HAVE_ACCEPT4
@@ -297,8 +297,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
         nn_usock_init_from_fd (self, s);
-        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_EVENT_DONE);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_DONE);
+        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_DONE);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
         return;
     }
 
@@ -319,7 +319,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
 void nn_usock_activate (struct nn_usock *self)
 {
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ACTIVATE);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ACTIVATE);
 }
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
@@ -328,20 +328,20 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     int rc;
 
     /*  Notify the state machine that we've started connecting. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_CONNECT);
+    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_CONNECT);
 
     /* Do the connect itself. */
     rc = connect (self->s, addr, (socklen_t) addrlen);
 
     /* Immediate success. */
     if (nn_fast (rc == 0)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_DONE);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
         return;
     }
 
     /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -384,7 +384,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     /*  Errors. */
     if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -405,7 +405,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_EVENT_ERROR);
+        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -487,7 +487,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         /*  When socket that's being accepted is asked to stop, we have to
             ask the listener socket to stop accepting first. */
         if (usock->state == NN_USOCK_STATE_BEING_ACCEPTED) {
-            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_EVENT_CANCEL);
+            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_CANCEL);
             usock->state = NN_USOCK_STATE_STOPPING_ACCEPT;
             return;
         }
@@ -499,7 +499,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
-        nn_assert (source == NULL && type == NN_USOCK_EVENT_DONE);
+        nn_assert (source == NULL && type == NN_USOCK_ACTION_DONE);
         goto finish2;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
@@ -548,13 +548,13 @@ finish3:
         /*  Events from the owner of the usock. */
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_LISTEN:
+            case NN_USOCK_ACTION_LISTEN:
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
-            case NN_USOCK_EVENT_CONNECT:
+            case NN_USOCK_ACTION_CONNECT:
                 usock->state = NN_USOCK_STATE_CONNECTING;
                 return;
-            case NN_USOCK_EVENT_BEING_ACCEPTED:
+            case NN_USOCK_ACTION_BEING_ACCEPTED:
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
                 return;
             default:
@@ -571,7 +571,7 @@ finish3:
     case NN_USOCK_STATE_BEING_ACCEPTED:
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_DONE:
+            case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
                 nn_fsm_raise (&usock->fsm, &usock->event_established,
                     usock, NN_USOCK_ACCEPTED);
@@ -590,7 +590,7 @@ finish3:
     case NN_USOCK_STATE_ACCEPTED:
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_ACTIVATE:
+            case NN_USOCK_ACTION_ACTIVATE:
                 nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 return;
@@ -607,13 +607,13 @@ finish3:
     case NN_USOCK_STATE_CONNECTING:
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_DONE:
+            case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 nn_worker_execute (usock->worker, &usock->task_connected);
                 nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
                     NN_USOCK_CONNECTED);
                 return;
-            case NN_USOCK_EVENT_ERROR:
+            case NN_USOCK_ACTION_ERROR:
                 rc = close (usock->s);
                 errno_assert (rc == 0);
                 usock->s = -1;
@@ -697,7 +697,7 @@ error:
         }
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_ERROR:
+            case NN_USOCK_ACTION_ERROR:
                 usock->state = NN_USOCK_STATE_REMOVING_FD;
                 nn_worker_execute (usock->worker, &usock->task_stop);
                 return;
@@ -746,7 +746,7 @@ error:
     case NN_USOCK_STATE_LISTENING:
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_ACCEPT:
+            case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
                 return;
             default:
@@ -763,10 +763,10 @@ error:
     case NN_USOCK_STATE_ACCEPTING:
         if (source == NULL) {
             switch (type) {
-            case NN_USOCK_EVENT_DONE:
+            case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
-            case NN_USOCK_EVENT_CANCEL:
+            case NN_USOCK_ACTION_CANCEL:
                 nn_worker_execute (usock->worker, &usock->task_stop);
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
@@ -830,7 +830,7 @@ error:
             usock->state = NN_USOCK_STATE_LISTENING;
 
             /*  Notify the accepted socket that it was stopped. */
-            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_EVENT_DONE);
+            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_DONE);
 
             return;
         }

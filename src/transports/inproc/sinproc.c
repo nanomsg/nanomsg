@@ -31,7 +31,7 @@
 #define NN_SINPROC_STATE_CONNECTING 2
 #define NN_SINPROC_STATE_ACTIVE 3
 
-#define NN_SINPROC_EVENT_ACCEPTED 1
+#define NN_SINPROC_ACTION_ACCEPTED 1
 
 /*  Set when SENT event was sent to the peer but RECEIVED haven't been
     passed back yet. */
@@ -109,7 +109,7 @@ printf ("%p sending ACCEPTED\n", self);
 
     /*  Notify the state machine. */
     nn_fsm_start (&self->fsm);
-    nn_sinproc_handler (&self->fsm, NULL, NN_SINPROC_EVENT_ACCEPTED);
+    nn_sinproc_handler (&self->fsm, NULL, NN_SINPROC_ACTION_ACCEPTED);
 }
 
 void nn_sinproc_stop (struct nn_sinproc *self)
@@ -203,7 +203,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
     case NN_SINPROC_STATE_CONNECTING:
         if (source == NULL) {
             switch (type) {
-            case NN_SINPROC_EVENT_ACCEPTED:
+            case NN_SINPROC_ACTION_ACCEPTED:
                 rc = nn_pipebase_start (&sinproc->pipebase);
                 errnum_assert (rc == 0, -rc);
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;

@@ -32,8 +32,8 @@
 #define NN_DNS_STATE_DONE 3
 #define NN_DNS_STATE_STOPPING 4
 
-#define NN_DNS_EVENT_DONE 1
-#define NN_DNS_EVENT_CANCELLED 2
+#define NN_DNS_ACTION_DONE 1
+#define NN_DNS_ACTION_CANCELLED 2
 
 /*  Private functions. */
 static void nn_dns_notify (union sigval);
@@ -132,11 +132,11 @@ static void nn_dns_notify (union sigval sval)
     nn_ctx_enter (self->fsm.ctx);
     rc = gai_error (&self->gcb);
     if (rc == EAI_CANCELED) {
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_EVENT_CANCELLED);
+        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_CANCELLED);
     }
     else if (rc != 0) {
         self->result->error = EINVAL;
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_EVENT_DONE);
+        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_DONE);
     }
     else {
         self->result->error = 0;
@@ -145,7 +145,7 @@ static void nn_dns_notify (union sigval sval)
         memcpy (&self->result->addr, self->gcb.ar_result->ai_addr,
             self->gcb.ar_result->ai_addrlen);
         self->result->addrlen = (size_t) self->gcb.ar_result->ai_addrlen;
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_EVENT_DONE);
+        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_DONE);
     }
     nn_ctx_leave (self->fsm.ctx);
 }
@@ -179,8 +179,8 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
     if (nn_slow (dns->state == NN_DNS_STATE_STOPPING)) {
-        if (source == NULL && (type == NN_DNS_EVENT_CANCELLED ||
-              type == NN_DNS_EVENT_DONE)) {
+        if (source == NULL && (type == NN_DNS_ACTION_CANCELLED ||
+              type == NN_DNS_ACTION_DONE)) {
             nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
             dns->state = NN_DNS_STATE_IDLE;
             return;
@@ -215,7 +215,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
     case NN_DNS_STATE_RESOLVING:
         if (source == NULL) {
             switch (type) {
-            case NN_DNS_EVENT_DONE:
+            case NN_DNS_ACTION_DONE:
                 nn_fsm_raise (&dns->fsm, &dns->done, dns, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
                 return;

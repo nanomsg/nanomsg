@@ -74,8 +74,9 @@ void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner);
 void nn_sinproc_term (struct nn_sinproc *self);
 
-void nn_sinproc_start (struct nn_sinproc *self, struct nn_fsm *peer);
-void nn_sinproc_start_accept (struct nn_sinproc *self, struct nn_sinproc *peer);
+/*  Connect and accept are two different ways to start the state machine. */
+void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer);
+void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer);
 void nn_sinproc_stop (struct nn_sinproc *self);
 
 #endif

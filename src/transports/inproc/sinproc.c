@@ -82,7 +82,7 @@ printf ("%p term\n", self);
     nn_fsm_term (&self->fsm);
 }
 
-void nn_sinproc_start (struct nn_sinproc *self, struct nn_fsm *peer)
+void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer)
 {
 printf ("%p start\n", self);
     nn_fsm_start (&self->fsm);
@@ -93,14 +93,13 @@ printf ("%p sending CONNECT\n", self);
         NN_SINPROC_CONNECT);
 }
 
-void nn_sinproc_start_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
+void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
 {
     int rc;
 
 printf ("%p start_peer\n", self);
     nn_assert (!self->peer);
     self->peer = peer;
-    
 
     /*  Start the connecting handshake with the peer. */
 printf ("%p sending ACCEPTED\n", self);

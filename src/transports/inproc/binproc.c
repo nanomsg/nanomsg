@@ -103,7 +103,7 @@ void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
     nn_sinproc_init (sinproc, &self->epbase, &self->fsm);
     nn_list_insert (&self->sinprocs, &sinproc->item,
         nn_list_end (&self->sinprocs));
-    nn_sinproc_start (sinproc, &peer->fsm);
+    nn_sinproc_connect (sinproc, &peer->fsm);
 }
 
 static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)

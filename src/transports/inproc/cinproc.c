@@ -146,7 +146,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
         switch (type) {
         case NN_SINPROC_CONNECT:
 printf ("%p CONNECT received (by cinproc)\n", sinproc);
-            nn_sinproc_start_accept (&cinproc->sinproc, sinproc);
+            nn_sinproc_accept (&cinproc->sinproc, sinproc);
             cinproc->state = NN_CINPROC_STATE_ACTIVE;
             return;
         default:

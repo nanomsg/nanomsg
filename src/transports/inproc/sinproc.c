@@ -57,7 +57,6 @@ const struct nn_pipebase_vfptr nn_sinproc_pipebase_vfptr = {
 void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-printf ("%p init\n", self);
     nn_fsm_init (&self->fsm, nn_sinproc_handler, owner);
     self->state = NN_SINPROC_STATE_IDLE;
     self->flags = 0;
@@ -74,7 +73,6 @@ printf ("%p init\n", self);
 
 void nn_sinproc_term (struct nn_sinproc *self)
 {
-printf ("%p term\n", self);
     nn_list_item_term (&self->item);
     nn_fsm_event_term (&self->event_disconnect);
     nn_fsm_event_term (&self->event_received);
@@ -93,7 +91,6 @@ int nn_sinproc_isidle (struct nn_sinproc *self)
 
 void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer)
 {
-printf ("%p connect\n", self);
     nn_fsm_start (&self->fsm);
 
     /*  Start the connecting handshake with the peer. */
@@ -105,7 +102,6 @@ void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
 {
     int rc;
 
-printf ("%p accept\n", self);
     nn_assert (!self->peer);
     self->peer = peer;
 
@@ -120,7 +116,6 @@ printf ("%p accept\n", self);
 
 void nn_sinproc_stop (struct nn_sinproc *self)
 {
-printf ("%p stop\n", self);
     nn_fsm_stop (&self->fsm);
 }
 
@@ -139,15 +134,12 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE);
     nn_assert (!(sinproc->flags & NN_SINPROC_FLAG_SENDING));
 
-printf ("%p send\n", sinproc);
-
     /*  Expose the message to the peer. */
     nn_msg_term (&sinproc->msg);
     nn_msg_mv (&sinproc->msg, msg);
 
     /*  Notify the peer that there's a message to get. */
     sinproc->flags |= NN_SINPROC_FLAG_SENDING;
-printf ("%p sending SENT\n", sinproc);
     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
         &sinproc->peer->event_sent, sinproc, NN_SINPROC_SENT);
 
@@ -164,8 +156,6 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     /*  Sanity check. */
     nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE ||
         sinproc->state == NN_SINPROC_STATE_DISCONNECTED);
-
-printf ("%p recv\n", sinproc);
 
     /*  Move the message to the caller. */
     rc = nn_msgqueue_recv (&sinproc->msgqueue, msg);
@@ -208,7 +198,6 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
               sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
             goto finish;
         nn_pipebase_stop (&sinproc->pipebase);
-printf ("%p sending DISCONNECT\n", sinproc);
         nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
             &sinproc->peer->event_disconnect, sinproc, NN_SINPROC_DISCONNECT);
         sinproc->state = NN_SINPROC_STATE_STOPPING;
@@ -216,7 +205,6 @@ printf ("%p sending DISCONNECT\n", sinproc);
     }
     if (nn_slow (sinproc->state == NN_SINPROC_STATE_STOPPING)) {
         nn_assert (source == sinproc->peer && type == NN_SINPROC_DISCONNECT);
-printf ("%p received DISCONNECT (STOPPING state)\n", sinproc);
         sinproc->state = NN_SINPROC_STATE_IDLE;
 finish:
         nn_fsm_stopped (&sinproc->fsm, sinproc, NN_SINPROC_STOPPED);
@@ -279,8 +267,6 @@ finish:
                 switch (type) {
                 case NN_SINPROC_SENT:
 
-printf ("%p received SENT\n", sinproc);
-
                     empty = nn_msgqueue_empty (&sinproc->msgqueue);
 
                     /*  Push the message to the inbound message queue. */
@@ -297,7 +283,6 @@ printf ("%p received SENT\n", sinproc);
                     if (empty)
                         nn_pipebase_received (&sinproc->pipebase);
 
-printf ("%p sending RECEIVED\n", sinproc);
                     /*  Notify the peer that the message was received. */
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
                         &sinproc->peer->event_received, sinproc,
@@ -306,16 +291,13 @@ printf ("%p sending RECEIVED\n", sinproc);
                     return;
 
                 case NN_SINPROC_RECEIVED:
-printf ("%p received RECEIVED\n", sinproc);
                     nn_assert (sinproc->flags & NN_SINPROC_FLAG_SENDING);
                     nn_pipebase_sent (&sinproc->pipebase);
                     sinproc->flags &= ~NN_SINPROC_FLAG_SENDING;
                     return;
 
                 case NN_SINPROC_DISCONNECT:
-printf ("%p received DISCONNECT (ACTIVE state)\n", sinproc);
                     nn_pipebase_stop (&sinproc->pipebase);
-printf ("%p bouncing DISCONNECT\n", sinproc);
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
                         &sinproc->peer->event_disconnect, sinproc,
                         NN_SINPROC_DISCONNECT);

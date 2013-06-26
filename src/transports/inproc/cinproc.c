@@ -35,6 +35,8 @@
 #define NN_CINPROC_STATE_ACTIVE 3
 #define NN_CINPROC_STATE_STOPPING 4
 
+#define NN_CINPROC_ACTION_CONNECT 1
+
 /*  Implementation of nn_epbase callback interface. */
 static void nn_cinproc_stop (struct nn_epbase *self);
 static void nn_cinproc_destroy (struct nn_epbase *self);
@@ -98,7 +100,8 @@ const char *nn_cinproc_getaddr (struct nn_cinproc *self)
 void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
 {
     nn_assert (self->state == NN_CINPROC_STATE_DISCONNECTED);
-    nn_assert (0);
+    nn_sinproc_connect (&self->sinproc, &peer->fsm);
+    nn_cinproc_handler (&self->fsm, NULL, NN_CINPROC_ACTION_CONNECT);
 }
 
 static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
@@ -153,6 +156,9 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
     case NN_CINPROC_STATE_DISCONNECTED:
         if (source == NULL) {
             switch (type) {
+            case NN_CINPROC_ACTION_CONNECT:
+                cinproc->state = NN_CINPROC_STATE_ACTIVE;
+                return;
             default:
                 nn_assert (0);
             }
@@ -169,6 +175,12 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
         default:
             nn_assert (0);
         }
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/******************************************************************************/
+    case NN_CINPROC_STATE_ACTIVE:
+        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

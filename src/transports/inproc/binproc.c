@@ -112,6 +112,7 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
     struct nn_binproc *binproc;
     struct nn_list_item *it;
     struct nn_sinproc *sinproc;
+    struct nn_sinproc *peer;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
 
@@ -174,7 +175,19 @@ finish:
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_BINPROC_STATE_ACTIVE:
-        nn_assert (0);
+
+        /*  Here we assume that all the events are coming from the peers. */
+        nn_assert (source && type == NN_SINPROC_CONNECT);
+        peer = (struct nn_sinproc*) source;
+
+        /*  Create new sinproc object. */
+        sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
+        alloc_assert (sinproc);
+        nn_sinproc_init (sinproc, &binproc->epbase, &binproc->fsm);
+        nn_list_insert (&binproc->sinprocs, &sinproc->item,
+            nn_list_end (&binproc->sinprocs));
+        nn_sinproc_accept (sinproc, peer);
+        return;
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

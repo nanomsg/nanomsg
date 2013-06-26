@@ -22,6 +22,7 @@
 
 #include "cinproc.h"
 #include "binproc.h"
+#include "inproc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -32,6 +33,7 @@
 #define NN_CINPROC_STATE_IDLE 1
 #define NN_CINPROC_STATE_DISCONNECTED 2
 #define NN_CINPROC_STATE_ACTIVE 3
+#define NN_CINPROC_STATE_STOPPING 4
 
 /*  Implementation of nn_epbase callback interface. */
 static void nn_cinproc_stop (struct nn_epbase *self);
@@ -109,8 +111,24 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &cinproc->fsm && type == NN_FSM_STOP))
-        nn_assert (0);
+    if (nn_slow (source == &cinproc->fsm && type == NN_FSM_STOP)) {
+
+        /*  First, unregister the endpoint from the global repository of inproc
+            endpoints. This way, new connections cannot be created anymore. */
+        nn_inproc_disconnect (cinproc);
+
+        /*  Stop the existing connection. */
+        nn_sinproc_stop (&cinproc->sinproc);
+        cinproc->state = NN_CINPROC_STATE_STOPPING;
+    }
+    if (nn_slow (cinproc->state == NN_CINPROC_STATE_STOPPING)) {
+        if (!nn_sinproc_isidle (&cinproc->sinproc))
+            return;
+        cinproc->state = NN_CINPROC_STATE_IDLE;
+        nn_fsm_stopped_noevent (&cinproc->fsm);
+        nn_epbase_stopped (&cinproc->epbase);
+        return;
+    }
 
     switch (cinproc->state) {
 
@@ -145,7 +163,6 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
         sinproc = (struct nn_sinproc*) source;
         switch (type) {
         case NN_SINPROC_CONNECT:
-printf ("%p CONNECT received (by cinproc)\n", sinproc);
             nn_sinproc_accept (&cinproc->sinproc, sinproc);
             cinproc->state = NN_CINPROC_STATE_ACTIVE;
             return;

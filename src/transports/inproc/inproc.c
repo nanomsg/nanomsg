@@ -169,4 +169,17 @@ static int nn_inproc_connect (const char *addr, void *hint,
     return 0;
 }
 
+void nn_inproc_disconnect (struct nn_cinproc *cinproc)
+{
+    nn_mutex_lock (&self.sync);
+    nn_list_erase (&self.connected, &cinproc->item);
+    nn_mutex_unlock (&self.sync);
+}
+
+void nn_inproc_unbind (struct nn_binproc *binproc)
+{
+    nn_mutex_lock (&self.sync);
+    nn_list_erase (&self.bound, &binproc->item);
+    nn_mutex_unlock (&self.sync);
+}
 

@@ -36,6 +36,8 @@
 #define NN_SINPROC_ACCEPTED 2
 #define NN_SINPROC_SENT 3
 #define NN_SINPROC_RECEIVED 4
+#define NN_SINPROC_DISCONNECT 5
+#define NN_SINPROC_STOPPED 6
 
 struct nn_sinproc {
 
@@ -61,9 +63,13 @@ struct nn_sinproc {
         it to its msgqueue. */
     struct nn_msg msg;
 
+    /*  Outbound events. I.e. event sent by this sinproc to the peer sinproc. */
     struct nn_fsm_event event_connect;
+
+    /*  Inbound events. I.e. events sent by the peer sinproc to this inproc. */
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
+    struct nn_fsm_event event_disconnect;
 
     /*  This member is used only if we are on the bound side. binproc object
         has a list of sinprocs it handles. */
@@ -73,6 +79,7 @@ struct nn_sinproc {
 void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner);
 void nn_sinproc_term (struct nn_sinproc *self);
+int nn_sinproc_isidle (struct nn_sinproc *self);
 
 /*  Connect and accept are two different ways to start the state machine. */
 void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer);

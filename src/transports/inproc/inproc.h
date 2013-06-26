@@ -25,6 +25,12 @@
 
 #include "../../transport.h"
 
+struct nn_binproc;
+struct nn_cinproc;
+
 extern struct nn_transport *nn_inproc;
+
+void nn_inproc_disconnect (struct nn_cinproc *cinproc);
+void nn_inproc_unbind (struct nn_binproc *binproc);
 
 #endif

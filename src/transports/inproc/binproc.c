@@ -31,6 +31,7 @@
 
 #define NN_BINPROC_STATE_IDLE 1
 #define NN_BINPROC_STATE_ACTIVE 2
+#define NN_BINPROC_STATE_STOPPING 3
 
 /*  Implementation of nn_epbase interface. */
 static void nn_binproc_stop (struct nn_epbase *self);
@@ -109,14 +110,48 @@ void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
 static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_binproc *binproc;
+    struct nn_list_item *it;
+    struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
 
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &binproc->fsm && type == NN_FSM_STOP))
-        nn_assert (0);
+    if (nn_slow (source == &binproc->fsm && type == NN_FSM_STOP)) {
+
+        /*  First, unregister the endpoint from the global repository of inproc
+            endpoints. This way, new connections cannot be created anymore. */
+        nn_inproc_unbind (binproc);
+
+        /*  Stop the existing connections. */
+        for (it = nn_list_begin (&binproc->sinprocs);
+              it != nn_list_end (&binproc->sinprocs);
+              it = nn_list_next (&binproc->sinprocs, it)) {
+            sinproc = nn_cont (it, struct nn_sinproc, item);
+            nn_sinproc_stop (sinproc);
+        }
+
+        binproc->state = NN_BINPROC_STATE_STOPPING;
+        goto finish;
+    }
+    if (nn_slow (binproc->state == NN_BINPROC_STATE_STOPPING)) {
+
+        /*  Here we are going to assume that all the events are coming from
+            the individual sinprocs. */
+        nn_assert (type == NN_SINPROC_STOPPED);
+        sinproc = (struct nn_sinproc*) source;
+        nn_list_erase (&binproc->sinprocs, &sinproc->item);
+        nn_sinproc_term (sinproc);
+        nn_free (sinproc);
+finish:
+        if (!nn_list_empty (&binproc->sinprocs))
+            return;
+        binproc->state = NN_BINPROC_STATE_IDLE;
+        nn_fsm_stopped_noevent (&binproc->fsm);
+        nn_epbase_stopped (&binproc->epbase);
+        return;
+    }
 
     switch (binproc->state) {
 

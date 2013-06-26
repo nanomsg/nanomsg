@@ -49,11 +49,9 @@ int main ()
     rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
-#if 0
     /*  Try a duplicate bind. It should fail. */
     rc = nn_bind (sc, SOCKET_ADDRESS);
     nn_assert (rc < 0 && errno == EADDRINUSE);
-#endif
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
@@ -75,7 +73,6 @@ int main ()
         nn_assert (rc == 4);
     }
 
-#if 0
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
         rc = nn_send (sc, "XYZ", 3, 0);
@@ -87,7 +84,6 @@ int main ()
         errno_assert (rc >= 0);
         nn_assert (rc == 3);
     }
-#endif
 
     rc = nn_close (sc);
     errno_assert (rc == 0);

@@ -139,12 +139,15 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE);
     nn_assert (!(sinproc->flags & NN_SINPROC_FLAG_SENDING));
 
+printf ("%p send\n", sinproc);
+
     /*  Expose the message to the peer. */
     nn_msg_term (&sinproc->msg);
     nn_msg_mv (&sinproc->msg, msg);
 
     /*  Notify the peer that there's a message to get. */
     sinproc->flags |= NN_SINPROC_FLAG_SENDING;
+printf ("%p sending SENT\n", sinproc);
     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
         &sinproc->peer->event_sent, sinproc, NN_SINPROC_SENT);
 
@@ -162,24 +165,29 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE ||
         sinproc->state == NN_SINPROC_STATE_DISCONNECTED);
 
+printf ("%p recv\n", sinproc);
+
     /*  Move the message to the caller. */
     rc = nn_msgqueue_recv (&sinproc->msgqueue, msg);
     errnum_assert (rc == 0, -rc);
 
-    /*  If there was a message from peer lingering, try to push it to the
-        queue once again. */
-    if (sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
-        return 0;
-    if (nn_slow (sinproc->flags & NN_SINPROC_FLAG_RECEIVING)) {
-        rc = nn_msgqueue_send (&sinproc->msgqueue, &sinproc->peer->msg);
-        if (rc == -EAGAIN)
-            return 0;
-        errnum_assert (rc == 0, -rc);
-        nn_msg_init (&sinproc->peer->msg, 0);
-        nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-            &sinproc->peer->event_received, sinproc, NN_SINPROC_RECEIVED);
-        sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
+    /*  If there was a message from peer lingering because of the exceeded
+        buffer limit, try to enqueue it once again. */
+    if (sinproc->state != NN_SINPROC_STATE_DISCONNECTED) {
+        if (nn_slow (sinproc->flags & NN_SINPROC_FLAG_RECEIVING)) {
+            rc = nn_msgqueue_send (&sinproc->msgqueue, &sinproc->peer->msg);
+            if (rc == -EAGAIN)
+                return 0;
+            errnum_assert (rc == 0, -rc);
+            nn_msg_init (&sinproc->peer->msg, 0);
+            nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
+                &sinproc->peer->event_received, sinproc, NN_SINPROC_RECEIVED);
+            sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
+        }
     }
+
+    if (!nn_msgqueue_empty (&sinproc->msgqueue))
+       nn_pipebase_received (&sinproc->pipebase);
 
     return 0;
 }
@@ -271,6 +279,8 @@ finish:
                 switch (type) {
                 case NN_SINPROC_SENT:
 
+printf ("%p received SENT\n", sinproc);
+
                     empty = nn_msgqueue_empty (&sinproc->msgqueue);
 
                     /*  Push the message to the inbound message queue. */
@@ -287,6 +297,7 @@ finish:
                     if (empty)
                         nn_pipebase_received (&sinproc->pipebase);
 
+printf ("%p sending RECEIVED\n", sinproc);
                     /*  Notify the peer that the message was received. */
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
                         &sinproc->peer->event_received, sinproc,
@@ -295,6 +306,7 @@ finish:
                     return;
 
                 case NN_SINPROC_RECEIVED:
+printf ("%p received RECEIVED\n", sinproc);
                     nn_assert (sinproc->flags & NN_SINPROC_FLAG_SENDING);
                     nn_pipebase_sent (&sinproc->pipebase);
                     sinproc->flags &= ~NN_SINPROC_FLAG_SENDING;

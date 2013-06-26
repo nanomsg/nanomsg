@@ -742,6 +742,18 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
                     memset (&sock->sndfd, 0xcd, sizeof (sock->sndfd));
                 }
 
+                /*  If there are no ednpoints, we can start stopping
+                    protocol-specific part of the socket. If there' no stop
+                    function we can consider it stopped straight away. */
+                if (nn_list_empty (&sock->eps)) {
+                    sock->state = NN_SOCK_STATE_STOPPING;
+                    if (sock->sockbase->vfptr->stop)
+                        sock->sockbase->vfptr->stop (sock->sockbase);
+                    else
+                        nn_sock_stopped (sock);
+                    return;
+                }
+
                 /*  Ask all the associated endpoints to stop. */
                 for (it = nn_list_begin (&sock->eps);
                       it != nn_list_end (&sock->eps);
@@ -805,7 +817,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (0);
 
 /******************************************************************************/
-/*  CLOSING_EPS state.                                                        */
+/*  STOPPING_EPS state.                                                       */
 /******************************************************************************/
     case NN_SOCK_STATE_STOPPING_EPS:
         if (source == NULL) {

@@ -112,6 +112,7 @@ void device3 (void *arg)
 
 int main ()
 {
+#if 0
     int rc;
     int enda;
     int endb;
@@ -235,6 +236,7 @@ int main ()
     nn_thread_term (&thread1);
     nn_thread_term (&thread2);
     nn_thread_term (&thread3);
+#endif
 
     return 0;
 }

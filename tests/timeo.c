@@ -28,7 +28,6 @@
 
 int main ()
 {
-#if 0
     int rc;
     int s;
     int timeo;
@@ -59,7 +58,6 @@ int main ()
 
     rc = nn_close (s);
     errno_assert (rc == 0);
-#endif
 
     return 0;
 }

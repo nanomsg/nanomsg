@@ -297,8 +297,9 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 
                     /*  Special case when size of the message body is 0. */
                     if (!size) {
+                        sipc->instate = NN_SIPC_INSTATE_HASMSG;
                         nn_pipebase_received (&sipc->pipebase);
-                        nn_assert (0);
+                        return;
                     }
 
                     /*  Start receiving the message body. */

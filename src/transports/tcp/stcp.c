@@ -290,8 +290,9 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 
                     /*  Special case when size of the message body is 0. */
                     if (!size) {
+                        stcp->instate = NN_STCP_INSTATE_HASMSG;
                         nn_pipebase_received (&stcp->pipebase);
-                        nn_assert (0);
+                        return;
                     }
 
                     /*  Start receiving the message body. */

@@ -23,6 +23,7 @@
 #include "binproc.h"
 #include "sinproc.h"
 #include "cinproc.h"
+#include "inproc.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"

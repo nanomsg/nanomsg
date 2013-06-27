@@ -100,8 +100,6 @@ void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer)
 
 void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
 {
-    int rc;
-
     nn_assert (!self->peer);
     self->peer = peer;
 

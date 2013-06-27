@@ -94,7 +94,6 @@ static int nn_inproc_bind (const char *addr, void *hint,
     struct nn_list_item *it;
     struct nn_binproc *binproc;
     struct nn_cinproc *cinproc;
-    struct nn_msgpipe *pipe;
 
     nn_mutex_lock (&self.sync);
 
@@ -140,7 +139,6 @@ static int nn_inproc_connect (const char *addr, void *hint,
     struct nn_list_item *it;
     struct nn_cinproc *cinproc;
     struct nn_binproc *binproc;
-    struct nn_msgpipe *pipe;
 
     nn_mutex_lock (&self.sync);
 

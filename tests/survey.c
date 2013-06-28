@@ -26,7 +26,7 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
-#define SOCKET_ADDRESS "inproc://a"
+#define SOCKET_ADDRESS "inproc://test"
 
 int main ()
 {

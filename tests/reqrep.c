@@ -24,13 +24,11 @@
 #include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
 
 #define SOCKET_ADDRESS "inproc://test"
 
 int main ()
 {
-#if 0
     int rc;
     int rep1;
     int rep2;
@@ -180,8 +178,6 @@ int main ()
     rc = nn_send (req1, "ABC", 3, 0);
     errno_assert (rc >= 0);
 
-    nn_sleep (10);
-
     rep1 = nn_socket (AF_SP, NN_REP);
     errno_assert (rep1 != -1);
     rc = nn_bind (rep1, SOCKET_ADDRESS);
@@ -198,7 +194,7 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (rep1);
     errno_assert (rc == 0);
-#endif
+
     return 0;
 }
 

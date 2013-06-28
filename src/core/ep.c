@@ -45,8 +45,6 @@ int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
 {
     int rc;
 
-    /*  TODO: Accessing sock's internal member is not nice. Can it be done
-        in a better way? */
     nn_fsm_init (&self->fsm, nn_ep_handler, &sock->fsm);
     self->state = NN_EP_STATE_IDLE;
 
@@ -75,6 +73,7 @@ int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
     /*  Endpoint creation failed. */
     if (rc < 0) {
         nn_list_item_term (&self->item);
+        nn_fsm_term (&self->fsm);
         return rc;
     }
 

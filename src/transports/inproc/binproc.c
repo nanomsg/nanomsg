@@ -48,6 +48,7 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type);
 struct nn_binproc *nn_binproc_create (void *hint)
 {
     struct nn_binproc *self;
+    size_t sz;
 
     self = nn_alloc (sizeof (struct nn_binproc), "binproc");
     alloc_assert (self);
@@ -58,6 +59,10 @@ struct nn_binproc *nn_binproc_create (void *hint)
     self->state = NN_BINPROC_STATE_IDLE;
     nn_list_init (&self->sinprocs);
     nn_list_item_init (&self->item);
+    sz = sizeof (self->protocol);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+        &self->protocol, &sz);
+    nn_assert (sz == sizeof (self->protocol));
     self->connects = 0;
 
     /*  Start the state machine. */

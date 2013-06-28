@@ -151,7 +151,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
 
-    switch (self->state) {
+    switch (ep->state) {
 
 /******************************************************************************/
 /*  IDLE state.                                                               */

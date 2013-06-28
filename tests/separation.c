@@ -32,8 +32,8 @@
 #define SOCKET_ADDRESS_IPC "ipc://test.ipc"
 #define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5555"
 
-/*  This test checks whether the library prevents connecting sockets from
-    non-compatible protocols. */
+/*  This test checks whether the library prevents interconnecting sockets
+    between different non-compatible protocols. */
 
 int main ()
 {

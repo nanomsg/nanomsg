@@ -122,9 +122,13 @@ void nn_pipebase_sent (struct nn_pipebase *self)
             (struct nn_pipe*) self, NN_PIPE_OUT);
 }
 
-struct nn_ctx *nn_pipebase_getctx (struct nn_pipebase *self)
+void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
+    void *optval, size_t *optvallen)
 {
-    return nn_sock_getctx (self->sock);
+    int rc;
+
+    rc = nn_sock_getopt_inner (self->sock, level, option, optval, optvallen);
+    errnum_assert (rc == 0, -rc);
 }
 
 int nn_pipebase_ispeer (struct nn_pipebase *self, int socktype)

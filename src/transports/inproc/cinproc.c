@@ -51,6 +51,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type);
 struct nn_cinproc *nn_cinproc_create (void *hint)
 {
     struct nn_cinproc *self;
+    size_t sz;
 
     self = nn_alloc (sizeof (struct nn_cinproc), "cinproc");
     alloc_assert (self);
@@ -61,6 +62,10 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     self->state = NN_CINPROC_STATE_IDLE;
     nn_sinproc_init (&self->sinproc, &self->epbase, &self->fsm);
     nn_list_item_init (&self->item);
+    sz = sizeof (self->protocol);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+        &self->protocol, &sz);
+    nn_assert (sz == sizeof (self->protocol));
     self->connects = 0;
 
     /*  Start the state machine. */

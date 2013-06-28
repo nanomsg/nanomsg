@@ -201,7 +201,8 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &sipc->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_streamhdr_start (&sipc->streamhdr, sipc->usock);
+                nn_streamhdr_start (&sipc->streamhdr, sipc->usock,
+                    &sipc->pipebase);
                 sipc->state = NN_SIPC_STATE_PROTOHDR;
                 return;
             default:

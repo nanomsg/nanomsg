@@ -195,7 +195,8 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &stcp->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_streamhdr_start (&stcp->streamhdr, stcp->usock);
+                nn_streamhdr_start (&stcp->streamhdr, stcp->usock,
+                    &stcp->pipebase);
                 stcp->state = NN_STCP_STATE_PROTOHDR;
                 return;
             default:

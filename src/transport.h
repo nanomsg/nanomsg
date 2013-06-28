@@ -174,8 +174,9 @@ void nn_pipebase_received (struct nn_pipebase *self);
 /*  Call this function when current outgoing message was fully sent. */
 void nn_pipebase_sent (struct nn_pipebase *self);
 
-/*  Returns the AIO context associated with the pipe. */
-struct nn_ctx *nn_pipebase_getctx (struct nn_pipebase *self);
+/*  Retrieve value of a socket option. */
+void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
+    void *optval, size_t *optvallen);
 
 /*  Returns 1 is the specified socket type is a valid peer for this socket,
     or 0 otherwise. */

@@ -23,6 +23,8 @@
 #ifndef NN_STREAMHDR_INCLUDED
 #define NN_STREAMHDR_INCLUDED
 
+#include "../../transport.h"
+
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 #include "../../aio/timer.h"
@@ -51,6 +53,9 @@ struct nn_streamhdr {
     /*  The original owner of the underlying socket. */
     struct nn_fsm *usock_owner;
 
+    /*  Handle to the pipe. */
+    struct nn_pipebase *pipebase;
+
     /*  Protocol header. */
     uint8_t protohdr [8];
 
@@ -62,7 +67,8 @@ void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner);
 void nn_streamhdr_term (struct nn_streamhdr *self);
 
 int nn_streamhdr_isidle (struct nn_streamhdr *self);
-void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock);
+void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock,
+    struct nn_pipebase *pipebase);
 void nn_streamhdr_stop (struct nn_streamhdr *self);
 
 #endif

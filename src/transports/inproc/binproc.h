@@ -47,10 +47,15 @@ struct nn_binproc {
         by nn_inproc object. */
     struct nn_list_item item;
 
+    /*  Protocol as specified in the original nn_socket() call. Note that this
+        member is sychronised using inproc obejct's global critical section. */
+    int protocol;
+
     /*  Number of connects underway. We cannot deallocate this object until
         the value drops to zero. Note that this member is sychronised using
         inproc obejct's global critical section. */
     int connects;
+
 };
 
 struct nn_binproc *nn_binproc_create (void *hint);

@@ -120,6 +120,11 @@ static int nn_inproc_bind (const char *addr, void *hint,
         cinproc = nn_cont (it, struct nn_cinproc, item);
         if (strncmp (addr, nn_cinproc_getaddr (cinproc),
               NN_SOCKADDR_MAX) == 0) {
+
+            /*  Check whether the two sockets are compatible. */
+            if (!nn_epbase_ispeer (&binproc->epbase, cinproc->protocol))
+                continue;
+
             nn_assert (cinproc->connects == 0);
             cinproc->connects = 1;
             nn_binproc_connect (binproc, cinproc);
@@ -154,6 +159,11 @@ static int nn_inproc_connect (const char *addr, void *hint,
         binproc = nn_cont (it, struct nn_binproc, item);
         if (strncmp (addr, nn_binproc_getaddr (binproc),
               NN_SOCKADDR_MAX) == 0) {
+
+            /*  Check whether the two sockets are compatible. */
+            if (!nn_epbase_ispeer (&cinproc->epbase, binproc->protocol))
+                break;
+
             ++binproc->connects;
             nn_cinproc_connect (cinproc, binproc);
             break;

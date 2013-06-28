@@ -29,6 +29,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
 
+#include <stddef.h>
 #include <string.h>
 
 #define NN_STREAMHDR_STATE_IDLE 1
@@ -49,20 +50,9 @@ void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
     nn_timer_init (&self->timer, &self->fsm);
     nn_fsm_event_init (&self->done);
 
-    /*  TODO: Prepare the outgoing protocol header.  */
-#if 0
-    sz = sizeof (protocol);
-    nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_PROTOCOL, &protocol, &sz);
-    errnum_assert (rc == 0, -rc);
-    nn_assert (sz == sizeof (protocol));
-#endif
-    memcpy (self->protohdr, "\0\0SP\0\0\0\0", 8);
-#if 0
-    nn_puts (self->protohdr + 4, (uint16_t) protocol);
-#endif
-
     self->usock = NULL;
     self->usock_owner = NULL;
+    self->pipebase = NULL;
 }
 
 void nn_streamhdr_term (struct nn_streamhdr *self)
@@ -79,12 +69,26 @@ int nn_streamhdr_isidle (struct nn_streamhdr *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock)
+void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock,
+    struct nn_pipebase *pipebase)
 {
+    size_t sz;
+    int protocol;
+
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner == NULL);
     self->usock_owner = nn_usock_swap_owner (usock, &self->fsm);
     self->usock = usock;
+    self->pipebase = pipebase;
+
+    /*  Get the protocol identifier. */
+    sz = sizeof (protocol);
+    nn_pipebase_getopt (pipebase, NN_SOL_SOCKET, NN_PROTOCOL, &protocol, &sz);
+    nn_assert (sz == sizeof (protocol));
+
+    /*  Compose the protocol header. */
+    memcpy (self->protohdr, "\0SP\0\0\0\0\0", 8);
+    nn_puts (self->protohdr + 4, (uint16_t) protocol);
 
     /*  Launch the state machine. */
     nn_fsm_start (&self->fsm);
@@ -99,6 +103,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 {
     struct nn_streamhdr *streamhdr;
     struct nn_iovec iovec;
+    int protocol;
 
     streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
 
@@ -177,12 +182,18 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
             switch (type) {
             case NN_USOCK_RECEIVED:
 
-                /*  TODO: Check the header here. */
-
+                /*  Here we are checking whether the peer speaks the same
+                    protocol as this socket. */
+                if (memcmp (streamhdr->protohdr, "\0SP\0", 4) != 0)
+                    goto invalidhdr;
+                protocol = nn_gets (streamhdr->protohdr + 4);
+                if (!nn_pipebase_ispeer (streamhdr->pipebase, protocol))
+                    goto invalidhdr;
                 nn_timer_stop (&streamhdr->timer);
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_DONE;
                 return;
             case NN_USOCK_ERROR:
+invalidhdr:
                 nn_timer_stop (&streamhdr->timer);
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
                 return;

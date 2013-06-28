@@ -51,10 +51,6 @@ struct nn_sock
     /*  Pointer to the socket type metadata. */
     struct nn_socktype *socktype;
 
-    /*  Event sent to itself when stopping of the protocol-specific part of
-        the socket is done. */
-    struct nn_fsm_event stopped;
-
     int flags;
 
     struct nn_ctx ctx;

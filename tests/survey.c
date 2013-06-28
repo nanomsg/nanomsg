@@ -24,12 +24,12 @@
 #include "../src/survey.h"
 
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.c"
 
 #define SOCKET_ADDRESS "inproc://a"
 
 int main ()
 {
-#if 0
     int rc;
     int surveyor;
     int respondent1;
@@ -106,7 +106,7 @@ int main ()
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
 
-    /* Check that stale response from third respondent is not delivered. */
+    /*  Check that stale response from third respondent is not delivered. */
     rc = nn_recv (surveyor, buf, sizeof (buf), 0);
     errno_assert (rc == -1 && nn_errno () == EFSM);
 
@@ -118,7 +118,6 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (respondent3);
     errno_assert (rc == 0);
-#endif
 
     return 0;
 }

@@ -164,20 +164,21 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     if (sinproc->state != NN_SINPROC_STATE_DISCONNECTED) {
         if (nn_slow (sinproc->flags & NN_SINPROC_FLAG_RECEIVING)) {
             rc = nn_msgqueue_send (&sinproc->msgqueue, &sinproc->peer->msg);
-            if (rc == -EAGAIN)
-                return 0;
-            errnum_assert (rc == 0, -rc);
-            nn_msg_init (&sinproc->peer->msg, 0);
-            nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                &sinproc->peer->event_received, sinproc, NN_SINPROC_RECEIVED);
-            sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
+            nn_assert (rc == 0 || rc == -EAGAIN);
+            if (rc == 0) {
+                errnum_assert (rc == 0, -rc);
+                nn_msg_init (&sinproc->peer->msg, 0);
+                nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
+                    &sinproc->peer->event_received, sinproc, NN_SINPROC_RECEIVED);
+                sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
+            }
         }
     }
 
     if (!nn_msgqueue_empty (&sinproc->msgqueue))
        nn_pipebase_received (&sinproc->pipebase);
 
-    return 0;
+    return NN_PIPEBASE_PARSED;
 }
 
 void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)

@@ -94,7 +94,8 @@ static int nn_tcp_bind (const char *addr, void *hint,
     /*  Parse the port. */
     end = addr + strlen (addr);
     pos = strrchr (addr, ':');
-    nn_assert (pos);
+    if (!pos)
+        return -EINVAL;
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
     if (rc < 0)
@@ -123,7 +124,8 @@ static int nn_tcp_connect (const char *addr, void *hint,
     /*  Parse the port. */
     end = addr + strlen (addr);
     pos = strrchr (addr, ':');
-    nn_assert (pos);
+    if (!pos)
+        return -EINVAL;
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
     if (rc < 0)

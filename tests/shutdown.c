@@ -52,7 +52,6 @@ static void worker (void *arg)
 
 int main ()
 {
-#if 0
     int rc;
     int s;
     struct nn_thread thread;
@@ -74,7 +73,6 @@ int main ()
     
     /*  Wait till worker thread terminates. */
     nn_thread_term (&thread);
-#endif
 
     return 0;
 }

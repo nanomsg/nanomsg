@@ -625,9 +625,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
 
     /*  If nn_close() was already called there's no point in adjusting the
         snd/rcv file descriptors. */
-    if (sock->state == NN_SOCK_STATE_STOPPING_EPS ||
-          sock->state == NN_SOCK_STATE_STOPPING ||
-          sock->state == NN_SOCK_STATE_INIT)
+    if (nn_slow (sock->state != NN_SOCK_STATE_ACTIVE))
         return;
 
     /*  Check whether socket is readable and/or writeable at the moment. */

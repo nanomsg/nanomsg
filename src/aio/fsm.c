@@ -145,10 +145,10 @@ void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
 }
 
 void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
-    struct nn_fsm_event *event, void *source, int type)
+    struct nn_fsm_event *event, int type)
 {
     event->fsm = dst;
-    event->source = source;
+    event->source = self->source;
     event->type = type;
     nn_ctx_raiseto (self->ctx, event);
 }

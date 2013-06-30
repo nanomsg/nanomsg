@@ -94,8 +94,7 @@ void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer)
     nn_fsm_start (&self->fsm);
 
     /*  Start the connecting handshake with the peer. */
-    nn_fsm_raiseto (&self->fsm, peer, &self->event_connect, self,
-        NN_SINPROC_CONNECT);
+    nn_fsm_raiseto (&self->fsm, peer, &self->event_connect, NN_SINPROC_CONNECT);
 }
 
 void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
@@ -104,7 +103,7 @@ void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
     self->peer = peer;
 
     /*  Start the connecting handshake with the peer. */
-    nn_fsm_raiseto (&self->fsm, &peer->fsm, &self->event_connect, self,
+    nn_fsm_raiseto (&self->fsm, &peer->fsm, &self->event_connect,
         NN_SINPROC_ACCEPTED);
 
     /*  Notify the state machine. */
@@ -139,7 +138,7 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     /*  Notify the peer that there's a message to get. */
     sinproc->flags |= NN_SINPROC_FLAG_SENDING;
     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-        &sinproc->peer->event_sent, sinproc, NN_SINPROC_SENT);
+        &sinproc->peer->event_sent, NN_SINPROC_SENT);
 
     return 0;
 }
@@ -169,7 +168,7 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
                 errnum_assert (rc == 0, -rc);
                 nn_msg_init (&sinproc->peer->msg, 0);
                 nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                    &sinproc->peer->event_received, sinproc, NN_SINPROC_RECEIVED);
+                    &sinproc->peer->event_received, NN_SINPROC_RECEIVED);
                 sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
             }
         }
@@ -198,7 +197,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
             goto finish;
         nn_pipebase_stop (&sinproc->pipebase);
         nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-            &sinproc->peer->event_disconnect, sinproc, NN_SINPROC_DISCONNECT);
+            &sinproc->peer->event_disconnect, NN_SINPROC_DISCONNECT);
         sinproc->state = NN_SINPROC_STATE_STOPPING;
         return;
     }
@@ -284,8 +283,7 @@ finish:
 
                     /*  Notify the peer that the message was received. */
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                        &sinproc->peer->event_received, sinproc,
-                        NN_SINPROC_RECEIVED);
+                        &sinproc->peer->event_received, NN_SINPROC_RECEIVED);
 
                     return;
 
@@ -298,7 +296,7 @@ finish:
                 case NN_SINPROC_DISCONNECT:
                     nn_pipebase_stop (&sinproc->pipebase);
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                        &sinproc->peer->event_disconnect, sinproc,
+                        &sinproc->peer->event_disconnect,
                         NN_SINPROC_DISCONNECT);
                     sinproc->state = NN_SINPROC_STATE_DISCONNECTED;
                     return;

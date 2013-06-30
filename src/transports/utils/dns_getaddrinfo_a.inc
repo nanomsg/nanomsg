@@ -41,7 +41,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type);
 
 void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_dns_handler, owner);
+    nn_fsm_init (&self->fsm, nn_dns_handler, self, owner);
     self->state = NN_DNS_STATE_IDLE;
     nn_fsm_event_init (&self->done);
 }
@@ -164,7 +164,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
         if (dns->state == NN_DNS_STATE_RESOLVING) {
             rc = gai_cancel (&dns->gcb);
             if (rc == EAI_CANCELED) {
-                nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
+                nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
                 dns->state = NN_DNS_STATE_IDLE;
                 return;
             }
@@ -174,14 +174,14 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
             }
             nn_assert (0);
         }
-        nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
+        nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
         return;
     }
     if (nn_slow (dns->state == NN_DNS_STATE_STOPPING)) {
         if (source == NULL && (type == NN_DNS_ACTION_CANCELLED ||
               type == NN_DNS_ACTION_DONE)) {
-            nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
+            nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
             dns->state = NN_DNS_STATE_IDLE;
             return;
         }
@@ -200,7 +200,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
                     dns->state = NN_DNS_STATE_RESOLVING;
                     return;
                 }
-                nn_fsm_raise (&dns->fsm, &dns->done, dns, NN_DNS_DONE);
+                nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
                 return;
             default:
@@ -216,7 +216,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
         if (source == NULL) {
             switch (type) {
             case NN_DNS_ACTION_DONE:
-                nn_fsm_raise (&dns->fsm, &dns->done, dns, NN_DNS_DONE);
+                nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
                 return;
             default:

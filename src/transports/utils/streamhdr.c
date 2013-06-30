@@ -45,7 +45,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type);
 
 void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_streamhdr_handler, owner);
+    nn_fsm_init (&self->fsm, nn_streamhdr_handler, self, owner);
     self->state = NN_STREAMHDR_STATE_IDLE;
     nn_timer_init (&self->timer, &self->fsm);
     nn_fsm_event_init (&self->done);
@@ -118,7 +118,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
         if (!nn_timer_isidle (&streamhdr->timer))
             return;
         streamhdr->state = NN_STREAMHDR_STATE_IDLE;
-        nn_fsm_stopped (&streamhdr->fsm, streamhdr, NN_STREAMHDR_STOPPED);
+        nn_fsm_stopped (&streamhdr->fsm, NN_STREAMHDR_STOPPED);
         return;
     }
 
@@ -224,7 +224,7 @@ invalidhdr:
                 streamhdr->usock = NULL;
                 streamhdr->usock_owner = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
-                nn_fsm_raise (&streamhdr->fsm, &streamhdr->done, streamhdr,
+                nn_fsm_raise (&streamhdr->fsm, &streamhdr->done,
                     NN_STREAMHDR_ERROR);
                 return;
             default:
@@ -244,7 +244,7 @@ invalidhdr:
                 streamhdr->usock = NULL;
                 streamhdr->usock_owner = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
-                nn_fsm_raise (&streamhdr->fsm, &streamhdr->done, streamhdr,
+                nn_fsm_raise (&streamhdr->fsm, &streamhdr->done,
                     NN_STREAMHDR_OK);
                 return;
             default:

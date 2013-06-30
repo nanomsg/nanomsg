@@ -57,7 +57,7 @@ const struct nn_pipebase_vfptr nn_sinproc_pipebase_vfptr = {
 void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_sinproc_handler, owner);
+    nn_fsm_init (&self->fsm, nn_sinproc_handler, self, owner);
     self->state = NN_SINPROC_STATE_IDLE;
     self->flags = 0;
     self->peer = NULL;
@@ -206,7 +206,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (source == sinproc->peer && type == NN_SINPROC_DISCONNECT);
         sinproc->state = NN_SINPROC_STATE_IDLE;
 finish:
-        nn_fsm_stopped (&sinproc->fsm, sinproc, NN_SINPROC_STOPPED);
+        nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
         return;
     }
 

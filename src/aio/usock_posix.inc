@@ -62,7 +62,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type);
 void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
 {
     /*  Initalise the state machine. */
-    nn_fsm_init (&self->fsm, nn_usock_handler, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
 
     /*  Choose a worker thread to handle this socket. */
@@ -377,7 +377,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     /*  Success. */
     if (nn_fast (rc == 0)) {
-        nn_fsm_raise (&self->fsm, &self->event_sent, self, NN_USOCK_SENT);
+        nn_fsm_raise (&self->fsm, &self->event_sent, NN_USOCK_SENT);
         return;
     }
 
@@ -411,8 +411,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 
     /*  Success. */
     if (nn_fast (nbytes == len)) {
-        nn_fsm_raise (&self->fsm, &self->event_received, self,
-            NN_USOCK_RECEIVED);
+        nn_fsm_raise (&self->fsm, &self->event_received, NN_USOCK_RECEIVED);
         return;
     }
 
@@ -513,7 +512,7 @@ finish1:
         usock->s = -1;
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
-        nn_fsm_stopped (&usock->fsm, usock, NN_USOCK_STOPPED);
+        nn_fsm_stopped (&usock->fsm, NN_USOCK_STOPPED);
 finish3:
         return;
     }
@@ -574,7 +573,7 @@ finish3:
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
                 nn_fsm_raise (&usock->fsm, &usock->event_established,
-                    usock, NN_USOCK_ACCEPTED);
+                    NN_USOCK_ACCEPTED);
                 return;
             default:
                 nn_assert (0);
@@ -610,7 +609,7 @@ finish3:
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 nn_worker_execute (usock->worker, &usock->task_connected);
-                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
@@ -618,7 +617,7 @@ finish3:
                 errno_assert (rc == 0);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
+                nn_fsm_raise (&usock->fsm, &usock->event_error,
                     NN_USOCK_ERROR);
                 return;
             default:
@@ -630,7 +629,7 @@ finish3:
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_FD_ERR:
@@ -639,8 +638,7 @@ finish3:
                 errno_assert (rc == 0);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
-                    NN_USOCK_ERROR);
+                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
                 nn_assert (0);
@@ -663,7 +661,7 @@ finish3:
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
                         nn_fsm_raise (&usock->fsm, &usock->event_received,
-                            usock, NN_USOCK_RECEIVED);
+                            NN_USOCK_RECEIVED);
                     }
                     return;
                 }
@@ -673,7 +671,7 @@ finish3:
                 rc = nn_usock_send_raw (usock, &usock->out.hdr);
                 if (nn_fast (rc == 0)) {
                     nn_worker_reset_out (usock->worker, &usock->wfd);
-                    nn_fsm_raise (&usock->fsm, &usock->event_sent, usock,
+                    nn_fsm_raise (&usock->fsm, &usock->event_sent,
                         NN_USOCK_SENT);
                     return;
                 }
@@ -688,8 +686,7 @@ error:
                 errno_assert (rc == 0);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
-                    NN_USOCK_ERROR);
+                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
                 nn_assert (0);
@@ -718,8 +715,7 @@ error:
             errno_assert (rc == 0);
             usock->s = -1;
             usock->state = NN_USOCK_STATE_DONE;
-            nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
-                NN_USOCK_ERROR);
+            nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
             return;
         }
 
@@ -800,8 +796,7 @@ error:
 
                 /*  Notify the user that connection was accepted. */
                 nn_fsm_raise (&usock->asock->fsm,
-                    &usock->asock->event_established, usock->asock,
-                    NN_USOCK_ACCEPTED);
+                    &usock->asock->event_established, NN_USOCK_ACCEPTED);
 
                 /*  Disassociate the listener socket from the accepted
                     socket. */

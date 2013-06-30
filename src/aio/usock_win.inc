@@ -58,7 +58,7 @@ int nn_usock_cancel_io (struct nn_usock *self);
 
 void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_usock_handler, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
     self->s = INVALID_SOCKET;
     nn_worker_op_init (&self->in, &self->fsm);
@@ -445,7 +445,7 @@ finish1:
         wsa_assert (rc == 0);
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
-        nn_fsm_stopped (&usock->fsm, usock, NN_USOCK_STOPPED);
+        nn_fsm_stopped (&usock->fsm, NN_USOCK_STOPPED);
 finish3:
         return;
     }
@@ -497,7 +497,7 @@ finish3:
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
                 nn_fsm_raise (&usock->fsm, &usock->event_established,
-                    usock, NN_USOCK_ACCEPTED);
+                    NN_USOCK_ACCEPTED);
                 return;
             default:
                 nn_assert (0);
@@ -528,7 +528,7 @@ finish3:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
@@ -536,8 +536,7 @@ finish3:
                 wsa_assert (rc == 0);
                 usock->s = INVALID_SOCKET;
                 usock->state = NN_USOCK_STATE_DONE;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
-                    NN_USOCK_ERROR);
+                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
                 nn_assert (0);
@@ -547,7 +546,7 @@ finish3:
             switch (type) {
             case NN_WORKER_OP_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established, usock,
+                nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_OP_ERROR:
@@ -555,8 +554,7 @@ finish3:
                 wsa_assert (rc == 0);
                 usock->s = INVALID_SOCKET;
                 usock->state = NN_USOCK_STATE_DONE;
-                nn_fsm_raise (&usock->fsm, &usock->event_error, usock,
-                    NN_USOCK_ERROR);
+                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
                 nn_assert (0);
@@ -572,7 +570,7 @@ finish3:
             switch (type) {
             case NN_WORKER_OP_DONE:
                 nn_fsm_raise (&usock->fsm, &usock->event_received,
-                    usock, NN_USOCK_RECEIVED);
+                    NN_USOCK_RECEIVED);
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
@@ -588,8 +586,7 @@ finish3:
         if (source == &usock->out) {
             switch (type) {
             case NN_WORKER_OP_DONE:
-                nn_fsm_raise (&usock->fsm, &usock->event_sent,
-                    usock, NN_USOCK_SENT);
+                nn_fsm_raise (&usock->fsm, &usock->event_sent, NN_USOCK_SENT);
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
@@ -677,8 +674,7 @@ finish3:
 
                 /*  Notify the user that connection was accepted. */
                 nn_fsm_raise (&usock->asock->fsm,
-                    &usock->asock->event_established, usock->asock,
-                    NN_USOCK_ACCEPTED);
+                    &usock->asock->event_established, NN_USOCK_ACCEPTED);
 
                 /*  Disassociate the listener socket from the accepted
                     socket. */

@@ -61,19 +61,21 @@ typedef void (*nn_fsm_fn) (struct nn_fsm *self, void *source, int type);
 struct nn_fsm {
     nn_fsm_fn fn;
     int state;
+    void *source;
     struct nn_fsm *owner;
     struct nn_ctx *ctx;
     struct nn_fsm_event stopped;
 };
 
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx);
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner);
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, void *source,
+    struct nn_fsm *owner);
 void nn_fsm_term (struct nn_fsm *self);
 
 int nn_fsm_isidle (struct nn_fsm *self);
 void nn_fsm_start (struct nn_fsm *self);
 void nn_fsm_stop (struct nn_fsm *self);
-void nn_fsm_stopped (struct nn_fsm *self, void *source, int type);
+void nn_fsm_stopped (struct nn_fsm *self, int type);
 void nn_fsm_stopped_noevent (struct nn_fsm *self);
 
 struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
@@ -81,8 +83,7 @@ struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 
 /*  Send event from the state machine to its owner. */
-void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event,
-    void *source, int type);
+void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
 
 /*  Send event to the specified state machine. It's caller's responsibility
     to ensure that the destination state machine will still exist when the

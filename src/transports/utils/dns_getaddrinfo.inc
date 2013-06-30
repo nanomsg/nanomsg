@@ -41,7 +41,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type);
 
 void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_dns_handler, owner);
+    nn_fsm_init (&self->fsm, nn_dns_handler, self, owner);
     self->state = NN_DNS_STATE_IDLE;
     nn_fsm_event_init (&self->done);
 }
@@ -129,7 +129,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
 /*  STOP procedure.                                                           */
 /******************************************************************************/
     if (nn_slow (source == &dns->fsm && type == NN_FSM_STOP)) {
-        nn_fsm_stopped (&dns->fsm, dns, NN_DNS_STOPPED);
+        nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
         return;
     }
@@ -142,7 +142,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
         if (source == &dns->fsm) {
             switch (type) {
             case NN_FSM_START:
-                nn_fsm_raise (&dns->fsm, &dns->done, dns, NN_DNS_DONE);
+                nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 self->state = NN_DNS_STATE_DONE;
                 return;
             default:

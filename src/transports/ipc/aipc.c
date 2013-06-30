@@ -42,7 +42,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type);
 void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_aipc_handler, owner);
+    nn_fsm_init (&self->fsm, nn_aipc_handler, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
     nn_usock_init (&self->usock, &self->fsm);
     self->listener = NULL;
@@ -116,7 +116,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
             aipc->listener_owner = NULL;
         }
         aipc->state = NN_AIPC_STATE_IDLE;
-        nn_fsm_stopped (&aipc->fsm, aipc, NN_AIPC_STOPPED);
+        nn_fsm_stopped (&aipc->fsm, NN_AIPC_STOPPED);
         return;
     }
 
@@ -152,8 +152,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
                 nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
                 aipc->listener = NULL;
                 aipc->listener_owner = NULL;
-                nn_fsm_raise (&aipc->fsm, &aipc->accepted, aipc,
-                    NN_AIPC_ACCEPTED);
+                nn_fsm_raise (&aipc->fsm, &aipc->accepted, NN_AIPC_ACCEPTED);
 
                 /*  Start the sipc state machine. */
                 nn_usock_activate (&aipc->usock);
@@ -207,7 +206,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
         if (source == &aipc->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
-                nn_fsm_raise (&aipc->fsm, &aipc->done, aipc, NN_AIPC_ERROR);
+                nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;
                 return;
             default:

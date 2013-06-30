@@ -65,7 +65,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type);
 void nn_sipc_init (struct nn_sipc *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_sipc_handler, owner);
+    nn_fsm_init (&self->fsm, nn_sipc_handler, self, owner);
     self->state = NN_SIPC_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, &self->fsm);
     self->usock = NULL;
@@ -186,7 +186,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
             sipc->usock = NULL;
             sipc->usock_owner = NULL;
             sipc->state = NN_SIPC_STATE_IDLE;
-            nn_fsm_stopped (&sipc->fsm, sipc, NN_SIPC_STOPPED);
+            nn_fsm_stopped (&sipc->fsm, NN_SIPC_STOPPED);
             return;
         }
         return;
@@ -230,7 +230,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
                 /* Raise the error and move directly to the DONE state.
                    streamhdr object will be stopped later on. */
                 sipc->state == NN_SIPC_STATE_DONE;
-                nn_fsm_raise (&sipc->fsm, &sipc->done, sipc, NN_SIPC_ERROR);
+                nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
                 return;
 
             default:
@@ -326,7 +326,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&sipc->pipebase);
                 sipc->state == NN_SIPC_STATE_DONE;
-                nn_fsm_raise (&sipc->fsm, &sipc->done, sipc, NN_SIPC_ERROR);
+                nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
                 return;
 
             default:

@@ -62,15 +62,18 @@ void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
 {
     self->fn = fn;
     self->state = NN_FSM_STATE_IDLE;
+    self->source = NULL;
     self->owner = NULL;
     self->ctx = ctx;
     nn_fsm_event_init (&self->stopped);
 }
 
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, struct nn_fsm *owner)
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, void *source,
+    struct nn_fsm *owner)
 {
     self->fn = fn;
     self->state = NN_FSM_STATE_IDLE;
+    self->source = source;
     self->owner = owner;
     self->ctx = owner->ctx;
     nn_fsm_event_init (&self->stopped);
@@ -105,10 +108,10 @@ void nn_fsm_stop (struct nn_fsm *self)
     self->fn (self, self, NN_FSM_STOP);
 }
 
-void nn_fsm_stopped (struct nn_fsm *self, void *source, int type)
+void nn_fsm_stopped (struct nn_fsm *self, int type)
 {
     nn_assert (self->state == NN_FSM_STATE_STOPPING);
-    nn_fsm_raise (self, &self->stopped, source, type);
+    nn_fsm_raise (self, &self->stopped, type);
     self->state = NN_FSM_STATE_IDLE;
 }
 
@@ -133,11 +136,10 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
     return nn_ctx_choose_worker (self->ctx);
 }
 
-void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event,
-    void *source, int type)
+void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
 {    
     event->fsm = self->owner;
-    event->source = source;
+    event->source = self->source;
     event->type = type;
     nn_ctx_raise (self->ctx, event);
 }

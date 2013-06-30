@@ -45,7 +45,7 @@ int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
 {
     int rc;
 
-    nn_fsm_init (&self->fsm, nn_ep_handler, &sock->fsm);
+    nn_fsm_init (&self->fsm, nn_ep_handler, self, &sock->fsm);
     self->state = NN_EP_STATE_IDLE;
 
     self->epbase = NULL;
@@ -146,7 +146,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
         if (source != NULL || type != NN_EP_ACTION_STOPPED)
             return;
         ep->state = NN_EP_STATE_IDLE;
-        nn_fsm_stopped (&ep->fsm, ep, NN_EP_STOPPED);
+        nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
         return;
     }
 

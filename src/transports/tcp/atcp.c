@@ -40,7 +40,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type);
 void nn_atcp_init (struct nn_atcp *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_atcp_handler, owner);
+    nn_fsm_init (&self->fsm, nn_atcp_handler, self, owner);
     self->state = NN_ATCP_STATE_IDLE;
     nn_usock_init (&self->usock, &self->fsm);
     self->listener = NULL;
@@ -114,7 +114,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
             atcp->listener_owner = NULL;
         }
         atcp->state = NN_ATCP_STATE_IDLE;
-        nn_fsm_stopped (&atcp->fsm, atcp, NN_ATCP_STOPPED);
+        nn_fsm_stopped (&atcp->fsm, NN_ATCP_STOPPED);
         return;
     }
 
@@ -150,8 +150,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
                 nn_usock_swap_owner (atcp->listener, atcp->listener_owner);
                 atcp->listener = NULL;
                 atcp->listener_owner = NULL;
-                nn_fsm_raise (&atcp->fsm, &atcp->accepted, atcp,
-                    NN_ATCP_ACCEPTED);
+                nn_fsm_raise (&atcp->fsm, &atcp->accepted, NN_ATCP_ACCEPTED);
 
                 /*  Start the stcp state machine. */
                 nn_usock_activate (&atcp->usock);
@@ -205,7 +204,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
         if (source == &atcp->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
-                nn_fsm_raise (&atcp->fsm, &atcp->done, atcp, NN_ATCP_ERROR);
+                nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
                 atcp->state = NN_ATCP_STATE_DONE;
                 return;
             default:

@@ -60,7 +60,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type);
 void nn_stcp_init (struct nn_stcp *self, struct nn_epbase *epbase,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_stcp_handler, owner);
+    nn_fsm_init (&self->fsm, nn_stcp_handler, self, owner);
     self->state = NN_STCP_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, &self->fsm);
     self->usock = NULL;
@@ -180,7 +180,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
             stcp->usock = NULL;
             stcp->usock_owner = NULL;
             stcp->state = NN_STCP_STATE_IDLE;
-            nn_fsm_stopped (&stcp->fsm, stcp, NN_STCP_STOPPED);
+            nn_fsm_stopped (&stcp->fsm, NN_STCP_STOPPED);
             return;
         }
         return;
@@ -224,7 +224,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
                 /* Raise the error and move directly to the DONE state.
                    streamhdr object will be stopped later on. */
                 stcp->state = NN_STCP_STATE_DONE;
-                nn_fsm_raise (&stcp->fsm, &stcp->done, stcp, NN_STCP_ERROR);
+                nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
                 return;
 
             default:
@@ -319,7 +319,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&stcp->pipebase);
                 stcp->state = NN_STCP_STATE_DONE;
-                nn_fsm_raise (&stcp->fsm, &stcp->done, stcp, NN_STCP_ERROR);
+                nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
                 return;
 
             default:

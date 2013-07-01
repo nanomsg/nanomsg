@@ -91,7 +91,7 @@ void nn_fsm_term (struct nn_fsm *self)
 void nn_fsm_start (struct nn_fsm *self)
 {
     nn_assert (nn_fsm_isidle (self));
-    self->fn (self, self, NN_FSM_START);
+    self->fn (self, NULL, NN_FSM_START);
     self->state = NN_FSM_STATE_ACTIVE;
 }
 
@@ -108,7 +108,7 @@ void nn_fsm_stop (struct nn_fsm *self)
         return;
 
     self->state = NN_FSM_STATE_STOPPING;
-    self->fn (self, self, NN_FSM_STOP);
+    self->fn (self, NULL, NN_FSM_STOP);
 }
 
 void nn_fsm_stopped (struct nn_fsm *self, int type)

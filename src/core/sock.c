@@ -708,7 +708,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &sock->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
             sock->state == NN_SOCK_STATE_ZOMBIE);
 
@@ -782,7 +782,7 @@ finish1:
 /*  INIT state.                                                               */
 /******************************************************************************/
     case NN_SOCK_STATE_INIT:
-        if (source == &sock->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;

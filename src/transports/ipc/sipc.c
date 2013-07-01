@@ -178,7 +178,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &sipc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&sipc->pipebase);
         nn_streamhdr_stop (&sipc->streamhdr);
         sipc->state = NN_SIPC_STATE_STOPPING;
@@ -201,7 +201,7 @@ static void nn_sipc_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SIPC_STATE_IDLE:
-        if (source == &sipc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock,

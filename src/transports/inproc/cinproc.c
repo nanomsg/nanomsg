@@ -122,7 +122,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &cinproc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -147,7 +147,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_CINPROC_STATE_IDLE:
-        if (source == &cinproc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;

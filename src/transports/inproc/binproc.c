@@ -128,7 +128,7 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &binproc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -169,7 +169,7 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BINPROC_STATE_IDLE:
-        if (source == &binproc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 binproc->state = NN_BINPROC_STATE_ACTIVE;

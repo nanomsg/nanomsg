@@ -191,7 +191,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &sinproc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         if (sinproc->state == NN_SINPROC_STATE_IDLE ||
               sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
             goto finish;
@@ -215,7 +215,7 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SINPROC_STATE_IDLE:
-        if (source == &sinproc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 sinproc->state = NN_SINPROC_STATE_CONNECTING;

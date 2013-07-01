@@ -160,7 +160,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &dns->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         if (dns->state == NN_DNS_STATE_RESOLVING) {
             rc = gai_cancel (&dns->gcb);
             if (rc == EAI_CANCELED) {
@@ -193,7 +193,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_DNS_STATE_IDLE:
-        if (source == &dns->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 if (dns->result->error == EINPROGRESS) {

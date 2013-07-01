@@ -153,7 +153,7 @@ static void nn_btcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &btcp->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_atcp_stop (btcp->atcp);
         btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
     }
@@ -208,7 +208,7 @@ atcps_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BTCP_STATE_IDLE:
-        if (source == &btcp->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_btcp_start_listening (btcp);

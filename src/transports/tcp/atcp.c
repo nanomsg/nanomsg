@@ -97,7 +97,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &atcp->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_stcp_stop (&atcp->stcp);
         atcp->state = NN_ATCP_STATE_STOPPING_STCP_FINAL;
     }
@@ -128,7 +128,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_ATCP_STATE_IDLE:
-        if (source == &atcp->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&atcp->usock, atcp->listener);

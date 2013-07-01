@@ -137,7 +137,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &ep->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         ep->epbase->vfptr->stop (ep->epbase);
         ep->state = NN_EP_STATE_STOPPING;
         return;
@@ -156,7 +156,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_EP_STATE_IDLE:
-        if (source == &ep->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 ep->state = NN_EP_STATE_ACTIVE;

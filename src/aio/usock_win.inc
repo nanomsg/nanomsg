@@ -393,7 +393,7 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &usock->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.
             Stop the socket being accepted first. */
@@ -456,7 +456,7 @@ finish3:
 /*  IDLE state.                                                              */
 /*****************************************************************************/
     case NN_USOCK_STATE_IDLE:
-        if (source == &usock->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;

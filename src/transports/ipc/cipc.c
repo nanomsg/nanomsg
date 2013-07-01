@@ -146,7 +146,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &cipc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_sipc_stop (&cipc->sipc);
         cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
     }
@@ -174,7 +174,7 @@ static void nn_cipc_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CIPC_STATE_IDLE:
-        if (source == &cipc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_cipc_start_connecting (cipc);

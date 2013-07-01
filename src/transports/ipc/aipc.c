@@ -99,7 +99,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &aipc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_sipc_stop (&aipc->sipc);
         aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
     }
@@ -130,7 +130,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_AIPC_STATE_IDLE:
-        if (source == &aipc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&aipc->usock, aipc->listener);

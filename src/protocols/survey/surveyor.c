@@ -308,7 +308,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &surveyor->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_timer_stop (&surveyor->timer);
         surveyor->state = NN_SURVEYOR_STATE_STOPPING;
     }
@@ -328,7 +328,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  The socket was created recently.                                          */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_IDLE:
-        if (source == &surveyor->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;

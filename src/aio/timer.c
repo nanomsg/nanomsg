@@ -86,7 +86,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &timer->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
         return;
@@ -107,7 +107,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_TIMER_STATE_IDLE:
-        if (source == &timer->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
 

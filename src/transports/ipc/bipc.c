@@ -144,7 +144,7 @@ static void nn_bipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &bipc->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_aipc_stop (bipc->aipc);
         bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
     }
@@ -199,7 +199,7 @@ aipcs_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BIPC_STATE_IDLE:
-        if (source == &bipc->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_bipc_start_listening (bipc);

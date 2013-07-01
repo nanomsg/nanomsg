@@ -172,7 +172,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &stcp->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcp->pipebase);
         nn_streamhdr_stop (&stcp->streamhdr);
         stcp->state = NN_STCP_STATE_STOPPING;
@@ -195,7 +195,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STCP_STATE_IDLE:
-        if (source == &stcp->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&stcp->streamhdr, stcp->usock,

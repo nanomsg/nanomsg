@@ -113,7 +113,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &streamhdr->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
     }
@@ -131,7 +131,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_IDLE:
-        if (source == &streamhdr->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_timer_start (&streamhdr->timer, 1000);

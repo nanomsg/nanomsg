@@ -166,7 +166,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &ctcp->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_stcp_stop (&ctcp->stcp);
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
     }
@@ -196,7 +196,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CTCP_STATE_IDLE:
-        if (source == &ctcp->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_ctcp_start_resolving (ctcp);

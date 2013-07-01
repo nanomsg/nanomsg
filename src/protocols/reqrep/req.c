@@ -365,7 +365,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == &req->fsm && type == NN_FSM_STOP)) {
+    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
         nn_timer_stop (&req->timer);
         req->state = NN_REQ_STATE_STOPPING;
     }
@@ -386,7 +386,7 @@ static void nn_req_handler (struct nn_fsm *self, void *source, int type)
 /*  Pass straight to the PASSIVE state.                                       */
 /******************************************************************************/
     case NN_REQ_STATE_IDLE:
-        if (source == &req->fsm) {
+        if (source == NULL) {
             switch (type) {
             case NN_FSM_START:
                 req->state = NN_REQ_STATE_PASSIVE;

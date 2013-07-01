@@ -132,11 +132,11 @@ static void nn_dns_notify (union sigval sval)
     nn_ctx_enter (self->fsm.ctx);
     rc = gai_error (&self->gcb);
     if (rc == EAI_CANCELED) {
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_CANCELLED);
+        nn_fsm_action (&self->fsm, NN_DNS_ACTION_CANCELLED);
     }
     else if (rc != 0) {
         self->result->error = EINVAL;
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_DNS_ACTION_DONE);
     }
     else {
         self->result->error = 0;
@@ -145,7 +145,7 @@ static void nn_dns_notify (union sigval sval)
         memcpy (&self->result->addr, self->gcb.ar_result->ai_addr,
             self->gcb.ar_result->ai_addrlen);
         self->result->addrlen = (size_t) self->gcb.ar_result->ai_addrlen;
-        nn_dns_handler (&self->fsm, NULL, NN_DNS_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_DNS_ACTION_DONE);
     }
     nn_ctx_leave (self->fsm.ctx);
 }

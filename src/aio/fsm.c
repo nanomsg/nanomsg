@@ -139,6 +139,12 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
     return nn_ctx_choose_worker (self->ctx);
 }
 
+void nn_fsm_action (struct nn_fsm *self, int type)
+{
+    nn_assert (type > 0);
+    self->fn (self, NULL, type);
+}
+
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
 {    
     event->fsm = self->owner;

@@ -228,7 +228,7 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 
         /*  Notify the state machine. */
         if (req->state == NN_REQ_STATE_ACTIVE)
-            nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_IN);
+            nn_fsm_action (&req->fsm, NN_REQ_ACTION_IN);
 
         return;
     }
@@ -245,7 +245,7 @@ static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     /*  Notify the state machine. */
     if (req->state == NN_REQ_STATE_DELAYED)
-        nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_OUT);
+        nn_fsm_action (&req->fsm, NN_REQ_ACTION_OUT);
 }
 
 static int nn_req_events (struct nn_sockbase *self)
@@ -286,7 +286,7 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
     nn_msg_mv (&req->request, msg);
 
     /*  Notify the state machine. */
-    nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_SENT);
+    nn_fsm_action (&req->fsm, NN_REQ_ACTION_SENT);
 
     return 0;
 }
@@ -310,7 +310,7 @@ static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
     nn_msg_init (&req->reply, 0);
 
     /*  Notify the state machine. */
-    nn_req_handler (&req->fsm, NULL, NN_REQ_ACTION_RECEIVED);
+    nn_fsm_action (&req->fsm, NN_REQ_ACTION_RECEIVED);
 
     return 0;
 }

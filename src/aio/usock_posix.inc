@@ -273,7 +273,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
         return -errno;
 
     /*  Notify the state machine. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_LISTEN);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_LISTEN);
 
     return 0;
 }
@@ -284,8 +284,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Start the actual accepting. */
     nn_fsm_start (&self->fsm);
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_BEING_ACCEPTED);
-    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_ACCEPT);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_BEING_ACCEPTED);
+    nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_ACCEPT);
 
     /*  Try to accept new connection in synchronous manner. */
 #if NN_HAVE_ACCEPT4
@@ -297,8 +297,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
         nn_usock_init_from_fd (self, s);
-        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_DONE);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
         return;
     }
 
@@ -319,7 +319,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
 void nn_usock_activate (struct nn_usock *self)
 {
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ACTIVATE);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ACTIVATE);
 }
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
@@ -328,20 +328,20 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     int rc;
 
     /*  Notify the state machine that we've started connecting. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_CONNECT);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_CONNECT);
 
     /* Do the connect itself. */
     rc = connect (self->s, addr, (socklen_t) addrlen);
 
     /* Immediate success. */
     if (nn_fast (rc == 0)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
         return;
     }
 
     /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -384,7 +384,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     /*  Errors. */
     if (nn_slow (rc != -EAGAIN)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -405,7 +405,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     rc = nn_usock_recv_raw (self, buf, &nbytes);
     if (nn_slow (rc < 0)) {
         errnum_assert (rc == -ECONNRESET, -rc);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -486,7 +486,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         /*  When socket that's being accepted is asked to stop, we have to
             ask the listener socket to stop accepting first. */
         if (usock->state == NN_USOCK_STATE_BEING_ACCEPTED) {
-            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_CANCEL);
+            nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_CANCEL);
             usock->state = NN_USOCK_STATE_STOPPING_ACCEPT;
             return;
         }
@@ -825,7 +825,7 @@ error:
             usock->state = NN_USOCK_STATE_LISTENING;
 
             /*  Notify the accepted socket that it was stopped. */
-            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_DONE);
+            nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
 
             return;
         }

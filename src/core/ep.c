@@ -101,7 +101,7 @@ void nn_ep_stop (struct nn_ep *self)
 
 void nn_ep_stopped (struct nn_ep *self)
 {
-    nn_ep_handler (&self->fsm, NULL, NN_EP_ACTION_STOPPED);
+    nn_fsm_action (&self->fsm, NN_EP_ACTION_STOPPED);
 }
 
 struct nn_ctx *nn_ep_getctx (struct nn_ep *self)

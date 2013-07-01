@@ -151,7 +151,7 @@ void nn_sock_stopped (struct nn_sock *self)
 void nn_sock_zombify (struct nn_sock *self)
 {
     nn_ctx_enter (&self->ctx);
-    nn_sock_handler (&self->fsm, NULL, NN_SOCK_ACTION_ZOMBIFY);
+    nn_fsm_action (&self->fsm, NN_SOCK_ACTION_ZOMBIFY);
     nn_ctx_leave (&self->ctx);
 }
 

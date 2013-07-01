@@ -109,7 +109,7 @@ void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
 {
     nn_assert (self->state == NN_CINPROC_STATE_DISCONNECTED);
     nn_sinproc_connect (&self->sinproc, &peer->fsm);
-    nn_cinproc_handler (&self->fsm, NULL, NN_CINPROC_ACTION_CONNECT);
+    nn_fsm_action (&self->fsm, NN_CINPROC_ACTION_CONNECT);
 }
 
 static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)

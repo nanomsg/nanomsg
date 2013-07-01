@@ -108,7 +108,7 @@ void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
 
     /*  Notify the state machine. */
     nn_fsm_start (&self->fsm);
-    nn_sinproc_handler (&self->fsm, NULL, NN_SINPROC_ACTION_ACCEPTED);
+    nn_fsm_action (&self->fsm, NN_SINPROC_ACTION_ACCEPTED);
 }
 
 void nn_sinproc_stop (struct nn_sinproc *self)

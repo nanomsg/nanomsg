@@ -211,7 +211,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
        return -nn_err_wsa_to_posix (WSAGetLastError ());
 
     /*  Notify the state machine. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_LISTEN);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_LISTEN);
 
     return 0;
 }
@@ -226,8 +226,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
         listener->protocol);
     /*  TODO: EMFILE can be returned here. */
     errnum_assert (rc == 0, -rc);
-    nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_ACCEPT);
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_BEING_ACCEPTED);
+    nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_ACCEPT);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_BEING_ACCEPTED);
 
     /*  If the memory for accept information is not yet allocated, do so.  */
     if (!listener->ainfo) {
@@ -242,8 +242,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Immediate success. */
     if (nn_fast (brc == TRUE)) {
-        nn_usock_handler (&listener->fsm, NULL, NN_USOCK_ACTION_DONE);
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
         return;
     }
 
@@ -262,7 +262,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
 void nn_usock_activate (struct nn_usock *self)
 {
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ACTIVATE);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ACTIVATE);
 }
 
 void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
@@ -278,7 +278,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     nn_assert (self->state == NN_USOCK_STATE_STARTING);
 
     /*  Notify the state machine that we've started connecting. */
-    nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_CONNECT);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_CONNECT);
 
     /*  Get the pointer to connect function. */
     rc = WSAIoctl (self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
@@ -294,13 +294,13 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     
     /*  Immediate success. */
     if (nn_fast (brc == TRUE)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
         return;
     }
 
     /*  Immediate error. */
     if (nn_slow (WSAGetLastError () != WSA_IO_PENDING)) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
 
@@ -341,7 +341,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
           rc == WSAENETDOWN || rc == WSAENETRESET ||
           rc == WSAENOBUFS || rc == WSAEWOULDBLOCK) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }
 
@@ -376,7 +376,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
           rc == WSAENETDOWN || rc == WSAENETRESET ||
           rc == WSAETIMEDOUT || rc == WSAEWOULDBLOCK) {
-        nn_usock_handler (&self->fsm, NULL, NN_USOCK_ACTION_ERROR);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }
 
@@ -412,7 +412,7 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         /*  When socket that's being accepted is asked to stop, we have to
             ask the listener socket to stop accepting first. */
         if (usock->state == NN_USOCK_STATE_BEING_ACCEPTED) {
-            nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_CANCEL);
+            nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_CANCEL);
             usock->state = NN_USOCK_STATE_STOPPING_ACCEPT;
             return;
         }
@@ -706,7 +706,7 @@ finish3:
                 usock->state = NN_USOCK_STATE_LISTENING;
 
                 /*  Notify the accepted socket that it was stopped. */
-                nn_usock_handler (&usock->asock->fsm, NULL, NN_USOCK_ACTION_DONE);
+                nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
 
                 return;
 

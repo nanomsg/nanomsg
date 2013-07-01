@@ -209,13 +209,13 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
             return -EAGAIN;
 
         /*  Cancel the current survey. */
-        nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_ACTION_CANCEL);
+        nn_fsm_action (&surveyor->fsm, NN_SURVEYOR_ACTION_CANCEL);
 
         return 0;
     }
 
     /*  Notify the state machine that the survey was started. */
-    nn_surveyor_handler (&surveyor->fsm, NULL, NN_SURVEYOR_ACTION_START);
+    nn_fsm_action (&surveyor->fsm, NN_SURVEYOR_ACTION_START);
 
     return 0;
 }

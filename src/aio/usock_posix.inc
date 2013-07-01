@@ -57,7 +57,8 @@ static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
-static void nn_usock_handler (struct nn_fsm *self, void *source, int type);
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
@@ -423,7 +424,8 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     nn_worker_execute (self->worker, &self->task_recv);
 }
 
-static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
     struct nn_usock *usock;
@@ -435,28 +437,28 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  Internal tasks sent from the user thread to the worker thread.            */
 /******************************************************************************/
-    if (source == &usock->task_send) {
+    if (srcptr == &usock->task_send) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_set_out (usock->worker, &usock->wfd);
         return;
     }
-    if (source == &usock->task_recv) {
+    if (srcptr == &usock->task_recv) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_set_in (usock->worker, &usock->wfd);
         return;
     }
-    if (source == &usock->task_connected) {
+    if (srcptr == &usock->task_connected) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         return;
     }
-    if (source == &usock->task_connecting) {
+    if (srcptr == &usock->task_connecting) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_out (usock->worker, &usock->wfd);
         return;
     }
-    if (source == &usock->task_accept) {
+    if (srcptr == &usock->task_accept) {
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_in (usock->worker, &usock->wfd);
@@ -466,7 +468,7 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING or CANCELLING state cannot be closed.
             Stop the socket being accepted first. */
@@ -498,11 +500,11 @@ static void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
-        nn_assert (source == NULL && type == NN_USOCK_ACTION_DONE);
+        nn_assert (srcptr == NULL && type == NN_USOCK_ACTION_DONE);
         goto finish2;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
-        if (source != &usock->task_stop)
+        if (srcptr != &usock->task_stop)
             return;
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_fd (usock->worker, &usock->wfd);
@@ -525,7 +527,7 @@ finish3:
 /*  created.                                                                  */
 /******************************************************************************/
     case NN_USOCK_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;
@@ -545,7 +547,7 @@ finish3:
     case NN_USOCK_STATE_STARTING:
 
         /*  Events from the owner of the usock. */
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_LISTEN:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -568,7 +570,7 @@ finish3:
 /*  connection to arrive.                                                     */
 /******************************************************************************/ 
     case NN_USOCK_STATE_BEING_ACCEPTED:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
@@ -587,7 +589,7 @@ finish3:
 /*  the active state.                                                         */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ACCEPTED:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ACTIVATE:
                 nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
@@ -604,7 +606,7 @@ finish3:
 /*  Asynchronous connecting is going on.                                      */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CONNECTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -624,7 +626,7 @@ finish3:
                   nn_assert (0);
             }
         }
-        if (source == &usock->wfd) {
+        if (srcptr == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
@@ -651,7 +653,7 @@ finish3:
 /*  Socket is connected. It can be used for sending and receiving data.       */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ACTIVE:
-        if (source == &usock->wfd) {
+        if (srcptr == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_IN:
                 sz = usock->in.len;
@@ -692,7 +694,7 @@ error:
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 usock->state = NN_USOCK_STATE_REMOVING_FD;
@@ -708,7 +710,7 @@ error:
 /*  REMOVING_FD state.                                                        */
 /******************************************************************************/ 
     case NN_USOCK_STATE_REMOVING_FD:
-        if (source == &usock->task_stop) {
+        if (srcptr == &usock->task_stop) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_rm_fd (usock->worker, &usock->wfd);
             rc = close (usock->s);
@@ -721,7 +723,7 @@ error:
 
         /*  Events from the file descriptor are ignored while it is being
             removed. */
-        if (source == &usock->wfd)
+        if (srcptr == &usock->wfd)
             return;
 
         nn_assert (0);
@@ -740,7 +742,7 @@ error:
 /*  accepting a new connection.                                               */
 /******************************************************************************/ 
     case NN_USOCK_STATE_LISTENING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
@@ -757,7 +759,7 @@ error:
 /*  to be accepted.                                                           */
 /******************************************************************************/ 
     case NN_USOCK_STATE_ACCEPTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -770,7 +772,7 @@ error:
                 nn_assert (0);
             }
         }
-        if (source == &usock->wfd) {
+        if (srcptr == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_IN:
 
@@ -819,7 +821,7 @@ error:
 /*  CANCELLING state.                                                         */
 /******************************************************************************/ 
     case NN_USOCK_STATE_CANCELLING:
-        if (source == &usock->task_stop) {
+        if (srcptr == &usock->task_stop) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_worker_rm_fd (usock->worker, &usock->wfd);
             usock->state = NN_USOCK_STATE_LISTENING;
@@ -829,7 +831,7 @@ error:
 
             return;
         }
-        if (source == &usock->wfd) {
+        if (srcptr == &usock->wfd) {
             switch (type) {
             case NN_WORKER_FD_IN:
                 return;

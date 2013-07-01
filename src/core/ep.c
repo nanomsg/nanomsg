@@ -38,7 +38,8 @@
 #define NN_EP_ACTION_STOPPED 1
 
 /*  Private functions. */
-static void nn_ep_handler (struct nn_fsm *self, void *source, int type);
+static void nn_ep_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     struct nn_transport *transport, int bind, const char *addr)
@@ -128,7 +129,7 @@ int nn_ep_ispeer (struct nn_ep *self, int socktype)
     return nn_sock_ispeer (self->sock, socktype);
 }
 
-static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
+static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 {
     struct nn_ep *ep;
 
@@ -137,13 +138,13 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         ep->epbase->vfptr->stop (ep->epbase);
         ep->state = NN_EP_STATE_STOPPING;
         return;
     }
     if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
-        if (source != NULL || type != NN_EP_ACTION_STOPPED)
+        if (srcptr != NULL || type != NN_EP_ACTION_STOPPED)
             return;
         ep->state = NN_EP_STATE_IDLE;
         nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
@@ -156,7 +157,7 @@ static void nn_ep_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_EP_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 ep->state = NN_EP_STATE_ACTIVE;

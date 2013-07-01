@@ -98,7 +98,8 @@ const struct nn_epbase_vfptr nn_ctcp_epbase_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type);
+static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_ctcp_start_resolving (struct nn_ctcp *self);
 static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     struct sockaddr_storage *ss, size_t sslen);
@@ -157,7 +158,8 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
     nn_free (ctcp);
 }
 
-static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
+static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_ctcp *ctcp;
 
@@ -166,7 +168,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_stcp_stop (&ctcp->stcp);
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
     }
@@ -196,7 +198,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CTCP_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_ctcp_start_resolving (ctcp);
@@ -212,7 +214,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  Name of the host to connect to is being resolved to get an IP address.    */
 /******************************************************************************/
     case NN_CTCP_STATE_RESOLVING:
-        if (source == &ctcp->dns) {
+        if (srcptr == &ctcp->dns) {
             switch (type) {
             case NN_DNS_DONE:
                 nn_dns_stop (&ctcp->dns);
@@ -229,7 +231,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  dns object was asked to stop but it haven't stopped yet.                  */
 /******************************************************************************/
     case NN_CTCP_STATE_STOPPING_DNS:
-        if (source == &ctcp->dns) {
+        if (srcptr == &ctcp->dns) {
             switch (type) {
             case NN_DNS_STOPPED:
                 if (ctcp->dns_result.error == 0) {
@@ -250,7 +252,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  Non-blocking connect is under way.                                        */
 /******************************************************************************/
     case NN_CTCP_STATE_CONNECTING:
-        if (source == &ctcp->usock) {
+        if (srcptr == &ctcp->usock) {
             switch (type) {
             case NN_USOCK_CONNECTED:
                 nn_stcp_start (&ctcp->stcp, &ctcp->usock);
@@ -271,7 +273,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  Connection is established and handled by the stcp state machine.          */
 /******************************************************************************/
     case NN_CTCP_STATE_ACTIVE:
-        if (source == &ctcp->stcp) {
+        if (srcptr == &ctcp->stcp) {
             switch (type) {
             case NN_STCP_ERROR:
                 nn_stcp_stop (&ctcp->stcp);
@@ -288,7 +290,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  stcp object was asked to stop but it haven't stopped yet.                 */
 /******************************************************************************/
     case NN_CTCP_STATE_STOPPING_STCP:
-        if (source == &ctcp->stcp) {
+        if (srcptr == &ctcp->stcp) {
             switch (type) {
             case NN_STCP_STOPPED:
                 nn_usock_stop (&ctcp->usock);
@@ -305,7 +307,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  usock object was asked to stop but it haven't stopped yet.                */
 /******************************************************************************/
     case NN_CTCP_STATE_STOPPING_USOCK:
-        if (source == &ctcp->usock) {
+        if (srcptr == &ctcp->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_backoff_start (&ctcp->retry);
@@ -323,7 +325,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  the system by continuous re-connection attemps.                           */
 /******************************************************************************/
     case NN_CTCP_STATE_WAITING:
-        if (source == &ctcp->retry) {
+        if (srcptr == &ctcp->retry) {
             switch (type) {
             case NN_BACKOFF_TIMEOUT:
                 nn_backoff_stop (&ctcp->retry);
@@ -340,7 +342,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, void *source, int type)
 /*  backoff object was asked to stop, but it haven't stopped yet.             */
 /******************************************************************************/
     case NN_CTCP_STATE_STOPPING_BACKOFF:
-        if (source == &ctcp->retry) {
+        if (srcptr == &ctcp->retry) {
             switch (type) {
             case NN_BACKOFF_STOPPED:
                 nn_ctcp_start_resolving (ctcp);

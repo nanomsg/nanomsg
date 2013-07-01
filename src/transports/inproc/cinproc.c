@@ -48,7 +48,8 @@ static const struct nn_epbase_vfptr nn_cinproc_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type);
+static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 struct nn_cinproc *nn_cinproc_create (void *hint)
 {
@@ -112,7 +113,8 @@ void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
     nn_fsm_action (&self->fsm, NN_CINPROC_ACTION_CONNECT);
 }
 
-static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
+static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_cinproc *cinproc;
     struct nn_sinproc *sinproc;
@@ -122,7 +124,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -147,7 +149,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_CINPROC_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
@@ -162,7 +164,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 /*  DISCONNECTED state.                                                       */
 /******************************************************************************/
     case NN_CINPROC_STATE_DISCONNECTED:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_CINPROC_ACTION_CONNECT:
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
@@ -174,7 +176,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, void *source, int type)
 
         /*  Here we assume that all other events are raised by the peer
             sinproc object. */
-        sinproc = (struct nn_sinproc*) source;
+        sinproc = (struct nn_sinproc*) srcptr;
         switch (type) {
         case NN_SINPROC_CONNECT:
             nn_sinproc_accept (&cinproc->sinproc, sinproc);

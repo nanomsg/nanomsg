@@ -80,7 +80,8 @@ struct nn_surveyor {
 static void nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_surveyor_term (struct nn_surveyor *self);
-static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type);
+static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static int nn_surveyor_inprogress (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -298,7 +299,8 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
+static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
     struct nn_surveyor *surveyor;
@@ -308,7 +310,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_timer_stop (&surveyor->timer);
         surveyor->state = NN_SURVEYOR_STATE_STOPPING;
     }
@@ -328,7 +330,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  The socket was created recently.                                          */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
@@ -344,7 +346,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  There's no survey going on.                                               */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_PASSIVE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_SURVEYOR_ACTION_START:
                 rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase,
@@ -364,7 +366,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  Survey was sent, waiting for responses.                                   */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_ACTIVE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_SURVEYOR_ACTION_CANCEL:
                 nn_timer_stop (&surveyor->timer);
@@ -374,7 +376,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == &surveyor->timer) {
+        if (srcptr == &surveyor->timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&surveyor->timer);
@@ -392,7 +394,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  survey thus haven't been sent and is stored in 'tosend'.                  */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_CANCELLING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_SURVEYOR_ACTION_CANCEL:
                 return;
@@ -400,7 +402,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == &surveyor->timer) {
+        if (srcptr == &surveyor->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase,
@@ -420,7 +422,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, void *source, int type)
 /*  Survey timeout expired. Now we are stopping the timer.                    */
 /******************************************************************************/
     case NN_SURVEYOR_STATE_STOPPING_TIMER:
-        if (source == &surveyor->timer) {
+        if (srcptr == &surveyor->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;

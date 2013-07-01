@@ -45,7 +45,8 @@ static const struct nn_epbase_vfptr nn_binproc_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_binproc_handler (struct nn_fsm *self, void *source, int type);
+static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 struct nn_binproc *nn_binproc_create (void *hint)
 {
@@ -116,7 +117,8 @@ void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
     nn_sinproc_connect (sinproc, &peer->fsm);
 }
 
-static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
+static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_binproc *binproc;
     struct nn_list_item *it;
@@ -128,7 +130,7 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -150,7 +152,7 @@ static void nn_binproc_handler (struct nn_fsm *self, void *source, int type)
         /*  Here we are going to assume that all the events are coming from
             the individual sinprocs. */
         nn_assert (type == NN_SINPROC_STOPPED);
-        sinproc = (struct nn_sinproc*) source;
+        sinproc = (struct nn_sinproc*) srcptr;
         nn_list_erase (&binproc->sinprocs, &sinproc->item);
         nn_sinproc_term (sinproc);
         nn_free (sinproc);
@@ -169,7 +171,7 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BINPROC_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 binproc->state = NN_BINPROC_STATE_ACTIVE;
@@ -186,8 +188,8 @@ finish:
     case NN_BINPROC_STATE_ACTIVE:
 
         /*  Here we assume that all the events are coming from the peers. */
-        nn_assert (source && type == NN_SINPROC_CONNECT);
-        peer = (struct nn_sinproc*) source;
+        nn_assert (srcptr && type == NN_SINPROC_CONNECT);
+        peer = (struct nn_sinproc*) srcptr;
 
         /*  Create new sinproc object. */
         sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");

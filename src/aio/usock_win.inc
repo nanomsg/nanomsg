@@ -53,8 +53,9 @@
 #define NN_USOCK_ACTION_ERROR 8
 
 /*  Private functions. */
-void nn_usock_handler (struct nn_fsm *self, void *source, int type);
-int nn_usock_cancel_io (struct nn_usock *self);
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
+static int nn_usock_cancel_io (struct nn_usock *self);
 
 void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
@@ -383,7 +384,8 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
-void nn_usock_handler (struct nn_fsm *self, void *source, int type)
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
     struct nn_usock *usock;
@@ -393,7 +395,7 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.
             Stop the socket being accepted first. */
@@ -433,7 +435,7 @@ void nn_usock_handler (struct nn_fsm *self, void *source, int type)
         return;
     } 
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
-        nn_assert (source == NULL && type == NN_USOCK_ACTION_DONE);
+        nn_assert (srcptr == NULL && type == NN_USOCK_ACTION_DONE);
         goto finish1;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
@@ -456,7 +458,7 @@ finish3:
 /*  IDLE state.                                                              */
 /*****************************************************************************/
     case NN_USOCK_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;
@@ -471,7 +473,7 @@ finish3:
 /*  STARTING state.                                                          */
 /*****************************************************************************/
     case NN_USOCK_STATE_STARTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_LISTEN:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -492,7 +494,7 @@ finish3:
 /*  BEING_ACCEPTED state.                                                    */
 /*****************************************************************************/
     case NN_USOCK_STATE_BEING_ACCEPTED:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
@@ -509,7 +511,7 @@ finish3:
 /*  ACCEPTED state.                                                          */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTED:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ACTIVATE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -524,7 +526,7 @@ finish3:
 /*  CONNECTING state.                                                        */
 /*****************************************************************************/
     case NN_USOCK_STATE_CONNECTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -542,7 +544,7 @@ finish3:
                 nn_assert (0);
             }
         }
-        if (source == &usock->out) {
+        if (srcptr == &usock->out) {
             switch (type) {
             case NN_WORKER_OP_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -566,7 +568,7 @@ finish3:
 /*  ACTIVE state.                                                            */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACTIVE:
-        if (source == &usock->in) {
+        if (srcptr == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_DONE:
                 nn_fsm_raise (&usock->fsm, &usock->event_received,
@@ -583,7 +585,7 @@ finish3:
                 nn_assert (0);
             }
         }
-        if (source == &usock->out) {
+        if (srcptr == &usock->out) {
             switch (type) {
             case NN_WORKER_OP_DONE:
                 nn_fsm_raise (&usock->fsm, &usock->event_sent, NN_USOCK_SENT);
@@ -599,7 +601,7 @@ finish3:
                 nn_assert (0);
             }
         }
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
@@ -618,7 +620,7 @@ finish3:
 /*  CANCELLING_IO state.                                                     */
 /*****************************************************************************/
     case NN_USOCK_STATE_CANCELLING_IO:
-        if (source == &usock->in || source == &usock->out) {
+        if (srcptr == &usock->in || srcptr == &usock->out) {
             if (!nn_worker_op_isidle (&usock->in) ||
                   !nn_worker_op_isidle (&usock->out))
                 return;
@@ -637,7 +639,7 @@ finish3:
 /*  LISTENING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_LISTENING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
@@ -652,7 +654,7 @@ finish3:
 /*  ACCEPTING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -665,7 +667,7 @@ finish3:
                 nn_assert (0);
             }
         }
-        if (source == &usock->in) {
+        if (srcptr == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_DONE:
 
@@ -696,7 +698,7 @@ finish3:
 /*  CANCELLING state.                                                        */
 /*****************************************************************************/
     case NN_USOCK_STATE_CANCELLING:
-        if (source == &usock->in) {
+        if (srcptr == &usock->in) {
             switch (type) {
             case NN_WORKER_OP_DONE:
             case NN_WORKER_OP_ERROR:
@@ -729,7 +731,7 @@ finish3:
 /*****************************************************************************/
 
 /*  Returns 0 if there's nothing to cancel or 1 otherwise. */
-int nn_usock_cancel_io (struct nn_usock *self)
+static int nn_usock_cancel_io (struct nn_usock *self)
 {
     int rc;
     BOOL brc;

@@ -37,7 +37,8 @@
 #define NN_DNS_STATE_DONE 2
 
 /*  Private functions. */
-static void nn_dns_handler (struct nn_fsm *self, void *source, int type);
+static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
 {
@@ -119,7 +120,8 @@ void nn_dns_stop (struct nn_dns *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
+static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_dns *dns;
 
@@ -128,7 +130,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
         return;
@@ -139,7 +141,7 @@ static void nn_dns_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_DNS_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);

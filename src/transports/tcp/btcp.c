@@ -87,7 +87,8 @@ const struct nn_epbase_vfptr nn_btcp_epbase_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_btcp_handler (struct nn_fsm *self, void *source, int type);
+static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_btcp_start_listening (struct nn_btcp *self);
 static void nn_btcp_start_accepting (struct nn_btcp *self);
 
@@ -142,7 +143,8 @@ static void nn_btcp_destroy (struct nn_epbase *self)
     nn_free (btcp);
 }
 
-static void nn_btcp_handler (struct nn_fsm *self, void *source, int type)
+static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_btcp *btcp;
     struct nn_list_item *it;
@@ -153,7 +155,7 @@ static void nn_btcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_atcp_stop (btcp->atcp);
         btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
     }
@@ -184,7 +186,7 @@ static void nn_btcp_handler (struct nn_fsm *self, void *source, int type)
             by child atcp state machines. We could programatically test the
             assumption, but it would be O(n)-complex, so we'll skip the test. */
         nn_assert (type == NN_ATCP_STOPPED);
-        atcp = (struct nn_atcp *) source;
+        atcp = (struct nn_atcp *) srcptr;
         nn_list_erase (&btcp->atcps, &atcp->item);
         nn_atcp_term (atcp);
         nn_free (atcp);
@@ -208,7 +210,7 @@ atcps_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BTCP_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_btcp_start_listening (btcp);
@@ -226,7 +228,7 @@ atcps_stopping:
 /*  The execution is yielded to the atcp state machine in this state.         */
 /******************************************************************************/
     case NN_BTCP_STATE_ACTIVE:
-        if (source == btcp->atcp) {
+        if (srcptr == btcp->atcp) {
             switch (type) {
             case NN_ATCP_ACCEPTED:
 
@@ -248,7 +250,7 @@ atcps_stopping:
 
         /*  For all remaining events we'll assume they are coming from one
             of remaining child atcp objects. */
-        atcp = (struct nn_atcp*) source;
+        atcp = (struct nn_atcp*) srcptr;
         switch (type) {
         case NN_ATCP_ERROR:
             nn_atcp_stop (atcp);

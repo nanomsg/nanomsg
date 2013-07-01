@@ -38,7 +38,8 @@
 #define NN_ATCP_SRC_STCP 2
 
 /*  Private functions. */
-static void nn_atcp_handler (struct nn_fsm *self, void *source, int type);
+static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_atcp_init (struct nn_atcp *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
@@ -88,7 +89,8 @@ void nn_atcp_stop (struct nn_atcp *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
+static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_atcp *atcp;
 
@@ -97,7 +99,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_stcp_stop (&atcp->stcp);
         atcp->state = NN_ATCP_STATE_STOPPING_STCP_FINAL;
     }
@@ -128,7 +130,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_ATCP_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&atcp->usock, atcp->listener);
@@ -145,7 +147,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_ATCP_STATE_ACCEPTING:
-        if (source == &atcp->usock) {
+        if (srcptr == &atcp->usock) {
             switch (type) {
             case NN_USOCK_ACCEPTED:
 
@@ -172,7 +174,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_ATCP_STATE_ACTIVE:
-        if (source == &atcp->stcp) {
+        if (srcptr == &atcp->stcp) {
             switch (type) {
             case NN_STCP_ERROR:
                 nn_stcp_stop (&atcp->stcp);
@@ -188,7 +190,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  STOPPING_STCP state.                                                      */
 /******************************************************************************/
     case NN_ATCP_STATE_STOPPING_STCP:
-        if (source == &atcp->stcp) {
+        if (srcptr == &atcp->stcp) {
             switch (type) {
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
@@ -204,7 +206,7 @@ static void nn_atcp_handler (struct nn_fsm *self, void *source, int type)
 /*  STOPPING_USOCK state.                                                      */
 /******************************************************************************/
     case NN_ATCP_STATE_STOPPING_USOCK:
-        if (source == &atcp->usock) {
+        if (srcptr == &atcp->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);

@@ -45,7 +45,8 @@
 #define NN_SINPROC_FLAG_RECEIVING 2
 
 /*  Private functions. */
-void nn_sinproc_handler (struct nn_fsm *self, void *source, int type);
+static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -180,7 +181,8 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return NN_PIPEBASE_PARSED;
 }
 
-void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
+static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
     struct nn_sinproc *sinproc;
@@ -191,7 +193,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         if (sinproc->state == NN_SINPROC_STATE_IDLE ||
               sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
             goto finish;
@@ -202,7 +204,7 @@ void nn_sinproc_handler (struct nn_fsm *self, void *source, int type)
         return;
     }
     if (nn_slow (sinproc->state == NN_SINPROC_STATE_STOPPING)) {
-        nn_assert (source == sinproc->peer && type == NN_SINPROC_DISCONNECT);
+        nn_assert (srcptr == sinproc->peer && type == NN_SINPROC_DISCONNECT);
         sinproc->state = NN_SINPROC_STATE_IDLE;
 finish:
         nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
@@ -215,7 +217,7 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SINPROC_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 sinproc->state = NN_SINPROC_STATE_CONNECTING;
@@ -232,7 +234,7 @@ finish:
 /*  acknowledgement.                                                          */
 /******************************************************************************/
     case NN_SINPROC_STATE_CONNECTING:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_SINPROC_ACTION_ACCEPTED:
                 rc = nn_pipebase_start (&sinproc->pipebase);
@@ -248,7 +250,7 @@ finish:
             peer sinproc object. */
         switch (type) {
         case NN_SINPROC_ACCEPTED:
-            sinproc->peer = (struct nn_sinproc*) source;
+            sinproc->peer = (struct nn_sinproc*) srcptr;
             rc = nn_pipebase_start (&sinproc->pipebase);
             errnum_assert (rc == 0, -rc);
             sinproc->state = NN_SINPROC_STATE_ACTIVE;
@@ -261,7 +263,7 @@ finish:
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
         case NN_SINPROC_STATE_ACTIVE:
-            if (source == sinproc->peer) {
+            if (srcptr == sinproc->peer) {
                 switch (type) {
                 case NN_SINPROC_SENT:
 

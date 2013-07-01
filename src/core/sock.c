@@ -59,7 +59,8 @@ struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
 static void nn_sock_onleave (struct nn_ctx *self);
-static void nn_sock_handler (struct nn_fsm *self, void *source, int type);
+static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 {
@@ -697,7 +698,8 @@ struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
     return self->optsets [index];
 }
 
-static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
+static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_sock *sock;
     struct nn_list_item *it;
@@ -708,7 +710,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
             sock->state == NN_SOCK_STATE_ZOMBIE);
 
@@ -740,7 +742,7 @@ static void nn_sock_handler (struct nn_fsm *self, void *source, int type)
         nn_assert (type == NN_EP_STOPPED);
 
         /*  Endpoint is stopped. Now we can safely deallocate it. */
-        ep = (struct nn_ep*) source;
+        ep = (struct nn_ep*) srcptr;
         nn_list_erase (&sock->eps, &ep->item);
         nn_ep_term (ep);
         nn_free (ep);
@@ -761,7 +763,7 @@ finish2:
 
         /*  We get here when the deallocation of the socket was delayed by the
             specific socket type. */
-        nn_assert (source == NULL && type == NN_SOCK_ACTION_STOPPED);
+        nn_assert (srcptr == NULL && type == NN_SOCK_ACTION_STOPPED);
 
 finish1:
         /*  Protocol-specific part of the socket is stopped.
@@ -782,7 +784,7 @@ finish1:
 /*  INIT state.                                                               */
 /******************************************************************************/
     case NN_SOCK_STATE_INIT:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
@@ -797,7 +799,7 @@ finish1:
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_SOCK_STATE_ACTIVE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
 
             case NN_SOCK_ACTION_ZOMBIFY:
@@ -829,11 +831,11 @@ finish1:
         switch (type) {
         case NN_PIPE_IN:
             sock->sockbase->vfptr->in (sock->sockbase,
-                (struct nn_pipe*) source);
+                (struct nn_pipe*) srcptr);
             return;
         case NN_PIPE_OUT:
             sock->sockbase->vfptr->out (sock->sockbase,
-                (struct nn_pipe*) source);
+                (struct nn_pipe*) srcptr);
             return;
         default:
             nn_assert (0);

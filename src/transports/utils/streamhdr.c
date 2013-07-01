@@ -43,7 +43,8 @@
 #define NN_STREAMHDR_SRC_TIMER 1
 
 /*  Private functions. */
-static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type);
+static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_streamhdr_init (struct nn_streamhdr *self, int src,
     struct nn_fsm *owner)
@@ -102,7 +103,8 @@ void nn_streamhdr_stop (struct nn_streamhdr *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
+static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_streamhdr *streamhdr;
     struct nn_iovec iovec;
@@ -113,7 +115,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
     }
@@ -131,7 +133,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_timer_start (&streamhdr->timer, 1000);
@@ -150,7 +152,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  SENDING state.                                                            */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_SENDING:
-        if (source == streamhdr->usock) {
+        if (srcptr == streamhdr->usock) {
             switch (type) {
             case NN_USOCK_SENT:
                 nn_usock_recv (streamhdr->usock, streamhdr->protohdr,
@@ -165,7 +167,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
                 nn_assert (0);
             }
         }
-        if (source == &streamhdr->timer) {
+        if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&streamhdr->timer);
@@ -181,7 +183,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type)
 /*  RECEIVING state.                                                          */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_RECEIVING:
-        if (source == streamhdr->usock) {
+        if (srcptr == streamhdr->usock) {
             switch (type) {
             case NN_USOCK_RECEIVED:
 
@@ -204,7 +206,7 @@ invalidhdr:
                 nn_assert (0);
             }
         }
-        if (source == &streamhdr->timer) {
+        if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&streamhdr->timer);
@@ -220,7 +222,7 @@ invalidhdr:
 /*  STOPPING_TIMER_ERROR state.                                               */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR:
-        if (source == &streamhdr->timer) {
+        if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);
@@ -240,7 +242,7 @@ invalidhdr:
 /*  STOPPING_TIMER_DONE state.                                                */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_STOPPING_TIMER_DONE:
-        if (source == &streamhdr->timer) {
+        if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);

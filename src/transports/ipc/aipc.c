@@ -40,7 +40,8 @@
 #define NN_AIPC_SRC_SIPC 2
 
 /*  Private functions. */
-static void nn_aipc_handler (struct nn_fsm *self, void *source, int type);
+static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+   void *srcptr);
 
 void nn_aipc_init (struct nn_aipc *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
@@ -90,7 +91,8 @@ void nn_aipc_stop (struct nn_aipc *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
+static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_aipc *aipc;
 
@@ -99,7 +101,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_sipc_stop (&aipc->sipc);
         aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
     }
@@ -130,7 +132,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_AIPC_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&aipc->usock, aipc->listener);
@@ -147,7 +149,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_AIPC_STATE_ACCEPTING:
-        if (source == &aipc->usock) {
+        if (srcptr == &aipc->usock) {
             switch (type) {
             case NN_USOCK_ACCEPTED:
 
@@ -174,7 +176,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_AIPC_STATE_ACTIVE:
-        if (source == &aipc->sipc) {
+        if (srcptr == &aipc->sipc) {
             switch (type) {
             case NN_SIPC_ERROR:
                 nn_sipc_stop (&aipc->sipc);
@@ -190,7 +192,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOPPING_SIPC state.                                                      */
 /******************************************************************************/
     case NN_AIPC_STATE_STOPPING_SIPC:
-        if (source == &aipc->sipc) {
+        if (srcptr == &aipc->sipc) {
             switch (type) {
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&aipc->usock);
@@ -206,7 +208,7 @@ static void nn_aipc_handler (struct nn_fsm *self, void *source, int type)
 /*  STOPPING_USOCK state.                                                      */
 /******************************************************************************/
     case NN_AIPC_STATE_STOPPING_USOCK:
-        if (source == &aipc->usock) {
+        if (srcptr == &aipc->usock) {
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);

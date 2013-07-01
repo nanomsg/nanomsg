@@ -33,7 +33,8 @@
 #define NN_TIMER_STATE_STOPPING 3
 
 /*  Private functions. */
-static void nn_timer_handler (struct nn_fsm *self, void *source, int type);
+static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
 {
@@ -77,7 +78,8 @@ void nn_timer_stop (struct nn_timer *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
+static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_timer *timer;
 
@@ -86,13 +88,13 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
         return;
     }
     if (nn_slow (timer->state == NN_TIMER_STATE_STOPPING)) {
-        if (source != &timer->stop_task)
+        if (srcptr != &timer->stop_task)
             return;
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
@@ -107,7 +109,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_TIMER_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
 
@@ -125,7 +127,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_TIMER_STATE_ACTIVE:
-        if (source == &timer->start_task) {
+        if (srcptr == &timer->start_task) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_assert (timer->timeout >= 0);
             nn_worker_add_timer (timer->worker, timer->timeout,
@@ -133,7 +135,7 @@ static void nn_timer_handler (struct nn_fsm *self, void *source, int type)
             timer->timeout = -1;
             return;
         }
-        if (source == &timer->wtimer) {
+        if (srcptr == &timer->wtimer) {
             switch (type) {
             case NN_WORKER_TIMER_TIMEOUT:
 

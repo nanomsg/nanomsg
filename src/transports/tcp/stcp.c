@@ -46,7 +46,7 @@
 #define NN_STCP_OUTSTATE_IDLE 1
 #define NN_STCP_OUTSTATE_SENDING 2
 
-/*  Subordinate source objects. */
+/*  Subordinate srcptr objects. */
 #define NN_STCP_SRC_STREAMHDR 1
 
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
@@ -58,7 +58,8 @@ const struct nn_pipebase_vfptr nn_stcp_pipebase_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_stcp_handler (struct nn_fsm *self, void *source, int type);
+static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_stcp_init (struct nn_stcp *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
@@ -161,7 +162,8 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return 0;
 }
 
-static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
+static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
     struct nn_stcp *stcp;
@@ -172,7 +174,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (source == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcp->pipebase);
         nn_streamhdr_stop (&stcp->streamhdr);
         stcp->state = NN_STCP_STATE_STOPPING;
@@ -195,7 +197,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STCP_STATE_IDLE:
-        if (source == NULL) {
+        if (srcptr == NULL) {
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&stcp->streamhdr, stcp->usock,
@@ -212,7 +214,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /*  PROTOHDR state.                                                           */
 /******************************************************************************/
     case NN_STCP_STATE_PROTOHDR:
-        if (source == &stcp->streamhdr) {
+        if (srcptr == &stcp->streamhdr) {
             switch (type) {
             case NN_STREAMHDR_OK:
 
@@ -240,7 +242,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /*  STOPPING_STREAMHDR state.                                                 */
 /******************************************************************************/
     case NN_STCP_STATE_STOPPING_STREAMHDR:
-        if (source == &stcp->streamhdr) {
+        if (srcptr == &stcp->streamhdr) {
             switch (type) {
             case NN_STREAMHDR_STOPPED:
 
@@ -269,7 +271,7 @@ static void nn_stcp_handler (struct nn_fsm *self, void *source, int type)
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_STCP_STATE_ACTIVE:
-        if (source == stcp->usock) {
+        if (srcptr == stcp->usock) {
             switch (type) {
             case NN_USOCK_SENT:
 

@@ -59,10 +59,10 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
 static void nn_usock_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
+void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
     /*  Initalise the state machine. */
-    nn_fsm_init (&self->fsm, nn_usock_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
 
     /*  Choose a worker thread to handle this socket. */

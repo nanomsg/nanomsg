@@ -40,12 +40,12 @@
 /*  Private functions. */
 static void nn_ep_handler (struct nn_fsm *self, void *source, int type);
 
-int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
+int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     struct nn_transport *transport, int bind, const char *addr)
 {
     int rc;
 
-    nn_fsm_init (&self->fsm, nn_ep_handler, self, &sock->fsm);
+    nn_fsm_init (&self->fsm, nn_ep_handler, src, self, &sock->fsm);
     self->state = NN_EP_STATE_IDLE;
 
     self->epbase = NULL;

@@ -50,6 +50,9 @@
 #define NN_SOCK_ACTION_ZOMBIFY 1
 #define NN_SOCK_ACTION_STOPPED 2
 
+/*  Subordinated source objects. */
+#define NN_SOCK_SRC_EP 1
+
 /*  Private functions. */
 void nn_sock_adjust_events (struct nn_sock *self);
 struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
@@ -139,7 +142,8 @@ void nn_sock_stopped (struct nn_sock *self)
 {
     /*  TODO: Do the following in a more sane way. */
     self->fsm.stopped.fsm = &self->fsm;
-    self->fsm.stopped.source = NULL;
+    self->fsm.stopped.src = 0;
+    self->fsm.stopped.srcptr = NULL;
     self->fsm.stopped.type = NN_SOCK_ACTION_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
 }
@@ -410,7 +414,8 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
 
     /*  Instantiate the endpoint. */
     ep = nn_alloc (sizeof (struct nn_ep), "endpoint");
-    rc = nn_ep_init (ep, self, self->eid, transport, bind, addr);
+    rc = nn_ep_init (ep, NN_SOCK_SRC_EP, self, self->eid, transport,
+        bind, addr);
     if (nn_slow (rc < 0)) {
         nn_free (ep);
         nn_ctx_leave (&self->ctx);

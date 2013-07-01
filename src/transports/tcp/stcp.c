@@ -46,6 +46,9 @@
 #define NN_STCP_OUTSTATE_IDLE 1
 #define NN_STCP_OUTSTATE_SENDING 2
 
+/*  Subordinate source objects. */
+#define NN_STCP_SRC_STREAMHDR 1
+
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -57,12 +60,12 @@ const struct nn_pipebase_vfptr nn_stcp_pipebase_vfptr = {
 /*  Private functions. */
 static void nn_stcp_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_stcp_init (struct nn_stcp *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner)
+void nn_stcp_init (struct nn_stcp *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_stcp_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_stcp_handler, src, self, owner);
     self->state = NN_STCP_STATE_IDLE;
-    nn_streamhdr_init (&self->streamhdr, &self->fsm);
+    nn_streamhdr_init (&self->streamhdr, NN_STCP_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
     self->usock_owner = NULL;
     nn_pipebase_init (&self->pipebase, &nn_stcp_pipebase_vfptr, epbase);

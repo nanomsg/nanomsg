@@ -65,8 +65,8 @@ struct nn_atcp {
     struct nn_list_item item;
 };
 
-void nn_atcp_init (struct nn_atcp *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner);
+void nn_atcp_init (struct nn_atcp *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_atcp_term (struct nn_atcp *self);
 
 int nn_atcp_isidle (struct nn_atcp *self);

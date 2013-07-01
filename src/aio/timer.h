@@ -40,7 +40,7 @@ struct nn_timer {
     int timeout;
 };
 
-void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner);
+void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner);
 void nn_timer_term (struct nn_timer *self);
 
 int nn_timer_isidle (struct nn_timer *self);

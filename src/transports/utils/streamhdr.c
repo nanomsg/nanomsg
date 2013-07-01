@@ -40,14 +40,17 @@
 #define NN_STREAMHDR_STATE_DONE 6
 #define NN_STREAMHDR_STATE_STOPPING 7
 
+#define NN_STREAMHDR_SRC_TIMER 1
+
 /*  Private functions. */
 static void nn_streamhdr_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner)
+void nn_streamhdr_init (struct nn_streamhdr *self, int src,
+    struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_streamhdr_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_streamhdr_handler, src, self, owner);
     self->state = NN_STREAMHDR_STATE_IDLE;
-    nn_timer_init (&self->timer, &self->fsm);
+    nn_timer_init (&self->timer, NN_STREAMHDR_SRC_TIMER, &self->fsm);
     nn_fsm_event_init (&self->done);
 
     self->usock = NULL;

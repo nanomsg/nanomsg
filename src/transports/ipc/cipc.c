@@ -49,6 +49,10 @@
 #define NN_CIPC_STATE_STOPPING_SIPC_FINAL 8
 #define NN_CIPC_STATE_STOPPING 9
 
+#define NN_CIPC_SRC_USOCK 1
+#define NN_CIPC_SRC_RECONNECT_TIMER 2
+#define NN_CIPC_SRC_SIPC 3
+
 struct nn_cipc {
 
     /*  The state machine. */
@@ -95,9 +99,10 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_cipc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
-    nn_backoff_init (&self->retry, 1000, 1000, &self->fsm);
-    nn_sipc_init (&self->sipc, &self->epbase, &self->fsm);
+    nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
+    nn_backoff_init (&self->retry, NN_CIPC_SRC_RECONNECT_TIMER,
+        1000, 1000, &self->fsm);
+    nn_sipc_init (&self->sipc, NN_CIPC_SRC_SIPC, &self->epbase, &self->fsm);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);

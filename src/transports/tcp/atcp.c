@@ -34,18 +34,21 @@
 #define NN_ATCP_STATE_STOPPING_STCP_FINAL 7
 #define NN_ATCP_STATE_STOPPING 8
 
+#define NN_ATCP_SRC_USOCK 1
+#define NN_ATCP_SRC_STCP 2
+
 /*  Private functions. */
 static void nn_atcp_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_atcp_init (struct nn_atcp *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner)
+void nn_atcp_init (struct nn_atcp *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_atcp_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_atcp_handler, src, self, owner);
     self->state = NN_ATCP_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
+    nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner = NULL;
-    nn_stcp_init (&self->stcp, epbase, &self->fsm);
+    nn_stcp_init (&self->stcp, NN_ATCP_SRC_STCP, epbase, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);

@@ -56,7 +56,7 @@
 void nn_usock_handler (struct nn_fsm *self, void *source, int type);
 int nn_usock_cancel_io (struct nn_usock *self);
 
-void nn_usock_init (struct nn_usock *self, struct nn_fsm *owner)
+void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_usock_handler, self, owner);
     self->state = NN_USOCK_STATE_IDLE;

@@ -37,6 +37,8 @@
 
 #define NN_CINPROC_ACTION_CONNECT 1
 
+#define NN_CINPROC_SRC_SINPROC 1
+
 /*  Implementation of nn_epbase callback interface. */
 static void nn_cinproc_stop (struct nn_epbase *self);
 static void nn_cinproc_destroy (struct nn_epbase *self);
@@ -60,7 +62,8 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CINPROC_STATE_IDLE;
-    nn_sinproc_init (&self->sinproc, &self->epbase, &self->fsm);
+    nn_sinproc_init (&self->sinproc, NN_CINPROC_SRC_SINPROC,
+        &self->epbase, &self->fsm);
     nn_list_item_init (&self->item);
     sz = sizeof (self->protocol);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,

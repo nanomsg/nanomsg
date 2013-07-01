@@ -34,7 +34,8 @@
 void nn_fsm_event_init (struct nn_fsm_event *self)
 {
     self->fsm = NULL;
-    self->source = NULL;
+    self->src = -1;
+    self->srcptr = NULL;
     self->type = -1;
     nn_queue_item_init (&self->item);
 }
@@ -55,25 +56,27 @@ void nn_fsm_event_process (struct nn_fsm_event *self)
 
     type = self->type;
     self->type = -1;
-    self->fsm->fn (self->fsm, self->source, type);
+    self->fsm->fn (self->fsm, self->srcptr, type);
 }
 
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
 {
     self->fn = fn;
     self->state = NN_FSM_STATE_IDLE;
-    self->source = NULL;
+    self->src = -1;
+    self->srcptr = NULL;
     self->owner = NULL;
     self->ctx = ctx;
     nn_fsm_event_init (&self->stopped);
 }
 
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, void *source,
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, int src, void *srcptr,
     struct nn_fsm *owner)
 {
     self->fn = fn;
     self->state = NN_FSM_STATE_IDLE;
-    self->source = source;
+    self->src = src;
+    self->srcptr = srcptr;
     self->owner = owner;
     self->ctx = owner->ctx;
     nn_fsm_event_init (&self->stopped);
@@ -139,7 +142,8 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
 {    
     event->fsm = self->owner;
-    event->source = self->source;
+    event->src = self->src;
+    event->srcptr = self->srcptr;
     event->type = type;
     nn_ctx_raise (self->ctx, event);
 }
@@ -148,7 +152,8 @@ void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
     struct nn_fsm_event *event, int type)
 {
     event->fsm = dst;
-    event->source = self->source;
+    event->src = self->src;
+    event->srcptr = self->srcptr;
     event->type = type;
     nn_ctx_raiseto (self->ctx, event);
 }

@@ -36,18 +36,21 @@
 #define NN_AIPC_STATE_STOPPING_SIPC_FINAL 7
 #define NN_AIPC_STATE_STOPPING 8
 
+#define NN_AIPC_SRC_USOCK 1
+#define NN_AIPC_SRC_SIPC 2
+
 /*  Private functions. */
 static void nn_aipc_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_aipc_init (struct nn_aipc *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner)
+void nn_aipc_init (struct nn_aipc *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_aipc_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_aipc_handler, src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
+    nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner = NULL;
-    nn_sipc_init (&self->sipc, epbase, &self->fsm);
+    nn_sipc_init (&self->sipc, NN_AIPC_SRC_SIPC, epbase, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);

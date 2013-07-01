@@ -35,9 +35,9 @@
 /*  Private functions. */
 static void nn_timer_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_timer_init (struct nn_timer *self, struct nn_fsm *owner)
+void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_timer_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_timer_handler, src, self, owner);
     self->state = NN_TIMER_STATE_IDLE;
     nn_worker_task_init (&self->start_task, &self->fsm);
     nn_worker_task_init (&self->stop_task, &self->fsm);

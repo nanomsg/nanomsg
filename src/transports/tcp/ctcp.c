@@ -58,6 +58,11 @@
 #define NN_CTCP_STATE_STOPPING_STCP_FINAL 10
 #define NN_CTCP_STATE_STOPPING 11
 
+#define NN_CTCP_SRC_USOCK 1
+#define NN_CTCP_SRC_RECONNECT_TIMER 2
+#define NN_CTCP_SRC_DNS 3
+#define NN_CTCP_SRC_SCTP 4
+
 struct nn_ctcp {
 
     /*  The state machine. */
@@ -111,10 +116,12 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_ctcp_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CTCP_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
-    nn_backoff_init (&self->retry, 1000, 1000, &self->fsm);
-    nn_stcp_init (&self->stcp, &self->epbase, &self->fsm);
-    nn_dns_init (&self->dns, &self->fsm);
+    nn_usock_init (&self->usock, NN_CTCP_SRC_USOCK, &self->fsm);
+    /*  TODO: Get actual retry interval options! */
+    nn_backoff_init (&self->retry, NN_CTCP_SRC_RECONNECT_TIMER,
+        1000, 1000, &self->fsm);
+    nn_stcp_init (&self->stcp, NN_CTCP_SRC_SCTP, &self->epbase, &self->fsm);
+    nn_dns_init (&self->dns, NN_CTCP_SRC_DNS, &self->fsm);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);

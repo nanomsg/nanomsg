@@ -42,7 +42,7 @@ struct nn_ep {
     char addr [NN_SOCKADDR_MAX + 1];
 };
 
-int nn_ep_init (struct nn_ep *self, struct nn_sock *sock, int eid,
+int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     struct nn_transport *transport, int bind, const char *addr);
 void nn_ep_term (struct nn_ep *self);
 

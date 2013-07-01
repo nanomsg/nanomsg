@@ -33,7 +33,8 @@ struct nn_worker;
 
 struct nn_fsm_event {
     struct nn_fsm *fsm;
-    void *source;
+    int src;
+    void *srcptr;
     int type;
     struct nn_queue_item item;
 };
@@ -61,14 +62,15 @@ typedef void (*nn_fsm_fn) (struct nn_fsm *self, void *source, int type);
 struct nn_fsm {
     nn_fsm_fn fn;
     int state;
-    void *source;
+    int src;
+    void *srcptr;
     struct nn_fsm *owner;
     struct nn_ctx *ctx;
     struct nn_fsm_event stopped;
 };
 
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx);
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, void *source,
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, int src, void *srcptr,
     struct nn_fsm *owner);
 void nn_fsm_term (struct nn_fsm *self);
 

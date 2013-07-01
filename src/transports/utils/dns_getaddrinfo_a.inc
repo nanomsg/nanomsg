@@ -39,9 +39,9 @@
 static void nn_dns_notify (union sigval);
 static void nn_dns_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner)
+void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_dns_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_dns_handler, src, self, owner);
     self->state = NN_DNS_STATE_IDLE;
     nn_fsm_event_init (&self->done);
 }

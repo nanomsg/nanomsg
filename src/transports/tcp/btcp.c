@@ -55,6 +55,9 @@
 #define NN_BTCP_STATE_STOPPING_USOCK 4
 #define NN_BTCP_STATE_STOPPING_ATCPS 5
 
+#define NN_BTCP_SRC_USOCK 1
+#define NN_BTCP_SRC_ATCP 2
+
 struct nn_btcp {
 
     /*  The state machine. */
@@ -101,7 +104,7 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_btcp_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
+    nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
     self->atcp = NULL;
     nn_list_init (&self->atcps);
 
@@ -328,7 +331,7 @@ static void nn_btcp_start_accepting (struct nn_btcp *self)
     /*  Allocate new atcp state machine. */
     self->atcp = nn_alloc (sizeof (struct nn_atcp), "atcp");
     alloc_assert (self->atcp);
-    nn_atcp_init (self->atcp, &self->epbase, &self->fsm);
+    nn_atcp_init (self->atcp, NN_BTCP_SRC_ATCP, &self->epbase, &self->fsm);
 
     /*  Start waiting for a new incoming connection. */
     nn_atcp_start (self->atcp, &self->usock);

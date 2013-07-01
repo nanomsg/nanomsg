@@ -22,10 +22,10 @@
 
 #include "backoff.h"
 
-void nn_backoff_init (struct nn_backoff *self, int minivl, int maxivl,
+void nn_backoff_init (struct nn_backoff *self, int src, int minivl, int maxivl,
     struct nn_fsm *owner)
 {
-    nn_timer_init (&self->timer, owner);
+    nn_timer_init (&self->timer, src, owner);
     self->minivl = minivl;
     self->maxivl = maxivl;
     self->n = 1;

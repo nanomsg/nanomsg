@@ -52,6 +52,8 @@
 #define NN_SURVEYOR_ACTION_START 1
 #define NN_SURVEYOR_ACTION_CANCEL 2
 
+#define NN_SURVEYOR_SRC_DEADLINE_TIMER 1
+
 struct nn_surveyor {
 
     /*  The underlying raw SP socket. */
@@ -117,7 +119,7 @@ static void nn_surveyor_init (struct nn_surveyor *self,
         there should be no key clashes even if the executable is re-started. */
     nn_random_generate (&self->surveyid, sizeof (self->surveyid));
 
-    nn_timer_init (&self->timer, &self->fsm);
+    nn_timer_init (&self->timer, NN_SURVEYOR_SRC_DEADLINE_TIMER, &self->fsm);
     nn_msg_init (&self->tosend, 0);
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
 

@@ -63,7 +63,8 @@ struct nn_streamhdr {
     struct nn_fsm_event done;
 };
 
-void nn_streamhdr_init (struct nn_streamhdr *self, struct nn_fsm *owner);
+void nn_streamhdr_init (struct nn_streamhdr *self, int src,
+    struct nn_fsm *owner);
 void nn_streamhdr_term (struct nn_streamhdr *self);
 
 int nn_streamhdr_isidle (struct nn_streamhdr *self);

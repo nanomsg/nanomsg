@@ -76,8 +76,8 @@ struct nn_sinproc {
     struct nn_list_item item;
 };
 
-void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner);
+void nn_sinproc_init (struct nn_sinproc *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_sinproc_term (struct nn_sinproc *self);
 int nn_sinproc_isidle (struct nn_sinproc *self);
 

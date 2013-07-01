@@ -42,6 +42,9 @@
 #define NN_SIPC_STATE_DONE 5
 #define NN_SIPC_STATE_STOPPING 6
 
+/*  Subordinated source objects. */
+#define NN_SIPC_SRC_STREAMHDR 1
+
 /*  Possible states of the inbound part of the object. */
 #define NN_SIPC_INSTATE_HDR 1
 #define NN_SIPC_INSTATE_BODY 2
@@ -62,12 +65,12 @@ const struct nn_pipebase_vfptr nn_sipc_pipebase_vfptr = {
 /*  Private functions. */
 static void nn_sipc_handler (struct nn_fsm *self, void *source, int type);
 
-void nn_sipc_init (struct nn_sipc *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner)
+void nn_sipc_init (struct nn_sipc *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_sipc_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_sipc_handler, src, self, owner);
     self->state = NN_SIPC_STATE_IDLE;
-    nn_streamhdr_init (&self->streamhdr, &self->fsm);
+    nn_streamhdr_init (&self->streamhdr, NN_SIPC_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
     self->usock_owner = NULL;
     nn_pipebase_init (&self->pipebase, &nn_sipc_pipebase_vfptr, epbase);

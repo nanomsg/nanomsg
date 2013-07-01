@@ -54,10 +54,10 @@ const struct nn_pipebase_vfptr nn_sinproc_pipebase_vfptr = {
     nn_sinproc_recv
 };
 
-void nn_sinproc_init (struct nn_sinproc *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner)
+void nn_sinproc_init (struct nn_sinproc *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_sinproc_handler, self, owner);
+    nn_fsm_init (&self->fsm, nn_sinproc_handler, src, self, owner);
     self->state = NN_SINPROC_STATE_IDLE;
     self->flags = 0;
     self->peer = NULL;

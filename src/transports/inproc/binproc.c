@@ -34,6 +34,8 @@
 #define NN_BINPROC_STATE_ACTIVE 2
 #define NN_BINPROC_STATE_STOPPING 3
 
+#define NN_BINPROC_SRC_SINPROC 1
+
 /*  Implementation of nn_epbase interface. */
 static void nn_binproc_stop (struct nn_epbase *self);
 static void nn_binproc_destroy (struct nn_epbase *self);
@@ -107,7 +109,8 @@ void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
 
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
     alloc_assert (sinproc);
-    nn_sinproc_init (sinproc, &self->epbase, &self->fsm);
+    nn_sinproc_init (sinproc, NN_BINPROC_SRC_SINPROC,
+        &self->epbase, &self->fsm);
     nn_list_insert (&self->sinprocs, &sinproc->item,
         nn_list_end (&self->sinprocs));
     nn_sinproc_connect (sinproc, &peer->fsm);
@@ -189,7 +192,8 @@ finish:
         /*  Create new sinproc object. */
         sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
         alloc_assert (sinproc);
-        nn_sinproc_init (sinproc, &binproc->epbase, &binproc->fsm);
+        nn_sinproc_init (sinproc, NN_BINPROC_SRC_SINPROC,
+            &binproc->epbase, &binproc->fsm);
         nn_list_insert (&binproc->sinprocs, &sinproc->item,
             nn_list_end (&binproc->sinprocs));
         nn_sinproc_accept (sinproc, peer);

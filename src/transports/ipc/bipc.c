@@ -46,6 +46,9 @@
 #define NN_BIPC_STATE_STOPPING_USOCK 4
 #define NN_BIPC_STATE_STOPPING_AIPCS 5
 
+#define NN_BIPC_SRC_USOCK 1
+#define NN_BIPC_SRC_AIPC 2
+
 struct nn_bipc {
 
     /*  The state machine. */
@@ -92,7 +95,7 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_bipc_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, &self->fsm);
+    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm);
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
 
@@ -300,7 +303,7 @@ static void nn_bipc_start_accepting (struct nn_bipc *self)
     /*  Allocate new aipc state machine. */
     self->aipc = nn_alloc (sizeof (struct nn_aipc), "aipc");
     alloc_assert (self->aipc);
-    nn_aipc_init (self->aipc, &self->epbase, &self->fsm);
+    nn_aipc_init (self->aipc, NN_BIPC_SRC_AIPC, &self->epbase, &self->fsm);
 
     /*  Start waiting for a new incoming connection. */
     nn_aipc_start (self->aipc, &self->usock);

@@ -38,7 +38,7 @@ struct nn_backoff {
     int n;
 };
 
-void nn_backoff_init (struct nn_backoff *self, int minivl, int maxivl,
+void nn_backoff_init (struct nn_backoff *self, int src, int minivl, int maxivl,
     struct nn_fsm *owner);
 void nn_backoff_term (struct nn_backoff *self);
 

@@ -80,8 +80,8 @@ struct nn_sipc {
     struct nn_fsm_event done;
 };
 
-void nn_sipc_init (struct nn_sipc *self, struct nn_epbase *epbase,
-    struct nn_fsm *owner);
+void nn_sipc_init (struct nn_sipc *self, int src,
+    struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_sipc_term (struct nn_sipc *self);
 
 int nn_sipc_isidle (struct nn_sipc *self);

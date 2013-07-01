@@ -43,7 +43,7 @@ struct nn_dns_result {
     size_t addrlen;
 };
 
-void nn_dns_init (struct nn_dns *self, struct nn_fsm *owner);
+void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner);
 void nn_dns_term (struct nn_dns *self);
 
 int nn_dns_isidle (struct nn_dns *self);

@@ -59,6 +59,8 @@
 #define NN_REQ_ACTION_SENT 4
 #define NN_REQ_ACTION_RECEIVED 5
 
+#define NN_REQ_SRC_RESEND_TIMER 1
+
 struct nn_req {
 
     /*  The base class. Raw REQ socket. */
@@ -133,7 +135,7 @@ static void nn_req_init (struct nn_req *self,
 
     nn_msg_init (&self->request, 0);
     nn_msg_init (&self->reply, 0);
-    nn_timer_init (&self->timer, &self->fsm);
+    nn_timer_init (&self->timer, NN_REQ_SRC_RESEND_TIMER, &self->fsm);
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
 
     /*  Start the state machine. */

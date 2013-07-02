@@ -41,6 +41,7 @@ int nn_efd_init (struct nn_efd *self)
     int addrlen;
     BOOL reuseaddr;
     BOOL nodelay;
+    u_long nonblock;
 
     /*  Make the following critical section accessible to everyone. */
     sa.nLength = sizeof (sa);
@@ -151,6 +152,11 @@ int nn_efd_init (struct nn_efd *self)
     brc = CloseHandle (sync);
     win_assert (brc != 0);
 
+    /*  Make the receiving socket non-blocking. */
+    nonblock = 1;
+    rc = ioctlsocket (s_, FIONBIO, &nonblock);
+    wsa_assert (rc != SOCKET_ERROR);
+
     /* Initialise the pre-allocated pollset. */
     FD_ZERO (&self->fds);
 
@@ -163,6 +169,7 @@ wsafail:
     brc = CloseHandle (sync);
     win_assert (brc != 0);
     errnum_assert (0, rc);
+    return -rc;
 }
 
 void nn_efd_term (struct nn_efd *self)
@@ -197,6 +204,8 @@ void nn_efd_unsignal (struct nn_efd *self)
 
     while (1) {
         rc = recv (self->r, (char*) buf, sizeof (buf), 0);
+        if (rc == SOCKET_ERROR && WSAGetLastError () == WSAEWOULDBLOCK)
+            rc = 0;
         wsa_assert (rc != SOCKET_ERROR);
         if (nn_fast (rc < sizeof (buf)))
             break;

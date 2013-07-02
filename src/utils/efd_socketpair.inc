@@ -98,6 +98,8 @@ void nn_efd_unsignal (struct nn_efd *self)
 
     while (1) {
         nbytes = recv (self->r, buf, sizeof (buf), 0);
+        if (nbytes < 0 && errno == EAGAIN)
+            nbytes = 0;
         errno_assert (nbytes >= 0);
         if (nn_fast (nbytes < sizeof (buf)))
             break;

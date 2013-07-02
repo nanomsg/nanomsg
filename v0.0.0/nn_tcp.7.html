@@ -628,7 +628,7 @@ IPv6 address of a local network interface in numeric form (::1).
 </li>
 <li>
 <p>
-Interface name, as defined by operating system.
+Interface name, as defined by operating system (eth0).
 </p>
 </li>
 </ul></div>
@@ -651,6 +651,21 @@ The DNS name of the remote box.
 </p>
 </li>
 </ul></div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+NN_TCP_NODELAY
+</dt>
+<dd>
+<p>
+    This option, when set to 1, disables Nagle&#8217;s algorithm. It also disables
+    delaying of TCP acknowledgments. Using this option improves latency at
+    the expense of throughput. Type of this option is int. Default value is 0.
+</p>
+</dd>
+</dl></div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -684,7 +699,7 @@ nn_connect (s2, "tcp://myserver:5555");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-28 10:02:05 CET
+Last updated 2013-05-15 09:58:02 CEST
 </div>
 </div>
 </body>

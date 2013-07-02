@@ -592,6 +592,11 @@ pointers among threads, synchronising thread access to shared data becomes
 your responsibility. Such design also prevents moving the thread into different
 process or machine once the need arises. As a rule of the thumb, don&#8217;t pass
 pointers among threads unless you know what you are doing.</p></div>
+<div class="paragraph"><p>The overall buffer size for an inproc connection is determined by NN_RCVBUF
+socket option on the receiving end of the connection. NN_SNDBUF socket option
+is ignored. In addition to the buffer, one message of arbitrary size will fit
+into the buffer. That way, even messages larger than the buffer can be
+transfered via inproc connection.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -625,7 +630,7 @@ nn_connect (s2, "inproc://test);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.0.0<br />
-Last updated 2013-03-28 10:02:05 CET
+Last updated 2013-07-02 14:24:43 CEST
 </div>
 </div>
 </body>

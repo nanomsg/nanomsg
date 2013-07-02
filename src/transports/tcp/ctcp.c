@@ -126,11 +126,11 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
         &reconnect_ivl, &sz);
     nn_assert (sz == sizeof (reconnect_ivl));
     sz = sizeof (reconnect_ivl_max);
-    if (reconnect_ivl_max == 0)
-        reconnect_ivl_max = reconnect_ivl;
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
         &reconnect_ivl_max, &sz);
     nn_assert (sz == sizeof (reconnect_ivl_max));
+    if (reconnect_ivl_max == 0)
+        reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CTCP_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
     nn_stcp_init (&self->stcp, NN_CTCP_SRC_SCTP, &self->epbase, &self->fsm);

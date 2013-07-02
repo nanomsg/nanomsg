@@ -154,7 +154,7 @@ int nn_efd_init (struct nn_efd *self)
 
     /*  Make the receiving socket non-blocking. */
     nonblock = 1;
-    rc = ioctlsocket (s_, FIONBIO, &nonblock);
+    rc = ioctlsocket (self->r, FIONBIO, &nonblock);
     wsa_assert (rc != SOCKET_ERROR);
 
     /* Initialise the pre-allocated pollset. */

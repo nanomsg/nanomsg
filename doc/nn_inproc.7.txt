@@ -28,6 +28,12 @@ your responsibility. Such design also prevents moving the thread into different
 process or machine once the need arises. As a rule of the thumb, don't pass
 pointers among threads unless you know what you are doing.
 
+The overall buffer size for an inproc connection is determined by NN_RCVBUF
+socket option on the receiving end of the connection. NN_SNDBUF socket option
+is ignored. In addition to the buffer, one message of arbitrary size will fit
+into the buffer. That way, even messages larger than the buffer can be
+transfered via inproc connection.
+
 EXAMPLE
 -------
 

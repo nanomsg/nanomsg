@@ -102,7 +102,12 @@ void nn_ep_stop (struct nn_ep *self)
 
 void nn_ep_stopped (struct nn_ep *self)
 {
-    nn_fsm_action (&self->fsm, NN_EP_ACTION_STOPPED);
+    /*  TODO: Do the following in a more sane way. */
+    self->fsm.stopped.fsm = &self->fsm;
+    self->fsm.stopped.src = 0;
+    self->fsm.stopped.srcptr = NULL;
+    self->fsm.stopped.type = NN_EP_ACTION_STOPPED;
+    nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
 }
 
 struct nn_ctx *nn_ep_getctx (struct nn_ep *self)

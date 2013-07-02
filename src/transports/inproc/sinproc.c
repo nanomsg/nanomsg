@@ -58,12 +58,18 @@ const struct nn_pipebase_vfptr nn_sinproc_pipebase_vfptr = {
 void nn_sinproc_init (struct nn_sinproc *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
+    int rcvbuf;
+    size_t sz;
+
     nn_fsm_init (&self->fsm, nn_sinproc_handler, src, self, owner);
     self->state = NN_SINPROC_STATE_IDLE;
     self->flags = 0;
     self->peer = NULL;
     nn_pipebase_init (&self->pipebase, &nn_sinproc_pipebase_vfptr, epbase);
-    nn_msgqueue_init (&self->msgqueue, 1000000);
+    sz = sizeof (rcvbuf);
+    nn_epbase_getopt (epbase, NN_SOL_SOCKET, NN_RCVBUF, &rcvbuf, &sz);
+    nn_assert (sz == sizeof (rcvbuf));
+    nn_msgqueue_init (&self->msgqueue, rcvbuf);
     nn_msg_init (&self->msg, 0);
     nn_fsm_event_init (&self->event_connect);
     nn_fsm_event_init (&self->event_sent);

@@ -90,6 +90,9 @@ static void nn_cipc_start_connecting (struct nn_cipc *self);
 int nn_cipc_create (void *hint, struct nn_epbase **epbase)
 {
     struct nn_cipc *self;
+    int reconnect_ivl;
+    int reconnect_ivl_max;
+    size_t sz;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_cipc), "cipc");
@@ -101,8 +104,18 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CIPC_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
+    sz = sizeof (reconnect_ivl);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
+        &reconnect_ivl, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl));
+    sz = sizeof (reconnect_ivl_max);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+        &reconnect_ivl_max, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl_max));
+    if (reconnect_ivl_max == 0)
+        reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CIPC_SRC_RECONNECT_TIMER,
-        1000, 1000, &self->fsm);
+        reconnect_ivl, reconnect_ivl_max, &self->fsm);
     nn_sipc_init (&self->sipc, NN_CIPC_SRC_SIPC, &self->epbase, &self->fsm);
 
     /*  Start the state machine. */

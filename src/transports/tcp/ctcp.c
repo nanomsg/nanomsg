@@ -107,6 +107,9 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
 int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
 {
     struct nn_ctcp *self;
+    int reconnect_ivl;
+    int reconnect_ivl_max;
+    size_t sz;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_ctcp), "ctcp");
@@ -118,9 +121,16 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CTCP_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CTCP_SRC_USOCK, &self->fsm);
-    /*  TODO: Get actual retry interval options! */
+    sz = sizeof (reconnect_ivl);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
+        &reconnect_ivl, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl));
+    sz = sizeof (reconnect_ivl_max);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+        &reconnect_ivl_max, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl_max));
     nn_backoff_init (&self->retry, NN_CTCP_SRC_RECONNECT_TIMER,
-        1000, 1000, &self->fsm);
+        reconnect_ivl, reconnect_ivl_max, &self->fsm);
     nn_stcp_init (&self->stcp, NN_CTCP_SRC_SCTP, &self->epbase, &self->fsm);
     nn_dns_init (&self->dns, NN_CTCP_SRC_DNS, &self->fsm);
 

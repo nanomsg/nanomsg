@@ -43,17 +43,15 @@ int main ()
     size_t sz;
 
     /*  Try closing bound but unconnected socket. */
-#if 0
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb >= 0);
     rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc > 0);
     rc = nn_close (sb);
     errno_assert (rc == 0);
-#endif
 
     /*  Try closing a TCP socket while it not connected. At the same time
-        test specifying the local address for connection. */
+        test specifying the local address for the connection. */
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
     rc = nn_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");
@@ -95,6 +93,9 @@ int main ()
     rc = nn_connect (sc, "tcp://eth10000;127.0.0.1:5555");
     nn_assert (rc < 0);    
     errno_assert (nn_errno () == ENODEV);
+    rc = nn_connect (sc, "tcp://127.0.0.1");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
     rc = nn_bind (sc, "tcp://127.0.0.1:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);

@@ -132,7 +132,7 @@ static void nn_global_add_socktype (struct nn_socktype *socktype);
 
 /*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
-static int nn_global_create_ep (int fd, const char *addr, int bind);
+static int nn_global_create_ep (int s, const char *addr, int bind);
 
 int nn_errno (void)
 {
@@ -242,6 +242,7 @@ static void nn_global_term (void)
     int rc;
 #endif
     struct nn_list_item *it;
+    struct nn_transport *tp;
 
     /*  If there are no sockets remaining, uninitialise the global context. */
     nn_assert (self.socks);
@@ -254,7 +255,9 @@ static void nn_global_term (void)
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
         it = nn_list_begin (&self.transports);
-        nn_cont (it, struct nn_transport, item)->term ();
+        tp = nn_cont (it, struct nn_transport, item);
+        if (tp->term)
+            tp->term ();
         nn_list_erase (&self.transports, it);
     }
 
@@ -302,17 +305,12 @@ void nn_term (void)
 
 void *nn_allocmsg (size_t size, int type)
 {
-    struct nn_chunk *ch;
-
-    ch = nn_chunk_alloc (size, type);
-    if (nn_slow (!ch))
-        return NULL;
-    return (void*) (ch + 1);
+    return nn_chunk_alloc (size, type);
 }
 
 int nn_freemsg (void *msg)
 {
-    nn_chunk_free (((struct nn_chunk*) msg) - 1);
+    nn_chunk_free (msg);
     return 0;
 }
 
@@ -322,6 +320,7 @@ int nn_socket (int domain, int protocol)
     int s;
     struct nn_list_item *it;
     struct nn_socktype *socktype;
+    struct nn_sock *sock;
 
     nn_glock_lock ();
 
@@ -355,16 +354,22 @@ int nn_socket (int domain, int protocol)
     /*  Find an empty socket slot. */
     s = self.unused [NN_MAX_SOCKETS - self.nsocks - 1];
 
-    /*  Find the appropriate socket type and instantiate it. */
+    /*  Find the appropriate socket type. */
     for (it = nn_list_begin (&self.socktypes);
           it != nn_list_end (&self.socktypes);
           it = nn_list_next (&self.socktypes, it)) {
         socktype = nn_cont (it, struct nn_socktype, item);
         if (socktype->domain == domain && socktype->protocol == protocol) {
-            rc = socktype->create ((struct nn_sockbase**) &self.socks [s]);
+
+            /*  Instantiate the socket. */
+            sock = nn_alloc (sizeof (struct nn_sock), "sock");
+            alloc_assert (sock);
+            rc = nn_sock_init (sock, socktype);
             if (rc < 0)
                 goto error;
-            nn_sock_postinit (self.socks [s], domain, protocol);
+
+            /*  Adjust the global socket table. */
+            self.socks [s] = sock;
             ++self.nsocks;
             nn_glock_unlock ();
             return s;
@@ -386,17 +391,20 @@ int nn_close (int s)
 
     NN_BASIC_CHECKS;
 
+    /*  TODO: nn_sock_term can take a long time to accomplish. It should not be
+        performed under global critical section. */
+    nn_glock_lock ();
+
     /*  Deallocate the socket object. */
-    rc = nn_sock_destroy (self.socks [s]);
+    rc = nn_sock_term (self.socks [s]);
     if (nn_slow (rc == -EINTR)) {
         errno = EINTR;
         return -1;
     }
 
-    nn_glock_lock ();
-
     /*  Remove the socket from the socket table, add it to unused socket
         table. */
+    nn_free (self.socks [s]);
     self.socks [s] = NULL;
     self.unused [NN_MAX_SOCKETS - self.nsocks] = s;
     --self.nsocks;
@@ -443,7 +451,7 @@ int nn_getsockopt (int s, int level, int option, void *optval,
         return -1;
     }
 
-    rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen, 0);
+    rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen);
     if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
@@ -503,7 +511,7 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 {
     int rc;
     struct nn_msg msg;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -514,13 +522,13 @@ int nn_send (int s, const void *buf, size_t len, int flags)
 
     /*  Create a message object. */
     if (len == NN_MSG) {
-        ch = nn_chunk_from_data (*(void**) buf);
-        if (nn_slow (ch == NULL)) {
+        chunk = *(void**) buf;
+        if (nn_slow (chunk == NULL)) {
             errno = EFAULT;
             return -1;
         }
-        len = nn_chunk_size (ch);
-        nn_msg_init_chunk (&msg, ch);
+        len = nn_chunk_size (chunk);
+        nn_msg_init_chunk (&msg, chunk);
     }
     else {
         nn_msg_init (&msg, len);
@@ -543,7 +551,7 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     int rc;
     struct nn_msg msg;
     size_t sz;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -559,9 +567,9 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     }
 
     if (len == NN_MSG) {
-        ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) buf = nn_chunk_data (ch);
-        sz = nn_chunk_size (ch);
+        chunk = nn_chunkref_getchunk (&msg.body);
+        *(void**) buf = chunk;
+        sz = nn_chunk_size (chunk);
     }
     else {
         sz = nn_chunkref_size (&msg.body);
@@ -579,7 +587,7 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     int i;
     struct nn_iovec *iov;
     struct nn_msg msg;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -594,13 +602,13 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        ch = nn_chunk_from_data (*(void**) msghdr->msg_iov [0].iov_base);
-        if (nn_slow (ch == NULL)) {
+        chunk = *(void**) msghdr->msg_iov [0].iov_base;
+        if (nn_slow (chunk == NULL)) {
             errno = EFAULT;
             return -1;
         }
-        sz = nn_chunk_size (ch);
-        nn_msg_init_chunk (&msg, ch);
+        sz = nn_chunk_size (chunk);
+        nn_msg_init_chunk (&msg, chunk);
     }
     else {
 
@@ -637,9 +645,9 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     /*  Add ancillary data to the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            ch = nn_chunk_from_data (*((void**) msghdr->msg_control));
+            chunk = *((void**) msghdr->msg_control);
             nn_chunkref_term (&msg.hdr);
-            nn_chunkref_init_chunk (&msg.hdr, ch);
+            nn_chunkref_init_chunk (&msg.hdr, chunk);
         }
         else {
 
@@ -667,7 +675,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     size_t sz;
     int i;
     struct nn_iovec *iov;
-    struct nn_chunk *ch;
+    void *chunk;
 
     NN_BASIC_CHECKS;
 
@@ -689,9 +697,9 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        ch = nn_chunkref_getchunk (&msg.body);
-        *(void**) (msghdr->msg_iov [0].iov_base) = nn_chunk_data (ch);
-        sz = nn_chunk_size (ch);
+        chunk = nn_chunkref_getchunk (&msg.body);
+        *(void**) (msghdr->msg_iov [0].iov_base) = chunk;
+        sz = nn_chunk_size (chunk);
     }
     else {
 
@@ -719,8 +727,8 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            ch = nn_chunkref_getchunk (&msg.hdr);
-            *((void**) msghdr->msg_control) = nn_chunk_data (ch);
+            chunk = nn_chunkref_getchunk (&msg.hdr);
+            *((void**) msghdr->msg_control) = chunk;
         }
         else {
 
@@ -737,7 +745,8 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
 static void nn_global_add_transport (struct nn_transport *transport)
 {
-    transport->init ();
+    if (transport->init)
+        transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
     
@@ -749,7 +758,7 @@ static void nn_global_add_socktype (struct nn_socktype *socktype)
         nn_list_end (&self.socktypes));
 }
 
-static int nn_global_create_ep (int fd, const char *addr, int bind)
+static int nn_global_create_ep (int s, const char *addr, int bind)
 {
     int rc;
     const char *proto;
@@ -793,10 +802,8 @@ static int nn_global_create_ep (int fd, const char *addr, int bind)
         return -EPROTONOSUPPORT;
     }
 
-    /*  Ask socket to create the endpoint. Pass it the class factory
-        function. */
-    rc = nn_sock_add_ep (self.socks [fd], addr,
-        bind ? tp->bind : tp->connect);
+    /*  Ask the socket to create the endpoint. */
+    rc = nn_sock_add_ep (self.socks [s], tp, bind, addr);
     nn_glock_unlock ();
     return rc;
 }
@@ -822,8 +829,8 @@ struct nn_transport *nn_global_transport (int id)
     return tp;
 }
 
-struct nn_worker *nn_global_choose_worker ()
+struct nn_pool *nn_global_getpool ()
 {
-    return nn_pool_choose_worker (&self.pool);
+    return &self.pool;
 }
 

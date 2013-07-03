@@ -23,19 +23,21 @@
 #ifndef NN_EFD_INCLUDED
 #define NN_EFD_INCLUDED
 
-/*  Defines a type of native file descriptor on the platform. */
-#if defined NN_HAVE_WINDOWS
-#include "win.h"
-typedef SOCKET nn_fd;
-#else
-typedef int nn_fd;
-#endif
-
 /*  Provides a way to send signals via file descriptors. The important part
     is that nn_efd_getfd() returns an actual OS-level file descriptor that
     you can poll on to wait for the event. */
 
-struct nn_efd;
+#if defined NN_HAVE_WINDOWS
+#include "efd_win.h"
+#elif defined NN_HAVE_EVENTFD
+#include "efd_eventfd.h"
+#elif defined NN_HAVE_PIPE
+#include "efd_pipe.h"
+#elif defined NN_HAVE_SOCKETPAIR
+#include "efd_socketpair.h"
+#else
+#error
+#endif
 
 /*  Initialise the efd object. */
 int nn_efd_init (struct nn_efd *self);
@@ -57,38 +59,6 @@ void nn_efd_unsignal (struct nn_efd *self);
     nagative value meaning 'infinite') expires. In the former case 0 is
     returened. In the latter, -ETIMEDOUT. */
 int nn_efd_wait (struct nn_efd *self, int timeout);
-
-#if defined NN_HAVE_WINDOWS
-
-#include "win.h"
-
-struct nn_efd {
-    SOCKET r;
-    SOCKET w;
-    fd_set fds;
-};
-
-#elif defined NN_USE_SOCKETPAIR
-
-struct nn_efd {
-    int r;
-    int w;
-};
-
-#elif defined NN_USE_PIPE
-
-struct nn_efd {
-    int r;
-    int w;
-};
-
-#elif defined NN_USE_EVENTFD
-
-struct nn_efd {
-    int efd;
-};
-
-#endif
 
 #endif
 

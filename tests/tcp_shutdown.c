@@ -49,7 +49,6 @@ static void routine (void *arg)
     errno_assert (rc == 0);
 }
 
-
 int main ()
 {
     int rc;

@@ -93,16 +93,13 @@ int main ()
     /*  Test whether queue limits are observed. */
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);
-    val = 100;
+    val = 200;
     rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
     errno_assert (rc == 0);
     rc = nn_bind (sb, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sc = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sc != -1);
-    val = 100;
-    rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDBUF, &val, sizeof (val));
-    errno_assert (rc == 0);
     rc = nn_connect (sc, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 

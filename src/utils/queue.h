@@ -46,6 +46,9 @@ void nn_queue_init (struct nn_queue *self);
     termination. */
 void nn_queue_term (struct nn_queue *self);
 
+/*  Returns 1 if there are no items in the queue, 0 otherwise. */
+int nn_queue_empty (struct nn_queue *self);
+
 /*  Inserts one element into the queue. */
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
 
@@ -59,5 +62,8 @@ void nn_queue_item_init (struct nn_queue_item *self);
 /*  Terminate a queue item. The item must not be in a queue prior to
     this call. */
 void nn_queue_item_term (struct nn_queue_item *self);
+
+/*  Returns 1 if item is a part of a queue. 0 otherwise. */
+int nn_queue_item_isinqueue (struct nn_queue_item *self);
 
 #endif

@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/dist.h"
-#include "../../utils/fq.h"
+#include "../utils/dist.h"
+#include "../utils/fq.h"
 
 extern struct nn_socktype *nn_xbus_socktype;
 
@@ -41,11 +41,10 @@ struct nn_xbus {
     struct nn_fq inpipes;
 };
 
-int nn_xbus_init (struct nn_xbus *self,
-    const struct nn_sockbase_vfptr *vfptr);
+void nn_xbus_init (struct nn_xbus *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 void nn_xbus_term (struct nn_xbus *self);
 
-int nn_xbus_ispeer (int socktype);
 int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -57,5 +56,7 @@ int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+
+int nn_xbus_ispeer (int socktype);
 
 #endif

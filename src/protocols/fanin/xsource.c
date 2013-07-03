@@ -25,11 +25,12 @@
 #include "../../nn.h"
 #include "../../fanin.h"
 
+#include "../utils/excl.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/excl.h"
 #include "../../utils/list.h"
 
 struct nn_xsource {
@@ -38,12 +39,11 @@ struct nn_xsource {
 };
 
 /*  Private functions. */
-static int nn_xsource_init (struct nn_xsource *self,
-    const struct nn_sockbase_vfptr *vfptr);
+static void nn_xsource_init (struct nn_xsource *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xsource_term (struct nn_xsource *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_xsource_ispeer (int socktype);
 static void nn_xsource_destroy (struct nn_sockbase *self);
 static int nn_xsource_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xsource_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -56,8 +56,7 @@ static int nn_xsource_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
-    NN_SOCKBASE_FLAG_NORECV,
-    nn_xsource_ispeer,
+    NULL,
     nn_xsource_destroy,
     nn_xsource_add,
     nn_xsource_rm,
@@ -70,23 +69,11 @@ static const struct nn_sockbase_vfptr nn_xsource_sockbase_vfptr = {
     nn_xsource_getopt
 };
 
-static int nn_xsource_ispeer (int socktype)
+static void nn_xsource_init (struct nn_xsource *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    return socktype == NN_SINK ? 1 : 0;
-}
-
-static int nn_xsource_init (struct nn_xsource *self,
-    const struct nn_sockbase_vfptr *vfptr)
-{
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
-    if (rc < 0)
-        return rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_excl_init (&self->excl);
-
-    return 0;
 }
 
 static void nn_xsource_term (struct nn_xsource *self)
@@ -150,27 +137,29 @@ static int nn_xsource_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-int nn_xsource_create (struct nn_sockbase **sockbase)
+int nn_xsource_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xsource *self;
 
     self = nn_alloc (sizeof (struct nn_xsource), "socket (source)");
     alloc_assert (self);
-    rc = nn_xsource_init (self, &nn_xsource_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xsource_init (self, &nn_xsource_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;
 }
 
+int nn_xsource_ispeer (int socktype)
+{
+    return socktype == NN_SINK ? 1 : 0;
+}
+
 static struct nn_socktype nn_xsource_socktype_struct = {
     AF_SP_RAW,
     NN_SOURCE,
+    NN_SOCKTYPE_FLAG_NORECV,
     nn_xsource_create,
+    nn_xsource_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

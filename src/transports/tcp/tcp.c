@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,21 +21,29 @@
 */
 
 #include "tcp.h"
+#include "btcp.h"
+#include "ctcp.h"
 
 #include "../../tcp.h"
 
+#include "../utils/port.h"
+#include "../utils/iface.h"
+
 #include "../../utils/err.h"
-#include "../../utils/addr.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/cont.h"
-#include "../../utils/bstream.h"
-#include "../../utils/cstream.h"
 #include "../../utils/list.h"
+#include "../../utils/cont.h"
 
 #include <string.h>
 
-#define NN_TCP_BACKLOG 100
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
+#include <unistd.h>
+#endif
+
+/*  TCP-specific socket options. */
 
 struct nn_tcp_optset {
     struct nn_optset base;
@@ -53,28 +61,18 @@ static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
     nn_tcp_optset_getopt
 };
 
-/*  Private functions. */
-static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
-    struct nn_cp *cp, int backlog);
-static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
-    struct nn_cp *cp);
-static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
-    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen);
-
 /*  nn_transport interface. */
-static void nn_tcp_init (void);
-static void nn_tcp_term (void);
 static int nn_tcp_bind (const char *addr, void *hint,
     struct nn_epbase **epbase);
 static int nn_tcp_connect (const char *addr, void *hint,
     struct nn_epbase **epbase);
-static struct nn_optset *nn_tcp_optset ();
+static struct nn_optset *nn_tcp_optset (void);
 
 static struct nn_transport nn_tcp_vfptr = {
     "tcp",
     NN_TCP,
-    nn_tcp_init,
-    nn_tcp_term,
+    NULL,
+    NULL,
     nn_tcp_bind,
     nn_tcp_connect,
     nn_tcp_optset,
@@ -83,30 +81,34 @@ static struct nn_transport nn_tcp_vfptr = {
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
-static void nn_tcp_init (void)
-{
-}
-
-static void nn_tcp_term (void)
-{
-}
-
 static int nn_tcp_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
     int rc;
-    struct nn_bstream *bstream;
+    const char *end;
+    const char *pos;
+    int port;
+    struct sockaddr_storage ss;
+    size_t sslen;
 
-    bstream = nn_alloc (sizeof (struct nn_bstream), "bstream (tcp)");
-    alloc_assert (bstream);
-    rc = nn_bstream_init (bstream, addr, hint, nn_tcp_binit, NN_TCP_BACKLOG);
-    if (nn_slow (rc != 0)) {
-        nn_free (bstream);
-        return rc;
-    }
-    *epbase = &bstream->epbase;
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    if (!pos)
+        return -EINVAL;
+    ++pos;
+    rc = nn_port_resolve (pos, end - pos);
+    if (rc < 0)
+        return -EINVAL;
+    port = rc;
 
-    return 0;
+    /*  Parse the address. */
+    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+    rc = nn_iface_resolve (addr, pos - addr - 1, 1, &ss, &sslen);
+    if (rc < 0)
+        return -ENODEV;
+
+    return nn_btcp_create (hint, epbase);
 }
 
 static int nn_tcp_connect (const char *addr, void *hint,
@@ -115,54 +117,9 @@ static int nn_tcp_connect (const char *addr, void *hint,
     int rc;
     const char *end;
     const char *pos;
-    struct nn_cstream *cstream;
-
-    /*  Check the syntax of the address here. First, check whether port number
-        is OK.  */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    if (!pos)
-        return -EINVAL;
-    ++pos;
-    rc = nn_addr_parse_port (pos, end - pos);
-    if (rc < 0)
-        return rc;
-
-    /*  Now check whether local address, in any, is valid. */
-    pos = strchr (addr, ';');
-    if (pos) {
-        rc = nn_addr_parse_local (addr, pos - addr, NN_ADDR_IPV4ONLY,
-            NULL, NULL);
-        if (rc < 0)
-            return rc;
-    }
-
-    /*  Create the async object to handle the connection. */
-    cstream = nn_alloc (sizeof (struct nn_cstream), "cstream (tcp)");
-    alloc_assert (cstream);
-    rc = nn_cstream_init (cstream, addr, hint, nn_tcp_csockinit,
-        nn_tcp_cresolve);
-    if (nn_slow (rc != 0)) {
-        nn_free (cstream);
-        return rc;
-    }
-    *epbase = &cstream->epbase;
-
-    return 0;
-}
-
-static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
-    struct nn_cp *cp, int backlog)
-{
-    int rc;
     int port;
-    const char *end;
-    const char *pos;
     struct sockaddr_storage ss;
-    socklen_t sslen;
-
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (&ss, 0, sizeof (ss));
+    size_t sslen;
 
     /*  Parse the port. */
     end = addr + strlen (addr);
@@ -170,95 +127,21 @@ static int nn_tcp_binit (const char *addr, struct nn_usock *usock,
     if (!pos)
         return -EINVAL;
     ++pos;
-    rc = nn_addr_parse_port (pos, end - pos);
+    rc = nn_port_resolve (pos, end - pos);
     if (rc < 0)
-        return rc;
+        return -EINVAL;
     port = rc;
 
-    /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_local (addr, pos - addr - 1, NN_ADDR_IPV4ONLY,
-        &ss, &sslen);
-    if (rc < 0)
-        return rc;
-
-    /*  Combine the port and the address. */
-    if (ss.ss_family == AF_INET)
-        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
-    else if (ss.ss_family == AF_INET6)
-        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
-    else
-        nn_assert (0);
-
-    /*  Open the listening socket. */
-    rc = nn_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
-        -1, -1, cp);
-    errnum_assert (rc == 0, -rc);
-    rc = nn_usock_bind (usock, (struct sockaddr*) &ss, sslen);
-    errnum_assert (rc == 0, -rc);
-    rc = nn_usock_listen (usock, NN_TCP_BACKLOG);
-    errnum_assert (rc == 0, -rc);
-
-    return 0;
-}
-
-static int nn_tcp_csockinit (struct nn_usock *usock, int sndbuf, int rcvbuf,
-    struct nn_cp *cp)
-{
-    return nn_usock_init (usock, NULL, AF_INET, SOCK_STREAM, IPPROTO_TCP,
-        sndbuf, rcvbuf, cp);
-}
-
-static int nn_tcp_cresolve (const char *addr, struct sockaddr_storage *local,
-    socklen_t *locallen, struct sockaddr_storage *remote, socklen_t *remotelen)
-{
-    int rc;
-    int port;
-    const char *end;
-    const char *colon;
-    const char *semicolon;
-    int res;
-
-    res = 0;
-
-    /*  Make sure we're working from a clean slate. Required on Mac OS X. */
-    memset (remote, 0, sizeof (struct sockaddr_storage));
-
-    /*  Parse the port. */
-    end = addr + strlen (addr);
-    colon = strrchr (addr, ':');
-    port = nn_addr_parse_port (colon + 1, end - colon - 1);
-    if (nn_slow (port == -EINVAL))
-        return -EINVAL;
-    errnum_assert (port > 0, -port);
-
-    /*  Parse the local address, if any. */
-    semicolon = strchr (addr, ';');
-    if (semicolon) {
-        memset (local, 0, sizeof (struct sockaddr_storage));
-        rc = nn_addr_parse_local (addr, semicolon - addr, NN_ADDR_IPV4ONLY,
-            local, locallen);
-        errnum_assert (rc == 0, -rc);
-        addr = semicolon + 1;
-        res |= NN_CSTREAM_DOBIND;
+    /*  If local address is specified, check whether it is valid. */
+    pos = strchr (addr, ';');
+    if (pos) {
+        /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
+        rc = nn_iface_resolve (addr, pos - addr, 1, &ss, &sslen);
+        if (rc < 0)
+            return -ENODEV;
     }
 
-    /*  Parse the remote address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_addr_parse_remote (addr, colon - addr, NN_ADDR_IPV4ONLY,
-        remote, remotelen);
-    if (nn_slow (rc < 0))
-        return rc;
-
-    /*  Combine the port and the address. */
-    if (remote->ss_family == AF_INET)
-        ((struct sockaddr_in*) remote)->sin_port = htons (port);
-    else if (remote->ss_family == AF_INET6)
-        ((struct sockaddr_in6*) remote)->sin6_port = htons (port);
-    else
-        nn_assert (0);
-
-    return res;
+    return nn_ctcp_create (hint, epbase);
 }
 
 static struct nn_optset *nn_tcp_optset ()

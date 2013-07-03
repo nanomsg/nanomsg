@@ -30,7 +30,9 @@
 static struct nn_socktype nn_sink_socktype_struct = {
     AF_SP,
     NN_SINK,
+    NN_SOCKTYPE_FLAG_NOSEND,
     nn_xsink_create,
+    nn_xsink_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

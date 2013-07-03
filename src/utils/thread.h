@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,33 +25,17 @@
 
 /*  Platform independent implementation of threading. */
 
-#ifdef NN_HAVE_WINDOWS
-#include "win.h"
-#else
-#include <pthread.h>
-#endif
-
 typedef void (nn_thread_routine) (void*);
 
-struct nn_thread
-{
-    nn_thread_routine *routine;
-    void *arg;
-#ifdef NN_HAVE_WINDOWS
-    HANDLE handle;
-    unsigned int tid;
+#if defined NN_HAVE_WINDOWS
+#include "thread_win.h"
 #else
-    pthread_t handle;
+#include "thread_posix.h"
 #endif
-};
 
 void nn_thread_init (struct nn_thread *self,
     nn_thread_routine *routine, void *arg);
 void nn_thread_term (struct nn_thread *self);
-
-/*  Returns 1 if the current thread is the one managed by the nn_thread object,
-    0 otherwise. */
-int nn_thread_current (struct nn_thread *self);
 
 #endif
 

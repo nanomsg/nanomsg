@@ -32,8 +32,8 @@
 #define SOCKET_ADDRESS_IPC "ipc://test.ipc"
 #define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5555"
 
-/*  This test checks whether the library prevents connecting sockets from
-    non-compatible protocols. */
+/*  This test checks whether the library prevents interconnecting sockets
+    between different non-compatible protocols. */
 
 int main ()
 {
@@ -80,7 +80,8 @@ int main ()
     rc = nn_close (pair);
     errno_assert (rc == 0);
 
-#if 0
+#if !defined NN_HAVE_WINDOWS
+
     /*  IPC */
     pair = nn_socket (AF_SP, NN_PAIR);
     errno_assert (pair != -1);
@@ -100,6 +101,8 @@ int main ()
     rc = nn_close (pair);
     errno_assert (rc == 0);
 
+#endif
+
     /*  TCP */
     pair = nn_socket (AF_SP, NN_PAIR);
     errno_assert (pair != -1);
@@ -118,7 +121,6 @@ int main ()
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);
-#endif
 
     return 0;
 }

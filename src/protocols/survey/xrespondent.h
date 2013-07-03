@@ -25,7 +25,7 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/excl.h"
+#include "../utils/excl.h"
 
 extern struct nn_socktype *nn_xrespondent_socktype;
 
@@ -34,11 +34,10 @@ struct nn_xrespondent {
     struct nn_excl excl;
 };
 
-int nn_xrespondent_init (struct nn_xrespondent *self,
-    const struct nn_sockbase_vfptr *vfptr);
+void nn_xrespondent_init (struct nn_xrespondent *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 void nn_xrespondent_term (struct nn_xrespondent *self);
 
-int nn_xrespondent_ispeer (int socktype);
 int nn_xrespondent_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrespondent_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -50,5 +49,7 @@ int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+
+int nn_xrespondent_ispeer (int socktype);
 
 #endif

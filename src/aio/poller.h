@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -29,8 +29,13 @@
 #define NN_POLLER_OUT 2
 #define NN_POLLER_ERR 3
 
-struct nn_poller;
-struct nn_poller_hndl;
+#if defined NN_USE_POLL
+#include "poller_poll.h"
+#elif defined NN_USE_EPOLL
+#include "poller_epoll.h"
+#elif defined NN_USE_KQUEUE
+#include "poller_kqueue.h"
+#endif
 
 int nn_poller_init (struct nn_poller *self);
 void nn_poller_term (struct nn_poller *self);
@@ -44,108 +49,6 @@ void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl);
 int nn_poller_wait (struct nn_poller *self, int timeout);
 int nn_poller_event (struct nn_poller *self, int *event,
     struct nn_poller_hndl **hndl);
-
-#if defined NN_USE_POLL
-
-#include <poll.h>
-
-#define NN_POLLER_HAVE_ASYNC_ADD 0
-
-struct nn_poller_hndl {
-    int index;
-};
-
-struct nn_poller {
-
-    /*  Actual number of elements in the pollset. */
-    int size;
-
-    /*  Index of the event being processed at the moment. */
-    int index;
-
-    /*  Number of allocated elements in the pollset. */
-    int capacity;
-
-    /*  The pollset. */
-    struct pollfd *pollset;
-
-    /*  List of handles associated with elements in the pollset. Either points
-        to the handle associated with the file descriptor (hndl) or is part
-        of the list of removed pollitems (removed). */
-    struct nn_hndls_item {
-        struct nn_poller_hndl *hndl;
-        int prev;
-        int next;
-    } *hndls;
-
-    /*  List of removed pollitems, linked by indices. -1 means empty list. */
-    int removed;
-};
-
-#endif
-
-#if defined NN_USE_EPOLL
-
-#include <sys/epoll.h>
-
-#define NN_POLLER_HAVE_ASYNC_ADD 1
-
-#define NN_POLLER_MAX_EVENTS 32
-
-struct nn_poller_hndl {
-    int fd;
-    uint32_t events;
-};
-
-struct nn_poller {
-
-    /*  Current pollset. */
-    int ep;
-
-    /*  Number of events being processed at the moment. */
-    int nevents;
-
-    /*  Index of the event being processed at the moment. */
-    int index;
-
-    /*  Events being processed at the moment. */
-    struct epoll_event events [NN_POLLER_MAX_EVENTS];
-};
-
-#endif
-
-#if defined NN_USE_KQUEUE
-
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/event.h>
-
-#define NN_POLLER_MAX_EVENTS 32
-
-#define NN_POLLER_EVENT_IN 1
-#define NN_POLLER_EVENT_OUT 2
-
-struct nn_poller_hndl {
-    int fd;
-    int events;
-};
-
-struct nn_poller {
-
-    /*  Current pollset. */
-    int kq;
-
-    /*  Number of events being processed at the moment. */
-    int nevents;
-
-    /*  Index of the event being processed at the moment. */
-    int index;
-
-    /*  Cached events. */
-    struct kevent events [NN_POLLER_MAX_EVENTS];
-};
-
-#endif
 
 #endif
 

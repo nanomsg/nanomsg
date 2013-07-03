@@ -23,24 +23,6 @@
 #ifndef NN_ATOMIC_INCLUDED
 #define NN_ATOMIC_INCLUDED
 
-
-#if 0
-AC_MSG_CHECKING([for GCC-style __sync_*() atomic builtins])
-AC_LINK_IFELSE([AC_LANG_PROGRAM(
-    [volatile void* p;],
-    [[  int r;
-        r = __sync_bool_compare_and_swap(&p, (void*) 0x12345, (void*) 0);
-        return r;]])],
-    [gcc_style_sync_atomic=yes],
-    [gcc_style_sync_atomic=no])
-AC_MSG_RESULT([$gcc_style_sync_atomic])
-AS_IF([test "x$gcc_style_sync_atomic" = "xyes"], [
-    AC_DEFINE([XS_ATOMIC_GCC_SYNC], [1], [GCC-style __sync_*() atomic builtins])
-])
-#endif
-
-
-
 #if defined NN_HAVE_WINDOWS
 #include "win.h"
 #define NN_ATOMIC_WINAPI

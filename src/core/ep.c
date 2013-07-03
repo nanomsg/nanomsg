@@ -26,23 +26,35 @@
 #include "sock.h"
 
 #include "../utils/err.h"
+#include "../utils/cont.h"
+#include "../utils/fast.h"
 
 #include <string.h>
 
-void nn_epbase_init (struct nn_epbase *self,
-    const struct nn_epbase_vfptr *vfptr, const char *addr, void *hint)
+#define NN_EP_STATE_IDLE 1
+#define NN_EP_STATE_ACTIVE 2
+#define NN_EP_STATE_STOPPING 3
+
+#define NN_EP_ACTION_STOPPED 1
+
+/*  Private functions. */
+static void nn_ep_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
+
+int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
+    struct nn_transport *transport, int bind, const char *addr)
 {
+    int rc;
 
-    /*  Set up the virtual functions table. */
-    self->vfptr = vfptr;
+    nn_fsm_init (&self->fsm, nn_ep_handler, src, self, &sock->fsm);
+    self->state = NN_EP_STATE_IDLE;
 
-    /*  Remember which socket the endpoint belongs to. */
-    self->sock = (struct nn_sock*) hint;
-
-    /*  This enpoint does not belong to any socket yet. */
+    self->epbase = NULL;
+    self->sock = sock;
+    self->eid = eid;
     nn_list_item_init (&self->item);
 
-    /*  Store the textual for of the address. */
+    /*  Store the textual form of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
 #if defined _MSC_VER
 #pragma warning (push)
@@ -52,53 +64,128 @@ void nn_epbase_init (struct nn_epbase *self,
 #if defined _MSC_VER
 #pragma warning (pop)
 #endif
+
+    /*  Create transport-specific part of the endpoint. */
+    if (bind)
+        rc = transport->bind (addr, (void*) self, &self->epbase);
+    else
+        rc = transport->connect (addr, (void*) self, &self->epbase);
+
+    /*  Endpoint creation failed. */
+    if (rc < 0) {
+        nn_list_item_term (&self->item);
+        nn_fsm_term (&self->fsm);
+        return rc;
+    }
+
+    return 0;
 }
 
-void nn_epbase_term (struct nn_epbase *self)
+void nn_ep_term (struct nn_ep *self)
 {
-    /*  If we are shutting the endpoint down before it was added to the socket
-        (failure during initialisation), do nothing. */
-    if (nn_slow (!nn_list_item_isinlist (&self->item)))
-        return;
+    nn_assert (self->state == NN_EP_STATE_IDLE);
 
-    nn_sock_ep_closed (self->sock, self);
+    self->epbase->vfptr->destroy (self->epbase);
     nn_list_item_term (&self->item);
+    nn_fsm_term (&self->fsm);
 }
 
-struct nn_cp *nn_epbase_getcp (struct nn_epbase *self)
+void nn_ep_start (struct nn_ep *self)
 {
-    return nn_sock_getcp (self->sock);
+    nn_fsm_start (&self->fsm);
 }
 
-struct nn_worker *nn_epbase_choose_worker (struct nn_epbase *self)
+void nn_ep_stop (struct nn_ep *self)
 {
-    return nn_sock_choose_worker (self->sock);
+    nn_fsm_stop (&self->fsm);
 }
 
-const char *nn_epbase_getaddr (struct nn_epbase *self)
+void nn_ep_stopped (struct nn_ep *self)
+{
+    /*  TODO: Do the following in a more sane way. */
+    self->fsm.stopped.fsm = &self->fsm;
+    self->fsm.stopped.src = 0;
+    self->fsm.stopped.srcptr = NULL;
+    self->fsm.stopped.type = NN_EP_ACTION_STOPPED;
+    nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
+}
+
+struct nn_ctx *nn_ep_getctx (struct nn_ep *self)
+{
+    return nn_sock_getctx (self->sock);
+}
+
+const char *nn_ep_getaddr (struct nn_ep *self)
 {
     return self->addr;
 }
 
-void nn_epbase_getopt (struct nn_epbase *self, int level, int option,
+void nn_ep_getopt (struct nn_ep *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     int rc;
 
-    rc = nn_sock_getopt (self->sock, level, option, optval, optvallen, 1);
+    rc = nn_sock_getopt_inner (self->sock, level, option, optval, optvallen);
     errnum_assert (rc == 0, -rc);
 }
 
-int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
+int nn_ep_ispeer (struct nn_ep *self, int socktype)
 {
     return nn_sock_ispeer (self->sock, socktype);
 }
 
-int nn_ep_close (struct nn_ep *self)
+static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 {
-    struct nn_epbase *epbase;
+    struct nn_ep *ep;
 
-    epbase = (struct nn_epbase*) self;
-    return epbase->vfptr->close (epbase);
+    ep = nn_cont (self, struct nn_ep, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+        ep->epbase->vfptr->stop (ep->epbase);
+        ep->state = NN_EP_STATE_STOPPING;
+        return;
+    }
+    if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
+        if (srcptr != NULL || type != NN_EP_ACTION_STOPPED)
+            return;
+        ep->state = NN_EP_STATE_IDLE;
+        nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
+        return;
+    }
+
+    switch (ep->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/******************************************************************************/
+    case NN_EP_STATE_IDLE:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_FSM_START:
+                ep->state = NN_EP_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/*  We don't expect any events in this state. The only thing that can be done */
+/*  is closing the endpoint.                                                  */
+/******************************************************************************/
+    case NN_EP_STATE_ACTIVE:
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
 }
 

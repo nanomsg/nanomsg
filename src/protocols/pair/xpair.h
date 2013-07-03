@@ -27,6 +27,7 @@
 
 extern struct nn_socktype *nn_xpair_socktype;
 
-int nn_xpair_create (struct nn_sockbase **sockbase);
+int nn_xpair_create (void *hint, struct nn_sockbase **sockbase);
+int nn_xpair_ispeer (int socktype);
 
 #endif

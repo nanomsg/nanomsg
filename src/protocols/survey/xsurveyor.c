@@ -39,8 +39,7 @@ static void nn_xsurveyor_destroy (struct nn_sockbase *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
 static const struct nn_sockbase_vfptr nn_xsurveyor_sockbase_vfptr = {
-    0,
-    nn_xsurveyor_ispeer,
+    NULL,
     nn_xsurveyor_destroy,
     nn_xsurveyor_add,
     nn_xsurveyor_rm,
@@ -53,24 +52,12 @@ static const struct nn_sockbase_vfptr nn_xsurveyor_sockbase_vfptr = {
     nn_xsurveyor_getopt
 };
 
-int nn_xsurveyor_ispeer (int socktype)
+void nn_xsurveyor_init (struct nn_xsurveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    return socktype == NN_RESPONDENT ? 1 : 0;
-}
-
-int nn_xsurveyor_init (struct nn_xsurveyor *self,
-    const struct nn_sockbase_vfptr *vfptr)
-{
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
-    if (rc < 0)
-        return -rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_dist_init (&self->outpipes);
     nn_fq_init (&self->inpipes);
-
-    return 0;
 }
 
 void nn_xsurveyor_term (struct nn_xsurveyor *self)
@@ -203,27 +190,29 @@ int nn_xsurveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_xsurveyor_create (struct nn_sockbase **sockbase)
+static int nn_xsurveyor_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xsurveyor *self;
 
     self = nn_alloc (sizeof (struct nn_xsurveyor), "socket (xsurveyor)");
     alloc_assert (self);
-    rc = nn_xsurveyor_init (self, &nn_xsurveyor_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xsurveyor_init (self, &nn_xsurveyor_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;
 }
 
+int nn_xsurveyor_ispeer (int socktype)
+{
+    return socktype == NN_RESPONDENT ? 1 : 0;
+}
+
 static struct nn_socktype nn_xsurveyor_socktype_struct = {
     AF_SP_RAW,
     NN_SURVEYOR,
+    0,
     nn_xsurveyor_create,
+    nn_xsurveyor_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

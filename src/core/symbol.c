@@ -39,7 +39,7 @@ struct sym_value_name {
     const char* name;
 };
 
-static const struct sym_value_name sym_value_names[] = {
+static const struct sym_value_name sym_value_names [] = {
 
     {NN_VERSION_MAJOR, "NN_VERSION_MAJOR"},
     {NN_VERSION_MINOR, "NN_VERSION_MINOR"},
@@ -65,7 +65,7 @@ static const struct sym_value_name sym_value_names[] = {
     {NN_SURVEYOR, "NN_SURVEYOR"},
     {NN_RESPONDENT, "NN_RESPONDENT"},
     {NN_BUS, "NN_BUS"},
- 
+
     {NN_SOCKADDR_MAX, "NN_SOCKADDR_MAX"},
 
     {NN_SOL_SOCKET, "NN_SOL_SOCKET"},
@@ -87,6 +87,7 @@ static const struct sym_value_name sym_value_names[] = {
     {NN_SUB_UNSUBSCRIBE, "NN_SUB_UNSUBSCRIBE"},
     {NN_REQ_RESEND_IVL, "NN_REQ_RESEND_IVL"},
     {NN_SURVEYOR_DEADLINE, "NN_SURVEYOR_DEADLINE"},
+    {NN_TCP_NODELAY, "NN_TCP_NODELAY"},
 
     {NN_DONTWAIT, "NN_DONTWAIT"},
 
@@ -129,7 +130,7 @@ static const struct sym_value_name sym_value_names[] = {
 const int SYM_VALUE_NAMES_LEN = (sizeof (sym_value_names) /
     sizeof (sym_value_names [0]));
 
-const char *nn_symbol (int i, int* value)
+const char *nn_symbol (int i, int *value)
 {
     const struct sym_value_name *svn;
     if (i < 0 || i >= SYM_VALUE_NAMES_LEN) {

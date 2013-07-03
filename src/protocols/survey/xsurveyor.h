@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/dist.h"
-#include "../../utils/fq.h"
+#include "../utils/dist.h"
+#include "../utils/fq.h"
 
 extern struct nn_socktype *nn_xsurveyor_socktype;
 
@@ -48,11 +48,10 @@ struct nn_xsurveyor {
     struct nn_fq inpipes;
 };
 
-int nn_xsurveyor_init (struct nn_xsurveyor *self,
-    const struct nn_sockbase_vfptr *vfptr);
+void nn_xsurveyor_init (struct nn_xsurveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 void nn_xsurveyor_term (struct nn_xsurveyor *self);
 
-int nn_xsurveyor_ispeer (int socktype);
 int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -64,6 +63,8 @@ int nn_xsurveyor_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xsurveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+
+int nn_xsurveyor_ispeer (int socktype);
 
 #endif
 

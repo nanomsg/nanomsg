@@ -26,6 +26,9 @@
 #include "../../nn.h"
 #include "../../survey.h"
 
+#include "../../aio/fsm.h"
+#include "../../aio/timer.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
@@ -39,23 +42,50 @@
 
 #define NN_SURVEYOR_DEFAULT_DEADLINE 1000
 
-#define NN_SURVEYOR_INPROGRESS 1
+#define NN_SURVEYOR_STATE_IDLE 1
+#define NN_SURVEYOR_STATE_PASSIVE 2
+#define NN_SURVEYOR_STATE_ACTIVE 3
+#define NN_SURVEYOR_STATE_CANCELLING 4
+#define NN_SURVEYOR_STATE_STOPPING_TIMER 5
+#define NN_SURVEYOR_STATE_STOPPING 6
+
+#define NN_SURVEYOR_ACTION_START 1
+#define NN_SURVEYOR_ACTION_CANCEL 2
+
+#define NN_SURVEYOR_SRC_DEADLINE_TIMER 1
 
 struct nn_surveyor {
+
+    /*  The underlying raw SP socket. */
     struct nn_xsurveyor xsurveyor;
-    const struct nn_cp_sink *sink;
-    uint32_t flags;
+
+    /*  The state machine. */
+    struct nn_fsm fsm;
+    int state;
+
+    /*  Survey ID of the current survey. */
     uint32_t surveyid;
+
+    /*  Timer for timing out the survey. */
+    struct nn_timer timer;
+
+    /*  When starting the survey, the message is temporarily stored here. */
+    struct nn_msg tosend;
+
+    /*  Protocol-specific socket options. */
     int deadline;
-    struct nn_timer deadline_timer;
 };
 
 /*  Private functions. */
-static int nn_surveyor_init (struct nn_surveyor *self,
-    const struct nn_sockbase_vfptr *vfptr);
+static void nn_surveyor_init (struct nn_surveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_surveyor_term (struct nn_surveyor *self);
+static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr);
+static int nn_surveyor_inprogress (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
+static void nn_surveyor_stop (struct nn_sockbase *self);
 static void nn_surveyor_destroy (struct nn_sockbase *self);
 static int nn_surveyor_events (struct nn_sockbase *self);
 static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg);
@@ -65,8 +95,7 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
-    0,
-    nn_xsurveyor_ispeer,
+    nn_surveyor_stop,
     nn_surveyor_destroy,
     nn_xsurveyor_add,
     nn_xsurveyor_rm,
@@ -79,46 +108,41 @@ static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
     nn_surveyor_getopt
 };
 
-/*  Event sink. */
-static void nn_surveyor_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer);
-static const struct nn_cp_sink nn_surveyor_sink = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    nn_surveyor_timeout
-};
-
-static int nn_surveyor_init (struct nn_surveyor *self,
-    const struct nn_sockbase_vfptr *vfptr)
+static void nn_surveyor_init (struct nn_surveyor *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    int rc;
-
-    rc = nn_xsurveyor_init (&self->xsurveyor, vfptr);
-    if (rc < 0)
-        return rc;
-
-    self->sink = &nn_surveyor_sink;
-    self->flags = 0;
+    nn_xsurveyor_init (&self->xsurveyor, vfptr, hint);
+    nn_fsm_init_root (&self->fsm, nn_surveyor_handler,
+        nn_sockbase_getctx (&self->xsurveyor.sockbase));
+    self->state = NN_SURVEYOR_STATE_IDLE;
 
     /*  Start assigning survey IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
     nn_random_generate (&self->surveyid, sizeof (self->surveyid));
 
+    nn_timer_init (&self->timer, NN_SURVEYOR_SRC_DEADLINE_TIMER, &self->fsm);
+    nn_msg_init (&self->tosend, 0);
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
-    nn_timer_init (&self->deadline_timer, &self->sink,
-        nn_sockbase_getcp (&self->xsurveyor.sockbase));
 
-    return 0;
+    /*  Start the state machine. */
+    nn_fsm_start (&self->fsm);
 }
 
 static void nn_surveyor_term (struct nn_surveyor *self)
 {
-    nn_timer_term (&self->deadline_timer);
+    nn_msg_term (&self->tosend);
+    nn_timer_term (&self->timer);
+    nn_fsm_term (&self->fsm);
     nn_xsurveyor_term (&self->xsurveyor);
+}
+
+void nn_surveyor_stop (struct nn_sockbase *self)
+{
+    struct nn_surveyor *surveyor;
+
+    surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
+
+    nn_fsm_stop (&surveyor->fsm);
 }
 
 void nn_surveyor_destroy (struct nn_sockbase *self)
@@ -131,29 +155,37 @@ void nn_surveyor_destroy (struct nn_sockbase *self)
     nn_free (surveyor);
 }
 
-static int nn_surveyor_events (struct nn_sockbase *self)
+static int nn_surveyor_inprogress (struct nn_surveyor *self)
 {
-    struct nn_surveyor *surveyor;
-
-    surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
-
-    if (!(surveyor->flags & NN_SURVEYOR_INPROGRESS))
-        return NN_SOCKBASE_EVENT_IN | NN_SOCKBASE_EVENT_OUT;
-    return nn_xsurveyor_events (&surveyor->xsurveyor.sockbase);
+    /*  Return 1 if there's a survey going on. 0 otherwise. */
+    return self->state == NN_SURVEYOR_STATE_IDLE ||
+        self->state == NN_SURVEYOR_STATE_PASSIVE ||
+        self->state == NN_SURVEYOR_STATE_STOPPING ? 0 : 1;
 }
 
-static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
+static int nn_surveyor_events (struct nn_sockbase *self)
 {
     int rc;
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
 
-    /*  Cancel any ongoing survey. */
-    if (nn_slow (surveyor->flags & NN_SURVEYOR_INPROGRESS)) {
-        surveyor->flags &= ~NN_SURVEYOR_INPROGRESS;
-        nn_timer_stop (&surveyor->deadline_timer);
-    }
+    /*  Determine the actual readability/writeability of the socket. */
+    rc = nn_xsurveyor_events (&surveyor->xsurveyor.sockbase);
+
+    /*  If there's no survey going on we'll signal IN to interrupt polling
+        when the survey expires. nn_recv() will return -EFSM afterwards. */
+    if (!nn_surveyor_inprogress (surveyor))
+        rc |= NN_SOCKBASE_EVENT_IN;
+
+    return rc;
+}
+
+static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
+{
+    struct nn_surveyor *surveyor;
+
+    surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
 
     /*  Generate new survey ID. */
     ++surveyor->surveyid;
@@ -164,14 +196,27 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
     nn_chunkref_init (&msg->hdr, 4);
     nn_putl (nn_chunkref_data (&msg->hdr), surveyor->surveyid);
 
-    /*  Send the survey. */
-    rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase, msg);
-    errnum_assert (rc == 0, -rc);
+    /*  Store the survey, so that it can be sent later on. */
+    nn_msg_term (&surveyor->tosend);
+    nn_msg_mv (&surveyor->tosend, msg);
+    nn_msg_init (msg, 0);
 
-    surveyor->flags |= NN_SURVEYOR_INPROGRESS;
+    /*  Cancel any ongoing survey, if any. */
+    if (nn_slow (nn_surveyor_inprogress (surveyor))) {
 
-    /*  Set up the re-send timer. */
-    nn_timer_start (&surveyor->deadline_timer, surveyor->deadline);
+        /*  First check whether the survey can be sent at all. */
+        if (!(nn_xsurveyor_events (&surveyor->xsurveyor.sockbase) &
+              NN_SOCKBASE_EVENT_OUT))
+            return -EAGAIN;
+
+        /*  Cancel the current survey. */
+        nn_fsm_action (&surveyor->fsm, NN_SURVEYOR_ACTION_CANCEL);
+
+        return 0;
+    }
+
+    /*  Notify the state machine that the survey was started. */
+    nn_fsm_action (&surveyor->fsm, NN_SURVEYOR_ACTION_START);
 
     return 0;
 }
@@ -185,7 +230,7 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
 
     /*  If no survey is going on return EFSM error. */
-    if (nn_slow (!(surveyor->flags & NN_SURVEYOR_INPROGRESS)))
+    if (nn_slow (!nn_surveyor_inprogress (surveyor)))
        return -EFSM;
 
     while (1) {
@@ -197,15 +242,12 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
         errnum_assert (rc == 0, -rc);
 
         /*  Get the survey ID. Ignore any stale responses. */
-        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t))) {
-            nn_msg_term (msg);
+        /*  TODO: This should be done asynchronously! */
+        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t)))
             continue;
-        }
         surveyid = nn_getl (nn_chunkref_data (&msg->hdr));
-        if (nn_slow (surveyid != surveyor->surveyid)) {
-            nn_msg_term (msg);
+        if (nn_slow (surveyid != surveyor->surveyid))
             continue;
-        }
 
         /*  Discard the header and return the message to the user. */
         nn_chunkref_term (&msg->hdr);
@@ -214,20 +256,6 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
     }
 
     return 0;
-}
-
-static void nn_surveyor_timeout (const struct nn_cp_sink **self,
-    struct nn_timer *timer)
-{
-    struct nn_surveyor *surveyor;
-
-    surveyor = nn_cont (self, struct nn_surveyor, sink);
-
-    /*  Cancel the survey. */
-    surveyor->flags &= ~NN_SURVEYOR_INPROGRESS;
-
-    /*  If there's a blocked recv/poll operation, unblock it. */
-    nn_sockbase_changed (&surveyor->xsurveyor.sockbase);
 }
 
 static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
@@ -271,18 +299,155 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_surveyor_create (struct nn_sockbase **sockbase)
+static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     int rc;
+    struct nn_surveyor *surveyor;
+
+    surveyor = nn_cont (self, struct nn_surveyor, fsm);
+
+/******************************************************************************/
+/*  STOP procedure.                                                           */
+/******************************************************************************/
+    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+        nn_timer_stop (&surveyor->timer);
+        surveyor->state = NN_SURVEYOR_STATE_STOPPING;
+    }
+    if (nn_slow (surveyor->state == NN_SURVEYOR_STATE_STOPPING)) {
+        if (!nn_timer_isidle (&surveyor->timer))
+            return;
+        surveyor->state = NN_SURVEYOR_STATE_IDLE;
+        nn_fsm_stopped_noevent (&surveyor->fsm);
+        nn_sockbase_stopped (&surveyor->xsurveyor.sockbase);
+        return;
+    }
+
+    switch (surveyor->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/*  The socket was created recently.                                          */
+/******************************************************************************/
+    case NN_SURVEYOR_STATE_IDLE:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_FSM_START:
+                surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  PASSIVE state.                                                            */
+/*  There's no survey going on.                                               */
+/******************************************************************************/
+    case NN_SURVEYOR_STATE_PASSIVE:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_SURVEYOR_ACTION_START:
+                rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase,
+                    &surveyor->tosend);
+                errnum_assert (rc == 0, -rc);
+                nn_timer_start (&surveyor->timer, surveyor->deadline);
+                surveyor->state = NN_SURVEYOR_STATE_ACTIVE;
+                return;
+
+            default:
+                nn_assert (0);
+            }
+        }
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/*  Survey was sent, waiting for responses.                                   */
+/******************************************************************************/
+    case NN_SURVEYOR_STATE_ACTIVE:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_SURVEYOR_ACTION_CANCEL:
+                nn_timer_stop (&surveyor->timer);
+                surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        if (srcptr == &surveyor->timer) {
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                nn_timer_stop (&surveyor->timer);
+                surveyor->state = NN_SURVEYOR_STATE_STOPPING_TIMER;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  CANCELLING state.                                                         */
+/*  Survey was cancelled, but the old timer haven't stopped yet. The new      */
+/*  survey thus haven't been sent and is stored in 'tosend'.                  */
+/******************************************************************************/
+    case NN_SURVEYOR_STATE_CANCELLING:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_SURVEYOR_ACTION_CANCEL:
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        if (srcptr == &surveyor->timer) {
+            switch (type) {
+            case NN_TIMER_STOPPED:
+                rc = nn_xsurveyor_send (&surveyor->xsurveyor.sockbase,
+                    &surveyor->tosend);
+                errnum_assert (rc == 0, -rc);
+                nn_timer_start (&surveyor->timer, surveyor->deadline);
+                surveyor->state = NN_SURVEYOR_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  STOPPING_TIMER state.                                                     */
+/*  Survey timeout expired. Now we are stopping the timer.                    */
+/******************************************************************************/
+    case NN_SURVEYOR_STATE_STOPPING_TIMER:
+        if (srcptr == &surveyor->timer) {
+            switch (type) {
+            case NN_TIMER_STOPPED:
+                surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_assert (0);
+    }
+}
+
+static int nn_surveyor_create (void *hint, struct nn_sockbase **sockbase)
+{
     struct nn_surveyor *self;
 
     self = nn_alloc (sizeof (struct nn_surveyor), "socket (surveyor)");
     alloc_assert (self);
-    rc = nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_surveyor_init (self, &nn_surveyor_sockbase_vfptr, hint);
     *sockbase = &self->xsurveyor.sockbase;
 
     return 0;
@@ -291,7 +456,9 @@ static int nn_surveyor_create (struct nn_sockbase **sockbase)
 static struct nn_socktype nn_surveyor_socktype_struct = {
     AF_SP,
     NN_SURVEYOR,
+    0,
     nn_surveyor_create,
+    nn_xsurveyor_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

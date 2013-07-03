@@ -30,7 +30,9 @@
 static struct nn_socktype nn_source_socktype_struct = {
     AF_SP,
     NN_SOURCE,
+    NN_SOCKTYPE_FLAG_NORECV,
     nn_xsource_create,
+    nn_xsource_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

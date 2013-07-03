@@ -24,47 +24,75 @@
 #include "../protocol.h"
 
 #include "sock.h"
+#include "ep.h"
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
 
 /*  Internal pipe states. */
+#define NN_PIPEBASE_STATE_IDLE 1
+#define NN_PIPEBASE_STATE_ACTIVE 2
+
 #define NN_PIPEBASE_INSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_INSTATE_IDLE 1
 #define NN_PIPEBASE_INSTATE_RECEIVING 2
 #define NN_PIPEBASE_INSTATE_RECEIVED 3
 #define NN_PIPEBASE_INSTATE_ASYNC 4
+
 #define NN_PIPEBASE_OUTSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_OUTSTATE_IDLE 1
 #define NN_PIPEBASE_OUTSTATE_SENDING 2
 #define NN_PIPEBASE_OUTSTATE_SENT 3
 #define NN_PIPEBASE_OUTSTATE_ASYNC 4
 
-int nn_pipebase_init (struct nn_pipebase *self,
+void nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
 {
-    nn_assert (epbase->sock);
+    nn_assert (epbase->ep->sock);
+
+    nn_fsm_init (&self->fsm, NULL, 0, self, &epbase->ep->sock->fsm);
     self->vfptr = vfptr;
+    self->state = NN_PIPEBASE_STATE_IDLE;
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
-    self->sock = epbase->sock;
-    return nn_sock_add (self->sock, (struct nn_pipe*) self);
+    self->sock = epbase->ep->sock;
+    nn_fsm_event_init (&self->in);
+    nn_fsm_event_init (&self->out);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
-    if (self->sock)
-        nn_sock_rm (self->sock, (struct nn_pipe*) self);
+    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE); 
+
+    nn_fsm_event_term (&self->out);
+    nn_fsm_event_term (&self->in);
+    nn_fsm_term (&self->fsm);
 }
 
-void nn_pipebase_activate (struct nn_pipebase *self)
+int nn_pipebase_start (struct nn_pipebase *self)
 {
+    int rc;
+
+    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+
+    self->state = NN_PIPEBASE_STATE_ACTIVE;
     self->instate = NN_PIPEBASE_INSTATE_ASYNC;
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
-
-    /*  Provide the outgoing pipe to the SP socket. */
+    rc = nn_sock_add (self->sock, (struct nn_pipe*) self);
+    if (nn_slow (rc < 0))
+        return rc;
     if (self->sock)
-        nn_sock_out (self->sock, (struct nn_pipe*) self);
+        nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
+
+    return 0;
+}
+
+void nn_pipebase_stop (struct nn_pipebase *self)
+{
+    if (self->state != NN_PIPEBASE_STATE_ACTIVE)
+        return;
+    nn_sock_rm (self->sock, (struct nn_pipe*) self);
+    self->state = NN_PIPEBASE_STATE_IDLE;
 }
 
 void nn_pipebase_received (struct nn_pipebase *self)
@@ -76,7 +104,7 @@ void nn_pipebase_received (struct nn_pipebase *self)
     nn_assert (self->instate == NN_PIPEBASE_INSTATE_ASYNC);
     self->instate = NN_PIPEBASE_INSTATE_IDLE;
     if (self->sock)
-        nn_sock_in (self->sock, (struct nn_pipe*) self);
+        nn_fsm_raise (&self->fsm, &self->in, NN_PIPE_IN);
 }
 
 void nn_pipebase_sent (struct nn_pipebase *self)
@@ -88,12 +116,16 @@ void nn_pipebase_sent (struct nn_pipebase *self)
     nn_assert (self->outstate == NN_PIPEBASE_OUTSTATE_ASYNC);
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
     if (self->sock)
-        nn_sock_out (self->sock, (struct nn_pipe*) self);
+        nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
 }
 
-struct nn_cp *nn_pipebase_getcp (struct nn_pipebase *self)
+void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
+    void *optval, size_t *optvallen)
 {
-    return nn_sock_getcp (self->sock);
+    int rc;
+
+    rc = nn_sock_getopt_inner (self->sock, level, option, optval, optvallen);
+    errnum_assert (rc == 0, -rc);
 }
 
 int nn_pipebase_ispeer (struct nn_pipebase *self, int socktype)

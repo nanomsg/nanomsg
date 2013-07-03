@@ -25,11 +25,12 @@
 #include "../../nn.h"
 #include "../../pair.h"
 
+#include "../utils/excl.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/excl.h"
 #include "../../utils/list.h"
 
 struct nn_xpair {
@@ -38,12 +39,11 @@ struct nn_xpair {
 };
 
 /*  Private functions. */
-static int nn_xpair_init (struct nn_xpair *self,
-    const struct nn_sockbase_vfptr *vfptr);
+static void nn_xpair_init (struct nn_xpair *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_xpair_term (struct nn_xpair *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static int nn_xpair_ispeer (int socktype);
 static void nn_xpair_destroy (struct nn_sockbase *self);
 static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -57,8 +57,7 @@ static int nn_xpair_setopt (struct nn_sockbase *self, int level, int option,
 static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
-    0,
-    nn_xpair_ispeer,
+    NULL,
     nn_xpair_destroy,
     nn_xpair_add,
     nn_xpair_rm,
@@ -71,23 +70,11 @@ static const struct nn_sockbase_vfptr nn_xpair_sockbase_vfptr = {
     nn_xpair_getopt
 };
 
-static int nn_xpair_ispeer (int socktype)
+static void nn_xpair_init (struct nn_xpair *self,
+    const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    return socktype == NN_PAIR ? 1 : 0;
-}
-
-static int nn_xpair_init (struct nn_xpair *self,
-    const struct nn_sockbase_vfptr *vfptr)
-{
-    int rc;
-
-    rc = nn_sockbase_init (&self->sockbase, vfptr);
-    if (rc < 0)
-        return rc;
-
+    nn_sockbase_init (&self->sockbase, vfptr, hint);
     nn_excl_init (&self->excl);
-
-    return 0;
 }
 
 static void nn_xpair_term (struct nn_xpair *self)
@@ -169,27 +156,29 @@ static int nn_xpair_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-int nn_xpair_create (struct nn_sockbase **sockbase)
+int nn_xpair_create (void *hint, struct nn_sockbase **sockbase)
 {
-    int rc;
     struct nn_xpair *self;
 
     self = nn_alloc (sizeof (struct nn_xpair), "socket (pair)");
     alloc_assert (self);
-    rc = nn_xpair_init (self, &nn_xpair_sockbase_vfptr);
-    if (rc < 0) {
-        nn_free (self);
-        return rc;
-    }
+    nn_xpair_init (self, &nn_xpair_sockbase_vfptr, hint);
     *sockbase = &self->sockbase;
 
     return 0;
 }
 
+int nn_xpair_ispeer (int socktype)
+{
+    return socktype == NN_PAIR ? 1 : 0;
+}
+
 static struct nn_socktype nn_xpair_socktype_struct = {
     AF_SP_RAW,
     NN_PAIR,
+    0,
     nn_xpair_create,
+    nn_xpair_ispeer,
     NN_LIST_ITEM_INITIALIZER
 };
 

@@ -25,8 +25,8 @@
 
 #include "../../protocol.h"
 
-#include "../../utils/lb.h"
-#include "../../utils/fq.h"
+#include "../utils/lb.h"
+#include "../utils/fq.h"
 
 struct nn_xreq {
     struct nn_sockbase sockbase;
@@ -34,10 +34,10 @@ struct nn_xreq {
     struct nn_fq fq;
 };
 
-int nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr);
+void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
+    void *hint);
 void nn_xreq_term (struct nn_xreq *self);
 
-int nn_xreq_ispeer (int socktype);
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe);
@@ -49,6 +49,8 @@ int nn_xreq_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
 int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
     void *optval, size_t *optvallen);
+
+int nn_xreq_ispeer (int socktype);
 
 extern struct nn_socktype *nn_xreq_socktype;
 

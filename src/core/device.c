@@ -195,55 +195,61 @@ static int nn_device_twoway (int s1, int s1rcv, int s1snd,
 {
     int rc;
     fd_set fds;
+    int s1rcv_isready = 0;
+    int s1snd_isready = 0;
+    int s2rcv_isready = 0;
+    int s2snd_isready = 0;
 
     /*  Initialise the pollset. */
     FD_ZERO (&fds);
-    FD_SET (s1rcv, &fds);
-    FD_SET (s1snd, &fds);
-    FD_SET (s2rcv, &fds);
-    FD_SET (s2snd, &fds);
 
     while (1) {
 
-        /*  Wait for network events. */
-        rc = select (0, &fds, NULL, NULL, NULL);
-        wsa_assert (rc != SOCKET_ERROR);
-
-        /*  Process the events. When the event is received, we cease polling
-            for it. */
-        if (FD_ISSET (s1rcv, &fds))
+        /*  Wait for network events. Adjust the 'ready' events based
+            on the result. */
+        if (s1rcv_isready)
             FD_CLR (s1rcv, &fds);
         else
-            FD_SET (s1snd, &fds);
-        if (FD_ISSET (s1snd, &fds))
+            FD_SET (s1rcv, &fds);
+        if (s1snd_isready)
             FD_CLR (s1snd, &fds);
         else
             FD_SET (s1snd, &fds);
-        if (FD_ISSET (s2rcv, &fds))
+        if (s2rcv_isready)
             FD_CLR (s2rcv, &fds);
         else
-            FD_SET (s2snd, &fds);
-        if (FD_ISSET (s2snd, &fds))
+            FD_SET (s2rcv, &fds);
+        if (s2snd_isready)
             FD_CLR (s2snd, &fds);
         else
             FD_SET (s2snd, &fds);
+        rc = select (0, &fds, NULL, NULL, NULL);
+        wsa_assert (rc != SOCKET_ERROR);
+        if (FD_ISSET (s1rcv, &fds))
+            s1rcv_isready = 1;
+        if (FD_ISSET (s1snd, &fds))
+            s1snd_isready = 1;
+        if (FD_ISSET (s2rcv, &fds))
+            s2rcv_isready = 1;
+        if (FD_ISSET (s2snd, &fds))
+            s2snd_isready = 1;
 
         /*  If possible, pass the message from s1 to s2. */
-        if (!FD_ISSET (s1rcv, &fds) && !FD_ISSET (s2snd, &fds)) {
+        if (s1rcv_isready && s2snd_isready) {
             rc = nn_device_mvmsg (s1, s2, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
-            FD_SET (s1rcv, &fds);
-            FD_SET (s2snd, &fds);
+            s1rcv_isready = 0;
+            s2snd_isready = 0;
         }
 
         /*  If possible, pass the message from s2 to s1. */
-        if (!FD_ISSET (s2rcv, &fds) && !FD_ISSET (s1snd, &fds)) {
+        if (s2rcv_isready && s1snd_isready) {
             rc = nn_device_mvmsg (s2, s1, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
-            FD_SET (s2rcv, &fds);
-            FD_SET (s1snd, &fds);
+            s2rcv_isready = 0;
+            s1snd_isready = 0;
         }
     }
 }

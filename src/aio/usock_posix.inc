@@ -786,7 +786,16 @@ error:
                 /*  ECONNABORTED is an valid error. New connection was closed
                     by the peer before we were able to accept it. If it happens
                     do nothing and wait for next incoming connection. */
-                if (s < 0 && errno == ECONNABORTED)
+                if (nn_slow (s < 0 && errno == ECONNABORTED))
+                    return;
+
+                /*  Resource allocation errors. It's not clear from POSIX
+                    specification whether the new connection is closed in this
+                    case or whether it remains in the backlog. In the latter
+                    case it would be wise to wait here for a while to prevent
+                    busy looping. */
+                if (nn_slow (s < 0 && (errno == ENFILE || errno == EMFILE ||
+                      errno == ENOBUFS || errno == ENOMEM)))
                     return;
 
                 /* Any other error is unexpected. */

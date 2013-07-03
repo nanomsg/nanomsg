@@ -391,14 +391,16 @@ int nn_close (int s)
 
     NN_BASIC_CHECKS;
 
+    /*  TODO: nn_sock_term can take a long time to accomplish. It should not be
+        performed under global critical section. */
+    nn_glock_lock ();
+
     /*  Deallocate the socket object. */
     rc = nn_sock_term (self.socks [s]);
     if (nn_slow (rc == -EINTR)) {
         errno = EINTR;
         return -1;
     }
-
-    nn_glock_lock ();
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */

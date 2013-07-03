@@ -27,6 +27,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
+#include "../../utils/wire.h"
 
 #include <stdint.h>
 
@@ -234,7 +235,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 
                 /* Raise the error and move directly to the DONE state.
                    streamhdr object will be stopped later on. */
-                sipc->state == NN_SIPC_STATE_DONE;
+                sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
                 return;
 
@@ -330,7 +331,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&sipc->pipebase);
-                sipc->state == NN_SIPC_STATE_DONE;
+                sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
                 return;
 

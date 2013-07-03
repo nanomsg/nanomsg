@@ -54,13 +54,13 @@
 #define NN_SOCK_SRC_EP 1
 
 /*  Private functions. */
-void nn_sock_adjust_events (struct nn_sock *self);
-struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
+static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
 static void nn_sock_onleave (struct nn_ctx *self);
 static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_sock_action_zombify (struct nn_sock *self);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
 {
@@ -671,7 +671,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
     }
 }
 
-struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
+static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
 {
     int index;
     struct nn_transport *tp;
@@ -789,6 +789,9 @@ finish1:
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
                 return;
+            case NN_SOCK_ACTION_ZOMBIFY:
+                nn_sock_action_zombify (sock);
+                return;
             default:
                 nn_assert (0);
             }
@@ -801,27 +804,9 @@ finish1:
     case NN_SOCK_STATE_ACTIVE:
         if (srcptr == NULL) {
             switch (type) {
-
             case NN_SOCK_ACTION_ZOMBIFY:
-
-                /*  Switch to the zombie state. From now on all the socket
-                    functions will return ETERM. */
-                sock->state = NN_SOCK_STATE_ZOMBIE;
-
-                /*  Set IN and OUT events to unblock any polling function. */
-                if (!(sock->flags & NN_SOCK_FLAG_IN)) {
-                    sock->flags |= NN_SOCK_FLAG_IN;
-                    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
-                        nn_efd_signal (&sock->rcvfd);
-                }
-                if (!(sock->flags & NN_SOCK_FLAG_OUT)) {
-                    sock->flags |= NN_SOCK_FLAG_OUT;
-                    if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
-                        nn_efd_signal (&sock->sndfd);
-                }
-
+                nn_sock_action_zombify (sock);
                 return;
-
             default:
                 nn_assert (0);
             }
@@ -852,6 +837,29 @@ finish1:
 /******************************************************************************/
     default:
         nn_assert (0);
+    }
+}
+
+/******************************************************************************/
+/*  State machine actions.                                                    */
+/******************************************************************************/
+
+static void nn_sock_action_zombify (struct nn_sock *self)
+{
+    /*  Switch to the zombie state. From now on all the socket
+        functions will return ETERM. */
+    self->state = NN_SOCK_STATE_ZOMBIE;
+
+    /*  Set IN and OUT events to unblock any polling function. */
+    if (!(self->flags & NN_SOCK_FLAG_IN)) {
+        self->flags |= NN_SOCK_FLAG_IN;
+        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
+            nn_efd_signal (&self->rcvfd);
+    }
+    if (!(self->flags & NN_SOCK_FLAG_OUT)) {
+        self->flags |= NN_SOCK_FLAG_OUT;
+        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
+            nn_efd_signal (&self->sndfd);
     }
 }
 

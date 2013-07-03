@@ -306,7 +306,8 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     /*  Detect a failure. Note that in ECONNABORTED case we simply ignore
         the error and wait for next connection in asynchronous manner. */
     errno_assert (errno == EAGAIN || errno == EWOULDBLOCK ||
-          errno == ECONNABORTED);
+        errno == ECONNABORTED || errno == ENFILE || errno == EMFILE ||
+        errno == ENOBUFS || errno == ENOMEM);
 
     /*  Pair the two sockets. */
     nn_assert (!self->asock);

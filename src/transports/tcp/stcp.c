@@ -47,7 +47,8 @@
 #define NN_STCP_OUTSTATE_SENDING 2
 
 /*  Subordinate srcptr objects. */
-#define NN_STCP_SRC_STREAMHDR 1
+#define NN_STCP_SRC_USOCK 1
+#define NN_STCP_SRC_STREAMHDR 2
 
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg);
@@ -68,7 +69,8 @@ void nn_stcp_init (struct nn_stcp *self, int src,
     self->state = NN_STCP_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, NN_STCP_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
-    self->usock_owner = NULL;
+    self->usock_owner.src = -1;
+    self->usock_owner.fsm = NULL;
     nn_pipebase_init (&self->pipebase, &nn_stcp_pipebase_vfptr, epbase);
     self->instate = -1;
     nn_msg_init (&self->inmsg, 0);
@@ -97,8 +99,10 @@ int nn_stcp_isidle (struct nn_stcp *self)
 void nn_stcp_start (struct nn_stcp *self, struct nn_usock *usock)
 {
     /*  Take ownership of the underlying socket. */
-    nn_assert (self->usock == NULL && self->usock_owner == NULL);
-    self->usock_owner = nn_usock_swap_owner (usock, &self->fsm);
+    nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
+    self->usock_owner.src = NN_STCP_SRC_USOCK;
+    self->usock_owner.fsm = &self->fsm;
+    nn_usock_swap_owner (usock, &self->usock_owner);
     self->usock = usock;
 
     /*  Launch the state machine. */
@@ -181,9 +185,10 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (stcp->state == NN_STCP_STATE_STOPPING)) {
         if (nn_streamhdr_isidle (&stcp->streamhdr)) {
-            nn_usock_swap_owner (stcp->usock, stcp->usock_owner);
+            nn_usock_swap_owner (stcp->usock, &stcp->usock_owner);
             stcp->usock = NULL;
-            stcp->usock_owner = NULL;
+            stcp->usock_owner.src = -1;
+            stcp->usock_owner.fsm = NULL;
             stcp->state = NN_STCP_STATE_IDLE;
             nn_fsm_stopped (&stcp->fsm, NN_STCP_STOPPED);
             return;

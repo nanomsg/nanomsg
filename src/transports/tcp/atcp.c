@@ -36,6 +36,7 @@
 
 #define NN_ATCP_SRC_USOCK 1
 #define NN_ATCP_SRC_STCP 2
+#define NN_ATCP_SRC_LISTENER 3
 
 /*  Private functions. */
 static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
@@ -48,7 +49,8 @@ void nn_atcp_init (struct nn_atcp *self, int src,
     self->state = NN_ATCP_STATE_IDLE;
     nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm);
     self->listener = NULL;
-    self->listener_owner = NULL;
+    self->listener_owner.src = -1;
+    self->listener_owner.fsm = NULL;
     nn_stcp_init (&self->stcp, NN_ATCP_SRC_STCP, epbase, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
@@ -78,7 +80,9 @@ void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
-    self->listener_owner = nn_usock_swap_owner (listener, &self->fsm);
+    self->listener_owner.src = NN_ATCP_SRC_LISTENER;
+    self->listener_owner.fsm = &self->fsm;
+    nn_usock_swap_owner (listener, &self->listener_owner);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -113,10 +117,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         if (!nn_usock_isidle (&atcp->usock))
             return;
        if (atcp->listener) {
-            nn_assert (atcp->listener_owner);
-            nn_usock_swap_owner (atcp->listener, atcp->listener_owner);
+            nn_assert (atcp->listener_owner.fsm);
+            nn_usock_swap_owner (atcp->listener, &atcp->listener_owner);
             atcp->listener = NULL;
-            atcp->listener_owner = NULL;
+            atcp->listener_owner.src = -1;
+            atcp->listener_owner.fsm = NULL;
         }
         atcp->state = NN_ATCP_STATE_IDLE;
         nn_fsm_stopped (&atcp->fsm, NN_ATCP_STOPPED);
@@ -152,9 +157,10 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_ACCEPTED:
 
                 /*  Return ownership of the listening socket to the parent. */
-                nn_usock_swap_owner (atcp->listener, atcp->listener_owner);
+                nn_usock_swap_owner (atcp->listener, &atcp->listener_owner);
                 atcp->listener = NULL;
-                atcp->listener_owner = NULL;
+                atcp->listener_owner.src = -1;
+                atcp->listener_owner.fsm = NULL;
                 nn_fsm_raise (&atcp->fsm, &atcp->accepted, NN_ATCP_ACCEPTED);
 
                 /*  Start the stcp state machine. */

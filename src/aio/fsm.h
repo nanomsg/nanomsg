@@ -58,6 +58,11 @@ void nn_fsm_event_process (struct nn_fsm_event *self);
 typedef void (*nn_fsm_fn) (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
+struct nn_fsm_owner {
+    int src;
+    struct nn_fsm *fsm;
+};
+
 struct nn_fsm {
     nn_fsm_fn fn;
     int state;
@@ -79,7 +84,9 @@ void nn_fsm_stop (struct nn_fsm *self);
 void nn_fsm_stopped (struct nn_fsm *self, int type);
 void nn_fsm_stopped_noevent (struct nn_fsm *self);
 
-struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner);
+/*  Replaces current owner of the fsm by the owner speicified by 'owner'
+    parameter. The parameter will hold the old owner afrer the call. */
+void nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm_owner *owner);
 
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 

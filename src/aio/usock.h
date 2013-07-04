@@ -56,8 +56,7 @@ int nn_usock_isidle (struct nn_usock *self);
 int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol);
 void nn_usock_stop (struct nn_usock *self);
 
-struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
-    struct nn_fsm *newowner);
+void nn_usock_swap_owner (struct nn_usock *self, struct nn_fsm_owner *owner);
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
     const void *optval, size_t optlen);

@@ -51,7 +51,7 @@ struct nn_streamhdr {
     struct nn_usock *usock;
 
     /*  The original owner of the underlying socket. */
-    struct nn_fsm *usock_owner;
+    struct nn_fsm_owner usock_owner;
 
     /*  Handle to the pipe. */
     struct nn_pipebase *pipebase;

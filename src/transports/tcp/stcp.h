@@ -51,7 +51,7 @@ struct nn_stcp {
     struct nn_streamhdr streamhdr;
 
     /*  The original owner of the underlying socket. */
-    struct nn_fsm *usock_owner;
+    struct nn_fsm_owner usock_owner;
 
     /*  Pipe connecting this TCP connection to the nanomsg core. */
     struct nn_pipebase pipebase;

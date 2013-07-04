@@ -154,10 +154,9 @@ void nn_usock_stop (struct nn_usock *self)
     nn_fsm_stop (&self->fsm);
 }
 
-struct nn_fsm *nn_usock_swap_owner (struct nn_usock *self,
-    struct nn_fsm *newowner)
+void nn_usock_swap_owner (struct nn_usock *self, struct nn_fsm_owner *owner)
 {
-    return nn_fsm_swap_owner (&self->fsm, newowner);
+    nn_fsm_swap_owner (&self->fsm, owner);
 }
 
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,

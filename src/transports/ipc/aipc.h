@@ -54,7 +54,7 @@ struct nn_aipc {
 
     /*  Listening socket. Valid only while accepting new connection. */
     struct nn_usock *listener;
-    struct nn_fsm *listener_owner;
+    struct nn_fsm_owner listener_owner;
 
     /*  State machine that takes care of the connection in the active state. */
     struct nn_sipc sipc;

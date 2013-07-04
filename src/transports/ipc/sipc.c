@@ -44,7 +44,8 @@
 #define NN_SIPC_STATE_STOPPING 6
 
 /*  Subordinated srcptr objects. */
-#define NN_SIPC_SRC_STREAMHDR 1
+#define NN_SIPC_SRC_USOCK 1
+#define NN_SIPC_SRC_STREAMHDR 2
 
 /*  Possible states of the inbound part of the object. */
 #define NN_SIPC_INSTATE_HDR 1
@@ -74,7 +75,8 @@ void nn_sipc_init (struct nn_sipc *self, int src,
     self->state = NN_SIPC_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, NN_SIPC_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
-    self->usock_owner = NULL;
+    self->usock_owner.src = -1;
+    self->usock_owner.fsm = NULL;
     nn_pipebase_init (&self->pipebase, &nn_sipc_pipebase_vfptr, epbase);
     self->instate = -1;
     nn_msg_init (&self->inmsg, 0);
@@ -103,8 +105,10 @@ int nn_sipc_isidle (struct nn_sipc *self)
 void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
 {
     /*  Take ownership of the underlying socket. */
-    nn_assert (self->usock == NULL && self->usock_owner == NULL);
-    self->usock_owner = nn_usock_swap_owner (usock, &self->fsm);
+    nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
+    self->usock_owner.src = NN_SIPC_SRC_USOCK;
+    self->usock_owner.fsm = &self->fsm;
+    nn_usock_swap_owner (usock, &self->usock_owner);
     self->usock = usock;
 
     /*  Launch the state machine. */
@@ -188,9 +192,10 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (sipc->state == NN_SIPC_STATE_STOPPING)) {
         if (nn_streamhdr_isidle (&sipc->streamhdr)) {
-            nn_usock_swap_owner (sipc->usock, sipc->usock_owner);
+            nn_usock_swap_owner (sipc->usock, &sipc->usock_owner);
             sipc->usock = NULL;
-            sipc->usock_owner = NULL;
+            sipc->usock_owner.src = -1;
+            sipc->usock_owner.fsm = NULL;
             sipc->state = NN_SIPC_STATE_IDLE;
             nn_fsm_stopped (&sipc->fsm, NN_SIPC_STOPPED);
             return;

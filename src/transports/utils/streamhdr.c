@@ -40,7 +40,8 @@
 #define NN_STREAMHDR_STATE_DONE 6
 #define NN_STREAMHDR_STATE_STOPPING 7
 
-#define NN_STREAMHDR_SRC_TIMER 1
+#define NN_STREAMHDR_SRC_USOCK 1
+#define NN_STREAMHDR_SRC_TIMER 2
 
 /*  Private functions. */
 static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
@@ -55,7 +56,8 @@ void nn_streamhdr_init (struct nn_streamhdr *self, int src,
     nn_fsm_event_init (&self->done);
 
     self->usock = NULL;
-    self->usock_owner = NULL;
+    self->usock_owner.src = -1;
+    self->usock_owner.fsm = NULL;
     self->pipebase = NULL;
 }
 
@@ -80,8 +82,10 @@ void nn_streamhdr_start (struct nn_streamhdr *self, struct nn_usock *usock,
     int protocol;
 
     /*  Take ownership of the underlying socket. */
-    nn_assert (self->usock == NULL && self->usock_owner == NULL);
-    self->usock_owner = nn_usock_swap_owner (usock, &self->fsm);
+    nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
+    self->usock_owner.src = NN_STREAMHDR_SRC_USOCK;
+    self->usock_owner.fsm = &self->fsm;
+    nn_usock_swap_owner (usock, &self->usock_owner);
     self->usock = usock;
     self->pipebase = pipebase;
 
@@ -225,9 +229,10 @@ invalidhdr:
         if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
-                nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);
+                nn_usock_swap_owner (streamhdr->usock, &streamhdr->usock_owner);
                 streamhdr->usock = NULL;
-                streamhdr->usock_owner = NULL;
+                streamhdr->usock_owner.src = -1;
+                streamhdr->usock_owner.fsm = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
                 nn_fsm_raise (&streamhdr->fsm, &streamhdr->done,
                     NN_STREAMHDR_ERROR);
@@ -245,9 +250,10 @@ invalidhdr:
         if (srcptr == &streamhdr->timer) {
             switch (type) {
             case NN_TIMER_STOPPED:
-                nn_usock_swap_owner (streamhdr->usock, streamhdr->usock_owner);
+                nn_usock_swap_owner (streamhdr->usock, &streamhdr->usock_owner);
                 streamhdr->usock = NULL;
-                streamhdr->usock_owner = NULL;
+                streamhdr->usock_owner.src = -1;
+                streamhdr->usock_owner.fsm = NULL;
                 streamhdr->state = NN_STREAMHDR_STATE_DONE;
                 nn_fsm_raise (&streamhdr->fsm, &streamhdr->done,
                     NN_STREAMHDR_OK);

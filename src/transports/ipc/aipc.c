@@ -50,7 +50,8 @@ void nn_aipc_init (struct nn_aipc *self, int src,
     self->state = NN_AIPC_STATE_IDLE;
     nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
     self->listener = NULL;
-    self->listener_owner = NULL;
+    self->listener_owner.src = -1;
+    self->listener_owner.fsm = NULL;
     nn_sipc_init (&self->sipc, NN_AIPC_SRC_SIPC, epbase, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
@@ -80,7 +81,9 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
-    self->listener_owner = nn_usock_swap_owner (listener, &self->fsm);
+    self->listener_owner.src = NN_AIPC_SRC_USOCK;
+    self->listener_owner.fsm = &self->fsm;
+    nn_usock_swap_owner (listener, &self->listener_owner);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -115,10 +118,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         if (!nn_usock_isidle (&aipc->usock))
             return;
        if (aipc->listener) {
-            nn_assert (aipc->listener_owner);
-            nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
+            nn_assert (aipc->listener_owner.fsm);
+            nn_usock_swap_owner (aipc->listener, &aipc->listener_owner);
             aipc->listener = NULL;
-            aipc->listener_owner = NULL;
+            aipc->listener_owner.src = 1;
+            aipc->listener_owner.fsm = NULL;
         }
         aipc->state = NN_AIPC_STATE_IDLE;
         nn_fsm_stopped (&aipc->fsm, NN_AIPC_STOPPED);
@@ -154,9 +158,10 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_ACCEPTED:
 
                 /*  Return ownership of the listening socket to the parent. */
-                nn_usock_swap_owner (aipc->listener, aipc->listener_owner);
+                nn_usock_swap_owner (aipc->listener, &aipc->listener_owner);
                 aipc->listener = NULL;
-                aipc->listener_owner = NULL;
+                aipc->listener_owner.src = -1;
+                aipc->listener_owner.fsm = NULL;
                 nn_fsm_raise (&aipc->fsm, &aipc->accepted, NN_AIPC_ACCEPTED);
 
                 /*  Start the sipc state machine. */

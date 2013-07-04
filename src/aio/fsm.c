@@ -130,14 +130,17 @@ void nn_fsm_stopped_noevent (struct nn_fsm *self)
     self->state = NN_FSM_STATE_IDLE;
 }
 
-struct nn_fsm *nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm *newowner)
+void nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm_owner *owner)
 {
+    int oldsrc;
     struct nn_fsm *oldowner;
 
+    oldsrc = self->src;
     oldowner = self->owner;
-    self->owner = newowner;
-
-    return oldowner;
+    self->src = owner->src;
+    self->owner = owner->fsm;
+    owner->src = oldsrc;
+    owner->fsm = oldowner;
 }
 
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)

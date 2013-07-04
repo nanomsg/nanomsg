@@ -97,7 +97,7 @@ EXAMPLE
 ----
 int linger = 1000;
 nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &linger, sizeof (linger));
-nn_setsockopt (s, NN_SUB, NN_SUBSCRIBE, "ABC", 3);
+nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "ABC", 3);
 ----
 
 

@@ -143,7 +143,7 @@ void nn_sock_stopped (struct nn_sock *self)
 {
     /*  TODO: Do the following in a more sane way. */
     self->fsm.stopped.fsm = &self->fsm;
-    self->fsm.stopped.src = 0;
+    self->fsm.stopped.src = NN_FSM_ACTION;
     self->fsm.stopped.srcptr = NULL;
     self->fsm.stopped.type = NN_SOCK_ACTION_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
@@ -710,7 +710,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
             sock->state == NN_SOCK_STATE_ZOMBIE);
 
@@ -763,7 +763,7 @@ finish2:
 
         /*  We get here when the deallocation of the socket was delayed by the
             specific socket type. */
-        nn_assert (srcptr == NULL && type == NN_SOCK_ACTION_STOPPED);
+        nn_assert (src == NN_FSM_ACTION && type == NN_SOCK_ACTION_STOPPED);
 
 finish1:
         /*  Protocol-specific part of the socket is stopped.
@@ -784,7 +784,9 @@ finish1:
 /*  INIT state.                                                               */
 /******************************************************************************/
     case NN_SOCK_STATE_INIT:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
@@ -795,14 +797,18 @@ finish1:
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_SOCK_STATE_ACTIVE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_SOCK_ACTION_ZOMBIFY:
                 nn_sock_action_zombify (sock);
@@ -810,20 +816,22 @@ finish1:
             default:
                 nn_assert (0);
             }
-        }
 
-        /*  The assumption is that all the other events come from pipes. */
-        switch (type) {
-        case NN_PIPE_IN:
-            sock->sockbase->vfptr->in (sock->sockbase,
-                (struct nn_pipe*) srcptr);
-            return;
-        case NN_PIPE_OUT:
-            sock->sockbase->vfptr->out (sock->sockbase,
-                (struct nn_pipe*) srcptr);
-            return;
         default:
-            nn_assert (0);
+
+            /*  The assumption is that all the other events come from pipes. */
+            switch (type) {
+            case NN_PIPE_IN:
+                sock->sockbase->vfptr->in (sock->sockbase,
+                    (struct nn_pipe*) srcptr);
+                return;
+            case NN_PIPE_OUT:
+                sock->sockbase->vfptr->out (sock->sockbase,
+                    (struct nn_pipe*) srcptr);
+                return;
+            default:
+                nn_assert (0);
+            }
         }
 
 /******************************************************************************/

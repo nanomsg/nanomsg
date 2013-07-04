@@ -199,7 +199,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (sinproc->state == NN_SINPROC_STATE_IDLE ||
               sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
             goto finish;
@@ -223,7 +223,9 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SINPROC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 sinproc->state = NN_SINPROC_STATE_CONNECTING;
@@ -231,8 +233,10 @@ finish:
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
@@ -240,7 +244,9 @@ finish:
 /*  acknowledgement.                                                          */
 /******************************************************************************/
     case NN_SINPROC_STATE_CONNECTING:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_SINPROC_ACTION_ACCEPTED:
                 rc = nn_pipebase_start (&sinproc->pipebase);
@@ -250,19 +256,21 @@ finish:
             default:
                 nn_assert (0);
             }
-        }
 
-        /*  The assumption here is that all the events are coming from the
-            peer sinproc object. */
-        switch (type) {
-        case NN_SINPROC_ACCEPTED:
-            sinproc->peer = (struct nn_sinproc*) srcptr;
-            rc = nn_pipebase_start (&sinproc->pipebase);
-            errnum_assert (rc == 0, -rc);
-            sinproc->state = NN_SINPROC_STATE_ACTIVE;
-            return;
         default:
-            nn_assert (0);
+
+            /*  The assumption here is that all the events are coming from the
+                peer sinproc object. */
+            switch (type) {
+            case NN_SINPROC_ACCEPTED:
+                sinproc->peer = (struct nn_sinproc*) srcptr;
+                rc = nn_pipebase_start (&sinproc->pipebase);
+                errnum_assert (rc == 0, -rc);
+                sinproc->state = NN_SINPROC_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
         }
 
 /******************************************************************************/

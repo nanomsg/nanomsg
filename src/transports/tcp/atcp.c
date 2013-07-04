@@ -103,7 +103,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_stcp_stop (&atcp->stcp);
         atcp->state = NN_ATCP_STATE_STOPPING_STCP_FINAL;
     }
@@ -135,7 +135,9 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_ATCP_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&atcp->usock, atcp->listener);
@@ -144,15 +146,19 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACCEPTING state.                                                          */
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_ATCP_STATE_ACCEPTING:
-        if (srcptr == &atcp->usock) {
+        switch (src) {
+
+        case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
 
@@ -173,14 +179,18 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_ATCP_STATE_ACTIVE:
-        if (srcptr == &atcp->stcp) {
+        switch (src) {
+
+        case NN_ATCP_SRC_STCP:
             switch (type) {
             case NN_STCP_ERROR:
                 nn_stcp_stop (&atcp->stcp);
@@ -189,14 +199,18 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_STCP state.                                                      */
 /******************************************************************************/
     case NN_ATCP_STATE_STOPPING_STCP:
-        if (srcptr == &atcp->stcp) {
+        switch (src) {
+
+        case NN_ATCP_SRC_STCP:
             switch (type) {
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
@@ -205,14 +219,18 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_USOCK state.                                                      */
 /******************************************************************************/
     case NN_ATCP_STATE_STOPPING_USOCK:
-        if (srcptr == &atcp->usock) {
+        switch (src) {
+
+        case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
@@ -221,8 +239,10 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

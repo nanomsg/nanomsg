@@ -104,7 +104,7 @@ void nn_ep_stopped (struct nn_ep *self)
 {
     /*  TODO: Do the following in a more sane way. */
     self->fsm.stopped.fsm = &self->fsm;
-    self->fsm.stopped.src = 0;
+    self->fsm.stopped.src = NN_FSM_ACTION;
     self->fsm.stopped.srcptr = NULL;
     self->fsm.stopped.type = NN_EP_ACTION_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
@@ -143,13 +143,13 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         ep->epbase->vfptr->stop (ep->epbase);
         ep->state = NN_EP_STATE_STOPPING;
         return;
     }
     if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
-        if (srcptr != NULL || type != NN_EP_ACTION_STOPPED)
+        if (src != NN_FSM_ACTION || type != NN_EP_ACTION_STOPPED)
             return;
         ep->state = NN_EP_STATE_IDLE;
         nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
@@ -162,7 +162,9 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_EP_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 ep->state = NN_EP_STATE_ACTIVE;
@@ -170,8 +172,10 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */

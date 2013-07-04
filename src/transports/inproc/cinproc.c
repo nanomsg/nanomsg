@@ -124,7 +124,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -149,7 +149,9 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_CINPROC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
@@ -157,14 +159,18 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DISCONNECTED state.                                                       */
 /******************************************************************************/
     case NN_CINPROC_STATE_DISCONNECTED:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_CINPROC_ACTION_CONNECT:
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
@@ -172,18 +178,20 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
-        }
 
-        /*  Here we assume that all other events are raised by the peer
-            sinproc object. */
-        sinproc = (struct nn_sinproc*) srcptr;
-        switch (type) {
-        case NN_SINPROC_CONNECT:
-            nn_sinproc_accept (&cinproc->sinproc, sinproc);
-            cinproc->state = NN_CINPROC_STATE_ACTIVE;
-            return;
         default:
-            nn_assert (0);
+
+            /*  Here we assume that all other events are raised by the peer
+                sinproc object. */
+            sinproc = (struct nn_sinproc*) srcptr;
+            switch (type) {
+            case NN_SINPROC_CONNECT:
+                nn_sinproc_accept (&cinproc->sinproc, sinproc);
+                cinproc->state = NN_CINPROC_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
         }
 
 /******************************************************************************/

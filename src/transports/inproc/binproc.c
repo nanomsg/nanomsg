@@ -130,7 +130,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -148,10 +148,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
         goto finish;
     }
     if (nn_slow (binproc->state == NN_BINPROC_STATE_STOPPING)) {
-
-        /*  Here we are going to assume that all the events are coming from
-            the individual sinprocs. */
-        nn_assert (type == NN_SINPROC_STOPPED);
+        nn_assert (src == NN_BINPROC_SRC_SINPROC && type == NN_SINPROC_STOPPED);
         sinproc = (struct nn_sinproc*) srcptr;
         nn_list_erase (&binproc->sinprocs, &sinproc->item);
         nn_sinproc_term (sinproc);
@@ -171,7 +168,9 @@ finish:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BINPROC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 binproc->state = NN_BINPROC_STATE_ACTIVE;
@@ -179,8 +178,10 @@ finish:
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */

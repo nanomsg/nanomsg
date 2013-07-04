@@ -178,7 +178,7 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcp->pipebase);
         nn_streamhdr_stop (&stcp->streamhdr);
         stcp->state = NN_STCP_STATE_STOPPING;
@@ -202,7 +202,9 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_STCP_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&stcp->streamhdr, stcp->usock,
@@ -212,14 +214,18 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  PROTOHDR state.                                                           */
 /******************************************************************************/
     case NN_STCP_STATE_PROTOHDR:
-        if (srcptr == &stcp->streamhdr) {
+        switch (src) {
+
+        case NN_STCP_SRC_STREAMHDR:
             switch (type) {
             case NN_STREAMHDR_OK:
 
@@ -240,14 +246,18 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_STREAMHDR state.                                                 */
 /******************************************************************************/
     case NN_STCP_STATE_STOPPING_STREAMHDR:
-        if (srcptr == &stcp->streamhdr) {
+        switch (src) {
+
+        case NN_STCP_SRC_STREAMHDR:
             switch (type) {
             case NN_STREAMHDR_STOPPED:
 
@@ -269,14 +279,18 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_STCP_STATE_ACTIVE:
-        if (srcptr == stcp->usock) {
+        switch (src) {
+
+        case NN_STCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SENT:
 
@@ -335,8 +349,10 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DONE state.                                                               */

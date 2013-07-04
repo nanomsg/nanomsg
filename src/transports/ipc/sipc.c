@@ -185,7 +185,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&sipc->pipebase);
         nn_streamhdr_stop (&sipc->streamhdr);
         sipc->state = NN_SIPC_STATE_STOPPING;
@@ -209,7 +209,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SIPC_STATE_IDLE:
-        if (srcptr == NULL) {
+        if (src == NN_FSM_ACTION) {
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock,
@@ -226,7 +226,9 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /*  PROTOHDR state.                                                           */
 /******************************************************************************/
     case NN_SIPC_STATE_PROTOHDR:
-        if (srcptr == &sipc->streamhdr) {
+        switch (src) {
+
+        case NN_SIPC_SRC_STREAMHDR:
             switch (type) {
             case NN_STREAMHDR_OK:
 
@@ -247,14 +249,18 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_STREAMHDR state.                                                 */
 /******************************************************************************/
     case NN_SIPC_STATE_STOPPING_STREAMHDR:
-        if (srcptr == &sipc->streamhdr) {
+        switch (src) {
+
+        case NN_SIPC_SRC_STREAMHDR:
             switch (type) {
             case NN_STREAMHDR_STOPPED:
 
@@ -276,14 +282,18 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_SIPC_STATE_ACTIVE:
-        if (srcptr == sipc->usock) {
+        switch (src) {
+
+        case NN_SIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SENT:
 
@@ -343,8 +353,10 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DONE state.                                                               */

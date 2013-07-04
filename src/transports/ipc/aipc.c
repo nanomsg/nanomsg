@@ -104,7 +104,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_sipc_stop (&aipc->sipc);
         aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
     }
@@ -136,7 +136,9 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_AIPC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_usock_accept (&aipc->usock, aipc->listener);
@@ -145,15 +147,19 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACCEPTING state.                                                          */
 /*  Waiting for incoming connection.                                          */
 /******************************************************************************/
     case NN_AIPC_STATE_ACCEPTING:
-        if (srcptr == &aipc->usock) {
+        switch (src) {
+
+        case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
 
@@ -174,14 +180,18 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_AIPC_STATE_ACTIVE:
-        if (srcptr == &aipc->sipc) {
+        switch (src) {
+
+        case NN_AIPC_SRC_SIPC:
             switch (type) {
             case NN_SIPC_ERROR:
                 nn_sipc_stop (&aipc->sipc);
@@ -190,14 +200,18 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_SIPC state.                                                      */
 /******************************************************************************/
     case NN_AIPC_STATE_STOPPING_SIPC:
-        if (srcptr == &aipc->sipc) {
+        switch (src) {
+
+        case NN_AIPC_SRC_SIPC:
             switch (type) {
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&aipc->usock);
@@ -206,14 +220,18 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_USOCK state.                                                      */
 /******************************************************************************/
     case NN_AIPC_STATE_STOPPING_USOCK:
-        if (srcptr == &aipc->usock) {
+        switch (src) {
+
+        case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);
@@ -222,8 +240,10 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

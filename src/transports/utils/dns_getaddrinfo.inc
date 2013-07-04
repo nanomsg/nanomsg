@@ -130,7 +130,7 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
         return;
@@ -141,7 +141,8 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_DNS_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
@@ -150,8 +151,9 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DONE state.                                                               */

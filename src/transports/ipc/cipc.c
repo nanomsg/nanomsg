@@ -161,7 +161,7 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_sipc_stop (&cipc->sipc);
         cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
     }
@@ -189,7 +189,9 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
 /*  The state machine wasn't yet started.                                     */
 /******************************************************************************/
     case NN_CIPC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_cipc_start_connecting (cipc);
@@ -197,15 +199,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
 /*  Non-blocking connect is under way.                                        */
 /******************************************************************************/
     case NN_CIPC_STATE_CONNECTING:
-        if (srcptr == &cipc->usock) {
+        switch (src) {
+
+        case NN_CIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
                 nn_sipc_start (&cipc->sipc, &cipc->usock);
@@ -218,15 +224,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  Connection is established and handled by the sipc state machine.          */
 /******************************************************************************/
     case NN_CIPC_STATE_ACTIVE:
-        if (srcptr == &cipc->sipc) {
+        switch (src) {
+
+        case NN_CIPC_SRC_SIPC:
             switch (type) {
             case NN_SIPC_ERROR:
                 nn_sipc_stop (&cipc->sipc);
@@ -235,15 +245,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_SIPC state.                                                      */
 /*  sipc object was asked to stop but it haven't stopped yet.                 */
 /******************************************************************************/
     case NN_CIPC_STATE_STOPPING_SIPC:
-        if (srcptr == &cipc->sipc) {
+        switch (src) {
+
+        case NN_CIPC_SRC_SIPC:
             switch (type) {
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&cipc->usock);
@@ -252,15 +266,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_USOCK state.                                                     */
 /*  usock object was asked to stop but it haven't stopped yet.                */
 /******************************************************************************/
     case NN_CIPC_STATE_STOPPING_USOCK:
-        if (srcptr == &cipc->usock) {
+        switch (src) {
+
+        case NN_CIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_STOPPED:
                 nn_backoff_start (&cipc->retry);
@@ -269,8 +287,10 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  WAITING state.                                                            */
@@ -278,7 +298,9 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
 /*  the system by continuous re-connection attemps.                           */
 /******************************************************************************/
     case NN_CIPC_STATE_WAITING:
-        if (srcptr == &cipc->retry) {
+        switch (src) {
+
+        case NN_CIPC_SRC_RECONNECT_TIMER:
             switch (type) {
             case NN_BACKOFF_TIMEOUT:
                 nn_backoff_stop (&cipc->retry);
@@ -287,15 +309,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_BACKOFF state.                                                   */
 /*  backoff object was asked to stop, but it haven't stopped yet.             */
 /******************************************************************************/
     case NN_CIPC_STATE_STOPPING_BACKOFF:
-        if (srcptr == &cipc->retry) {
+        switch (src) {
+
+        case NN_CIPC_SRC_RECONNECT_TIMER:
             switch (type) {
             case NN_BACKOFF_STOPPED:
                 nn_cipc_start_connecting (cipc);
@@ -303,8 +329,10 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

@@ -162,7 +162,7 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (dns->state == NN_DNS_STATE_RESOLVING) {
             rc = gai_cancel (&dns->gcb);
             if (rc == EAI_CANCELED) {
@@ -181,7 +181,7 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
         return;
     }
     if (nn_slow (dns->state == NN_DNS_STATE_STOPPING)) {
-        if (srcptr == NULL && (type == NN_DNS_ACTION_CANCELLED ||
+        if (src == NN_FSM_ACTION && (type == NN_DNS_ACTION_CANCELLED ||
               type == NN_DNS_ACTION_DONE)) {
             nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
             dns->state = NN_DNS_STATE_IDLE;
@@ -195,7 +195,8 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_DNS_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 if (dns->result->error == EINPROGRESS) {
@@ -208,14 +209,16 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  RESOLVING state.                                                          */
 /******************************************************************************/
     case NN_DNS_STATE_RESOLVING:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_DNS_ACTION_DONE:
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
@@ -224,8 +227,9 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DONE state.                                                               */

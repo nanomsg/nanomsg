@@ -155,7 +155,7 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_atcp_stop (btcp->atcp);
         btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
     }
@@ -181,11 +181,7 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
         goto atcps_stopping;
     }
     if (nn_slow (btcp->state == NN_BTCP_STATE_STOPPING_ATCPS)) {
-
-        /*  The assumption here is that the events here are generated only
-            by child atcp state machines. We could programatically test the
-            assumption, but it would be O(n)-complex, so we'll skip the test. */
-        nn_assert (type == NN_ATCP_STOPPED);
+        nn_assert (src == NN_BTCP_SRC_ATCP && type == NN_ATCP_STOPPED);
         atcp = (struct nn_atcp *) srcptr;
         nn_list_erase (&btcp->atcps, &atcp->item);
         nn_atcp_term (atcp);
@@ -210,7 +206,9 @@ atcps_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BTCP_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_btcp_start_listening (btcp);
@@ -220,8 +218,10 @@ atcps_stopping:
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
@@ -250,6 +250,7 @@ atcps_stopping:
 
         /*  For all remaining events we'll assume they are coming from one
             of remaining child atcp objects. */
+        nn_assert (src == NN_BTCP_SRC_ATCP);
         atcp = (struct nn_atcp*) srcptr;
         switch (type) {
         case NN_ATCP_ERROR:

@@ -146,7 +146,7 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_aipc_stop (bipc->aipc);
         bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
     }
@@ -172,11 +172,7 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
         goto aipcs_stopping;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_AIPCS)) {
-
-        /*  The assumption here is that the events here are generated only
-            by child aipc state machines. We could programatically test the
-            assumption, but it would be O(n)-complex, so we'll skip the test. */
-        nn_assert (type == NN_AIPC_STOPPED);
+        nn_assert (src == NN_BIPC_SRC_AIPC && type == NN_AIPC_STOPPED);
         aipc = (struct nn_aipc *) srcptr;
         nn_list_erase (&bipc->aipcs, &aipc->item);
         nn_aipc_term (aipc);
@@ -201,7 +197,9 @@ aipcs_stopping:
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BIPC_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_bipc_start_listening (bipc);
@@ -211,8 +209,10 @@ aipcs_stopping:
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
@@ -241,6 +241,7 @@ aipcs_stopping:
 
         /*  For all remaining events we'll assume they are coming from one
             of remaining child aipc objects. */
+        nn_assert (src == NN_BIPC_SRC_AIPC);
         aipc = (struct nn_aipc*) srcptr;
         switch (type) {
         case NN_AIPC_ERROR:

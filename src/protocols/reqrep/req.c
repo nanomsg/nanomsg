@@ -367,7 +367,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&req->timer);
         req->state = NN_REQ_STATE_STOPPING;
     }
@@ -388,7 +388,9 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 /*  Pass straight to the PASSIVE state.                                       */
 /******************************************************************************/
     case NN_REQ_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 req->state = NN_REQ_STATE_PASSIVE;
@@ -396,15 +398,19 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  PASSIVE state.                                                            */
 /*  No request is submitted.                                                  */
 /******************************************************************************/
     case NN_REQ_STATE_PASSIVE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_REQ_ACTION_SENT:
                 nn_req_action_send (req);
@@ -412,8 +418,10 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DELAYED state.                                                            */
@@ -422,12 +430,13 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 /*  peer to arrive to send the request to it.                                 */
 /******************************************************************************/
     case NN_REQ_STATE_DELAYED:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_REQ_ACTION_OUT:
                 nn_req_action_send (req);
                 return;
-
             case NN_REQ_ACTION_SENT:
 
                 /*  New request was sent while the old one was still being
@@ -435,19 +444,22 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_timer_stop (&req->timer);
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
-
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  Request was submitted. Waiting for reply.                                 */
 /******************************************************************************/
     case NN_REQ_STATE_ACTIVE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_REQ_ACTION_IN:
 
@@ -467,8 +479,8 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
-        }
-        if (srcptr == &req->timer) {
+        
+        case NN_REQ_SRC_RESEND_TIMER:
             switch (type) {
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&req->timer);
@@ -477,8 +489,10 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+        
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  TIMED_OUT state.                                                          */
@@ -486,7 +500,9 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 /*  re-send the request.                                                      */
 /******************************************************************************/
     case NN_REQ_STATE_TIMED_OUT:
-        if (srcptr == &req->timer) {
+        switch (src) {
+
+        case NN_REQ_SRC_RESEND_TIMER:
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_req_action_send (req);
@@ -494,8 +510,8 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
-        }
-        if (srcptr == NULL) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_REQ_ACTION_SENT:
                 req->state = NN_REQ_STATE_CANCELLING;
@@ -503,15 +519,19 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  CANCELLING state.                                                         */
 /*  Request was canceled. Waiting till the timer is stopped.                  */
 /******************************************************************************/
     case NN_REQ_STATE_CANCELLING:
-        if (srcptr == &req->timer) {
+        switch (src) {
+
+        case NN_REQ_SRC_RESEND_TIMER:
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_req_action_send (req);
@@ -519,23 +539,28 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
-        }
-        if (srcptr == NULL) {
+
+        case NN_FSM_ACTION:
              switch (type) {
              case NN_REQ_ACTION_SENT:
                  return;
              default:
                  nn_assert (0);
              }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  STOPPING_TIMER state.                                                     */
 /*  Reply was delivered. Waiting till the timer is stopped.                   */
 /******************************************************************************/
     case NN_REQ_STATE_STOPPING_TIMER:
-        if (srcptr == &req->timer) {
+        switch (src) {
+
+        case NN_REQ_SRC_RESEND_TIMER:
+
             switch (type) {
             case NN_TIMER_STOPPED:
                 req->state = NN_REQ_STATE_DONE;
@@ -543,24 +568,28 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_REQ_ACTION_SENT:
+                req->state = NN_REQ_STATE_CANCELLING;
+                return;
+            default:
+                nn_assert (0);
+            }
+
+        default:
+            nn_assert (0);
         }
-        if (srcptr == NULL) {
-             switch (type) {
-             case NN_REQ_ACTION_SENT:
-                 req->state = NN_REQ_STATE_CANCELLING;
-                 return;
-             default:
-                 nn_assert (0);
-             }
-        }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  DONE state.                                                               */
 /*  Reply was received but not yet retrieved by the user.                     */
 /******************************************************************************/
     case NN_REQ_STATE_DONE:
-        if (srcptr == NULL) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
              switch (type) {
              case NN_REQ_ACTION_RECEIVED:
                  req->state = NN_REQ_STATE_PASSIVE;
@@ -571,8 +600,10 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
              default:
                  nn_assert (0);
              }
+
+        default:
+            nn_assert (0);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

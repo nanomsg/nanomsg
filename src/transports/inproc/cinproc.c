@@ -179,10 +179,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 nn_assert (0);
             }
 
-        default:
-
-            /*  Here we assume that all other events are raised by the peer
-                sinproc object. */
+        case NN_SINPROC_SRC_PEER:
             sinproc = (struct nn_sinproc*) srcptr;
             switch (type) {
             case NN_SINPROC_CONNECT:
@@ -192,6 +189,9 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_assert (0);
             }
+
+        default:
+            nn_assert (0);
         }
 
 /******************************************************************************/

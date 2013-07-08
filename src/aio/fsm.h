@@ -102,7 +102,7 @@ void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
     NOTE: This function is a hack to make inproc transport work in the most
     efficient manner. Do not use it outside of inproc transport! */
 void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
-    struct nn_fsm_event *event, int type);
+    struct nn_fsm_event *event, int src, int type, void *srcptr);
 
 #endif
 

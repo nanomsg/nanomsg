@@ -101,7 +101,8 @@ void nn_sinproc_connect (struct nn_sinproc *self, struct nn_fsm *peer)
     nn_fsm_start (&self->fsm);
 
     /*  Start the connecting handshake with the peer. */
-    nn_fsm_raiseto (&self->fsm, peer, &self->event_connect, NN_SINPROC_CONNECT);
+    nn_fsm_raiseto (&self->fsm, peer, &self->event_connect,
+        NN_SINPROC_SRC_PEER, NN_SINPROC_CONNECT, self);
 }
 
 void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
@@ -111,7 +112,7 @@ void nn_sinproc_accept (struct nn_sinproc *self, struct nn_sinproc *peer)
 
     /*  Start the connecting handshake with the peer. */
     nn_fsm_raiseto (&self->fsm, &peer->fsm, &self->event_connect,
-        NN_SINPROC_ACCEPTED);
+        NN_SINPROC_SRC_PEER, NN_SINPROC_ACCEPTED, self);
 
     /*  Notify the state machine. */
     nn_fsm_start (&self->fsm);
@@ -145,7 +146,8 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     /*  Notify the peer that there's a message to get. */
     sinproc->flags |= NN_SINPROC_FLAG_SENDING;
     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-        &sinproc->peer->event_sent, NN_SINPROC_SENT);
+        &sinproc->peer->event_sent, NN_SINPROC_SRC_PEER,
+        NN_SINPROC_SENT, sinproc);
 
     return 0;
 }
@@ -175,7 +177,8 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
                 errnum_assert (rc == 0, -rc);
                 nn_msg_init (&sinproc->peer->msg, 0);
                 nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                    &sinproc->peer->event_received, NN_SINPROC_RECEIVED);
+                    &sinproc->peer->event_received, NN_SINPROC_SRC_PEER,
+                    NN_SINPROC_RECEIVED, sinproc);
                 sinproc->flags &= ~NN_SINPROC_FLAG_RECEIVING;
             }
         }
@@ -205,7 +208,8 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
             goto finish;
         nn_pipebase_stop (&sinproc->pipebase);
         nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-            &sinproc->peer->event_disconnect, NN_SINPROC_DISCONNECT);
+            &sinproc->peer->event_disconnect, NN_SINPROC_SRC_PEER,
+            NN_SINPROC_DISCONNECT, sinproc);
         sinproc->state = NN_SINPROC_STATE_STOPPING;
         return;
     }
@@ -257,10 +261,7 @@ finish:
                 nn_assert (0);
             }
 
-        default:
-
-            /*  The assumption here is that all the events are coming from the
-                peer sinproc object. */
+        case NN_SINPROC_SRC_PEER:
             switch (type) {
             case NN_SINPROC_ACCEPTED:
                 sinproc->peer = (struct nn_sinproc*) srcptr;
@@ -277,7 +278,9 @@ finish:
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
         case NN_SINPROC_STATE_ACTIVE:
-            if (srcptr == sinproc->peer) {
+            switch (src) {
+
+            case NN_SINPROC_SRC_PEER:
                 switch (type) {
                 case NN_SINPROC_SENT:
 
@@ -299,7 +302,8 @@ finish:
 
                     /*  Notify the peer that the message was received. */
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                        &sinproc->peer->event_received, NN_SINPROC_RECEIVED);
+                        &sinproc->peer->event_received, NN_SINPROC_SRC_PEER,
+                        NN_SINPROC_RECEIVED, sinproc);
 
                     return;
 
@@ -312,16 +316,18 @@ finish:
                 case NN_SINPROC_DISCONNECT:
                     nn_pipebase_stop (&sinproc->pipebase);
                     nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-                        &sinproc->peer->event_disconnect,
-                        NN_SINPROC_DISCONNECT);
+                        &sinproc->peer->event_disconnect, NN_SINPROC_SRC_PEER,
+                        NN_SINPROC_DISCONNECT, sinproc);
                     sinproc->state = NN_SINPROC_STATE_DISCONNECTED;
                     return;
 
                 default:
                     nn_assert (0);
                 }
+
+            default:
+                nn_assert (0);
             }
-            nn_assert (0);
 
 /******************************************************************************/
 /*  DISCONNECTED state.                                                       */

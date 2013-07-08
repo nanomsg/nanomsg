@@ -39,6 +39,10 @@
 #define NN_SINPROC_DISCONNECT 5
 #define NN_SINPROC_STOPPED 6
 
+/*  We use a random value here to prevent accidental clashes with the peer's
+    internal source IDs. */
+#define NN_SINPROC_SRC_PEER 27713
+
 struct nn_sinproc {
 
     /*  The state machine. */

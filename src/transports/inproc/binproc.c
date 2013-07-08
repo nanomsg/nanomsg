@@ -187,20 +187,27 @@ finish:
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_BINPROC_STATE_ACTIVE:
+        switch (src) {
 
-        /*  Here we assume that all the events are coming from the peers. */
-        nn_assert (srcptr && type == NN_SINPROC_CONNECT);
-        peer = (struct nn_sinproc*) srcptr;
+        case NN_SINPROC_SRC_PEER:
+            switch (type) {
+            case NN_SINPROC_CONNECT:
+                peer = (struct nn_sinproc*) srcptr;
+                sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
+                alloc_assert (sinproc);
+                nn_sinproc_init (sinproc, NN_BINPROC_SRC_SINPROC,
+                    &binproc->epbase, &binproc->fsm);
+                nn_list_insert (&binproc->sinprocs, &sinproc->item,
+                    nn_list_end (&binproc->sinprocs));
+                nn_sinproc_accept (sinproc, peer);
+                return;
+            default:
+                nn_assert (0);
+            }
 
-        /*  Create new sinproc object. */
-        sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
-        alloc_assert (sinproc);
-        nn_sinproc_init (sinproc, NN_BINPROC_SRC_SINPROC,
-            &binproc->epbase, &binproc->fsm);
-        nn_list_insert (&binproc->sinprocs, &sinproc->item,
-            nn_list_end (&binproc->sinprocs));
-        nn_sinproc_accept (sinproc, peer);
-        return;
+        default:
+            nn_assert (0);
+        }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

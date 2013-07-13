@@ -24,6 +24,7 @@
 #include "../utils/err.h"
 
 #include <string.h>
+#include <unistd.h>
 
 int nn_poller_init (struct nn_poller *self)
 {

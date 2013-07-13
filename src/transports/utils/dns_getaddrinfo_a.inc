@@ -25,6 +25,8 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 
+#include "../../aio/ctx.h"
+
 #include <signal.h>
 
 #define NN_DNS_STATE_IDLE 1

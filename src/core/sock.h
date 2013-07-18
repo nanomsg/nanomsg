@@ -77,6 +77,7 @@ struct nn_sock
     int reconnect_ivl;
     int reconnect_ivl_max;
     int sndprio;
+    int ipv4only;
 
     /*  Transport-specific socket options. */
     struct nn_optset *optsets [NN_MAX_TRANSPORT];

@@ -84,63 +84,12 @@ struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 static int nn_tcp_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    int rc;
-    const char *end;
-    const char *pos;
-    int port;
-    struct sockaddr_storage ss;
-    size_t sslen;
-
-    /*  Parse the port. */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    if (!pos)
-        return -EINVAL;
-    ++pos;
-    rc = nn_port_resolve (pos, end - pos);
-    if (rc < 0)
-        return -EINVAL;
-    port = rc;
-
-    /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_iface_resolve (addr, pos - addr - 1, 1, &ss, &sslen);
-    if (rc < 0)
-        return -ENODEV;
-
     return nn_btcp_create (hint, epbase);
 }
 
 static int nn_tcp_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    int rc;
-    const char *end;
-    const char *pos;
-    int port;
-    struct sockaddr_storage ss;
-    size_t sslen;
-
-    /*  Parse the port. */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    if (!pos)
-        return -EINVAL;
-    ++pos;
-    rc = nn_port_resolve (pos, end - pos);
-    if (rc < 0)
-        return -EINVAL;
-    port = rc;
-
-    /*  If local address is specified, check whether it is valid. */
-    pos = strchr (addr, ';');
-    if (pos) {
-        /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-        rc = nn_iface_resolve (addr, pos - addr, 1, &ss, &sslen);
-        if (rc < 0)
-            return -ENODEV;
-    }
-
     return nn_ctcp_create (hint, epbase);
 }
 

@@ -94,14 +94,56 @@ static void nn_btcp_start_accepting (struct nn_btcp *self);
 
 int nn_btcp_create (void *hint, struct nn_epbase **epbase)
 {
+    int rc;
     struct nn_btcp *self;
+    const char *addr;
+    size_t addrlen;
+    const char *end;
+    const char *pos;
+    int port;
+    struct sockaddr_storage ss;
+    size_t sslen;
+    int ipv4only;
+    size_t ipv4onlylen;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_btcp), "btcp");
     alloc_assert (self);
 
-    /*  Initialise the structure. */
+    /*  Initalise the epbase. */
     nn_epbase_init (&self->epbase, &nn_btcp_epbase_vfptr, hint);
+    addr = nn_epbase_getaddr (&self->epbase);
+    addrlen = strlen (addr);
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    if (nn_slow (!pos)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    ++pos;
+    rc = nn_port_resolve (pos, end - pos);
+    if (nn_slow (rc < 0)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    port = rc;
+
+    /*  Check whether IPv6 is to be used. */
+    ipv4onlylen = sizeof (ipv4only);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+        &ipv4only, &ipv4onlylen);
+    nn_assert (ipv4onlylen == sizeof (ipv4only));
+
+    /*  Parse the address. */
+    rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
+    if (nn_slow (rc < 0)) {
+        nn_epbase_term (&self->epbase);
+        return -ENODEV;
+    }
+
+    /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_btcp_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
@@ -282,6 +324,8 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     int rc;
     struct sockaddr_storage ss;
     size_t sslen;
+    int ipv4only;
+    size_t ipv4onlylen;
     const char *addr;
     const char *end;
     const char *pos;
@@ -301,8 +345,11 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     port = rc;
 
     /*  Parse the address. */
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
-    rc = nn_iface_resolve (addr, pos - addr - 1, 1, &ss, &sslen);
+    ipv4onlylen = sizeof (ipv4only);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+        &ipv4only, &ipv4onlylen);
+    nn_assert (ipv4onlylen == sizeof (ipv4only));
+    rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
     errnum_assert (rc == 0, -rc);
 
     /*  Combine the port and the address. */

@@ -78,6 +78,9 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     (or a limited set of peers), peers with high priority take precedence
     over peers with low priority. The type of the option is int. Highest
     priority is 1, lowest priority is 16. Default value is 8.
+*NN_IPV4ONLY*::
+    If set to 1, only IPv4 addresses are used. If set to 0, both IPv4 and IPv6
+    addresses are used. Default value is 1.
 *NN_SNDFD*::
     Retrieves a file descriptor that is readable when a message can be sent
     to the socket. The descriptor should be used only for polling and never

@@ -120,6 +120,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->reconnect_ivl = 100;
     self->reconnect_ivl_max = 0;
     self->sndprio = 8;
+    self->ipv4only = 1;
 
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
@@ -293,6 +294,11 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
                 return -EINVAL;
             dst = &self->sndprio;
             break;
+        case NN_IPV4ONLY:
+            if (nn_slow (val != 0 && val != 1))
+                return -EINVAL;
+            dst = &self->ipv4only;
+            break;
         default:
             return -ENOPROTOOPT;
         }
@@ -360,6 +366,9 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             break;
         case NN_SNDPRIO:
             intval = self->sndprio;
+            break;
+        case NN_IPV4ONLY:
+            intval = self->ipv4only;
             break;
         case NN_SNDFD:
             if (self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)

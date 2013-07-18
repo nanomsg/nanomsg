@@ -106,6 +106,16 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
 
 int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
 {
+    int rc;
+    const char *addr;
+    size_t addrlen;
+    const char *end;
+    const char *pos;
+    int port;
+    struct sockaddr_storage ss;
+    size_t sslen;
+    int ipv4only;
+    size_t ipv4onlylen;
     struct nn_ctcp *self;
     int reconnect_ivl;
     int reconnect_ivl_max;
@@ -115,8 +125,45 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     self = nn_alloc (sizeof (struct nn_ctcp), "ctcp");
     alloc_assert (self);
 
-    /*  Initialise the structure. */
+    /*  Initalise the epbase. */
     nn_epbase_init (&self->epbase, &nn_ctcp_epbase_vfptr, hint);
+    addr = nn_epbase_getaddr (&self->epbase);
+    addrlen = strlen (addr);
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    pos = strrchr (addr, ':');
+    if (nn_slow (!pos)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    ++pos;
+    rc = nn_port_resolve (pos, end - pos);
+    if (nn_slow (rc < 0)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    port = rc;
+
+    /*  If local address is specified, check whether it is valid. */
+    pos = strchr (addr, ';');
+    if (pos) {
+
+        /*  Check whether IPv6 is to be used. */
+        ipv4onlylen = sizeof (ipv4only);
+        nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+            &ipv4only, &ipv4onlylen);
+        nn_assert (ipv4onlylen == sizeof (ipv4only));
+
+        /*  Resolve the local interface name. */
+        rc = nn_iface_resolve (addr, pos - addr, 1, &ss, &sslen);
+        if (rc < 0) {
+            nn_epbase_term (&self->epbase);
+            return -ENODEV;
+        }
+    }
+
+    /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_ctcp_handler,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CTCP_STATE_IDLE;
@@ -419,6 +466,8 @@ static void nn_ctcp_start_resolving (struct nn_ctcp *self)
     const char *addr;
     const char *begin;
     const char *end;
+    int ipv4only;
+    size_t ipv4onlylen;
 
     /*  Extract the hostname part from address string. */
     addr = nn_epbase_getaddr (&self->epbase);
@@ -430,8 +479,14 @@ static void nn_ctcp_start_resolving (struct nn_ctcp *self)
     end = strrchr (addr, ':');
     nn_assert (end);
 
+    /*  Check whether IPv6 is to be used. */
+    ipv4onlylen = sizeof (ipv4only);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+        &ipv4only, &ipv4onlylen);
+    nn_assert (ipv4onlylen == sizeof (ipv4only));
+
     /*  TODO: Get the actual value of IPV4ONLY option. */
-    nn_dns_start (&self->dns, begin, end - begin, 1, &self->dns_result);
+    nn_dns_start (&self->dns, begin, end - begin, ipv4only, &self->dns_result);
 
     self->state = NN_CTCP_STATE_RESOLVING;
 }
@@ -449,6 +504,8 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     const char *colon;
     const char *semicolon;
     uint16_t port;
+    int ipv4only;
+    size_t ipv4onlylen;
 
     /*  Create IP address from the address string. */
     addr = nn_epbase_getaddr (&self->epbase);
@@ -461,14 +518,20 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     errnum_assert (rc > 0, -rc);
     port = rc;
 
+    /*  Check whether IPv6 is to be used. */
+    ipv4onlylen = sizeof (ipv4only);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+        &ipv4only, &ipv4onlylen);
+    nn_assert (ipv4onlylen == sizeof (ipv4only));
+
     /*  Parse the local address, if any. */
     semicolon = strchr (addr, ';');
     memset (&local, 0, sizeof (local));
-    /*  TODO:  Get the actual value of the IPV4ONLY socket option. */
     if (semicolon) 
-        rc = nn_iface_resolve (addr, semicolon - addr, 1, &local, &locallen);
+        rc = nn_iface_resolve (addr, semicolon - addr, ipv4only,
+            &local, &locallen);
     else
-        rc = nn_iface_resolve ("*", 1, 1, &local, &locallen);
+        rc = nn_iface_resolve ("*", 1, ipv4only, &local, &locallen);
     errnum_assert (rc == 0, -rc);
 
     /*  Combine the remote address and the port. */

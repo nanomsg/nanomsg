@@ -226,6 +226,7 @@ NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
 #define NN_RCVFD 11
 #define NN_DOMAIN 12
 #define NN_PROTOCOL 13
+#define NN_IPV4ONLY 14
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

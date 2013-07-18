@@ -72,6 +72,20 @@ $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 Auto-builds are run every time the project is updated. The results can be found here:
 <p><a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a></p>
 
+<h3>Cross-compilation</h3>
+
+To make cross-compilation easier, nanomsg project contains also an autotools build system. To use it, do the following:
+
+<pre>
+$ git clone git@github.com:250bpm/nanomsg.git
+$ cd nanomsg
+$ autoreconf -if
+$ ./configure
+$ make
+$ make check
+$ sudo make install
+</pre>
+
 <h3>Bug tracker</h3>
 
 <p>Use GitHub bug tracker to report problems with nanomsg:</p>

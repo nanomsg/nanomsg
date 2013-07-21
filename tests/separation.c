@@ -29,8 +29,8 @@
 #include "../src/utils/err.c"
 
 #define SOCKET_ADDRESS_INPROC "inproc://a"
-#define SOCKET_ADDRESS_IPC "ipc://test.ipc"
-#define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5555"
+#define SOCKET_ADDRESS_IPC "ipc://test-separation.ipc"
+#define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5556"
 
 /*  This test checks whether the library prevents interconnecting sockets
     between different non-compatible protocols. */

@@ -32,7 +32,7 @@
 /*  Stress test the TCP transport. */
 
 #define THREAD_COUNT 100
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
+#define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
 
 static void routine (void *arg)
 {

@@ -32,7 +32,7 @@
 /*  Stress test the IPC transport. */
 
 #define THREAD_COUNT 100
-#define SOCKET_ADDRESS "ipc://test.ipc"
+#define SOCKET_ADDRESS "ipc://test-shutdown.ipc"
 
 static void routine (void *arg)
 {

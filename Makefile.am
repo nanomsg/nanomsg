@@ -20,6 +20,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
+DISTCLEANFILES = @DOLT_CLEANFILES@
+
 include_HEADERS = \
     src/nn.h \
     src/protocol.h \
@@ -345,7 +347,7 @@ FUNCTIONS_MAN = \
     $(docbuilddir)/nn_recvmsg.3 \
     $(docbuilddir)/nn_device.3
 
-man_MANS = \
+dist_man_MANS = \
     $(docbuilddir)/nanomsg.7 \
     $(PROTOCOLS_MAN) \
     $(TRANSPORTS_MAN) \
@@ -422,7 +424,19 @@ check_PROGRAMS = \
 TESTS = $(check_PROGRAMS)
 
 
-.version: version.sh .git
-	./$< > $@
+
+dist-hook:
+	chmod u+w $(distdir)/.version
+	$(srcdir)/version.sh > $(distdir)/.version
 
 EXTRA_DIST = .version version.sh
+
+CMAKE_FILES = \
+    ./perf/CMakeLists.txt \
+    ./tests/CMakeLists.txt \
+    ./src/CMakeLists.txt \
+    ./compat/zmq/CMakeLists.txt \
+    ./doc/CMakeLists.txt \
+    ./CMakeLists.txt
+
+EXTRA_DIST += $(CMAKE_FILES)

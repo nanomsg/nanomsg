@@ -293,6 +293,19 @@ pkgconfig_DATA = libnanomsg.pc
 
 libnanomsg_la_LDFLAGS = -version-info @NN_LT_VERSION@
 
+if COMPAT
+lib_LTLIBRARIES += libzmq.la
+
+libzmq_la_SOURCES = \
+    compat/zmq/zmq.h \
+    compat/zmq/zmq_utils.h \
+    compat/zmq/zmq.c
+
+pkgconfig_DATA += compat/zmq/libzmq.pc
+
+libzmq_la_LDFLAGS = -version-info 1:1:0
+endif
+
 bin_PROGRAMS = \
     perf/inproc_lat \
     perf/inproc_thr \

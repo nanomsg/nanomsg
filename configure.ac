@@ -41,6 +41,13 @@ AM_PROG_CC_C_O
 
 AC_CANONICAL_HOST
 
+AC_ARG_ENABLE([compat],
+    AS_HELP_STRING([--enable-compat], [Enable zeromq compatibility library])
+)
+
+AM_CONDITIONAL([COMPAT], [test x"$enable_compat" = "xyes"])
+AM_COND_IF([COMPAT], [AC_CONFIG_FILES([compat/zmq/libzmq.pc])])
+
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],
     [*mingw32*], [AC_DEFINE([NN_HAVE_WINDOWS])],

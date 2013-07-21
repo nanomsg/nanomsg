@@ -306,6 +306,70 @@ pkgconfig_DATA += compat/zmq/libzmq.pc
 libzmq_la_LDFLAGS = -version-info 1:1:0
 endif
 
+if DOC
+
+docsrcdir   = $(srcdir)/doc
+docbuilddir = $(builddir)/doc
+
+PROTOCOLS_MAN = \
+    $(docbuilddir)/nn_pair.7 \
+    $(docbuilddir)/nn_reqrep.7 \
+    $(docbuilddir)/nn_pubsub.7 \
+    $(docbuilddir)/nn_survey.7 \
+    $(docbuilddir)/nn_fanin.7 \
+    $(docbuilddir)/nn_fanout.7 \
+    $(docbuilddir)/nn_bus.7
+
+TRANSPORTS_MAN = \
+    $(docbuilddir)/nn_inproc.7 \
+    $(docbuilddir)/nn_ipc.7 \
+    $(docbuilddir)/nn_tcp.7
+
+FUNCTIONS_MAN = \
+    $(docbuilddir)/nn_errno.3 \
+    $(docbuilddir)/nn_strerror.3 \
+    $(docbuilddir)/nn_symbol.3 \
+    $(docbuilddir)/nn_term.3 \
+    $(docbuilddir)/nn_allocmsg.3 \
+    $(docbuilddir)/nn_freemsg.3 \
+    $(docbuilddir)/nn_socket.3 \
+    $(docbuilddir)/nn_close.3 \
+    $(docbuilddir)/nn_getsockopt.3 \
+    $(docbuilddir)/nn_setsockopt.3 \
+    $(docbuilddir)/nn_bind.3 \
+    $(docbuilddir)/nn_connect.3 \
+    $(docbuilddir)/nn_shutdown.3 \
+    $(docbuilddir)/nn_send.3 \
+    $(docbuilddir)/nn_recv.3 \
+    $(docbuilddir)/nn_sendmsg.3 \
+    $(docbuilddir)/nn_recvmsg.3 \
+    $(docbuilddir)/nn_device.3
+
+man_MANS = \
+    $(docbuilddir)/nanomsg.7 \
+    $(PROTOCOLS_MAN) \
+    $(TRANSPORTS_MAN) \
+    $(FUNCTIONS_MAN) \
+    $(docbuilddir)/nn_cmsg.3 \
+    $(docbuilddir)/nn_zmq.7
+
+asciidocconf = -d manpage -b docbook -f $(docsrcdir)/asciidoc.conf
+
+SUFFIXES = .7.xml .3.xml .3 .7
+
+.txt.xml:
+	$(AM_V_GEN)$(ASCIIDOC) $(asciidocconf) -o $@ $<
+
+.7.xml.7:
+	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
+
+.3.xml.3:
+	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
+
+CLEANFILES = $(man_MANS)
+
+endif
+
 bin_PROGRAMS = \
     perf/inproc_lat \
     perf/inproc_thr \

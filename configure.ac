@@ -48,6 +48,17 @@ AC_ARG_ENABLE([compat],
 AM_CONDITIONAL([COMPAT], [test x"$enable_compat" = "xyes"])
 AM_COND_IF([COMPAT], [AC_CONFIG_FILES([compat/zmq/libzmq.pc])])
 
+AC_ARG_ENABLE([doc],
+    AS_HELP_STRING([--enable-doc], [Build documentation])
+)
+
+AS_IF([test x"$enable_doc" != "xno"], [
+    AC_CHECK_PROGS(ASCIIDOC, [asciidoc])
+    AC_CHECK_PROGS(XMLTO, [xmlto])
+    AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
+    AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
+])
+
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],
     [*mingw32*], [AC_DEFINE([NN_HAVE_WINDOWS])],

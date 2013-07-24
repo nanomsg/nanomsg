@@ -101,7 +101,7 @@ static int nn_inproc_bind (const char *addr, void *hint,
     /*  TODO:  This is an O(n) algorithm! */
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item);
+        binproc = nn_cont (it, struct nn_binproc, item.item);
         if (strncmp (addr, nn_binproc_getaddr (binproc),
               NN_SOCKADDR_MAX) == 0) {
             nn_mutex_unlock (&self.sync);
@@ -111,28 +111,30 @@ static int nn_inproc_bind (const char *addr, void *hint,
 
     /*  Insert the entry into the endpoint repository. */
     binproc = nn_binproc_create (hint);
-    nn_list_insert (&self.bound, &binproc->item, nn_list_end (&self.bound));
+    nn_list_insert (&self.bound, &binproc->item.item,
+        nn_list_end (&self.bound));
 
     /*  During this process new pipes may be created. */
     for (it = nn_list_begin (&self.connected);
           it != nn_list_end (&self.connected);
           it = nn_list_next (&self.connected, it)) {
-        cinproc = nn_cont (it, struct nn_cinproc, item);
+        cinproc = nn_cont (it, struct nn_cinproc, item.item);
         if (strncmp (addr, nn_cinproc_getaddr (cinproc),
               NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&binproc->epbase, cinproc->protocol))
+            if (!nn_epbase_ispeer (&binproc->item.epbase,
+                  cinproc->item.protocol))
                 continue;
 
-            nn_assert (cinproc->connects == 0);
-            cinproc->connects = 1;
+            nn_assert (cinproc->item.connects == 0);
+            cinproc->item.connects = 1;
             nn_binproc_connect (binproc, cinproc);
         }
     }
 
     nn_assert (epbase);
-    *epbase = &binproc->epbase;
+    *epbase = &binproc->item.epbase;
     nn_mutex_unlock (&self.sync);
 
     return 0;
@@ -149,29 +151,30 @@ static int nn_inproc_connect (const char *addr, void *hint,
 
     /*  Insert the entry into the endpoint repository. */
     cinproc = nn_cinproc_create (hint);
-    nn_list_insert (&self.connected, &cinproc->item,
+    nn_list_insert (&self.connected, &cinproc->item.item,
         nn_list_end (&self.connected));
 
     /*  During this process a pipe may be created. */
     for (it = nn_list_begin (&self.bound);
           it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item);
+        binproc = nn_cont (it, struct nn_binproc, item.item);
         if (strncmp (addr, nn_binproc_getaddr (binproc),
               NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&cinproc->epbase, binproc->protocol))
+            if (!nn_epbase_ispeer (&cinproc->item.epbase,
+                  binproc->item.protocol))
                 break;
 
-            ++binproc->connects;
+            ++binproc->item.connects;
             nn_cinproc_connect (cinproc, binproc);
             break;
         }
     }
 
     nn_assert (epbase);
-    *epbase = &cinproc->epbase;
+    *epbase = &cinproc->item.epbase;
     nn_mutex_unlock (&self.sync);
 
     return 0;
@@ -180,14 +183,14 @@ static int nn_inproc_connect (const char *addr, void *hint,
 void nn_inproc_disconnect (struct nn_cinproc *cinproc)
 {
     nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.connected, &cinproc->item);
+    nn_list_erase (&self.connected, &cinproc->item.item);
     nn_mutex_unlock (&self.sync);
 }
 
 void nn_inproc_unbind (struct nn_binproc *binproc)
 {
     nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.bound, &binproc->item);
+    nn_list_erase (&self.bound, &binproc->item.item);
     nn_mutex_unlock (&self.sync);
 }
 

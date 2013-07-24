@@ -59,18 +59,18 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     self = nn_alloc (sizeof (struct nn_cinproc), "cinproc");
     alloc_assert (self);
 
-    nn_epbase_init (&self->epbase, &nn_cinproc_vfptr, hint);
+    nn_epbase_init (&self->item.epbase, &nn_cinproc_vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
-        nn_epbase_getctx (&self->epbase));
+        nn_epbase_getctx (&self->item.epbase));
     self->state = NN_CINPROC_STATE_IDLE;
     nn_sinproc_init (&self->sinproc, NN_CINPROC_SRC_SINPROC,
-        &self->epbase, &self->fsm);
-    nn_list_item_init (&self->item);
-    sz = sizeof (self->protocol);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
-        &self->protocol, &sz);
-    nn_assert (sz == sizeof (self->protocol));
-    self->connects = 0;
+        &self->item.epbase, &self->fsm);
+    nn_list_item_init (&self->item.item);
+    sz = sizeof (self->item.protocol);
+    nn_epbase_getopt (&self->item.epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+        &self->item.protocol, &sz);
+    nn_assert (sz == sizeof (self->item.protocol));
+    self->item.connects = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -82,7 +82,7 @@ static void nn_cinproc_stop (struct nn_epbase *self)
 {
     struct nn_cinproc *cinproc;
 
-    cinproc = nn_cont (self, struct nn_cinproc, epbase);
+    cinproc = nn_cont (self, struct nn_cinproc, item.epbase);
 
     nn_fsm_stop (&cinproc->fsm);
 }
@@ -91,11 +91,11 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
 {
     struct nn_cinproc *cinproc;
 
-    cinproc = nn_cont (self, struct nn_cinproc, epbase);
+    cinproc = nn_cont (self, struct nn_cinproc, item.epbase);
 
-    nn_list_item_term (&cinproc->item);
+    nn_list_item_term (&cinproc->item.item);
     nn_sinproc_term (&cinproc->sinproc);
-    nn_epbase_term (&cinproc->epbase);
+    nn_epbase_term (&cinproc->item.epbase);
     nn_fsm_term (&cinproc->fsm);
 
     nn_free (cinproc);
@@ -103,7 +103,7 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
 
 const char *nn_cinproc_getaddr (struct nn_cinproc *self)
 {
-    return nn_epbase_getaddr (&self->epbase);
+    return nn_epbase_getaddr (&self->item.epbase);
 }
 
 void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
@@ -139,7 +139,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             return;
         cinproc->state = NN_CINPROC_STATE_IDLE;
         nn_fsm_stopped_noevent (&cinproc->fsm);
-        nn_epbase_stopped (&cinproc->epbase);
+        nn_epbase_stopped (&cinproc->item.epbase);
         return;
     }
 

@@ -23,6 +23,8 @@
 #ifndef NN_BINPROC_INCLUDED
 #define NN_BINPROC_INCLUDED
 
+#include "ins.h"
+
 #include "../../transport.h"
 
 #include "../../aio/fsm.h"
@@ -37,25 +39,11 @@ struct nn_binproc {
     struct nn_fsm fsm;
     int state;
 
-    /*  This object is an endpoint. */
-    struct nn_epbase epbase;
+    /*  This object is registered with nn_ins. */
+    struct nn_ins_item item;
 
     /*  The list of inproc sessions owned by this object. */
     struct nn_list sinprocs;
-
-    /*  This object is an element in the list of all bound endpoints managed
-        by nn_inproc object. */
-    struct nn_list_item item;
-
-    /*  Protocol as specified in the original nn_socket() call. Note that this
-        member is sychronised using inproc obejct's global critical section. */
-    int protocol;
-
-    /*  Number of connects underway. We cannot deallocate this object until
-        the value drops to zero. Note that this member is sychronised using
-        inproc obejct's global critical section. */
-    int connects;
-
 };
 
 struct nn_binproc *nn_binproc_create (void *hint);

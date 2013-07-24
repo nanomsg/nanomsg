@@ -59,18 +59,12 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     self = nn_alloc (sizeof (struct nn_cinproc), "cinproc");
     alloc_assert (self);
 
-    nn_epbase_init (&self->item.epbase, &nn_cinproc_vfptr, hint);
+    nn_ins_item_init (&self->item, &nn_cinproc_vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
         nn_epbase_getctx (&self->item.epbase));
     self->state = NN_CINPROC_STATE_IDLE;
     nn_sinproc_init (&self->sinproc, NN_CINPROC_SRC_SINPROC,
         &self->item.epbase, &self->fsm);
-    nn_list_item_init (&self->item.item);
-    sz = sizeof (self->item.protocol);
-    nn_epbase_getopt (&self->item.epbase, NN_SOL_SOCKET, NN_PROTOCOL,
-        &self->item.protocol, &sz);
-    nn_assert (sz == sizeof (self->item.protocol));
-    self->item.connects = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -93,10 +87,9 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
 
     cinproc = nn_cont (self, struct nn_cinproc, item.epbase);
 
-    nn_list_item_term (&cinproc->item.item);
     nn_sinproc_term (&cinproc->sinproc);
-    nn_epbase_term (&cinproc->item.epbase);
     nn_fsm_term (&cinproc->fsm);
+    nn_ins_item_term (&cinproc->item);
 
     nn_free (cinproc);
 }

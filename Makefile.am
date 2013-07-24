@@ -246,6 +246,8 @@ TRANSPORTS_INPROC = \
     src/transports/inproc/cinproc.c \
     src/transports/inproc/inproc.h \
     src/transports/inproc/inproc.c \
+    src/transports/inproc/ins.h \
+    src/transports/inproc/ins.c \
     src/transports/inproc/msgqueue.h \
     src/transports/inproc/msgqueue.c \
     src/transports/inproc/sinproc.h \

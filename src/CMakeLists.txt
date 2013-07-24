@@ -220,6 +220,8 @@ set (NN_SOURCES
     transports/inproc/cinproc.c
     transports/inproc/inproc.h
     transports/inproc/inproc.c
+    transports/inproc/ins.h
+    transports/inproc/ins.c
     transports/inproc/msgqueue.h
     transports/inproc/msgqueue.c
     transports/inproc/sinproc.h

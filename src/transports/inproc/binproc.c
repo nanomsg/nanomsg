@@ -56,17 +56,11 @@ struct nn_binproc *nn_binproc_create (void *hint)
     self = nn_alloc (sizeof (struct nn_binproc), "binproc");
     alloc_assert (self);
 
-    nn_epbase_init (&self->item.epbase, &nn_binproc_vfptr, hint);
+    nn_ins_item_init (&self->item, &nn_binproc_vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_binproc_handler,
         nn_epbase_getctx (&self->item.epbase));
     self->state = NN_BINPROC_STATE_IDLE;
     nn_list_init (&self->sinprocs);
-    nn_list_item_init (&self->item.item);
-    sz = sizeof (self->item.protocol);
-    nn_epbase_getopt (&self->item.epbase, NN_SOL_SOCKET, NN_PROTOCOL,
-        &self->item.protocol, &sz);
-    nn_assert (sz == sizeof (self->item.protocol));
-    self->item.connects = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -89,10 +83,9 @@ static void nn_binproc_destroy (struct nn_epbase *self)
 
     binproc = nn_cont (self, struct nn_binproc, item.epbase);
 
-    nn_list_item_term (&binproc->item.item);
     nn_list_term (&binproc->sinprocs);
     nn_fsm_term (&binproc->fsm);
-    nn_epbase_term (&binproc->item.epbase);
+    nn_ins_item_term (&binproc->item);
 
     nn_free (binproc);
 }

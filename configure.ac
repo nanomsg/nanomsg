@@ -22,7 +22,7 @@ AC_PREREQ([2.53])
 
 AC_INIT([nanomsg], [m4_esyscmd([./version.sh])])
 AC_CONFIG_SRCDIR([src/nn.h])
-AM_INIT_AUTOMAKE([1.6 foreign subdir-objects])
+AM_INIT_AUTOMAKE([1.6 foreign subdir-objects dist-xz])
 m4_ifdef([AM_SILENT_RULES], [
     AM_SILENT_RULES([yes])
 ])
@@ -40,6 +40,24 @@ AC_PROG_CC_C99
 AM_PROG_CC_C_O
 
 AC_CANONICAL_HOST
+
+AC_ARG_ENABLE([compat],
+    AS_HELP_STRING([--enable-compat], [Enable zeromq compatibility library])
+)
+
+AM_CONDITIONAL([COMPAT], [test x"$enable_compat" = "xyes"])
+AM_COND_IF([COMPAT], [AC_CONFIG_FILES([compat/zmq/libzmq.pc])])
+
+AC_ARG_ENABLE([doc],
+    AS_HELP_STRING([--enable-doc], [Build documentation])
+)
+
+AS_IF([test x"$enable_doc" != "xno"], [
+    AC_CHECK_PROGS(ASCIIDOC, [asciidoc])
+    AC_CHECK_PROGS(XMLTO, [xmlto])
+    AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
+    AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
+])
 
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],

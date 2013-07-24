@@ -27,6 +27,8 @@
 
 #include "../../utils/list.h"
 
+/*  Inproc naming system. A global repository of inproc endpoints. */
+
 struct nn_ins_item {
 
     /*  Every ins_item is an endpoint. */
@@ -47,6 +49,14 @@ struct nn_ins_item {
 void nn_ins_item_init (struct nn_ins_item *self,
     const struct nn_epbase_vfptr *vfptr, void *hint);
 void nn_ins_item_term (struct nn_ins_item *self);
+
+void nn_ins_init (void);
+void nn_ins_term (void);
+
+int nn_ins_bind (const char *addr, void *hint, struct nn_epbase **epbase);
+int nn_ins_connect (const char *addr, void *hint, struct nn_epbase **epbase);
+void nn_ins_disconnect (struct nn_ins_item *item);
+void nn_ins_unbind (struct nn_ins_item *item);
 
 #endif
 

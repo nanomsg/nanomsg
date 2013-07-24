@@ -23,7 +23,7 @@
 #include "binproc.h"
 #include "sinproc.h"
 #include "cinproc.h"
-#include "inproc.h"
+#include "ins.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -127,7 +127,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
-        nn_inproc_unbind (binproc);
+        nn_ins_unbind (&binproc->item);
 
         /*  Stop the existing connections. */
         for (it = nn_list_begin (&binproc->sinprocs);

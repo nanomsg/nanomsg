@@ -21,17 +21,11 @@
 */
 
 #include "inproc.h"
+#include "ins.h"
 #include "binproc.h"
 #include "cinproc.h"
 
 #include "../../inproc.h"
-
-#include "../../utils/mutex.h"
-#include "../../utils/alloc.h"
-#include "../../utils/list.h"
-#include "../../utils/cont.h"
-#include "../../utils/fast.h"
-#include "../../utils/err.h"
 
 #include <string.h>
 
@@ -56,141 +50,25 @@ static struct nn_transport nn_inproc_vfptr = {
 
 struct nn_transport *nn_inproc = &nn_inproc_vfptr;
 
-struct nn_inproc {
-
-    /*  Synchronises access to this object. Note that 'connected' members in
-        sinproc object are synchronised by this mutex as well. */
-    struct nn_mutex sync;
-
-    /*  List of all bound inproc endpoints. */
-    /*  TODO: O(n) lookup, shouldn't we do better? Hash? */
-    struct nn_list bound;
-
-    /*  List of all connected inproc endpoints. */
-    /*  TODO: O(n) lookup, shouldn't we do better? Hash? */
-    struct nn_list connected;
-};
-
-/*  Global instance of the nn_inproc object. It contains the lists of all
-    inproc endpoints in the current process. */
-static struct nn_inproc self;
-
 static void nn_inproc_init (void)
 {
-    nn_mutex_init (&self.sync);
-    nn_list_init (&self.bound);
-    nn_list_init (&self.connected);
+    nn_ins_init ();
 }
+
 static void nn_inproc_term (void)
 {
-    nn_list_term (&self.connected);
-    nn_list_term (&self.bound);
-    nn_mutex_term (&self.sync);
+    nn_ins_term ();
 }
 
 static int nn_inproc_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    struct nn_list_item *it;
-    struct nn_binproc *binproc;
-    struct nn_cinproc *cinproc;
-
-    nn_mutex_lock (&self.sync);
-
-    /*  Check whether the endpoint isn't already bound. */
-    /*  TODO:  This is an O(n) algorithm! */
-    for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
-          it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item.item);
-        if (strncmp (addr, nn_binproc_getaddr (binproc),
-              NN_SOCKADDR_MAX) == 0) {
-            nn_mutex_unlock (&self.sync);
-            return -EADDRINUSE;
-        }
-    }
-
-    /*  Insert the entry into the endpoint repository. */
-    binproc = nn_binproc_create (hint);
-    nn_list_insert (&self.bound, &binproc->item.item,
-        nn_list_end (&self.bound));
-
-    /*  During this process new pipes may be created. */
-    for (it = nn_list_begin (&self.connected);
-          it != nn_list_end (&self.connected);
-          it = nn_list_next (&self.connected, it)) {
-        cinproc = nn_cont (it, struct nn_cinproc, item.item);
-        if (strncmp (addr, nn_cinproc_getaddr (cinproc),
-              NN_SOCKADDR_MAX) == 0) {
-
-            /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&binproc->item.epbase,
-                  cinproc->item.protocol))
-                continue;
-
-            nn_assert (cinproc->item.connects == 0);
-            cinproc->item.connects = 1;
-            nn_binproc_connect (binproc, cinproc);
-        }
-    }
-
-    nn_assert (epbase);
-    *epbase = &binproc->item.epbase;
-    nn_mutex_unlock (&self.sync);
-
-    return 0;
+    return nn_ins_bind (addr, hint, epbase);
 }
 
 static int nn_inproc_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    struct nn_list_item *it;
-    struct nn_cinproc *cinproc;
-    struct nn_binproc *binproc;
-
-    nn_mutex_lock (&self.sync);
-
-    /*  Insert the entry into the endpoint repository. */
-    cinproc = nn_cinproc_create (hint);
-    nn_list_insert (&self.connected, &cinproc->item.item,
-        nn_list_end (&self.connected));
-
-    /*  During this process a pipe may be created. */
-    for (it = nn_list_begin (&self.bound);
-          it != nn_list_end (&self.bound);
-          it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item.item);
-        if (strncmp (addr, nn_binproc_getaddr (binproc),
-              NN_SOCKADDR_MAX) == 0) {
-
-            /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&cinproc->item.epbase,
-                  binproc->item.protocol))
-                break;
-
-            ++binproc->item.connects;
-            nn_cinproc_connect (cinproc, binproc);
-            break;
-        }
-    }
-
-    nn_assert (epbase);
-    *epbase = &cinproc->item.epbase;
-    nn_mutex_unlock (&self.sync);
-
-    return 0;
-}
-
-void nn_inproc_disconnect (struct nn_cinproc *cinproc)
-{
-    nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.connected, &cinproc->item.item);
-    nn_mutex_unlock (&self.sync);
-}
-
-void nn_inproc_unbind (struct nn_binproc *binproc)
-{
-    nn_mutex_lock (&self.sync);
-    nn_list_erase (&self.bound, &binproc->item.item);
-    nn_mutex_unlock (&self.sync);
+    return nn_ins_connect (addr, hint, epbase);
 }
 

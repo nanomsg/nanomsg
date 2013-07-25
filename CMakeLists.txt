@@ -215,10 +215,6 @@ if (LATENCY_MONITOR)
     add_definitions(-DNN_LATENCY_MONITOR=1000)
 endif ()
 
-# Be careful when turning this option on. It can mess with the existing ZeroMQ
-# installation on the box.
-option (ZMQ_COMPAT "Build ZMQ compatibility library" OFF)
-
 #  Version.
 
 file (READ "${PROJECT_SOURCE_DIR}/src/nn.h" NN_H_DATA)
@@ -237,9 +233,6 @@ add_subdirectory (src)
 add_subdirectory (tests)
 add_subdirectory (perf)
 add_subdirectory (doc)
-if (ZMQ_COMPAT)
-    add_subdirectory (compat/zmq)
-endif ()
 
 #  Installation.
 

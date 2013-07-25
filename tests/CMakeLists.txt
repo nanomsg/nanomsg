@@ -65,14 +65,6 @@ add_libnanomsg_test (hash)
 add_libnanomsg_test (symbol)
 add_libnanomsg_test (separation)
 
-#  If ZMQ compatibility is required, test it.
-if (ZMQ_COMPAT)
-list (APPEND all_tests zmq_compat)
-add_executable (zmq_compat zmq_compat.c)
-target_link_libraries (zmq_compat zmq)
-add_test (zmq_compat ${CMAKE_BINARY_DIR}/zmq_compat)
-endif ()
-
 #  The builtin "test" target cannot be modified to build the library and tests
 #  or to show output when a test failes.
 add_custom_target (check

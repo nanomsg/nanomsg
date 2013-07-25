@@ -297,19 +297,6 @@ pkgconfig_DATA = libnanomsg.pc
 
 libnanomsg_la_LDFLAGS = -version-info @NN_LT_VERSION@
 
-if COMPAT
-lib_LTLIBRARIES += libzmq.la
-
-libzmq_la_SOURCES = \
-    compat/zmq/zmq.h \
-    compat/zmq/zmq_utils.h \
-    compat/zmq/zmq.c
-
-pkgconfig_DATA += compat/zmq/libzmq.pc
-
-libzmq_la_LDFLAGS = -version-info 1:1:0
-endif
-
 if DOC
 
 docsrcdir   = $(srcdir)/doc
@@ -354,8 +341,7 @@ dist_man_MANS = \
     $(PROTOCOLS_MAN) \
     $(TRANSPORTS_MAN) \
     $(FUNCTIONS_MAN) \
-    $(docbuilddir)/nn_cmsg.3 \
-    $(docbuilddir)/nn_zmq.7
+    $(docbuilddir)/nn_cmsg.3
 
 asciidocconf = -d manpage -b docbook -f $(docsrcdir)/asciidoc.conf
 
@@ -437,7 +423,6 @@ CMAKE_FILES = \
     ./perf/CMakeLists.txt \
     ./tests/CMakeLists.txt \
     ./src/CMakeLists.txt \
-    ./compat/zmq/CMakeLists.txt \
     ./doc/CMakeLists.txt \
     ./CMakeLists.txt
 

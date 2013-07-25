@@ -66,9 +66,6 @@ if (NOT WIN32)
         #  Macros.
         nn_cmsg.3
 
-        #  Compatibility.
-        nn_zmq.7
-
         )
 
     #  Build the genconf program.

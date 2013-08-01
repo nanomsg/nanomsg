@@ -46,9 +46,6 @@ struct nn_binproc {
     struct nn_list sinprocs;
 };
 
-struct nn_binproc *nn_binproc_create (void *hint);
-
-const char *nn_binproc_getaddr (struct nn_binproc *self);
-void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer);
+int nn_binproc_create (void *hint, struct nn_epbase **epbase);
 
 #endif

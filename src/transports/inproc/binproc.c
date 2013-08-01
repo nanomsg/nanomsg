@@ -47,9 +47,13 @@ static const struct nn_epbase_vfptr nn_binproc_vfptr = {
 /*  Private functions. */
 static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_binproc_connect (struct nn_ins_item *self,
+    struct nn_ins_item *peer);
 
-struct nn_binproc *nn_binproc_create (void *hint)
+
+int nn_binproc_create (void *hint, struct nn_epbase **epbase)
 {
+    int rc;
     struct nn_binproc *self;
     size_t sz;
 
@@ -65,7 +69,22 @@ struct nn_binproc *nn_binproc_create (void *hint)
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
-    return self;
+    /*  Register the inproc endpoint into a global repository. */
+    rc = nn_ins_bind (&self->item, nn_binproc_connect);
+    if (nn_slow (rc < 0)) {
+        nn_list_term (&self->sinprocs);
+
+        /*  TODO: Now, this is ugly! We are getting the state machine into
+            the idle state manually. How should it be done correctly? */
+        self->fsm.state = 1;
+        nn_fsm_term (&self->fsm);
+
+        nn_ins_item_term (&self->item);
+        return rc;
+    }
+
+    *epbase = &self->item.epbase;
+    return 0;
 }
 
 static void nn_binproc_stop (struct nn_epbase *self)
@@ -90,24 +109,25 @@ static void nn_binproc_destroy (struct nn_epbase *self)
     nn_free (binproc);
 }
 
-const char *nn_binproc_getaddr (struct nn_binproc *self)
+static void nn_binproc_connect (struct nn_ins_item *self,
+    struct nn_ins_item *peer)
 {
-    return nn_epbase_getaddr (&self->item.epbase);
-}
-
-void nn_binproc_connect (struct nn_binproc *self, struct nn_cinproc *peer)
-{
+    struct nn_binproc *binproc;
+    struct nn_cinproc *cinproc;
     struct nn_sinproc *sinproc;
 
-    nn_assert (self->state == NN_BINPROC_STATE_ACTIVE);
+    binproc = nn_cont (self, struct nn_binproc, item);
+    cinproc = nn_cont (peer, struct nn_cinproc, item);
+
+    nn_assert (binproc->state == NN_BINPROC_STATE_ACTIVE);
 
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
     alloc_assert (sinproc);
     nn_sinproc_init (sinproc, NN_BINPROC_SRC_SINPROC,
-        &self->item.epbase, &self->fsm);
-    nn_list_insert (&self->sinprocs, &sinproc->item,
-        nn_list_end (&self->sinprocs));
-    nn_sinproc_connect (sinproc, &peer->fsm);
+        &binproc->item.epbase, &binproc->fsm);
+    nn_list_insert (&binproc->sinprocs, &sinproc->item,
+        nn_list_end (&binproc->sinprocs));
+    nn_sinproc_connect (sinproc, &cinproc->fsm);
 }
 
 static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
@@ -115,8 +135,8 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_binproc *binproc;
     struct nn_list_item *it;
-    struct nn_sinproc *sinproc;
     struct nn_sinproc *peer;
+    struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
 

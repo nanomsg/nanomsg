@@ -30,8 +30,6 @@
 
 #include "../../aio/fsm.h"
 
-struct nn_binproc;
-
 struct nn_cinproc {
 
     /*  The state machine. */
@@ -45,10 +43,7 @@ struct nn_cinproc {
     struct nn_sinproc sinproc;
 };
 
-struct nn_cinproc *nn_cinproc_create (void *hint);
-
-const char *nn_cinproc_getaddr (struct nn_cinproc *self);
-void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer);
+int nn_cinproc_create (void *hint, struct nn_epbase **epbase);
 
 #endif
 

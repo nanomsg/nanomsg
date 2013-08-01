@@ -53,8 +53,10 @@ void nn_ins_item_term (struct nn_ins_item *self);
 void nn_ins_init (void);
 void nn_ins_term (void);
 
-int nn_ins_bind (const char *addr, void *hint, struct nn_epbase **epbase);
-int nn_ins_connect (const char *addr, void *hint, struct nn_epbase **epbase);
+typedef void (*nn_ins_fn) (struct nn_ins_item *self, struct nn_ins_item *peer);
+
+int nn_ins_bind (struct nn_ins_item *item, nn_ins_fn fn);
+void nn_ins_connect (struct nn_ins_item *item, nn_ins_fn fn);
 void nn_ins_disconnect (struct nn_ins_item *item);
 void nn_ins_unbind (struct nn_ins_item *item);
 

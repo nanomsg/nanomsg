@@ -50,8 +50,10 @@ static const struct nn_epbase_vfptr nn_cinproc_vfptr = {
 /*  Private functions. */
 static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_cinproc_connect (struct nn_ins_item *self,
+    struct nn_ins_item *peer);
 
-struct nn_cinproc *nn_cinproc_create (void *hint)
+int nn_cinproc_create (void *hint, struct nn_epbase **epbase)
 {
     struct nn_cinproc *self;
     size_t sz;
@@ -69,7 +71,11 @@ struct nn_cinproc *nn_cinproc_create (void *hint)
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
-    return self;
+    /*  Register the inproc endpoint into a global repository. */
+    nn_ins_connect (&self->item, nn_cinproc_connect);
+
+    *epbase = &self->item.epbase;
+    return 0;
 }
 
 static void nn_cinproc_stop (struct nn_epbase *self)
@@ -94,16 +100,18 @@ static void nn_cinproc_destroy (struct nn_epbase *self)
     nn_free (cinproc);
 }
 
-const char *nn_cinproc_getaddr (struct nn_cinproc *self)
+static void nn_cinproc_connect (struct nn_ins_item *self,
+    struct nn_ins_item *peer)
 {
-    return nn_epbase_getaddr (&self->item.epbase);
-}
+    struct nn_cinproc *cinproc;
+    struct nn_binproc *binproc;
 
-void nn_cinproc_connect (struct nn_cinproc *self, struct nn_binproc *peer)
-{
-    nn_assert (self->state == NN_CINPROC_STATE_DISCONNECTED);
-    nn_sinproc_connect (&self->sinproc, &peer->fsm);
-    nn_fsm_action (&self->fsm, NN_CINPROC_ACTION_CONNECT);
+    cinproc = nn_cont (self, struct nn_cinproc, item);
+    binproc = nn_cont (peer, struct nn_binproc, item);
+
+    nn_assert (cinproc->state == NN_CINPROC_STATE_DISCONNECTED);
+    nn_sinproc_connect (&cinproc->sinproc, &binproc->fsm);
+    nn_fsm_action (&cinproc->fsm, NN_CINPROC_ACTION_CONNECT);
 }
 
 static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,

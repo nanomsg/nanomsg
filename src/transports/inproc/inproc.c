@@ -63,12 +63,12 @@ static void nn_inproc_term (void)
 static int nn_inproc_bind (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    return nn_ins_bind (addr, hint, epbase);
+    return nn_binproc_create (hint, epbase);
 }
 
 static int nn_inproc_connect (const char *addr, void *hint,
     struct nn_epbase **epbase)
 {
-    return nn_ins_connect (addr, hint, epbase);
+    return nn_cinproc_create (hint, epbase);
 }
 

@@ -22,9 +22,6 @@
 
 #include "ins.h"
 
-#include "binproc.h"
-#include "cinproc.h"
-
 #include "../../utils/mutex.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
@@ -84,11 +81,11 @@ void nn_ins_term (void)
     nn_mutex_term (&self.sync);
 }
 
-int nn_ins_bind (const char *addr, void *hint, struct nn_epbase **epbase)
+int nn_ins_bind (struct nn_ins_item *item, nn_ins_fn fn)
 {
     struct nn_list_item *it;
-    struct nn_binproc *binproc;
-    struct nn_cinproc *cinproc;
+    struct nn_ins_item *bitem;
+    struct nn_ins_item *citem;
 
     nn_mutex_lock (&self.sync);
 
@@ -96,82 +93,73 @@ int nn_ins_bind (const char *addr, void *hint, struct nn_epbase **epbase)
     /*  TODO:  This is an O(n) algorithm! */
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item.item);
-        if (strncmp (addr, nn_binproc_getaddr (binproc),
-              NN_SOCKADDR_MAX) == 0) {
+        bitem = nn_cont (it, struct nn_ins_item, item);
+        if (strncmp (nn_epbase_getaddr (&item->epbase),
+              nn_epbase_getaddr (&bitem->epbase), NN_SOCKADDR_MAX) == 0) {
             nn_mutex_unlock (&self.sync);
             return -EADDRINUSE;
         }
     }
 
     /*  Insert the entry into the endpoint repository. */
-    binproc = nn_binproc_create (hint);
-    nn_list_insert (&self.bound, &binproc->item.item,
+    nn_list_insert (&self.bound, &item->item,
         nn_list_end (&self.bound));
 
     /*  During this process new pipes may be created. */
     for (it = nn_list_begin (&self.connected);
           it != nn_list_end (&self.connected);
           it = nn_list_next (&self.connected, it)) {
-        cinproc = nn_cont (it, struct nn_cinproc, item.item);
-        if (strncmp (addr, nn_cinproc_getaddr (cinproc),
-              NN_SOCKADDR_MAX) == 0) {
+        citem = nn_cont (it, struct nn_ins_item, item);
+        if (strncmp (nn_epbase_getaddr (&item->epbase),
+              nn_epbase_getaddr (&citem->epbase), NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&binproc->item.epbase,
-                  cinproc->item.protocol))
+            if (!nn_epbase_ispeer (&item->epbase, citem->protocol))
                 continue;
 
-            nn_assert (cinproc->item.connects == 0);
-            cinproc->item.connects = 1;
-            nn_binproc_connect (binproc, cinproc);
+            nn_assert (citem->connects == 0);
+            citem->connects = 1;
+            fn (item, citem);
         }
     }
 
-    nn_assert (epbase);
-    *epbase = &binproc->item.epbase;
     nn_mutex_unlock (&self.sync);
 
     return 0;
 }
 
-int nn_ins_connect (const char *addr, void *hint, struct nn_epbase **epbase)
+void nn_ins_connect (struct nn_ins_item *item, nn_ins_fn fn)
 {
     struct nn_list_item *it;
-    struct nn_cinproc *cinproc;
-    struct nn_binproc *binproc;
+    struct nn_ins_item *bitem;
 
     nn_mutex_lock (&self.sync);
 
     /*  Insert the entry into the endpoint repository. */
-    cinproc = nn_cinproc_create (hint);
-    nn_list_insert (&self.connected, &cinproc->item.item,
+    nn_list_insert (&self.connected, &item->item,
         nn_list_end (&self.connected));
 
     /*  During this process a pipe may be created. */
     for (it = nn_list_begin (&self.bound);
           it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
-        binproc = nn_cont (it, struct nn_binproc, item.item);
-        if (strncmp (addr, nn_binproc_getaddr (binproc),
-              NN_SOCKADDR_MAX) == 0) {
+        bitem = nn_cont (it, struct nn_ins_item, item);
+        if (strncmp (nn_epbase_getaddr (&item->epbase),
+              nn_epbase_getaddr (&bitem->epbase), NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&cinproc->item.epbase,
-                  binproc->item.protocol))
+            if (!nn_epbase_ispeer (&item->epbase, bitem->protocol))
                 break;
 
-            ++binproc->item.connects;
-            nn_cinproc_connect (cinproc, binproc);
+            /*  Call back to cinproc to create actual connection. */
+            ++bitem->connects;
+            fn (item, bitem);
+
             break;
         }
     }
 
-    nn_assert (epbase);
-    *epbase = &cinproc->item.epbase;
     nn_mutex_unlock (&self.sync);
-
-    return 0;
 }
 
 void nn_ins_disconnect (struct nn_ins_item *item)

@@ -80,6 +80,7 @@ int nn_binproc_create (void *hint, struct nn_epbase **epbase)
         nn_fsm_term (&self->fsm);
 
         nn_ins_item_term (&self->item);
+        nn_free (self);
         return rc;
     }
 

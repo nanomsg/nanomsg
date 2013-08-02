@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 Pivotal Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -205,11 +206,12 @@ struct nn_transport {
 
     /*  Each of these functions creates an endpoint and returns the newly
         created endpoint in 'epbase' parameter. 'hint' is in opaque pointer
-        to be passed to nn_epbase_init().  These functions are guarded by
-        a socket-wide critical section. Two of these function will never be
+        to be passed to nn_epbase_init(). The epbase object can then be used
+        to retrieve the address to bind/connect to. These functions are guarded
+        by a socket-wide critical section. Two of these function will never be
         invoked in parallel on the same socket. */
-    int (*bind) (const char *addr, void *hint, struct nn_epbase **epbase);
-    int (*connect) (const char *addr, void *hint, struct nn_epbase **epbase);
+    int (*bind) (void *hint, struct nn_epbase **epbase);
+    int (*connect) (void *hint, struct nn_epbase **epbase);
 
     /*  Create an object to hold transport-specific socket options.
         Set this member to NULL in case there are no transport-specific

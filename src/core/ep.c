@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2013 Pivotal Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -67,9 +68,9 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
 
     /*  Create transport-specific part of the endpoint. */
     if (bind)
-        rc = transport->bind (addr, (void*) self, &self->epbase);
+        rc = transport->bind ((void*) self, &self->epbase);
     else
-        rc = transport->connect (addr, (void*) self, &self->epbase);
+        rc = transport->connect ((void*) self, &self->epbase);
 
     /*  Endpoint creation failed. */
     if (rc < 0) {

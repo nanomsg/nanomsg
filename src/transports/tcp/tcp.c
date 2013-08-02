@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.
+    Copyright (c) 2013 Pivotal Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -62,10 +63,8 @@ static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
 };
 
 /*  nn_transport interface. */
-static int nn_tcp_bind (const char *addr, void *hint,
-    struct nn_epbase **epbase);
-static int nn_tcp_connect (const char *addr, void *hint,
-    struct nn_epbase **epbase);
+static int nn_tcp_bind (void *hint, struct nn_epbase **epbase);
+static int nn_tcp_connect (void *hint, struct nn_epbase **epbase);
 static struct nn_optset *nn_tcp_optset (void);
 
 static struct nn_transport nn_tcp_vfptr = {
@@ -81,14 +80,12 @@ static struct nn_transport nn_tcp_vfptr = {
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
-static int nn_tcp_bind (const char *addr, void *hint,
-    struct nn_epbase **epbase)
+static int nn_tcp_bind (void *hint, struct nn_epbase **epbase)
 {
     return nn_btcp_create (hint, epbase);
 }
 
-static int nn_tcp_connect (const char *addr, void *hint,
-    struct nn_epbase **epbase)
+static int nn_tcp_connect (void *hint, struct nn_epbase **epbase)
 {
     return nn_ctcp_create (hint, epbase);
 }

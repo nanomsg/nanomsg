@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.
+    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2012 Julien Ammous
 
     Permission is hereby granted, free of charge, to any person obtaining a copy

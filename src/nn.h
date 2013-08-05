@@ -182,7 +182,7 @@ NN_EXPORT struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
 
 #define NN_CMSG_FIRSTHDR(mhdr) \
     ((mhdr)->msg_controllen >= sizeof (struct nn_cmsghdr) \
-    ? (struct nn_cmsghdr*) (mhdr)->msg_control : (struct cmsghdr*) NULL)
+    ? (struct nn_cmsghdr*) (mhdr)->msg_control : (struct nn_cmsghdr*) NULL)
 
 #define NN_CMSG_NXTHDR(mhdr,cmsg) \
     nn_cmsg_nexthdr ((struct nn_msghdr*) (mhdr), (struct nn_cmsghdr*) (cmsg))

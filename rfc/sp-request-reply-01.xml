@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+
+<rfc category="info" docName="sp-request-reply-01">
+
+  <front>
+
+    <title abbrev="Request/Reply SP">
+    Request/Reply Scalability Protocol
+    </title>
+
+    <author fullname="Martin Sustrik" initials="M." role="editor"
+            surname="Sustrik">
+      <organization>GoPivotal Inc.</organization>
+      <address>
+        <email>msustrik@gopivotal.com</email>
+      </address>
+    </author>
+
+    <date month="August" year="2013" />
+
+    <area>Applications</area>
+    <workgroup>Internet Engineering Task Force</workgroup>
+
+    <keyword>Request</keyword>
+    <keyword>Reply</keyword>
+    <keyword>REQ</keyword>
+    <keyword>REP</keyword>
+    <keyword>stateless</keyword>
+    <keyword>service</keyword>
+    <keyword>SP</keyword>
+
+    <abstract>
+      <t>This document defines a scalability protocol used for distributing
+         tasks from any number of clients among arbitrary number of stateless
+         processing nodes and getting the results back to the original
+         clients.</t>
+    </abstract>
+
+  </front>
+
+  <middle>
+
+    <section title = "Introduction">
+
+      <t>One of the most common problems in distributed applications is how to
+         delegate a work to another processing node and get the result back to
+         the original node. There's a wide range of RPC systems addressing the
+         problem.</t>
+
+      <t>However, in the generalised version of the problem we want to issue
+         processing requests from multiple clients, not just a single one and
+         distribute the work to any number processing nodes insead of a single
+         one so that the processing can be scaled up by adding new processing
+         nodes as necessary.</t>
+
+      <t>Solving the generalised problem, however, requires that the processing
+         algorithm -- or "service" -- is stateless.</t>
+
+      <t>To put it simply, the service is called "stateless" when there's no
+         way for the user to distinguish whether a request was processed by
+         one instance of the service or another one.</t>
+
+      <t>So, for example, a service which accepts two integers and multiplies
+         them is stateless. Request for "2x2" is always going to produce "4",
+         no matter what instance of the service have computed it.</t>
+
+      <t>Service that accepts empty requests and produces the number
+         of requests processed so far (1, 2, 3 et c.), on the other hand, is
+         not stateless. To prove that you can run two instances of the service.
+         First reply, no matter which instance produces it is going to be 1.
+         Second reply though is going to be either 2 (if processed by the same
+         instance as the first one) or 1 (if processed by the other instance).
+         Thus you can distinguish which instance produced the result. Thus,
+         according to the definition the service is not stateless.</t>
+
+      <t>Despite the name, being "stateless" doesn't mean that the service has
+         no state at all. Rather it means that the service doesn't retain any
+         business-logic-related state in-between processing two subsequent
+         requests. The service is, of course, allowed to have state while
+         processing a single request. It can also have state that is unrelated
+         to its business logic, say statistics about the processing that are
+         used for administrative purposes and never returned to the clients.</t>
+         
+      <t>Note that "stateless" doesn't necessarily mean "fully deterministic".
+         For example, a service that generates random number is
+         non-deterministic. However, the client, after receiving a new random
+         number cannot tell which instance has produced it.</t>
+
+      <t>While stateless services are often implemented by passing the entire
+         state inside the request, they are not required to do so. Especially
+         when the state is large, passing it around in each request may be
+         impractical. In such cases, it's often just a reference to the state
+         that's passed in the request, such as ID or path. The state itself
+         can then be retrieved by the service from a shared database, a network
+         file system or similar storage mechanism.</t>
+         
+      <t>Requiring services to be stateless serves a specific purpose.
+         It allows us to use any number of service instances to handle the
+         processing load. After all, the client won't be able to tell the
+         difference between replies from instance A and replies from instance B.
+         You can even start new instances on the fly and get away with it.
+         The client still won't be able to tell the difference. In other
+         words, statelessness is a prerequisite to make your service cluster
+         fully scalable.</t>
+
+      <t>??? example topologies ???</t>
+
+    </section>
+
+    <section title = "Underlying protocol">
+
+      <t>The request/reply protocol can be run on top of any SP mapping,
+         such as, for example, SP TCP mapping.</t>
+
+      <t>Also, given that SP protocols describe the behaviour of entire
+         arbitrarily complex topologies rather than of a single node-to-node
+         communication, several underlying protocols can be used in parallel.
+         For example, a client may send a request via WebSocket, then, on the
+         edge of the company network an intermediary node may retransimit it
+         via a TCP connection et c.</t>
+
+    </section>
+
+    <section title = "The endpoints">
+
+      <t>Request/reply protocol defines two different endpoint types:
+         The requester (the client) or REQ in short and the replier
+         (the service) or REP in short.</t>
+
+      <t>Endpoint type identifiers should be assigned by IANA. For now,
+         value of 16 should be used for REQ endpoints and value of 17 for REP
+         endpoints.</t>
+
+      <t>REQ endpoint can be connected only to a REP endpoint. REP endpoint
+         can be connected only to the REQ endpoint. If the underlying protocol
+         indicates that there's an attempt to create a channel to an
+         incompatible endpoint, the channel MUST be rejected. In the case of
+         TCP mapping, for example, the underlying TCP connection MUST
+         be closed.</t>
+
+      <figure>
+        <artwork>
+                --- requests --&gt;
+
++-----+   +-----+-----+   +-----+-----+   +-----+
+|     |--&gt;|     |     |--&gt;|     |     |--&gt;|     |
+| REQ |   | REP | REQ |   | REP | REQ |   | REP |
+|     |&lt;--|     |     |&lt;--|     |     |&lt;--|     |
++-----+   +-----+-----+   +-----+-----+   +-----+
+
+                &lt;--  replies ---
+        </artwork>
+      </figure>
+
+<t>
+TODO:
+- priorities
+- loop detection
+- load balancing
+- fair queueing
+- backpressure
+- resending
+</t>
+
+    </section>
+
+    <section title = "Hop-by-hop behaviour">
+
+      <t>The REQ endpoint takes a message from the user and sends it to the one
+         of the channels associated with the endpoint. ...load-balancing...
+         prioritisation... back pressure...</t>
+
+      <t>The REQ endpoint fair-queues the incoming messages. The goal is prevent
+         DoS attacks where a huge stream of fake replies from one channel can
+         block the real replies coming from different channels. Fair queueing
+         ensures that every channel gets a fair amount of processing capacity.
+         That way, even if DoS attack can slow down the processing to some
+         extent it  can't entirely block the system.</t>
+
+      <t>By default, the REP socket MUST fair queue the incoming requests.
+         While it is not possible to achieve fully fair distribution of requests
+         among the protcessing nodes in the topology, fair queuing ensures that
+         requests from one channel won't completely block out requests from
+         other channels.</t>
+
+      <t>Before handing the message to the user, REP socket should prepend the
+         payload by an ID of the channel it was received from.</t>
+
+      <t>REP endoint processes a message from the user (a reply) in the
+         following way: It tries to chop off the channel ID from the beginning
+         of the reply. If the reply is shorter that the channel ID, it
+         is malformed and should be ignored.</t>
+
+      <t>Afterwards, REP endpoint checks its table of associated channel and
+         tries to find the one with corresponding ID. If there's no such
+         channel, either the message is malformed or the channel was closed
+         since the original request was routed through this endpoint. The two
+         cases cannot be distinguish and the endpoint should simply ignore
+         the message in either case.</t>
+
+      <t>If the corresponding channel is found, REP endpoint tries to send the
+         reply (with the channel ID chopped off) to the channel. If it is not
+         possible due -- for example due to TCP pushback -- the message should
+         be ignored. The reason for this behaviour is that if the endpoint
+         blocked and waited for the channel be become available, all the
+         subsequent replies, possibly destined for different, unblocked channels
+         would be blocked in the meantime anyway. That would allow for a DoS
+         attack by simply firing a lot of requests and not receiving the
+         replies.</t>
+         
+    </section>
+
+    <section title = "End-to-end behaviour">
+    </section>
+
+    <section title = "Loop prevention">
+
+      <t>It may happen that a request/reply topology contains a loop. It becomes
+         increasingly likely as the topology grows out of scope of a single
+         organisation and there are multiple administrators involved
+         in maintaining it. In such case unfortunate interaction between
+         two perfectly legitimate setups can cause loop to be created.</t>
+
+      <t>With no additional guards against the loops, it may happen that
+         messages will be caugth rotating inside the loop, each message
+         gradually growing in size as new prefixes are added to it by each
+         REP endpoint on its way. Eventually, a loop could bring the whole
+         system to halt.</t>
+
+    </section>
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>New SP endpoint types REQ and REP should be registered by IANA.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>The mapping isn't intended to provide any additional security to the
+         underlying protocol. DoS concerns are addressed within
+         the specification.</t>
+    </section>
+
+  </middle>
+
+</rfc>
+

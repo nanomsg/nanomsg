@@ -26,7 +26,7 @@
     <keyword>SP</keyword>
 
     <abstract>
-      <t>This doucment defines the TCP mapping for scalability protocols.
+      <t>This document defines the TCP mapping for scalability protocols.
          The main purpose of the mapping is to turn the stream of bytes
          into stream of messages. Additionaly, the mapping provides some
          additional checks during the connection establishment phase.</t>

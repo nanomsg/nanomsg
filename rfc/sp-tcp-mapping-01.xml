@@ -98,10 +98,10 @@
       <t>Fifth and sixth bytes of the header form a 16-bit unsigned integer in
          network byte order representing the type of SP endpoint on the layer
          above. The value SHOULD NOT be interpreted by the mapping, rather
-         the interpretation should be done by the scalability protocol above
-         the mapping. For informational purposes, it should be noted that the
-         field encodes information such as SP protocol ID, protocol version and
-         the role of endpoint within the protocol. Individual values are
+         the interpretation should be delegated to the scalability protocol
+         above the mapping. For informational purposes, it should be noted that
+         the field encodes information such as SP protocol ID, protocol version
+         and the role of endpoint within the protocol. Individual values are
          assigned by IANA.</t>
 
       <t>Finally, the last two bytes of the protocol header are reserved for

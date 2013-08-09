@@ -27,7 +27,6 @@ m4_ifdef([AM_SILENT_RULES], [
     AM_SILENT_RULES([yes])
 ])
 
-
 AC_CANONICAL_HOST
 
 NN_LT_VERSION=m4_esyscmd([./version.sh -v])
@@ -38,8 +37,6 @@ AC_SUBST(NN_PC_VERSION)
 
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
-
-AC_CANONICAL_HOST
 
 AC_ARG_ENABLE([doc],
     AS_HELP_STRING([--enable-doc], [Build documentation])
@@ -146,7 +143,6 @@ AS_IF([test x"$ac_cv_func_eventfd"=xyes], [
         ])
     ])
 ])
-
 
 LT_INIT
 

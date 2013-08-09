@@ -21,17 +21,17 @@
     IN THE SOFTWARE.
 */
 
-#ifndef FANOUT_H_INCLUDED
-#define FANOUT_H_INCLUDED
+#ifndef PIPELINE_H_INCLUDED
+#define PIPELINE_H_INCLUDED
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define NN_PROTO_FANOUT 5
+#define NN_PROTO_PIPELINE 5
 
-#define NN_PUSH (NN_PROTO_FANOUT * 16 + 0)
-#define NN_PULL (NN_PROTO_FANOUT * 16 + 1)
+#define NN_PUSH (NN_PROTO_PIPELINE * 16 + 0)
+#define NN_PULL (NN_PROTO_PIPELINE * 16 + 1)
 
 #ifdef __cplusplus
 }

@@ -123,7 +123,7 @@
           <t>Many clients send requests to be processed by many servers.
              The "enterprise service bus" model. In the simplest case the bus
              can be implemented as a simple hub-and-spokes topology. In complex
-             cases the bus can span mutliple physical locations or multiple
+             cases the bus can span multiple physical locations or multiple
              oraganisations with intermediate nodes at the boundaries connecting
              different parts of the topology.</t>
         </list>
@@ -153,14 +153,14 @@
          resend it and thus cause duplicit execution of the task.</t>
 
       <t>Some applications may want to prevent duplicit execution of tasks. It
-         often turns out that hardining such applications to be idempotent is
+         often turns out that hardening such applications to be idempotent is
          relatively easy as they already possess the tools to do so. For
          example, a payment processing server already has access to a shared
          database which it can use to verify that the payment with specified ID
          was not yet processed.</t>
 
-      <t>On the other hand, many applications don't care about occassional
-         duplicitly processed tasks. Therefore, request/reply protocol doesn't
+      <t>On the other hand, many applications don't care about occasional
+         duplicitly processed tasks. Therefore, request/reply protocol does not
          require the service to be idempotent. Instead, the idempotancy issue
          is left to the user to decide on.</t>
 
@@ -191,7 +191,7 @@
 +---+             +---+           +---+
                    | |
      +---+   IPC   | |  SCTP  +---+    DCCP   +---+
-     |   |---------+ +- ------|   |-----------|   |
+     |   |---------+ +--------|   |-----------|   |
      +---+                    +---+           +---+
         </artwork>
       </figure>
@@ -723,7 +723,7 @@
     </section>
 
     <section anchor="Security" title="Security Considerations">
-      <t>The mapping isn't intended to provide any additional security to the
+      <t>The mapping is not intended to provide any additional security to the
          underlying protocol. DoS concerns are addressed within
          the specification.</t>
     </section>

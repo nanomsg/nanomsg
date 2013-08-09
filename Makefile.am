@@ -414,10 +414,9 @@ TESTS = $(check_PROGRAMS)
 
 
 dist-hook:
-	chmod u+w $(distdir)/.version
 	$(srcdir)/version.sh > $(distdir)/.version
 
-EXTRA_DIST = .version version.sh
+EXTRA_DIST = version.sh
 
 CMAKE_FILES = \
     ./perf/CMakeLists.txt \

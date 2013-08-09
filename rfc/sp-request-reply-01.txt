@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft                                            GoPivotal Inc.
-Intended status: Informational                           August 08, 2013
-Expires: February 09, 2014
+Intended status: Informational                           August 09, 2013
+Expires: February 10, 2014
 
 
                    Request/Reply Scalability Protocol
@@ -32,7 +32,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on February 09, 2014.
+   This Internet-Draft will expire on February 10, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 1]
+Sustrik                 Expires February 10, 2014               [Page 1]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -109,7 +109,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 2]
+Sustrik                 Expires February 10, 2014               [Page 2]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -155,7 +155,7 @@ Internet-Draft              Request/Reply SP                 August 2013
    4.  Many clients send requests to be processed by many servers.  The
        "enterprise service bus" model.  In the simplest case the bus can
        be implemented as a simple hub-and-spokes topology.  In complex
-       cases the bus can span mutliple physical locations or multiple
+       cases the bus can span multiple physical locations or multiple
        oraganisations with intermediate nodes at the boundaries
        connecting different parts of the topology.
 
@@ -165,7 +165,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 3]
+Sustrik                 Expires February 10, 2014               [Page 3]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -190,16 +190,16 @@ Internet-Draft              Request/Reply SP                 August 2013
    resend it and thus cause duplicit execution of the task.
 
    Some applications may want to prevent duplicit execution of tasks.
-   It often turns out that hardining such applications to be idempotent
+   It often turns out that hardening such applications to be idempotent
    is relatively easy as they already possess the tools to do so.  For
    example, a payment processing server already has access to a shared
    database which it can use to verify that the payment with specified
    ID was not yet processed.
 
-   On the other hand, many applications don't care about occassional
-   duplicitly processed tasks.  Therefore, request/reply protocol
-   doesn't require the service to be idempotent.  Instead, the
-   idempotancy issue is left to the user to decide on.
+   On the other hand, many applications don't care about occasional
+   duplicitly processed tasks.  Therefore, request/reply protocol does
+   not require the service to be idempotent.  Instead, the idempotancy
+   issue is left to the user to decide on.
 
    Finally, it should be noted that this specification discusses several
    features that are of little use in simple topologies and are rather
@@ -221,7 +221,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 4]
+Sustrik                 Expires February 10, 2014               [Page 4]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -231,7 +231,7 @@ Internet-Draft              Request/Reply SP                 August 2013
    +---+             +---+           +---+
                       | |
         +---+   IPC   | |  SCTP  +---+    DCCP   +---+
-        |   |---------+ +- ------|   |-----------|   |
+        |   |---------+ +--------|   |-----------|   |
         +---+                    +---+           +---+
 
 
@@ -277,7 +277,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 5]
+Sustrik                 Expires February 10, 2014               [Page 5]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -333,7 +333,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 6]
+Sustrik                 Expires February 10, 2014               [Page 6]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -389,7 +389,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 7]
+Sustrik                 Expires February 10, 2014               [Page 7]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -445,7 +445,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 8]
+Sustrik                 Expires February 10, 2014               [Page 8]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -501,7 +501,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014               [Page 9]
+Sustrik                 Expires February 10, 2014               [Page 9]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -557,7 +557,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 10]
+Sustrik                 Expires February 10, 2014              [Page 10]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -613,7 +613,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 11]
+Sustrik                 Expires February 10, 2014              [Page 11]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -669,7 +669,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 12]
+Sustrik                 Expires February 10, 2014              [Page 12]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -725,7 +725,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 13]
+Sustrik                 Expires February 10, 2014              [Page 13]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -781,7 +781,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 14]
+Sustrik                 Expires February 10, 2014              [Page 14]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -813,7 +813,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 9.  Security Considerations
 
-   The mapping isn't intended to provide any additional security to the
+   The mapping is not intended to provide any additional security to the
    underlying protocol.  DoS concerns are addressed within the
    specification.
 
@@ -837,4 +837,4 @@ Author's Address
 
 
 
-Sustrik                 Expires February 09, 2014              [Page 15]
+Sustrik                 Expires February 10, 2014              [Page 15]

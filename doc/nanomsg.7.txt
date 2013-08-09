@@ -88,11 +88,8 @@ Publish/subscribe protocol::
 Survey protocol::
     linknanomsg:nn_survey[7]
 
-Fan-in (data aggregation) protocol::
-    linknanomsg:nn_fanin[7]
-
-Fan-out (load balancing) protocol::
-    linknanomsg:nn_fanout[7]
+Pipeline protocol::
+    linknanomsg:nn_pipeline[7]
 
 Message bus protocol::
     linknanomsg:nn_bus[7]

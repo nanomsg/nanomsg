@@ -78,8 +78,7 @@ SEE ALSO
 --------
 linknanomsg:nn_pubsub[3]
 linknanomsg:nn_reqrep[3]
-linknanomsg:nn_fanin[3]
-linknanomsg:nn_fanout[3]
+linknanomsg:nn_pipeline[3]
 linknanomsg:nn_survey[3]
 linknanomsg:nn_bind[3]
 linknanomsg:nn_connect[3]

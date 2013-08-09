@@ -31,8 +31,7 @@ include_HEADERS = \
     src/pair.h \
     src/pubsub.h \
     src/reqrep.h \
-    src/fanin.h \
-    src/fanout.h \
+    src/pipeline.h \
     src/survey.h \
     src/bus.h
 
@@ -153,25 +152,15 @@ PROTOCOLS_BUS = \
     src/protocols/bus/xbus.h \
     src/protocols/bus/xbus.c
 
-PROTOCOLS_FANIN = \
-    src/protocols/fanin/sink.h \
-    src/protocols/fanin/sink.c \
-    src/protocols/fanin/source.h \
-    src/protocols/fanin/source.c \
-    src/protocols/fanin/xsink.h \
-    src/protocols/fanin/xsink.c \
-    src/protocols/fanin/xsource.h \
-    src/protocols/fanin/xsource.c
-
-PROTOCOLS_FANOUT = \
-    src/protocols/fanout/push.h \
-    src/protocols/fanout/push.c \
-    src/protocols/fanout/pull.h \
-    src/protocols/fanout/pull.c \
-    src/protocols/fanout/xpull.h \
-    src/protocols/fanout/xpull.c \
-    src/protocols/fanout/xpush.h \
-    src/protocols/fanout/xpush.c
+PROTOCOLS_PIPELINE = \
+    src/protocols/pipeline/push.h \
+    src/protocols/pipeline/push.c \
+    src/protocols/pipeline/pull.h \
+    src/protocols/pipeline/pull.c \
+    src/protocols/pipeline/xpull.h \
+    src/protocols/pipeline/xpull.c \
+    src/protocols/pipeline/xpush.h \
+    src/protocols/pipeline/xpush.c
 
 PROTOCOLS_PAIR = \
     src/protocols/pair/pair.h \
@@ -209,8 +198,7 @@ PROTOCOLS_SURVEY = \
 
 NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_BUS) \
-    $(PROTOCOLS_FANIN) \
-    $(PROTOCOLS_FANOUT) \
+    $(PROTOCOLS_PIPELINE) \
     $(PROTOCOLS_PAIR) \
     $(PROTOCOLS_PUBSUB) \
     $(PROTOCOLS_REQREP) \
@@ -307,8 +295,7 @@ PROTOCOLS_MAN = \
     $(docbuilddir)/nn_reqrep.7 \
     $(docbuilddir)/nn_pubsub.7 \
     $(docbuilddir)/nn_survey.7 \
-    $(docbuilddir)/nn_fanin.7 \
-    $(docbuilddir)/nn_fanout.7 \
+    $(docbuilddir)/nn_pipeline.7 \
     $(docbuilddir)/nn_bus.7
 
 TRANSPORTS_MAN = \
@@ -382,8 +369,7 @@ PROTOCOL_TESTS = \
     tests/pair \
     tests/pubsub \
     tests/reqrep \
-    tests/fanin \
-    tests/fanout \
+    tests/pipeline \
     tests/survey \
     tests/bus
 

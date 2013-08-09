@@ -1,32 +1,32 @@
-nn_fanout(7)
-============
+nn_pipeline(7)
+==============
 
 NAME
 ----
-nn_fanout - fan-out (load balancing) scalability protocol
+nn_pipeline - scalability protocol for passing tasks through a series of processing steps
 
 
 SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*#include <nanomsg/fanout.h>*
+*#include <nanomsg/pipeline.h>*
 
 
 DESCRIPTION
 -----------
-Load balances messages among multiple destinations.
+Fair queues messages from the previous processing step and load balances them
+among instances of the next processing step.
 
 Socket Types
 ~~~~~~~~~~~~
 
 NN_PUSH::
-    This socket is used to send messages to the cluster of load-balanced
+    This socket is used to send messages to a cluster of load-balanced
     nodes. Receive operation is not implemented on this socket type.
 NN_PULL::
-    This socket is used to implement a node within a load-balanced cluster.
-    It can be used to receive messages. Send operation is not implemented
-    on this socket type. This socket can be connected to at most one peer.
+    This socket is used to receive a message from a cluster of nodes. Send
+    operation is not implemented on this socket type.
 
 Socket Options
 ~~~~~~~~~~~~~~
@@ -38,7 +38,6 @@ SEE ALSO
 linknanomsg:nn_bus[7]
 linknanomsg:nn_pubsub[7]
 linknanomsg:nn_reqrep[7]
-linknanomsg:nn_fanin[7]
 linknanomsg:nn_survey[7]
 linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]

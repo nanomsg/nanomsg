@@ -24,7 +24,7 @@
 #include "xpull.h"
 
 #include "../../nn.h"
-#include "../../fanout.h"
+#include "../../pipeline.h"
 #include "../../utils/list.h"
 
 static struct nn_socktype nn_pull_socktype_struct = {

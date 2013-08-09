@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,7 +22,7 @@
 */
 
 #include "../src/nn.h"
-#include "../src/fanout.h"
+#include "../src/pipeline.h"
 
 #include "../src/utils/err.c"
 

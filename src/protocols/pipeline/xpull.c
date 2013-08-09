@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,9 +24,9 @@
 #include "xpull.h"
 
 #include "../../nn.h"
-#include "../../fanout.h"
+#include "../../pipeline.h"
 
-#include "../utils/excl.h"
+#include "../utils/fq.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -33,9 +34,13 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 
+struct nn_xpull_data {
+    struct nn_fq_data fq;
+};
+
 struct nn_xpull {
     struct nn_sockbase sockbase;
-    struct nn_excl excl;
+    struct nn_fq fq;
 };
 
 /*  Private functions. */
@@ -73,12 +78,12 @@ static void nn_xpull_init (struct nn_xpull *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_sockbase_init (&self->sockbase, vfptr, hint);
-    nn_excl_init (&self->excl);
+    nn_fq_init (&self->fq);
 }
 
 static void nn_xpull_term (struct nn_xpull *self)
 {
-    nn_excl_term (&self->excl);
+    nn_fq_term (&self->fq);
     nn_sockbase_term (&self->sockbase);
 }
 
@@ -94,28 +99,49 @@ void nn_xpull_destroy (struct nn_sockbase *self)
 
 static int nn_xpull_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_add (&nn_cont (self, struct nn_xpull, sockbase)->excl,
-        pipe);
+    struct nn_xpull *xpull;
+    struct nn_xpull_data *data;
+
+    xpull = nn_cont (self, struct nn_xpull, sockbase);
+
+    data = nn_alloc (sizeof (struct nn_xpull_data), "pipe data (pull)");
+    alloc_assert (data);
+    nn_pipe_setdata (pipe, data);
+    nn_fq_add (&xpull->fq, pipe, &data->fq, 8);
+
+    return 0;
 }
 
 static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_rm (&nn_cont (self, struct nn_xpull, sockbase)->excl, pipe);
+    struct nn_xpull *xpull;
+    struct nn_xpull_data *data;
+
+    xpull = nn_cont (self, struct nn_xpull, sockbase);
+    data = nn_pipe_getdata (pipe);
+    nn_fq_rm (&xpull->fq, pipe, &data->fq);
+    nn_free (data);
 }
 
 static void nn_xpull_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_in (&nn_cont (self, struct nn_xpull, sockbase)->excl, pipe);
+    struct nn_xpull *xpull;
+    struct nn_xpull_data *data;
+
+    xpull = nn_cont (self, struct nn_xpull, sockbase);
+    data = nn_pipe_getdata (pipe);
+    nn_fq_in (&xpull->fq, pipe, &data->fq);
 }
 
 static void nn_xpull_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_out (&nn_cont (self, struct nn_xpull, sockbase)->excl, pipe);
+    /*  We are not going to send any messages, so there's no point is
+        maintaining a list of pipes ready for sending. */
 }
 
 static int nn_xpull_events (struct nn_sockbase *self)
 {
-    return nn_excl_can_recv (&nn_cont (self, struct nn_xpull, sockbase)->excl) ?
+    return nn_fq_can_recv (&nn_cont (self, struct nn_xpull, sockbase)->fq) ?
         NN_SOCKBASE_EVENT_IN : 0;
 }
 
@@ -123,7 +149,7 @@ static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
-    rc = nn_excl_recv (&nn_cont (self, struct nn_xpull, sockbase)->excl, msg);
+    rc = nn_fq_recv (&nn_cont (self, struct nn_xpull, sockbase)->fq, msg, NULL);
 
     /*  Discard NN_PIPEBASE_PARSED flag. */
     return rc < 0 ? rc : 0;

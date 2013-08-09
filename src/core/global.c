@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -52,14 +53,10 @@
 #include "../protocols/reqrep/req.h"
 #include "../protocols/reqrep/xrep.h"
 #include "../protocols/reqrep/xreq.h"
-#include "../protocols/fanin/sink.h"
-#include "../protocols/fanin/source.h"
-#include "../protocols/fanin/xsink.h"
-#include "../protocols/fanin/xsource.h"
-#include "../protocols/fanout/push.h"
-#include "../protocols/fanout/pull.h"
-#include "../protocols/fanout/xpush.h"
-#include "../protocols/fanout/xpull.h"
+#include "../protocols/pipeline/push.h"
+#include "../protocols/pipeline/pull.h"
+#include "../protocols/pipeline/xpush.h"
+#include "../protocols/pipeline/xpull.h"
 #include "../protocols/survey/respondent.h"
 #include "../protocols/survey/surveyor.h"
 #include "../protocols/survey/xrespondent.h"
@@ -217,10 +214,6 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_req_socktype);
     nn_global_add_socktype (nn_xrep_socktype);
     nn_global_add_socktype (nn_xreq_socktype);
-    nn_global_add_socktype (nn_sink_socktype);
-    nn_global_add_socktype (nn_source_socktype);
-    nn_global_add_socktype (nn_xsink_socktype);
-    nn_global_add_socktype (nn_xsource_socktype);
     nn_global_add_socktype (nn_push_socktype);
     nn_global_add_socktype (nn_xpush_socktype);
     nn_global_add_socktype (nn_pull_socktype);

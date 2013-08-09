@@ -41,8 +41,7 @@ SEE ALSO
 --------
 linknanomsg:nn_bus[7]
 linknanomsg:nn_pubsub[7]
-linknanomsg:nn_fanin[7]
-linknanomsg:nn_fanout[7]
+linknanomsg:nn_pipeline[7]
 linknanomsg:nn_survey[7]
 linknanomsg:nn_pair[7]
 linknanomsg:nanomsg[7]

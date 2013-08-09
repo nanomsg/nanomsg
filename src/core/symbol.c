@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Evan Wies <evan@neomantra.net>
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -29,8 +30,7 @@
 #include "../pair.h"
 #include "../pubsub.h"
 #include "../reqrep.h"
-#include "../fanin.h"
-#include "../fanout.h"
+#include "../pipeline.h"
 #include "../survey.h"
 #include "../bus.h"
 
@@ -58,8 +58,6 @@ static const struct sym_value_name sym_value_names [] = {
     {NN_SUB, "NN_SUB"},
     {NN_REP, "NN_REP"},
     {NN_REQ, "NN_REQ"},
-    {NN_SOURCE, "NN_SOURCE"},
-    {NN_SINK, "NN_SINK"},
     {NN_PUSH, "NN_PUSH"},
     {NN_PULL, "NN_PULL"},
     {NN_SURVEYOR, "NN_SURVEYOR"},

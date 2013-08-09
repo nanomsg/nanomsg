@@ -1,5 +1,6 @@
 #
 #   Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+#   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -243,8 +244,7 @@ install (FILES src/tcp.h DESTINATION include/nanomsg)
 install (FILES src/pair.h DESTINATION include/nanomsg)
 install (FILES src/pubsub.h DESTINATION include/nanomsg)
 install (FILES src/reqrep.h DESTINATION include/nanomsg)
-install (FILES src/fanin.h DESTINATION include/nanomsg)
-install (FILES src/fanout.h DESTINATION include/nanomsg)
+install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 

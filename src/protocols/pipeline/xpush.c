@@ -23,7 +23,7 @@
 #include "xpush.h"
 
 #include "../../nn.h"
-#include "../../fanout.h"
+#include "../../pipeline.h"
 
 #include "../utils/lb.h"
 

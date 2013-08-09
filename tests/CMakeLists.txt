@@ -1,5 +1,6 @@
 #
 #   Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+#   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -43,8 +44,7 @@ add_libnanomsg_test (tcp_shutdown)
 add_libnanomsg_test (pair)
 add_libnanomsg_test (pubsub)
 add_libnanomsg_test (reqrep)
-add_libnanomsg_test (fanin)
-add_libnanomsg_test (fanout)
+add_libnanomsg_test (pipeline)
 add_libnanomsg_test (survey)
 add_libnanomsg_test (bus)
 

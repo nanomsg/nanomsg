@@ -1,5 +1,6 @@
 #
 #   Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+#   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -34,8 +35,7 @@ if (NOT WIN32)
         nn_reqrep.7
         nn_pubsub.7
         nn_survey.7
-        nn_fanin.7
-        nn_fanout.7
+        nn_pipeline.7
         nn_bus.7
 
         #  Transports.

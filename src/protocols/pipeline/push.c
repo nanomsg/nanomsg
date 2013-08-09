@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2013 250bpm s.r.o.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,21 +20,21 @@
     IN THE SOFTWARE.
 */
 
-#ifndef FANOUT_H_INCLUDED
-#define FANOUT_H_INCLUDED
+#include "push.h"
+#include "xpush.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "../../nn.h"
+#include "../../pipeline.h"
+#include "../../utils/list.h"
 
-#define NN_PROTO_FANOUT 5
+static struct nn_socktype nn_push_socktype_struct = {
+    AF_SP,
+    NN_PUSH,
+    NN_SOCKTYPE_FLAG_NORECV,
+    nn_xpush_create,
+    nn_xpush_ispeer,
+    NN_LIST_ITEM_INITIALIZER
+};
 
-#define NN_PUSH (NN_PROTO_FANOUT * 16 + 0)
-#define NN_PULL (NN_PROTO_FANOUT * 16 + 1)
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+struct nn_socktype *nn_push_socktype = &nn_push_socktype_struct;
 

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,7 +23,7 @@
 
 #include "../src/nn.h"
 #include "../src/pair.h"
-#include "../src/fanin.h"
+#include "../src/pipeline.h"
 #include "../src/inproc.h"
 #include "../src/ipc.h"
 #include "../src/tcp.h"
@@ -39,7 +40,7 @@ int main ()
 {
     int rc;
     int pair;
-    int sink;
+    int pull;
     int timeo;
 
     /*  Inproc: Bind first, connect second. */
@@ -47,24 +48,24 @@ int main ()
     errno_assert (pair != -1);
     rc = nn_bind (pair, SOCKET_ADDRESS_INPROC);
     errno_assert (rc >= 0);
-    sink = nn_socket (AF_SP, NN_SINK);
-    errno_assert (sink != -1);
-    rc = nn_connect (sink, SOCKET_ADDRESS_INPROC);
+    pull = nn_socket (AF_SP, NN_PULL);
+    errno_assert (pull != -1);
+    rc = nn_connect (pull, SOCKET_ADDRESS_INPROC);
     errno_assert (rc >= 0);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (sink);
+    rc = nn_close (pull);
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);
 
     /*  Inproc: Connect first, bind second. */
-    sink = nn_socket (AF_SP, NN_SINK);
-    errno_assert (sink != -1);
-    rc = nn_connect (sink, SOCKET_ADDRESS_INPROC);
+    pull = nn_socket (AF_SP, NN_PULL);
+    errno_assert (pull != -1);
+    rc = nn_connect (pull, SOCKET_ADDRESS_INPROC);
     errno_assert (rc >= 0);
     pair = nn_socket (AF_SP, NN_PAIR);
     errno_assert (pair != -1);
@@ -75,7 +76,7 @@ int main ()
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (sink);
+    rc = nn_close (pull);
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);
@@ -87,16 +88,16 @@ int main ()
     errno_assert (pair != -1);
     rc = nn_bind (pair, SOCKET_ADDRESS_IPC);
     errno_assert (rc >= 0);
-    sink = nn_socket (AF_SP, NN_SINK);
-    errno_assert (sink != -1);
-    rc = nn_connect (sink, SOCKET_ADDRESS_IPC);
+    pull = nn_socket (AF_SP, NN_PULL);
+    errno_assert (pull != -1);
+    rc = nn_connect (pull, SOCKET_ADDRESS_IPC);
     errno_assert (rc >= 0);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (sink);
+    rc = nn_close (pull);
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);
@@ -108,16 +109,16 @@ int main ()
     errno_assert (pair != -1);
     rc = nn_bind (pair, SOCKET_ADDRESS_TCP);
     errno_assert (rc >= 0);
-    sink = nn_socket (AF_SP, NN_SINK);
-    errno_assert (sink != -1);
-    rc = nn_connect (sink, SOCKET_ADDRESS_TCP);
+    pull = nn_socket (AF_SP, NN_PULL);
+    errno_assert (pull != -1);
+    rc = nn_connect (pull, SOCKET_ADDRESS_TCP);
     errno_assert (rc >= 0);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (sink);
+    rc = nn_close (pull);
     errno_assert (rc == 0);
     rc = nn_close (pair);
     errno_assert (rc == 0);

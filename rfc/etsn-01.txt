@@ -155,7 +155,7 @@ Internet-Draft                    ETSN                       August 2013
    connection is handed to the process that registered the service name
    in question.
 
-   From that point on the connection bahves as ordinary TCP connection,
+   From that point on the connection behaves as an ordinary TCP connection,
    both with respect to the data transfer and to the connection
    shutdown.
 

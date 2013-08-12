@@ -22,6 +22,10 @@ ACLOCAL_AMFLAGS = -I m4
 
 DISTCLEANFILES = @DOLT_CLEANFILES@
 
+################################################################################
+#  nanomsg library                                                             #
+################################################################################
+
 include_HEADERS = \
     src/nn.h \
     src/protocol.h \
@@ -285,57 +289,91 @@ pkgconfig_DATA = libnanomsg.pc
 
 libnanomsg_la_LDFLAGS = -version-info @NN_LT_VERSION@
 
+################################################################################
+#  documentation                                                               #
+################################################################################
+
 if DOC
 
-docsrcdir   = $(srcdir)/doc
-docbuilddir = $(builddir)/doc
+docsrcdir   = $(abs_srcdir)/doc
+docbuilddir = $(abs_builddir)/doc
 
 PROTOCOLS_MAN = \
     $(docbuilddir)/nn_pair.7 \
+    $(docbuilddir)/nn_pair.7.html \
     $(docbuilddir)/nn_reqrep.7 \
+    $(docbuilddir)/nn_reqrep.7.html \
     $(docbuilddir)/nn_pubsub.7 \
+    $(docbuilddir)/nn_pubsub.7.html \
     $(docbuilddir)/nn_survey.7 \
+    $(docbuilddir)/nn_survey.7.html \
     $(docbuilddir)/nn_pipeline.7 \
-    $(docbuilddir)/nn_bus.7
+    $(docbuilddir)/nn_pipeline.7.html \
+    $(docbuilddir)/nn_bus.7 \
+    $(docbuilddir)/nn_bus.7.html
 
 TRANSPORTS_MAN = \
     $(docbuilddir)/nn_inproc.7 \
+    $(docbuilddir)/nn_inproc.7.html \
     $(docbuilddir)/nn_ipc.7 \
-    $(docbuilddir)/nn_tcp.7
+    $(docbuilddir)/nn_ipc.7.html \
+    $(docbuilddir)/nn_tcp.7 \
+    $(docbuilddir)/nn_tcp.7.html
 
 FUNCTIONS_MAN = \
     $(docbuilddir)/nn_errno.3 \
+    $(docbuilddir)/nn_errno.3.html \
     $(docbuilddir)/nn_strerror.3 \
+    $(docbuilddir)/nn_strerror.3.html \
     $(docbuilddir)/nn_symbol.3 \
+    $(docbuilddir)/nn_symbol.3.html \
     $(docbuilddir)/nn_term.3 \
+    $(docbuilddir)/nn_term.3.html \
     $(docbuilddir)/nn_allocmsg.3 \
+    $(docbuilddir)/nn_allocmsg.3.html \
     $(docbuilddir)/nn_freemsg.3 \
+    $(docbuilddir)/nn_freemsg.3.html \
     $(docbuilddir)/nn_socket.3 \
+    $(docbuilddir)/nn_socket.3.html \
     $(docbuilddir)/nn_close.3 \
+    $(docbuilddir)/nn_close.3.html \
     $(docbuilddir)/nn_getsockopt.3 \
+    $(docbuilddir)/nn_getsockopt.3.html \
     $(docbuilddir)/nn_setsockopt.3 \
+    $(docbuilddir)/nn_setsockopt.3.html \
     $(docbuilddir)/nn_bind.3 \
+    $(docbuilddir)/nn_bind.3.html \
     $(docbuilddir)/nn_connect.3 \
+    $(docbuilddir)/nn_connect.3.html \
     $(docbuilddir)/nn_shutdown.3 \
+    $(docbuilddir)/nn_shutdown.3.html \
     $(docbuilddir)/nn_send.3 \
+    $(docbuilddir)/nn_send.3.html \
     $(docbuilddir)/nn_recv.3 \
+    $(docbuilddir)/nn_recv.3.html \
     $(docbuilddir)/nn_sendmsg.3 \
+    $(docbuilddir)/nn_sendmsg.3.html \
     $(docbuilddir)/nn_recvmsg.3 \
-    $(docbuilddir)/nn_device.3
+    $(docbuilddir)/nn_recvmsg.3.html \
+    $(docbuilddir)/nn_device.3 \
+    $(docbuilddir)/nn_device.3.html
 
 dist_man_MANS = \
     $(docbuilddir)/nanomsg.7 \
+    $(docbuilddir)/nanomsg.7.html \
     $(PROTOCOLS_MAN) \
     $(TRANSPORTS_MAN) \
     $(FUNCTIONS_MAN) \
-    $(docbuilddir)/nn_cmsg.3
+    $(docbuilddir)/nn_cmsg.3 \
+    $(docbuilddir)/nn_cmsg.3.html
 
-asciidocconf = -d manpage -b docbook -f $(docsrcdir)/asciidoc.conf
+manpageconf = -d manpage -b docbook -f $(docsrcdir)/asciidoc.conf
+htmlconf = -d manpage -b xhtml11 -a stylesheet=$(docsrcdir)/htmldoc.css -f $(docsrcdir)/asciidoc.conf
 
-SUFFIXES = .7.xml .3.xml .3 .7
+SUFFIXES = .3.xml .7.xml .3 .7
 
 .txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) $(asciidocconf) -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOC) $(manpageconf) -o $@ $<
 
 .7.xml.7:
 	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
@@ -343,9 +381,16 @@ SUFFIXES = .7.xml .3.xml .3 .7
 .3.xml.3:
 	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
 
+.txt.html:
+	$(AM_V_GEN)$(ASCIIDOC) $(htmlconf) -o $@ $<
+
 CLEANFILES = $(dist_man_MANS)
 
 endif
+
+################################################################################
+#  performance tests                                                           #
+################################################################################
 
 bin_PROGRAMS = \
     perf/inproc_lat \
@@ -356,6 +401,10 @@ bin_PROGRAMS = \
     perf/remote_thr
 
 LDADD = libnanomsg.la
+
+################################################################################
+#  automated tests                                                             #
+################################################################################
 
 TRANSPORT_TESTS = \
     tests/inproc \
@@ -397,10 +446,12 @@ check_PROGRAMS = \
 
 TESTS = $(check_PROGRAMS)
 
-
-
 dist-hook:
 	$(srcdir)/version.sh > $(distdir)/.version
+
+################################################################################
+#  additional files to include into the package                                #
+################################################################################
 
 EXTRA_DIST = version.sh
 
@@ -412,3 +463,4 @@ CMAKE_FILES = \
     ./CMakeLists.txt
 
 EXTRA_DIST += $(CMAKE_FILES)
+

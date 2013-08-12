@@ -343,7 +343,7 @@ SUFFIXES = .7.xml .3.xml .3 .7
 .3.xml.3:
 	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
 
-CLEANFILES = $(man_MANS)
+CLEANFILES = $(dist_man_MANS)
 
 endif
 

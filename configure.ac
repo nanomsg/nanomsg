@@ -39,21 +39,21 @@ AC_PROG_CC_C99
 AM_PROG_CC_C_O
 
 AC_ARG_ENABLE([doc],
-    AS_HELP_STRING([--enable-doc], [Build documentation])
+    AS_HELP_STRING([--enable-doc], [Build documentation [default=no]])
 )
 
-AS_IF([test x"$enable_doc" != "xno"], [
+AS_IF([test x"$enable_doc" == "xyes"], [
     AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
-    AS_IF([test x"$ASCIIDOC" == "x" -a x"$enable_doc" == "xyes"],[
+    AS_IF([test x"$ASCIIDOC" == "x"],[
         AC_MSG_ERROR([Please install asciidoc to build the documentation])
     ])
     AC_CHECK_PROGS([XMLTO], [xmlto])
-    AS_IF([test x"$XMLTO" == "x" -a x"$enable_doc" == "xyes"], [
+    AS_IF([test x"$XMLTO" == "x"], [
         AC_MSG_ERROR([Please install xmlto to build the documentation])
     ])
-    AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
-    AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
 ])
+AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
+AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
 
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],

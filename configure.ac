@@ -1,4 +1,5 @@
 # Copyright (c) 2013 Luca Barbato
+# Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -18,6 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
+################################################################################
+#  Start the configuration phase.                                              #
+################################################################################
+
 AC_PREREQ([2.53])
 
 AC_INIT([nanomsg], [m4_esyscmd([./version.sh])])
@@ -29,14 +34,112 @@ m4_ifdef([AM_SILENT_RULES], [
 
 AC_CANONICAL_HOST
 
+################################################################################
+#  Retrieve the versions.                                                      #
+################################################################################
+
+AC_PROG_SED
+AC_PROG_AWK
+
 NN_LT_VERSION=m4_esyscmd([./version.sh -v])
 NN_PC_VERSION=m4_esyscmd([./version.sh -p])
 
 AC_SUBST(NN_LT_VERSION)
 AC_SUBST(NN_PC_VERSION)
 
+################################################################################
+#  Check the compilers.                                                         #
+################################################################################
+
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+
+################################################################################
+#  Check whether GCC compiler is used.                                         #
+################################################################################
+AS_IF([test x"$GCC"=xyes],
+    [AC_DEFINE([NN_HAVE_GCC])]
+)
+
+################################################################################
+#  Check whether ICC compiler is used.                                         #
+################################################################################
+AC_CACHE_CHECK([whether we are using ICC compiler],
+    [ac_cv_icc_compiler],
+    [AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([], [[
+            #ifndef __INTEL_COMPILER
+               #error
+            #endif
+            ]])],
+        [ac_icc_compiler=yes],
+        [ac_icc_compiler=no])
+    ac_cv_icc_compiler=$ac_icc_compiler])
+AS_IF([test x"$ac_cv_icc_compiler"=xyes],
+    [AC_DEFINE([NN_HAVE_ICC])]
+)
+
+################################################################################
+#  Check whether Sun Studio compiler is used.                                  #
+################################################################################
+AC_CACHE_CHECK([whether we are using Sun Studio compiler],
+    [ac_cv_sun_studio_compiler],
+    [AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([], [[
+            #ifndef __SUNPRO_C
+                #error
+            #endif
+            ]])],
+        [ac_sun_studio_compiler=yes],
+        [ac_sun_studio_compiler=no])
+    ac_cv_sun_studio_compiler=$ac_sun_studio_compiler])
+AS_IF([test x"$ac_cv_sun_studio_compiler"=xyes],
+    [AC_DEFINE([NN_HAVE_SUN_STUDIO])]
+)
+
+################################################################################
+#  Check whether clang compiler is used.                                       #
+################################################################################
+AC_CACHE_CHECK([whether we are using clang compiler],
+    [ac_cv_clang_compiler],
+    [AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([], [[
+            #ifndef __clang__
+                #error
+            #endif
+            ]])],
+        [ac_clang_compiler=yes],
+        [ac_clang_compiler=no])
+    ac_cv_clang_compiler=$ac_clang_compiler])
+AS_IF([test x"$ac_cv_clang_compiler"=xyes],
+    [AC_DEFINE([NN_HAVE_CLANG])]
+)
+
+################################################################################
+#  If --enable-debug is specified set appropriate compiler options.            #
+################################################################################
+
+AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug],
+    [Enable debugging information [default=no]])])
+
+if test "x$enable_debug" = "xyes"; then
+    if test "x$GCC" = "xyes" -o \
+            "x$ac_cv_icc_compiler" = "xyes" -o \
+            "x$ac_cv_clang_compiler" = "xyes"; then
+        CFLAGS="-g -O0 "
+    elif test "x$ac_cv_sun_studio_compiler" = "xyes"; then
+        CFLAGS="-g0 "
+    fi
+    ORIG_CFLAGS="${CFLAGS:-none}"
+    if test "x$ORIG_CFLAGS" != "xnone"; then
+        CFLAGS="${CFLAGS} ${ORIG_CFLAGS}"
+    fi
+    AC_DEFINE([NN_DEBUG])
+fi
+
+################################################################################
+#  Build the documentation.                                                    #
+################################################################################
 
 AC_ARG_ENABLE([doc],
     AS_HELP_STRING([--enable-doc], [Build documentation [default=no]])
@@ -55,6 +158,10 @@ AS_IF([test x"$enable_doc" == "xyes"], [
 AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
 AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
 
+################################################################################
+#  Check which OS we are building for.                                         #
+################################################################################
+
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],
     [*mingw32*], [AC_DEFINE([NN_HAVE_WINDOWS])],
@@ -68,6 +175,10 @@ AS_CASE([${host_os}],
         AC_CHECK_LIB([nsl], [gethostbyname])
     ]
 )
+
+################################################################################
+#  Feature checks.                                                             #
+################################################################################
 
 AX_PTHREAD([
   LIBS="$PTHREAD_LIBS $LIBS"
@@ -154,9 +265,14 @@ LT_INIT
 
 DOLT
 
+################################################################################
+#  Finish the configuration phase.                                             #
+################################################################################
+
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_OUTPUT([
 Makefile
 libnanomsg.pc
 ])
+

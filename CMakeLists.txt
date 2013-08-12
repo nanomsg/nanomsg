@@ -211,11 +211,6 @@ if (ALLOC_MONITOR)
     add_definitions(-DNN_ALLOC_MONITOR)
 endif ()
 
-option (LATENCY_MONITOR "Add latency monitoring" OFF)
-if (LATENCY_MONITOR)
-    add_definitions(-DNN_LATENCY_MONITOR=1000)
-endif ()
-
 #  Version.
 
 file (READ "${PROJECT_SOURCE_DIR}/src/nn.h" NN_H_DATA)
@@ -233,7 +228,6 @@ set (NN_DESCRIPTION "nanomsg library is a high-performance implementation of sev
 add_subdirectory (src)
 add_subdirectory (tests)
 add_subdirectory (perf)
-add_subdirectory (doc)
 
 #  Installation.
 
@@ -247,26 +241,4 @@ install (FILES src/reqrep.h DESTINATION include/nanomsg)
 install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
-
-#  Source package.
-
-if (WIN32)
-    set (CPACK_SOURCE_GENERATOR ZIP)
-else ()
-    set (CPACK_SOURCE_GENERATOR TGZ)
-endif ()
-set (CPACK_SOURCE_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME}-${NN_VERSION_STR}")
-set (CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;.gitignore;README.md;${CPACK_SOURCE_IGNORE_FILES}")
-add_custom_target (dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
-
-#  Create the packages.
-
-set (CPACK_PACKAGE_NAME "${CMAKE_PROJECT_NAME}")
-set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "${NN_DESCRIPTION}")
-set (CPACK_PACKAGE_VERSION "${NN_VERSION_STR}")
-set (CPACK_PACKAGE_VERSION_MAJOR "${NN_VERSION_MAJOR}")
-set (CPACK_PACKAGE_VERSION_MINOR "${NN_VERSION_MINOR}")
-set (CPACK_PACKAGE_VERSION_PATCH "${NN_VERSION_PATCH}")
-
-include (CPack)
 

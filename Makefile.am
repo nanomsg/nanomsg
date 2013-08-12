@@ -22,6 +22,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 DISTCLEANFILES = @DOLT_CLEANFILES@
 
+EXTRA_DIST =
+
 ################################################################################
 #  nanomsg library                                                             #
 ################################################################################
@@ -295,96 +297,66 @@ libnanomsg_la_LDFLAGS = -version-info @NN_LT_VERSION@
 
 if DOC
 
-docsrcdir   = $(abs_srcdir)/doc
-docbuilddir = $(abs_builddir)/doc
+#  Source files.
 
-PROTOCOLS_MAN = \
-    $(docbuilddir)/nn_pair.7 \
-    $(docbuilddir)/nn_pair.7.html \
-    $(docbuilddir)/nn_reqrep.7 \
-    $(docbuilddir)/nn_reqrep.7.html \
-    $(docbuilddir)/nn_pubsub.7 \
-    $(docbuilddir)/nn_pubsub.7.html \
-    $(docbuilddir)/nn_survey.7 \
-    $(docbuilddir)/nn_survey.7.html \
-    $(docbuilddir)/nn_pipeline.7 \
-    $(docbuilddir)/nn_pipeline.7.html \
-    $(docbuilddir)/nn_bus.7 \
-    $(docbuilddir)/nn_bus.7.html
+MAN7 = \
+    doc/nanomsg.txt \
+    doc/nn_pair.txt \
+    doc/nn_reqrep.txt \
+    doc/nn_pubsub.txt \
+    doc/nn_survey.txt \
+    doc/nn_pipeline.txt \
+    doc/nn_bus.txt \
+    doc/nn_inproc.txt \
+    doc/nn_ipc.txt \
+    doc/nn_tcp.txt
 
-TRANSPORTS_MAN = \
-    $(docbuilddir)/nn_inproc.7 \
-    $(docbuilddir)/nn_inproc.7.html \
-    $(docbuilddir)/nn_ipc.7 \
-    $(docbuilddir)/nn_ipc.7.html \
-    $(docbuilddir)/nn_tcp.7 \
-    $(docbuilddir)/nn_tcp.7.html
+MAN3 = \
+    doc/nn_errno.txt \
+    doc/nn_strerror.txt \
+    doc/nn_symbol.txt \
+    doc/nn_term.txt \
+    doc/nn_allocmsg.txt \
+    doc/nn_freemsg.txt \
+    doc/nn_socket.txt \
+    doc/nn_close.txt \
+    doc/nn_getsockopt.txt \
+    doc/nn_setsockopt.txt \
+    doc/nn_bind.txt \
+    doc/nn_connect.txt \
+    doc/nn_shutdown.txt \
+    doc/nn_send.txt \
+    doc/nn_recv.txt \
+    doc/nn_sendmsg.txt \
+    doc/nn_recvmsg.txt \
+    doc/nn_device.txt \
+    doc/nn_cmsg.txt
 
-FUNCTIONS_MAN = \
-    $(docbuilddir)/nn_errno.3 \
-    $(docbuilddir)/nn_errno.3.html \
-    $(docbuilddir)/nn_strerror.3 \
-    $(docbuilddir)/nn_strerror.3.html \
-    $(docbuilddir)/nn_symbol.3 \
-    $(docbuilddir)/nn_symbol.3.html \
-    $(docbuilddir)/nn_term.3 \
-    $(docbuilddir)/nn_term.3.html \
-    $(docbuilddir)/nn_allocmsg.3 \
-    $(docbuilddir)/nn_allocmsg.3.html \
-    $(docbuilddir)/nn_freemsg.3 \
-    $(docbuilddir)/nn_freemsg.3.html \
-    $(docbuilddir)/nn_socket.3 \
-    $(docbuilddir)/nn_socket.3.html \
-    $(docbuilddir)/nn_close.3 \
-    $(docbuilddir)/nn_close.3.html \
-    $(docbuilddir)/nn_getsockopt.3 \
-    $(docbuilddir)/nn_getsockopt.3.html \
-    $(docbuilddir)/nn_setsockopt.3 \
-    $(docbuilddir)/nn_setsockopt.3.html \
-    $(docbuilddir)/nn_bind.3 \
-    $(docbuilddir)/nn_bind.3.html \
-    $(docbuilddir)/nn_connect.3 \
-    $(docbuilddir)/nn_connect.3.html \
-    $(docbuilddir)/nn_shutdown.3 \
-    $(docbuilddir)/nn_shutdown.3.html \
-    $(docbuilddir)/nn_send.3 \
-    $(docbuilddir)/nn_send.3.html \
-    $(docbuilddir)/nn_recv.3 \
-    $(docbuilddir)/nn_recv.3.html \
-    $(docbuilddir)/nn_sendmsg.3 \
-    $(docbuilddir)/nn_sendmsg.3.html \
-    $(docbuilddir)/nn_recvmsg.3 \
-    $(docbuilddir)/nn_recvmsg.3.html \
-    $(docbuilddir)/nn_device.3 \
-    $(docbuilddir)/nn_device.3.html
-
-dist_man_MANS = \
-    $(docbuilddir)/nanomsg.7 \
-    $(docbuilddir)/nanomsg.7.html \
-    $(PROTOCOLS_MAN) \
-    $(TRANSPORTS_MAN) \
-    $(FUNCTIONS_MAN) \
-    $(docbuilddir)/nn_cmsg.3 \
-    $(docbuilddir)/nn_cmsg.3.html
-
-manpageconf = -d manpage -b docbook -f $(docsrcdir)/asciidoc.conf
-htmlconf = -d manpage -b xhtml11 -a stylesheet=$(docsrcdir)/htmldoc.css -f $(docsrcdir)/asciidoc.conf
-
-SUFFIXES = .3.xml .7.xml .3 .7
+#  Build instructions.
 
 .txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) $(manpageconf) -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf -o $@ $<
 
-.7.xml.7:
-	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
-
-.3.xml.3:
-	$(AM_V_GEN)$(XMLTO) -o $(docbuilddir) man $<
+.xml.man:
+	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
 .txt.html:
-	$(AM_V_GEN)$(ASCIIDOC) $(htmlconf) -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
+    -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf -o $@ $<
 
-CLEANFILES = $(dist_man_MANS)
+#  The man pages to be installed.
+
+man3_MANS = $(MAN3:%.txt=%.man)
+man7_MANS = $(MAN7:%.txt=%.man)
+
+#  Extra files to be included into the source package.
+
+EXTRA_DIST += doc/htmldoc.css $(MAN3) $(MAN7)
+
+#  Extra files to be cleaned.
+
+CLEANFILES = $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
+    $(MAN3:%.txt=%.html) $(MAN7:%.txt=%.html)
 
 endif
 
@@ -453,14 +425,10 @@ dist-hook:
 #  additional files to include into the package                                #
 ################################################################################
 
-EXTRA_DIST = version.sh
-
-CMAKE_FILES = \
+EXTRA_DIST += \
+    ./version.sh \
     ./perf/CMakeLists.txt \
     ./tests/CMakeLists.txt \
     ./src/CMakeLists.txt \
-    ./doc/CMakeLists.txt \
     ./CMakeLists.txt
-
-EXTRA_DIST += $(CMAKE_FILES)
 

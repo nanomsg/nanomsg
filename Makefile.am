@@ -427,8 +427,6 @@ dist-hook:
 
 EXTRA_DIST += \
     ./version.sh \
-    ./perf/CMakeLists.txt \
-    ./tests/CMakeLists.txt \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
 

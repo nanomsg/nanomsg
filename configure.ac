@@ -25,9 +25,10 @@
 
 AC_PREREQ([2.53])
 
-AC_INIT([nanomsg], [m4_esyscmd([./version.sh])])
+AC_INIT([nanomsg], [m4_esyscmd([./version.sh])],
+   [nanomsg@freelists.org], [nanomsg], [http://nanomsg.org/])
 AC_CONFIG_SRCDIR([src/nn.h])
-AM_INIT_AUTOMAKE([1.6 foreign subdir-objects dist-xz])
+AM_INIT_AUTOMAKE([1.6 foreign subdir-objects tar-ustar dist-zip])
 m4_ifdef([AM_SILENT_RULES], [
     AM_SILENT_RULES([yes])
 ])

@@ -223,11 +223,76 @@ set (NN_VERSION_STR "${NN_VERSION_MAJOR}.${NN_VERSION_MINOR}.${NN_VERSION_PATCH}
 
 set (NN_DESCRIPTION "nanomsg library is a high-performance implementation of several \"scalability protocols\". Scalability protocol's job is to define how multiple applications communicate to form a single distributed application")
 
-#  Subdirectories to build.
+#  Build the library itself.
 
 add_subdirectory (src)
-add_subdirectory (tests)
-add_subdirectory (perf)
+
+#  Build unit tests.
+
+set (all_tests "")
+
+macro (add_libnanomsg_test NAME)
+    list (APPEND all_tests ${NAME})
+    add_executable (${NAME} tests/${NAME}.c)
+    target_link_libraries (${NAME} nanomsg)
+    add_test (${NAME} ${NAME})
+endmacro (add_libnanomsg_test)
+
+#  Transport tests.
+add_libnanomsg_test (inproc)
+add_libnanomsg_test (inproc_shutdown)
+add_libnanomsg_test (ipc)
+add_libnanomsg_test (ipc_shutdown)
+add_libnanomsg_test (tcp)
+add_libnanomsg_test (tcp_shutdown)
+
+#  Protocol tests.
+add_libnanomsg_test (pair)
+add_libnanomsg_test (pubsub)
+add_libnanomsg_test (reqrep)
+add_libnanomsg_test (pipeline)
+add_libnanomsg_test (survey)
+add_libnanomsg_test (bus)
+
+#  Feature tests.
+add_libnanomsg_test (block)
+add_libnanomsg_test (shutdown)
+add_libnanomsg_test (timeo)
+add_libnanomsg_test (iovec)
+add_libnanomsg_test (msg)
+add_libnanomsg_test (prio)
+add_libnanomsg_test (poll)
+add_libnanomsg_test (device)
+add_libnanomsg_test (emfile)
+add_libnanomsg_test (domain)
+add_libnanomsg_test (trie)
+add_libnanomsg_test (list)
+add_libnanomsg_test (hash)
+add_libnanomsg_test (symbol)
+add_libnanomsg_test (separation)
+
+#  The builtin "test" target cannot be modified to build the library and tests
+#  or to show output when a test failes. Let's create a different target.
+add_custom_target (check
+                   COMMENT "Running tests..."
+                   COMMAND ctest --force-new-ctest-process --output-on-failure
+                   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_dependencies (check ${all_tests})
+
+#  Build the performance tests.
+
+macro (add_libnanomsg_perf NAME)
+    add_executable (${NAME} perf/${NAME}.c)
+    target_link_libraries (${NAME} nanomsg)
+endmacro (add_libnanomsg_perf)
+
+add_libnanomsg_perf (inproc_lat)
+add_libnanomsg_perf (inproc_thr)
+add_libnanomsg_perf (local_lat)
+add_libnanomsg_perf (remote_lat)
+add_libnanomsg_perf (local_thr)
+add_libnanomsg_perf (remote_thr)
 
 #  Installation.
 

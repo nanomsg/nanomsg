@@ -35,6 +35,6 @@ else
     VER="Unknown"
 fi
 
-echo -n $VER
+printf '%s' "$VER"
 
 

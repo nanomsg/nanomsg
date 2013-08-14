@@ -33,9 +33,9 @@ if [ -z "$CURRENT" -o -z "$REVISION" -o -z "$AGE" ]; then
     exit 1
 fi
 
-CURRENT=$(echo -n $CURRENT | awk '{ print $3 }')
-REVISION=$(echo -n $REVISION | awk '{ print $3 }')
-AGE=$(echo -n $AGE | awk '{ print $3 }')
+CURRENT=$(printf '%s' "$CURRENT" | awk '{ print $3 }')
+REVISION=$(printf '%s' "$REVISION" | awk '{ print $3 }')
+AGE=$(printf '%s' "$AGE" | awk '{ print $3 }') 
 
-echo -n $CURRENT.$REVISION.$AGE
+printf '%s' "$CURRENT.$REVISION.$AGE"
 

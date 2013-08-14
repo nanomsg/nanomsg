@@ -337,7 +337,10 @@ MAN3 = \
 .txt.xml:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf -o $@ $<
 
-.xml.man:
+SUFFIXES = .3 .7
+.xml.3:
+	$(AM_V_GEN)$(XMLTO) -o doc man $<
+.xml.7:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
 .txt.html:
@@ -346,8 +349,8 @@ MAN3 = \
 
 #  The man pages to be installed.
 
-man3_MANS = $(MAN3:%.txt=%.man)
-man7_MANS = $(MAN7:%.txt=%.man)
+man3_MANS = $(MAN3:%.txt=%.3)
+man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Extra files to be included into the source package.
 

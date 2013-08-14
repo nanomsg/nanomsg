@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -55,7 +56,6 @@ int nn_binproc_create (void *hint, struct nn_epbase **epbase)
 {
     int rc;
     struct nn_binproc *self;
-    size_t sz;
 
     self = nn_alloc (sizeof (struct nn_binproc), "binproc");
     alloc_assert (self);

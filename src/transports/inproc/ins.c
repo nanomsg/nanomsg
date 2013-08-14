@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -50,7 +51,6 @@ static struct nn_ins self;
 void nn_ins_item_init (struct nn_ins_item *self,
     const struct nn_epbase_vfptr *vfptr, void *hint)
 {
-    int protocol;
     size_t sz;
 
     nn_epbase_init (&self->epbase, vfptr, hint);

@@ -349,10 +349,14 @@ SUFFIXES = .3 .7
         -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
-#  The man pages to be installed.
+#  Cause man pages to be generated and installed.
 
 man3_MANS = $(MAN3:%.txt=%.3)
-man7_MANS = $(MAN7:%.txt=%.7) 
+man7_MANS = $(MAN7:%.txt=%.7)
+
+#  Cause HTML docs to be generated.
+
+doc_DATA = $(MAN3:%.txt=%.html)
 
 #  Extra files to be included into the source package.
 

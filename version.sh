@@ -32,7 +32,7 @@ packageversion(){
         VER="Unknown"
     fi
 
-    echo -n $VER
+    printf '%s' "$VER"
 }
 
 soversion(){
@@ -50,11 +50,11 @@ soversion(){
         exit 1
     fi
 
-    MAJOR=$(echo -n $MAJOR | awk '{ print $3 }')
-    MINOR=$(echo -n $MINOR | awk '{ print $3 }')
-    PATCH=$(echo -n $PATCH | awk '{ print $3 }')
+    MAJOR=$(printf '%s' "$MAJOR" | awk '{ print $3 }')
+    MINOR=$(printf '%s' "$MINOR" | awk '{ print $3 }')
+    PATCH=$(printf '%s' "$PATCH" | awk '{ print $3 }')
 
-    echo -n $MAJOR$1$MINOR$1$PATCH
+    printf '%s' "$MAJOR$1$MINOR$1$PATCH"
 }
 
 

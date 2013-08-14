@@ -335,14 +335,16 @@ MAN3 = \
 #  Build instructions.
 
 .txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf \
+        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .xml.man:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
 .txt.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-    -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf -o $@ $<
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 #  The man pages to be installed.
 

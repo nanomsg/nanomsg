@@ -44,9 +44,11 @@ AC_PROG_AWK
 
 NN_LT_VERSION=m4_esyscmd([./version.sh -v])
 NN_PC_VERSION=m4_esyscmd([./version.sh -p])
+NN_PACKAGE_VERSION=m4_esyscmd([./version.sh])
 
 AC_SUBST(NN_LT_VERSION)
 AC_SUBST(NN_PC_VERSION)
+AC_SUBST(NN_PACKAGE_VERSION)
 
 ################################################################################
 #  Check the compilers.                                                         #
@@ -157,7 +159,6 @@ AS_IF([test x"$enable_doc" == "xyes"], [
     ])
 ])
 AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
-AM_COND_IF([DOC], [AC_CONFIG_FILES([doc/asciidoc.conf])])
 
 ################################################################################
 #  Check which OS we are building for.                                         #

@@ -131,12 +131,15 @@ NANOMSG_UTILS = \
     src/utils/sem.c \
     src/utils/sleep.h \
     src/utils/sleep.c \
+    src/utils/stopwatch.h \
+    src/utils/stopwatch.c \
     src/utils/thread.h \
     src/utils/thread.c \
     src/utils/thread_posix.h \
     src/utils/thread_posix.inc \
     src/utils/thread_win.h \
     src/utils/thread_win.inc \
+    src/utils/win.h \
     src/utils/wire.h \
     src/utils/wire.c
 
@@ -295,8 +298,6 @@ libnanomsg_la_LDFLAGS = -version-info @NN_LIBTOOL_VERSION@
 #  documentation                                                               #
 ################################################################################
 
-if DOC
-
 #  Source files.
 
 MAN7 = \
@@ -332,6 +333,8 @@ MAN3 = \
     doc/nn_device.txt \
     doc/nn_cmsg.txt
 
+if DOC
+
 #  Build instructions.
 
 .txt.xml:
@@ -358,16 +361,16 @@ man7_MANS = $(MAN7:%.txt=%.7)
 
 doc_DATA = $(MAN3:%.txt=%.html)
 
-#  Extra files to be included into the source package.
-
-EXTRA_DIST += doc/htmldoc.css $(MAN3) $(MAN7)
-
 #  Extra files to be cleaned.
 
 CLEANFILES = $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
     $(MAN3:%.txt=%.html) $(MAN7:%.txt=%.html)
 
 endif
+
+#  Extra files to be included into the source package.
+
+EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN3) $(MAN7)
 
 ################################################################################
 #  performance tests                                                           #

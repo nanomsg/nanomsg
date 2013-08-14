@@ -289,7 +289,7 @@ libnanomsg_la_SOURCES = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnanomsg.pc
 
-libnanomsg_la_LDFLAGS = -version-info @NN_LT_VERSION@
+libnanomsg_la_LDFLAGS = -version-info @NN_LIBTOOL_VERSION@
 
 ################################################################################
 #  documentation                                                               #
@@ -424,11 +424,15 @@ TESTS = $(check_PROGRAMS)
 #  additional packaging-related stuff                                          #
 ################################################################################
 
+#  There's no git availabe when building from the source package and thus
+#  no way to obtain package version. Therefore, package version is saved into
+#  a file when building a source package.
 dist-hook:
-	$(srcdir)/version.sh > $(distdir)/.version
+	$(srcdir)/package_version.sh > $(distdir)/.version
 
 EXTRA_DIST += \
-    ./version.sh \
+    ./abi_version.sh \
+    ./package_version.sh \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
 

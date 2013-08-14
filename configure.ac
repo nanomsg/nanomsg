@@ -25,7 +25,7 @@
 
 AC_PREREQ([2.53])
 
-AC_INIT([nanomsg], [m4_esyscmd([./version.sh])],
+AC_INIT([nanomsg], [m4_esyscmd([./package_version.sh])],
    [nanomsg@freelists.org], [nanomsg], [http://nanomsg.org/])
 AC_CONFIG_SRCDIR([src/nn.h])
 AM_INIT_AUTOMAKE([1.6 foreign subdir-objects tar-ustar dist-zip])
@@ -42,13 +42,16 @@ AC_CANONICAL_HOST
 AC_PROG_SED
 AC_PROG_AWK
 
-NN_LT_VERSION=m4_esyscmd([./version.sh -v])
-NN_PC_VERSION=m4_esyscmd([./version.sh -p])
-NN_PACKAGE_VERSION=m4_esyscmd([./version.sh])
+NN_ABI_VERSION=m4_esyscmd([./abi_version.sh])
+NN_PACKAGE_VERSION=m4_esyscmd([./package_version.sh])
+NN_LIBTOOL_VERSION=m4_esyscmd([./abi_version.sh | sed -e y/./:/])
 
-AC_SUBST(NN_LT_VERSION)
-AC_SUBST(NN_PC_VERSION)
+AC_SUBST(NN_ABI_VERSION)
 AC_SUBST(NN_PACKAGE_VERSION)
+AC_SUBST(NN_LIBTOOL_VERSION)
+
+AC_MSG_NOTICE([nanomsg package version: $NN_PACKAGE_VERSION])
+AC_MSG_NOTICE([nanomsg ABI version: $NN_ABI_VERSION])
 
 ################################################################################
 #  Check the compilers.                                                         #

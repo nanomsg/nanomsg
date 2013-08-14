@@ -41,10 +41,9 @@ struct sym_value_name {
 
 static const struct sym_value_name sym_value_names [] = {
 
-    {NN_VERSION_MAJOR, "NN_VERSION_MAJOR"},
-    {NN_VERSION_MINOR, "NN_VERSION_MINOR"},
-    {NN_VERSION_PATCH, "NN_VERSION_PATCH"},
-    {NN_VERSION, "NN_VERSION"},
+    {NN_VERSION_CURRENT, "NN_VERSION_CURRENT"},
+    {NN_VERSION_REVISION, "NN_VERSION_REVISION"},
+    {NN_VERSION_AGE, "NN_VERSION_AGE"},
 
     {AF_SP, "AF_SP"},
     {AF_SP_RAW, "AF_SP_RAW"},

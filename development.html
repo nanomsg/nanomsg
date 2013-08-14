@@ -44,47 +44,50 @@
 
 <h3>Build</h3>
 
-<p>First, you have to have CMake installed. Once that is done following sequence of steps will build the library and related utilities:</p>
+<h4>POSIX-compliant platforms</h4>
+
+<p>First, you have to have autotools installed. Once that is done following sequence of steps will build the project:</p>
 
 <pre>
 $ git clone git@github.com:250bpm/nanomsg.git
 $ cd nanomsg
-$ mkdir build
-$ cmake .. # or cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-$ cmake ..
-$ make
-$ make check
-$ sudo make install
-</pre>
-
-<p>To build a version with debug info use the following command instead of "cmake .." step:
-
-<pre>
-$ cmake -DCMAKE_BUILD_TYPE=Debug ..
-</pre>
-
-<p>On Windows, follow the above steps until cmake step is done. Then use MSVC2010 to open and build the nanomsg solution located in on build subdirectory.</p>
-
-<p>To build the documentation (man pages and HTML reference) you need asciidoc and xmlto installed. Once done, run "make doc" command in the build subdirectory.</p>
-
-<h3>Auto-builds</h3>
-
-Auto-builds are run every time the project is updated. The results can be found here:
-<p><a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a></p>
-
-<h3>Cross-compilation</h3>
-
-To make cross-compilation easier, nanomsg project contains also an autotools build system. To use it, do the following:
-
-<pre>
-$ git clone git@github.com:250bpm/nanomsg.git
-$ cd nanomsg
-$ autoreconf -if
+$ ./autogen.sh
 $ ./configure
 $ make
 $ make check
 $ sudo make install
 </pre>
+
+<p>To build a version with documentation (man pages and HTML reference) included you will need <i>asciidoc</i> and <i>xmlto</i> tools installed. To build it modify the <i>./configure</i> step in following manner:
+
+<pre>
+$ ./configure --enable-doc
+</pre>
+
+<p>To build a version with debug info adjust the <i>./configure</i> step as follows:
+
+<pre>
+$ ./configure --enable-debug
+</pre>
+
+<h4>Windows</h4>
+
+<p>As autotools are not supported on Windows, you have to install <i>CMake</i> to be able to build the project. To do so, follow these steps:</p>
+
+<pre>
+$ git clone git@github.com:250bpm/nanomsg.git
+$ cd nanomsg
+$ mkdir build
+$ cd build
+$ cmake ..
+</pre>
+
+<p>At this point MSVC project gets generated in <i>build</i> subdirectory. You can open it using MSVC IDE and build the project in the standard way.</p>
+
+<h3>Auto-builds</h3>
+
+Auto-builds are run every time the project is updated. The results can be found here:
+<p><a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a></p>
 
 <h3>Bug tracker</h3>
 

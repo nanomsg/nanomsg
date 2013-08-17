@@ -87,6 +87,7 @@ static const struct sym_value_name sym_value_names [] = {
     {NN_TCP_NODELAY, "NN_TCP_NODELAY"},
 
     {NN_DONTWAIT, "NN_DONTWAIT"},
+    {NN_MSG, "NN_MSG"},
 
     {EADDRINUSE, "EADDRINUSE"},
     {EADDRNOTAVAIL, "EADDRNOTAVAIL"},

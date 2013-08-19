@@ -355,8 +355,8 @@ SUFFIXES = .3 .7
 
 #  Cause man pages to be generated and installed.
 
-man3_MANS = $(MAN3:%.txt=%.3)
-man7_MANS = $(MAN7:%.txt=%.7)
+dist_man3_MANS = $(MAN3:%.txt=%.3)
+dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 

@@ -377,7 +377,7 @@ EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN3) $(MAN7)
 #  performance tests                                                           #
 ################################################################################
 
-bin_PROGRAMS = \
+noinst_PROGRAMS = \
     perf/inproc_lat \
     perf/inproc_thr \
     perf/local_lat \

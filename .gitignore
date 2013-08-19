@@ -43,6 +43,7 @@ perf/remote_lat
 perf/remote_thr
 doc/*.7
 doc/*.3
+doc/*.html
 *.log
 tests/*.trs
 tests/block

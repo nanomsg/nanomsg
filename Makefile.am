@@ -342,13 +342,18 @@ if DOC
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
-SUFFIXES = .3 .7
+SUFFIXES = .3 .7 .3.html .7.html
 .xml.3:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 .xml.7: 
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
-.txt.html:
+.txt.3.html:
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+
+.txt.7.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
         -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
@@ -360,12 +365,12 @@ dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 
-doc_DATA = $(MAN3:%.txt=%.html) $(MAN7:%.txt=%.html)
+doc_DATA = $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 
 CLEANFILES = $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
-    $(MAN3:%.txt=%.html) $(MAN7:%.txt=%.html)
+    $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 endif
 

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_send(3)</title>
+<title>nn_device(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_send(3) Manual Page
+nn_device(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_send -
-   send a message
+<p>nn_device -
+   start a device
 </p>
 </div>
 </div>
@@ -761,41 +761,26 @@ nn_send(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_send (int <em>s</em>, const void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</strong></p></div>
+<div class="paragraph"><p><strong>int nn_device (int <em>s1</em>, int <em>s2</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The function will send a message containing the data from buffer pointed to
-by <em>buf</em> parameter to the socket <em>s</em>. The message will be <em>len</em> bytes long.</p></div>
-<div class="paragraph"><p>Alternatively, to send a buffer allocated by <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a> function
-set the buf parameter to point to the pointer to the buffer and <em>len</em> parameter
-to <em>NN_MSG</em> constant. In this case the buffer will be deallocated by <em>nn_send</em>
-function. Trying to deallocate it afterwards will result in undefined behaviour.</p></div>
-<div class="paragraph"><p>Which of the peers the message will be sent to is determined by
-the particular socket type.</p></div>
-<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-<strong>NN_DONTWAIT</strong>
-</dt>
-<dd>
-<p>
-Specifies that the operation should be performed in non-blocking mode. If the
-message cannot be sent straight away, the function will fail with <em>errno</em> set
-to EAGAIN.
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>Starts a device to forward messages between two sockets. If both sockets are
+valid, <em>nn_device</em> function loops and sends and messages received from <em>s1</em> to
+<em>s2</em> and vice versa. If only one socket is valid and the other is negative,
+<em>nn_device</em> works in a "loopback" mode&#8201;&#8212;&#8201;it loops and sends any messages
+received from the socket back to itself.</p></div>
+<div class="paragraph"><p>To break the loop and make <em>nn_device</em> function exit use
+<a href="nn_term.3.html">nn_term(3)</a> function.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds, the number of bytes in the message is returned.
-Otherwise, a negative number is returned and <em>errno</em> is set to to one of the
-values defined below.</p></div>
+<div class="paragraph"><p>The function loops until it hits an error. In such case it returns a negative
+value and sets <em>errno</em> to one of the values defined below.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -807,33 +792,17 @@ values defined below.</p></div>
 </dt>
 <dd>
 <p>
-The provided socket is invalid.
+One of the provided sockets is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>ENOTSUP</strong>
+<strong>EINVAL</strong>
 </dt>
 <dd>
 <p>
-The operation is not supported by this socket type.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EFSM</strong>
-</dt>
-<dd>
-<p>
-The operation cannot be performed on this socket at the moment because the socket
-is not in the appropriate state.  This error may occur with socket types that
-switch between several states.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EAGAIN</strong>
-</dt>
-<dd>
-<p>
-Non-blocking mode was requested and the message cannot be sent at the moment.
+Either one of the socket is not an AF_SP_RAW socket; or the two sockets don&#8217;t
+belong to the same protocol; or the directionality of the sockets doesn&#8217;t fit
+(e.g. attempt to join two SINK sockets to form a device).
 </p>
 </dd>
 <dt class="hdlist1">
@@ -841,17 +810,7 @@ Non-blocking mode was requested and the message cannot be sent at the moment.
 </dt>
 <dd>
 <p>
-The operation was interrupted by delivery of a signal before the message was
-sent.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETIMEDOUT</strong>
-</dt>
-<dd>
-<p>
-Individual socket types may define their own specific timeouts. If such timeout
-is hit, this error will be returned.
+The operation was interrupted by delivery of a signal.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -870,17 +829,19 @@ The library is terminating.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>nbytes = nn_send (s, "ABC", 3, 0);
-assert (nbytes == 3);</tt></pre>
+<pre><tt>int s1 = nn_socket (AF_SP_RAW, NN_REQ);
+nn_bind (s1, "tcp://eth0:5555");
+int s2 = nn_socket (AF_SP_RAW, NN_REP);
+nn_bind (s2, "tcp://eth0:5556");
+nn_device (s1, s2);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_recv.3.html">nn_recv(3)</a>
-<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
-<a href="nn_socket.3.html">nn_socket(3)</a>
+<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_term.3.html">nn_term(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -895,7 +856,7 @@ assert (nbytes == 3);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

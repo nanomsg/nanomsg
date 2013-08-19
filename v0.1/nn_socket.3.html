@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_cmsg(3)</title>
+<title>nn_socket(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_cmsg(3) Manual Page
+nn_socket(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_cmsg -
-   access control information
+<p>nn_socket -
+   create an SP socket
 </p>
 </div>
 </div>
@@ -761,28 +761,118 @@ nn_cmsg(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>struct nn_cmsghdr *NN_CMSG_FIRSTHDR(struct nn_msghdr <em>*hdr</em>);</strong></p></div>
-<div class="paragraph"><p><strong>struct nn_cmsghdr *NN_CMSG_NXTHDR(struct nn_msghdr <em>*hdr</em>, struct nn_cmsghdr <em>*cmsg</em>);</strong></p></div>
-<div class="paragraph"><p><strong>unsigned char *NN_CMSG_DATA(struct nn_cmsghdr <em>*cmsg</em>);</strong></p></div>
-<div class="paragraph"><p><strong>size_t NN_CMSG_SPACE(size_t <em>len</em>);</strong></p></div>
-<div class="paragraph"><p><strong>size_t NN_CMSG_LEN(size_t <em>len</em>);</strong></p></div>
+<div class="paragraph"><p><strong>int nn_socket (int <em>domain</em>, int <em>protocol</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><em>NN_CMSG_FIRSTHDR</em> returns a pointer to the first nn_cmsghdr in the control buffer in the supplied nn_msghdr structure.</p></div>
-<div class="paragraph"><p><em>NN_CMSG_NXTHDR</em> returns the next nn_cmsghdr after the supplied nn_cmsghdr. Returns NULL if there isn&#8217;t enough space in the buffer.</p></div>
-<div class="paragraph"><p><em>NN_CMSG_DATA</em> returns a pointer to the data associated with supplied nn_cmsghdr.</p></div>
-<div class="paragraph"><p><em>NN_CMSG_SPACE</em> returns the number of bytes occupied by nn_cmsghdr with payload of the specified length.</p></div>
-<div class="paragraph"><p><em>NN_CMSG_LEN</em> returns the value to store in the cmsg_len member of the cmsghdr structure, taking into account any  necessary  alignment.</p></div>
+<div class="paragraph"><p>Creates an SP socket with specified <em>domain</em> and <em>protocol</em>. Returns a file
+descriptor for the newly created socket.</p></div>
+<div class="paragraph"><p>Following domains are defined at the moment:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>AF_SP</strong>
+</dt>
+<dd>
+<p>
+Standard full-blown SP socket.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>AF_SP_RAW</strong>
+</dt>
+<dd>
+<p>
+Raw SP socket. Raw sockets omit the end-to-end functionality found in AF_SP
+sockets and thus can be used to implement intermediary devices in SP topologies.
+</p>
+</dd>
+</dl></div>
+<div class="paragraph"><p><em>protocol</em> parameter defines the type of the socket, which in turn determines
+the exact semantics of the socket. Check manual pages for individual SP
+protocols to get the list of available socket types.</p></div>
+<div class="paragraph"><p>The newly created socket is initially not associated with any endpoints.
+In order to establish a message flow at least one endpoint has to be added
+to the socket using <a href="nn_bind.3.html">nn_bind(3)</a> or <a href="nn_connect.3.html">nn_connect(3)</a>
+function.</p></div>
+<div class="paragraph"><p>Also note that <em>type</em> argument as found in standard <em>socket(2)</em> function is
+omitted from <em>nn_socket</em>. All the SP sockets are message-based and thus of
+<em>SOCK_SEQPACKET</em> type.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds file descriptor of the new socket is returned.
+Otherwise, negative number is returned and <em>errno</em> is set to to one of
+the values defined below.</p></div>
+<div class="paragraph"><p>Note that file descriptors returned by <em>nn_socket</em> function are not standard
+file descriptors and will exhibit undefined behaviour when used with system
+functions. Moreover, it may happen that a system file descriptor and file
+descriptor of an SP socket will incidentally collide (be equal).</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EAFNOSUPPORT</strong>
+</dt>
+<dd>
+<p>
+Specified address family is not supported.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+Unknown protocol.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EMFILE</strong>
+</dt>
+<dd>
+<p>
+The limit on the total number of open SP sockets or OS limit for file
+descriptors has been reached.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int s = nn_socket (AF_SP, NN_PUB);
+assert (s &gt;= 0);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
-<a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
+<div class="paragraph"><p><a href="nn_pubsub.3.html">nn_pubsub(3)</a>
+<a href="nn_reqrep.3.html">nn_reqrep(3)</a>
+<a href="nn_pipeline.3.html">nn_pipeline(3)</a>
+<a href="nn_survey.3.html">nn_survey(3)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
+<a href="nn_connect.3.html">nn_connect(3)</a>
+<a href="nn_close.3.html">nn_close(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -797,7 +887,7 @@ nn_cmsg(3) Manual Page
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

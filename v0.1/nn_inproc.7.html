@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_pipeline(7)</title>
+<title>nn_inproc(7)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_pipeline(7) Manual Page
+nn_inproc(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_pipeline -
-   scalability protocol for passing tasks through a series of processing steps
+<p>nn_inproc -
+   in-process transport mechanism
 </p>
 </div>
 </div>
@@ -761,51 +761,47 @@ nn_pipeline(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/pipeline.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/inproc.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Fair queues messages from the previous processing step and load balances them
-among instances of the next processing step.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-NN_PUSH
-</dt>
-<dd>
-<p>
-    This socket is used to send messages to a cluster of load-balanced
-    nodes. Receive operation is not implemented on this socket type.
-</p>
-</dd>
-<dt class="hdlist1">
-NN_PULL
-</dt>
-<dd>
-<p>
-    This socket is used to receive a message from a cluster of nodes. Send
-    operation is not implemented on this socket type.
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>In-process transport allows to send messages between threads or modules inside a
+process. In-process address is an arbitrary case-sensitive string preceded by
+<em>inproc://</em> protocol specifier. All in-process addresses are visible from any
+module within the process. They are not visible from outside of the process.</p></div>
+<div class="paragraph"><p>The nature of in-process transport makes it easy to pass pointers between
+threads instead of actual data. This is, however, considered a bad application
+design and violates the scalable share-nothing architecture. If you do pass
+pointers among threads, synchronising thread access to shared data becomes
+your responsibility. Such design also prevents moving the thread into different
+process or machine once the need arises. As a rule of the thumb, don&#8217;t pass
+pointers among threads unless you know what you are doing.</p></div>
+<div class="paragraph"><p>The overall buffer size for an inproc connection is determined by NN_RCVBUF
+socket option on the receiving end of the connection. NN_SNDBUF socket option
+is ignored. In addition to the buffer, one message of arbitrary size will fit
+into the buffer. That way, even messages larger than the buffer can be
+transfered via inproc connection.</p></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="paragraph"><p>No protocol-specific socket options are defined at the moment.</p></div>
 </div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>nn_bind (s1, "inproc://test");
+nn_connect (s2, "inproc://test);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
-<a href="nn_pubsub.7.html">nn_pubsub(7)</a>
-<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
-<a href="nn_survey.7.html">nn_survey(7)</a>
-<a href="nn_pair.7.html">nn_pair(7)</a>
+<div class="paragraph"><p><a href="nn_ipc.7.html">nn_ipc(7)</a>
+<a href="nn_tcp.7.html">nn_tcp(7)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
+<a href="nn_connect.3.html">nn_connect(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -820,7 +816,7 @@ NN_PULL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

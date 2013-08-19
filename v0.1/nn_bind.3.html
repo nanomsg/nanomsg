@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_device(3)</title>
+<title>nn_bind(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_device(3) Manual Page
+nn_bind(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_device -
-   start a device
+<p>nn_bind -
+   add a local endpoint to the socket
 </p>
 </div>
 </div>
@@ -761,26 +761,34 @@ nn_device(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_device (int <em>s1</em>, int <em>s2</em>);</strong></p></div>
+<div class="paragraph"><p><strong>int nn_bind (int <em>s</em>, const char <em>*addr</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Starts a device to forward messages between two sockets. If both sockets are
-valid, <em>nn_device</em> function loops and sends and messages received from <em>s1</em> to
-<em>s2</em> and vice versa. If only one socket is valid and the other is negative,
-<em>nn_device</em> works in a "loopback" mode&#8201;&#8212;&#8201;it loops and sends any messages
-received from the socket back to itself.</p></div>
-<div class="paragraph"><p>To break the loop and make <em>nn_device</em> function exit use
-<a href="nn_term.3.html">nn_term(3)</a> function.</p></div>
+<div class="paragraph"><p>Adds a local endpoint to the socket <em>s</em>. The endpoint can be then used by other
+applications to connect to.</p></div>
+<div class="paragraph"><p>The <em>addr</em> argument consists of two parts as follows: <em>transport</em><tt>://</tt><em>address</em>.
+The <em>transport</em> specifies the underlying transport protocol to use. The meaning
+of the <em>address</em> part is specific to the underlying transport protocol.</p></div>
+<div class="paragraph"><p>For the list of available transport protocols check the list on
+<a href="nanomsg.7.html">nanomsg(7)</a> manual page.</p></div>
+<div class="paragraph"><p>Maximum length of the <em>addr</em> parameter is specified by <em>NN_SOCKADDR_MAX</em>
+defined in <em>&lt;nanomsg/nn.h&gt;</em> header file.</p></div>
+<div class="paragraph"><p>Note that nn_bind and <a href="nn_connect.3.html">nn_connect(3)</a> may be called multiple times
+on the same socket thus allowing the socket to communicate with multiple
+heterogeneous endpoints.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>The function loops until it hits an error. In such case it returns a negative
-value and sets <em>errno</em> to one of the values defined below.</p></div>
+<div class="paragraph"><p>If the function succeeds positive endpoint ID is returned. Endpoint ID can be
+later used to remove the endpoint from the socket via <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
+function.</p></div>
+<div class="paragraph"><p>If the function fails negative value is returned and <em>errno</em> is set to to one of
+the values defined below.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -792,7 +800,15 @@ value and sets <em>errno</em> to one of the values defined below.</p></div>
 </dt>
 <dd>
 <p>
-One of the provided sockets is invalid.
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EMFILE</strong>
+</dt>
+<dd>
+<p>
+Maximum number of active endpoints was reached.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -800,17 +816,47 @@ One of the provided sockets is invalid.
 </dt>
 <dd>
 <p>
-Either one of the socket is not an AF_SP_RAW socket; or the two sockets don&#8217;t
-belong to the same protocol; or the directionality of the sockets doesn&#8217;t fit
-(e.g. attempt to join two SINK sockets to form a device).
+The syntax of the supplied address is invalid.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EINTR</strong>
+<strong>ENAMETOOLONG</strong>
 </dt>
 <dd>
 <p>
-The operation was interrupted by delivery of a signal.
+The supplied address is too long.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EPROTONOSUPPORT</strong>
+</dt>
+<dd>
+<p>
+The requested transport protocol is not supported.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EADDRNOTAVAIL</strong>
+</dt>
+<dd>
+<p>
+The requested endpoint is not local.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENODEV</strong>
+</dt>
+<dd>
+<p>
+Address specifies a nonexistent interface.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EADDRINUSE</strong>
+</dt>
+<dd>
+<p>
+The requested local endpoint is already in use.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -829,19 +875,21 @@ The library is terminating.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>int s1 = nn_socket (AF_SP_RAW, NN_REQ);
-nn_bind (s1, "tcp://eth0:5555");
-int s2 = nn_socket (AF_SP_RAW, NN_REP);
-nn_bind (s2, "tcp://eth0:5556");
-nn_device (s1, s2);</tt></pre>
+<pre><tt>s = nn_socket (AF_SP, NN_PUB);
+eid1 = nn_bind (s, "inproc://test");
+eid2 = nn_bind (s, "tcp://eth0:5560");</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
-<a href="nn_term.3.html">nn_term(3)</a>
+<div class="paragraph"><p><a href="nn_inproc.7.html">nn_inproc(7)</a>
+<a href="nn_ipc.7.html">nn_ipc(7)</a>
+<a href="nn_tcp.7.html">nn_tcp(7)</a>
+<a href="nn_socket.3.html">nn_socket(3)</a>
+<a href="nn_connect.3.html">nn_connect(3)</a>
+<a href="nn_shutdown.3.html">nn_shutdown(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -856,7 +904,7 @@ nn_device (s1, s2);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

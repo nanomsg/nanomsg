@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_shutdown(3)</title>
+<title>nn_pubsub(7)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_shutdown(3) Manual Page
+nn_pubsub(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_shutdown -
-   remove an endpoint from a socket
+<p>nn_pubsub -
+   publish/subscribe scalability protocol
 </p>
 </div>
 </div>
@@ -761,83 +761,71 @@ nn_shutdown(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_shutdown (int <em>s</em>, int <em>how</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/pubsub.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Removes an endpoint from socket <em>s</em>. <em>how</em> parameter specifies the ID of the
-endpoint to remove as returned by prior call to <a href="nn_bind.3.html">nn_bind(3)</a> or
-<a href="nn_connect.3.html">nn_connect(3)</a>. The library will try to deliver any outstanding
-outbound messages to this endpoint for the time specified by <em>NN_LINGER</em> socket
-option. The call will block in the meantime.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
-returned and <em>errno</em> is set to to one of the values defined below.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
+<div class="paragraph"><p>Broadcasts messages to multiple destinations.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EBADF</strong>
+NN_PUB
 </dt>
 <dd>
 <p>
-The provided socket is invalid.
+    This socket is used to distribute messages to multiple destinations.
+    Receive operation is not defined.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EINVAL</strong>
+NN_SUB
 </dt>
 <dd>
 <p>
-The <em>how</em> parameter doesn&#8217;t correspond to an active endpoint.
+    Receives messages from the publisher. Only messages that the socket is
+    subscribed to are received. When the socket is created there are no
+    subscriptions and thus no messages will be received. Send operation is
+    not defined on this socket. The socket can be connected to at most one peer.
+</p>
+</dd>
+</dl></div>
+</div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+NN_SUB_SUBSCRIBE
+</dt>
+<dd>
+<p>
+    Defined on full SUB socket. Subscribes for a particular topic. Type of the
+    option is string.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EINTR</strong>
+NN_SUB_UNSUBSCRIBE
 </dt>
 <dd>
 <p>
-Operation was interrupted by a signal. The endpoint is not fully closed yet.
-Operation can be re-started by calling <em>nn_shutdown()</em> again.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETERM</strong>
-</dt>
-<dd>
-<p>
-The library is terminating.
+    Defined on full SUB socket. Unsubscribes from a particular topic. Type of
+    the option is string.
 </p>
 </dd>
 </dl></div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre><tt>s = nn_socket (AF_SP, NN_PUB);
-eid = nn_bind (s, "inproc://test");
-nn_shutdown (s, eid);</tt></pre>
-</div></div>
-</div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
-<a href="nn_bind.3.html">nn_bind(3)</a>
-<a href="nn_connect.3.html">nn_connect(3)</a>
+<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
+<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
+<a href="nn_pipeline.7.html">nn_pipeline(7)</a>
+<a href="nn_survey.7.html">nn_survey(7)</a>
+<a href="nn_pair.7.html">nn_pair(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -852,7 +840,7 @@ nn_shutdown (s, eid);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

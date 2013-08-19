@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_tcp(7)</title>
+<title>nn_allocmsg(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_tcp(7) Manual Page
+nn_allocmsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_tcp -
-   TCP transport mechanism
+<p>nn_allocmsg -
+   allocate a message
 </p>
 </div>
 </div>
@@ -761,97 +761,54 @@ nn_tcp(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/tcp.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>void *nn_allocmsg (size_t <em>size</em>, int <em>type</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>TCP transport allows for passing message over the network using simple reliable
-one-to-one connections. TCP is the most widely used transport protocol, it is
-virtually ubiquitous and thus the transport of choice for communication over
-the network.</p></div>
-<div class="paragraph"><p>When binding a TCP socket address of the form tcp://interface:port should be
-used. Port is the TCP port number to use. Interface is one of the following
-(optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-Asterisk character (*) meaning all local network interfaces.
-</p>
-</li>
-<li>
-<p>
-IPv4 address of a local network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a local network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-Interface name, as defined by operating system.
-</p>
-</li>
-</ul></div>
-<div class="paragraph"><p>When connecting a TCP socket address of the form tcp://interface;address:port
-should be used. Port is the TCP port number to use. Interface is optional and
-specifies which local network interface to use. If not specified, OS will select
-an appropriate interface itself. If specified it can be one of the following
-(optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-IPv4 address of a local network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a local network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-Interface name, as defined by operating system (eth0).
-</p>
-</li>
-</ul></div>
-<div class="paragraph"><p>Finally, address specifies the remote address to connect to. It can be one of
-the following (optionally placed within square brackets):</p></div>
-<div class="ulist"><ul>
-<li>
-<p>
-IPv4 address of a remote network interface in numeric form (192.168.0.111).
-</p>
-</li>
-<li>
-<p>
-IPv6 address of a remote network interface in numeric form (::1).
-</p>
-</li>
-<li>
-<p>
-The DNS name of the remote box.
-</p>
-</li>
-</ul></div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
+<div class="paragraph"><p>Allocate a message of the specified <em>size</em> to be sent in zero-copy fashion.
+The content of the message is undefined after allocation and it should be filled
+in by the user. While <a href="nn_send.3.html">nn_send(3)</a> and <a href="nn_sendmsg.3.html">nn_sendmsg(3)</a> allow
+to send arbitrary buffers, buffers allocated using <em>nn_allocmsg()</em> can be more
+efficient for large messages as they allow for using zero-copy techniques.</p></div>
+<div class="paragraph"><p><em>type</em> parameter specifies type of allocation mechanism to use. Zero is the
+default one, however, individual transport mechanisms may define their
+own allocation mechanisms, such as allocating in shared memory or allocating
+a memory block pinned down to a physical memory address. Such allocation,
+when used with the transport that defines them, should be more efficient
+than the default allocation mechanism.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds pointer to newly allocated buffer is returned.
+Otherwise, NULL is returned and <em>errno</em> is set to to one of the values
+defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-NN_TCP_NODELAY
+<strong>EINVAL</strong>
 </dt>
 <dd>
 <p>
-    This option, when set to 1, disables Nagle&#8217;s algorithm. It also disables
-    delaying of TCP acknowledgments. Using this option improves latency at
-    the expense of throughput. Type of this option is int. Default value is 0.
+Supplied allocation <em>type</em> is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOMEM</strong>
+</dt>
+<dd>
+<p>
+Not enough memory to allocate the message.
 </p>
 </dd>
 </dl></div>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -859,18 +816,18 @@ NN_TCP_NODELAY
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>nn_bind (s1, "tcp://*:5555");
-nn_connect (s2, "tcp://myserver:5555");</tt></pre>
+<pre><tt>void *buf = nn_allocmsg (12, 0);
+memcpy (buf, "Hello world!", 12);
+nn_send (s, &amp;buf, NN_MSG, 0);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_inproc.7.html">nn_inproc(7)</a>
-<a href="nn_ipc.7.html">nn_ipc(7)</a>
-<a href="nn_bind.3.html">nn_bind(3)</a>
-<a href="nn_connect.3.html">nn_connect(3)</a>
+<div class="paragraph"><p><a href="nn_freemsg.3.html">nn_freemsg(3)</a>
+<a href="nn_send.3.html">nn_send(3)</a>
+<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -885,7 +842,7 @@ nn_connect (s2, "tcp://myserver:5555");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

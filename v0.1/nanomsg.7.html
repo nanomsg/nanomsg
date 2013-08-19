@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_recvmsg(3)</title>
+<title>nanomsg(7)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_recvmsg(3) Manual Page
+nanomsg(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_recvmsg -
-   fine-grained alternative to nn_recv
+<p>nanomsg -
+   scalability protocols library
 </p>
 </div>
 </div>
@@ -760,162 +760,245 @@ nn_recvmsg(3) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>NN_EXPORT int nn_recvmsg (int <em>s</em>, struct nn_msghdr <em>*msghdr</em>, int <em>flags</em>);</strong></p></div>
+<div class="paragraph"><p><strong>cc</strong> [<em>flags</em>] <em>files</em> <strong>-lnanomsg</strong> [<em>libraries</em>]</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Receives a message from socket <em>s</em> into buffers specified by <em>msghdr</em> paramter
-along with any additional control data. <em>msghdr</em> parameter should be nullified
-before beign used.</p></div>
-<div class="paragraph"><p>Structure <em>nn_msghdr</em> contains at least following members:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>struct nn_iovec *msg_iov;
-int msg_iovlen;
-void *msg_control;
-size_t msg_controllen;</tt></pre>
-</div></div>
-<div class="paragraph"><p><em>msg_iov</em> points to a gather array of buffers to fill in. <em>msg_iovlen</em> specifies
-the size of the array.</p></div>
-<div class="paragraph"><p><em>msg_control</em> points to the buffer to hold control information  associated with
-the received message. <em>msg_controllen</em> specifies the length of the buffer.
-If the control information should not be retrieved, set <em>msg_control</em> parameter
-to NULL. For detailed discussion of how to parse the control information check
-<a href="nn_cmsg.3.html">nn_cmsg(3)</a> man page.</p></div>
-<div class="paragraph"><p>Structure <em>nn_iovec</em> defines one element in the gather array (a buffer to be
-filled in by message data) and contains following members:</p></div>
-<div class="literalblock">
-<div class="content">
-<pre><tt>void *iov_base;
-size_t iov_len;</tt></pre>
-</div></div>
-<div class="paragraph"><p>Alternatively, <em>nanomsg</em> library can allocate the buffer for you. To do so,
-let the <em>iov_base</em> point to void* variable to receive the buffer and set
-<em>iov_len</em> to <em>NN_MSG</em>. After successful completion user is responsible
-for deallocating the message using <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function. Gather
-array in <em>nn_msghdr</em> structure can contain only one element in this case.</p></div>
-<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="paragraph"><p>Following functions are exported by nanomsg library:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>NN_DONTWAIT</strong>
+Create an SP socket
 </dt>
 <dd>
 <p>
-Specifies that the operation should be performed in non-blocking mode. If the
-message cannot be received straight away, the function will fail with <em>errno</em>
-set to EAGAIN.
+    <a href="nn_socket.3.html">nn_socket(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Close an SP socket
+</dt>
+<dd>
+<p>
+    <a href="nn_close.3.html">nn_close(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Set a socket option
+</dt>
+<dd>
+<p>
+    <a href="nn_setsockopt.3.html">nn_setsockopt(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Retrieve a socket option
+</dt>
+<dd>
+<p>
+    <a href="nn_getsockopt.3.html">nn_getsockopt(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Add a local endpoint to the socket
+</dt>
+<dd>
+<p>
+    <a href="nn_bind.3.html">nn_bind(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Add a remote endpoint to the socket
+</dt>
+<dd>
+<p>
+    <a href="nn_connect.3.html">nn_connect(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Remove an endpoint from the socket
+</dt>
+<dd>
+<p>
+    <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Send a message
+</dt>
+<dd>
+<p>
+    <a href="nn_send.3.html">nn_send(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Receive a message
+</dt>
+<dd>
+<p>
+    <a href="nn_recv.3.html">nn_recv(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Fine-grained alternative to nn_send
+</dt>
+<dd>
+<p>
+    <a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Fine-grained alternative to nn_recv
+</dt>
+<dd>
+<p>
+    <a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Allocate a message
+</dt>
+<dd>
+<p>
+    <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Deallocate a message
+</dt>
+<dd>
+<p>
+    <a href="nn_freemsg.3.html">nn_freemsg(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Manipulation of message control data
+</dt>
+<dd>
+<p>
+    <a href="nn_cmsg.3.html">nn_cmsg(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Retrieve the current errno
+</dt>
+<dd>
+<p>
+    <a href="nn_errno.3.html">nn_errno(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Convert an error number into human-readable string
+</dt>
+<dd>
+<p>
+    <a href="nn_strerror.3.html">nn_strerror(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Query the names and values of nanomsg symbols
+</dt>
+<dd>
+<p>
+    <a href="nn_symbol.3.html">nn_symbol(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Start a device
+</dt>
+<dd>
+<p>
+    <a href="nn_device.3.html">nn_device(3)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Notify all sockets about process termination
+</dt>
+<dd>
+<p>
+    <a href="nn_term.3.html">nn_term(3)</a>
 </p>
 </dd>
 </dl></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
-negative number is returned and <em>errno</em> is set to to one of the values defined
-below.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
+<div class="paragraph"><p>Following scalability protocols are provided by nanomsg:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EBADF</strong>
+One-to-one protocol
 </dt>
 <dd>
 <p>
-The provided socket is invalid.
+    <a href="nn_pair.7.html">nn_pair(7)</a>
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>ENOTSUP</strong>
+Request/reply protocol
 </dt>
 <dd>
 <p>
-The operation is not supported by this socket type.
+    <a href="nn_reqrep.7.html">nn_reqrep(7)</a>
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EFSM</strong>
+Publish/subscribe protocol
 </dt>
 <dd>
 <p>
-The operation cannot be performed on this socket at the moment because socket is
-not in the appropriate state.  This error may occur with socket types that
-switch between several states.
+    <a href="nn_pubsub.7.html">nn_pubsub(7)</a>
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EAGAIN</strong>
+Survey protocol
 </dt>
 <dd>
 <p>
-Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+    <a href="nn_survey.7.html">nn_survey(7)</a>
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EINTR</strong>
+Pipeline protocol
 </dt>
 <dd>
 <p>
-The operation was interrupted by delivery of a signal before the message was
-received.
+    <a href="nn_pipeline.7.html">nn_pipeline(7)</a>
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>ETIMEDOUT</strong>
+Message bus protocol
 </dt>
 <dd>
 <p>
-Individual socket types may define their own specific timeouts. If such timeout
-is hit this error will be returned.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETERM</strong>
-</dt>
-<dd>
-<p>
-The library is terminating.
+    <a href="nn_bus.7.html">nn_bus(7)</a>
 </p>
 </dd>
 </dl></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre><tt>struct nn_msghdr hdr;
-struct nn_iovec iov [2];
-char buf0 [4];
-char buf1 [2];
-iov [0].iov_base = buf0;
-iov [0].iov_len = sizeof (buf0);
-iov [1].iov_base = buf1;
-iov [1].iov_len = sizeof (buf1);
-memset (&amp;hdr, 0, sizeof (hdr));
-hdr.msg_iov = iov;
-hdr.msg_iovlen = 2;
-nn_recvmsg (s, &amp;hdr, 0);</tt></pre>
-</div></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_see_also">SEE ALSO</h2>
-<div class="sectionbody">
-<div class="paragraph"><p><a href="nn_recv.3.html">nn_recv(3)</a>
-<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
-<a href="nn_allocmsg.3.html">nn_allocmsg(3)</a>
-<a href="nn_freemsg.3.html">nn_freemsg(3)</a>
-<a href="nn_cmsg.3.html">nn_cmsg(3)</a>
-<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+<div class="paragraph"><p>Following transport mechanisms are provided by nanomsg:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+In-process transport
+</dt>
+<dd>
+<p>
+    <a href="nn_inproc.7.html">nn_inproc(7)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+Inter-process transport
+</dt>
+<dd>
+<p>
+    <a href="nn_ipc.7.html">nn_ipc(7)</a>
+</p>
+</dd>
+<dt class="hdlist1">
+TCP transport
+</dt>
+<dd>
+<p>
+    <a href="nn_tcp.7.html">nn_tcp(7)</a>
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -929,7 +1012,7 @@ nn_recvmsg (s, &amp;hdr, 0);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

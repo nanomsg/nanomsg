@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_symbol(3)</title>
+<title>nn_survey(7)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_symbol(3) Manual Page
+nn_survey(7) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_symbol -
-   query the names and values of nanomsg symbols
+<p>nn_survey -
+   survey scalability protocol
 </p>
 </div>
 </div>
@@ -761,73 +761,72 @@ nn_symbol(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>const char *nn_symbol (int <em>i</em>, int <em>*value</em>);</strong></p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/survey.h&gt;</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Retrieves the symbol name and value at index <em>i</em>.  Indices start at 0.  An index
-has no significance to its associated symbol; the mappings may change between
-library versions.</p></div>
-<div class="paragraph"><p>Typically a client will iterate through the symbols until nn_symbol returns
-NULL in order to collect all the symbols.</p></div>
-<div class="paragraph"><p>All symbols exposed by <em>nn_symbol</em> are available directly in the C API,
-generally as preprocessor macros.  Thus, this function is useful mostly for
-language bindings that can&#8217;t parse the header file and rely on retrieving the
-symbols in the runtime.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_return_value">RETURN VALUE</h2>
-<div class="sectionbody">
-<div class="paragraph"><p>If <em>i</em> is valid, returns the name of the symbol at that index.  If the pointer
-<em>value</em> is not NULL, the symbol&#8217;s value is stored there.</p></div>
-<div class="paragraph"><p>If <em>i</em> is out-of-range, nn_symbol returns NULL and sets <em>errno</em> to EINVAL.</p></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_errors">ERRORS</h2>
-<div class="sectionbody">
+<div class="paragraph"><p>Allows to broadcast a survey to multiple locations and gather the responses.</p></div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EINVAL</strong>
+NN_SURVEYOR
 </dt>
 <dd>
 <p>
-The passed index <em>i</em> was out-of-range; it was less than zero or greater-than-or-
-equal-to the number of symbols.
+    Used to send the survey. The survey is delivered to all the connected
+    respondents. Once the query is sent, the socket can be used to receive
+    the responses. When the survey deadline expires, receive will return
+    ETIMEDOUT error.
+</p>
+</dd>
+<dt class="hdlist1">
+NN_RESPONDENT
+</dt>
+<dd>
+<p>
+    Use to respond to the survey. Survey is received using receive function,
+    response is sent using send function. This socket can be connected to
+    at most one peer.
+</p>
+</dd>
+</dl></div>
+</div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+NN_SURVEYOR_DEADLINE
+</dt>
+<dd>
+<p>
+    Specifies how long to wait for responses to the survey. Once the deadline
+    expires, receive function will return ETIMEDOUT error and all subsequent
+    responses to the survey will be silently dropped. The deadline is measured
+    in milliseconds. Option type is int. Default value is 1000 (1 second).
 </p>
 </dd>
 </dl></div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
-<div class="sectionbody">
-<div class="listingblock">
-<div class="content">
-<pre><tt>int value, i;
-for (i = 0; ; ++i) {
-    const char* name = nn_symbol (i, &amp;value);
-    if (name == NULL) break;
-    printf ("'%s' = %d\n", name, value);
-}</tt></pre>
-</div></div>
-</div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_errno.3.html">nn_errno(3)</a>
-<a href="nn_strerror.3.html">nn_strerror(3)</a>
+<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
+<a href="nn_pubsub.7.html">nn_pubsub(7)</a>
+<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
+<a href="nn_pipeline.7.html">nn_pipeline(7)</a>
+<a href="nn_pair.7.html">nn_pair(7)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Evan Wies &lt;<a href="mailto:evan@neomantra.net">evan@neomantra.net</a>&gt;</p></div>
+<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -835,7 +834,7 @@ for (i = 0; ; ++i) {
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

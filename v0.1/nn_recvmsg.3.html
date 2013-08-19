@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_reqrep(7)</title>
+<title>nn_recvmsg(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_reqrep(7) Manual Page
+nn_recvmsg(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_reqrep -
-   request/reply scalability protocol
+<p>nn_recvmsg -
+   fine-grained alternative to nn_recv
 </p>
 </div>
 </div>
@@ -761,62 +761,160 @@ nn_reqrep(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/reprep.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>NN_EXPORT int nn_recvmsg (int <em>s</em>, struct nn_msghdr <em>*msghdr</em>, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>This protocol is used to distribute the workload among multiple stateless
-workers.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
+<div class="paragraph"><p>Receives a message from socket <em>s</em> into buffers specified by <em>msghdr</em> paramter
+along with any additional control data. <em>msghdr</em> parameter should be nullified
+before beign used.</p></div>
+<div class="paragraph"><p>Structure <em>nn_msghdr</em> contains at least following members:</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>struct nn_iovec *msg_iov;
+int msg_iovlen;
+void *msg_control;
+size_t msg_controllen;</tt></pre>
+</div></div>
+<div class="paragraph"><p><em>msg_iov</em> points to a gather array of buffers to fill in. <em>msg_iovlen</em> specifies
+the size of the array.</p></div>
+<div class="paragraph"><p><em>msg_control</em> points to the buffer to hold control information  associated with
+the received message. <em>msg_controllen</em> specifies the length of the buffer.
+If the control information should not be retrieved, set <em>msg_control</em> parameter
+to NULL. For detailed discussion of how to parse the control information check
+<a href="nn_cmsg.3.html">nn_cmsg(3)</a> man page.</p></div>
+<div class="paragraph"><p>Structure <em>nn_iovec</em> defines one element in the gather array (a buffer to be
+filled in by message data) and contains following members:</p></div>
+<div class="literalblock">
+<div class="content">
+<pre><tt>void *iov_base;
+size_t iov_len;</tt></pre>
+</div></div>
+<div class="paragraph"><p>Alternatively, <em>nanomsg</em> library can allocate the buffer for you. To do so,
+let the <em>iov_base</em> point to void* variable to receive the buffer and set
+<em>iov_len</em> to <em>NN_MSG</em>. After successful completion user is responsible
+for deallocating the message using <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function. Gather
+array in <em>nn_msghdr</em> structure can contain only one element in this case.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
 <div class="dlist"><dl>
 <dt class="hdlist1">
-NN_REQ
+<strong>NN_DONTWAIT</strong>
 </dt>
 <dd>
 <p>
-    Used to implement the client application that sends requests and
-    receives replies.
-</p>
-</dd>
-<dt class="hdlist1">
-NN_REP
-</dt>
-<dd>
-<p>
-    Used to implement the stateless worker that receives requests and sends
-    replies.
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.
 </p>
 </dd>
 </dl></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-NN_REQ_RESEND_IVL
+<strong>EBADF</strong>
 </dt>
 <dd>
 <p>
-    This option is defined on the full REQ socket. If reply is not received
-    in specified amount of milliseconds, the request will be automatically
-    resent. The type of this option is int. Default value is 60000 (1 minute).
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+received.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
 </p>
 </dd>
 </dl></div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>struct nn_msghdr hdr;
+struct nn_iovec iov [2];
+char buf0 [4];
+char buf1 [2];
+iov [0].iov_base = buf0;
+iov [0].iov_len = sizeof (buf0);
+iov [1].iov_base = buf1;
+iov [1].iov_len = sizeof (buf1);
+memset (&amp;hdr, 0, sizeof (hdr));
+hdr.msg_iov = iov;
+hdr.msg_iovlen = 2;
+nn_recvmsg (s, &amp;hdr, 0);</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
-<a href="nn_pubsub.7.html">nn_pubsub(7)</a>
-<a href="nn_pipeline.7.html">nn_pipeline(7)</a>
-<a href="nn_survey.7.html">nn_survey(7)</a>
-<a href="nn_pair.7.html">nn_pair(7)</a>
+<div class="paragraph"><p><a href="nn_recv.3.html">nn_recv(3)</a>
+<a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
+<a href="nn_allocmsg.3.html">nn_allocmsg(3)</a>
+<a href="nn_freemsg.3.html">nn_freemsg(3)</a>
+<a href="nn_cmsg.3.html">nn_cmsg(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -831,7 +929,7 @@ NN_REQ_RESEND_IVL
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_connect(3)</title>
+<title>nn_symbol(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_connect(3) Manual Page
+nn_symbol(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_connect -
-   add a remote endpoint to the socket
+<p>nn_symbol -
+   query the names and values of nanomsg symbols
 </p>
 </div>
 </div>
@@ -761,34 +761,29 @@ nn_connect(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_connect (int <em>s</em>, const char <em>*addr</em>);</strong></p></div>
+<div class="paragraph"><p><strong>const char *nn_symbol (int <em>i</em>, int <em>*value</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Adds a remote endpoint to the socket <em>s</em>. The library would then try to connect
-to the specified remote endpoint.</p></div>
-<div class="paragraph"><p>The <em>addr</em> argument consists of two parts as follows: <em>transport</em><tt>://</tt><em>address</em>.
-The <em>transport</em> specifies the underlying transport protocol to use. The meaning
-of the <em>address</em> part is specific to the underlying transport protocol.</p></div>
-<div class="paragraph"><p>For the list of available transport protocols check the list on
-<a href="nanomsg.7.html">nanomsg(7)</a> manual page.</p></div>
-<div class="paragraph"><p>Maximum length of the <em>addr</em> parameter is specified by <em>NN_SOCKADDR_MAX</em>
-defined in <em>&lt;nanomsg/nn.h&gt;</em> header file.</p></div>
-<div class="paragraph"><p>Note that nn_connect and <a href="nn_bind.3.html">nn_bind(3)</a> may be called multiple times
-on the same socket thus allowing the socket to communicate with multiple
-heterogeneous endpoints.</p></div>
+<div class="paragraph"><p>Retrieves the symbol name and value at index <em>i</em>.  Indices start at 0.  An index
+has no significance to its associated symbol; the mappings may change between
+library versions.</p></div>
+<div class="paragraph"><p>Typically a client will iterate through the symbols until nn_symbol returns
+NULL in order to collect all the symbols.</p></div>
+<div class="paragraph"><p>All symbols exposed by <em>nn_symbol</em> are available directly in the C API,
+generally as preprocessor macros.  Thus, this function is useful mostly for
+language bindings that can&#8217;t parse the header file and rely on retrieving the
+symbols in the runtime.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>If the function succeeds positive endpoint ID is returned. Endpoint ID can be
-later used to remove the endpoint from the socket via <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
-function.</p></div>
-<div class="paragraph"><p>If the function fails negative value is returned and <em>errno</em> is set to to one of
-the values defined below.</p></div>
+<div class="paragraph"><p>If <em>i</em> is valid, returns the name of the symbol at that index.  If the pointer
+<em>value</em> is not NULL, the symbol&#8217;s value is stored there.</p></div>
+<div class="paragraph"><p>If <em>i</em> is out-of-range, nn_symbol returns NULL and sets <em>errno</em> to EINVAL.</p></div>
 </div>
 </div>
 <div class="sect1">
@@ -796,59 +791,12 @@ the values defined below.</p></div>
 <div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-<strong>EBADF</strong>
-</dt>
-<dd>
-<p>
-The provided socket is invalid.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EMFILE</strong>
-</dt>
-<dd>
-<p>
-Maximum number of active endpoints was reached.
-</p>
-</dd>
-<dt class="hdlist1">
 <strong>EINVAL</strong>
 </dt>
 <dd>
 <p>
-The syntax of the supplied address is invalid.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ENAMETOOLONG</strong>
-</dt>
-<dd>
-<p>
-The supplied address is too long.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EPROTONOSUPPORT</strong>
-</dt>
-<dd>
-<p>
-The requested transport protocol is not supported.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ENODEV</strong>
-</dt>
-<dd>
-<p>
-Address specifies a nonexistent interface.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>ETERM</strong>
-</dt>
-<dd>
-<p>
-The library is terminating.
+The passed index <em>i</em> was out-of-range; it was less than zero or greater-than-or-
+equal-to the number of symbols.
 </p>
 </dd>
 </dl></div>
@@ -859,28 +807,27 @@ The library is terminating.
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>s = nn_socket (AF_SP, NN_PUB);
-eid1 = nn_connect (s, "ipc:///tmp/test.ipc");
-eid2 = nn_connect (s, "tcp://server001:5560");</tt></pre>
+<pre><tt>int value, i;
+for (i = 0; ; ++i) {
+    const char* name = nn_symbol (i, &amp;value);
+    if (name == NULL) break;
+    printf ("'%s' = %d\n", name, value);
+}</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_inproc.7.html">nn_inproc(7)</a>
-<a href="nn_ipc.7.html">nn_ipc(7)</a>
-<a href="nn_tcp.7.html">nn_tcp(7)</a>
-<a href="nn_socket.3.html">nn_socket(3)</a>
-<a href="nn_bind.3.html">nn_bind(3)</a>
-<a href="nn_shutdown.3.html">nn_shutdown(3)</a>
+<div class="paragraph"><p><a href="nn_errno.3.html">nn_errno(3)</a>
+<a href="nn_strerror.3.html">nn_strerror(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
+<div class="paragraph"><p>Evan Wies &lt;<a href="mailto:evan@neomantra.net">evan@neomantra.net</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -888,7 +835,7 @@ eid2 = nn_connect (s, "tcp://server001:5560");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

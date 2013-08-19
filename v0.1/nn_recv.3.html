@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_inproc(7)</title>
+<title>nn_recv(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_inproc(7) Manual Page
+nn_recv(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_inproc -
-   in-process transport mechanism
+<p>nn_recv -
+   receive a message
 </p>
 </div>
 </div>
@@ -761,47 +761,168 @@ nn_inproc(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/inproc.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_recv (int <em>s</em>, void <em>*buf</em>, size_t <em>len</em>, int <em>flags</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>In-process transport allows to send messages between threads or modules inside a
-process. In-process address is an arbitrary case-sensitive string preceded by
-<em>inproc://</em> protocol specifier. All in-process addresses are visible from any
-module within the process. They are not visible from outside of the process.</p></div>
-<div class="paragraph"><p>The nature of in-process transport makes it easy to pass pointers between
-threads instead of actual data. This is, however, considered a bad application
-design and violates the scalable share-nothing architecture. If you do pass
-pointers among threads, synchronising thread access to shared data becomes
-your responsibility. Such design also prevents moving the thread into different
-process or machine once the need arises. As a rule of the thumb, don&#8217;t pass
-pointers among threads unless you know what you are doing.</p></div>
-<div class="paragraph"><p>The overall buffer size for an inproc connection is determined by NN_RCVBUF
-socket option on the receiving end of the connection. NN_SNDBUF socket option
-is ignored. In addition to the buffer, one message of arbitrary size will fit
-into the buffer. That way, even messages larger than the buffer can be
-transfered via inproc connection.</p></div>
+<div class="paragraph"><p>Receive a message from the socket <em>s</em> and store it in the buffer referenced by
+the <em>buf</em> argument. Any bytes exceeding the length specified by the <em>len</em>
+argument will be truncated.</p></div>
+<div class="paragraph"><p>Alternatively, <em>nanomsg</em> can allocate the buffer for you. To do so,
+let the <em>buf</em> parameter be a pointer to a void* variable (pointer to pointer)
+to the receive buffer and set the <em>len</em> parameter to <em>NN_MSG</em>. If the call is
+successful the user is responsible for deallocating the message using
+the <a href="nn_freemsg.3.html">nn_freemsg(3)</a> function.</p></div>
+<div class="paragraph"><p>The <em>flags</em> argument is a combination of the flags defined below:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_DONTWAIT</strong>
+</dt>
+<dd>
+<p>
+Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_example">EXAMPLE</h2>
+<h2 id="_return_value">RETURN VALUE</h2>
 <div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds number of bytes in the message is returned. Otherwise,
+negative number is returned and <em>errno</em> is set to to one of the values defined
+below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOTSUP</strong>
+</dt>
+<dd>
+<p>
+The operation is not supported by this socket type.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EFSM</strong>
+</dt>
+<dd>
+<p>
+The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EAGAIN</strong>
+</dt>
+<dd>
+<p>
+Non-blocking mode was requested and there&#8217;s no message to receive at the moment.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINTR</strong>
+</dt>
+<dd>
+<p>
+The operation was interrupted by delivery of a signal before the message was
+received.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETIMEDOUT</strong>
+</dt>
+<dd>
+<p>
+Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examples">EXAMPLES</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+Receiving a message into a buffer allocated by the user
+</dt>
+<dd>
+<p>
+This example code will retrieve a message of either 100 bytes or less. If a
+larger message was sent it will be truncated to 100 bytes.
+</p>
+</dd>
+</dl></div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>nn_bind (s1, "inproc://test");
-nn_connect (s2, "inproc://test);</tt></pre>
+<pre><tt>char buf [100];
+nbytes = nn_recv (s, buf, sizeof (buf), 0);</tt></pre>
 </div></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+Receiving a message into a buffer allocated by <em>nanomsg</em>
+</dt>
+<dd>
+<p>
+The following will get a message from the pipe with a buffer allocated by
+the system. It is large enough to accommodate the entire message. This is a good
+way to get the entire message without truncating if the size of the message is
+unknown. It is the user&#8217;s responsibility to call <a href="nn_freemsg.3.html">nn_freemsg(3)</a> after
+processing the message.
+</p>
+</dd>
+</dl></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>void *buf = NULL;
+nbytes = nn_recv (s, &amp;buf, NN_MSG, 0);
+
+if (nbytes &lt; 0) {
+    /* handle error */
+    ...
+}
+else {
+    /* process message */
+    ...
+    nn_freemsg (buf);
+}</tt></pre>
+</div></div>
+<div class="paragraph"><p>Note that this can be more efficient than manually allocating a buffer since
+it is a zero-copy operation.</p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_ipc.7.html">nn_ipc(7)</a>
-<a href="nn_tcp.7.html">nn_tcp(7)</a>
-<a href="nn_bind.3.html">nn_bind(3)</a>
-<a href="nn_connect.3.html">nn_connect(3)</a>
+<div class="paragraph"><p><a href="nn_send.3.html">nn_send(3)</a>
+<a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
+<a href="nn_socket.3.html">nn_socket(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -816,7 +937,7 @@ nn_connect (s2, "inproc://test);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

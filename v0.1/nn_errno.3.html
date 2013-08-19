@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_pubsub(7)</title>
+<title>nn_errno(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_pubsub(7) Manual Page
+nn_errno(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_pubsub -
-   publish/subscribe scalability protocol
+<p>nn_errno -
+   retrieve the current errno
 </p>
 </div>
 </div>
@@ -761,71 +761,50 @@ nn_pubsub(7) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>#include &lt;nanomsg/pubsub.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_errno (void);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Broadcasts messages to multiple destinations.</p></div>
-<div class="sect2">
-<h3 id="_socket_types">Socket Types</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-NN_PUB
-</dt>
-<dd>
-<p>
-    This socket is used to distribute messages to multiple destinations.
-    Receive operation is not defined.
-</p>
-</dd>
-<dt class="hdlist1">
-NN_SUB
-</dt>
-<dd>
-<p>
-    Receives messages from the publisher. Only messages that the socket is
-    subscribed to are received. When the socket is created there are no
-    subscriptions and thus no messages will be received. Send operation is
-    not defined on this socket. The socket can be connected to at most one peer.
-</p>
-</dd>
-</dl></div>
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+<div class="paragraph"><p>On most systems, <em>errno</em> can be accessed directly and this function is not
+needed. However, on Windows, there are multiple implementations of the CRT
+library (single-threaded, multi-threaded, release, debug) and each of them
+has its own instance of <em>errno</em>. Thus, if nanomsg library and the application
+that uses it link with different versions of CRT library, they don&#8217;t share
+same instance of <em>errno</em>. Consequently, error codes set by nanomsg cannot be
+accessed by the application. To overcome this problem, application can use
+<em>nn_errno()</em> function to retrieve the nanomsg&#8217;s value of <em>errno</em>.</p></div>
 </div>
-<div class="sect2">
-<h3 id="_socket_options">Socket Options</h3>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-NN_SUB_SUBSCRIBE
-</dt>
-<dd>
-<p>
-    Defined on full SUB socket. Subscribes for a particular topic. Type of the
-    option is string.
-</p>
-</dd>
-<dt class="hdlist1">
-NN_SUB_UNSUBSCRIBE
-</dt>
-<dd>
-<p>
-    Defined on full SUB socket. Unsubscribes from a particular topic. Type of
-    the option is string.
-</p>
-</dd>
-</dl></div>
 </div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Returns value of <em>errno</em> for the current thread.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>No errors are defined.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>rc = nn_send (s, "ABC", 3, 0);
+if (rc &lt; 0)
+    printf ("nn_send failed with error code %d\n", nn_errno ());</tt></pre>
+</div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_bus.7.html">nn_bus(7)</a>
-<a href="nn_reqrep.7.html">nn_reqrep(7)</a>
-<a href="nn_pipeline.7.html">nn_pipeline(7)</a>
-<a href="nn_survey.7.html">nn_survey(7)</a>
-<a href="nn_pair.7.html">nn_pair(7)</a>
+<div class="paragraph"><p><a href="nn_strerror.3.html">nn_strerror(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
 </div>
@@ -840,7 +819,7 @@ NN_SUB_UNSUBSCRIBE
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

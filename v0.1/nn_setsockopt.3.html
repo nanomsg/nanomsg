@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_term(3)</title>
+<title>nn_setsockopt(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_term(3) Manual Page
+nn_setsockopt(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_term -
-   notify all sockets about process termination
+<p>nn_setsockopt -
+   set a socket option
 </p>
 </div>
 </div>
@@ -761,23 +761,171 @@ nn_term(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>void nn_term (void);</strong></p></div>
+<div class="paragraph"><p><strong>int nn_setsockopt (int <em>s</em>, int <em>level</em>, int <em>option</em>, const void <em>*optval</em>, size_t <em>optvallen</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>To help with shutdown of multi-threaded programs nanomsg provides the
-<em>nn_term()</em> function which informs all the open sockets that process
-termination is underway.</p></div>
-<div class="paragraph"><p>If a socket is blocked inside a blocking function, such as
-<a href="nn_recv.3.html">nn_recv(3)</a>, it will be unblocked  and ETERM error will be returned
-to the user. Similarly, any subsequent attempt to invoke a socket function other
-than <a href="nn_close.3.html">nn_close(3)</a> after <em>nn_term()</em> was called will result
-in ETERM error.</p></div>
-<div class="paragraph"><p>If waiting for <em>NN_SNDFD</em> or <em>NN_RCVFD</em> using a polling function, such as
-<em>poll()</em> or <em>select()</em>, the call will unblock with both <em>NN_SNDFD</em> and
-<em>NN_RCVFD</em> signaled.</p></div>
+<div class="paragraph"><p>Sets the value of the <em>option</em>. The <em>level</em> argument specifies the protocol
+level at which the option resides. For generic socket-level options use
+<em>NN_SOL_SOCKET</em> level. For socket-type-specific options use socket type
+for <em>level</em> argument (e.g. <em>NN_SUB</em>). For transport-specific options use ID of
+the transport as the <em>level</em> argument (e.g. <em>NN_TCP</em>).</p></div>
+<div class="paragraph"><p>The new value is pointed to by <em>optval</em> argument. Size of the option is
+specified by the <em>optvallen</em> argument.</p></div>
+<div class="paragraph"><p><em>&lt;nanomsg/nn.h&gt;</em> header defines generic socket-level options
+(<em>NN_SOL_SOCKET</em> level). The options are as follows:</p></div>
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_LINGER</strong>
+</dt>
+<dd>
+<p>
+    Specifies how long should the socket try to send pending outbound messages
+    after <em>nn_close()</em> have been called, in milliseconds. Negative value means
+    infinite linger. The type of the option is int. Default value
+    is 1000 (1 second).
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_SNDBUF</strong>
+</dt>
+<dd>
+<p>
+    Size of the send buffer, in bytes. To prevent blocking for messages larger
+    than the buffer, exactly one message may be buffered in addition to the data
+    in the send buffer. The type of this option is int. Default value is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RCVBUF</strong>
+</dt>
+<dd>
+<p>
+    Size of the receive buffer, in bytes. To prevent blocking for messages
+    larger than the buffer, exactly one message may be buffered in addition
+    to the data in the receive buffer. The type of this option is int. Default
+    value is 128kB.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_SNDTIMEO</strong>
+</dt>
+<dd>
+<p>
+    The timeout for send operation on the socket, in milliseconds. If message
+    cannot be sent within the specified timeout, EAGAIN error is returned.
+    Negative value means infinite timeout. The type of the option is int.
+    Default value is -1.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RCVTIMEO</strong>
+</dt>
+<dd>
+<p>
+    The timeout for recv operation on the socket, in milliseconds. If message
+    cannot be received within the specified timeout, EAGAIN error is returned.
+    Negative value means infinite timeout. The type of the option is int.
+    Default value is -1.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RECONNECT_IVL</strong>
+</dt>
+<dd>
+<p>
+    For connection-based transports such as TCP, this option specifies how
+    long to wait, in milliseconds, when connection is broken before trying
+    to re-establish it. Note that actual reconnect interval may be randomised
+    to some extent to prevent severe reconnection storms. The type of the option
+    is int. Default value is 100 (0.1 second).
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_RECONNECT_IVL_MAX</strong>
+</dt>
+<dd>
+<p>
+    This option is to be used only in addition to <em>NN_RECONNECT_IVL</em> option.
+    It specifies maximum reconnection interval. On each reconnect attempt,
+    the previous interval is doubled until <em>NN_RECONNECT_IVL_MAX</em> is reached.
+    Value of zero means that no exponential backoff is performed and reconnect
+    interval is based only on <em>NN_RECONNECT_IVL</em>. If <em>NN_RECONNECT_IVL_MAX</em> is
+    less than <em>NN_RECONNECT_IVL</em>, it is ignored. The type of the option is int.
+    Default value is 0.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_SNDPRIO</strong>
+</dt>
+<dd>
+<p>
+    Sets outbound priority for endpoints subsequently added to the socket. This
+    option has no effect on socket types that send messages to all the peers.
+    However, if the socket type sends each message to a single peer
+    (or a limited set of peers), peers with high priority take precedence
+    over peers with low priority. The type of the option is int. Highest
+    priority is 1, lowest priority is 16. Default value is 8.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_IPV4ONLY</strong>
+</dt>
+<dd>
+<p>
+    If set to 1, only IPv4 addresses are used. If set to 0, both IPv4 and IPv6
+    addresses are used. Default value is 1.
+</p>
+</dd>
+</dl></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If the function succeeds zero is returned. Otherwise, negative number is
+returned and <em>errno</em> is set to to one of the values defined below.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>EBADF</strong>
+</dt>
+<dd>
+<p>
+The provided socket is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ENOPROTOOPT</strong>
+</dt>
+<dd>
+<p>
+The option is unknown at the level indicated.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>EINVAL</strong>
+</dt>
+<dd>
+<p>
+The specified option value is invalid.
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>ETERM</strong>
+</dt>
+<dd>
+<p>
+The library is terminating.
+</p>
+</dd>
+</dl></div>
 </div>
 </div>
 <div class="sect1">
@@ -785,19 +933,16 @@ in ETERM error.</p></div>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
-<pre><tt>s = nn_socket (AF_SP, NN_PAIR);
-nn_term ();
-rc = nn_send (s, "ABC", 3, 0);
-assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
+<pre><tt>int linger = 1000;
+nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &amp;linger, sizeof (linger));
+nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "ABC", 3);</tt></pre>
 </div></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_see_also">SEE ALSO</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><a href="nn_close.3.html">nn_close(3)</a>
-<a href="nn_send.3.html">nn_send(3)</a>
-<a href="nn_recv.3.html">nn_recv(3)</a>
+<div class="paragraph"><p><a href="nn_socket.3.html">nn_socket(3)</a>
 <a href="nn_getsockopt.3.html">nn_getsockopt(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
@@ -813,7 +958,7 @@ assert (rc == -1 &amp;&amp; errno == ETERM);</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

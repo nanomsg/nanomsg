@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nn_bind(3)</title>
+<title>nn_connect(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nn_bind(3) Manual Page
+nn_connect(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nn_bind -
-   add a local endpoint to the socket
+<p>nn_connect -
+   add a remote endpoint to the socket
 </p>
 </div>
 </div>
@@ -761,14 +761,14 @@ nn_bind(3) Manual Page
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
 <div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
-<div class="paragraph"><p><strong>int nn_bind (int <em>s</em>, const char <em>*addr</em>);</strong></p></div>
+<div class="paragraph"><p><strong>int nn_connect (int <em>s</em>, const char <em>*addr</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Adds a local endpoint to the socket <em>s</em>. The endpoint can be then used by other
-applications to connect to.</p></div>
+<div class="paragraph"><p>Adds a remote endpoint to the socket <em>s</em>. The library would then try to connect
+to the specified remote endpoint.</p></div>
 <div class="paragraph"><p>The <em>addr</em> argument consists of two parts as follows: <em>transport</em><tt>://</tt><em>address</em>.
 The <em>transport</em> specifies the underlying transport protocol to use. The meaning
 of the <em>address</em> part is specific to the underlying transport protocol.</p></div>
@@ -776,7 +776,7 @@ of the <em>address</em> part is specific to the underlying transport protocol.</
 <a href="nanomsg.7.html">nanomsg(7)</a> manual page.</p></div>
 <div class="paragraph"><p>Maximum length of the <em>addr</em> parameter is specified by <em>NN_SOCKADDR_MAX</em>
 defined in <em>&lt;nanomsg/nn.h&gt;</em> header file.</p></div>
-<div class="paragraph"><p>Note that nn_bind and <a href="nn_connect.3.html">nn_connect(3)</a> may be called multiple times
+<div class="paragraph"><p>Note that nn_connect and <a href="nn_bind.3.html">nn_bind(3)</a> may be called multiple times
 on the same socket thus allowing the socket to communicate with multiple
 heterogeneous endpoints.</p></div>
 </div>
@@ -836,27 +836,11 @@ The requested transport protocol is not supported.
 </p>
 </dd>
 <dt class="hdlist1">
-<strong>EADDRNOTAVAIL</strong>
-</dt>
-<dd>
-<p>
-The requested endpoint is not local.
-</p>
-</dd>
-<dt class="hdlist1">
 <strong>ENODEV</strong>
 </dt>
 <dd>
 <p>
 Address specifies a nonexistent interface.
-</p>
-</dd>
-<dt class="hdlist1">
-<strong>EADDRINUSE</strong>
-</dt>
-<dd>
-<p>
-The requested local endpoint is already in use.
 </p>
 </dd>
 <dt class="hdlist1">
@@ -876,8 +860,8 @@ The library is terminating.
 <div class="listingblock">
 <div class="content">
 <pre><tt>s = nn_socket (AF_SP, NN_PUB);
-eid1 = nn_bind (s, "inproc://test");
-eid2 = nn_bind (s, "tcp://eth0:5560");</tt></pre>
+eid1 = nn_connect (s, "ipc:///tmp/test.ipc");
+eid2 = nn_connect (s, "tcp://server001:5560");</tt></pre>
 </div></div>
 </div>
 </div>
@@ -888,7 +872,7 @@ eid2 = nn_bind (s, "tcp://eth0:5560");</tt></pre>
 <a href="nn_ipc.7.html">nn_ipc(7)</a>
 <a href="nn_tcp.7.html">nn_tcp(7)</a>
 <a href="nn_socket.3.html">nn_socket(3)</a>
-<a href="nn_connect.3.html">nn_connect(3)</a>
+<a href="nn_bind.3.html">nn_bind(3)</a>
 <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
 <a href="nanomsg.7.html">nanomsg(7)</a></p></div>
 </div>
@@ -904,7 +888,7 @@ eid2 = nn_bind (s, "tcp://eth0:5560");</tt></pre>
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.1-alpha<br />
-Last updated 2013-08-19 13:02:13 CEST
+Last updated 2013-08-19 13:34:31 CEST
 </div>
 </div>
 </body>

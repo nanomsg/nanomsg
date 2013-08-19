@@ -360,7 +360,7 @@ dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 
-doc_DATA = $(MAN3:%.txt=%.html)
+doc_DATA = $(MAN3:%.txt=%.html) $(MAN7:%.txt=%.html)
 
 #  Extra files to be cleaned.
 

@@ -26,7 +26,7 @@ include (CheckIncludeFiles)
 include (CheckSymbolExists)
 include (CheckCSourceCompiles)
 
-project (nanomsg)
+project (nanomsg C)
 enable_testing ()
 
 #  Platform checks.
@@ -226,6 +226,13 @@ set (NN_DESCRIPTION "nanomsg library is a high-performance implementation of sev
 #  Build the library itself.
 
 add_subdirectory (src)
+
+# pkg-config file
+
+if (UNIX)
+    configure_file (libnanomsg.pc.in libnanomsg.pc @ONLY)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/libnanomsg.pc DESTINATION lib/pkgconfig)
+endif ()
 
 #  Build unit tests.
 

@@ -265,11 +265,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_ctcp_start_resolving (ctcp);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -286,11 +286,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_DNS;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -312,11 +312,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_WAITING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -337,11 +337,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -358,11 +358,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_STCP;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -379,11 +379,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -400,11 +400,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_WAITING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -422,11 +422,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_BACKOFF;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -442,18 +442,18 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_ctcp_start_resolving (ctcp);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(ctcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(ctcp->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state(ctcp->state, src, type);
     }
 }
 
@@ -527,7 +527,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     /*  Parse the local address, if any. */
     semicolon = strchr (addr, ';');
     memset (&local, 0, sizeof (local));
-    if (semicolon) 
+    if (semicolon)
         rc = nn_iface_resolve (addr, semicolon - addr, ipv4only,
             &local, &locallen);
     else

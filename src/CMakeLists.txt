@@ -237,6 +237,8 @@ set (NN_SOURCES
     transports/tcp/ctcp.c
     transports/tcp/stcp.h
     transports/tcp/stcp.c
+    transports/tcp/fdtcp.h
+    transports/tcp/fdtcp.c
     transports/tcp/tcp.h
     transports/tcp/tcp.c
 )

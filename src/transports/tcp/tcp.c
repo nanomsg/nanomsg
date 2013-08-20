@@ -24,6 +24,7 @@
 #include "tcp.h"
 #include "btcp.h"
 #include "ctcp.h"
+#include "fdtcp.h"
 
 #include "../../tcp.h"
 
@@ -65,6 +66,8 @@ static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
 /*  nn_transport interface. */
 static int nn_tcp_bind (void *hint, struct nn_epbase **epbase);
 static int nn_tcp_connect (void *hint, struct nn_epbase **epbase);
+static int nn_tcp_bind_fd (void *hint, struct nn_epbase **epbase);
+static int nn_tcp_connect_fd (void *hint, struct nn_epbase **epbase);
 static struct nn_optset *nn_tcp_optset (void);
 
 static struct nn_transport nn_tcp_vfptr = {
@@ -78,7 +81,19 @@ static struct nn_transport nn_tcp_vfptr = {
     NN_LIST_ITEM_INITIALIZER
 };
 
+static struct nn_transport nn_tcp_fd_vfptr = {
+    "tcp+fd",
+    NN_TCP,
+    NULL,
+    NULL,
+    nn_tcp_bind_fd,
+    nn_tcp_connect_fd,
+    nn_tcp_optset,
+    NN_LIST_ITEM_INITIALIZER
+};
+
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
+struct nn_transport *nn_tcp_fd = &nn_tcp_fd_vfptr;
 
 static int nn_tcp_bind (void *hint, struct nn_epbase **epbase)
 {
@@ -88,6 +103,16 @@ static int nn_tcp_bind (void *hint, struct nn_epbase **epbase)
 static int nn_tcp_connect (void *hint, struct nn_epbase **epbase)
 {
     return nn_ctcp_create (hint, epbase);
+}
+
+static int nn_tcp_bind_fd (void *hint, struct nn_epbase **epbase)
+{
+    return nn_btcp_create_from_fd (hint, epbase);
+}
+
+static int nn_tcp_connect_fd (void *hint, struct nn_epbase **epbase)
+{
+    return nn_fdtcp_create (hint, epbase);
 }
 
 static struct nn_optset *nn_tcp_optset ()
@@ -101,7 +126,7 @@ static struct nn_optset *nn_tcp_optset ()
     /*  Default values for TCP socket options. */
     optset->nodelay = 0;
 
-    return &optset->base;   
+    return &optset->base;
 }
 
 static void nn_tcp_optset_destroy (struct nn_optset *self)

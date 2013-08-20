@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 Insollo Entertainment, LLC.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,15 +20,17 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_BTCP_INCLUDED
-#define NN_BTCP_INCLUDED
+#ifndef NN_FDTCP_INCLUDED
+#define NN_FDTCP_INCLUDED
 
 #include "../../transport.h"
 
-/*  State machine managing bound TCP socket. */
+/*  State machine managing connected TCP socket got by fd.
+    This is not the same as ctcp because we can't reconnect and
+    must remove the endpoint when fd is closed.
+    So this is basically a very thin layer above stcp. */
 
-int nn_btcp_create (void *hint, struct nn_epbase **epbase);
-int nn_btcp_create_from_fd (void *hint, struct nn_epbase **epbase);
+int nn_fdtcp_create (void *hint, struct nn_epbase **epbase);
 
 #endif
 

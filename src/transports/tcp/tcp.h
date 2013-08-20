@@ -26,5 +26,6 @@
 #include "../../transport.h"
 
 extern struct nn_transport *nn_tcp;
+extern struct nn_transport *nn_tcp_fd;
 
 #endif

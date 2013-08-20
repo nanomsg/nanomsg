@@ -34,14 +34,15 @@
 #define NN_USOCK_STATE_BEING_ACCEPTED 3
 #define NN_USOCK_STATE_ACCEPTED 4
 #define NN_USOCK_STATE_CONNECTING 5
-#define NN_USOCK_STATE_ACTIVE 6
-#define NN_USOCK_STATE_REMOVING_FD 7
-#define NN_USOCK_STATE_DONE 8
-#define NN_USOCK_STATE_LISTENING 9
-#define NN_USOCK_STATE_ACCEPTING 10
-#define NN_USOCK_STATE_CANCELLING 11
-#define NN_USOCK_STATE_STOPPING 12
-#define NN_USOCK_STATE_STOPPING_ACCEPT 13
+#define NN_USOCK_STATE_INIT_FD 6
+#define NN_USOCK_STATE_ACTIVE 7
+#define NN_USOCK_STATE_REMOVING_FD 8
+#define NN_USOCK_STATE_DONE 9
+#define NN_USOCK_STATE_LISTENING 10
+#define NN_USOCK_STATE_ACCEPTING 11
+#define NN_USOCK_STATE_CANCELLING 12
+#define NN_USOCK_STATE_STOPPING 13
+#define NN_USOCK_STATE_STOPPING_ACCEPT 14
 
 #define NN_USOCK_ACTION_ACCEPT 1
 #define NN_USOCK_ACTION_BEING_ACCEPTED 2
@@ -144,6 +145,19 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
        return -errno;
 
     nn_usock_init_from_fd (self, s);
+
+    /*  Start the state machine. */
+    nn_fsm_start (&self->fsm);
+
+    return 0;
+}
+
+int nn_usock_start_from_fd (struct nn_usock *self, int fd)
+{
+
+    nn_usock_init_from_fd (self, fd);
+    /*  We expect socket from fd is just accepted externally */
+    self->state = NN_USOCK_STATE_INIT_FD;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -592,6 +606,24 @@ finish3:
         if (srcptr == NULL) {
             switch (type) {
             case NN_USOCK_ACTION_ACTIVATE:
+                nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
+                usock->state = NN_USOCK_STATE_ACTIVE;
+                return;
+            default:
+                nn_assert (0);
+            }
+        }
+        nn_assert (0);
+
+/******************************************************************************/
+/*  INIT_FD state.                                                            */
+/*  Socket have just been intialized by fd, which is expected to be an        */
+/*  established connection                                                    */
+/******************************************************************************/
+    case NN_USOCK_STATE_INIT_FD:
+        if (srcptr == NULL) {
+            switch (type) {
+            case NN_FSM_START:
                 nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 return;

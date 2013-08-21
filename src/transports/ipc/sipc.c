@@ -209,7 +209,9 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_SIPC_STATE_IDLE:
-        if (src == NN_FSM_ACTION) {
+        switch (src) {
+
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock,
@@ -217,10 +219,12 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 sipc->state = NN_SIPC_STATE_PROTOHDR;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sipc->state, src, type);
             }
+
+        default:
+            nn_fsm_bad_source (sipc->state, src, type);
         }
-        nn_assert (0);
 
 /******************************************************************************/
 /*  PROTOHDR state.                                                           */
@@ -247,11 +251,11 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (sipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -280,11 +284,11 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (sipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -351,11 +355,11 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (sipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -364,13 +368,13 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /*  this state except stopping the object.                                    */
 /******************************************************************************/
     case NN_SIPC_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_source (sipc->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (sipc->state, src, type);
     }
 }
 

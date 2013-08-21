@@ -212,11 +212,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 stcp->state = NN_STCP_STATE_PROTOHDR;
                 return;
             default:
-                nn_fsm_bad_action(stcp->state, src, type);
+                nn_fsm_bad_action (stcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(stcp->state, src, type);
+            nn_fsm_bad_source (stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -244,11 +244,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_fsm_bad_action(stcp->state, src, type);
+                nn_fsm_bad_action (stcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(stcp->state, src, type);
+            nn_fsm_bad_source (stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -277,11 +277,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                  return;
 
             default:
-                nn_fsm_bad_action(stcp->state, src, type);
+                nn_fsm_bad_action (stcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(stcp->state, src, type);
+            nn_fsm_bad_source (stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -348,11 +348,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_fsm_bad_action(stcp->state, src, type);
+                nn_fsm_bad_action (stcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(stcp->state, src, type);
+            nn_fsm_bad_source (stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -361,13 +361,13 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 /*  this state except stopping the object.                                    */
 /******************************************************************************/
     case NN_STCP_STATE_DONE:
-        nn_fsm_bad_state(stcp->state, src, type);
+        nn_fsm_bad_source (stcp->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_fsm_bad_state(stcp->state, src, type);
+        nn_fsm_bad_state (stcp->state, src, type);
     }
 }
 

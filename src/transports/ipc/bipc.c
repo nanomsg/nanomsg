@@ -207,11 +207,11 @@ aipcs_stopping:
                 bipc->state = NN_BIPC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (bipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (bipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -235,7 +235,7 @@ aipcs_stopping:
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (bipc->state, src, type);
             }
         }
 
@@ -253,14 +253,14 @@ aipcs_stopping:
             nn_free (aipc);
             return;
         default:
-            nn_assert (0);
+            nn_fsm_bad_action (bipc->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (bipc->state, src, type);
     }
 }
 

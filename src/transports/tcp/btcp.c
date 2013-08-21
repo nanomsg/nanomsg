@@ -258,11 +258,11 @@ atcps_stopping:
                 btcp->state = NN_BTCP_STATE_ACTIVE;
                 return;
             default:
-                nn_fsm_bad_action(btcp->state, src, type);
+                nn_fsm_bad_action (btcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(btcp->state, src, type);
+            nn_fsm_bad_source (btcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -286,7 +286,7 @@ atcps_stopping:
                 return;
 
             default:
-                nn_fsm_bad_action(btcp->state, src, type);
+                nn_fsm_bad_action (btcp->state, src, type);
             }
         }
 
@@ -304,14 +304,14 @@ atcps_stopping:
             nn_free (atcp);
             return;
         default:
-            nn_fsm_bad_action(btcp->state, src, type);
+            nn_fsm_bad_action (btcp->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_fsm_bad_state(btcp->state, src, type);
+        nn_fsm_bad_state (btcp->state, src, type);
     }
 }
 

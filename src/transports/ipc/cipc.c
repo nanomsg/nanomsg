@@ -197,11 +197,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 nn_cipc_start_connecting (cipc);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -222,11 +222,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -243,11 +243,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 cipc->state = NN_CIPC_STATE_STOPPING_SIPC;
                 return;
             default:
-                nn_assert (0);
+               nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -264,11 +264,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -285,11 +285,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 cipc->state = NN_CIPC_STATE_WAITING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -307,11 +307,11 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 cipc->state = NN_CIPC_STATE_STOPPING_BACKOFF;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -327,18 +327,18 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
                 nn_cipc_start_connecting (cipc);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cipc->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (cipc->state, src, type);
     }
 }
 

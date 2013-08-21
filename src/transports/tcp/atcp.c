@@ -144,11 +144,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 atcp->state = NN_ATCP_STATE_ACCEPTING;
                 return;
             default:
-                nn_fsm_bad_action(atcp->state, src, type);
+                nn_fsm_bad_action (atcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(atcp->state, src, type);
+            nn_fsm_bad_source (atcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -177,11 +177,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_fsm_bad_action(atcp->state, src, type);
+                nn_fsm_bad_action (atcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(atcp->state, src, type);
+            nn_fsm_bad_source (atcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -197,11 +197,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 atcp->state = NN_ATCP_STATE_STOPPING_STCP;
                 return;
             default:
-                nn_fsm_bad_action(atcp->state, src, type);
+                nn_fsm_bad_action (atcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(atcp->state, src, type);
+            nn_fsm_bad_source (atcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -217,11 +217,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 atcp->state = NN_ATCP_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_fsm_bad_action(atcp->state, src, type);
+                nn_fsm_bad_action (atcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(atcp->state, src, type);
+            nn_fsm_bad_source (atcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -237,18 +237,18 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 atcp->state = NN_ATCP_STATE_DONE;
                 return;
             default:
-                nn_fsm_bad_action(atcp->state, src, type);
+                nn_fsm_bad_action (atcp->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(atcp->state, src, type);
+            nn_fsm_bad_source (atcp->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_fsm_bad_state(atcp->state, src, type);
+        nn_fsm_bad_state (atcp->state, src, type);
     }
 }
 

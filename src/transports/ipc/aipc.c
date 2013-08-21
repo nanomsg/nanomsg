@@ -145,11 +145,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 aipc->state = NN_AIPC_STATE_ACCEPTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (aipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (aipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -178,11 +178,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (aipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (aipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -198,11 +198,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 aipc->state = NN_AIPC_STATE_STOPPING_SIPC;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (aipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (aipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -218,11 +218,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 aipc->state = NN_AIPC_STATE_STOPPING_USOCK;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (aipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (aipc->state, src, type);
         }
 
 /******************************************************************************/
@@ -238,18 +238,18 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 aipc->state = NN_AIPC_STATE_DONE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (aipc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (aipc->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (aipc->state, src, type);
     }
 }
 

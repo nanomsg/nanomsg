@@ -87,4 +87,5 @@ struct nn_usock {
     struct nn_usock *asock;
 };
 
-int nn_usock_start_from_fd(struct nn_usock *self, int fd);
+int nn_usock_start_listen_fd(struct nn_usock *self, int fd);
+int nn_usock_start_connected_fd(struct nn_usock *self, int fd);

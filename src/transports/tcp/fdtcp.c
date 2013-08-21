@@ -36,11 +36,13 @@
 #include "../../utils/alloc.h"
 
 #define NN_FDTCP_STATE_STARTING 1
-#define NN_FDTCP_STATE_ACTIVE 2
-#define NN_FDTCP_STATE_STOPPING_STCP 3
-#define NN_FDTCP_STATE_STOPPING_STCP_FINAL 4
-#define NN_FDTCP_STATE_STOPPING 5
-#define NN_FDTCP_STATE_STOPPED 6
+#define NN_FDTCP_STATE_CONNECTING 2
+#define NN_FDTCP_STATE_ACTIVE 3
+#define NN_FDTCP_STATE_STOPPING_STCP 4
+#define NN_FDTCP_STATE_STOPPING_USOCK 5
+#define NN_FDTCP_STATE_STOPPING_STCP_FINAL 6
+#define NN_FDTCP_STATE_STOPPING 7
+#define NN_FDTCP_STATE_STOPPED 8
 
 #define NN_FDTCP_SRC_USOCK 1
 #define NN_FDTCP_SRC_STCP 2
@@ -153,10 +155,8 @@ static void nn_fdtcp_start_processing (struct nn_fdtcp *self) {
     fd = atoi(addr);
 
     /*  Start listening for incoming connections. */
-    rc = nn_usock_start_from_fd (&self->usock, fd);
+    rc = nn_usock_start_connected_fd (&self->usock, fd);
     errnum_assert (rc == 0, -rc);
-
-    nn_stcp_start (&self->stcp, &self->usock);
 }
 
 static void nn_fdtcp_handler (struct nn_fsm *self, int src, int type,
@@ -201,7 +201,32 @@ static void nn_fdtcp_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 nn_fdtcp_start_processing (fdtcp);
+                fdtcp->state = NN_FDTCP_STATE_CONNECTING;
+                return;
+            default:
+                nn_assert (0);
+            }
+
+        default:
+            nn_assert (0);
+        }
+
+/******************************************************************************/
+/*  CONNECTING state.                                                         */
+/******************************************************************************/
+
+    case NN_FDTCP_STATE_CONNECTING:
+        switch (src) {
+
+        case NN_FDTCP_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_CONNECTED:
+                nn_stcp_start (&fdtcp->stcp, &fdtcp->usock);
                 fdtcp->state = NN_FDTCP_STATE_ACTIVE;
+                return;
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&fdtcp->usock);
+                fdtcp->state = NN_FDTCP_STATE_STOPPING_USOCK;
                 return;
             default:
                 nn_assert (0);
@@ -229,6 +254,46 @@ static void nn_fdtcp_handler (struct nn_fsm *self, int src, int type,
 
         default:
             nn_assert (0);
+        }
+/******************************************************************************/
+/*  STOPPING_STCP state.                                                      */
+/*  stcp object was asked to stop but it haven't stopped yet.                 */
+/******************************************************************************/
+    case NN_FDTCP_STATE_STOPPING_STCP:
+        switch (src) {
+
+        case NN_FDTCP_SRC_STCP:
+            switch (type) {
+            case NN_STCP_STOPPED:
+                nn_usock_stop (&fdtcp->usock);
+                fdtcp->state = NN_FDTCP_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action(fdtcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source(fdtcp->state, src, type);
+        }
+
+/******************************************************************************/
+/*  STOPPING_USOCK state.                                                     */
+/*  usock object was asked to stop but it haven't stopped yet.                */
+/******************************************************************************/
+    case NN_FDTCP_STATE_STOPPING_USOCK:
+        switch (src) {
+
+        case NN_FDTCP_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_STOPPED:
+                fdtcp->state = NN_FDTCP_STATE_STOPPING;
+                return;
+            default:
+                nn_fsm_bad_action(fdtcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source(fdtcp->state, src, type);
         }
     }
 }

@@ -459,7 +459,7 @@ static void nn_btcp_start_listening_fd (struct nn_btcp *self)
     fd = atoi(addr);
 
     /*  Start listening for incoming connections. */
-    rc = nn_usock_start_from_fd (&self->usock, fd);
+    rc = nn_usock_start_listen_fd (&self->usock, fd);
     errnum_assert (rc == 0, -rc);
 }
 

@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <poll.h>
 
 /*  Tests TCP transport created from file descriptor. */
 
@@ -70,6 +71,10 @@ int main ()
 
     rc = connect (conn_fd, (struct sockaddr *)&saddr, sizeof(saddr));
     errno_assert (rc != -1);
+    struct pollfd fds = {fd: conn_fd, events: POLLOUT, revents: 0};
+    rc = poll (&fds, 1, 1000);
+    errno_assert (rc == 1);
+    nn_assert (fds.revents & POLLOUT);
 
     sb = nn_socket (AF_SP, NN_PAIR);
     errno_assert (sb != -1);

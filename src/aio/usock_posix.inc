@@ -371,8 +371,8 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         self->out.iov [out].iov_len = iov [i].iov_len;
         out++;
     }
-    self->out.hdr.msg_iovlen = out; 
-    
+    self->out.hdr.msg_iovlen = out;
+
     /*  Try to send the data immediately. */
     rc = nn_usock_send_raw (self, &self->out.hdr);
 
@@ -533,10 +533,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_STARTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  STARTING state.                                                           */
@@ -559,16 +559,16 @@ finish3:
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  BEING_ACCEPTED state.                                                     */
 /*  accept() was called on the usock. Now the socket is waiting for a new     */
 /*  connection to arrive.                                                     */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_BEING_ACCEPTED:
         if (srcptr == NULL) {
             switch (type) {
@@ -578,16 +578,16 @@ finish3:
                     NN_USOCK_ACCEPTED);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  ACCEPTED state.                                                           */
 /*  Connection was accepted, now it can be tuned. Afterwards, it'll move to   */
 /*  the active state.                                                         */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_ACCEPTED:
         if (srcptr == NULL) {
             switch (type) {
@@ -596,15 +596,15 @@ finish3:
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
 /*  Asynchronous connecting is going on.                                      */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_CONNECTING:
         if (srcptr == NULL) {
             switch (type) {
@@ -623,7 +623,7 @@ finish3:
                     NN_USOCK_ERROR);
                 return;
             default:
-                  nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
         if (srcptr == &usock->wfd) {
@@ -643,15 +643,15 @@ finish3:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  Socket is connected. It can be used for sending and receiving data.       */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_ACTIVE:
         if (srcptr == &usock->wfd) {
             switch (type) {
@@ -691,7 +691,7 @@ error:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
         if (srcptr == NULL) {
@@ -701,14 +701,14 @@ error:
                 nn_worker_execute (usock->worker, &usock->task_stop);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  REMOVING_FD state.                                                        */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_REMOVING_FD:
         if (srcptr == &usock->task_stop) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
@@ -726,21 +726,21 @@ error:
         if (srcptr == &usock->wfd)
             return;
 
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  DONE state.                                                               */
 /*  Socket is closed. The only thing that can be done in this state is        */
 /*  stopping the usock.                                                       */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_state(usock->state, src, type);
 
 /******************************************************************************/
 /*  LISTENING state.                                                          */
 /*  Socket is listening for new incoming connections, however, user is not    */
 /*  accepting a new connection.                                               */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_LISTENING:
         if (srcptr == NULL) {
             switch (type) {
@@ -748,16 +748,16 @@ error:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  ACCEPTING state.                                                          */
 /*  User is waiting asynchronouslyfor a new inbound connection                */
 /*  to be accepted.                                                           */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
         if (srcptr == NULL) {
             switch (type) {
@@ -769,7 +769,7 @@ error:
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
         if (srcptr == &usock->wfd) {
@@ -821,14 +821,14 @@ error:
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  CANCELLING state.                                                         */
-/******************************************************************************/ 
+/******************************************************************************/
     case NN_USOCK_STATE_CANCELLING:
         if (srcptr == &usock->task_stop) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
@@ -845,16 +845,16 @@ error:
             case NN_WORKER_FD_IN:
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state                                                             */
-/******************************************************************************/ 
+/******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state(usock->state, src, type);
     }
 }
 
@@ -938,14 +938,14 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         into the place. Otherwise, read data to the batch buffer. */
     if (length > NN_USOCK_BATCH_SIZE)
         nbytes = recv (self->s, buf, length, 0);
-    else 
+    else
         nbytes = recv (self->s, self->in.batch, NN_USOCK_BATCH_SIZE, 0);
 
     /*  Handle any possible errors. */
     if (nn_slow (nbytes <= 0)) {
 
         if (nn_slow (nbytes == 0))
-            return -ECONNRESET; 
+            return -ECONNRESET;
 
         /*  Zero bytes received. */
         if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))

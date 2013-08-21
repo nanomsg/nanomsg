@@ -419,7 +419,7 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
     int rc;
     struct nn_ep *ep;
     int eid;
-    
+
     nn_ctx_enter (&self->ctx);
 
     /*  Instantiate the endpoint. */
@@ -468,7 +468,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
         nn_ctx_leave (&self->ctx);
         return -EINVAL;
     }
-    
+
     /*  Ask the endpoint to stop. Actual terminatation may be delayed
         by the transport. */
     nn_ep_stop (ep);
@@ -545,7 +545,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             now = nn_clock_now (&self->clock);
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
-    }   
+    }
 }
 
 int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
@@ -618,7 +618,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             now = nn_clock_now (&self->clock);
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
-    }  
+    }
 }
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
@@ -743,7 +743,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
         goto finish2;
     }
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING_EPS)) {
-        
+
         /*  For all non-NULL sources, we assume it's an event from one of
             the endpoints associated with the socket. In theory we could
             double-check that that is the case, however, it would be an O(n)
@@ -804,11 +804,11 @@ finish1:
                 nn_sock_action_zombify (sock);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(sock->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(sock->state, src, type);
         }
 
 /******************************************************************************/
@@ -823,7 +823,7 @@ finish1:
                 nn_sock_action_zombify (sock);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(sock->state, src, type);
             }
 
         default:
@@ -839,7 +839,7 @@ finish1:
                     (struct nn_pipe*) srcptr);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(sock->state, src, type);
             }
         }
 
@@ -847,13 +847,13 @@ finish1:
 /*  ZOMBIE state.                                                             */
 /******************************************************************************/
     case NN_SOCK_STATE_ZOMBIE:
-        nn_assert (0);
+        nn_fsm_bad_state(sock->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state(sock->state, src, type);
     }
 }
 

@@ -105,6 +105,21 @@
         }\
     } while (0)
 
+/*  Assertion-like macros for easier fsm debugging. */
+#define nn_fsm_error(message, state, src, type) \
+    do {\
+        fprintf (stderr, "%s: %d from %d for state %d (%s:%d)\n", \
+            message, type, src, state, __FILE__, __LINE__);\
+        nn_err_abort ();\
+    } while (0)
+
+#define nn_fsm_bad_action(state, src, type) nn_fsm_error(\
+    "Unexpected action", state, src, type)
+#define nn_fsm_bad_state(state, src, type) nn_fsm_error(\
+    "Unexpected state", state, src, type)
+#define nn_fsm_bad_source(state, src, type) nn_fsm_error(\
+    "Unexpected source", state, src, type)
+
 /*  Compile-time assert. */
 #define CT_ASSERT_HELPER2(prefix, line) prefix##line
 #define CT_ASSERT_HELPER1(prefix, line) CT_ASSERT_HELPER2(prefix, line)

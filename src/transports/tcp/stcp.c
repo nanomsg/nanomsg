@@ -212,11 +212,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 stcp->state = NN_STCP_STATE_PROTOHDR;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(stcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -244,11 +244,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(stcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -264,7 +264,7 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&stcp->pipebase);
                  errnum_assert (rc == 0, -rc);
-                 
+
                  /*  Start receiving a message in asynchronous manner. */
                  stcp->instate = NN_STCP_INSTATE_HDR;
                  nn_usock_recv (stcp->usock, &stcp->inhdr,
@@ -277,11 +277,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                  return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(stcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -337,7 +337,8 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                     return;
 
                 default:
-                    nn_assert (0);
+                    nn_fsm_error("Unexpected socket instate",
+                        stcp->state, src, type);
                 }
 
             case NN_USOCK_ERROR:
@@ -347,11 +348,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(stcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(stcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -360,13 +361,13 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 /*  this state except stopping the object.                                    */
 /******************************************************************************/
     case NN_STCP_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_state(stcp->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state(stcp->state, src, type);
     }
 }
 

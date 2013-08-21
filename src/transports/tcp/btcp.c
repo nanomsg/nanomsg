@@ -228,7 +228,7 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
         nn_list_erase (&btcp->atcps, &atcp->item);
         nn_atcp_term (atcp);
         nn_free (atcp);
-        
+
         /*  If there are no more atcp state machines, we can stop the whole
             btcp object. */
 atcps_stopping:
@@ -258,11 +258,11 @@ atcps_stopping:
                 btcp->state = NN_BTCP_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(btcp->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source(btcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -286,7 +286,7 @@ atcps_stopping:
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action(btcp->state, src, type);
             }
         }
 
@@ -304,14 +304,14 @@ atcps_stopping:
             nn_free (atcp);
             return;
         default:
-            nn_assert (0);
+            nn_fsm_bad_action(btcp->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state(btcp->state, src, type);
     }
 }
 

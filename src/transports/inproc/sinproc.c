@@ -235,11 +235,11 @@ finish:
                 sinproc->state = NN_SINPROC_STATE_CONNECTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sinproc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (sinproc->state, src, type);
         }
 
 /******************************************************************************/
@@ -258,7 +258,7 @@ finish:
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sinproc->state, src, type);
             }
 
         case NN_SINPROC_SRC_PEER:
@@ -270,8 +270,11 @@ finish:
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (sinproc->state, src, type);
             }
+
+        default:
+            nn_fsm_bad_source (sinproc->state, src, type);
         }
 
 /******************************************************************************/
@@ -322,11 +325,11 @@ finish:
                     return;
 
                 default:
-                    nn_assert (0);
+                    nn_fsm_bad_action (sinproc->state, src, type);
                 }
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_source (sinproc->state, src, type);
             }
 
 /******************************************************************************/
@@ -335,13 +338,13 @@ finish:
 /*  asked to stop.                                                            */
 /******************************************************************************/
         case NN_SINPROC_STATE_DISCONNECTED:
-            nn_assert (0);
+            nn_fsm_bad_source (sinproc->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (sinproc->state, src, type);
     }
 }
 

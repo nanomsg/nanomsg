@@ -190,11 +190,11 @@ finish:
                 binproc->state = NN_BINPROC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (binproc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (binproc->state, src, type);
         }
 
 /******************************************************************************/
@@ -216,18 +216,18 @@ finish:
                 nn_sinproc_accept (sinproc, peer);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (binproc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (binproc->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (binproc->state, src, type);
     }
 }
 

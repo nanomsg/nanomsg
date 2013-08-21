@@ -158,11 +158,11 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cinproc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cinproc->state, src, type);
         }
 
 /******************************************************************************/
@@ -177,7 +177,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cinproc->state, src, type);
             }
 
         case NN_SINPROC_SRC_PEER:
@@ -188,24 +188,24 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (cinproc->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (cinproc->state, src, type);
         }
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_CINPROC_STATE_ACTIVE:
-        nn_assert (0);
+        nn_fsm_bad_source (cinproc->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (cinproc->state, src, type);
     }
 }
 

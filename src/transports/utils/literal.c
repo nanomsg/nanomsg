@@ -23,28 +23,34 @@
 #include "literal.h"
 
 #include "../../utils/err.h"
+#include "../../utils/fast.h"
 
 #include <string.h>
 
 #ifndef NN_HAVE_WINDOWS
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#else
-#if (_WIN32_WINNT <= 0x0501) || (WINVER <= 0x0501)
-#define inet_pton nn_inet_pton
+#endif
+
+/*  On Windows XS there's no inet_pton() function. */
+#if defined NN_HAVE_WINDOWS && ((_WIN32_WINNT <= 0x0501) || (WINVER <= 0x0501))
+
 static int nn_inet_pton(int family, const char *src, void *dst)
 {
     int rc;
     struct sockaddr_storage addr;
     int addr_len = sizeof(addr);
 
-    addr.ss_family = family;
-
-    rc = WSAStringToAddressA((char *) src, family, NULL,
-        (struct sockaddr*) &addr, &addr_len);
-    if (rc != 0) {
+    if (nn_slow (family != AF_INET && family != AF_INET6)) {
+        errno = EAFNOSUPPORT;
         return -1;
     }
+
+    addr.ss_family = family;
+    rc = WSAStringToAddressA ((char*) src, family, NULL,
+        (struct sockaddr*) &addr, &addr_len);
+    if (rc != 0)
+        return 0;
 
     if (family == AF_INET) {
         memcpy(dst, &((struct sockaddr_in *) &addr)->sin_addr,
@@ -56,7 +62,14 @@ static int nn_inet_pton(int family, const char *src, void *dst)
 
     return 1;
 }
-#endif
+
+#else
+
+static int nn_inet_pton(int family, const char *src, void *dst)
+{
+    return inet_pton (family, src, dst);
+}
+
 #endif
 
 int nn_literal_resolve (const char *addr, size_t addrlen,
@@ -88,7 +101,7 @@ int nn_literal_resolve (const char *addr, size_t addrlen,
 
     /*  Try to interpret the literal as an IPv6 address. */
     if (!ipv4only) {
-        rc = inet_pton (AF_INET6, addrz, &in6addr);
+        rc = nn_inet_pton (AF_INET6, addrz, &in6addr);
         if (rc == 1) {
             if (result) {
                 result->ss_family = AF_INET6;
@@ -102,7 +115,7 @@ int nn_literal_resolve (const char *addr, size_t addrlen,
     }
 
     /*  Try to interpret the literal as an IPv4 address. */
-    rc = inet_pton (AF_INET, addrz, &inaddr);
+    rc = nn_inet_pton (AF_INET, addrz, &inaddr);
     if (rc == 1) {
         if (result) {
            result->ss_family = AF_INET;

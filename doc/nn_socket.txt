@@ -76,10 +76,11 @@ assert (s >= 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_pubsub[3]
-linknanomsg:nn_reqrep[3]
-linknanomsg:nn_pipeline[3]
-linknanomsg:nn_survey[3]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_pipeline[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_bus[7]
 linknanomsg:nn_bind[3]
 linknanomsg:nn_connect[3]
 linknanomsg:nn_close[3]

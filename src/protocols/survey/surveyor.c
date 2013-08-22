@@ -338,11 +338,11 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (surveyor->state, src, type);
         }
 
 /******************************************************************************/
@@ -363,11 +363,11 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (surveyor->state, src, type);
         }
 
 /******************************************************************************/
@@ -384,7 +384,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         case NN_SURVEYOR_SRC_DEADLINE_TIMER:
@@ -394,11 +394,11 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 surveyor->state = NN_SURVEYOR_STATE_STOPPING_TIMER;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (surveyor->state, src, type);
         }
 
 /******************************************************************************/
@@ -414,7 +414,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             case NN_SURVEYOR_ACTION_CANCEL:
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         case NN_SURVEYOR_SRC_DEADLINE_TIMER:
@@ -427,11 +427,11 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 surveyor->state = NN_SURVEYOR_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
         
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (surveyor->state, src, type);
         }
 
 /******************************************************************************/
@@ -447,18 +447,18 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (surveyor->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (surveyor->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (surveyor->state, src, type);
     }
 }
 

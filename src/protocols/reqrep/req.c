@@ -396,11 +396,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_PASSIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -416,11 +416,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_req_action_send (req);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -445,11 +445,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -477,7 +477,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
         
         case NN_REQ_SRC_RESEND_TIMER:
@@ -487,11 +487,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_TIMED_OUT;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
         
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -508,7 +508,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_req_action_send (req);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         case NN_FSM_ACTION:
@@ -517,11 +517,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -537,7 +537,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_req_action_send (req);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         case NN_FSM_ACTION:
@@ -545,11 +545,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
              case NN_REQ_ACTION_SENT:
                  return;
              default:
-                 nn_assert (0);
+                 nn_fsm_bad_action (req->state, src, type);
              }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -566,7 +566,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_DONE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         case NN_FSM_ACTION:
@@ -575,11 +575,11 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (req->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
@@ -598,18 +598,18 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                  nn_req_action_send (req);
                  return;
              default:
-                 nn_assert (0);
+                 nn_fsm_bad_action (req->state, src, type);
              }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (req->state, src, type);
         }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (req->state, src, type);
     }
 }
 

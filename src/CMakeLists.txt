@@ -244,6 +244,7 @@ set (NN_SOURCES
 add_library (nanomsg SHARED ${NN_SOURCES})
 
 add_definitions (-DNN_EXPORTS)
+add_definitions (-DNN_USE_LITERAL_IFADDR)
 
 target_link_libraries (nanomsg ws2_32)
 target_link_libraries (nanomsg Mswsock.lib)

@@ -118,10 +118,10 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
                 timer->state = NN_TIMER_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (timer->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (timer->state, src, type);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
@@ -145,15 +145,15 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (timer->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (timer->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (timer->state, src, type);
     }
 }

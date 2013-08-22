@@ -295,5 +295,7 @@ static void nn_fdtcp_handler (struct nn_fsm *self, int src, int type,
         default:
             nn_fsm_bad_source(fdtcp->state, src, type);
         }
+    default:
+        nn_fsm_bad_state(fdtcp->state, src, type);
     }
 }

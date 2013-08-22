@@ -171,11 +171,11 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
                 ep->state = NN_EP_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (ep->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (ep->state, src, type);
         }
 
 /******************************************************************************/
@@ -184,13 +184,13 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 /*  is closing the endpoint.                                                  */
 /******************************************************************************/
     case NN_EP_STATE_ACTIVE:
-        nn_assert (0);
+        nn_fsm_bad_source (ep->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (ep->state, src, type);
     }
 }
 

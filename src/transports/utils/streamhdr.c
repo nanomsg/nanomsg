@@ -149,11 +149,11 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
                 streamhdr->state = NN_STREAMHDR_STATE_SENDING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
 /******************************************************************************/
@@ -174,7 +174,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         case NN_STREAMHDR_SRC_TIMER:
@@ -184,11 +184,11 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
 /******************************************************************************/
@@ -227,11 +227,11 @@ invalidhdr:
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
 /******************************************************************************/
@@ -252,11 +252,11 @@ invalidhdr:
                     NN_STREAMHDR_ERROR);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         default:    
-            nn_assert (0);
+            nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
 /******************************************************************************/
@@ -277,11 +277,11 @@ invalidhdr:
                     NN_STREAMHDR_OK);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
         default:       
-            nn_assert (0);
+            nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
 /******************************************************************************/
@@ -290,14 +290,13 @@ invalidhdr:
 /*  nothing that can be done in this state except stopping the object.        */
 /******************************************************************************/
     case NN_STREAMHDR_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_source (streamhdr->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (streamhdr->state, src, type);
     }
 }
-
 

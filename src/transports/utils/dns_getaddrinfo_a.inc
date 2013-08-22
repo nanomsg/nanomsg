@@ -209,10 +209,10 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
                 dns->state = NN_DNS_STATE_DONE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (dns->state, src, type);
             }
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (dns->state, src, type);
         }
 
 /******************************************************************************/
@@ -227,23 +227,23 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
                 dns->state = NN_DNS_STATE_DONE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (dns->state, src, type);
             }
         default:
-            nn_assert (0);
+            nn_fsm_bad_source (dns->state, src, type);
         }
 
 /******************************************************************************/
 /*  DONE state.                                                               */
 /******************************************************************************/
     case NN_DNS_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_source (dns->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (dns->state, src, type);
     }
 }
 

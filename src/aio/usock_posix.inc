@@ -533,10 +533,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_STARTING;
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  STARTING state.                                                           */
@@ -559,10 +559,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  BEING_ACCEPTED state.                                                     */
@@ -578,10 +578,10 @@ finish3:
                     NN_USOCK_ACCEPTED);
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  ACCEPTED state.                                                           */
@@ -596,10 +596,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */
@@ -623,7 +623,7 @@ finish3:
                     NN_USOCK_ERROR);
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == &usock->wfd) {
@@ -643,10 +643,10 @@ finish3:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
@@ -691,7 +691,7 @@ error:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == NULL) {
@@ -701,7 +701,7 @@ error:
                 nn_worker_execute (usock->worker, &usock->task_stop);
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         nn_fsm_bad_source(usock->state, src, type);
@@ -726,7 +726,7 @@ error:
         if (srcptr == &usock->wfd)
             return;
 
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  DONE state.                                                               */
@@ -734,7 +734,7 @@ error:
 /*  stopping the usock.                                                       */
 /******************************************************************************/
     case NN_USOCK_STATE_DONE:
-        nn_fsm_bad_state(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  LISTENING state.                                                          */
@@ -748,10 +748,10 @@ error:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  ACCEPTING state.                                                          */
@@ -769,7 +769,7 @@ error:
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == &usock->wfd) {
@@ -821,10 +821,10 @@ error:
                 return;
 
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  CANCELLING state.                                                         */
@@ -845,16 +845,16 @@ error:
             case NN_WORKER_FD_IN:
                 return;
             default:
-                nn_fsm_bad_action(usock->state, src, type);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_fsm_bad_source(usock->state, src, type);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state                                                             */
 /******************************************************************************/
     default:
-        nn_fsm_bad_state(usock->state, src, type);
+        nn_fsm_bad_state (usock->state, src, type);
     }
 }
 

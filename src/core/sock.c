@@ -804,11 +804,11 @@ finish1:
                 nn_sock_action_zombify (sock);
                 return;
             default:
-                nn_fsm_bad_action(sock->state, src, type);
+                nn_fsm_bad_action (sock->state, src, type);
             }
 
         default:
-            nn_fsm_bad_source(sock->state, src, type);
+            nn_fsm_bad_source (sock->state, src, type);
         }
 
 /******************************************************************************/
@@ -823,7 +823,7 @@ finish1:
                 nn_sock_action_zombify (sock);
                 return;
             default:
-                nn_fsm_bad_action(sock->state, src, type);
+                nn_fsm_bad_action (sock->state, src, type);
             }
 
         default:
@@ -839,7 +839,7 @@ finish1:
                     (struct nn_pipe*) srcptr);
                 return;
             default:
-                nn_fsm_bad_action(sock->state, src, type);
+                nn_fsm_bad_action (sock->state, src, type);
             }
         }
 
@@ -847,13 +847,13 @@ finish1:
 /*  ZOMBIE state.                                                             */
 /******************************************************************************/
     case NN_SOCK_STATE_ZOMBIE:
-        nn_fsm_bad_state(sock->state, src, type);
+        nn_fsm_bad_state (sock->state, src, type);
 
 /******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
-        nn_fsm_bad_state(sock->state, src, type);
+        nn_fsm_bad_state (sock->state, src, type);
     }
 }
 

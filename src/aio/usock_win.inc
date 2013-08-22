@@ -463,10 +463,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_STARTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  STARTING state.                                                          */
@@ -484,10 +484,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  BEING_ACCEPTED state.                                                    */
@@ -501,10 +501,10 @@ finish3:
                     NN_USOCK_ACCEPTED);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACCEPTED state.                                                          */
@@ -516,10 +516,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_ACTIVE;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CONNECTING state.                                                        */
@@ -540,7 +540,7 @@ finish3:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == &usock->out) {
@@ -558,10 +558,10 @@ finish3:
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACTIVE state.                                                            */
@@ -581,7 +581,7 @@ finish3:
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == &usock->out) {
@@ -597,7 +597,7 @@ finish3:
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == NULL) {
@@ -610,10 +610,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_CANCELLING_IO;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CANCELLING_IO state.                                                     */
@@ -626,13 +626,13 @@ finish3:
             usock->state = NN_USOCK_STATE_DONE;
             return;
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  DONE state.                                                              */
 /*****************************************************************************/
     case NN_USOCK_STATE_DONE:
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  LISTENING state.                                                         */
@@ -644,10 +644,10 @@ finish3:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACCEPTING state.                                                         */
@@ -663,7 +663,7 @@ finish3:
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
         if (srcptr == &usock->in) {
@@ -688,10 +688,10 @@ finish3:
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CANCELLING state.                                                        */
@@ -712,16 +712,16 @@ finish3:
                 return;
 
             default:
-                nn_assert (0);
+                nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        nn_assert (0);
+        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  Invalid state.                                                           */
 /*****************************************************************************/
     default:
-        nn_assert (0);
+        nn_fsm_bad_state (usock->state, src, type);
     }
 }
 

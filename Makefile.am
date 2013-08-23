@@ -345,7 +345,7 @@ if DOC
 SUFFIXES = .3 .7 .3.html .7.html
 .xml.3:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.7: 
+.xml.7:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
 .txt.3.html:
@@ -465,3 +465,9 @@ EXTRA_DIST += \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
 
+
+diagrams:
+	-mkdir doc/diagrams
+	./doc/diag.py $(DEFS) $(CPPFLAGS) \
+		$(shell clang -E - -v < /dev/null 2>&1 | \
+			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')

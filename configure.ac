@@ -238,7 +238,7 @@ AC_SEARCH_LIBS([getaddrinfo_a], [anl], [
 AC_SEARCH_LIBS([socketpair], [], [
     AC_DEFINE([NN_HAVE_SOCKETPAIR])
 ])
-AC_SEARCH_LIBS([sem_wait], [], [
+AC_SEARCH_LIBS([sem_wait], [rt pthread], [
     AC_DEFINE([NN_HAVE_SEMAPHORE])
 ])
 

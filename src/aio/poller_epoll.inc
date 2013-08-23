@@ -30,7 +30,11 @@ int nn_poller_init (struct nn_poller *self)
 {
     int rc;
 
+#ifdef EPOLL_CLOEXEC
     self->ep = epoll_create1 (EPOLL_CLOEXEC);
+#else
+    self->ep = epoll_create (1);
+#endif 
     if (self->ep == -1) {
         if (errno == ENFILE || errno == EMFILE)
             return -EMFILE;

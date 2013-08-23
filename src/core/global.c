@@ -204,6 +204,9 @@ static void nn_global_init (void)
     nn_global_add_transport (nn_ipc);
 #endif
     nn_global_add_transport (nn_tcp);
+#if !defined NN_HAVE_WINDOWS
+    nn_global_add_transport (nn_tcp_fd);
+#endif
 
     /*  Plug in individual socktypes. */
     nn_global_add_socktype (nn_pair_socktype);
@@ -431,7 +434,7 @@ int nn_setsockopt (int s, int level, int option, const void *optval,
 
     return 0;
 }
- 
+
 int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen)
 {
@@ -728,7 +731,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
             /*  TODO: Copy the data to the supplied buffer, prefix them
                 with size. */
             nn_assert (0);
-        }   
+        }
     }
 
     nn_msg_term (&msg);
@@ -742,7 +745,7 @@ static void nn_global_add_transport (struct nn_transport *transport)
         transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
-    
+
 }
 
 static void nn_global_add_socktype (struct nn_socktype *socktype)

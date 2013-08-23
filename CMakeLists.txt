@@ -251,6 +251,7 @@ add_libnanomsg_test (inproc_shutdown)
 add_libnanomsg_test (ipc)
 add_libnanomsg_test (ipc_shutdown)
 add_libnanomsg_test (tcp)
+add_libnanomsg_test (tcp_fd)
 add_libnanomsg_test (tcp_shutdown)
 
 #  Protocol tests.

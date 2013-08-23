@@ -151,6 +151,39 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     return 0;
 }
 
+int nn_usock_start_connected_fd (struct nn_usock *self, int fd)
+{
+
+    nn_usock_init_from_fd (self, fd);
+
+    /*  Start the state machine. */
+    nn_fsm_start (&self->fsm);
+
+    /*  Pretend we are connecting */
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_CONNECT);
+
+    /*  Start checking for OUT. If socket is already connected we will
+        get ACTIVE state immediately. It's safety check in case user passes
+        connect()'ed socket without waiting for connection to be established */
+    nn_worker_execute (self->worker, &self->task_connecting);
+
+    return 0;
+}
+
+int nn_usock_start_listen_fd (struct nn_usock *self, int fd)
+{
+
+    nn_usock_init_from_fd (self, fd);
+
+    /*  Start the state machine. */
+    nn_fsm_start (&self->fsm);
+
+    /*  Notify the state machine the socket is listening. */
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_LISTEN);
+
+    return 0;
+}
+
 static void nn_usock_init_from_fd (struct nn_usock *self, int s)
 {
     int rc;
@@ -600,6 +633,7 @@ finish3:
             }
         }
         nn_fsm_bad_source (usock->state, src, type);
+
 
 /******************************************************************************/
 /*  CONNECTING state.                                                         */

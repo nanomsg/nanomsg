@@ -272,6 +272,8 @@ TRANSPORTS_TCP = \
     src/transports/tcp/ctcp.c \
     src/transports/tcp/stcp.h \
     src/transports/tcp/stcp.c \
+    src/transports/tcp/fdtcp.h \
+    src/transports/tcp/fdtcp.c \
     src/transports/tcp/tcp.h \
     src/transports/tcp/tcp.c
 
@@ -345,7 +347,7 @@ if DOC
 SUFFIXES = .3 .7 .3.html .7.html
 .xml.3:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.7: 
+.xml.7:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 
 .txt.3.html:
@@ -402,6 +404,7 @@ TRANSPORT_TESTS = \
     tests/ipc \
     tests/ipc_shutdown \
     tests/tcp \
+    tests/tcp_fd \
     tests/tcp_shutdown
 
 PROTOCOL_TESTS = \

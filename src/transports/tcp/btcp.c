@@ -34,9 +34,9 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/fast.h"
+#include "../../utils/int.h"
 
 #include <string.h>
-#include <stdint.h>
 
 #if defined NN_HAVE_WINDOWS
 #include "../../utils/win.h"

@@ -32,8 +32,8 @@
 #include "../../utils/alloc.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
+#include "../../utils/int.h"
 
-#include <stdint.h>
 #include <string.h>
 
 #define NN_RESPONDENT_INPROGRESS 1

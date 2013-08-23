@@ -26,8 +26,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
-
-#include <stdint.h>
+#include "../../utils/int.h"
 
 /*  States of the object as a whole. */
 #define NN_STCP_STATE_IDLE 1

@@ -26,11 +26,11 @@
 #include "../../protocol.h"
 
 #include "../../utils/hash.h"
+#include "../../utils/int.h"
 
 #include "../utils/fq.h"
 
 #include <stddef.h>
-#include <stdint.h>
 
 #define NN_XREP_OUT 1
 

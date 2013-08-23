@@ -30,10 +30,10 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/int.h"
 
 #include <stddef.h>
 #include <string.h>
-#include <stdint.h>
 
 /*  To make the algorithm super efficient we directly cast pipe pointers to
     pipe IDs (rather than maintaining a hash table). For this to work, it is

@@ -25,10 +25,10 @@
 #include "alloc.h"
 #include "fast.h"
 #include "wire.h"
+#include "int.h"
 #include "err.h"
 
 #include <string.h>
-#include <stdint.h>
 
 #define NN_CHUNK_TAG 0xdeadcafe
 #define NN_CHUNK_TAG_DEALLOCATED 0xbeadfeed

@@ -33,7 +33,7 @@
 #define NN_ATOMIC_MUTEX
 #endif
 
-#include <stdint.h>
+#include "int.h"
 
 struct nn_atomic {
 #if defined NN_ATOMIC_MUTEX

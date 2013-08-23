@@ -23,7 +23,7 @@
 #ifndef NN_CLOCK_INCLUDED
 #define NN_CLOCK_INCLUDED
 
-#include <stdint.h>
+#include "int.h"
 
 /*  Optimised retrieval of the current time. The clock object is not
     thread-safe. */

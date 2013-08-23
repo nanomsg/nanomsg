@@ -35,8 +35,8 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
+#include "../../utils/int.h"
 
-#include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 

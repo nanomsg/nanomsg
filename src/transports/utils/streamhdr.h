@@ -29,7 +29,7 @@
 #include "../../aio/usock.h"
 #include "../../aio/timer.h"
 
-#include <stdint.h>
+#include "../../utils/int.h"
 
 /*  This state machine exchanges protocol headers on top of
     a stream-based bi-directional connection. */

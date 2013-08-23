@@ -25,9 +25,9 @@
 
 #include "utils/msg.h"
 #include "utils/list.h"
+#include "utils/int.h"
 
 #include <stddef.h>
-#include <stdint.h>
 
 struct nn_ctx;
 

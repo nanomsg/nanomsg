@@ -36,8 +36,8 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/list.h"
+#include "../../utils/int.h"
 
-#include <stdint.h>
 #include <string.h>
 
 #define NN_SURVEYOR_DEFAULT_DEADLINE 1000

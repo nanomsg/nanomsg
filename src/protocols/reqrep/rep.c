@@ -32,9 +32,9 @@
 #include "../../utils/chunkref.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
+#include "../../utils/int.h"
 
 #include <stddef.h>
-#include <stdint.h>
 #include <string.h>
 
 #define NN_REP_INPROGRESS 1

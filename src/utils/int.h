@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,25 +20,51 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_STOPWATCH_INCLUDED
-#define NN_STOPWATCH_INCLUDED
+#ifndef NN_INT_INCLUDED
+#define NN_INT_INCLUDED
 
-#include "err.h"
-#include "int.h"
+#if defined NN_HAVE_WINDOWS
 
-/*  Check whether measured time is the expected time (in microseconds).
-    The upper tolerance is 50ms so that the test doesn't fail even on
-    very slow or very loaded systems. */
-#define time_assert(actual,expected) \
-    nn_assert (actual > ((expected) - 5000) && actual < ((expected) + 50000)); 
+/*  Old versions of MSVC don't ship with stdint.h header file.
+    Thus, we have to define fix-sized integer type ourselves. */
 
-/*  Measures time interval in microseconds. */
+#ifndef int8_t
+typedef __int8 int8_t;
+#endif
+#ifndef uint8_t
+typedef unsigned __int8 uint8_t;
+#endif
+#ifndef int16_t
+typedef __int16 int16_t;
+#endif
+#ifndef uint16_t
+typedef unsigned __int16 uint16_t;
+#endif
+#ifndef int32_t
+typedef __int32 int32_t;
+#endif
+#ifndef uint32_t
+typedef unsigned __int32 uint32_t;
+#endif
+#ifndef int64_t
+typedef __int64 int64_t;
+#endif
+#ifndef uint64_t
+typedef unsigned __int64 uint64_t;
+#endif
 
-struct nn_stopwatch {
-    uint64_t start;
-};
+#elif defined NN_HAVE_SOLARIS || defined NN_HAVE_OPENVMS
 
-void nn_stopwatch_init (struct nn_stopwatch *self);
-uint64_t nn_stopwatch_term (struct nn_stopwatch *self);
+/*  Solaris and OpenVMS don't have standard stdint.h header, rather the fixed
+    integer types are defined in inttypes.h. */
+#include <inttypes.h>
+
+#else
+
+/*  Fully POSIX-compliant platforms have fixed integer types defined
+    in stdint.h. */
+#include <stdint.h>
+
+#endif
 
 #endif

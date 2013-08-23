@@ -23,7 +23,7 @@
 #ifndef NN_WIRE_INCLUDED
 #define NN_WIRE_INCLUDED
 
-#include <stdint.h>
+#include "int.h"
 
 uint16_t nn_gets (const uint8_t *buf);
 void nn_puts (uint8_t *buf, uint16_t val);

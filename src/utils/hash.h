@@ -23,10 +23,10 @@
 #ifndef NN_HASH_INCLUDED
 #define NN_HASH_INCLUDED
 
-#include <stdint.h>
-#include <stddef.h>
-
 #include "list.h"
+#include "int.h"
+
+#include <stddef.h>
 
 /*  Use for initialising a hash item statically. */
 #define NN_HASH_ITEM_INITIALIZER {0xffff, NN_LIST_ITEM_INITILIZER}

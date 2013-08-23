@@ -30,9 +30,9 @@
 
 #include "utils/list.h"
 #include "utils/msg.h"
+#include "utils/int.h"
 
 #include <stddef.h>
-#include <stdint.h>
 
 /*  This is the API between the nanomsg core and individual transports. */
 

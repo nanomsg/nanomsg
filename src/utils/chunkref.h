@@ -26,8 +26,8 @@
 #define NN_CHUNKREF_MAX 32
 
 #include "chunk.h"
+#include "int.h"
 
-#include <stdint.h>
 #include <stddef.h>
 
 /*  This class represents a reference to a data chunk. It's either an actual

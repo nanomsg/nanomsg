@@ -21,8 +21,8 @@
 */
 
 #include "err.h"
+#include "int.h"
 
-#include <stdint.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
 #include <fcntl.h>

@@ -25,10 +25,10 @@
 #if defined NN_ALLOC_MONITOR
 
 #include "mutex.h"
+#include "int.h"
 
 #include <stdlib.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 
 struct nn_alloc_hdr {

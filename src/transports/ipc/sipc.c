@@ -28,8 +28,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
-
-#include <stdint.h>
+#include "../../utils/int.h"
 
 /*  Types of messages passed via IPC transport. */
 #define NN_SIPC_MSG_NORMAL 1

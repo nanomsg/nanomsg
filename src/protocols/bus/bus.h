@@ -21,7 +21,7 @@
 */
 
 #ifndef NN_BUS_INCLUDED
-#define NN_PBUS_INCLUDED
+#define NN_BUS_INCLUDED
 
 #include "../../protocol.h"
 

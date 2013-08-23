@@ -25,6 +25,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 int nn_poller_init (struct nn_poller *self)
 {
@@ -33,7 +34,10 @@ int nn_poller_init (struct nn_poller *self)
 #ifdef EPOLL_CLOEXEC
     self->ep = epoll_create1 (EPOLL_CLOEXEC);
 #else
+    /*  Size parameter is unused, we can safely set it to 1. */
     self->ep = epoll_create (1);
+    rc = fcntl (self->ep, F_SETFD, FD_CLOEXEC);
+    errno_assert (rc != -1);
 #endif 
     if (self->ep == -1) {
         if (errno == ENFILE || errno == EMFILE)

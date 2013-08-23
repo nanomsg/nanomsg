@@ -24,18 +24,18 @@ if [ ! -f src/nn.h ]; then
     exit 1
 fi
 
-CURRENT=$(egrep '^#define +NN_VERSION_CURRENT +[0-9]+$' src/nn.h)
-REVISION=$(egrep '^#define +NN_VERSION_REVISION +[0-9]+$' src/nn.h)
-AGE=$(egrep '^#define +NN_VERSION_AGE +[0-9]+$' src/nn.h)
+CURRENT=`egrep '^#define +NN_VERSION_CURRENT +[0-9]+$' src/nn.h`
+REVISION=`egrep '^#define +NN_VERSION_REVISION +[0-9]+$' src/nn.h`
+AGE=`egrep '^#define +NN_VERSION_AGE +[0-9]+$' src/nn.h`
 
 if [ -z "$CURRENT" -o -z "$REVISION" -o -z "$AGE" ]; then
     echo "abi_version.sh: error: could not extract version from src/nn.h" 1>&2
     exit 1
 fi
 
-CURRENT=$(printf '%s' "$CURRENT" | awk '{ print $3 }')
-REVISION=$(printf '%s' "$REVISION" | awk '{ print $3 }')
-AGE=$(printf '%s' "$AGE" | awk '{ print $3 }') 
+CURRENT=`echo $CURRENT | awk '{ print $3 }'`
+REVISION=`echo $REVISION | awk '{ print $3 }'`
+AGE=`echo $AGE | awk '{ print $3 }'`
 
 printf '%s' "$CURRENT.$REVISION.$AGE"
 

@@ -145,6 +145,10 @@ const char *nn_err_strerror (int errnum)
     case ENOPROTOOPT:
         return "Protocol not available";
 #endif
+#if defined NN_EISCONN_DEFINED
+    case EISCONN:
+        return "Transport endpoint is already connected";
+#endif
     case ETERM:
         return "Nanomsg library was terminated";
     case EFSM:

@@ -46,6 +46,7 @@ perf/remote_thr
 doc/*.7
 doc/*.3
 doc/*.html
+doc/diagrams
 *.log
 tests/*.trs
 tests/block

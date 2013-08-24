@@ -241,39 +241,12 @@ set (NN_SOURCES
     transports/tcp/tcp.c
 )
 
-#  Here we cause symbols not to be exported from the library unless
-#  they are explicitly marked by NN_EXPORT specifier.
-#  Note: For MSVC there's no need for defining a special option. With MSVC
-#  symbols are not exported from the library unless explicitly said so.
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER MATCHES "/(icpc|icc)$")
-    add_definitions (-fvisibility=hidden)
-endif ()
-
 add_library (nanomsg SHARED ${NN_SOURCES})
-set_target_properties (nanomsg PROPERTIES VERSION "${NN_VERSION_STR}")
 
 add_definitions (-DNN_EXPORTS)
+add_definitions (-DNN_USE_LITERAL_IFADDR)
 
-if (UNIX AND NOT NN_HAVE_OSX)
-    target_link_libraries (nanomsg rt)
-endif ()
-
-if (NN_HAVE_WINDOWS)
-    target_link_libraries (nanomsg ws2_32)
-    target_link_libraries (nanomsg Mswsock.lib)
-    target_link_libraries (nanomsg Advapi32.lib)
-endif ()
-
-if (NN_HAVE_SOLARIS)
-    target_link_libraries (nanomsg socket)
-    target_link_libraries (nanomsg nsl)
-endif ()
-
-if (NN_HAVE_GETADDRINFO_A)
-    target_link_libraries (nanomsg anl)
-endif ()
-
-target_link_libraries (nanomsg ${CMAKE_THREAD_LIBS_INIT})
-
-install (TARGETS nanomsg DESTINATION lib)
+target_link_libraries (nanomsg ws2_32)
+target_link_libraries (nanomsg Mswsock.lib)
+target_link_libraries (nanomsg Advapi32.lib)
 

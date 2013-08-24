@@ -467,7 +467,7 @@ EXTRA_DIST += \
 
 
 diagrams:
-	-mkdir doc/diagrams
+	-mkdir -p doc/diagrams
 	./doc/diag.py $(DEFS) $(CPPFLAGS) \
 		$(shell clang -E - -v < /dev/null 2>&1 | \
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')

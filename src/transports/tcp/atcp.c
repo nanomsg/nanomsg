@@ -47,6 +47,7 @@ void nn_atcp_init (struct nn_atcp *self, int src,
 {
     nn_fsm_init (&self->fsm, nn_atcp_handler, src, self, owner);
     self->state = NN_ATCP_STATE_IDLE;
+    self->epbase = epbase;
     nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner.src = -1;
@@ -97,6 +98,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_atcp *atcp;
+    int val;
+    size_t sz;
 
     atcp = nn_cont (self, struct nn_atcp, fsm);
 
@@ -161,6 +164,20 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
+
+                /*  Set the relevant socket options. */
+                sz = sizeof (val);
+                nn_epbase_getopt (atcp->epbase, NN_SOL_SOCKET, NN_SNDBUF,
+                    &val, &sz);
+                nn_assert (sz == sizeof (val));
+                nn_usock_setsockopt (&atcp->usock, SOL_SOCKET, SO_SNDBUF,
+                    &val, sizeof (val));
+                sz = sizeof (val);
+                nn_epbase_getopt (atcp->epbase, NN_SOL_SOCKET, NN_RCVBUF,
+                    &val, &sz);
+                nn_assert (sz == sizeof (val));
+                nn_usock_setsockopt (&atcp->usock, SOL_SOCKET, SO_RCVBUF,
+                    &val, sizeof (val));
 
                 /*  Return ownership of the listening socket to the parent. */
                 nn_usock_swap_owner (atcp->listener, &atcp->listener_owner);

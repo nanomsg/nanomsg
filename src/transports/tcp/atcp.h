@@ -47,6 +47,9 @@ struct nn_atcp {
     struct nn_fsm fsm;
     int state;
 
+    /*  Pointer to the associated endpoint. */
+    struct nn_epbase *epbase;
+
     /*  Underlying socket. */
     struct nn_usock usock;
 

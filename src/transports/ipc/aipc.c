@@ -48,6 +48,7 @@ void nn_aipc_init (struct nn_aipc *self, int src,
 {
     nn_fsm_init (&self->fsm, nn_aipc_handler, src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
+    self->epbase = epbase;
     nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner.src = -1;
@@ -98,6 +99,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_aipc *aipc;
+    int val;
+    size_t sz;
 
     aipc = nn_cont (self, struct nn_aipc, fsm);
 
@@ -162,6 +165,20 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
+
+                /*  Set the relevant socket options. */
+                sz = sizeof (val);
+                nn_epbase_getopt (aipc->epbase, NN_SOL_SOCKET, NN_SNDBUF,
+                    &val, &sz);
+                nn_assert (sz == sizeof (val));
+                nn_usock_setsockopt (&aipc->usock, SOL_SOCKET, SO_SNDBUF,
+                    &val, sizeof (val));
+                sz = sizeof (val);
+                nn_epbase_getopt (aipc->epbase, NN_SOL_SOCKET, NN_RCVBUF,
+                    &val, &sz);
+                nn_assert (sz == sizeof (val));
+                nn_usock_setsockopt (&aipc->usock, SOL_SOCKET, SO_RCVBUF,
+                    &val, sizeof (val));
 
                 /*  Return ownership of the listening socket to the parent. */
                 nn_usock_swap_owner (aipc->listener, &aipc->listener_owner);

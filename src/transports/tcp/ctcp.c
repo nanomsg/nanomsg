@@ -23,6 +23,8 @@
 #include "ctcp.h"
 #include "stcp.h"
 
+#include "../../tcp.h"
+
 #include "../utils/dns.h"
 #include "../utils/port.h"
 #include "../utils/iface.h"
@@ -44,6 +46,7 @@
 #else
 #include <unistd.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif
 
 #define NN_CTCP_STATE_IDLE 1
@@ -156,7 +159,7 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
         nn_assert (ipv4onlylen == sizeof (ipv4only));
 
         /*  Resolve the local interface name. */
-        rc = nn_iface_resolve (addr, pos - addr, 1, &ss, &sslen);
+        rc = nn_iface_resolve (addr, pos - addr, ipv4only, &ss, &sslen);
         if (rc < 0) {
             nn_epbase_term (&self->epbase);
             return -ENODEV;
@@ -506,6 +509,8 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     uint16_t port;
     int ipv4only;
     size_t ipv4onlylen;
+    int val;
+    size_t sz;
 
     /*  Create IP address from the address string. */
     addr = nn_epbase_getaddr (&self->epbase);
@@ -555,6 +560,18 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
         self->state = NN_CTCP_STATE_WAITING;
         return;
     }
+
+    /*  Set the relevant socket options. */
+    sz = sizeof (val);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
+    nn_assert (sz == sizeof (val));
+    nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_SNDBUF,
+        &val, sizeof (val));
+    sz = sizeof (val);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
+    nn_assert (sz == sizeof (val));
+    nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
+        &val, sizeof (val));
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);

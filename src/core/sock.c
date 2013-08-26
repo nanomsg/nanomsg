@@ -826,6 +826,22 @@ finish1:
                 nn_fsm_bad_action (sock->state, src, type);
             }
 
+        case NN_SOCK_SRC_EP:
+            switch (type) {
+            case NN_EP_STOPPED:
+
+                /*  This happens when an endpoint is closed using
+                    nn_shutdown() function. */
+                ep = (struct nn_ep*) srcptr;
+                nn_list_erase (&sock->eps, &ep->item);
+                nn_ep_term (ep);
+                nn_free (ep);
+                return;
+
+            default:
+                nn_fsm_bad_action (sock->state, src, type);
+            }
+
         default:
 
             /*  The assumption is that all the other events come from pipes. */

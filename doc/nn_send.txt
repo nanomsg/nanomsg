@@ -19,8 +19,9 @@ by 'buf' parameter to the socket 's'. The message will be 'len' bytes long.
 
 Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
 set the buf parameter to point to the pointer to the buffer and 'len' parameter
-to _NN_MSG_ constant. In this case the buffer will be deallocated by _nn_send_
-function. Trying to deallocate it afterwards will result in undefined behaviour.
+to _NN_MSG_ constant. In this case a successful call to _nn_send_ will
+deallocate the buffer. Trying to deallocate it afterwards will result in
+undefined behaviour.
 
 Which of the peers the message will be sent to is determined by
 the particular socket type.

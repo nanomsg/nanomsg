@@ -505,6 +505,7 @@ int nn_send (int s, const void *buf, size_t len, int flags)
     int rc;
     struct nn_msg msg;
     void *chunk;
+    int ret;
 
     NN_BASIC_CHECKS;
 
@@ -520,23 +521,26 @@ int nn_send (int s, const void *buf, size_t len, int flags)
             errno = EFAULT;
             return -1;
         }
-        len = nn_chunk_size (chunk);
+        ret = nn_chunk_size (chunk);
         nn_msg_init_chunk (&msg, chunk);
     }
     else {
         nn_msg_init (&msg, len);
         memcpy (nn_chunkref_data (&msg.body), buf, len);
+        ret = (int) len;
     }
 
     /*  Send it further down the stack. */
     rc = nn_sock_send (self.socks [s], &msg, flags);
     if (nn_slow (rc < 0)) {
-        nn_msg_term (&msg);
+        nn_chunkref_term (&msg.hdr);
+        if (len != NN_MSG)
+            nn_chunkref_term (&msg.body);
         errno = -rc;
         return -1;
     }
 
-    return (int) len;
+    return ret;
 }
 
 int nn_recv (int s, void *buf, size_t len, int flags)

@@ -53,8 +53,18 @@ machine. We may lift some in the future. Important assumptions are:
 import os
 import sys
 import subprocess
+import errno
 
-from clang.cindex import Index
+try:
+    from clang.cindex import Index
+except ImportError:
+    sys.excepthook(*sys.exc_info())
+    print(file=sys.stderr)
+    print("It seems you don't have clang for python.", file=sys.stderr)
+    print("You may try one of the following:", file=sys.stderr)
+    print("    pip install clang", file=sys.stderr)
+    print("    easy_install clang", file=sys.stderr)
+    sys.exit(1)
 
 HTML_HEADER = """
 <!DOCTYPE html>
@@ -291,8 +301,17 @@ def parse_file(fn):
                         mksrc(src),
                         mkaction(action)))
             data = 'digraph G {' + '\n'.join(lines) + '}'
-            subprocess.Popen(['dot', '-Tpng', '-o', targetfn],
-                stdin=subprocess.PIPE).communicate(data)
+            try:
+                subprocess.Popen(['dot', '-Tpng', '-o', targetfn],
+                    stdin=subprocess.PIPE).communicate(data)
+            except OSError as e:
+                sys.excepthook(*sys.exc_info())
+                if e.errno == errno.ENOENT:
+                    print(file=sys.stderr)
+                    print("It seems you dont have `dot`", file=sys.stderr)
+                    print("You may wish to try:", file=sys.stderr)
+                    print("    apt-get install graphviz", file=sys.stderr)
+                sys.exit(1)
 
 
 def main():

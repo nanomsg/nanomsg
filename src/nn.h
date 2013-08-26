@@ -180,6 +180,10 @@ extern "C" {
 #define ENOPROTOOPT (NN_HAUSNUMERO + 26)
 #define NN_ENOPROTOOPT_DEFINED
 #endif
+#ifndef EISCONN
+#define EISCONN (NN_HAUSNUMERO + 27)
+#define NN_EISCONN_DEFINED
+#endif
 
 /*  Native error codes.                                                       */
 #ifndef ETERM

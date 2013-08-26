@@ -108,7 +108,7 @@
 /*  Assertion-like macros for easier fsm debugging. */
 #define nn_fsm_error(message, state, src, type) \
     do {\
-        fprintf (stderr, "%s: %d from %d for state %d (%s:%d)\n", \
+        fprintf (stderr, "%s: action=%d source=%d state=%d (%s:%d)\n", \
             message, type, src, state, __FILE__, __LINE__);\
         nn_err_abort ();\
     } while (0)

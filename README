@@ -10,18 +10,26 @@ For more info check the web site: http://nanomsg.org
 Build it
 --------
 
-1.  The build is performed using CMake, so first make sure that CMake is 
-    installed on your system
-2.  git clone git@github.com:250bpm/nanomsg.git
-3.  cd nanomsg
-4.  mkdir build
-5.  cd build
-6.  cmake .. # or cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-7.  make
-8.  make check
-9.  sudo make install
-10. On Linux or other platforms which use ld.so for dynamic linking, run 
-    ldconfig or equivalent as root to update your system’s shared library cache
+1.  Download the package.
+2.  Unpack it.
+3.  Go to the root directory of the package.
+5.  ./configure
+6.  make
+7.  make check
+8.  sudo make install
+9.  On Linux or other platforms which use ld.so for dynamic linking, run 
+    ldconfig or equivalent as root to update your system’s shared library cache.
+
+Build it on Windows
+-------------------
+
+1.  Download the package.
+2.  Unpack it.
+3.  Go to the root directory of the package.
+4.  run "cmake ."
+5.  Open the nanomsg.sln file using MSVC IDE.
+6.  Build the entire solution.
+7.  Optionally, build RUN_TESTS project to run the test suite.
 
 Resources
 ---------

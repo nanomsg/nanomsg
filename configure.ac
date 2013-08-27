@@ -44,7 +44,7 @@ AC_PROG_AWK
 
 NN_ABI_VERSION=m4_esyscmd([./abi_version.sh])
 NN_PACKAGE_VERSION=m4_esyscmd([./package_version.sh])
-NN_LIBTOOL_VERSION=m4_esyscmd([./abi_version.sh | sed -e y/./:/])
+NN_LIBTOOL_VERSION=m4_esyscmd([./abi_version.sh -libtool])
 
 AC_SUBST(NN_ABI_VERSION)
 AC_SUBST(NN_PACKAGE_VERSION)

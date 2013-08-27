@@ -427,7 +427,8 @@ FEATURE_TESTS = \
     tests/list \
     tests/hash \
     tests/symbol \
-    tests/separation
+    tests/separation \
+    tests/zerocopy
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \

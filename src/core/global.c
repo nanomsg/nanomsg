@@ -505,7 +505,7 @@ int nn_send (int s, const void *buf, size_t len, int flags)
     int rc;
     struct nn_msg msg;
     void *chunk;
-    int ret;
+    int nnmsg;
 
     NN_BASIC_CHECKS;
 
@@ -521,26 +521,32 @@ int nn_send (int s, const void *buf, size_t len, int flags)
             errno = EFAULT;
             return -1;
         }
-        ret = nn_chunk_size (chunk);
+        len = nn_chunk_size (chunk);
         nn_msg_init_chunk (&msg, chunk);
+        nnmsg = 1;
     }
     else {
         nn_msg_init (&msg, len);
         memcpy (nn_chunkref_data (&msg.body), buf, len);
-        ret = (int) len;
+        nnmsg = 0;
     }
 
     /*  Send it further down the stack. */
     rc = nn_sock_send (self.socks [s], &msg, flags);
     if (nn_slow (rc < 0)) {
         nn_chunkref_term (&msg.hdr);
-        if (len != NN_MSG)
-            nn_chunkref_term (&msg.body);
+
+        /*  If we are dealing with user-supplied buffer, detach it from
+            the message object. */
+        if (nnmsg)
+            nn_chunkref_init (&msg.body, 0);
+
+        nn_msg_term (&msg);
         errno = -rc;
         return -1;
     }
 
-    return ret;
+    return (int) len;
 }
 
 int nn_recv (int s, void *buf, size_t len, int flags)
@@ -549,6 +555,7 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     struct nn_msg msg;
     size_t sz;
     void *chunk;
+    int nnmsg;
 
     NN_BASIC_CHECKS;
 
@@ -585,6 +592,7 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     struct nn_iovec *iov;
     struct nn_msg msg;
     void *chunk;
+    int nnmsg;
 
     NN_BASIC_CHECKS;
 
@@ -606,6 +614,7 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         }
         sz = nn_chunk_size (chunk);
         nn_msg_init_chunk (&msg, chunk);
+        nnmsg = 1;
     }
     else {
 
@@ -637,6 +646,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
                 iov->iov_base, iov->iov_len);
             sz += iov->iov_len;
         }
+
+        nnmsg = 0;
     }
 
     /*  Add ancillary data to the message. */
@@ -656,6 +667,12 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     /*  Send it further down the stack. */
     rc = nn_sock_send (self.socks [s], &msg, flags);
     if (nn_slow (rc < 0)) {
+
+        /*  If we are dealing with user-supplied buffer, detach it from
+            the message object. */
+        if (nnmsg)
+            nn_chunkref_init (&msg.body, 0);
+
         nn_msg_term (&msg);
         errno = -rc;
         return -1;

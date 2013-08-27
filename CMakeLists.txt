@@ -84,6 +84,7 @@ add_libnanomsg_test (list)
 add_libnanomsg_test (hash)
 add_libnanomsg_test (symbol)
 add_libnanomsg_test (separation)
+add_libnanomsg_test (zerocopy)
 
 #  Build the performance tests.
 

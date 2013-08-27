@@ -43,9 +43,10 @@ to send to the socket) and contains following members:
 
 Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
 set 'iov_base' to point to the pointer to the buffer and 'iov_len' to _NN_MSG_
-constant. The buffer will be deallocated by _nn_send_ function. Trying to
-deallocate it afterwards will result in undefined behaviour. Also, scatter array
-in _nn_msghdr_ structure can contain only one element in this case.
+constant. In this case a successful call to _nn_send_ will deallocate the
+buffer. Trying to deallocate it afterwards will result in undefined behaviour.
+Also, scatter array in _nn_msghdr_ structure can contain only one element
+in this case.
 
 To which of the peers will the message be sent to is determined by
 the particular socket type.

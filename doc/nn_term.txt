@@ -29,6 +29,8 @@ If waiting for _NN_SNDFD_ or _NN_RCVFD_ using a polling function, such as
 _poll()_ or _select()_, the call will unblock with both _NN_SNDFD_ and
 _NN_RCVFD_ signaled.
 
+The _nn_term()_ function itself is non-blocking.
+
 
 EXAMPLE
 -------

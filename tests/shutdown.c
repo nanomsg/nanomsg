@@ -64,7 +64,7 @@ int main ()
 
     /*  Test nn_term() before nn_close(). */
     nn_thread_init (&thread, worker, NULL);
-    nn_sleep (10);
+    nn_sleep (100);
     nn_term ();
 
     /*  Check that it's not possible to create new sockets after nn_term(). */

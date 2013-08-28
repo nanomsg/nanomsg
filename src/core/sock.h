@@ -65,6 +65,9 @@ struct nn_sock
     /*  List of all endpoints associated with the socket. */
     struct nn_list eps;
 
+    /*  List of all endpoint being in the process of shutting down. */
+    struct nn_list sdeps;
+
     /*  Next endpoint ID to assign to a new endpoint. */
     int eid;
 

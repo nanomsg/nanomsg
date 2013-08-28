@@ -452,7 +452,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     struct nn_list_item *it;
     struct nn_ep *ep;
 
-    nn_ctx_leave (&self->ctx);
+    nn_ctx_enter (&self->ctx);
 
     /*  Find the specified enpoint. */
     ep = NULL;
@@ -770,6 +770,7 @@ finish2:
             we can consider it stopped straight away. */
         if (!nn_list_empty (&sock->sdeps))
             return;
+        nn_assert (nn_list_empty (&sock->eps));
         sock->state = NN_SOCK_STATE_STOPPING;
         if (!sock->sockbase->vfptr->stop)
             goto finish1;

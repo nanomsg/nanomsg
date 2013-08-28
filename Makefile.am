@@ -414,7 +414,7 @@ PROTOCOL_TESTS = \
 
 FEATURE_TESTS = \
     tests/block \
-    tests/shutdown \
+    tests/term \
     tests/timeo \
     tests/iovec \
     tests/msg \
@@ -428,7 +428,8 @@ FEATURE_TESTS = \
     tests/hash \
     tests/symbol \
     tests/separation \
-    tests/zerocopy
+    tests/zerocopy \
+    tests/shutdown
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \

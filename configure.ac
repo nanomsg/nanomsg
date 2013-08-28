@@ -255,6 +255,11 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([], [[
     AC_DEFINE([NN_HAVE_GCC_ATOMIC_BUILTINS])
 ])
 
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+    [[#include <atomic.h>]],
+    [[uint32_t value; atomic_cas_32 (&value, 0, 0); return 0;]])],[
+    AC_DEFINE([NN_HAVE_ATOMIC_SOLARIS])],[])
+
 AS_IF([test x"$ac_cv_func_eventfd"=xyes], [
     AC_DEFINE([NN_USE_EVENTFD])], [
     AS_IF([test x"$ac_cv_func_pipe"=xyes], [

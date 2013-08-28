@@ -42,6 +42,8 @@ uint32_t nn_atomic_inc (struct nn_atomic *self, uint32_t n)
 {
 #if defined NN_ATOMIC_WINAPI
     return (uint32_t) InterlockedExchangeAdd ((LONG*) &self->n, n);
+#elif defined NN_ATOMIC_SOLARIS
+    return atomic_add_32_nv (&self->n, n) - n;
 #elif defined NN_ATOMIC_GCC_BUILTINS
     return (uint32_t) __sync_fetch_and_add (&self->n, n);
 #elif defined NN_ATOMIC_MUTEX
@@ -60,6 +62,8 @@ uint32_t nn_atomic_dec (struct nn_atomic *self, uint32_t n)
 {
 #if defined NN_ATOMIC_WINAPI
     return (uint32_t) InterlockedExchangeAdd ((LONG*) &self->n, -((LONG) n));
+#elif defined NN_ATOMIC_SOLARIS
+    return atomic_add_32_nv (&self->n, -((int32_t) n)) + n;
 #elif defined NN_ATOMIC_GCC_BUILTINS
     return (uint32_t) __sync_fetch_and_sub (&self->n, n);
 #elif defined NN_ATOMIC_MUTEX

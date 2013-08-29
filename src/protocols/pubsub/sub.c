@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,7 +27,7 @@
 #include "../../nn.h"
 #include "../../pubsub.h"
 
-#include "../utils/excl.h"
+#include "../utils/fq.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -34,9 +35,13 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 
+struct nn_sub_data {
+    struct nn_fq_data fq;
+};
+
 struct nn_sub {
     struct nn_sockbase sockbase;
-    struct nn_excl excl;
+    struct nn_fq fq;
     struct nn_trie trie;
 };
 
@@ -75,14 +80,14 @@ static void nn_sub_init (struct nn_sub *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_sockbase_init (&self->sockbase, vfptr, hint);
-    nn_excl_init (&self->excl);
+    nn_fq_init (&self->fq);
     nn_trie_init (&self->trie);
 }
 
 static void nn_sub_term (struct nn_sub *self)
 {
     nn_trie_term (&self->trie);
-    nn_excl_term (&self->excl);
+    nn_fq_term (&self->fq);
     nn_sockbase_term (&self->sockbase);
 }
 
@@ -98,27 +103,50 @@ void nn_sub_destroy (struct nn_sockbase *self)
 
 static int nn_sub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_add (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    struct nn_sub *sub;
+    struct nn_sub_data *data;
+
+    sub = nn_cont (self, struct nn_sub, sockbase);
+
+    data = nn_alloc (sizeof (struct nn_sub_data), "pipe data (sub)");
+    alloc_assert (data);
+    nn_pipe_setdata (pipe, data);
+    nn_fq_add (&sub->fq, pipe, &data->fq, 8);
+
+    return 0;
 }
 
 static void nn_sub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_rm (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    struct nn_sub *sub;
+    struct nn_sub_data *data;
+
+    sub = nn_cont (self, struct nn_sub, sockbase);
+    data = nn_pipe_getdata (pipe);
+    nn_fq_rm (&sub->fq, pipe, &data->fq);
+    nn_free (data);
 }
 
 static void nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_in (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    struct nn_sub *sub;
+    struct nn_sub_data *data;
+
+    sub = nn_cont (self, struct nn_sub, sockbase);
+    data = nn_pipe_getdata (pipe);
+    nn_fq_in (&sub->fq, pipe, &data->fq);
 }
 
 static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    nn_excl_out (&nn_cont (self, struct nn_sub, sockbase)->excl, pipe);
+    /*  We are not going to send any messages until subscription forwarding
+        is implemented, so there's no point is maintaining a list of pipes
+        ready for sending. */
 }
 
 static int nn_sub_events (struct nn_sockbase *self)
 {
-    return nn_excl_can_recv (&nn_cont (self, struct nn_sub, sockbase)->excl) ?
+    return nn_fq_can_recv (&nn_cont (self, struct nn_sub, sockbase)->fq) ?
         NN_SOCKBASE_EVENT_IN : 0;
 }
 
@@ -132,7 +160,7 @@ static int nn_sub_recv (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Loop while a matching message is found or when there are no more
         messages to receive. */
     while (1) {
-        rc = nn_excl_recv (&sub->excl, msg);
+        rc = nn_fq_recv (&sub->fq, msg, NULL);
         if (nn_slow (rc == -EAGAIN))
             return -EAGAIN;
         errnum_assert (rc >= 0, -rc);

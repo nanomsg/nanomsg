@@ -27,7 +27,7 @@ NN_SUB::
     Receives messages from the publisher. Only messages that the socket is
     subscribed to are received. When the socket is created there are no
     subscriptions and thus no messages will be received. Send operation is
-    not defined on this socket. The socket can be connected to at most one peer.
+    not defined on this socket.
 
 Socket Options
 ~~~~~~~~~~~~~~

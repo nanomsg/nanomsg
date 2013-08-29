@@ -149,7 +149,8 @@ static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
 
-    rc = nn_fq_recv (&nn_cont (self, struct nn_xpull, sockbase)->fq, msg, NULL);
+    rc = nn_fq_recv (&nn_cont (self, struct nn_xpull, sockbase)->fq,
+         msg, NULL);
 
     /*  Discard NN_PIPEBASE_PARSED flag. */
     return rc < 0 ? rc : 0;

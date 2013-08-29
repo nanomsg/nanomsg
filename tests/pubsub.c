@@ -31,14 +31,15 @@
 int main ()
 {
     int rc;
-    int pub;
+    int pub1;
+    int pub2;
     int sub1;
     int sub2;
     char buf [3];
 
-    pub = nn_socket (AF_SP, NN_PUB);
-    errno_assert (pub != -1);
-    rc = nn_bind (pub, SOCKET_ADDRESS);
+    pub1 = nn_socket (AF_SP, NN_PUB);
+    errno_assert (pub1 != -1);
+    rc = nn_bind (pub1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
     sub1 = nn_socket (AF_SP, NN_SUB);
     errno_assert (sub1 != -1);
@@ -56,7 +57,7 @@ int main ()
     /*  Wait till connections are established to prevent message loss. */
     nn_sleep (10);
 
-    rc = nn_send (pub, "0123456789012345678901234567890123456789", 40, 0);
+    rc = nn_send (pub1, "0123456789012345678901234567890123456789", 40, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 40);
 
@@ -67,11 +68,49 @@ int main ()
     errno_assert (rc >= 0);
     nn_assert (rc == 40);
 
-    rc = nn_close (pub);
+    rc = nn_close (pub1);
     errno_assert (rc == 0);
     rc = nn_close (sub1);
     errno_assert (rc == 0);    
     rc = nn_close (sub2);
+    errno_assert (rc == 0);
+
+    /*  Check receiving messages from two publishers. */
+
+    sub1 = nn_socket (AF_SP, NN_SUB);
+    errno_assert (sub1 != -1);
+    rc = nn_setsockopt (sub1, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
+    errno_assert (rc == 0);
+    rc = nn_bind (sub1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    pub1 = nn_socket (AF_SP, NN_PUB);
+    errno_assert (pub1 != -1);
+    rc = nn_connect (pub1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    pub2 = nn_socket (AF_SP, NN_PUB);
+    errno_assert (pub2 != -1);
+    rc = nn_connect (pub2, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    nn_sleep (100);
+
+    rc = nn_send (pub1, "0123456789012345678901234567890123456789", 40, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 40);
+    rc = nn_send (pub2, "0123456789012345678901234567890123456789", 40, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 40);
+    rc = nn_recv (sub1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 40);
+    rc = nn_recv (sub1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 40);
+
+    rc = nn_close (pub2);
+    errno_assert (rc == 0);
+    rc = nn_close (pub1);
+    errno_assert (rc == 0);    
+    rc = nn_close (sub1);
     errno_assert (rc == 0);
 
     return 0;

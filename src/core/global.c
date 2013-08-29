@@ -141,18 +141,6 @@ const char *nn_strerror (int errnum)
     return nn_err_strerror (errnum);
 }
 
-struct nn_cmsghdr *nn_cmsg_nexthdr (const struct nn_msghdr *mhdr,
-    const struct nn_cmsghdr *cmsg)
-{
-    size_t sz;
-
-    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
-    if (((uint8_t*) cmsg) - ((uint8_t*) mhdr->msg_control) + sz >=
-           mhdr->msg_controllen)
-        return NULL;
-    return (struct nn_cmsghdr*) (((uint8_t*) cmsg) + sz);
-}
-
 static void nn_global_init (void)
 {
     int i;

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -52,6 +53,8 @@
 #define NN_USOCK_ACTION_DONE 7
 #define NN_USOCK_ACTION_ERROR 8
 
+#define NN_USOCK_SRC_FD 1
+
 /*  Private functions. */
 static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
@@ -81,7 +84,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
     memset (&self->out.hdr, 0, sizeof (struct msghdr));
 
     /*  Initialise tasks for the worker thread. */
-    nn_worker_fd_init (&self->wfd, &self->fsm);
+    nn_worker_fd_init (&self->wfd, NN_USOCK_SRC_FD, &self->fsm);
     nn_worker_task_init (&self->task_connecting, &self->fsm);
     nn_worker_task_init (&self->task_connected, &self->fsm);
     nn_worker_task_init (&self->task_accept, &self->fsm);
@@ -614,7 +617,8 @@ finish3:
 /*  Asynchronous connecting is going on.                                      */
 /******************************************************************************/
     case NN_USOCK_STATE_CONNECTING:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -633,8 +637,7 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == &usock->wfd) {
+        case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
@@ -653,15 +656,17 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  Socket is connected. It can be used for sending and receiving data.       */
 /******************************************************************************/
     case NN_USOCK_STATE_ACTIVE:
-        if (srcptr == &usock->wfd) {
+        switch (src) {
+        case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_IN:
                 sz = usock->in.len;
@@ -701,8 +706,7 @@ error:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == NULL) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 usock->state = NN_USOCK_STATE_REMOVING_FD;
@@ -711,8 +715,9 @@ error:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source(usock->state, src, type);
         }
-        nn_fsm_bad_source(usock->state, src, type);
 
 /******************************************************************************/
 /*  REMOVING_FD state.                                                        */
@@ -731,7 +736,7 @@ error:
 
         /*  Events from the file descriptor are ignored while it is being
             removed. */
-        if (srcptr == &usock->wfd)
+        if (src == NN_USOCK_SRC_FD)
             return;
 
         nn_fsm_bad_source (usock->state, src, type);
@@ -769,7 +774,8 @@ error:
 /*  to be accepted.                                                           */
 /******************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -781,8 +787,7 @@ error:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == &usock->wfd) {
+        case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_IN:
 
@@ -833,8 +838,9 @@ error:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /******************************************************************************/
 /*  CANCELLING state.                                                         */
@@ -850,7 +856,7 @@ error:
 
             return;
         }
-        if (srcptr == &usock->wfd) {
+        if (src == NN_USOCK_SRC_FD) {
             switch (type) {
             case NN_WORKER_FD_IN:
                 return;

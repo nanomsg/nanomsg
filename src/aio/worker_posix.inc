@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -29,8 +30,10 @@
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
-void nn_worker_fd_init (struct nn_worker_fd *self, struct nn_fsm *owner)
+void nn_worker_fd_init (struct nn_worker_fd *self, int src,
+    struct nn_fsm *owner)
 {
+    self->src = src;
     self->owner = owner;
 }
 
@@ -225,7 +228,7 @@ static void nn_worker_routine (void *arg)
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
             nn_ctx_enter (fd->owner->ctx);
-            fd->owner->fn (fd->owner, -1, pevent, fd);
+            fd->owner->fn (fd->owner, fd->src, pevent, fd);
             nn_ctx_leave (fd->owner->ctx);
         }
     }

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -32,11 +33,13 @@
 #define NN_WORKER_FD_ERR NN_POLLER_ERR
 
 struct nn_worker_fd {
+    int src;
     struct nn_fsm *owner;
     struct nn_poller_hndl hndl;
 };
 
-void nn_worker_fd_init (struct nn_worker_fd *self, struct nn_fsm *owner);
+void nn_worker_fd_init (struct nn_worker_fd *self, int src,
+    struct nn_fsm *owner);
 void nn_worker_fd_term (struct nn_worker_fd *self);
 
 struct nn_worker_task {

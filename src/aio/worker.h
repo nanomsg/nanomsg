@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -39,7 +40,8 @@ struct nn_worker_timer {
     struct nn_timerset_hndl hndl;
 };
 
-void nn_worker_timer_init (struct nn_worker_timer *self, struct nn_fsm *owner);
+void nn_worker_timer_init (struct nn_worker_timer *self,
+    struct nn_fsm *owner);
 void nn_worker_timer_term (struct nn_worker_timer *self);
 int nn_worker_timer_isactive (struct nn_worker_timer *self);
 
@@ -47,7 +49,8 @@ int nn_worker_timer_isactive (struct nn_worker_timer *self);
 
 struct nn_worker_task;
 
-void nn_worker_task_init (struct nn_worker_task *self,struct nn_fsm *owner);
+void nn_worker_task_init (struct nn_worker_task *self, int src,
+    struct nn_fsm *owner);
 void nn_worker_task_term (struct nn_worker_task *self);
 
 struct nn_worker;
@@ -58,7 +61,8 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task);
 
 void nn_worker_add_timer (struct nn_worker *self, int timeout,
     struct nn_worker_timer *timer);
-void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer);
+void nn_worker_rm_timer (struct nn_worker *self,
+    struct nn_worker_timer *timer);
 
 #endif
 

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -32,6 +33,9 @@
 #define NN_TIMER_STATE_ACTIVE 2
 #define NN_TIMER_STATE_STOPPING 3
 
+#define NN_TIMER_SRC_START_TASK 1
+#define NN_TIMER_SRC_STOP_TASK 2
+
 /*  Private functions. */
 static void nn_timer_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
@@ -40,8 +44,9 @@ void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_timer_handler, src, self, owner);
     self->state = NN_TIMER_STATE_IDLE;
-    nn_worker_task_init (&self->start_task, &self->fsm);
-    nn_worker_task_init (&self->stop_task, &self->fsm);
+    nn_worker_task_init (&self->start_task, NN_TIMER_SRC_START_TASK,
+        &self->fsm);
+    nn_worker_task_init (&self->stop_task, NN_TIMER_SRC_STOP_TASK, &self->fsm);
     nn_worker_timer_init (&self->wtimer, &self->fsm);
     nn_fsm_event_init (&self->done);
     self->worker = nn_fsm_choose_worker (&self->fsm);
@@ -88,13 +93,13 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
         return;
     }
     if (nn_slow (timer->state == NN_TIMER_STATE_STOPPING)) {
-        if (srcptr != &timer->stop_task)
+        if (src != NN_TIMER_SRC_STOP_TASK)
             return;
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
@@ -109,7 +114,8 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_TIMER_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
 
@@ -120,14 +126,15 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_fsm_bad_action (timer->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (timer->state, src, type);
         }
-        nn_fsm_bad_source (timer->state, src, type);
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /******************************************************************************/
     case NN_TIMER_STATE_ACTIVE:
-        if (srcptr == &timer->start_task) {
+        if (src == NN_TIMER_SRC_START_TASK) {
             nn_assert (type == NN_WORKER_TASK_EXECUTE);
             nn_assert (timer->timeout >= 0);
             nn_worker_add_timer (timer->worker, timer->timeout,
@@ -157,3 +164,4 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (timer->state, src, type);
     }
 }
+

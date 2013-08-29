@@ -83,8 +83,10 @@ void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer)
     nn_timerset_rm (&((struct nn_worker*) self)->timerset, &timer->hndl);
 }
 
-void nn_worker_task_init (struct nn_worker_task *self, struct nn_fsm *owner)
+void nn_worker_task_init (struct nn_worker_task *self, int src,
+    struct nn_fsm *owner)
 {
+    self->src = src;
     self->owner = owner;
     nn_queue_item_init (&self->item);
 }
@@ -217,7 +219,7 @@ static void nn_worker_routine (void *arg)
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
                     nn_ctx_enter (task->owner->ctx);
-                    task->owner->fn (task->owner, -1,
+                    task->owner->fn (task->owner, task->src,
                         NN_WORKER_TASK_EXECUTE, task);
                     nn_ctx_leave (task->owner->ctx);
                 }
@@ -233,3 +235,4 @@ static void nn_worker_routine (void *arg)
         }
     }
 }
+

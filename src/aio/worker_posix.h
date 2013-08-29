@@ -43,6 +43,7 @@ void nn_worker_fd_init (struct nn_worker_fd *self, int src,
 void nn_worker_fd_term (struct nn_worker_fd *self);
 
 struct nn_worker_task {
+    int src;
     struct nn_fsm *owner;
     struct nn_queue_item item;
 };

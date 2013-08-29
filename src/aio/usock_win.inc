@@ -53,6 +53,9 @@
 #define NN_USOCK_ACTION_DONE 7
 #define NN_USOCK_ACTION_ERROR 8
 
+#define NN_USOCK_SRC_IN 1
+#define NN_USOCK_SRC_OUT 2
+
 /*  Private functions. */
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
@@ -63,8 +66,8 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
     nn_fsm_init (&self->fsm, nn_usock_handler, src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
     self->s = INVALID_SOCKET;
-    nn_worker_op_init (&self->in, &self->fsm);
-    nn_worker_op_init (&self->out, &self->fsm);
+    nn_worker_op_init (&self->in, NN_USOCK_SRC_IN, &self->fsm);
+    nn_worker_op_init (&self->out, NN_USOCK_SRC_OUT, &self->fsm);
     self->domain = -1;
     self->type = -1;
     self->protocol = -1;
@@ -534,7 +537,8 @@ finish3:
 /*  CONNECTING state.                                                        */
 /*****************************************************************************/
     case NN_USOCK_STATE_CONNECTING:
-        if (src == NN_FSM_ACTION) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -551,8 +555,7 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == &usock->out) {
+        case NN_USOCK_SRC_OUT:
             switch (type) {
             case NN_WORKER_OP_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -569,14 +572,16 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACTIVE state.                                                            */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACTIVE:
-        if (srcptr == &usock->in) {
+        switch (src) {
+        case NN_USOCK_SRC_IN:
             switch (type) {
             case NN_WORKER_OP_DONE:
                 nn_fsm_raise (&usock->fsm, &usock->event_received,
@@ -592,8 +597,7 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == &usock->out) {
+        case NN_USOCK_SRC_OUT:
             switch (type) {
             case NN_WORKER_OP_DONE:
                 nn_fsm_raise (&usock->fsm, &usock->event_sent, NN_USOCK_SENT);
@@ -608,8 +612,7 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (src == NN_FSM_ACTION) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
@@ -621,21 +624,25 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CANCELLING_IO state.                                                     */
 /*****************************************************************************/
     case NN_USOCK_STATE_CANCELLING_IO:
-        if (srcptr == &usock->in || srcptr == &usock->out) {
+        switch (src) {
+        case NN_USOCK_SRC_IN:
+        case NN_USOCK_SRC_OUT:
             if (!nn_worker_op_isidle (&usock->in) ||
                   !nn_worker_op_isidle (&usock->out))
                 return;
             usock->state = NN_USOCK_STATE_DONE;
             return;
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  DONE state.                                                              */
@@ -664,7 +671,8 @@ finish3:
 /*  ACCEPTING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
-        if (src == NN_FSM_ACTION) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -676,8 +684,7 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
-        }
-        if (srcptr == &usock->in) {
+        case NN_USOCK_SRC_IN:
             switch (type) {
             case NN_WORKER_OP_DONE:
 
@@ -701,14 +708,16 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CANCELLING state.                                                        */
 /*****************************************************************************/
     case NN_USOCK_STATE_CANCELLING:
-        if (srcptr == &usock->in) {
+        switch (src) {
+        case NN_USOCK_SRC_IN:
             switch (type) {
             case NN_WORKER_OP_DONE:
             case NN_WORKER_OP_ERROR:
@@ -725,8 +734,9 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  Invalid state.                                                           */

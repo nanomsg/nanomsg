@@ -52,8 +52,10 @@ void nn_worker_task_term (struct nn_worker_task *self)
 {
 }
 
-void nn_worker_op_init (struct nn_worker_op *self, struct nn_fsm *owner)
+void nn_worker_op_init (struct nn_worker_op *self, int src,
+    struct nn_fsm *owner)
 {
+    self->src = src;
     self->owner = owner;
     self->state = NN_WORKER_OP_STATE_IDLE;
 }
@@ -198,7 +200,7 @@ static void nn_worker_routine (void *arg)
                       entries [i].dwNumberOfBytesTransferred == 0)
                     rc = NN_WORKER_OP_ERROR;
                 op->state = NN_WORKER_OP_STATE_IDLE;
-                op->owner->fn (op->owner, -1, rc, op);
+                op->owner->fn (op->owner, op->src, rc, op);
                 nn_ctx_leave (op->owner->ctx);
 
                 continue;

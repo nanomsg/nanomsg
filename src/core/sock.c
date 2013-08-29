@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -109,6 +110,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->flags = 0;
     nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
+    nn_list_init (&self->sdeps);
     self->eid = 1;
 
     /*  Default values for NN_SOL_SOCKET options. */
@@ -185,6 +187,7 @@ int nn_sock_term (struct nn_sock *self)
     nn_fsm_stopped_noevent (&self->fsm);
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
+    nn_list_term (&self->sdeps);
     nn_list_term (&self->eps);
     nn_clock_term (&self->clock);
     nn_ctx_term (&self->ctx);
@@ -450,7 +453,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     struct nn_list_item *it;
     struct nn_ep *ep;
 
-    nn_ctx_leave (&self->ctx);
+    nn_ctx_enter (&self->ctx);
 
     /*  Find the specified enpoint. */
     ep = NULL;
@@ -468,6 +471,11 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
         nn_ctx_leave (&self->ctx);
         return -EINVAL;
     }
+
+    /*  Move the endpoint from the list of active endpoints to the list
+        of shutting down endpoints. */
+    nn_list_erase (&self->eps, &ep->item);
+    nn_list_insert (&self->sdeps, &ep->item, nn_list_end (&self->sdeps));
 
     /*  Ask the endpoint to stop. Actual terminatation may be delayed
         by the transport. */
@@ -735,24 +743,25 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
         }
 
         /*  Ask all the associated endpoints to stop. */
-        for (it = nn_list_begin (&sock->eps);
-              it != nn_list_end (&sock->eps);
-              it = nn_list_next (&sock->eps, it))
-            nn_ep_stop (nn_cont (it, struct nn_ep, item));
+        it = nn_list_begin (&sock->eps);
+        while (it != nn_list_end (&sock->eps)) {
+            ep = nn_cont (it, struct nn_ep, item);
+            it = nn_list_next (&sock->eps, it);
+            nn_list_erase (&sock->eps, &ep->item);
+            nn_list_insert (&sock->sdeps, &ep->item,
+                nn_list_end (&sock->sdeps));
+            nn_ep_stop (ep);
+            
+        }
         sock->state = NN_SOCK_STATE_STOPPING_EPS;
         goto finish2;
     }
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING_EPS)) {
 
-        /*  For all non-NULL sources, we assume it's an event from one of
-            the endpoints associated with the socket. In theory we could
-            double-check that that is the case, however, it would be an O(n)
-            operations, so we'll just skip it. */
-        nn_assert (type == NN_EP_STOPPED);
-
         /*  Endpoint is stopped. Now we can safely deallocate it. */
+        nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
         ep = (struct nn_ep*) srcptr;
-        nn_list_erase (&sock->eps, &ep->item);
+        nn_list_erase (&sock->sdeps, &ep->item);
         nn_ep_term (ep);
         nn_free (ep);
 
@@ -760,8 +769,9 @@ finish2:
         /*  If all the endpoints are deallocated, we can start stopping
             protocol-specific part of the socket. If there' no stop function
             we can consider it stopped straight away. */
-        if (!nn_list_empty (&sock->eps))
+        if (!nn_list_empty (&sock->sdeps))
             return;
+        nn_assert (nn_list_empty (&sock->eps));
         sock->state = NN_SOCK_STATE_STOPPING;
         if (!sock->sockbase->vfptr->stop)
             goto finish1;
@@ -833,7 +843,7 @@ finish1:
                 /*  This happens when an endpoint is closed using
                     nn_shutdown() function. */
                 ep = (struct nn_ep*) srcptr;
-                nn_list_erase (&sock->eps, &ep->item);
+                nn_list_erase (&sock->sdeps, &ep->item);
                 nn_ep_term (ep);
                 nn_free (ep);
                 return;

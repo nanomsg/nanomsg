@@ -317,16 +317,15 @@ int nn_socket (int domain, int protocol)
 
     nn_glock_lock ();
 
-    /*  Make sure that global state is initialised. */
-    nn_global_init ();
-
     /*  If nn_term() was already called, return ETERM. */
     if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
-        nn_global_term ();
         nn_glock_unlock ();
         errno = ETERM;
         return -1;
     }
+
+    /*  Make sure that global state is initialised. */
+    nn_global_init ();
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
@@ -555,7 +554,6 @@ int nn_recv (int s, void *buf, size_t len, int flags)
     struct nn_msg msg;
     size_t sz;
     void *chunk;
-    int nnmsg;
 
     NN_BASIC_CHECKS;
 

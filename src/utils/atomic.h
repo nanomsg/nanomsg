@@ -26,6 +26,9 @@
 #if defined NN_HAVE_WINDOWS
 #include "win.h"
 #define NN_ATOMIC_WINAPI
+#elif NN_HAVE_ATOMIC_SOLARIS
+#include <atomic.h>
+#define NN_ATOMIC_SOLARIS
 #elif defined NN_HAVE_GCC_ATOMIC_BUILTINS
 #define NN_ATOMIC_GCC_BUILTINS
 #else

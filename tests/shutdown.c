@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,59 +21,25 @@
 */
 
 #include "../src/nn.h"
-#include "../src/pair.h"
+#include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
-#include "../src/utils/thread.c"
-#include "../src/utils/sleep.c"
-
-static void worker (void *arg)
-{
-    int rc;
-    int s;
-    char buf [3];
-
-    /*  Test socket. */
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s != -1);
-
-    /*  Launch blocking function to check that it will be unblocked once
-        nn_term() is called from the main thread. */
-    rc = nn_recv (s, buf, sizeof (buf), 0);
-    nn_assert (rc == -1 && nn_errno () == ETERM);
-
-    /*  Check that all subsequent operations fail in synchronous manner. */
-    rc = nn_recv (s, buf, sizeof (buf), 0);
-    nn_assert (rc == -1 && nn_errno () == ETERM);
-
-    rc = nn_close (s);
-    errno_assert (rc == 0);
-}
 
 int main ()
 {
-    int rc;
     int s;
-    struct nn_thread thread;
+    int rc;
+    int eid;
 
-    /*  Close the socket with no associated endpoints. */
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s != -1);
+    /*  Run endpoint shutdown and socket shutdown in parallel. */
+    s = nn_socket (AF_SP, NN_REQ);
+    errno_assert (s >= 0);
+    eid = nn_connect (s, "ipc://test.ipc");
+    errno_assert (eid >= 0);
+    rc = nn_shutdown (s, eid);
+    errno_assert (rc == 0);
     rc = nn_close (s);
     errno_assert (rc == 0);
-
-    /*  Test nn_term() before nn_close(). */
-    nn_thread_init (&thread, worker, NULL);
-    nn_sleep (10);
-    nn_term ();
-
-    /*  Check that it's not possible to create new sockets after nn_term(). */
-    rc = nn_socket (AF_SP, NN_PAIR);
-    nn_assert (rc == -1);
-    errno_assert (nn_errno () == ETERM);
-    
-    /*  Wait till worker thread terminates. */
-    nn_thread_term (&thread);
 
     return 0;
 }

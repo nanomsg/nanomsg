@@ -37,5 +37,12 @@ CURRENT=`echo $CURRENT | awk '{ print $3 }'`
 REVISION=`echo $REVISION | awk '{ print $3 }'`
 AGE=`echo $AGE | awk '{ print $3 }'`
 
-printf '%s' "$CURRENT.$REVISION.$AGE"
+case $1 in
+    -libtool)
+        printf '%s' "$CURRENT:$REVISION:$AGE"
+    ;;
+    *)
+        printf '%s' "$CURRENT.$REVISION.$AGE"
+    ;;
+esac
 

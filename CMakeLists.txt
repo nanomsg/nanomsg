@@ -70,7 +70,7 @@ add_libnanomsg_test (bus)
 
 #  Feature tests.
 add_libnanomsg_test (block)
-add_libnanomsg_test (shutdown)
+add_libnanomsg_test (term)
 add_libnanomsg_test (timeo)
 add_libnanomsg_test (iovec)
 add_libnanomsg_test (msg)
@@ -85,6 +85,7 @@ add_libnanomsg_test (hash)
 add_libnanomsg_test (symbol)
 add_libnanomsg_test (separation)
 add_libnanomsg_test (zerocopy)
+add_libnanomsg_test (shutdown)
 
 #  Build the performance tests.
 

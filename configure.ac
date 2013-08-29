@@ -44,7 +44,7 @@ AC_PROG_AWK
 
 NN_ABI_VERSION=m4_esyscmd([./abi_version.sh])
 NN_PACKAGE_VERSION=m4_esyscmd([./package_version.sh])
-NN_LIBTOOL_VERSION=m4_esyscmd([./abi_version.sh | sed -e y/./:/])
+NN_LIBTOOL_VERSION=m4_esyscmd([./abi_version.sh -libtool])
 
 AC_SUBST(NN_ABI_VERSION)
 AC_SUBST(NN_PACKAGE_VERSION)
@@ -254,6 +254,11 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([], [[
 ]])], [
     AC_DEFINE([NN_HAVE_GCC_ATOMIC_BUILTINS])
 ])
+
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+    [[#include <atomic.h>]],
+    [[uint32_t value; atomic_cas_32 (&value, 0, 0); return 0;]])],[
+    AC_DEFINE([NN_HAVE_ATOMIC_SOLARIS])],[])
 
 AS_IF([test x"$ac_cv_func_eventfd"=xyes], [
     AC_DEFINE([NN_USE_EVENTFD])], [

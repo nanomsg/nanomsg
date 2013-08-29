@@ -457,7 +457,8 @@ finish3:
 /*  IDLE state.                                                              */
 /*****************************************************************************/
     case NN_USOCK_STATE_IDLE:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;
@@ -465,14 +466,16 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  STARTING state.                                                          */
 /*****************************************************************************/
     case NN_USOCK_STATE_STARTING:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_LISTEN:
                 usock->state = NN_USOCK_STATE_LISTENING;
@@ -486,14 +489,16 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  BEING_ACCEPTED state.                                                    */
 /*****************************************************************************/
     case NN_USOCK_STATE_BEING_ACCEPTED:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACCEPTED;
@@ -503,14 +508,16 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACCEPTED state.                                                          */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTED:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_ACTIVATE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -518,8 +525,9 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  CONNECTING state.                                                        */
@@ -638,7 +646,8 @@ finish3:
 /*  LISTENING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_LISTENING:
-        if (srcptr == NULL) {
+        switch (src) {
+        case NN_FSM_ACTION:
             switch (type) {
             case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
@@ -646,8 +655,9 @@ finish3:
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
         }
-        nn_fsm_bad_source (usock->state, src, type);
 
 /*****************************************************************************/
 /*  ACCEPTING state.                                                         */

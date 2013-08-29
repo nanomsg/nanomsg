@@ -27,6 +27,7 @@
 #include "../utils/thread.h"
 
 struct nn_worker_task {
+    int src;
     struct nn_fsm *owner;
 };
 

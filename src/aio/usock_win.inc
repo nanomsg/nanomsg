@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -394,7 +395,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  STOP procedure.                                                           */
 /******************************************************************************/
-    if (nn_slow (srcptr == NULL && type == NN_FSM_STOP)) {
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.
             Stop the socket being accepted first. */
@@ -434,7 +435,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
         return;
     } 
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
-        nn_assert (srcptr == NULL && type == NN_USOCK_ACTION_DONE);
+        nn_assert (src == NN_FSM_ACTION && type == NN_USOCK_ACTION_DONE);
         goto finish1;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
@@ -533,7 +534,7 @@ finish3:
 /*  CONNECTING state.                                                        */
 /*****************************************************************************/
     case NN_USOCK_STATE_CONNECTING:
-        if (srcptr == NULL) {
+        if (src == NN_FSM_ACTION) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_ACTIVE;
@@ -608,7 +609,7 @@ finish3:
                 nn_fsm_bad_action (usock->state, src, type);
             }
         }
-        if (srcptr == NULL) {
+        if (src == NN_FSM_ACTION) {
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
@@ -663,7 +664,7 @@ finish3:
 /*  ACCEPTING state.                                                         */
 /*****************************************************************************/
     case NN_USOCK_STATE_ACCEPTING:
-        if (srcptr == NULL) {
+        if (src == NN_FSM_ACTION) {
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;

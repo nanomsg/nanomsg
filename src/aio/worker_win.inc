@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -40,8 +41,10 @@ const int nn_worker_stop = 0;
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
-void nn_worker_task_init (struct nn_worker_task *self,struct nn_fsm *owner)
+void nn_worker_task_init (struct nn_worker_task *self, int src,
+    struct nn_fsm *owner)
 {
+    self->src = src;
     self->owner = owner;
 }
 
@@ -209,7 +212,8 @@ static void nn_worker_routine (void *arg)
             /*  Process tasks. */
             task = (struct nn_worker_task*) entries [i].lpCompletionKey;
             nn_ctx_enter (task->owner->ctx);
-            task->owner->fn (task->owner, -1, NN_WORKER_TASK_EXECUTE, task);
+            task->owner->fn (task->owner, task->src,
+                NN_WORKER_TASK_EXECUTE, task);
             nn_ctx_leave (task->owner->ctx);
         }
     }

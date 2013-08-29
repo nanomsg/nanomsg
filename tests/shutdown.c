@@ -21,6 +21,7 @@
 */
 
 #include "../src/nn.h"
+#include "../src/tcp.h"
 #include "../src/reqrep.h"
 
 #include "../src/utils/err.c"
@@ -34,7 +35,7 @@ int main ()
     /*  Run endpoint shutdown and socket shutdown in parallel. */
     s = nn_socket (AF_SP, NN_REQ);
     errno_assert (s >= 0);
-    eid = nn_connect (s, "ipc://test.ipc");
+    eid = nn_connect (s, "tcp://127.0.0.1:5590");
     errno_assert (eid >= 0);
     rc = nn_shutdown (s, eid);
     errno_assert (rc == 0);

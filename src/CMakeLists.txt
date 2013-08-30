@@ -250,3 +250,7 @@ target_link_libraries (nanomsg ws2_32)
 target_link_libraries (nanomsg Mswsock.lib)
 target_link_libraries (nanomsg Advapi32.lib)
 
+install(TARGETS nanomsg
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)

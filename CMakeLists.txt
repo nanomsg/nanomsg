@@ -101,4 +101,21 @@ add_libnanomsg_perf (remote_lat)
 add_libnanomsg_perf (local_thr)
 add_libnanomsg_perf (remote_thr)
 
+#  NSIS package
+
+install (FILES src/nn.h DESTINATION include/nanomsg)
+install (FILES src/inproc.h DESTINATION include/nanomsg)
+install (FILES src/ipc.h DESTINATION include/nanomsg)
+install (FILES src/tcp.h DESTINATION include/nanomsg)
+install (FILES src/pair.h DESTINATION include/nanomsg)
+install (FILES src/pubsub.h DESTINATION include/nanomsg)
+install (FILES src/reqrep.h DESTINATION include/nanomsg)
+install (FILES src/pipeline.h DESTINATION include/nanomsg)
+install (FILES src/survey.h DESTINATION include/nanomsg)
+install (FILES src/bus.h DESTINATION include/nanomsg)
+
+set (CPACK_GENERATOR "NSIS")
+set (CPACK_PACKAGE_NAME "nanomsg")
+include (CPack)
+
 

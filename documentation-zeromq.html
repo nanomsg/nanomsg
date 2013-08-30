@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>nanomsg</title>
+  <style>
+  body {font-family:sans-serif;} 
+  #toplist {
+    padding-left: 0px;
+  }
+  #toplist li {
+    display: inline;
+    list-style-type: none;
+    padding-right: 15px;
+  }
+  a {color:#000000;}
+  </style>
+</head>
+<body>
+<div style="width:50em">
+
+<img src="logo.png">
+
+<b>
+<ul id='toplist'>
+<li><a href="index.html">Home</a></li>
+<li><a href="download.html">Download</a></li>
+<li><a href="documentation.html">Documentation</a></li>
+<li><a href="development.html">Development</a></li>
+<li><a href="community.html">Community</a></li>
+</ul>
+</b>
+
+<h2>Differences between nanomsg and ZeroMQ</h2>
+
+<h3>Licensing</h3>
+
+<p>nanomsg library is MIT-licensed. What it means is that, unlike with ZeroMQ, you can modify the source code and re-release it under a different license, as a proprietary product et c. More reasoning about the licensing can be found <a href="http://250bpm.com/blog:15">here</a>.</p>
+
+<h3>POSIX Compliance</h3>
+
+<p>ZeroMQ API, while modeled on BSD socket API, doesn't match the API fully. nanomsg aims for full POSIX compliance.<p>
+
+<ul>
+<li>Sockets are represented as ints, not void pointers.</li>
+<li>Contexts, as known in ZeroMQ, don't exist in nanomsg. This means simpler API (sockets can be created in a single step) as well as the possibility of using the library for communication between different modules in a single process (think of plugins implemented in different languages speaking each to another). More discussion can be found <a href="http://250bpm.com/blog:23">here</a>.</li>
+<li>Sending are receiving functions (nn_send, nn_sendmsg, nn_recv and nn_recvmsg) fully match POSIX syntax and semantics.</li>
+</ul>
+
+<h3>Implementation Language</h3>
+
+<p>The library is implemented in C instead of C++.<p>
+
+<ul>
+<li>From user's point of view it means that there's no dependency on C++ runtime (libstdc++ or similar) which may be handy in constrained and embedded environments.</li>
+<li>Form nanomsg developer's point of view it makes life easier.</li>
+<li>Number of memory allocations is drastically reduced as intrusive containers are used instead of C++ STL containers.</li>
+<li>The above also means less memory fragmentation, less cache misses et c.</li>
+<li>More discussion on the C vs. C++ topic can be found <a href="http://250bpm.com/blog:4">here</a> and <a href="http://250bpm.com/blog:8">here</a>.</li>
+</ul>
+
+<h3>Pluggable Transports and Protocols</h3>
+
+<p>In ZeroMQ there was no formal API for plugging in new transports (think WebSockets, DCCP, SCTP) and new protocols (counterparts to REQ/REP, PUB/SUB et c.) As a consequence there were no new transports added since 2008. No new protocols were implemented either. The formal internal transport API (see <a href="https://raw.github.com/250bpm/nanomsg/master/src/transport.h">transport.h</a> and <a href="https://raw.github.com/250bpm/nanomsg/master/src/protocol.h">protocol.h</a>) are meant to mitigate the problem and serve as a base for creating and experimenting with new transports and protocols.</p>
+
+<p>Please, be aware that the two APIs are still new and may experience some tweaking in the future to make them usable in wide variety of scenarios.</p>
+
+<ul>
+<li>nanomsg implements a new SURVEY protocol. The idea is to send a message ("survey") to multiple peers and wait for responses from all of them. For more details check the article <a href="http://250bpm.com/blog:5">here</a>. Also look <a href="http://250bpm.com/blog:20">here</a>.</li>
+<li>In financial services it is quite common to use "deliver messages from anyone to everyone else" kind of messaging. To address this use case, there's a new BUS protocol implemented in nanomsg. Check the details <a href="http://250bpm.com/blog:17">here</a>.</li>
+</ul>
+
+<h3>Threading Model</h3>
+
+<p>One of the big architectural blunders I've done in ZeroMQ is its threading model. Each individual object is managed exclusively by a single thread. That works well for async objects handled by worker threads, however, it becomes a trouble for objects managed by user threads. The thread may be used to do unrelated work for arbitrary timespan, e.g. an hour, and during that time the object being managed by it is completely stuck. Some unfortunate consequences are inability to implemed request resending in REQ/REP protocol, PUB/SUB subscriptions not being applied while application is doing other work and similar. In nanomsg the objects are not tightly bound to particular threads and thus these problems don't exist.</p>
+
+<ul>
+<li>REQ socket in ZeroMQ cannot be really used in real world environments as they get stuck if message is lost due to service failure or similar. Users have to use XREQ instead and implement the request re-trying themselves. With nanomsg, the re-try functionality is built into REQ socket.</li>
+<li>In nanomsg, both REQ and REP support cancelling the ongoing processing. Simply send a new request without waiting for a reply (in the case of REQ socket) or grab a new request without replying to the previous one (in the case of REP socket).</li>
+<li>In ZeroMQ, due to its threading model, bind-first-then-connect-second scenario doesn't work for inproc transport. It is fixed in nanomsg.</li>
+<li>For similar reasons auto-reconnect doesn't work for inproc transport in ZeroMQ. This problem is fixed in nanomsg as well.</li>
+<li>Finally, nanomsg attempts to make nanomsg sockets thread-safe. While using a single socket from multiple threads in parallel is still discouraged, the way in which ZeroMQ sockets failed randomly in such circumstances proved to be painful and hard to debug.</li>
+</ul>
+
+<h3>State Machines</h3>
+
+<p>Internal interactions inside the nanomsg library are modeled as a set of state machines. The goal is to avoid the incomprehensible shutdown mechanism as seen in ZeroMQ and thus make the development of the library easier.</p>
+
+<ul>
+<li>For more discussion see <a href="http://250bpm.com/blog:24">here</a> and <a href="http://250bpm.com/blog:25">here</a>.</li>
+</ul>
+
+<h3>IOCP Support</h3>
+
+<p>One of the long-standing problems in ZeroMQ was that internally it uses BSD socket API even on Windows platform where it is a second class citizen. Using IOCP instead, as appropriate, would require major rewrite of the codebase and thus, in spite of multiple attemps, was never implemented. IOCP is supposed to have better performance characteristics and, even more importantly, it allows to use additional transport mechanisms such as NamedPipes which are not accessible via BSD socket API. For these reasons nanomsg uses IOCP internally on Windows platforms.</p>
+
+<h3>Level-triggered Polling</h3>
+
+<p>One of the aspects of ZeroMQ that proved really confusing for users was the ability to integrate ZeroMQ sockets into an external event loops by using ZMQ_FD file descriptor. The main source of confusion was that the descriptor is edge-triggered, i.e. it signals only when there were no messages before and a new one arrived. nanomsg uses level triggered file descriptors instead that simply signal when there's a message available irrespective of whether it was available in the past.</p>
+
+<h3>Routing Priorities</h3>
+
+<p>nanomsg implements priorities for outbound traffic. You may decide that messages are to be routed to a particular destination in preference, and fall back to an alternative destination only if the primary one is not available.</p>
+
+<ul>
+<li>For more discussion see <a href="http://250bpm.com/blog:14">here</a>.</li>
+</ul>
+
+<h3>TCP Transport Enhancements</h3>
+
+<p>There's a minor enhancement to TCP transport. When connecting, you can optionally specify the local interface to use for the connection, like this: nn_connect (s, "tcp://eth0;192.168.0.111:5555").</p>
+
+<h3>Asynchronous DNS</h3>
+
+<p>DNS queries (e.g. converting hostnames to IP addresses) are done in asynchronous manner. In ZeroMQ such queries were done synchronously, which meant that when DNS was unavailable the whole library, including the sockets that haven't used DNS, just hung.</p>
+
+<h3>Zero-Copy</h3>
+
+<p>While ZeroMQ offers a "zero-copy" API, it's not true zero-copy. Rather it's "zero-copy till the message gets to the kernel boundary". From that point on data are copied as with standard TCP. nanomsg, on the other hand, aims at supporting true zero-copy mechanisms such as RDMA (CPU by-pass, direct memory-to-memory copying) and shmem (transfer of data between processes on the same box by using shared memory). The API entrypoint for zero-copy messaging are nn_allocmsg and nn_freemsg functions in combination with NN_MSG option passed to send/recv functions.</p>
+
+<h3>Efficient Subscription Matching</h3>
+
+<p>In ZeroMQ, simple tries are used to store and match PUB/SUB subscriptions. The subscription mechanism was intended for up to 10,000 subscriptions where simple trie works well. However, there are users who use as much as 150,000,000 subscriptions. In such cases there's a need for a more efficient data structure. Thus, nanomsg uses memory-efficient version of Patricia trie instead of simple trie.</p>
+
+<ul>
+<li>For more details check this <a href="http://250bpm.com/blog:19">article</a>.</li>
+</ul>
+
+<h3>Unified Buffer Model</h3>
+
+<p>ZeroMQ has a strange double-buffering behaviour. Both the outgoing and incoming data are stored in a message queue AND in TCP's tx/rx buffers. What it means, for example, is that if you want to limit the amount of outgoing data, you have to set both ZMQ_SNDBUF and ZMQ_SNDHWM socket options. Given that there's no semantic difference between the two, nanomsg uses only TCP's (or equivalent's) buffers to store the data.</p>
+
+<h3>Scalability Protocols</h3>
+
+<p>Finally, on philosophical level, nanomsg aims at implementing different "scalability protocols" rather than being a generic networking. Specifically:</p>
+
+<ul>
+<li>Different protocols are fully separated, you cannot connect REQ socket to SUB socket or similar.</li>
+<li>Each protocol embodies a distributed algorithm with well-defined prerequsites (e.g. "the service has to be stateless" in case of REQ/REP) and guarantees (if REQ socket stays alive request will be ultimately processed).</li>
+<li>Partial failure is handled by the protocol, not by the user. In fact, it is transparent to the user.</li>
+<li>The specifications of the protocols are in /rfc subdirectory.</li>
+<li>The goal is to standardise the protocols via IETF.</li>
+<li>There's no generic UDP-like socket (ZMQ_ROUTER), you should use L4 protocols for that kind of functionality.</li>
+</ ul>
+
+</div>
+</body>
+</html>

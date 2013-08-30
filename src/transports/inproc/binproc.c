@@ -48,6 +48,8 @@ static const struct nn_epbase_vfptr nn_binproc_vfptr = {
 /*  Private functions. */
 static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_binproc_connect (struct nn_ins_item *self,
     struct nn_ins_item *peer);
 
@@ -61,7 +63,7 @@ int nn_binproc_create (void *hint, struct nn_epbase **epbase)
     alloc_assert (self);
 
     nn_ins_item_init (&self->item, &nn_binproc_vfptr, hint);
-    nn_fsm_init_root (&self->fsm, nn_binproc_handler,
+    nn_fsm_init_root (&self->fsm, nn_binproc_handler, nn_binproc_shutdown,
         nn_epbase_getctx (&self->item.epbase));
     self->state = NN_BINPROC_STATE_IDLE;
     nn_list_init (&self->sinprocs);
@@ -131,19 +133,15 @@ static void nn_binproc_connect (struct nn_ins_item *self,
     nn_sinproc_connect (sinproc, &cinproc->fsm);
 }
 
-static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_binproc *binproc;
     struct nn_list_item *it;
-    struct nn_sinproc *peer;
     struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
@@ -175,6 +173,19 @@ finish:
         nn_epbase_stopped (&binproc->item.epbase);
         return;
     }
+
+    nn_fsm_bad_state(binproc->state, src, type);
+}
+
+static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_binproc *binproc;
+    struct nn_list_item *it;
+    struct nn_sinproc *peer;
+    struct nn_sinproc *sinproc;
+
+    binproc = nn_cont (self, struct nn_binproc, fsm);
 
     switch (binproc->state) {
 

@@ -60,11 +60,14 @@ const struct nn_pipebase_vfptr nn_stcp_pipebase_vfptr = {
 /*  Private functions. */
 static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_stcp_init (struct nn_stcp *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_stcp_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_stcp_handler, nn_stcp_shutdown,
+        src, self, owner);
     self->state = NN_STCP_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, NN_STCP_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
@@ -165,7 +168,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return 0;
 }
 
-static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
+static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     int rc;
@@ -174,9 +177,6 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 
     stcp = nn_cont (self, struct nn_stcp, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcp->pipebase);
         nn_streamhdr_stop (&stcp->streamhdr);
@@ -194,6 +194,18 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
         }
         return;
     }
+
+    nn_fsm_bad_state(stcp->state, src, type);
+}
+
+static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_stcp *stcp;
+    uint64_t size;
+
+    stcp = nn_cont (self, struct nn_stcp, fsm);
 
     switch (stcp->state) {
 

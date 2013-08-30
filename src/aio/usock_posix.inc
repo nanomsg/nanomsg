@@ -68,11 +68,14 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
     /*  Initalise the state machine. */
-    nn_fsm_init (&self->fsm, nn_usock_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, nn_usock_shutdown,
+        src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
 
     /*  Choose a worker thread to handle this socket. */
@@ -436,15 +439,8 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     nn_worker_execute (self->worker, &self->task_recv);
 }
 
-static void nn_usock_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+static int nn_internal_tasks (struct nn_usock *usock, int src, int type)
 {
-    int rc;
-    struct nn_usock *usock;
-    int s;
-    size_t sz;
-
-    usock = nn_cont (self, struct nn_usock, fsm);
 
 /******************************************************************************/
 /*  Internal tasks sent from the user thread to the worker thread.            */
@@ -453,30 +449,41 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     case NN_USOCK_SRC_TASK_SEND:
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_set_out (usock->worker, &usock->wfd);
-        return;
+        return 1;
     case NN_USOCK_SRC_TASK_RECV:
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_set_in (usock->worker, &usock->wfd);
-        return;
+        return 1;
     case NN_USOCK_SRC_TASK_CONNECTED:
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
-        return;
+        return 1;
     case NN_USOCK_SRC_TASK_CONNECTING:
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_out (usock->worker, &usock->wfd);
-        return;
+        return 1;
     case NN_USOCK_SRC_TASK_ACCEPT:
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
         nn_worker_set_in (usock->worker, &usock->wfd);
-        return;
+        return 1;
     }
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
+    return 0;
+}
+
+static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_usock *usock;
+
+    usock = nn_cont (self, struct nn_usock, fsm);
+
+    if(nn_internal_tasks(usock, src, type))
+        return;
+
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING or CANCELLING state cannot be closed.
@@ -527,6 +534,22 @@ finish2:
 finish3:
         return;
     }
+
+    nn_fsm_bad_state(usock->state, src, type);
+}
+
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_usock *usock;
+    int s;
+    size_t sz;
+
+    usock = nn_cont (self, struct nn_usock, fsm);
+
+    if(nn_internal_tasks(usock, src, type))
+        return;
 
     switch (usock->state) {
 

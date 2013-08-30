@@ -47,6 +47,8 @@
 /*  Private functions. */
 static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -61,7 +63,8 @@ void nn_sinproc_init (struct nn_sinproc *self, int src,
     int rcvbuf;
     size_t sz;
 
-    nn_fsm_init (&self->fsm, nn_sinproc_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_sinproc_handler, nn_sinproc_shutdown,
+        src, self, owner);
     self->state = NN_SINPROC_STATE_IDLE;
     self->flags = 0;
     self->peer = NULL;
@@ -133,7 +136,7 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     /*  If the peer have already closed the connection, we cannot send
         anymore. */
     if (sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
-        return -ECONNRESET; 
+        return -ECONNRESET;
 
     /*  Sanity checks. */
     nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE);
@@ -190,18 +193,13 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return NN_PIPEBASE_PARSED;
 }
 
-static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_sinproc *sinproc;
-    int empty;
 
     sinproc = nn_cont (self, struct nn_sinproc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (sinproc->state == NN_SINPROC_STATE_IDLE ||
               sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
@@ -220,6 +218,19 @@ finish:
         nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
         return;
     }
+
+    nn_fsm_bad_state(sinproc->state, src, type);
+}
+
+static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_sinproc *sinproc;
+    int empty;
+
+    sinproc = nn_cont (self, struct nn_sinproc, fsm);
+
 
     switch (sinproc->state) {
 

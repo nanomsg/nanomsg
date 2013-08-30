@@ -89,6 +89,8 @@ const struct nn_epbase_vfptr nn_btcp_epbase_vfptr = {
 /*  Private functions. */
 static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_btcp_start_listening (struct nn_btcp *self);
 static void nn_btcp_start_accepting (struct nn_btcp *self);
 
@@ -144,7 +146,7 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     }
 
     /*  Initialise the structure. */
-    nn_fsm_init_root (&self->fsm, nn_btcp_handler,
+    nn_fsm_init_root (&self->fsm, nn_btcp_handler, nn_btcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
@@ -185,7 +187,7 @@ static void nn_btcp_destroy (struct nn_epbase *self)
     nn_free (btcp);
 }
 
-static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
+static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_btcp *btcp;
@@ -194,9 +196,6 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_atcp_stop (btcp->atcp);
         btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
@@ -241,6 +240,17 @@ atcps_stopping:
 
         return;
     }
+
+    nn_fsm_bad_action(btcp->state, src, type);
+}
+
+static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_btcp *btcp;
+    struct nn_atcp *atcp;
+
+    btcp = nn_cont (self, struct nn_btcp, fsm);
 
     switch (btcp->state) {
 

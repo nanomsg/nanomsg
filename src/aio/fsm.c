@@ -62,12 +62,24 @@ void nn_fsm_event_process (struct nn_fsm_event *self)
     self->src = -1;
     self->type = -1;
     self->srcptr = NULL;
-    self->fsm->fn (self->fsm, src, type, srcptr);
+
+    nn_fsm_feed (self->fsm, src, type, srcptr);
 }
 
-void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
+void nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr)
+{
+    if (nn_slow (self->state != NN_FSM_STATE_STOPPING)) {
+        self->fn (self, src, type, srcptr);
+    } else {
+        self->shutdown_fn (self, src, type, srcptr);
+    }
+}
+
+void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn,
+    nn_fsm_fn shutdown_fn, struct nn_ctx *ctx)
 {
     self->fn = fn;
+    self->shutdown_fn = shutdown_fn;
     self->state = NN_FSM_STATE_IDLE;
     self->src = -1;
     self->srcptr = NULL;
@@ -76,10 +88,11 @@ void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx)
     nn_fsm_event_init (&self->stopped);
 }
 
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, int src, void *srcptr,
-    struct nn_fsm *owner)
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn,
+    nn_fsm_fn shutdown_fn, int src, void *srcptr, struct nn_fsm *owner)
 {
     self->fn = fn;
+    self->shutdown_fn = shutdown_fn;
     self->state = NN_FSM_STATE_IDLE;
     self->src = src;
     self->srcptr = srcptr;
@@ -114,7 +127,7 @@ void nn_fsm_stop (struct nn_fsm *self)
         return;
 
     self->state = NN_FSM_STATE_STOPPING;
-    self->fn (self, NN_FSM_ACTION, NN_FSM_STOP, NULL);
+    self->shutdown_fn (self, NN_FSM_ACTION, NN_FSM_STOP, NULL);
 }
 
 void nn_fsm_stopped (struct nn_fsm *self, int type)
@@ -151,11 +164,11 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
 void nn_fsm_action (struct nn_fsm *self, int type)
 {
     nn_assert (type > 0);
-    self->fn (self, NN_FSM_ACTION, type, NULL);
+    nn_fsm_feed (self, NN_FSM_ACTION, type, NULL);
 }
 
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
-{    
+{
     event->fsm = self->owner;
     event->src = self->src;
     event->srcptr = self->srcptr;

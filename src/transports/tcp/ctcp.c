@@ -220,16 +220,10 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
     nn_free (ctcp);
 }
 
-static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+static void nn_ctcp_shutdown (struct nn_ctcp *ctcp, int src, int type,
     void *srcptr)
 {
-    struct nn_ctcp *ctcp;
 
-    ctcp = nn_cont (self, struct nn_ctcp, fsm);
-
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_stcp_stop (&ctcp->stcp);
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
@@ -250,6 +244,19 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
         ctcp->state = NN_CTCP_STATE_IDLE;
         nn_fsm_stopped_noevent (&ctcp->fsm);
         nn_epbase_stopped (&ctcp->epbase);
+        return;
+    }
+}
+
+static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_ctcp *ctcp;
+
+    ctcp = nn_cont (self, struct nn_ctcp, fsm);
+
+    if (nn_slow (nn_fsm_isstopping (self))) {
+        nn_ctcp_shutdown (ctcp, src, type, srcptr);
         return;
     }
 

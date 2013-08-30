@@ -107,6 +107,11 @@ int nn_fsm_isidle (struct nn_fsm *self)
         !nn_fsm_event_active (&self->stopped) ? 1 : 0;
 }
 
+int nn_fsm_isstopping (struct nn_fsm *self)
+{
+    return self->state == NN_FSM_STATE_STOPPING;
+}
+
 void nn_fsm_stop (struct nn_fsm *self)
 {
     /*  If stopping of the state machine was already requested, do nothing. */
@@ -155,7 +160,7 @@ void nn_fsm_action (struct nn_fsm *self, int type)
 }
 
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)
-{    
+{
     event->fsm = self->owner;
     event->src = self->src;
     event->srcptr = self->srcptr;

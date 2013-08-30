@@ -79,6 +79,7 @@ void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, int src, void *srcptr,
 void nn_fsm_term (struct nn_fsm *self);
 
 int nn_fsm_isidle (struct nn_fsm *self);
+int nn_fsm_isstopping (struct nn_fsm *self);
 void nn_fsm_start (struct nn_fsm *self);
 void nn_fsm_stop (struct nn_fsm *self);
 void nn_fsm_stopped (struct nn_fsm *self, int type);

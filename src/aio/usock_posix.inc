@@ -731,14 +731,18 @@ error:
     case NN_USOCK_STATE_REMOVING_FD:
         switch (src) {
         case NN_USOCK_SRC_TASK_STOP:
-            nn_assert (type == NN_WORKER_TASK_EXECUTE);
-            nn_worker_rm_fd (usock->worker, &usock->wfd);
-            rc = close (usock->s);
-            errno_assert (rc == 0);
-            usock->s = -1;
-            usock->state = NN_USOCK_STATE_DONE;
-            nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
-            return;
+            switch (type) {
+            case NN_WORKER_TASK_EXECUTE:
+                nn_worker_rm_fd (usock->worker, &usock->wfd);
+                rc = close (usock->s);
+                errno_assert (rc == 0);
+                usock->s = -1;
+                usock->state = NN_USOCK_STATE_DONE;
+                nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
+                return;
+            default:
+                nn_fsm_bad_action (usock->state, src, type);
+            }
 
         /*  Events from the file descriptor are ignored while it is being
             removed. */

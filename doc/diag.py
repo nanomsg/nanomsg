@@ -189,8 +189,8 @@ class StateFinder(Visitor):
     def __init__(self):
         self.states = []
 
-    def state_found(self, name):
-        self.states.append(name)
+    def state_found(self, name, cursor):
+        self.states.append((name, cursor))
 
     def visit(self, cursor):
         super(StateFinder, self).visit(cursor)
@@ -200,8 +200,8 @@ class StateFinder(Visitor):
         if fun:
             sf = StateFinder()
             sf.run(fun)
-            for name in sf.states:
-                self.state_found(name)
+            for name, cursor in sf.states:
+                self.state_found(name, cursor)
 
     def enter_BINARY_OPERATOR(self, cursor):
         children = list(cursor.get_children())
@@ -218,7 +218,7 @@ class StateFinder(Visitor):
                 op = f.read(oplen).strip()
                 val = f.read(vallen).strip()
             if op == '=':
-                self.state_found(val)
+                self.state_found(val, cursor)
 
 
 class FSMScanner(StateFinder):
@@ -260,9 +260,13 @@ class FSMScanner(StateFinder):
         if typ in self.running:
             self.running[typ] = '*'
 
-    def state_found(self, state):
+    def state_found(self, state, cursor):
         r = self.running
         edge = (r['state'], r['src'], r['type'], state)
+        if r['src'] is None or r['type'] is None:
+            print('    Undefined state or action at {0.start.file}:{0.start.line}'
+                .format(cursor.extent),
+                file=sys.stderr)
         self.edges.add(edge)
 
 
@@ -295,7 +299,7 @@ def parse_file(fn):
                         mkstate(tostate),
                         mkaction(action)))
                 else:
-                    lines.append('{} -> {} [label="{}, {}"]'.format(
+                    lines.append('{} -> {} [label="{}:{}"]'.format(
                         mkstate(fromstate),
                         mkstate(tostate),
                         mksrc(src),

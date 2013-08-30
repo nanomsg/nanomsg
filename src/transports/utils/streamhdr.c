@@ -46,11 +46,14 @@
 /*  Private functions. */
 static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_streamhdr_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_streamhdr_init (struct nn_streamhdr *self, int src,
     struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_streamhdr_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_streamhdr_handler, nn_streamhdr_shutdown,
+        src, self, owner);
     self->state = NN_STREAMHDR_STATE_IDLE;
     nn_timer_init (&self->timer, NN_STREAMHDR_SRC_TIMER, &self->fsm);
     nn_fsm_event_init (&self->done);
@@ -107,18 +110,13 @@ void nn_streamhdr_stop (struct nn_streamhdr *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
+static void nn_streamhdr_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_streamhdr *streamhdr;
-    struct nn_iovec iovec;
-    int protocol;
 
     streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
@@ -130,6 +128,19 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_stopped (&streamhdr->fsm, NN_STREAMHDR_STOPPED);
         return;
     }
+
+    nn_fsm_bad_state (streamhdr->state, src, type);
+}
+
+static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_streamhdr *streamhdr;
+    struct nn_iovec iovec;
+    int protocol;
+
+    streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
+
 
     switch (streamhdr->state) {
 
@@ -255,7 +266,7 @@ invalidhdr:
                 nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
-        default:    
+        default:
             nn_fsm_bad_source (streamhdr->state, src, type);
         }
 
@@ -280,7 +291,7 @@ invalidhdr:
                 nn_fsm_bad_action (streamhdr->state, src, type);
             }
 
-        default:       
+        default:
             nn_fsm_bad_source (streamhdr->state, src, type);
         }
 

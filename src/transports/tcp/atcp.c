@@ -41,11 +41,14 @@
 /*  Private functions. */
 static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_atcp_init (struct nn_atcp *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_atcp_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_atcp_handler, nn_atcp_shutdown,
+        src, self, owner);
     self->state = NN_ATCP_STATE_IDLE;
     self->epbase = epbase;
     nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm);
@@ -94,7 +97,7 @@ void nn_atcp_stop (struct nn_atcp *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_atcp *atcp;
@@ -103,9 +106,6 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
     atcp = nn_cont (self, struct nn_atcp, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_stcp_stop (&atcp->stcp);
         atcp->state = NN_ATCP_STATE_STOPPING_STCP_FINAL;
@@ -130,6 +130,18 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_stopped (&atcp->fsm, NN_ATCP_STOPPED);
         return;
     }
+
+    nn_fsm_bad_action(atcp->state, src, type);
+}
+
+static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_atcp *atcp;
+    int val;
+    size_t sz;
+
+    atcp = nn_cont (self, struct nn_atcp, fsm);
 
     switch (atcp->state) {
 

@@ -66,11 +66,14 @@ const struct nn_pipebase_vfptr nn_sipc_pipebase_vfptr = {
 /*  Private functions. */
 static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_sipc_init (struct nn_sipc *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_sipc_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_sipc_handler, nn_sipc_shutdown,
+        src, self, owner);
     self->state = NN_SIPC_STATE_IDLE;
     nn_streamhdr_init (&self->streamhdr, NN_SIPC_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
@@ -172,18 +175,13 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return 0;
 }
 
-static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
+static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_sipc *sipc;
-    uint64_t size;
 
     sipc = nn_cont (self, struct nn_sipc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&sipc->pipebase);
         nn_streamhdr_stop (&sipc->streamhdr);
@@ -201,6 +199,19 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
         }
         return;
     }
+
+    nn_fsm_bad_state(sipc->state, src, type);
+}
+
+static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_sipc *sipc;
+    uint64_t size;
+
+    sipc = nn_cont (self, struct nn_sipc, fsm);
+
 
     switch (sipc->state) {
 
@@ -270,7 +281,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&sipc->pipebase);
                  errnum_assert (rc == 0, -rc);
-                 
+
                  /*  Start receiving a message in asynchronous manner. */
                  sipc->instate = NN_SIPC_INSTATE_HDR;
                  nn_usock_recv (sipc->usock, &sipc->inhdr,

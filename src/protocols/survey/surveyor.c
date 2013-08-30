@@ -82,6 +82,8 @@ static void nn_surveyor_init (struct nn_surveyor *self,
 static void nn_surveyor_term (struct nn_surveyor *self);
 static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static int nn_surveyor_inprogress (struct nn_surveyor *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -112,7 +114,7 @@ static void nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_xsurveyor_init (&self->xsurveyor, vfptr, hint);
-    nn_fsm_init_root (&self->fsm, nn_surveyor_handler,
+    nn_fsm_init_root (&self->fsm, nn_surveyor_handler, nn_surveyor_shutdown,
         nn_sockbase_getctx (&self->xsurveyor.sockbase));
     self->state = NN_SURVEYOR_STATE_IDLE;
 
@@ -299,17 +301,13 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src== NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&surveyor->timer);
         surveyor->state = NN_SURVEYOR_STATE_STOPPING;
@@ -322,6 +320,17 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
         nn_sockbase_stopped (&surveyor->xsurveyor.sockbase);
         return;
     }
+
+    nn_fsm_bad_state(surveyor->state, src, type);
+}
+
+static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_surveyor *surveyor;
+
+    surveyor = nn_cont (self, struct nn_surveyor, fsm);
 
     switch (surveyor->state) {
 
@@ -429,7 +438,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
-        
+
         default:
             nn_fsm_bad_source (surveyor->state, src, type);
         }

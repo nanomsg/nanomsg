@@ -94,6 +94,8 @@ static void nn_req_term (struct nn_req *self);
 static int nn_req_inprogress (struct nn_req *self);
 static void nn_req_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_req_action_send (struct nn_req *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
@@ -126,7 +128,7 @@ static void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_xreq_init (&self->xreq, vfptr, hint);
-    nn_fsm_init_root (&self->fsm, nn_req_handler,
+    nn_fsm_init_root (&self->fsm, nn_req_handler, nn_req_shutdown,
         nn_sockbase_getctx (&self->xreq.sockbase));
     self->state = NN_REQ_STATE_IDLE;
 
@@ -357,16 +359,13 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_req_handler (struct nn_fsm *self, int src, int type,
+static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_req *req;
 
     req = nn_cont (self, struct nn_req, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&req->timer);
         req->state = NN_REQ_STATE_STOPPING;
@@ -379,6 +378,16 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
         nn_sockbase_stopped (&req->xreq.sockbase);
         return;
     }
+
+    nn_fsm_bad_state(req->state, src, type);
+}
+
+static void nn_req_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_req *req;
+
+    req = nn_cont (self, struct nn_req, fsm);
 
     switch (req->state) {
 
@@ -479,7 +488,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
-        
+
         case NN_REQ_SRC_RESEND_TIMER:
             switch (type) {
             case NN_TIMER_TIMEOUT:
@@ -489,7 +498,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
-        
+
         default:
             nn_fsm_bad_source (req->state, src, type);
         }

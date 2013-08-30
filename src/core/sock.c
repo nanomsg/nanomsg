@@ -61,6 +61,8 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 static void nn_sock_onleave (struct nn_ctx *self);
 static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
@@ -76,7 +78,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     nn_ctx_init (&self->ctx, nn_global_getpool (), nn_sock_onleave);
 
     /*  Initialise the state machine. */
-    nn_fsm_init_root (&self->fsm, nn_sock_handler, &self->ctx);
+    nn_fsm_init_root (&self->fsm, nn_sock_handler,
+        nn_sock_shutdown, &self->ctx);
     self->state = NN_SOCK_STATE_INIT;
 
     /*  Open the NN_SNDFD and NN_RCVFD efds. Do so, only if the socket type
@@ -715,7 +718,7 @@ static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
     return self->optsets [index];
 }
 
-static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_sock *sock;
@@ -724,9 +727,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 
     sock = nn_cont (self, struct nn_sock, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
             sock->state == NN_SOCK_STATE_ZOMBIE);
@@ -751,7 +751,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             nn_list_insert (&sock->sdeps, &ep->item,
                 nn_list_end (&sock->sdeps));
             nn_ep_stop (ep);
-            
+
         }
         sock->state = NN_SOCK_STATE_STOPPING_EPS;
         goto finish2;
@@ -796,6 +796,17 @@ finish1:
 
         return;
     }
+
+    nn_fsm_bad_state(sock->state, src, type);
+}
+
+static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_sock *sock;
+    struct nn_ep *ep;
+
+    sock = nn_cont (self, struct nn_sock, fsm);
 
     switch (sock->state) {
 

@@ -51,6 +51,8 @@ static const struct nn_epbase_vfptr nn_cinproc_vfptr = {
 /*  Private functions. */
 static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_cinproc_connect (struct nn_ins_item *self,
     struct nn_ins_item *peer);
 
@@ -62,7 +64,7 @@ int nn_cinproc_create (void *hint, struct nn_epbase **epbase)
     alloc_assert (self);
 
     nn_ins_item_init (&self->item, &nn_cinproc_vfptr, hint);
-    nn_fsm_init_root (&self->fsm, nn_cinproc_handler,
+    nn_fsm_init_root (&self->fsm, nn_cinproc_handler, nn_cinproc_shutdown,
         nn_epbase_getctx (&self->item.epbase));
     self->state = NN_CINPROC_STATE_IDLE;
     nn_sinproc_init (&self->sinproc, NN_CINPROC_SRC_SINPROC,
@@ -114,17 +116,13 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
     nn_fsm_action (&cinproc->fsm, NN_CINPROC_ACTION_CONNECT);
 }
 
-static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
+static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_cinproc *cinproc;
-    struct nn_sinproc *sinproc;
 
     cinproc = nn_cont (self, struct nn_cinproc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  First, unregister the endpoint from the global repository of inproc
@@ -143,6 +141,18 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
         nn_epbase_stopped (&cinproc->item.epbase);
         return;
     }
+
+    nn_fsm_bad_state(cinproc->state, src, type);
+}
+
+static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_cinproc *cinproc;
+    struct nn_sinproc *sinproc;
+
+    cinproc = nn_cont (self, struct nn_cinproc, fsm);
+
 
     switch (cinproc->state) {
 

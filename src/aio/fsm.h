@@ -65,6 +65,7 @@ struct nn_fsm_owner {
 
 struct nn_fsm {
     nn_fsm_fn fn;
+    nn_fsm_fn shutdown_fn;
     int state;
     int src;
     void *srcptr;
@@ -73,9 +74,11 @@ struct nn_fsm {
     struct nn_fsm_event stopped;
 };
 
-void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn, struct nn_ctx *ctx);
-void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn, int src, void *srcptr,
-    struct nn_fsm *owner);
+void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn,
+    nn_fsm_fn shutdown_fn, struct nn_ctx *ctx);
+void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn,
+    nn_fsm_fn shutdown_fn,
+    int src, void *srcptr, struct nn_fsm *owner);
 void nn_fsm_term (struct nn_fsm *self);
 
 int nn_fsm_isidle (struct nn_fsm *self);
@@ -96,6 +99,7 @@ void nn_fsm_action (struct nn_fsm *self, int type);
 /*  Send event from the state machine to its owner. */
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
 
+
 /*  Send event to the specified state machine. It's caller's responsibility
     to ensure that the destination state machine will still exist when the
     event is delivered.
@@ -103,6 +107,11 @@ void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
     efficient manner. Do not use it outside of inproc transport! */
 void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
     struct nn_fsm_event *event, int src, int type, void *srcptr);
+
+/*  This function is very lowlevel action feeding
+    Used in worker threads and timers, shouldn't be used by others
+    use nn_fsm_action/nn_fsm_raise/nn_fsm_raiseto instread*/
+void nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr);
 
 #endif
 

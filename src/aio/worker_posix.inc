@@ -176,7 +176,7 @@ static void nn_worker_routine (void *arg)
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
             nn_ctx_enter (timer->owner->ctx);
-            timer->owner->fn (timer->owner, -1, NN_WORKER_TIMER_TIMEOUT, timer);
+            nn_fsm_feed (timer->owner, -1, NN_WORKER_TIMER_TIMEOUT, timer);
             nn_ctx_leave (timer->owner->ctx);
         }
 
@@ -219,7 +219,7 @@ static void nn_worker_routine (void *arg)
                         arrived in the worker thread. */
                     task = nn_cont (item, struct nn_worker_task, item);
                     nn_ctx_enter (task->owner->ctx);
-                    task->owner->fn (task->owner, task->src,
+                    nn_fsm_feed (task->owner, task->src,
                         NN_WORKER_TASK_EXECUTE, task);
                     nn_ctx_leave (task->owner->ctx);
                 }
@@ -230,7 +230,7 @@ static void nn_worker_routine (void *arg)
             /*  It's a true I/O event. Invoke the handler. */
             fd = nn_cont (phndl, struct nn_worker_fd, hndl);
             nn_ctx_enter (fd->owner->ctx);
-            fd->owner->fn (fd->owner, fd->src, pevent, fd);
+            nn_fsm_feed (fd->owner, fd->src, pevent, fd);
             nn_ctx_leave (fd->owner->ctx);
         }
     }

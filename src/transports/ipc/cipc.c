@@ -85,6 +85,8 @@ const struct nn_epbase_vfptr nn_cipc_epbase_vfptr = {
 /*  Private functions. */
 static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_cipc_start_connecting (struct nn_cipc *self);
 
 int nn_cipc_create (void *hint, struct nn_epbase **epbase)
@@ -100,7 +102,7 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
 
     /*  Initialise the structure. */
     nn_epbase_init (&self->epbase, &nn_cipc_epbase_vfptr, hint);
-    nn_fsm_init_root (&self->fsm, nn_cipc_handler,
+    nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CIPC_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
@@ -151,16 +153,13 @@ static void nn_cipc_destroy (struct nn_epbase *self)
     nn_free (cipc);
 }
 
-static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
+static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_cipc *cipc;
 
     cipc = nn_cont (self, struct nn_cipc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_sipc_stop (&cipc->sipc);
         cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
@@ -181,6 +180,16 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
         nn_epbase_stopped (&cipc->epbase);
         return;
     }
+
+    nn_fsm_bad_state(cipc->state, src, type);
+}
+
+static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_cipc *cipc;
+
+    cipc = nn_cont (self, struct nn_cipc, fsm);
 
     switch (cipc->state) {
 

@@ -39,10 +39,13 @@
 /*  Private functions. */
 static void nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_dns_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_dns_handler, nn_dns_shutdown,
+        src, self, owner);
     self->state = NN_DNS_STATE_IDLE;
     nn_fsm_event_init (&self->done);
 }
@@ -120,21 +123,27 @@ void nn_dns_stop (struct nn_dns *self)
     nn_fsm_stop (&self->fsm);
 }
 
+static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_dns *dns;
+
+    dns = nn_cont (self, struct nn_dns, fsm);
+    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
+        nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
+        dns->state = NN_DNS_STATE_IDLE;
+        return;
+    }
+
+    nn_fsm_bad_state(dns->state, src, type);
+}
+
 static void nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_dns *dns;
 
     dns = nn_cont (self, struct nn_dns, fsm);
-
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
-    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
-        dns->state = NN_DNS_STATE_IDLE;
-        return;
-    }
 
     switch (dns->state) {
 /******************************************************************************/

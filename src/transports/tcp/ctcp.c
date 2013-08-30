@@ -103,6 +103,8 @@ const struct nn_epbase_vfptr nn_ctcp_epbase_vfptr = {
 /*  Private functions. */
 static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static void nn_ctcp_start_resolving (struct nn_ctcp *self);
 static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     struct sockaddr_storage *ss, size_t sslen);
@@ -167,7 +169,7 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     }
 
     /*  Initialise the structure. */
-    nn_fsm_init_root (&self->fsm, nn_ctcp_handler,
+    nn_fsm_init_root (&self->fsm, nn_ctcp_handler, nn_ctcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CTCP_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CTCP_SRC_USOCK, &self->fsm);
@@ -220,16 +222,13 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
     nn_free (ctcp);
 }
 
-static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_ctcp *ctcp;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_stcp_stop (&ctcp->stcp);
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
@@ -252,6 +251,16 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
         nn_epbase_stopped (&ctcp->epbase);
         return;
     }
+
+    nn_fsm_bad_state (ctcp->state, src, type);
+}
+
+static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_ctcp *ctcp;
+
+    ctcp = nn_cont (self, struct nn_ctcp, fsm);
 
     switch (ctcp->state) {
 

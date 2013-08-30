@@ -41,13 +41,16 @@
 /*  Private functions. */
 static void nn_ep_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     struct nn_transport *transport, int bind, const char *addr)
 {
     int rc;
 
-    nn_fsm_init (&self->fsm, nn_ep_handler, src, self, &sock->fsm);
+    nn_fsm_init (&self->fsm, nn_ep_handler, nn_ep_shutdown,
+        src, self, &sock->fsm);
     self->state = NN_EP_STATE_IDLE;
 
     self->epbase = NULL;
@@ -135,15 +138,14 @@ int nn_ep_ispeer (struct nn_ep *self, int socktype)
     return nn_sock_ispeer (self->sock, socktype);
 }
 
-static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
+
+static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr)
 {
     struct nn_ep *ep;
 
     ep = nn_cont (self, struct nn_ep, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         ep->epbase->vfptr->stop (ep->epbase);
         ep->state = NN_EP_STATE_STOPPING;
@@ -156,6 +158,16 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
         nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
         return;
     }
+
+    nn_fsm_bad_state (ep->state, src, type);
+}
+
+
+static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
+{
+    struct nn_ep *ep;
+
+    ep = nn_cont (self, struct nn_ep, fsm);
 
     switch (ep->state) {
 

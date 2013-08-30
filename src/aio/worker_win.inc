@@ -155,7 +155,7 @@ static void nn_worker_routine (void *arg)
             errnum_assert (rc == 0, -rc);
             timer = nn_cont (thndl, struct nn_worker_timer, hndl);
             nn_ctx_enter (timer->owner->ctx);
-            timer->owner->fn (timer->owner, -1, NN_WORKER_TIMER_TIMEOUT, timer);
+            nn_fsm_feed (timer->owner, -1, NN_WORKER_TIMER_TIMEOUT, timer);
             nn_ctx_leave (timer->owner->ctx);
         }
 
@@ -200,7 +200,7 @@ static void nn_worker_routine (void *arg)
                       entries [i].dwNumberOfBytesTransferred == 0)
                     rc = NN_WORKER_OP_ERROR;
                 op->state = NN_WORKER_OP_STATE_IDLE;
-                op->owner->fn (op->owner, op->src, rc, op);
+                nn_fsm_feed (op->owner, op->src, rc, op);
                 nn_ctx_leave (op->owner->ctx);
 
                 continue;
@@ -214,7 +214,7 @@ static void nn_worker_routine (void *arg)
             /*  Process tasks. */
             task = (struct nn_worker_task*) entries [i].lpCompletionKey;
             nn_ctx_enter (task->owner->ctx);
-            task->owner->fn (task->owner, task->src,
+            nn_fsm_feed (task->owner, task->src,
                 NN_WORKER_TASK_EXECUTE, task);
             nn_ctx_leave (task->owner->ctx);
         }

@@ -39,10 +39,13 @@
 /*  Private functions. */
 static void nn_timer_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 
 void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_timer_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_timer_handler, nn_timer_shutdown,
+        src, self, owner);
     self->state = NN_TIMER_STATE_IDLE;
     nn_worker_task_init (&self->start_task, NN_TIMER_SRC_START_TASK,
         &self->fsm);
@@ -83,16 +86,13 @@ void nn_timer_stop (struct nn_timer *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_timer *timer;
 
     timer = nn_cont (self, struct nn_timer, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
@@ -107,6 +107,16 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_stopped (&timer->fsm, NN_TIMER_STOPPED);
         return;
     }
+
+    nn_fsm_bad_state(timer->state, src, type);
+}
+
+static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_timer *timer;
+
+    timer = nn_cont (self, struct nn_timer, fsm);
 
     switch (timer->state) {
 

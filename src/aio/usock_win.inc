@@ -59,11 +59,14 @@
 /*  Private functions. */
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
+    void *srcptr);
 static int nn_usock_cancel_io (struct nn_usock *self);
 
 void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_usock_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_usock_handler, nn_usock_shutdown,
+        src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
     self->s = INVALID_SOCKET;
     nn_worker_op_init (&self->in, NN_USOCK_SRC_IN, &self->fsm);
@@ -295,7 +298,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
     brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
         NULL, 0, NULL, &self->out.olpd);
-    
+
     /*  Immediate success. */
     if (nn_fast (brc == TRUE)) {
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
@@ -393,11 +396,6 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     int rc;
     struct nn_usock *usock;
 
-    usock = nn_cont (self, struct nn_usock, fsm);
-
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.
@@ -436,7 +434,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             goto finish1;
         usock->state = NN_USOCK_STATE_STOPPING;
         return;
-    } 
+    }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
         nn_assert (src == NN_FSM_ACTION && type == NN_USOCK_ACTION_DONE);
         goto finish1;
@@ -454,6 +452,17 @@ finish2:
 finish3:
         return;
     }
+
+    nn_fsm_bad_state(usock->state, src, type);
+}
+
+static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    int rc;
+    struct nn_usock *usock;
+
+    usock = nn_cont (self, struct nn_usock, fsm);
 
     switch (usock->state) {
 

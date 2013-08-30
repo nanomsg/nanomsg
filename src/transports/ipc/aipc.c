@@ -42,11 +42,14 @@
 /*  Private functions. */
 static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
    void *srcptr);
+static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
+   void *srcptr);
 
 void nn_aipc_init (struct nn_aipc *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
-    nn_fsm_init (&self->fsm, nn_aipc_handler, src, self, owner);
+    nn_fsm_init (&self->fsm, nn_aipc_handler, nn_aipc_shutdown,
+        src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
     self->epbase = epbase;
     nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
@@ -68,7 +71,7 @@ void nn_aipc_term (struct nn_aipc *self)
     nn_fsm_event_term (&self->accepted);
     nn_sipc_term (&self->sipc);
     nn_usock_term (&self->usock);
-    nn_fsm_term (&self->fsm);    
+    nn_fsm_term (&self->fsm);
 }
 
 int nn_aipc_isidle (struct nn_aipc *self)
@@ -95,18 +98,13 @@ void nn_aipc_stop (struct nn_aipc *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_aipc *aipc;
-    int val;
-    size_t sz;
 
     aipc = nn_cont (self, struct nn_aipc, fsm);
 
-/******************************************************************************/
-/*  STOP procedure.                                                           */
-/******************************************************************************/
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_sipc_stop (&aipc->sipc);
         aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
@@ -131,6 +129,18 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_stopped (&aipc->fsm, NN_AIPC_STOPPED);
         return;
     }
+
+    nn_fsm_bad_state(aipc->state, src, type);
+}
+
+static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+    void *srcptr)
+{
+    struct nn_aipc *aipc;
+    int val;
+    size_t sz;
+
+    aipc = nn_cont (self, struct nn_aipc, fsm);
 
     switch (aipc->state) {
 

@@ -450,6 +450,15 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     case NN_SURVEYOR_STATE_STOPPING_TIMER:
         switch (src) {
 
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_SURVEYOR_ACTION_CANCEL:
+                surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
+                return;
+            default:
+                nn_fsm_bad_action (surveyor->state, src, type);
+            }
+
         case NN_SURVEYOR_SRC_DEADLINE_TIMER:
             switch (type) {
             case NN_TIMER_STOPPED:

@@ -58,9 +58,46 @@ void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
 void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
-    if (nn_list_item_isinlist (&data->item))
-        nn_list_erase (&self->slots [data->priority - 1].pipes, &data->item);
+    struct nn_priolist_slot *slot;
+    struct nn_list_item *it;
+
+    /*  Non-active pipes don't need any sepcial processing. */
+    if (!nn_list_item_isinlist (&data->item)) {
+        nn_list_item_term (&data->item);
+        return;
+    }
+
+    /*  If the pipe being removed is not current, we can simply erase it
+        from the list. */
+    slot = &self->slots [data->priority - 1];
+    if (slot->current != data) {
+        nn_list_erase (&slot->pipes, &data->item);
+        nn_list_item_term (&data->item);
+        return;
+    }
+
+    /*  Advance the current pointer (with wrap-over). */
+    it = nn_list_erase (&slot->pipes, &data->item);
+    slot->current = nn_cont (it, struct nn_priolist_data, item);
     nn_list_item_term (&data->item);
+    if (!slot->current) {
+        it = nn_list_begin (&slot->pipes);
+        slot->current = nn_cont (it, struct nn_priolist_data, item);
+    }
+
+    /*  If we are not messing with the current slot, we are done. */
+    if (self->current != data->priority - 1)
+        return;
+
+    /*  Otherwise, the current slot may have become empty and we have switch
+        to lower priority slots. */
+    while (nn_list_empty (&self->slots [self->current - 1].pipes)) {
+        ++self->current;
+        if (self->current > NN_PRIOLIST_SLOTS) {
+            self->current = -1;
+            return;
+        }
+    }
 }
 
 void nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,

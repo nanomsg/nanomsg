@@ -481,7 +481,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
 
     usock = nn_cont (self, struct nn_usock, fsm);
 
-    if(nn_internal_tasks(usock, src, type))
+    if (nn_internal_tasks (usock, src, type))
         return;
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {

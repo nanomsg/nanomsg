@@ -88,7 +88,7 @@ int main ()
     rc = nn_close (rep1);
     errno_assert (rc == 0);
     rc = nn_close (req1);
-    errno_assert (rc == 0);    
+    errno_assert (rc == 0);
     rc = nn_close (req2);
     errno_assert (rc == 0);
 
@@ -135,7 +135,7 @@ int main ()
     rc = nn_close (rep2);
     errno_assert (rc == 0);
     rc = nn_close (rep1);
-    errno_assert (rc == 0);    
+    errno_assert (rc == 0);
     rc = nn_close (req1);
     errno_assert (rc == 0);
 
@@ -182,13 +182,42 @@ int main ()
     errno_assert (rep1 != -1);
     rc = nn_bind (rep1, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
-    timeo = 100;
+    timeo = 200;
     rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
        &timeo, sizeof (timeo));
     errno_assert (rc == 0);
     rc = nn_recv (rep1, buf, sizeof (buf), 0);
     errno_assert (rc >= 0);
     nn_assert (rc == 3);
+
+    rc = nn_close (req1);
+    errno_assert (rc == 0);
+    rc = nn_close (rep1);
+    errno_assert (rc == 0);
+
+    /*  Test cancelling delayed request  */
+
+    req1 = nn_socket (AF_SP, NN_REQ);
+    errno_assert (req1 != -1);
+    rc = nn_connect (req1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    rc = nn_send (req1, "ABC", 3, 0);
+    errno_assert (rc >= 0);
+    rc = nn_send (req1, "DEF", 3, 0);
+    errno_assert (rc >= 0);
+
+    rep1 = nn_socket (AF_SP, NN_REP);
+    errno_assert (rep1 != -1);
+    rc = nn_bind (rep1, SOCKET_ADDRESS);
+    errno_assert (rc >= 0);
+    timeo = 100;
+//    rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
+//       &timeo, sizeof (timeo));
+//    errno_assert (rc == 0);
+    rc = nn_recv (rep1, buf, sizeof (buf), 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 3);
+    nn_assert (!memcmp(buf, "DEF", 3));
 
     rc = nn_close (req1);
     errno_assert (rc == 0);

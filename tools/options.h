@@ -20,32 +20,32 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NC_OPTIONS_HEADER
-#define NC_OPTIONS_HEADER
+#ifndef NN_OPTIONS_HEADER
+#define NN_OPTIONS_HEADER
 
-enum nc_option_type {
-    NC_OPT_HELP,
-    NC_OPT_INT,
-    NC_OPT_INCREMENT,
-    NC_OPT_DECREMENT,
-    NC_OPT_ENUM,
-    NC_OPT_SET_ENUM,
-    NC_OPT_STRING,
-    NC_OPT_BLOB,
-    NC_OPT_FLOAT,
-    NC_OPT_LIST_APPEND,
-    NC_OPT_LIST_APPEND_FMT,
-    NC_OPT_READ_FILE
+enum nn_option_type {
+    NN_OPT_HELP,
+    NN_OPT_INT,
+    NN_OPT_INCREMENT,
+    NN_OPT_DECREMENT,
+    NN_OPT_ENUM,
+    NN_OPT_SET_ENUM,
+    NN_OPT_STRING,
+    NN_OPT_BLOB,
+    NN_OPT_FLOAT,
+    NN_OPT_LIST_APPEND,
+    NN_OPT_LIST_APPEND_FMT,
+    NN_OPT_READ_FILE
 };
 
-struct nc_option {
+struct nn_option {
     /*  Option names  */
     char *longname;
     char shortname;
     char *arg0name;
 
     /*  Parsing specification  */
-    enum nc_option_type type;
+    enum nn_option_type type;
     int offset;  /*  offsetof() where to store the value  */
     const void *pointer;  /*  type specific pointer  */
 
@@ -60,31 +60,31 @@ struct nc_option {
     char *description;
 };
 
-struct nc_commandline {
+struct nn_commandline {
     char *short_description;
     char *long_description;
-    struct nc_option *options;
+    struct nn_option *options;
     int required_options;
 };
 
-struct nc_enum_item {
+struct nn_enum_item {
     char *name;
     int value;
 };
 
-struct nc_string_list {
+struct nn_string_list {
     char **items;
     int num;
 };
 
-struct nc_blob {
+struct nn_blob {
     char *data;
     int length;
 };
 
 
-void nc_parse_options (struct nc_commandline *cline,
+void nn_parse_options (struct nn_commandline *cline,
                       void *target, int argc, char **argv);
 
 
-#endif  /* NC_OPTIONS_HEADER */
+#endif  /* NN_OPTIONS_HEADER */

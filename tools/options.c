@@ -29,10 +29,10 @@
 
 #include "options.h"
 
-struct nc_parse_context {
+struct nn_parse_context {
     /*  Initial state  */
-    struct nc_commandline *def;
-    struct nc_option *options;
+    struct nn_commandline *def;
+    struct nn_option *options;
     void *target;
     int argc;
     char **argv;
@@ -46,32 +46,32 @@ struct nc_parse_context {
     char **last_option_usage;
 };
 
-static int nc_has_arg (struct nc_option *opt)
+static int nn_has_arg (struct nn_option *opt)
 {
     switch (opt->type) {
-        case NC_OPT_INCREMENT:
-        case NC_OPT_DECREMENT:
-        case NC_OPT_SET_ENUM:
-        case NC_OPT_HELP:
+        case NN_OPT_INCREMENT:
+        case NN_OPT_DECREMENT:
+        case NN_OPT_SET_ENUM:
+        case NN_OPT_HELP:
             return 0;
-        case NC_OPT_ENUM:
-        case NC_OPT_STRING:
-        case NC_OPT_BLOB:
-        case NC_OPT_FLOAT:
-        case NC_OPT_INT:
-        case NC_OPT_LIST_APPEND:
-        case NC_OPT_LIST_APPEND_FMT:
-        case NC_OPT_READ_FILE:
+        case NN_OPT_ENUM:
+        case NN_OPT_STRING:
+        case NN_OPT_BLOB:
+        case NN_OPT_FLOAT:
+        case NN_OPT_INT:
+        case NN_OPT_LIST_APPEND:
+        case NN_OPT_LIST_APPEND_FMT:
+        case NN_OPT_READ_FILE:
             return 1;
     }
     abort ();
 }
 
-static void nc_print_usage (struct nc_parse_context *ctx, FILE *stream)
+static void nn_print_usage (struct nn_parse_context *ctx, FILE *stream)
 {
     int i;
     int first;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     fprintf (stream, "    %s ", ctx->argv[0]);
 
@@ -102,7 +102,7 @@ static void nc_print_usage (struct nc_parse_context *ctx, FILE *stream)
             break;
         if (opt->mask_set & ctx->requires)
             continue;  /* already printed */
-        if (opt->shortname && !nc_has_arg (opt)) {
+        if (opt->shortname && !nn_has_arg (opt)) {
             if (first) {
                 first = 0;
                 fprintf (stream, "[-%c", opt->shortname);
@@ -122,7 +122,7 @@ static void nc_print_usage (struct nc_parse_context *ctx, FILE *stream)
             break;
         if (opt->mask_set & ctx->requires)
             continue;  /* already printed */
-        if (opt->shortname && nc_has_arg (opt) && opt->metavar) {
+        if (opt->shortname && nn_has_arg (opt) && opt->metavar) {
             fprintf (stream, "[-%c %s] ", opt->shortname, opt->metavar);
         }
     }
@@ -130,7 +130,7 @@ static void nc_print_usage (struct nc_parse_context *ctx, FILE *stream)
     fprintf (stream, "[options] \n");  /* There may be long options too */
 }
 
-static char *nc_print_line (FILE *out, char *str, size_t width)
+static char *nn_print_line (FILE *out, char *str, size_t width)
 {
     int i;
     if (strlen (str) < width) {
@@ -147,16 +147,16 @@ static char *nc_print_line (FILE *out, char *str, size_t width)
     return "";
 }
 
-static void nc_print_help (struct nc_parse_context *ctx, FILE *stream)
+static void nn_print_help (struct nn_parse_context *ctx, FILE *stream)
 {
     int i;
     int optlen;
-    struct nc_option *opt;
+    struct nn_option *opt;
     char *last_group;
     char *cursor;
 
     fprintf (stream, "Usage:\n");
-    nc_print_usage (ctx, stream);
+    nn_print_usage (ctx, stream);
     fprintf (stream, "\n%s\n", ctx->def->short_description);
 
     last_group = NULL;
@@ -177,7 +177,7 @@ static void nc_print_help (struct nc_parse_context *ctx, FILE *stream)
             fprintf (stream, ",-%c", opt->shortname);
             optlen += 3;
         }
-        if (nc_has_arg (opt)) {
+        if (nn_has_arg (opt)) {
             if (opt->metavar) {
                 fprintf (stream, " %s", opt->metavar);
                 optlen += strlen (opt->metavar) + 1;
@@ -188,25 +188,25 @@ static void nc_print_help (struct nc_parse_context *ctx, FILE *stream)
         }
         if (optlen < 23) {
             fputs ("                        " + optlen, stream);
-            cursor = nc_print_line (stream, opt->description, 80-24);
+            cursor = nn_print_line (stream, opt->description, 80-24);
         } else {
             cursor = opt->description;
         }
         while (*cursor) {
             fprintf (stream, "\n                        ");
-            cursor = nc_print_line (stream, cursor, 80-24);
+            cursor = nn_print_line (stream, cursor, 80-24);
         }
         fprintf (stream, "\n");
     }
 }
 
-static void nc_print_option (struct nc_parse_context *ctx, int opt_index,
+static void nn_print_option (struct nn_parse_context *ctx, int opt_index,
                             FILE *stream)
 {
     char *ousage;
     char *oend;
     size_t olen;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     opt = &ctx->options[opt_index];
     ousage = ctx->last_option_usage[opt_index];
@@ -231,32 +231,32 @@ static void nc_print_option (struct nc_parse_context *ctx, int opt_index,
     }
 }
 
-static void nc_option_error (char *message, struct nc_parse_context *ctx,
+static void nn_option_error (char *message, struct nn_parse_context *ctx,
                      int opt_index)
 {
     fprintf (stderr, "%s: Option", ctx->argv[0]);
-    nc_print_option (ctx, opt_index, stderr);
+    nn_print_option (ctx, opt_index, stderr);
     fprintf (stderr, "%s\n", message);
     exit (1);
 }
 
 
-static void nc_memory_error (struct nc_parse_context *ctx) {
+static void nn_memory_error (struct nn_parse_context *ctx) {
     fprintf (stderr, "%s: Memory error while parsing command-line",
         ctx->argv[0]);
     abort ();
 }
 
-static void nc_invalid_enum_value (struct nc_parse_context *ctx,
+static void nn_invalid_enum_value (struct nn_parse_context *ctx,
     int opt_index, char *argument)
 {
-    struct nc_option *opt;
-    struct nc_enum_item *items;
+    struct nn_option *opt;
+    struct nn_enum_item *items;
 
     opt = &ctx->options[opt_index];
-    items = (struct nc_enum_item *)opt->pointer;
+    items = (struct nn_enum_item *)opt->pointer;
     fprintf (stderr, "%s: Invalid value ``%s'' for", ctx->argv[0], argument);
-    nc_print_option (ctx, opt_index, stderr);
+    nn_print_option (ctx, opt_index, stderr);
     fprintf (stderr, ". Options are:\n");
     for (;items->name; ++items) {
         fprintf (stderr, "    %s\n", items->name);
@@ -264,16 +264,16 @@ static void nc_invalid_enum_value (struct nc_parse_context *ctx,
     exit (1);
 }
 
-static void nc_option_conflict (struct nc_parse_context *ctx,
+static void nn_option_conflict (struct nn_parse_context *ctx,
                               int opt_index)
 {
     unsigned long mask;
     int i;
     int num_conflicts;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     fprintf (stderr, "%s: Option", ctx->argv[0]);
-    nc_print_option (ctx, opt_index, stderr);
+    nn_print_option (ctx, opt_index, stderr);
     fprintf (stderr, "conflicts with the following options:\n");
 
     mask = ctx->options[opt_index].conflicts_mask;
@@ -287,22 +287,22 @@ static void nc_option_conflict (struct nc_parse_context *ctx,
         if (ctx->last_option_usage[i] && opt->mask_set & mask) {
             num_conflicts += 1;
             fprintf (stderr, "   ");
-            nc_print_option (ctx, i, stderr);
+            nn_print_option (ctx, i, stderr);
             fprintf (stderr, "\n");
         }
     }
     if (!num_conflicts) {
         fprintf (stderr, "   ");
-        nc_print_option (ctx, opt_index, stderr);
+        nn_print_option (ctx, opt_index, stderr);
         fprintf (stderr, "\n");
     }
     exit (1);
 }
 
-static void nc_print_requires (struct nc_parse_context *ctx, unsigned long mask)
+static void nn_print_requires (struct nn_parse_context *ctx, unsigned long mask)
 {
     int i;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     for (i = 0;; ++i) {
         opt = &ctx->options[i];
@@ -318,21 +318,21 @@ static void nc_print_requires (struct nc_parse_context *ctx, unsigned long mask)
     exit (1);
 }
 
-static void nc_option_requires (struct nc_parse_context *ctx, int opt_index) {
+static void nn_option_requires (struct nn_parse_context *ctx, int opt_index) {
     fprintf (stderr, "%s: Option", ctx->argv[0]);
-    nc_print_option (ctx, opt_index, stderr);
+    nn_print_option (ctx, opt_index, stderr);
     fprintf (stderr, "requires at least one of the following options:\n");
 
-    nc_print_requires (ctx, ctx->options[opt_index].requires_mask);
+    nn_print_requires (ctx, ctx->options[opt_index].requires_mask);
     exit (1);
 }
 
-static void nc_append_string (struct nc_parse_context *ctx,
-                             struct nc_option *opt, char *str)
+static void nn_append_string (struct nn_parse_context *ctx,
+                             struct nn_option *opt, char *str)
 {
-    struct nc_string_list *lst;
+    struct nn_string_list *lst;
 
-    lst = (struct nc_string_list *)(
+    lst = (struct nn_string_list *)(
         ((char *)ctx->target) + opt->offset);
     if (lst->items) {
         lst->num += 1;
@@ -342,18 +342,18 @@ static void nc_append_string (struct nc_parse_context *ctx,
         lst->num = 1;
     }
     if (!lst->items) {
-        nc_memory_error (ctx);
+        nn_memory_error (ctx);
     }
     lst->items[lst->num-1] = str;
 }
 
-static void nc_process_option (struct nc_parse_context *ctx,
+static void nn_process_option (struct nn_parse_context *ctx,
                               int opt_index, char *argument)
 {
-    struct nc_option *opt;
-    struct nc_enum_item *items;
+    struct nn_option *opt;
+    struct nn_enum_item *items;
     char *endptr;
-    struct nc_blob *blob;
+    struct nn_blob *blob;
     FILE *file;
     char *data;
     size_t data_len;
@@ -362,31 +362,31 @@ static void nc_process_option (struct nc_parse_context *ctx,
 
     opt = &ctx->options[opt_index];
     if (ctx->mask & opt->conflicts_mask) {
-        nc_option_conflict (ctx, opt_index);
+        nn_option_conflict (ctx, opt_index);
     }
     ctx->mask |= opt->mask_set;
 
     switch (opt->type) {
-        case NC_OPT_HELP:
-            nc_print_help (ctx, stdout);
+        case NN_OPT_HELP:
+            nn_print_help (ctx, stdout);
             exit (0);
             return;
-        case NC_OPT_INT:
+        case NN_OPT_INT:
             *(long *)(((char *)ctx->target) + opt->offset) = strtol (argument,
                 &endptr, 0);
             if (endptr == argument || *endptr != 0) {
-                nc_option_error ("requires integer argument",
+                nn_option_error ("requires integer argument",
                                 ctx, opt_index);
             }
             return;
-        case NC_OPT_INCREMENT:
+        case NN_OPT_INCREMENT:
             *(int *)(((char *)ctx->target) + opt->offset) += 1;
             return;
-        case NC_OPT_DECREMENT:
+        case NN_OPT_DECREMENT:
             *(int *)(((char *)ctx->target) + opt->offset) -= 1;
             return;
-        case NC_OPT_ENUM:
-            items = (struct nc_enum_item *)opt->pointer;
+        case NN_OPT_ENUM:
+            items = (struct nn_enum_item *)opt->pointer;
             for (;items->name; ++items) {
                 if (!strcmp (items->name, argument)) {
                     *(int *)(((char *)ctx->target) + opt->offset) = \
@@ -394,39 +394,39 @@ static void nc_process_option (struct nc_parse_context *ctx,
                     return;
                 }
             }
-            nc_invalid_enum_value (ctx, opt_index, argument);
+            nn_invalid_enum_value (ctx, opt_index, argument);
             return;
-        case NC_OPT_SET_ENUM:
+        case NN_OPT_SET_ENUM:
             *(int *)(((char *)ctx->target) + opt->offset) = \
                 *(int *)(opt->pointer);
             return;
-        case NC_OPT_STRING:
+        case NN_OPT_STRING:
             *(char **)(((char *)ctx->target) + opt->offset) = argument;
             return;
-        case NC_OPT_BLOB:
-            blob = (struct nc_blob *)(((char *)ctx->target) + opt->offset);
+        case NN_OPT_BLOB:
+            blob = (struct nn_blob *)(((char *)ctx->target) + opt->offset);
             blob->data = argument;
             blob->length = strlen (argument);
             return;
-        case NC_OPT_FLOAT:
+        case NN_OPT_FLOAT:
             *(float *)(((char *)ctx->target) + opt->offset) = strtof (argument,
                 &endptr);
             if (endptr == argument || *endptr != 0) {
-                nc_option_error ("requires float point argument",
+                nn_option_error ("requires float point argument",
                                 ctx, opt_index);
             }
             return;
-        case NC_OPT_LIST_APPEND:
-            nc_append_string (ctx, opt, argument);
+        case NN_OPT_LIST_APPEND:
+            nn_append_string (ctx, opt, argument);
             return;
-        case NC_OPT_LIST_APPEND_FMT:
+        case NN_OPT_LIST_APPEND_FMT:
             data_buf = strlen (argument) + strlen (opt->pointer);
             data = malloc (data_buf);
             data_len = snprintf (data, data_buf, opt->pointer, argument);
             assert (data_len < data_buf);
-            nc_append_string (ctx, opt, data);
+            nn_append_string (ctx, opt, data);
             return;
-        case NC_OPT_READ_FILE:
+        case NN_OPT_READ_FILE:
             if (!strcmp (argument, "-")) {
                 file = stdin;
             } else {
@@ -439,7 +439,7 @@ static void nc_process_option (struct nc_parse_context *ctx,
             }
             data = malloc (4096);
             if (!data)
-                nc_memory_error (ctx);
+                nn_memory_error (ctx);
             data_len = 0;
             data_buf = 4096;
             for (;;) {
@@ -456,7 +456,7 @@ static void nc_process_option (struct nc_parse_context *ctx,
                     }
                     data = realloc (data, data_buf);
                     if (!data)
-                        nc_memory_error (ctx);
+                        nn_memory_error (ctx);
                 }
             }
             if (data_len != data_buf) {
@@ -471,7 +471,7 @@ static void nc_process_option (struct nc_parse_context *ctx,
             if (file != stdin) {
                 fclose (file);
             }
-            blob = (struct nc_blob *)(((char *)ctx->target) + opt->offset);
+            blob = (struct nn_blob *)(((char *)ctx->target) + opt->offset);
             blob->data = data;
             blob->length = data_len;
             return;
@@ -479,10 +479,10 @@ static void nc_process_option (struct nc_parse_context *ctx,
     abort ();
 }
 
-static void nc_parse_arg0 (struct nc_parse_context *ctx)
+static void nn_parse_arg0 (struct nn_parse_context *ctx)
 {
     int i;
-    struct nc_option *opt;
+    struct nn_option *opt;
     char *arg0;
 
     arg0 = strrchr (ctx->argv[0], '/');
@@ -498,17 +498,17 @@ static void nc_parse_arg0 (struct nc_parse_context *ctx)
         if (!opt->longname)
             return;
         if (opt->arg0name && !strcmp (arg0, opt->arg0name)) {
-            assert (!nc_has_arg (opt));
+            assert (!nn_has_arg (opt));
             ctx->last_option_usage[i] = ctx->argv[0];
-            nc_process_option (ctx, i, NULL);
+            nn_process_option (ctx, i, NULL);
         }
     }
 }
 
 
-static void nc_error_ambiguous_option (struct nc_parse_context *ctx)
+static void nn_error_ambiguous_option (struct nn_parse_context *ctx)
 {
-    struct nc_option *opt;
+    struct nn_option *opt;
     char *a, *b;
     char *arg;
 
@@ -527,26 +527,26 @@ static void nc_error_ambiguous_option (struct nc_parse_context *ctx)
     exit (1);
 }
 
-static void nc_error_unknown_long_option (struct nc_parse_context *ctx)
+static void nn_error_unknown_long_option (struct nn_parse_context *ctx)
 {
     fprintf (stderr, "%s: Unknown option ``%s''\n", ctx->argv[0], ctx->data);
     exit (1);
 }
 
-static void nc_error_unexpected_argument (struct nc_parse_context *ctx)
+static void nn_error_unexpected_argument (struct nn_parse_context *ctx)
 {
     fprintf (stderr, "%s: Unexpected argument ``%s''\n",
         ctx->argv[0], ctx->data);
     exit (1);
 }
 
-static void nc_error_unknown_short_option (struct nc_parse_context *ctx)
+static void nn_error_unknown_short_option (struct nn_parse_context *ctx)
 {
     fprintf (stderr, "%s: Unknown option ``-%c''\n", ctx->argv[0], *ctx->data);
     exit (1);
 }
 
-static int nc_get_arg (struct nc_parse_context *ctx)
+static int nn_get_arg (struct nn_parse_context *ctx)
 {
     if (!ctx->args_left)
         return 0;
@@ -556,9 +556,9 @@ static int nc_get_arg (struct nc_parse_context *ctx)
     return 1;
 }
 
-static void nc_parse_long_option (struct nc_parse_context *ctx)
+static void nn_parse_long_option (struct nn_parse_context *ctx)
 {
-    struct nc_option *opt;
+    struct nn_option *opt;
     char *a, *b;
     int longest_prefix;
     int cur_prefix;
@@ -598,33 +598,33 @@ finish:
         opt = &ctx->options[best_match];
         ctx->last_option_usage[best_match] = ctx->data;
         if (arg[longest_prefix] == '=') {
-            if (nc_has_arg (opt)) {
-                nc_process_option (ctx, best_match, arg + longest_prefix + 1);
+            if (nn_has_arg (opt)) {
+                nn_process_option (ctx, best_match, arg + longest_prefix + 1);
             } else {
-                nc_option_error ("does not accept argument", ctx, best_match);
+                nn_option_error ("does not accept argument", ctx, best_match);
             }
         } else {
-            if (nc_has_arg (opt)) {
-                if (nc_get_arg (ctx)) {
-                    nc_process_option (ctx, best_match, ctx->data);
+            if (nn_has_arg (opt)) {
+                if (nn_get_arg (ctx)) {
+                    nn_process_option (ctx, best_match, ctx->data);
                 } else {
-                    nc_option_error ("requires an argument", ctx, best_match);
+                    nn_option_error ("requires an argument", ctx, best_match);
                 }
             } else {
-                nc_process_option (ctx, best_match, NULL);
+                nn_process_option (ctx, best_match, NULL);
             }
         }
     } else if (longest_prefix > 0) {
-        nc_error_ambiguous_option (ctx);
+        nn_error_ambiguous_option (ctx);
     } else {
-        nc_error_unknown_long_option (ctx);
+        nn_error_unknown_long_option (ctx);
     }
 }
 
-static void nc_parse_short_option (struct nc_parse_context *ctx)
+static void nn_parse_short_option (struct nn_parse_context *ctx)
 {
     int i;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     for (i = 0;; ++i) {
         opt = &ctx->options[i];
@@ -634,50 +634,50 @@ static void nc_parse_short_option (struct nc_parse_context *ctx)
             continue;
         if (opt->shortname == *ctx->data) {
             ctx->last_option_usage[i] = ctx->data;
-            if (nc_has_arg (opt)) {
+            if (nn_has_arg (opt)) {
                 if (ctx->data[1]) {
-                    nc_process_option (ctx, i, ctx->data+1);
+                    nn_process_option (ctx, i, ctx->data+1);
                 } else {
-                    if (nc_get_arg (ctx)) {
-                        nc_process_option (ctx, i, ctx->data);
+                    if (nn_get_arg (ctx)) {
+                        nn_process_option (ctx, i, ctx->data);
                     } else {
-                        nc_option_error ("requires an argument", ctx, i);
+                        nn_option_error ("requires an argument", ctx, i);
                     }
                 }
                 ctx->data = "";  /* end of short options anyway */
             } else {
-                nc_process_option (ctx, i, NULL);
+                nn_process_option (ctx, i, NULL);
                 ctx->data += 1;
             }
             return;
         }
     }
-    nc_error_unknown_short_option (ctx);
+    nn_error_unknown_short_option (ctx);
 }
 
 
-static void nc_parse_arg (struct nc_parse_context *ctx)
+static void nn_parse_arg (struct nn_parse_context *ctx)
 {
     if (ctx->data[0] == '-') {  /* an option */
         if (ctx->data[1] == '-') {  /* long option */
             if (ctx->data[2] == 0) {  /* end of options */
                 return;
             }
-            nc_parse_long_option (ctx);
+            nn_parse_long_option (ctx);
         } else {
             ctx->data += 1;  /* Skip minus */
             while (*ctx->data) {
-                nc_parse_short_option (ctx);
+                nn_parse_short_option (ctx);
             }
         }
     } else {
-        nc_error_unexpected_argument (ctx);
+        nn_error_unexpected_argument (ctx);
     }
 }
 
-void nc_check_requires (struct nc_parse_context *ctx) {
+void nn_check_requires (struct nn_parse_context *ctx) {
     int i;
-    struct nc_option *opt;
+    struct nn_option *opt;
 
     for (i = 0;; ++i) {
         opt = &ctx->options[i];
@@ -687,22 +687,22 @@ void nc_check_requires (struct nc_parse_context *ctx) {
             continue;
         if (opt->requires_mask &&
             (opt->requires_mask & ctx->mask) != opt->requires_mask) {
-            nc_option_requires (ctx, i);
+            nn_option_requires (ctx, i);
         }
     }
 
     if ((ctx->requires & ctx->mask) != ctx->requires) {
         fprintf (stderr, "%s: At least one of the following required:\n",
             ctx->argv[0]);
-        nc_print_requires (ctx, ctx->requires & ~ctx->mask);
+        nn_print_requires (ctx, ctx->requires & ~ctx->mask);
         exit (1);
     }
 }
 
-void nc_parse_options (struct nc_commandline *cline,
+void nn_parse_options (struct nn_commandline *cline,
     void *target, int argc, char **argv)
 {
-    struct nc_parse_context ctx;
+    struct nn_parse_context ctx;
     int num_options;
 
     ctx.def = cline;
@@ -715,19 +715,19 @@ void nc_parse_options (struct nc_commandline *cline,
     for (num_options = 0; ctx.options[num_options].longname; ++num_options);
     ctx.last_option_usage = calloc (sizeof (char *), num_options);
     if  (!ctx.last_option_usage)
-        nc_memory_error (&ctx);
+        nn_memory_error (&ctx);
 
     ctx.mask = 0;
     ctx.args_left = argc - 1;
     ctx.arg = argv;
 
-    nc_parse_arg0 (&ctx);
+    nn_parse_arg0 (&ctx);
 
-    while (nc_get_arg (&ctx)) {
-        nc_parse_arg (&ctx);
+    while (nn_get_arg (&ctx)) {
+        nn_parse_arg (&ctx);
     }
 
-    nc_check_requires (&ctx);
+    nn_check_requires (&ctx);
 
     free (ctx.last_option_usage);
 

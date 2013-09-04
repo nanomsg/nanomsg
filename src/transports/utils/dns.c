@@ -22,6 +22,8 @@
 
 #include "dns.h"
 
+#include "../../utils/err.h"
+
 #include <string.h>
 
 int nn_dns_check_hostname (const char *name, size_t namelen)

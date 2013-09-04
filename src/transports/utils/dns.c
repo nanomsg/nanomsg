@@ -42,12 +42,25 @@ int nn_dns_check_hostname (const char *name, size_t namelen)
     labelsz = 0;
     while (1) {
 
-        /*  Hostname is parsed without an error. */
-        if (namelen == 0)
-            return 0;
+        /*  End of the hostname. */
+        if (namelen == 0) {
 
-        /*  New label. */
+            /*  The last label cannot be empty. */
+            if (labelsz == 0)
+                return -EINVAL;
+
+            /*  Success! */
+            return 0;
+        }
+
+        /*  End of a label. */
         if (*name == '.') {
+
+            /*  The old label cannot be empty. */
+            if (labelsz == 0)
+                return -EINVAL;
+
+            /*  Start new label. */
             labelsz = 0;
             ++name;
             --namelen;

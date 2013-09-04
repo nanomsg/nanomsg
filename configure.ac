@@ -164,6 +164,24 @@ AS_IF([test x"$enable_doc" == "xyes"], [
 AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
 
 ################################################################################
+#  Build the nanocat
+################################################################################
+
+AC_ARG_ENABLE([nanocat],
+    AS_HELP_STRING([--enable-nanocat], [Build nanocat executable [default=yes]])
+)
+AC_ARG_ENABLE([symlinks],
+    AS_HELP_STRING([--enable-symlinks],
+        [Make nn_xxx symlinks for nanocat [default=yes]])
+)
+
+AS_IF([test x"$enable_nanocat" != "xno" -a x"$enable_symlinks" != x"no"], [
+    AC_PROG_LN_S
+])
+AM_CONDITIONAL([NANOCAT], [test x"$enable_nanocat" != "xno" ])
+AM_CONDITIONAL([SYMLINKS], [test x"$enable_symlinks" != "xno" ])
+
+################################################################################
 #  Check which OS we are building for.                                         #
 ################################################################################
 

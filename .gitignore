@@ -35,6 +35,7 @@ doc/asciidoc.conf
 doltcompile
 doltlibtool
 libnanomsg.pc
+nanocat
 *.tar.gz
 *.zip
 perf/inproc_lat

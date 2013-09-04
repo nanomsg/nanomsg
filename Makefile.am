@@ -443,13 +443,16 @@ TESTS = $(check_PROGRAMS)
 #  tools                                                                       #
 ################################################################################
 
+bin_PROGRAMS =
+
 nanocat_SOURCES = \
 	tools/nanocat.c \
 	tools/options.c \
 	tools/options.h
 
-bin_PROGRAMS = \
-	nanocat
+if NANOCAT
+bin_PROGRAMS += nanocat
+endif NANOCAT
 
 ################################################################################
 #  additional packaging-related stuff                                          #
@@ -473,6 +476,27 @@ dist-hook:
         echo Failed to generate ChangeLog >&2; \
 	fi; \
 	$(srcdir)/package_version.sh > $(distdir)/.version
+
+
+if NANOCAT
+if SYMLINKS
+
+install-exec-hook:
+	cd $(DESTDIR)$(bindir) && \
+          $(LN_S) -f nanocat nn_push$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_pull$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_pub$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_sub$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_req$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_rep$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_surveyor$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_respondent$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_bus$(EXEEXT) && \
+          $(LN_S) -f nanocat nn_pair$(EXEEXT)
+
+endif SYMLINKS
+endif NANOCAT
+
 
 EXTRA_DIST += \
     ./abi_version.sh \

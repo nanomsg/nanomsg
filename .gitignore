@@ -77,3 +77,4 @@ tests/tcp_shutdown
 tests/timeo
 tests/trie
 tests/zerocopy
+tests/term

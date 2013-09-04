@@ -142,6 +142,8 @@ int nn_poller_wait (struct nn_poller *self, int timeout)
         }
     }
 
+    self->index = 0;
+
     /*  Wait for new events. */
 #if defined NN_IGNORE_EINTR
 again:

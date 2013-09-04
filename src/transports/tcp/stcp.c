@@ -171,9 +171,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
 static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_stcp *stcp;
-    uint64_t size;
 
     stcp = nn_cont (self, struct nn_stcp, fsm);
 

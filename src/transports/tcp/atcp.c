@@ -101,8 +101,6 @@ static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_atcp *atcp;
-    int val;
-    size_t sz;
 
     atcp = nn_cont (self, struct nn_atcp, fsm);
 

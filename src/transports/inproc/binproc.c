@@ -181,7 +181,6 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_binproc *binproc;
-    struct nn_list_item *it;
     struct nn_sinproc *peer;
     struct nn_sinproc *sinproc;
 

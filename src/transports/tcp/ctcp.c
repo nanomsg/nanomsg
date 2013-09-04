@@ -29,6 +29,7 @@
 #include "../utils/port.h"
 #include "../utils/iface.h"
 #include "../utils/backoff.h"
+#include "../utils/literal.h"
 
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
@@ -114,8 +115,10 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     int rc;
     const char *addr;
     size_t addrlen;
+    const char *semicolon;
+    const char *hostname;
+    const char *colon;
     const char *end;
-    const char *pos;
     int port;
     struct sockaddr_storage ss;
     size_t sslen;
@@ -130,38 +133,47 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     self = nn_alloc (sizeof (struct nn_ctcp), "ctcp");
     alloc_assert (self);
 
-    /*  Initalise the epbase. */
+    /*  Initalise the endpoint. */
     nn_epbase_init (&self->epbase, &nn_ctcp_epbase_vfptr, hint);
+
+    /*  Check whether IPv6 is to be used. */
+    ipv4onlylen = sizeof (ipv4only);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+        &ipv4only, &ipv4onlylen);
+    nn_assert (ipv4onlylen == sizeof (ipv4only));
+
+    /*  Start parsing the address. */
     addr = nn_epbase_getaddr (&self->epbase);
     addrlen = strlen (addr);
+    semicolon = strchr (addr, ';');
+    hostname = semicolon ? semicolon + 1 : addr;
+    colon = strrchr (addr, ':');
+    end = addr + addrlen;
 
     /*  Parse the port. */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    if (nn_slow (!pos)) {
+    if (nn_slow (!colon)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
-    ++pos;
-    rc = nn_port_resolve (pos, end - pos);
+    rc = nn_port_resolve (colon + 1, end - colon - 1);
     if (nn_slow (rc < 0)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
     port = rc;
 
+    /*  Check whether the host portion of the address is either a literal
+        or a valid hostname. */
+    if (nn_dns_check_hostname (hostname, colon - hostname) < 0 &&
+          nn_literal_resolve (hostname, colon - hostname, ipv4only,
+          &ss, &sslen) < 0) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+
     /*  If local address is specified, check whether it is valid. */
-    pos = strchr (addr, ';');
-    if (pos) {
-
-        /*  Check whether IPv6 is to be used. */
-        ipv4onlylen = sizeof (ipv4only);
-        nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-            &ipv4only, &ipv4onlylen);
-        nn_assert (ipv4onlylen == sizeof (ipv4only));
-
-        /*  Resolve the local interface name. */
-        rc = nn_iface_resolve (addr, pos - addr, ipv4only, &ss, &sslen);
+    if (semicolon) {
+        rc = nn_iface_resolve (addr, semicolon - addr, ipv4only, &ss, &sslen);
         if (rc < 0) {
             nn_epbase_term (&self->epbase);
             return -ENODEV;

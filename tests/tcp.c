@@ -105,6 +105,18 @@ int main ()
     rc = nn_bind (sc, "tcp://eth10000:5555");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == ENODEV);
+    rc = nn_connect (sc, "tcp://:5555");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://-hostname:5555");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://abc.123.---.#:5555");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    rc = nn_connect (sc, "tcp://[::1]:5555");
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
 
     /*  Connect correctly. Do so before binding the peer socket. */
     rc = nn_connect (sc, SOCKET_ADDRESS);

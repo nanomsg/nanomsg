@@ -26,6 +26,13 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
+int test_socket_impl (char *file, int line, int family, int protocol);
+void test_connect_impl (char *file, int line, int sock, char *address);
+void test_bind_impl (char *file, int line, int sock, char *address);
+void test_close_impl (char *file, int line, int sock);
+void test_send_impl (char *file, int line, int sock, char *data);
+void test_recv_impl (char *file, int line, int sock, char *data);
+
 #define test_socket(f, p) test_socket_impl (__FILE__, __LINE__, (f), (p))
 #define test_connect(s, a) test_connect_impl (__FILE__, __LINE__, (s), (a))
 #define test_bind(s, a) test_bind_impl (__FILE__, __LINE__, (s), (a))
@@ -42,7 +49,7 @@ inline int test_socket_impl (char *file, int line, int family, int protocol)
         fprintf (stderr, "Failed create socket: %s [%d] (%s:%d)\n",
             nn_err_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();\
+        nn_err_abort ();
     }
 
     return sock;

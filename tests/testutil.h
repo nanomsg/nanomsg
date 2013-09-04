@@ -26,12 +26,12 @@
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
-int test_socket_impl (char *file, int line, int family, int protocol);
-void test_connect_impl (char *file, int line, int sock, char *address);
-void test_bind_impl (char *file, int line, int sock, char *address);
-void test_close_impl (char *file, int line, int sock);
-void test_send_impl (char *file, int line, int sock, char *data);
-void test_recv_impl (char *file, int line, int sock, char *data);
+static int test_socket_impl (char *file, int line, int family, int protocol);
+static void test_connect_impl (char *file, int line, int sock, char *address);
+static void test_bind_impl (char *file, int line, int sock, char *address);
+static void test_close_impl (char *file, int line, int sock);
+static void test_send_impl (char *file, int line, int sock, char *data);
+static void test_recv_impl (char *file, int line, int sock, char *data);
 
 #define test_socket(f, p) test_socket_impl (__FILE__, __LINE__, (f), (p))
 #define test_connect(s, a) test_connect_impl (__FILE__, __LINE__, (s), (a))
@@ -40,7 +40,7 @@ void test_recv_impl (char *file, int line, int sock, char *data);
 #define test_recv(s, d) test_recv_impl (__FILE__, __LINE__, (s), (d))
 #define test_close(s) test_close_impl (__FILE__, __LINE__, (s))
 
-inline int test_socket_impl (char *file, int line, int family, int protocol)
+static int test_socket_impl (char *file, int line, int family, int protocol)
 {
     int sock;
 
@@ -55,7 +55,7 @@ inline int test_socket_impl (char *file, int line, int family, int protocol)
     return sock;
 }
 
-inline void test_connect_impl (char *file, int line, int sock, char *address)
+static void test_connect_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -69,7 +69,7 @@ inline void test_connect_impl (char *file, int line, int sock, char *address)
     }
 }
 
-inline void test_bind_impl (char *file, int line, int sock, char *address)
+static void test_bind_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -83,7 +83,7 @@ inline void test_bind_impl (char *file, int line, int sock, char *address)
     }
 }
 
-inline void test_close_impl (char *file, int line, int sock)
+static void test_close_impl (char *file, int line, int sock)
 {
     int rc;
 
@@ -96,7 +96,7 @@ inline void test_close_impl (char *file, int line, int sock)
     }
 }
 
-inline void test_send_impl (char *file, int line, int sock, char *data)
+static void test_send_impl (char *file, int line, int sock, char *data)
 {
     size_t data_len;
     int rc;
@@ -119,7 +119,7 @@ inline void test_send_impl (char *file, int line, int sock, char *data)
     }
 }
 
-inline void test_recv_impl (char *file, int line, int sock, char *data)
+static void test_recv_impl (char *file, int line, int sock, char *data)
 {
     size_t data_len;
     int rc;

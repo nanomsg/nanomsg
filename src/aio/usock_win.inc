@@ -390,12 +390,14 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
-static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     int rc;
     struct nn_usock *usock;
 
+    usock = nn_cont (self, struct nn_usock, fsm);
+ 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.

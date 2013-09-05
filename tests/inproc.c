@@ -24,7 +24,7 @@
 #include "../src/pubsub.h"
 #include "../src/inproc.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 /*  Tests inproc transport. */
 
@@ -40,14 +40,10 @@ int main ()
     int val;
 
     /*  Create a simple topology. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
 
     /*  Try a duplicate bind. It should fail. */
     rc = nn_bind (sc, SOCKET_ADDRESS);
@@ -56,52 +52,31 @@ int main ()
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
 
-        rc = nn_send (sc, "ABC", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_send (sb, "DEFG", 4, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 4);
-
-        rc = nn_recv (sc, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 4);
+        test_send (sc, "ABC");
+        test_recv (sb, "ABC");
+        test_send (sb, "DEFG");
+        test_recv (sc, "DEFG");
     }
 
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
-        rc = nn_send (sc, "XYZ", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        test_send (sc, "XYZ");
     }
     for (i = 0; i != 100; ++i) {
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        test_recv (sb, "XYZ");
     }
 
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sc);
+    test_close (sb);
 
     /*  Test whether queue limits are observed. */
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
+    sb = test_socket (AF_SP, NN_PAIR);
     val = 200;
     rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
     errno_assert (rc == 0);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
 
     val = 200;
     rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &val, sizeof (val));
@@ -116,18 +91,12 @@ int main ()
         ++i;
     }
     nn_assert (i == 20);
-    rc = nn_recv (sb, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 10);
-    rc = nn_send (sc, "0123456789", 10, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 10);
+    test_recv (sb, "0123456789");
+    test_send (sc, "0123456789");
     rc = nn_send (sc, "0123456789", 10, 0);
     nn_assert (rc < 0 && nn_errno () == EAGAIN);
     for (i = 0; i != 20; ++i) {
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 10);
+        test_recv (sb, "0123456789");
     }
 
     /*  Make sure that even a message that doesn't fit into the buffers
@@ -141,10 +110,8 @@ int main ()
     errno_assert (rc >= 0);
     nn_assert (rc == 256);
 
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sc);
+    test_close (sb);
 
     return 0;
 }

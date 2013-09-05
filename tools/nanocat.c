@@ -20,25 +20,27 @@
     IN THE SOFTWARE.
 */
 
-#include <nanomsg/nn.h>
-#include <nanomsg/pubsub.h>
-#include <nanomsg/pipeline.h>
-#include <nanomsg/bus.h>
-#include <nanomsg/pair.h>
-#include <nanomsg/survey.h>
-#include <nanomsg/reqrep.h>
+#include "../src/nn.h"
+#include "../src/pubsub.h"
+#include "../src/pipeline.h"
+#include "../src/bus.h"
+#include "../src/pair.h"
+#include "../src/survey.h"
+#include "../src/reqrep.h"
+
+#include "options.h"
+#include "../src/utils/sleep.h"
+#include "../src/utils/clock.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
 #include <ctype.h>
-
-#include "options.h"
-#include "../src/utils/sleep.h"
-#include "../src/utils/clock.h"
+#if !defined NN_HAVE_WINDOWS
+#include <unistd.h>
+#endif
 
 enum echo_format {
     NN_NO_ECHO,
@@ -280,11 +282,11 @@ struct nn_option nn_options[] = {
 
 
 struct nn_commandline nn_cli = {
-    .short_description = "A command-line interface to nanomsg",
-    .long_description = "",
-    .options = nn_options,
-    .required_options = NN_MASK_SOCK | NN_MASK_ENDPOINT,
-    };
+    "A command-line interface to nanomsg",
+    "",
+    nn_options,
+    NN_MASK_SOCK | NN_MASK_ENDPOINT,
+};
 
 
 void nn_assert_errno (int flag, char *description)
@@ -353,10 +355,6 @@ int nn_create_socket (nn_options_t *options)
     }
 
     return sock;
-}
-
-double nn_nanocat_time ()
-{
 }
 
 void nn_print_message (nn_options_t *options, char *buf, int buflen)
@@ -462,7 +460,7 @@ void nn_send_loop (nn_options_t *options, int sock)
         if (interval >= 0) {
             time_to_sleep = (start_time + interval) - nn_clock_now (&clock);
             if (time_to_sleep > 0) {
-                nn_sleep (time_to_sleep);
+                nn_sleep ((int) time_to_sleep);
             }
         } else {
             break;
@@ -527,7 +525,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
             {
                 time_to_sleep = recv_timeout;
             }
-            nn_set_recv_timeout (sock, time_to_sleep);
+            nn_set_recv_timeout (sock, (double) time_to_sleep);
             rc = nn_recv (sock, &buf, NN_MSG, 0);
             if (rc < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -536,7 +534,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
                     time_to_sleep = (start_time + interval)
                         - nn_clock_now (&clock);
                     if (time_to_sleep > 0)
-                        nn_sleep (time_to_sleep);
+                        nn_sleep ((int) time_to_sleep);
                     continue;
                 }
             }
@@ -578,17 +576,17 @@ int main (int argc, char **argv)
 {
     int sock;
     nn_options_t options = {
-        .verbose = 0,
-        .socket_type = 0,
-        .bind_addresses = {NULL, 0},
-        .connect_addresses = {NULL, 0},
-        .send_timeout = -1.f,
-        .send_interval = -1.f,
-        .recv_timeout = -1.f,
-        .subscriptions = {NULL, 0},
-        .data_to_send = {NULL, 0},
-        .echo_format = NN_NO_ECHO
-        };
+        0,
+        0,
+        {NULL, 0},
+        {NULL, 0},
+        -1.f,
+        -1.f,
+        {NULL, 0},
+        -1.f,
+        {NULL, 0},
+        NN_NO_ECHO
+    };
 
     nn_parse_options (&nn_cli, &options, argc, argv);
     sock = nn_create_socket (&options);

@@ -20,14 +20,16 @@
     IN THE SOFTWARE.
 */
 
+#include "options.h"
+
+#include "../src/utils/err.c"
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
-
-#include "options.h"
 
 struct nn_parse_context {
     /*  Initial state  */
@@ -64,7 +66,7 @@ static int nn_has_arg (struct nn_option *opt)
         case NN_OPT_READ_FILE:
             return 1;
     }
-    abort ();
+    nn_assert (0);
 }
 
 static void nn_print_usage (struct nn_parse_context *ctx, FILE *stream)
@@ -409,12 +411,17 @@ static void nn_process_option (struct nn_parse_context *ctx,
             blob->length = strlen (argument);
             return;
         case NN_OPT_FLOAT:
-            *(float *)(((char *)ctx->target) + opt->offset) = strtof (argument,
-                &endptr);
+#if defined NN_HAVE_WINDOWS
+            *(float *)(((char *)ctx->target) + opt->offset) =
+                (float) atof (argument);
+#else
+            *(float *)(((char *)ctx->target) + opt->offset) =
+                strtof (argument, &endptr);
             if (endptr == argument || *endptr != 0) {
                 nn_option_error ("requires float point argument",
                                 ctx, opt_index);
             }
+#endif
             return;
         case NN_OPT_LIST_APPEND:
             nn_append_string (ctx, opt, argument);
@@ -422,7 +429,12 @@ static void nn_process_option (struct nn_parse_context *ctx,
         case NN_OPT_LIST_APPEND_FMT:
             data_buf = strlen (argument) + strlen (opt->pointer);
             data = malloc (data_buf);
+#if defined NN_HAVE_WINDOWS
+            data_len = _snprintf_s (data, data_buf, data_buf, opt->pointer,
+                argument);
+#else
             data_len = snprintf (data, data_buf, opt->pointer, argument);
+#endif
             assert (data_len < data_buf);
             nn_append_string (ctx, opt, data);
             return;
@@ -430,8 +442,12 @@ static void nn_process_option (struct nn_parse_context *ctx,
             if (!strcmp (argument, "-")) {
                 file = stdin;
             } else {
+#if defined NN_HAVE_WINDOWS
+                if (fopen_s (&file, argument, "r") != 0) {
+#else
                 file = fopen (argument, "r");
                 if (!file) {
+#endif
                     fprintf (stderr, "Error opening file ``%s'': %s\n",
                         argument, strerror (errno));
                     exit (2);

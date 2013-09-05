@@ -29,8 +29,8 @@
 #include "../src/reqrep.h"
 
 #include "options.h"
-#include "../src/utils/sleep.h"
-#include "../src/utils/clock.h"
+#include "../src/utils/sleep.c"
+#include "../src/utils/clock.c"
 
 #include <stdio.h>
 #include <string.h>

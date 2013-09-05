@@ -44,6 +44,7 @@ add_subdirectory (src)
 #  Build the tools
 
 add_executable (nanocat tools/nanocat.c tools/options.c)
+target_link_libraries (nanocat nanomsg)
 
 #  Build unit tests.
 

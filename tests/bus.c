@@ -22,8 +22,7 @@
 
 #include "../src/nn.h"
 #include "../src/bus.h"
-#include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS_A "inproc://a"
 #define SOCKET_ADDRESS_B "inproc://b"
@@ -37,33 +36,19 @@ int main ()
     char buf [3];
 
     /*  Create a simple bus topology consisting of 3 nodes. */
-    bus1 = nn_socket (AF_SP, NN_BUS);
-    errno_assert (bus1 != -1);
-    rc = nn_bind (bus1, SOCKET_ADDRESS_A);
-    errno_assert (rc >= 0);
-    bus2 = nn_socket (AF_SP, NN_BUS);
-    errno_assert (bus2 != -1);
-    rc = nn_bind (bus2, SOCKET_ADDRESS_B);
-    errno_assert (rc >= 0);
-    rc = nn_connect (bus2, SOCKET_ADDRESS_A);
-    errno_assert (rc >= 0);
-    bus3 = nn_socket (AF_SP, NN_BUS);
-    errno_assert (bus3 != -1);
-    rc = nn_connect (bus3, SOCKET_ADDRESS_A);
-    errno_assert (rc >= 0);
-    rc = nn_connect (bus3, SOCKET_ADDRESS_B);
-    errno_assert (rc >= 0);
+    bus1 = test_socket (AF_SP, NN_BUS);
+    test_bind (bus1, SOCKET_ADDRESS_A);
+    bus2 = test_socket (AF_SP, NN_BUS);
+    test_bind (bus2, SOCKET_ADDRESS_B);
+    test_connect (bus2, SOCKET_ADDRESS_A);
+    bus3 = test_socket (AF_SP, NN_BUS);
+    test_connect (bus3, SOCKET_ADDRESS_A);
+    test_connect (bus3, SOCKET_ADDRESS_B);
 
     /*  Send a message from each node. */
-    rc = nn_send (bus1, "A", 1, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 1);
-    rc = nn_send (bus2, "AB", 2, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 2);
-    rc = nn_send (bus3, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (bus1, "A");
+    test_send (bus2, "AB");
+    test_send (bus3, "ABC");
 
     /*  Check that two messages arrived at each node. */
     rc = nn_recv (bus1, buf, 3, 0);
@@ -88,12 +73,9 @@ int main ()
     /*  Wait till both connections are established. */
     nn_sleep (10);
 
-    rc = nn_close (bus3);
-    errno_assert (rc == 0);
-    rc = nn_close (bus2);
-    errno_assert (rc == 0);    
-    rc = nn_close (bus1);
-    errno_assert (rc == 0);
+    test_close (bus3);
+    test_close (bus2);
+    test_close (bus1);
 
     return 0;
 }

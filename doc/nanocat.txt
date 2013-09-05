@@ -1,0 +1,15 @@
+nanocat(1)
+==========
+
+NAME
+----
+nanocat - a command-line interface to nanomsg
+
+SEE ALSO
+--------
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+TODO
+

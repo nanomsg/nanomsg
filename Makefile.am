@@ -334,6 +334,9 @@ MAN3 = \
     doc/nn_device.txt \
     doc/nn_cmsg.txt
 
+MAN1 = \
+    doc/nanocat.txt
+
 if DOC
 
 #  Build instructions.
@@ -342,11 +345,18 @@ if DOC
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
-SUFFIXES = .3 .7 .3.html .7.html
+SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
+.xml.1:
+	$(AM_V_GEN)$(XMLTO) -o doc man $<
 .xml.3:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
 .xml.7:
 	$(AM_V_GEN)$(XMLTO) -o doc man $<
+
+.txt.1.html:
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .txt.3.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
@@ -360,23 +370,24 @@ SUFFIXES = .3 .7 .3.html .7.html
 
 #  Cause man pages to be generated and installed.
 
+dist_man1_MANS = $(MAN1:%.txt=%.1)
 dist_man3_MANS = $(MAN3:%.txt=%.3)
 dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 
-doc_DATA = $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
+doc_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 
-CLEANFILES = $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
-    $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
+CLEANFILES = $(MAN1:%.txt=%.1) $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
+    $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 endif
 
 #  Extra files to be included into the source package.
 
-EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN3) $(MAN7)
+EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN1) $(MAN3) $(MAN7)
 
 ################################################################################
 #  performance tests                                                           #

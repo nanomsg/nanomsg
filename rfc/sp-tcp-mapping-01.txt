@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft                                            GoPivotal Inc.
-Intended status: Informational                           August 06, 2013
-Expires: February 07, 2014
+Intended status: Informational                               August 2013
+Expires: February 02, 2014
 
 
                  TCP Mapping for Scalability Protocols
@@ -13,7 +13,7 @@ Expires: February 07, 2014
 
 Abstract
 
-   This doucment defines the TCP mapping for scalability protocols.  The
+   This document defines the TCP mapping for scalability protocols.  The
    main purpose of the mapping is to turn the stream of bytes into
    stream of messages.  Additionaly, the mapping provides some
    additional checks during the connection establishment phase.
@@ -33,7 +33,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on February 07, 2014.
+   This Internet-Draft will expire on February 02, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                 Expires February 07, 2014               [Page 1]
+Sustrik                 Expires February 02, 2014               [Page 1]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
@@ -73,9 +73,9 @@ Internet-Draft             TCP mapping for SPs               August 2013
 2.  Connection initiation
 
    As soon as the underlying connection, whether TCP or ETSN, is
-   established, each party MUST send the protocol header (described in
-   detail below) immediately.  Either endpoint MUST NOW wait for the
-   protocol header from the peer before sending its own protocol header.
+   established, both parties MUST send the protocol header (described in
+   detail below) immediately.  Both endpoints MUST then wait for the
+   protocol header from the peer before proceeding on.
 
    The goal of this design is to keep connection establishment as fast
    as possible by avoiding any additional protocol handshakes, i.e.
@@ -109,7 +109,7 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 07, 2014               [Page 2]
+Sustrik                 Expires February 02, 2014               [Page 2]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
@@ -165,7 +165,7 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 07, 2014               [Page 3]
+Sustrik                 Expires February 02, 2014               [Page 3]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
@@ -221,7 +221,7 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 07, 2014               [Page 4]
+Sustrik                 Expires February 02, 2014               [Page 4]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
@@ -277,4 +277,4 @@ Author's Address
 
 
 
-Sustrik                 Expires February 07, 2014               [Page 5]
+Sustrik                 Expires February 02, 2014               [Page 5]

@@ -53,10 +53,9 @@
     <section title = "Connection initiation">
 
       <t>As soon as the underlying connection, whether TCP or ETSN, is
-         established, each party MUST send the protocol header (described
-         in detail below) immediately. Either endpoint MUST NOW wait for the
-         protocol header from the peer before sending its own protocol
-         header.</t>
+         established, both parties MUST send the protocol header (described in
+         detail below) immediately. Both endpoints MUST then wait for the
+         protocol header from the peer before proceeding on.</t>
 
       <t>The goal of this design is to keep connection establishment as
          fast as possible by avoiding any additional protocol handshakes,

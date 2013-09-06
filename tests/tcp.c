@@ -25,8 +25,7 @@
 #include "../src/pubsub.h"
 #include "../src/tcp.h"
 
-#include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
+#include "testutil.h"
 
 /*  Tests TCP transport. */
 
@@ -38,30 +37,22 @@ int main ()
     int sb;
     int sc;
     int i;
-    char buf [3];
     int opt;
     size_t sz;
 
     /*  Try closing bound but unconnected socket. */
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb >= 0);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc > 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    test_close (sb);
 
     /*  Try closing a TCP socket while it not connected. At the same time
         test specifying the local address for the connection. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");
-    errno_assert (rc >= 0);
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");
+    test_close (sc);
 
     /*  Open the socket anew. */
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
+    sc = test_socket (AF_SP, NN_PAIR);
 
     /*  Check NODELAY socket option. */
     sz = sizeof (opt);
@@ -91,7 +82,7 @@ int main ()
     rc = nn_connect (sc, "tcp://*:some_port");
     nn_assert (rc < 0);
     rc = nn_connect (sc, "tcp://eth10000;127.0.0.1:5555");
-    nn_assert (rc < 0);    
+    nn_assert (rc < 0);
     errno_assert (nn_errno () == ENODEV);
     rc = nn_connect (sc, "tcp://127.0.0.1");
     nn_assert (rc < 0);
@@ -128,53 +119,34 @@ int main ()
     errno_assert (nn_errno () == EINVAL);
 
     /*  Connect correctly. Do so before binding the peer socket. */
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    test_connect (sc, SOCKET_ADDRESS);
 
     /*  Leave enough time for at least on re-connect attempt. */
     nn_sleep (200);
 
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
 
-        rc = nn_send (sc, "ABC", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        test_send (sc, "ABC");
+        test_recv (sb, "ABC");
 
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_send (sb, "DEF", 3, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
-
-        rc = nn_recv (sc, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 3);
+        test_send (sb, "DEF");
+        test_recv (sc, "DEF");
     }
 
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
-        rc = nn_send (sc, "0123456789012345678901234567890123456789", 40, 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 40);
+        test_send (sc, "0123456789012345678901234567890123456789");
     }
     for (i = 0; i != 100; ++i) {
-        rc = nn_recv (sb, buf, sizeof (buf), 0);
-        errno_assert (rc >= 0);
-        nn_assert (rc == 40);
+        test_recv (sb, "0123456789012345678901234567890123456789");
     }
 
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sc);
+    test_close (sb);
 
     return 0;
 }

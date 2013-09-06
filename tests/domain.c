@@ -22,7 +22,7 @@
 
 #include "../src/nn.h"
 #include "../src/pair.h"
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 /*  Test the NN_DOMAIN and NN_PROTOCOL socket options. */
 
@@ -33,8 +33,7 @@ int main ()
     int op;
     size_t opsz;
 
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s >= 0);
+    s = test_socket (AF_SP, NN_PAIR);
 
     opsz = sizeof (op);
     rc = nn_getsockopt (s, NN_SOL_SOCKET, NN_DOMAIN, &op, &opsz);
@@ -48,8 +47,7 @@ int main ()
     nn_assert (opsz == sizeof (op));
     nn_assert (op == NN_PAIR);
 
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    test_close (s);
 
     return 0;
 }

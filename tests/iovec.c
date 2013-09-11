@@ -23,7 +23,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #include <string.h>
 
@@ -38,14 +38,10 @@ int main ()
     struct nn_msghdr hdr;
     char buf [6];
 
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
 
     iov [0].iov_base = "AB";
     iov [0].iov_len = 2;
@@ -70,10 +66,8 @@ int main ()
     nn_assert (rc == 6);
     nn_assert (memcmp (buf, "ABCDEF", 6) == 0);
 
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sc);
+    test_close (sb);
 
     return 0;
 }

@@ -24,7 +24,7 @@
 #include "../src/nn.h"
 #include "../src/pipeline.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS_A "inproc://a"
 #define SOCKET_ADDRESS_B "inproc://b"
@@ -38,44 +38,30 @@ int main ()
     int sndprio;
     char buf [3];
 
-    pull1 = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull1 != -1);
-    rc = nn_bind (pull1, SOCKET_ADDRESS_A);
-    errno_assert (rc >= 0);
-    pull2 = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull2 != -1);
-    rc = nn_bind (pull2, SOCKET_ADDRESS_B);
-    errno_assert (rc >= 0);
-    push = nn_socket (AF_SP, NN_PUSH);
-    errno_assert (push != -1);
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_bind (pull1, SOCKET_ADDRESS_A);
+    pull2 = test_socket (AF_SP, NN_PULL);
+    test_bind (pull2, SOCKET_ADDRESS_B);
+    push = test_socket (AF_SP, NN_PUSH);
     sndprio = 1;
     rc = nn_setsockopt (push, NN_SOL_SOCKET, NN_SNDPRIO,
         &sndprio, sizeof (sndprio));
     errno_assert (rc == 0);
-    rc = nn_connect (push, SOCKET_ADDRESS_A);
-    errno_assert (rc >= 0);
+    test_connect (push, SOCKET_ADDRESS_A);
     sndprio = 2;
     rc = nn_setsockopt (push, NN_SOL_SOCKET, NN_SNDPRIO,
         &sndprio, sizeof (sndprio));
     errno_assert (rc == 0);
-    rc = nn_connect (push, SOCKET_ADDRESS_B);
-    errno_assert (rc >= 0);
+    test_connect (push, SOCKET_ADDRESS_B);
 
-    rc = nn_send (push, "ABC", 3, 0);
-    errno_assert (rc == 3);
-    rc = nn_send (push, "DEF", 3, 0);
-    errno_assert (rc == 3);
-    rc = nn_recv (pull1, buf, sizeof (buf), 0);
-    errno_assert (rc == 3);
-    rc = nn_recv (pull1, buf, sizeof (buf), 0);
-    errno_assert (rc == 3);
+    test_send (push, "ABC");
+    test_send (push, "DEF");
+    test_recv (pull1, "ABC");
+    test_recv (pull1, "DEF");
 
-    rc = nn_close (pull1);
-    errno_assert (rc == 0);
-    rc = nn_close (push);
-    errno_assert (rc == 0);
-    rc = nn_close (pull2);
-    errno_assert (rc == 0);
+    test_close (pull1);
+    test_close (push);
+    test_close (pull2);
 
     return 0;
 }

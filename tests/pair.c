@@ -23,7 +23,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS "inproc://a"
 
@@ -34,35 +34,18 @@ int main ()
     int sc;
     char buf [3];
 
-    sb = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sb != -1);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    sc = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (sc != -1);
-    rc = nn_connect (sc, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
 
-    rc = nn_send (sc, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_send (sb, "DEF");
+    test_recv (sc, "DEF");
 
-    rc = nn_recv (sb, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-
-    rc = nn_send (sb, "DEF", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-
-    rc = nn_recv (sc, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-
-    rc = nn_close (sc);
-    errno_assert (rc == 0);
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sc);
+    test_close (sb);
 
     return 0;
 }

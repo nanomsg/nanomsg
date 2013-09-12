@@ -23,7 +23,7 @@
 #include "../src/nn.h"
 #include "../src/reqrep.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS "inproc://test"
 
@@ -39,17 +39,12 @@ int main ()
     int timeo;
 
     /*  Test req/rep with full socket types. */
-    rep1 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    req1 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_connect (req1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    req2 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req2 != -1);
-    rc = nn_connect (req2, SOCKET_ADDRESS);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_bind (rep1, SOCKET_ADDRESS);
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_connect (req1, SOCKET_ADDRESS);
+    req2 = test_socket (AF_SP, NN_REQ);
+    test_connect (req2, SOCKET_ADDRESS);
     errno_assert (rc >= 0);
 
     /*  Check invalid sequence of sends and recvs. */
@@ -59,170 +54,95 @@ int main ()
     nn_assert (rc == -1 && nn_errno () == EFSM);
 
     /*  Check fair queueing the requests. */
-    rc = nn_send (req2, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (rep1, buf, 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (req2, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (req2, "ABC");
+    test_recv (rep1, "ABC");
+    test_send (rep1, "ABC");
+    test_recv (req2, "ABC");
 
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (rep1, buf, 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (req1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (req1, "ABC");
+    test_recv (rep1, "ABC");
+    test_send (rep1, "ABC");
+    test_recv (req1, "ABC");
 
-    rc = nn_close (rep1);
-    errno_assert (rc == 0);
-    rc = nn_close (req1);
-    errno_assert (rc == 0);
-    rc = nn_close (req2);
-    errno_assert (rc == 0);
+    test_close (rep1);
+    test_close (req1);
+    test_close (req2);
 
     /*  Check load-balancing of requests. */
-    req1 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_bind (req1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rep1 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep1 != -1);
-    rc = nn_connect (rep1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rep2 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep2 != -1);
-    rc = nn_connect (rep2, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_bind (req1, SOCKET_ADDRESS);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_connect (rep1, SOCKET_ADDRESS);
+    rep2 = test_socket (AF_SP, NN_REP);
+    test_connect (rep2, SOCKET_ADDRESS);
 
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (rep1, buf, 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (req1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (req1, "ABC");
+    test_recv (rep1, "ABC");
+    test_send (rep1, "ABC");
+    test_recv (req1, "ABC");
 
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep2, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (rep2, buf, 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (req1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (req1, "ABC");
+    test_recv (rep2, "ABC");
+    test_send (rep2, "ABC");
+    test_recv (req1, "ABC");
 
-    rc = nn_close (rep2);
-    errno_assert (rc == 0);
-    rc = nn_close (rep1);
-    errno_assert (rc == 0);
-    rc = nn_close (req1);
-    errno_assert (rc == 0);
+    test_close (rep2);
+    test_close (rep1);
+    test_close (req1);
 
     /*  Test re-sending of the request. */
-    rep1 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    req1 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_connect (req1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_bind (rep1, SOCKET_ADDRESS);
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_connect (req1, SOCKET_ADDRESS);
     resend_ivl = 100;
     rc = nn_setsockopt (req1, NN_REQ, NN_REQ_RESEND_IVL,
         &resend_ivl, sizeof (resend_ivl));
     errno_assert (rc == 0);
 
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (req1, "ABC");
+    test_recv (rep1, "ABC");
+    /*  The following waits for request to be resent  */
+    test_recv (rep1, "ABC");
 
-    rc = nn_close (req1);
-    errno_assert (rc == 0);
-    rc = nn_close (rep1);
-    errno_assert (rc == 0);
+    test_close (req1);
+    test_close (rep1);
 
     /*  Check sending a request when the peer is not available. (It should
         be sent immediatelly when the peer comes online rather than relying
         on the resend algorithm. */
-    req1 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_connect (req1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_connect (req1, SOCKET_ADDRESS);
+    test_send (req1, "ABC");
 
-    rep1 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_bind (rep1, SOCKET_ADDRESS);
     timeo = 200;
     rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
        &timeo, sizeof (timeo));
     errno_assert (rc == 0);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_recv (rep1, "ABC");
 
-    rc = nn_close (req1);
-    errno_assert (rc == 0);
-    rc = nn_close (rep1);
-    errno_assert (rc == 0);
+    test_close (req1);
+    test_close (rep1);
 
     /*  Test cancelling delayed request  */
 
-    req1 = nn_socket (AF_SP, NN_REQ);
-    errno_assert (req1 != -1);
-    rc = nn_connect (req1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rc = nn_send (req1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    rc = nn_send (req1, "DEF", 3, 0);
-    errno_assert (rc >= 0);
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_connect (req1, SOCKET_ADDRESS);
+    test_send (req1, "ABC");
+    test_send (req1, "DEF");
 
-    rep1 = nn_socket (AF_SP, NN_REP);
-    errno_assert (rep1 != -1);
-    rc = nn_bind (rep1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_bind (rep1, SOCKET_ADDRESS);
     timeo = 100;
 //    rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
 //       &timeo, sizeof (timeo));
 //    errno_assert (rc == 0);
-    rc = nn_recv (rep1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    nn_assert (!memcmp(buf, "DEF", 3));
+    test_recv (rep1, "DEF");
 
-    rc = nn_close (req1);
-    errno_assert (rc == 0);
-    rc = nn_close (rep1);
-    errno_assert (rc == 0);
+    test_close (req1);
+    test_close (rep1);
 
     return 0;
 }

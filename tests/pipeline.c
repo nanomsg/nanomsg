@@ -23,8 +23,7 @@
 
 #include "../src/nn.h"
 #include "../src/pipeline.h"
-#include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS "inproc://a"
 
@@ -39,80 +38,45 @@ int main ()
 
     /*  Test fan-out. */
 
-    push1 = nn_socket (AF_SP, NN_PUSH);
-    errno_assert (push1 != -1);
-    rc = nn_bind (push1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    pull1 = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull1 != -1);
-    rc = nn_connect (pull1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    pull2 = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull2 != -1);
-    rc = nn_connect (pull2, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    push1 = test_socket (AF_SP, NN_PUSH);
+    test_bind (push1, SOCKET_ADDRESS);
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull1, SOCKET_ADDRESS);
+    pull2 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull2, SOCKET_ADDRESS);
 
     /*  Wait till both connections are established to get messages spread
         evenly between the two pull sockets. */
     nn_sleep (10);
 
-    rc = nn_send (push1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (push1, "DEF", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (push1, "ABC");
+    test_send (push1, "DEF");
 
-    rc = nn_recv (pull1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (pull2, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_recv (pull1, "ABC");
+    test_recv (pull2, "DEF");
 
-    rc = nn_close (push1);
-    errno_assert (rc == 0);
-    rc = nn_close (pull1);
-    errno_assert (rc == 0);    
-    rc = nn_close (pull2);
-    errno_assert (rc == 0);
+    test_close (push1);
+    test_close (pull1);
+    test_close (pull2);
 
     /*  Test fan-in. */
 
-    pull1 = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull1 != -1);
-    rc = nn_bind (pull1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    push1 = nn_socket (AF_SP, NN_PUSH);
-    errno_assert (push1 != -1);
-    rc = nn_connect (push1, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    push2 = nn_socket (AF_SP, NN_PUSH);
-    errno_assert (push2 != -1);
-    rc = nn_connect (push2, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_bind (pull1, SOCKET_ADDRESS);
+    push1 = test_socket (AF_SP, NN_PUSH);
+    test_connect (push1, SOCKET_ADDRESS);
+    push2 = test_socket (AF_SP, NN_PUSH);
+    test_connect (push2, SOCKET_ADDRESS);
 
-    rc = nn_send (push1, "ABC", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_send (push2, "DEF", 3, 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_send (push1, "ABC");
+    test_send (push2, "DEF");
 
-    rc = nn_recv (pull1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
-    rc = nn_recv (pull1, buf, sizeof (buf), 0);
-    errno_assert (rc >= 0);
-    nn_assert (rc == 3);
+    test_recv (pull1, "ABC");
+    test_recv (pull1, "DEF");
 
-    rc = nn_close (pull1);
-    errno_assert (rc == 0);
-    rc = nn_close (push1);
-    errno_assert (rc == 0);    
-    rc = nn_close (push2);
-    errno_assert (rc == 0);
-
+    test_close (pull1);
+    test_close (push1);
+    test_close (push2);
 
     return 0;
 }

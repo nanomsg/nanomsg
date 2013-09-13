@@ -38,6 +38,7 @@ set (NN_SOURCES
     pipeline.h
     survey.h
     bus.h
+    sync.h
 
     core/ep.h
     core/ep.c
@@ -187,6 +188,15 @@ set (NN_SOURCES
     protocols/survey/xrespondent.c
     protocols/survey/xsurveyor.h
     protocols/survey/xsurveyor.c
+
+    protocols/sync/master.h
+    protocols/sync/master.c
+    protocols/sync/xmaster.h
+    protocols/sync/xmaster.c
+    protocols/sync/mirror.h
+    protocols/sync/mirror.c
+    protocols/sync/xmirror.h
+    protocols/sync/xmirror.c
 
     transports/utils/backoff.h
     transports/utils/backoff.c

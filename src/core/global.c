@@ -63,6 +63,10 @@
 #include "../protocols/survey/xsurveyor.h"
 #include "../protocols/bus/bus.h"
 #include "../protocols/bus/xbus.h"
+#include "../protocols/sync/master.h"
+#include "../protocols/sync/xmaster.h"
+#include "../protocols/sync/mirror.h"
+#include "../protocols/sync/xmirror.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -212,6 +216,10 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_xsurveyor_socktype);
     nn_global_add_socktype (nn_bus_socktype);
     nn_global_add_socktype (nn_xbus_socktype);
+    nn_global_add_socktype (nn_master_socktype);
+    nn_global_add_socktype (nn_xmaster_socktype);
+    nn_global_add_socktype (nn_mirror_socktype);
+    nn_global_add_socktype (nn_xmirror_socktype);
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);

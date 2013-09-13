@@ -49,6 +49,7 @@ linknanomsg:nn_pubsub[7]
 linknanomsg:nn_reqrep[7]
 linknanomsg:nn_pipeline[7]
 linknanomsg:nn_survey[7]
+linknanomsg:nn_sync[7]
 linknanomsg:nanomsg[7]
 
 

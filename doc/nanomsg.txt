@@ -94,6 +94,9 @@ Pipeline protocol::
 Message bus protocol::
     linknanomsg:nn_bus[7]
 
+State synchronisation protocol::
+    linknanomsg:nn_sync[7]
+
 Following transport mechanisms are provided by nanomsg:
 
 In-process transport::

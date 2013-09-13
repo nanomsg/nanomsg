@@ -45,10 +45,11 @@ There are no options defined at the moment.
 SEE ALSO
 --------
 linknanomsg:nn_pubsub[7]
-linknanomsg:nn_reqrep[7]
-linknanomsg:nn_pipeline[7]
-linknanomsg:nn_survey[7]
 linknanomsg:nn_pair[7]
+linknanomsg:nn_pipeline[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nn_sync[7]
 linknanomsg:nanomsg[7]
 
 AUTHORS

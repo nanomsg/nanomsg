@@ -40,7 +40,8 @@ nninclude_HEADERS = \
     src/reqrep.h \
     src/pipeline.h \
     src/survey.h \
-    src/bus.h
+    src/bus.h \
+    src/sync.h
 
 lib_LTLIBRARIES = libnanomsg.la
 
@@ -206,6 +207,16 @@ PROTOCOLS_SURVEY = \
     src/protocols/survey/xsurveyor.h \
     src/protocols/survey/xsurveyor.c
 
+PROTOCOLS_SYNC = \
+    src/protocols/sync/master.h \
+    src/protocols/sync/master.c \
+    src/protocols/sync/xmaster.h \
+    src/protocols/sync/xmaster.c \
+    src/protocols/sync/mirror.h \
+    src/protocols/sync/mirror.c \
+    src/protocols/sync/xmirror.h \
+    src/protocols/sync/xmirror.c
+
 NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_BUS) \
     $(PROTOCOLS_PIPELINE) \
@@ -215,8 +226,7 @@ NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_SURVEY) \
     $(PROTOCOLS_UTILS) \
     $(PROTOCOLS_INPROC) \
-    $(PROTOCOLS_IPC) \
-    $(PROTOCOLS_TCP)
+    $(PROTOCOLS_SYNC)
 
 
 TRANSPORTS_UTILS = \
@@ -309,6 +319,7 @@ MAN7 = \
     doc/nn_survey.txt \
     doc/nn_pipeline.txt \
     doc/nn_bus.txt \
+    doc/nn_sync.txt \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt
@@ -421,7 +432,8 @@ PROTOCOL_TESTS = \
     tests/reqrep \
     tests/pipeline \
     tests/survey \
-    tests/bus
+    tests/bus \
+    tests/sync
 
 FEATURE_TESTS = \
     tests/block \

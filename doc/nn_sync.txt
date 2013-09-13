@@ -1,0 +1,51 @@
+nn_sync(7)
+==========
+
+NAME
+----
+nn_sync - scalability protocol for synchronising state between components
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/sync.h>*
+
+
+DESCRIPTION
+-----------
+Synchronises a state (one message) on the master with the state on the mirrors.
+
+Socket Types
+~~~~~~~~~~~~
+
+NN_MASTER::
+    This socket is used to expose the state (one message) to the network. State
+    is set using send oprtation. Every such operation overwrites the old state
+    by the new state. Receive operation is not implemented on this socket type.
+NN_MIRROR::
+    This socket is used to mirror the state on the master. The changes of
+    the state are delivered to the component by receive operations. Send
+    operation is not implemented on this socket type.
+
+Socket Options
+~~~~~~~~~~~~~~
+
+No protocol-specific socket options are defined at the moment.
+
+SEE ALSO
+--------
+linknanomsg:nn_bus[7]
+linknanomsg:nn_pair[7]
+linknanomsg:nn_pipeline[7]
+linknanomsg:nn_pubsub[7]
+linknanomsg:nn_reqrep[7]
+linknanomsg:nn_survey[7]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+

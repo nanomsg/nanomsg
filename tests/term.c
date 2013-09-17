@@ -23,9 +23,8 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 
-#include "../src/utils/err.c"
 #include "../src/utils/thread.c"
-#include "../src/utils/sleep.c"
+#include "testutil.h"
 
 static void worker (void *arg)
 {
@@ -34,8 +33,7 @@ static void worker (void *arg)
     char buf [3];
 
     /*  Test socket. */
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s != -1);
+    s = test_socket (AF_SP, NN_PAIR);
 
     /*  Launch blocking function to check that it will be unblocked once
         nn_term() is called from the main thread. */
@@ -46,8 +44,7 @@ static void worker (void *arg)
     rc = nn_recv (s, buf, sizeof (buf), 0);
     nn_assert (rc == -1 && nn_errno () == ETERM);
 
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    test_close (s);
 }
 
 int main ()
@@ -57,10 +54,8 @@ int main ()
     struct nn_thread thread;
 
     /*  Close the socket with no associated endpoints. */
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s != -1);
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    s = test_socket (AF_SP, NN_PAIR);
+    test_close (s);
 
     /*  Test nn_term() before nn_close(). */
     nn_thread_init (&thread, worker, NULL);
@@ -71,7 +66,7 @@ int main ()
     rc = nn_socket (AF_SP, NN_PAIR);
     nn_assert (rc == -1);
     errno_assert (nn_errno () == ETERM);
-    
+
     /*  Wait till worker thread terminates. */
     nn_thread_term (&thread);
 

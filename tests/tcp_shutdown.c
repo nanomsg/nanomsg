@@ -25,8 +25,7 @@
 #include "../src/pubsub.h"
 #include "../src/tcp.h"
 
-#include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
+#include "testutil.h"
 #include "../src/utils/thread.c"
 
 /*  Stress test the TCP transport. */
@@ -43,10 +42,8 @@ static void routine (void *arg)
     if (s < 0 && nn_errno () == EMFILE)
         return;
     errno_assert (s >= 0);
-    rc = nn_connect (s, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    test_connect (s, SOCKET_ADDRESS);
+    test_close (s);
 }
 
 int main ()
@@ -59,10 +56,8 @@ int main ()
 
     /*  Stress the shutdown algorithm. */
 
-    sb = nn_socket (AF_SP, NN_PUB);
-    errno_assert (sb >= 0);
-    rc = nn_bind (sb, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
+    sb = test_socket (AF_SP, NN_PUB);
+    test_bind (sb, SOCKET_ADDRESS);
 
     for (j = 0; j != 10; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)
@@ -71,8 +66,7 @@ int main ()
             nn_thread_term (&threads [i]);
     }
 
-    rc = nn_close (sb);
-    errno_assert (rc == 0);
+    test_close (sb);
 
     return 0;
 }

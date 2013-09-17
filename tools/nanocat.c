@@ -63,6 +63,7 @@ typedef struct nn_options {
     struct nn_string_list subscriptions;
 
     /* Output options */
+    float send_delay;
     float send_interval;
     struct nn_blob data_to_send;
 
@@ -262,6 +263,11 @@ struct nn_option nn_options[] = {
      NN_OPT_FLOAT, offsetof (nn_options_t, send_interval), NULL,
      NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_WRITEABLE,
      "Output Options", "SEC", "Send message (or request) every SEC seconds"},
+    {"delay", 'd', NULL,
+     NN_OPT_FLOAT, offsetof (nn_options_t, send_delay), NULL,
+     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Output Options", "SEC", "Wait for SEC seconds before sending message"
+                              " (useful for one-shot PUB sockets)"},
     {"data", 'D', NULL,
      NN_OPT_BLOB, offsetof (nn_options_t, data_to_send), &echo_formats,
      NN_MASK_DATA, NN_MASK_DATA, NN_MASK_WRITEABLE,
@@ -576,22 +582,23 @@ int main (int argc, char **argv)
 {
     int sock;
     nn_options_t options = {
-        0,
-        0,
-        {NULL, 0},
-        {NULL, 0},
-        -1.f,
-        -1.f,
-        {NULL, 0},
-        -1.f,
-        {NULL, 0},
-        NN_NO_ECHO
+        /* verbose           */ 0,
+        /* socket_type       */ 0,
+        /* bind_addresses    */ {NULL, 0},
+        /* connect_addresses */ {NULL, 0},
+        /* send_timeout      */ -1.f,
+        /* recv_timeout      */ -1.f,
+        /* subscriptions     */ {NULL, 0},
+        /* send_delay        */ 0.f,
+        /* send_interval     */ -1.f,
+        /* data_to_send      */ {NULL, 0},
+        /* echo_format       */ NN_NO_ECHO
     };
 
     nn_parse_options (&nn_cli, &options, argc, argv);
     sock = nn_create_socket (&options);
     nn_connect_socket (&options, sock);
-
+    nn_sleep((int)(options.send_delay*1000));
     switch (options.socket_type) {
     case NN_PUB:
     case NN_PUSH:

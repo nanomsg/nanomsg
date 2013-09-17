@@ -27,7 +27,7 @@
 #include "../src/inproc.h"
 #include "../src/ipc.h"
 #include "../src/tcp.h"
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #define SOCKET_ADDRESS_INPROC "inproc://a"
 #define SOCKET_ADDRESS_IPC "ipc://test-separation.ipc"
@@ -44,84 +44,60 @@ int main ()
     int timeo;
 
     /*  Inproc: Bind first, connect second. */
-    pair = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (pair != -1);
-    rc = nn_bind (pair, SOCKET_ADDRESS_INPROC);
-    errno_assert (rc >= 0);
-    pull = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull != -1);
-    rc = nn_connect (pull, SOCKET_ADDRESS_INPROC);
-    errno_assert (rc >= 0);
+    pair = test_socket (AF_SP, NN_PAIR);
+    test_bind (pair, SOCKET_ADDRESS_INPROC);
+    pull = test_socket (AF_SP, NN_PULL);
+    test_connect (pull, SOCKET_ADDRESS_INPROC);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (pull);
-    errno_assert (rc == 0);
-    rc = nn_close (pair);
-    errno_assert (rc == 0);
+    test_close (pull);
+    test_close (pair);
 
     /*  Inproc: Connect first, bind second. */
-    pull = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull != -1);
-    rc = nn_connect (pull, SOCKET_ADDRESS_INPROC);
-    errno_assert (rc >= 0);
-    pair = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (pair != -1);
-    rc = nn_bind (pair, SOCKET_ADDRESS_INPROC);
-    errno_assert (rc >= 0);
+    pull = test_socket (AF_SP, NN_PULL);
+    test_connect (pull, SOCKET_ADDRESS_INPROC);
+    pair = test_socket (AF_SP, NN_PAIR);
+    test_bind (pair, SOCKET_ADDRESS_INPROC);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (pull);
-    errno_assert (rc == 0);
-    rc = nn_close (pair);
-    errno_assert (rc == 0);
+    test_close (pull);
+    test_close (pair);
 
 #if !defined NN_HAVE_WINDOWS
 
     /*  IPC */
-    pair = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (pair != -1);
-    rc = nn_bind (pair, SOCKET_ADDRESS_IPC);
-    errno_assert (rc >= 0);
-    pull = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull != -1);
-    rc = nn_connect (pull, SOCKET_ADDRESS_IPC);
-    errno_assert (rc >= 0);
+    pair = test_socket (AF_SP, NN_PAIR);
+    test_bind (pair, SOCKET_ADDRESS_IPC);
+    pull = test_socket (AF_SP, NN_PULL);
+    test_connect (pull, SOCKET_ADDRESS_IPC);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (pull);
-    errno_assert (rc == 0);
-    rc = nn_close (pair);
-    errno_assert (rc == 0);
+    test_close (pull);
+    test_close (pair);
 
 #endif
 
     /*  TCP */
-    pair = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (pair != -1);
-    rc = nn_bind (pair, SOCKET_ADDRESS_TCP);
-    errno_assert (rc >= 0);
-    pull = nn_socket (AF_SP, NN_PULL);
-    errno_assert (pull != -1);
-    rc = nn_connect (pull, SOCKET_ADDRESS_TCP);
-    errno_assert (rc >= 0);
+    pair = test_socket (AF_SP, NN_PAIR);
+    test_bind (pair, SOCKET_ADDRESS_TCP);
+    pull = test_socket (AF_SP, NN_PULL);
+    test_connect (pull, SOCKET_ADDRESS_TCP);
     timeo = 100;
     rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
-    rc = nn_close (pull);
-    errno_assert (rc == 0);
-    rc = nn_close (pair);
-    errno_assert (rc == 0);
+    test_close (pull);
+    test_close (pair);
 
     return 0;
 }

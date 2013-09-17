@@ -23,7 +23,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 #include "../src/utils/stopwatch.c"
 
 int main ()
@@ -35,8 +35,7 @@ int main ()
     struct nn_stopwatch stopwatch;
     uint64_t elapsed;
 
-    s = nn_socket (AF_SP, NN_PAIR);
-    errno_assert (s != -1);
+    s = test_socket (AF_SP, NN_PAIR);
 
     timeo = 100;
     rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo, sizeof (timeo));
@@ -56,8 +55,7 @@ int main ()
     errno_assert (rc < 0 && nn_errno () == EAGAIN);
     time_assert (elapsed, 100000);
 
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    test_close (s);
 
     return 0;
 }

@@ -24,7 +24,7 @@
 #include "../src/tcp.h"
 #include "../src/reqrep.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 int main ()
 {
@@ -33,14 +33,11 @@ int main ()
     int eid;
 
     /*  Run endpoint shutdown and socket shutdown in parallel. */
-    s = nn_socket (AF_SP, NN_REQ);
-    errno_assert (s >= 0);
-    eid = nn_connect (s, "tcp://127.0.0.1:5590");
-    errno_assert (eid >= 0);
+    s = test_socket (AF_SP, NN_REQ);
+    eid = test_connect (s, "tcp://127.0.0.1:5590");
     rc = nn_shutdown (s, eid);
     errno_assert (rc == 0);
-    rc = nn_close (s);
-    errno_assert (rc == 0);
+    test_close (s);
 
     return 0;
 }

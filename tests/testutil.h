@@ -27,8 +27,8 @@
 #include "../src/utils/sleep.c"
 
 static int test_socket_impl (char *file, int line, int family, int protocol);
-static void test_connect_impl (char *file, int line, int sock, char *address);
-static void test_bind_impl (char *file, int line, int sock, char *address);
+static int test_connect_impl (char *file, int line, int sock, char *address);
+static int test_bind_impl (char *file, int line, int sock, char *address);
 static void test_close_impl (char *file, int line, int sock);
 static void test_send_impl (char *file, int line, int sock, char *data);
 static void test_recv_impl (char *file, int line, int sock, char *data);
@@ -55,7 +55,7 @@ static int test_socket_impl (char *file, int line, int family, int protocol)
     return sock;
 }
 
-static void test_connect_impl (char *file, int line, int sock, char *address)
+static int test_connect_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -67,9 +67,10 @@ static void test_connect_impl (char *file, int line, int sock, char *address)
             (int) errno, file, line);
         nn_err_abort ();
     }
+    return rc;
 }
 
-static void test_bind_impl (char *file, int line, int sock, char *address)
+static int test_bind_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -81,6 +82,7 @@ static void test_bind_impl (char *file, int line, int sock, char *address)
             (int) errno, file, line);
         nn_err_abort ();
     }
+    return rc;
 }
 
 static void test_close_impl (char *file, int line, int sock)

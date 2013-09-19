@@ -23,7 +23,7 @@
 #include "../src/nn.h"
 #include "../src/reqrep.h"
 
-#include "../src/utils/err.c"
+#include "testutil.h"
 
 #include <string.h>
 
@@ -36,8 +36,7 @@ int main ()
     struct nn_msghdr hdr;
 
     /*  Create a socket. */
-    req = nn_socket (AF_SP_RAW, NN_REQ);
-    errno_assert (req >= 0);
+    req = test_socket (AF_SP_RAW, NN_REQ);
 
     /*  Make send fail and check whether the zero-copy buffer is left alone
         rather than deallocated. */
@@ -65,8 +64,7 @@ int main ()
     errno_assert (rc == 0);
 
     /*  Clean up. */
-    rc = nn_close (req);
-    errno_assert (rc == 0);
+    test_close (req);
 
     return 0;
 }

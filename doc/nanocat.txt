@@ -123,6 +123,9 @@ Output Options:
 
  *--interval,-i* 'SEC'::
     Send message (or request) every SEC seconds
+ *--delay,-d* 'SEC'::
+    Wait for SEC seconds before sending message (useful for one-shot
+    PUB sockets)
  *--data,-D* 'DATA'::
     Send DATA to the socket and quit for PUB, PUSH, PAIR,
     BUS socket. Use DATA to reply for REP or  RESPONDENT

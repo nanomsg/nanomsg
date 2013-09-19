@@ -84,6 +84,41 @@ struct nn_sock
 
     /*  Transport-specific socket options. */
     struct nn_optset *optsets [NN_MAX_TRANSPORT];
+
+    struct {
+
+        /*****  The ever-incrementing counters  *****/
+
+        /*  Successfully established connections  */
+        uint64_t connects;
+        /*  Forcedly closed connections  */
+        uint64_t dropped_connections;
+        /*  Connections closed by peer  */
+        uint64_t broken_connections;
+        /*  Errors trying to establish active connection  */
+        uint64_t connect_errors;
+        /*  Errors binding to specified port  */
+        uint64_t bind_errors;
+        /*  Errors accepting connections at nn_bind()'ed endpoint  */
+        uint64_t accept_errors;
+
+        /*  Messages sent  */
+        uint64_t messages_sent;
+        /*  Messages received  */
+        uint64_t messages_received;
+        /*  Bytes sent (sum length of data in messages sent)  */
+        uint64_t bytes_sent;
+        /*  Bytes recevied (sum length of data in messages received)  */
+        uint64_t bytes_received;
+
+        /*****  Level-style values *****/
+
+        /*  Number of currently established connections  */
+        uint64_t current_connections;
+        /*  The currently set priority for sending data  */
+        uint64_t current_snd_priority;
+
+    } statistics;
 };
 
 /*  Initialise the socket. */
@@ -121,7 +156,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags);
 
 /*  Set a socket option. */
 int nn_sock_setopt (struct nn_sock *self, int level, int option,
-    const void *optval, size_t optvallen); 
+    const void *optval, size_t optvallen);
 
 /*  Retrieve a socket option. This function is to be called from the API. */
 int nn_sock_getopt (struct nn_sock *self, int level, int option,

@@ -40,6 +40,9 @@ struct nn_ep {
     int eid;
     struct nn_list_item item;
     char addr [NN_SOCKADDR_MAX + 1];
+
+    /*  Error state for endpoint */
+    int last_errno;
 };
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
@@ -56,5 +59,7 @@ const char *nn_ep_getaddr (struct nn_ep *self);
 void nn_ep_getopt (struct nn_ep *self, int level, int option,
     void *optval, size_t *optvallen);
 int nn_ep_ispeer (struct nn_ep *self, int socktype);
+void nn_ep_set_error(struct nn_ep *self, int errnum);
+void nn_ep_clear_error(struct nn_ep *self);
 
 #endif

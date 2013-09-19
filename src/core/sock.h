@@ -117,6 +117,8 @@ struct nn_sock
         uint64_t current_connections;
         /*  The currently set priority for sending data  */
         uint64_t current_snd_priority;
+        /*  Number of endpoints having last_errno set to non-zero value  */
+        uint64_t current_ep_errors;
 
     } statistics;
 };
@@ -170,5 +172,8 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level, int option,
 /*  Used by pipes. */
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
+
+/*  Monitoring callbacks  */
+void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep, int errnum);
 
 #endif

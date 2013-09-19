@@ -917,3 +917,13 @@ static void nn_sock_action_zombify (struct nn_sock *self)
     }
 }
 
+void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
+{
+    if (errnum != 0) {
+        /*  A place to plug error reporting in  */
+        fprintf(stderr, "Recoverable error in nanomsg: %s\n",
+            nn_strerror(errnum));
+        /*  End of plugged error reporting  */
+    }
+}
+

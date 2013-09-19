@@ -1,4 +1,5 @@
 /*
+:A
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
@@ -206,3 +207,20 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
     }
 }
 
+void nn_ep_set_error(struct nn_ep *self, int errnum)
+{
+    if (self->last_errno == errno)
+        /*  Error is still there, no need to report it  */
+        return;
+    self->last_errno = errno;
+    nn_sock_report_error(self->sock, self, errnum);
+}
+
+void nn_ep_clear_error (struct nn_ep *self)
+{
+    if (self->last_errno == 0)
+        /*  Error is already clear, no need to report it  */
+        return;
+    self->last_errno = 0;
+    nn_sock_report_error (self->sock, self, 0);
+}

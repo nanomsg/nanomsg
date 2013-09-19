@@ -29,6 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/uio.h>
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
@@ -946,7 +947,7 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
             ++hdr->msg_iov;
         }
         else {
-            hdr->msg_iov->iov_base += nbytes;
+            *((uint8_t**) &(hdr->msg_iov->iov_base)) += nbytes;
             hdr->msg_iov->iov_len -= nbytes;
             return -EAGAIN;
         }

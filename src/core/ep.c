@@ -209,12 +209,12 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
 
 void nn_ep_set_error(struct nn_ep *self, int errnum)
 {
-    if (self->last_errno == errno)
+    if (self->last_errno == errnum)
         /*  Error is still there, no need to report it  */
         return;
 	if (self->last_errno == 0)
 		nn_sock_stat_increment (self->sock, NN_STAT_CURRENT_EP_ERRORS, 1);
-    self->last_errno = errno;
+    self->last_errno = errnum;
     nn_sock_report_error (self->sock, self, errnum);
 }
 

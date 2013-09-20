@@ -1012,7 +1012,7 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
         case NN_STAT_CURRENT_EP_ERRORS:
             nn_assert (increment > 0 ||
                 self->statistics.current_ep_errors >= -increment);
-            self->statistics.inprogress_connections += increment;
+            self->statistics.current_ep_errors += increment;
             break;
     }
 }

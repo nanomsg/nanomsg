@@ -550,6 +550,8 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     struct nn_usock *usock;
     int s;
     size_t sz;
+    int sockerr;
+    socklen_t sockerr_len;
 
     usock = nn_cont (self, struct nn_usock, fsm);
 
@@ -676,8 +678,24 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established,
-                    NN_USOCK_CONNECTED);
+                sockerr_len = sizeof(sockerr);
+                rc = getsockopt (usock->s, SOL_SOCKET, SO_ERROR,
+                    &sockerr, &sockerr_len);
+                errno_assert (rc == 0);
+                nn_assert (sockerr_len == sizeof (sockerr));
+                if (sockerr == 0) {
+                    nn_fsm_raise (&usock->fsm, &usock->event_established,
+                        NN_USOCK_CONNECTED);
+                } else {
+                    usock->errnum = sockerr;
+                    nn_worker_rm_fd (usock->worker, &usock->wfd);
+                    rc = close (usock->s);
+                    errno_assert (rc == 0);
+                    usock->s = -1;
+                    usock->state = NN_USOCK_STATE_DONE;
+                    nn_fsm_raise (&usock->fsm,
+                        &usock->event_error, NN_USOCK_ERROR);
+                }
                 return;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);

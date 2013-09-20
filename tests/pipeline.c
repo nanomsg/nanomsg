@@ -34,6 +34,7 @@ int main ()
     int push2;
     int pull1;
     int pull2;
+    int timeo;
     char buf [3];
 
     /*  Test fan-out. */
@@ -77,6 +78,32 @@ int main ()
     test_close (pull1);
     test_close (push1);
     test_close (push2);
+
+    /*  Test for priolist bug */
+
+    push1 = test_socket (AF_SP, NN_PUSH);
+    test_bind (push1, SOCKET_ADDRESS);
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull1, SOCKET_ADDRESS);
+
+    test_send (push1, "ABC");
+    test_recv (pull1, "ABC");
+    test_close (pull1);
+
+    timeo = 200;
+    rc = nn_setsockopt (push1, NN_SOL_SOCKET, NN_SNDTIMEO,
+       &timeo, sizeof (timeo));
+    errno_assert (rc == 0);
+    rc = nn_send (push1, "ABC", 3, 0);
+    nn_assert (rc == -1 && nn_errno() == EAGAIN);
+
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull1, SOCKET_ADDRESS);
+
+    test_send (push1, "ABC");
+    test_recv (pull1, "ABC");
+    test_close (pull1);
+    test_close (push1);
 
     return 0;
 }

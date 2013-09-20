@@ -87,7 +87,7 @@ void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     }
 
     /*  If we are not messing with the current slot, we are done. */
-    if (self->current != data->priority - 1)
+    if (self->current != data->priority)
         return;
 
     /*  Otherwise, the current slot may have become empty and we have switch

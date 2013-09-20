@@ -59,6 +59,6 @@ struct nn_usock {
         done on this socket, the field is set to NULL. */
     void *ainfo;
 
-	/*  Errno remembered in NN_USOCK_ERROR state  */
-	int errnum;
+    /*  Errno remembered in NN_USOCK_ERROR state  */
+    int errnum;
 };

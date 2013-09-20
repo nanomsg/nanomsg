@@ -84,7 +84,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
     /*  Actual file descriptor will be generated during 'start' step. */
     self->s = -1;
-	self->errnum = 0;
+    self->errnum = 0;
 
     self->in.buf = NULL;
     self->in.len = 0;
@@ -359,7 +359,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
-		self->errnum = errno;
+        self->errnum = errno;
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -494,7 +494,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (usock->state != NN_USOCK_STATE_ACCEPTING &&
             usock->state != NN_USOCK_STATE_CANCELLING);
 
-		usock->errnum = 0;
+        usock->errnum = 0;
 
         /*  Synchronous stop. */
         if (usock->state == NN_USOCK_STATE_IDLE)

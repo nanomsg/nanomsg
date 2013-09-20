@@ -348,7 +348,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
           rc == WSAENETDOWN || rc == WSAENETRESET ||
           rc == WSAENOBUFS || rc == WSAEWOULDBLOCK) {
-		self->errnum = nn_err_wsa_to_posix(rc);
+        self->errnum = nn_err_wsa_to_posix(rc);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }

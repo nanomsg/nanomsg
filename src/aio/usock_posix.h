@@ -86,6 +86,6 @@ struct nn_usock {
         In BEING_ACCEPTED state points to the listener socket. */
     struct nn_usock *asock;
 
-	/*  Errno remembered in NN_USOCK_ERROR state  */
-	int errnum;
+    /*  Errno remembered in NN_USOCK_ERROR state  */
+    int errnum;
 };

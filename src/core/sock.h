@@ -39,6 +39,13 @@ struct nn_pipe;
 /*  The maximum implemented transport ID. */
 #define NN_MAX_TRANSPORT 3
 
+/*  The socket-internal statistics  */
+#define NN_STAT_MESSAGES_SENT          301
+#define NN_STAT_MESSAGES_RECEIVED      302
+#define NN_STAT_BYTES_SENT             303
+#define NN_STAT_BYTES_RECEIVED         304
+
+
 struct nn_sock
 {
     /*  Socket state machine. */
@@ -115,6 +122,8 @@ struct nn_sock
 
         /*  Number of currently established connections  */
         uint64_t current_connections;
+        /*  Number of connections currently in progress  */
+        uint64_t inprogress_connections;
         /*  The currently set priority for sending data  */
         uint64_t current_snd_priority;
         /*  Number of endpoints having last_errno set to non-zero value  */
@@ -174,6 +183,7 @@ int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 
 /*  Monitoring callbacks  */
-void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep, int errnum);
+void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
+void nn_sock_stat_increment(struct nn_sock *self, int name, int increment);
 
 #endif

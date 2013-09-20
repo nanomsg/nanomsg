@@ -1,4 +1,4 @@
-/*  
+/*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,7 +45,7 @@ struct nn_usock {
     int type;
     int protocol;
 
-    /*  Events raised by the usock. */ 
+    /*  Events raised by the usock. */
     struct nn_fsm_event event_established;
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
@@ -58,4 +58,7 @@ struct nn_usock {
     /*  Buffer allocated for output of AcceptEx function. If accepting is not
         done on this socket, the field is set to NULL. */
     void *ainfo;
+
+	/*  Errno remembered in NN_USOCK_ERROR state  */
+	int errnum;
 };

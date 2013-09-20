@@ -212,8 +212,10 @@ void nn_ep_set_error(struct nn_ep *self, int errnum)
     if (self->last_errno == errno)
         /*  Error is still there, no need to report it  */
         return;
+	if (self->last_errno == 0)
+		nn_sock_stat_increment (self->sock, NN_STAT_CURRENT_EP_ERRORS, 1);
     self->last_errno = errno;
-    nn_sock_report_error(self->sock, self, errnum);
+    nn_sock_report_error (self->sock, self, errnum);
 }
 
 void nn_ep_clear_error (struct nn_ep *self)
@@ -221,6 +223,12 @@ void nn_ep_clear_error (struct nn_ep *self)
     if (self->last_errno == 0)
         /*  Error is already clear, no need to report it  */
         return;
+	nn_sock_stat_increment (self->sock, NN_STAT_CURRENT_EP_ERRORS, -1);
     self->last_errno = 0;
     nn_sock_report_error (self->sock, self, 0);
+}
+
+void nn_ep_stat_increment (struct nn_ep *self, int name, int increment)
+{
+	nn_sock_stat_increment (self->sock, name, increment);
 }

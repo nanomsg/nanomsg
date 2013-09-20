@@ -355,10 +355,21 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_CONNECTED:
                 nn_stcp_start (&ctcp->stcp, &ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_ACTIVE;
+				nn_epbase_stat_increment (&ctcp->epbase,
+					NN_STAT_INPROGRESS_CONNECTIONS, -1);
+				nn_epbase_stat_increment (&ctcp->epbase,
+					NN_STAT_CONNECTS, 1);
+				nn_epbase_clear_error (&ctcp->epbase);
                 return;
             case NN_USOCK_ERROR:
+				nn_epbase_set_error (&ctcp->epbase,
+					nn_usock_geterrno (&ctcp->usock));
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
+				nn_epbase_stat_increment (&ctcp->epbase,
+					NN_STAT_INPROGRESS_CONNECTIONS, -1);
+				nn_epbase_stat_increment (&ctcp->epbase,
+					NN_STAT_CONNECT_ERRORS, 1);
                 return;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
@@ -601,5 +612,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
     self->state = NN_CTCP_STATE_CONNECTING;
+	nn_epbase_stat_increment (&self->epbase,
+		NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
 

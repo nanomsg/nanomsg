@@ -39,6 +39,13 @@ struct nn_pipe;
 /*  The maximum implemented transport ID. */
 #define NN_MAX_TRANSPORT 3
 
+/*  The socket-internal statistics  */
+#define NN_STAT_MESSAGES_SENT          301
+#define NN_STAT_MESSAGES_RECEIVED      302
+#define NN_STAT_BYTES_SENT             303
+#define NN_STAT_BYTES_RECEIVED         304
+
+
 struct nn_sock
 {
     /*  Socket state machine. */
@@ -84,6 +91,45 @@ struct nn_sock
 
     /*  Transport-specific socket options. */
     struct nn_optset *optsets [NN_MAX_TRANSPORT];
+
+    struct {
+
+        /*****  The ever-incrementing counters  *****/
+
+        /*  Successfully established connections  */
+        uint64_t connects;
+        /*  Forcedly closed connections  */
+        uint64_t dropped_connections;
+        /*  Connections closed by peer  */
+        uint64_t broken_connections;
+        /*  Errors trying to establish active connection  */
+        uint64_t connect_errors;
+        /*  Errors binding to specified port  */
+        uint64_t bind_errors;
+        /*  Errors accepting connections at nn_bind()'ed endpoint  */
+        uint64_t accept_errors;
+
+        /*  Messages sent  */
+        uint64_t messages_sent;
+        /*  Messages received  */
+        uint64_t messages_received;
+        /*  Bytes sent (sum length of data in messages sent)  */
+        uint64_t bytes_sent;
+        /*  Bytes recevied (sum length of data in messages received)  */
+        uint64_t bytes_received;
+
+        /*****  Level-style values *****/
+
+        /*  Number of currently established connections  */
+        uint64_t current_connections;
+        /*  Number of connections currently in progress  */
+        uint64_t inprogress_connections;
+        /*  The currently set priority for sending data  */
+        uint64_t current_snd_priority;
+        /*  Number of endpoints having last_errno set to non-zero value  */
+        uint64_t current_ep_errors;
+
+    } statistics;
 };
 
 /*  Initialise the socket. */
@@ -121,7 +167,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags);
 
 /*  Set a socket option. */
 int nn_sock_setopt (struct nn_sock *self, int level, int option,
-    const void *optval, size_t optvallen); 
+    const void *optval, size_t optvallen);
 
 /*  Retrieve a socket option. This function is to be called from the API. */
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
@@ -135,5 +181,9 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level, int option,
 /*  Used by pipes. */
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe);
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
+
+/*  Monitoring callbacks  */
+void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
+void nn_sock_stat_increment(struct nn_sock *self, int name, int increment);
 
 #endif

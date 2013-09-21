@@ -84,6 +84,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
     /*  Actual file descriptor will be generated during 'start' step. */
     self->s = -1;
+    self->errnum = 0;
 
     self->in.buf = NULL;
     self->in.len = 0;
@@ -358,6 +359,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
+        self->errnum = errno;
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -492,6 +494,8 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (usock->state != NN_USOCK_STATE_ACCEPTING &&
             usock->state != NN_USOCK_STATE_CANCELLING);
 
+        usock->errnum = 0;
+
         /*  Synchronous stop. */
         if (usock->state == NN_USOCK_STATE_IDLE)
             goto finish3;
@@ -546,6 +550,8 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     struct nn_usock *usock;
     int s;
     size_t sz;
+    int sockerr;
+    socklen_t sockerr_len;
 
     usock = nn_cont (self, struct nn_usock, fsm);
 
@@ -672,8 +678,24 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established,
-                    NN_USOCK_CONNECTED);
+                sockerr_len = sizeof(sockerr);
+                rc = getsockopt (usock->s, SOL_SOCKET, SO_ERROR,
+                    &sockerr, &sockerr_len);
+                errno_assert (rc == 0);
+                nn_assert (sockerr_len == sizeof (sockerr));
+                if (sockerr == 0) {
+                    nn_fsm_raise (&usock->fsm, &usock->event_established,
+                        NN_USOCK_CONNECTED);
+                } else {
+                    usock->errnum = sockerr;
+                    nn_worker_rm_fd (usock->worker, &usock->wfd);
+                    rc = close (usock->s);
+                    errno_assert (rc == 0);
+                    usock->s = -1;
+                    usock->state = NN_USOCK_STATE_DONE;
+                    nn_fsm_raise (&usock->fsm,
+                        &usock->event_error, NN_USOCK_ERROR);
+                }
                 return;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);

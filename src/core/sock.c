@@ -127,6 +127,24 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->sndprio = 8;
     self->ipv4only = 1;
 
+    /* Initialize statistic entries */
+    self->statistics.connects = 0;
+    self->statistics.dropped_connections = 0;
+    self->statistics.broken_connections = 0;
+    self->statistics.connect_errors = 0;
+    self->statistics.bind_errors = 0;
+    self->statistics.accept_errors = 0;
+
+    self->statistics.messages_sent = 0;
+    self->statistics.messages_received = 0;
+    self->statistics.bytes_sent = 0;
+    self->statistics.bytes_received = 0;
+
+    self->statistics.current_connections = 0;
+    self->statistics.inprogress_connections = 0;
+    self->statistics.current_snd_priority = 0;
+    self->statistics.current_ep_errors = 0;
+
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)
@@ -917,3 +935,84 @@ static void nn_sock_action_zombify (struct nn_sock *self)
     }
 }
 
+void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
+{
+    if (errnum != 0) {
+        /*  A place to plug error reporting in  */
+        if(ep) {
+            fprintf(stderr, "Recoverable error in nanomsg: %s: %s\n",
+                nn_ep_getaddr(ep), nn_strerror(errnum));
+        } else {
+            fprintf(stderr, "Recoverable error in nanomsg: %s\n",
+                nn_strerror(errnum));
+        }
+        /*  End of plugged error reporting  */
+    }
+}
+
+void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
+{
+    switch (name) {
+        case NN_STAT_CONNECTS:
+            nn_assert (increment > 0);
+            self->statistics.connects += increment;
+            break;
+        case NN_STAT_DROPPED_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.dropped_connections += increment;
+            break;
+        case NN_STAT_BROKEN_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.broken_connections += increment;
+            break;
+        case NN_STAT_CONNECT_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.connect_errors += increment;
+            break;
+        case NN_STAT_BIND_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.bind_errors += increment;
+            break;
+        case NN_STAT_ACCEPT_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.accept_errors += increment;
+            break;
+        case NN_STAT_MESSAGES_SENT:
+            nn_assert (increment > 0);
+            self->statistics.messages_sent += increment;
+            break;
+        case NN_STAT_MESSAGES_RECEIVED:
+            nn_assert (increment > 0);
+            self->statistics.messages_received += increment;
+            break;
+        case NN_STAT_BYTES_SENT:
+            nn_assert (increment > 0);
+            self->statistics.bytes_sent += increment;
+            break;
+        case NN_STAT_BYTES_RECEIVED:
+            nn_assert (increment > 0);
+            self->statistics.bytes_received += increment;
+            break;
+
+        case NN_STAT_CURRENT_CONNECTIONS:
+            nn_assert (increment > 0 ||
+                self->statistics.current_connections >= -increment);
+            self->statistics.current_connections += increment;
+            break;
+        case NN_STAT_INPROGRESS_CONNECTIONS:
+            nn_assert (increment > 0 ||
+                self->statistics.inprogress_connections >= -increment);
+            self->statistics.inprogress_connections += increment;
+            break;
+        case NN_STAT_CURRENT_SND_PRIORITY:
+            /*  This is an exception, we don't want to incement priority  */
+            nn_assert(increment > 0 && increment <= 16);
+            self->statistics.current_snd_priority = increment;
+            break;
+        case NN_STAT_CURRENT_EP_ERRORS:
+            nn_assert (increment > 0 ||
+                self->statistics.current_ep_errors >= -increment);
+            self->statistics.current_ep_errors += increment;
+            break;
+    }
+}

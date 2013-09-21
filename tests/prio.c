@@ -63,6 +63,28 @@ int main ()
     test_close (push);
     test_close (pull2);
 
+    /*  Test removing a pipe from the list. */
+
+    push = test_socket (AF_SP, NN_PUSH);
+    test_bind (push, SOCKET_ADDRESS_A);
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull1, SOCKET_ADDRESS_A);
+
+    test_send (push, "ABC");
+    test_recv (pull1, "ABC");
+    test_close (pull1);
+
+    rc = nn_send (push, "ABC", 3, NN_DONTWAIT);
+    nn_assert (rc == -1 && nn_errno() == EAGAIN);
+
+    pull1 = test_socket (AF_SP, NN_PULL);
+    test_connect (pull1, SOCKET_ADDRESS_A);
+
+    test_send (push, "ABC");
+    test_recv (pull1, "ABC");
+    test_close (pull1);
+    test_close (push);
+
     return 0;
 }
 

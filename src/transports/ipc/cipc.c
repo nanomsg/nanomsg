@@ -225,10 +225,21 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_CONNECTED:
                 nn_sipc_start (&cipc->sipc, &cipc->usock);
                 cipc->state = NN_CIPC_STATE_ACTIVE;
+                nn_epbase_stat_increment (&cipc->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cipc->epbase,
+                    NN_STAT_CONNECTS, 1);
+                nn_epbase_clear_error (&cipc->epbase);
                 return;
             case NN_USOCK_ERROR:
+                nn_epbase_set_error (&cipc->epbase,
+                    nn_usock_geterrno (&cipc->usock));
                 nn_usock_stop (&cipc->usock);
                 cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
+                nn_epbase_stat_increment (&cipc->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cipc->epbase,
+                    NN_STAT_CONNECT_ERRORS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cipc->state, src, type);
@@ -396,6 +407,9 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
         sizeof (struct sockaddr_un));
     self->state  = NN_CIPC_STATE_CONNECTING;
+
+    nn_epbase_stat_increment (&self->epbase,
+        NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
 
 #endif

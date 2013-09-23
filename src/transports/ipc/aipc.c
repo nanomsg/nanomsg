@@ -38,6 +38,7 @@
 
 #define NN_AIPC_SRC_USOCK 1
 #define NN_AIPC_SRC_SIPC 2
+#define NN_AIPC_SRC_LISTENER 3
 
 /*  Private functions. */
 static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
@@ -85,7 +86,7 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
-    self->listener_owner.src = NN_AIPC_SRC_USOCK;
+    self->listener_owner.src = NN_AIPC_SRC_LISTENER;
     self->listener_owner.fsm = &self->fsm;
     nn_usock_swap_owner (listener, &self->listener_owner);
 
@@ -122,7 +123,7 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
             nn_assert (aipc->listener_owner.fsm);
             nn_usock_swap_owner (aipc->listener, &aipc->listener_owner);
             aipc->listener = NULL;
-            aipc->listener_owner.src = 1;
+            aipc->listener_owner.src = -1;
             aipc->listener_owner.fsm = NULL;
         }
         aipc->state = NN_AIPC_STATE_IDLE;
@@ -175,6 +176,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
+                nn_epbase_clear_error (aipc->epbase);
 
                 /*  Set the relevant socket options. */
                 sz = sizeof (val);
@@ -201,6 +203,21 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 nn_usock_activate (&aipc->usock);
                 nn_sipc_start (&aipc->sipc, &aipc->usock);
                 aipc->state = NN_AIPC_STATE_ACTIVE;
+
+                return;
+
+            default:
+                nn_fsm_bad_action (aipc->state, src, type);
+            }
+
+        case NN_AIPC_SRC_LISTENER:
+            switch (type) {
+            case NN_USOCK_ACCEPT_ERROR:
+                nn_epbase_set_error (aipc->epbase,
+                    nn_usock_geterrno (aipc->listener));
+                nn_epbase_stat_increment (aipc->epbase,
+                    NN_STAT_ACCEPT_ERRORS, 1);
+                nn_usock_accept (&aipc->usock, aipc->listener);
 
                 return;
 

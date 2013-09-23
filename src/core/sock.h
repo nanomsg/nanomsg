@@ -121,13 +121,13 @@ struct nn_sock
         /*****  Level-style values *****/
 
         /*  Number of currently established connections  */
-        uint64_t current_connections;
+        int current_connections;
         /*  Number of connections currently in progress  */
-        uint64_t inprogress_connections;
+        int inprogress_connections;
         /*  The currently set priority for sending data  */
         int current_snd_priority;
         /*  Number of endpoints having last_errno set to non-zero value  */
-        uint64_t current_ep_errors;
+        int current_ep_errors;
 
     } statistics;
 };

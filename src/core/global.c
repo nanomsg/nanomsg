@@ -803,13 +803,21 @@ static void nn_global_add_socktype (struct nn_socktype *socktype)
 static void nn_global_submit_counter (int i, struct nn_sock *s,
     char *name, uint64_t value)
 {
-    fprintf(stderr, "socket.%d:%s: %lu\n", i, name, value);
+    if(*s->socket_name) {
+        fprintf(stderr, "socket.%s:%s: %lu\n", s->socket_name, name, value);
+    } else {
+        fprintf(stderr, "socket.%d:%s: %lu\n", i, name, value);
+    }
 }
 
 static void nn_global_submit_level (int i, struct nn_sock *s,
     char *name, int value)
 {
-    fprintf(stderr, "socket.%d:%s: %lu\n", i, name, value);
+    if(*s->socket_name) {
+        fprintf(stderr, "socket.%s:%s: %d\n", s->socket_name, name, value);
+    } else {
+        fprintf(stderr, "socket.%d:%s: %d\n", i, name, value);
+    }
 }
 
 static void nn_global_submit_statistics () {

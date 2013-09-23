@@ -132,6 +132,9 @@ struct nn_sock
         int current_ep_errors;
 
     } statistics;
+
+    /*  The socket name for statistics  */
+    char socket_name[64];
 };
 
 /*  Initialise the socket. */

@@ -146,6 +146,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->statistics.current_snd_priority = 0;
     self->statistics.current_ep_errors = 0;
 
+    self->socket_name[0] = '\0';
+
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)
@@ -275,6 +277,15 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
         if (!optset)
             return -ENOPROTOOPT;
         return optset->vfptr->setopt (optset, option, optval, optvallen);
+    }
+
+    /*  Special-casing socket name for now as it's the only string option  */
+    if (level == NN_SOL_SOCKET && option == NN_SOCKET_NAME) {
+        if (optvallen > 63)
+            return -EINVAL;
+        memcpy (self->socket_name, optval, optvallen);
+        self->socket_name [optvallen] = 0;
+        return 0;
     }
 
     /*  At this point we assume that all options are of type int. */
@@ -410,6 +421,10 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
+            return 0;
+        case NN_SOCKET_NAME:
+            strncpy (optval, self->socket_name, *optvallen);
+            *optvallen = strlen(self->socket_name);
             return 0;
         default:
             return -ENOPROTOOPT;

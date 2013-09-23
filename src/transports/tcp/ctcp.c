@@ -362,7 +362,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (&ctcp->epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
                 nn_epbase_stat_increment (&ctcp->epbase,
-                    NN_STAT_CONNECTS, 1);
+                    NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 nn_epbase_clear_error (&ctcp->epbase);
                 return;
             case NN_USOCK_ERROR:

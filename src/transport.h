@@ -118,16 +118,17 @@ void nn_epbase_clear_error(struct nn_epbase *self);
 void nn_epbase_stat_increment(struct nn_epbase *self, int name, int increment);
 
 
-#define NN_STAT_CONNECTS               101
-#define NN_STAT_DROPPED_CONNECTIONS    102
-#define NN_STAT_BROKEN_CONNECTIONS     103
-#define NN_STAT_CONNECT_ERRORS         104
-#define NN_STAT_BIND_ERRORS            105
-#define NN_STAT_ACCEPT_ERRORS          106
+#define NN_STAT_ESTABLISHED_CONNECTIONS 101
+#define NN_STAT_ACCEPTED_CONNECTIONS    102
+#define NN_STAT_DROPPED_CONNECTIONS     103
+#define NN_STAT_BROKEN_CONNECTIONS      104
+#define NN_STAT_CONNECT_ERRORS          105
+#define NN_STAT_BIND_ERRORS             106
+#define NN_STAT_ACCEPT_ERRORS           107
 
-#define NN_STAT_CURRENT_CONNECTIONS    201
-#define NN_STAT_INPROGRESS_CONNECTIONS 202
-#define NN_STAT_CURRENT_EP_ERRORS      203
+#define NN_STAT_CURRENT_CONNECTIONS     201
+#define NN_STAT_INPROGRESS_CONNECTIONS  202
+#define NN_STAT_CURRENT_EP_ERRORS       203
 
 
 /******************************************************************************/

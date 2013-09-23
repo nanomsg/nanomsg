@@ -206,6 +206,9 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_stcp_start (&atcp->stcp, &atcp->usock);
                 atcp->state = NN_ATCP_STATE_ACTIVE;
 
+                nn_epbase_stat_increment (atcp->epbase,
+                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+
                 return;
 
             default:

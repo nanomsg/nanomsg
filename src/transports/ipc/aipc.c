@@ -208,6 +208,9 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 nn_sipc_start (&aipc->sipc, &aipc->usock);
                 aipc->state = NN_AIPC_STATE_ACTIVE;
 
+                nn_epbase_stat_increment (aipc->epbase,
+                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+
                 return;
 
             default:

@@ -96,8 +96,10 @@ struct nn_sock
 
         /*****  The ever-incrementing counters  *****/
 
-        /*  Successfully established connections  */
-        uint64_t connects;
+        /*  Successfully established nn_connect() connections  */
+        uint64_t established_connections;
+        /*  Successfully accepted connections  */
+        uint64_t accepted_connections;
         /*  Forcedly closed connections  */
         uint64_t dropped_connections;
         /*  Connections closed by peer  */

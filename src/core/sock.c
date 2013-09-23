@@ -128,7 +128,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->ipv4only = 1;
 
     /* Initialize statistic entries */
-    self->statistics.connects = 0;
+    self->statistics.established_connections = 0;
+    self->statistics.accepted_connections = 0;
     self->statistics.dropped_connections = 0;
     self->statistics.broken_connections = 0;
     self->statistics.connect_errors = 0;
@@ -960,9 +961,13 @@ void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
 void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
 {
     switch (name) {
-        case NN_STAT_CONNECTS:
+        case NN_STAT_ESTABLISHED_CONNECTIONS:
             nn_assert (increment > 0);
-            self->statistics.connects += increment;
+            self->statistics.established_connections += increment;
+            break;
+        case NN_STAT_ACCEPTED_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.accepted_connections += increment;
             break;
         case NN_STAT_DROPPED_CONNECTIONS:
             nn_assert (increment > 0);

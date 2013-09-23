@@ -821,7 +821,9 @@ static void nn_global_submit_statistics () {
             continue;
         nn_ctx_enter (&s->ctx);
         nn_global_submit_counter (i, s,
-            "connects", s->statistics.connects);
+            "established_connections", s->statistics.established_connections);
+        nn_global_submit_counter (i, s,
+            "accepted_connections", s->statistics.accepted_connections);
         nn_global_submit_counter (i, s,
             "dropped_connections", s->statistics.dropped_connections);
         nn_global_submit_counter (i, s,

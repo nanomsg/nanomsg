@@ -30,6 +30,7 @@
 #include "ep.h"
 
 #include "../aio/pool.h"
+#include "../aio/timer.h"
 
 #include "../utils/err.h"
 #include "../utils/alloc.h"
@@ -89,6 +90,12 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 #define NN_CTX_FLAG_ZOMBIE 1
 
+#define NN_GLOBAL_SRC_STAT_TIMER 1
+
+#define NN_GLOBAL_STATE_IDLE           1
+#define NN_GLOBAL_STATE_ACTIVE         2
+#define NN_GLOBAL_STATE_STOPPING_TIMER 3
+
 struct nn_global {
 
     /*  The global table of existing sockets. The descriptor representing
@@ -114,6 +121,12 @@ struct nn_global {
 
     /*  Pool of worker threads. */
     struct nn_pool pool;
+
+    /*  Timer and other machinery for submitting statistics  */
+    struct nn_ctx ctx;
+    struct nn_fsm fsm;
+    int state;
+    struct nn_timer stat_timer;
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -130,6 +143,13 @@ static void nn_global_add_socktype (struct nn_socktype *socktype);
 /*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
 static int nn_global_create_ep (int s, const char *addr, int bind);
+
+/*  FSM callbacks  */
+static void nn_global_handler (struct nn_fsm *self,
+    int src, int type, void *srcptr);
+static void nn_global_shutdown (struct nn_fsm *self,
+    int src, int type, void *srcptr);
+
 
 int nn_errno (void)
 {
@@ -215,6 +235,17 @@ static void nn_global_init (void)
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);
+
+    /*  Start FSM  */
+    nn_fsm_init_root (&self.fsm, nn_global_handler, nn_global_shutdown,
+        &self.ctx);
+    self.state = NN_GLOBAL_STATE_IDLE;
+
+    /*  Start statistics collection timer. */
+    nn_ctx_init (&self.ctx, nn_global_getpool (), NULL);
+    nn_timer_init (&self.stat_timer, NN_GLOBAL_SRC_STAT_TIMER, &self.fsm);
+
+    nn_fsm_start (&self.fsm);
 }
 
 static void nn_global_term (void)
@@ -229,6 +260,11 @@ static void nn_global_term (void)
     nn_assert (self.socks);
     if (self.nsocks > 0)
         return;
+
+    /*  Stop the FSM  */
+    nn_ctx_enter (&self.ctx);
+    nn_fsm_stop (&self.fsm);
+    nn_ctx_leave (&self.ctx);
 
     /*  Shut down the worker threads. */
     nn_pool_term (&self.pool);
@@ -840,3 +876,84 @@ struct nn_pool *nn_global_getpool ()
     return &self.pool;
 }
 
+static void nn_global_handler (struct nn_fsm *self,
+    int src, int type, void *srcptr)
+{
+
+    struct nn_global *global;
+
+    global = nn_cont (self, struct nn_global, fsm);
+
+    switch (global->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/*  The state machine wasn't yet started.                                     */
+/******************************************************************************/
+    case NN_GLOBAL_STATE_IDLE:
+        switch (src) {
+
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_FSM_START:
+                global->state = NN_GLOBAL_STATE_ACTIVE;
+                nn_timer_start (&global->stat_timer, 10000);
+                return;
+            default:
+                nn_fsm_bad_action (global->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (global->state, src, type);
+        }
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/*  Normal lifetime for global object.                                        */
+/******************************************************************************/
+    case NN_GLOBAL_STATE_ACTIVE:
+        switch (src) {
+
+        case NN_GLOBAL_SRC_STAT_TIMER:
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                printf("STATISTICS\n");
+                /*  No need to change state  */
+                nn_timer_stop (&global->stat_timer);
+                return;
+            case NN_TIMER_STOPPED:
+                nn_timer_start (&global->stat_timer, 10000);
+                return;
+            default:
+                nn_fsm_bad_action (global->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (global->state, src, type);
+        }
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_fsm_bad_state (global->state, src, type);
+    }
+}
+
+static void nn_global_shutdown (struct nn_fsm *self,
+    int src, int type, void *srcptr)
+{
+
+    struct nn_global *global;
+
+    global = nn_cont (self, struct nn_global, fsm);
+
+    nn_assert (global->state == NN_GLOBAL_STATE_ACTIVE
+        || global->state == NN_GLOBAL_STATE_IDLE);
+    if (global->state == NN_GLOBAL_STATE_ACTIVE) {
+        if (!nn_timer_isidle (&global->stat_timer)) {
+            nn_timer_stop (&global->stat_timer);
+            return;
+        }
+    }
+}

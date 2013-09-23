@@ -1012,10 +1012,9 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
             self->statistics.inprogress_connections += increment;
             break;
         case NN_STAT_CURRENT_SND_PRIORITY:
-            /*  This is an exception, we don't want to incement priority  */
-            nn_assert(increment > 0 && increment <= 16);
+            /*  This is an exception, we don't want to increment priority  */
+            nn_assert(increment > 0 && increment <= 16 || increment == -1);
             self->statistics.current_snd_priority = increment;
-            printf("NEW PRIORITY %d\n", increment);
             break;
         case NN_STAT_CURRENT_EP_ERRORS:
             nn_assert (increment > 0 ||

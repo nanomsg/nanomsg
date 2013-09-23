@@ -98,4 +98,7 @@ struct nn_pipe *nn_priolist_getpipe (struct nn_priolist *self);
     nn_priolist_activate function. */
 void nn_priolist_advance (struct nn_priolist *self, int release);
 
+/*  Returns current priority. Used for statistics only  */
+int nn_priolist_get_priority (struct nn_priolist *self);
+
 #endif

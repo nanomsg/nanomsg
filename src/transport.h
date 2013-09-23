@@ -127,8 +127,7 @@ void nn_epbase_stat_increment(struct nn_epbase *self, int name, int increment);
 
 #define NN_STAT_CURRENT_CONNECTIONS    201
 #define NN_STAT_INPROGRESS_CONNECTIONS 202
-#define NN_STAT_CURRENT_SND_PRIORITY   203
-#define NN_STAT_CURRENT_EP_ERRORS      204
+#define NN_STAT_CURRENT_EP_ERRORS      203
 
 
 /******************************************************************************/

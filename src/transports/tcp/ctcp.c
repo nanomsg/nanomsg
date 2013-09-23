@@ -242,7 +242,11 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_stcp_stop (&ctcp->stcp);
+        if (!nn_stcp_isidle (&ctcp->stcp)) {
+            nn_epbase_stat_increment (&ctcp->epbase,
+                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_stcp_stop (&ctcp->stcp);
+        }
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
     }
     if (nn_slow (ctcp->state == NN_CTCP_STATE_STOPPING_STCP_FINAL)) {
@@ -391,6 +395,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_STCP_ERROR:
                 nn_stcp_stop (&ctcp->stcp);
                 ctcp->state = NN_CTCP_STATE_STOPPING_STCP;
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);

@@ -63,7 +63,7 @@ AM_PROG_CC_C_O
 ################################################################################
 #  Check whether GCC compiler is used.                                         #
 ################################################################################
-AS_IF([test x"$GCC"=xyes],
+AS_IF([test x"$GCC" = xyes],
     [AC_DEFINE([NN_HAVE_GCC])]
 )
 
@@ -81,7 +81,7 @@ AC_CACHE_CHECK([whether we are using ICC compiler],
         [ac_icc_compiler=yes],
         [ac_icc_compiler=no])
     ac_cv_icc_compiler=$ac_icc_compiler])
-AS_IF([test x"$ac_cv_icc_compiler"=xyes],
+AS_IF([test x"$ac_cv_icc_compiler" = xyes],
     [AC_DEFINE([NN_HAVE_ICC])]
 )
 
@@ -99,7 +99,7 @@ AC_CACHE_CHECK([whether we are using Sun Studio compiler],
         [ac_sun_studio_compiler=yes],
         [ac_sun_studio_compiler=no])
     ac_cv_sun_studio_compiler=$ac_sun_studio_compiler])
-AS_IF([test x"$ac_cv_sun_studio_compiler"=xyes],
+AS_IF([test x"$ac_cv_sun_studio_compiler" = xyes],
     [AC_DEFINE([NN_HAVE_SUN_STUDIO])]
 )
 
@@ -117,8 +117,26 @@ AC_CACHE_CHECK([whether we are using clang compiler],
         [ac_clang_compiler=yes],
         [ac_clang_compiler=no])
     ac_cv_clang_compiler=$ac_clang_compiler])
-AS_IF([test x"$ac_cv_clang_compiler"=xyes],
+AS_IF([test x"$ac_cv_clang_compiler" = xyes],
     [AC_DEFINE([NN_HAVE_CLANG])]
+)
+
+################################################################################
+#  Check whether HP aCC compiler is used.                                      #
+################################################################################
+AC_CACHE_CHECK([whether we are using HP aCC compiler],
+    [ac_cv_hpacc_compiler],
+    [AC_COMPILE_IFELSE(
+        [AC_LANG_PROGRAM([], [[
+            #ifndef __HP_cc
+                #error
+            #endif
+            ]])],
+        [ac_hpacc_compiler=yes],
+        [ac_hpacc_compiler=no])
+    ac_cv_hpacc_compiler=$ac_hpacc_compiler])
+AS_IF([test x"$ac_cv_hpacc_compiler" = xyes],
+    [AC_DEFINE([NN_HAVE_HPACC])]
 )
 
 ################################################################################
@@ -135,6 +153,8 @@ if test "x$enable_debug" = "xyes"; then
         CFLAGS="-g -O0 "
     elif test "x$ac_cv_sun_studio_compiler" = "xyes"; then
         CFLAGS="-g0 "
+    elif test "x$ac_cv_hpacc_compiler" = "xyes"; then
+        CFLAGS="-g +O0 "
     fi
     ORIG_CFLAGS="${CFLAGS:-none}"
     if test "x$ORIG_CFLAGS" != "xnone"; then
@@ -151,13 +171,13 @@ AC_ARG_ENABLE([doc],
     AS_HELP_STRING([--enable-doc], [Build documentation [default=no]])
 )
 
-AS_IF([test x"$enable_doc" == "xyes"], [
+AS_IF([test x"$enable_doc" = "xyes"], [
     AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
-    AS_IF([test x"$ASCIIDOC" == "x"],[
+    AS_IF([test x"$ASCIIDOC" = "x"],[
         AC_MSG_ERROR([Please install asciidoc to build the documentation])
     ])
     AC_CHECK_PROGS([XMLTO], [xmlto])
-    AS_IF([test x"$XMLTO" == "x"], [
+    AS_IF([test x"$XMLTO" = "x"], [
         AC_MSG_ERROR([Please install xmlto to build the documentation])
     ])
 ])
@@ -192,6 +212,7 @@ AS_CASE([${host_os}],
     [*freebsd*], [AC_DEFINE([NN_HAVE_FREEBSD])],
     [*netbsd*],  [AC_DEFINE([NN_HAVE_NETBSD])],
     [*openbsd*], [AC_DEFINE([NN_HAVE_OPENBSD])],
+    [*hpux*],    [AC_DEFINE([NN_HAVE_HPUX])],
     [*solaris*], [
         AC_DEFINE([NN_HAVE_SOLARIS])
         AC_CHECK_LIB([socket], [socket])
@@ -278,11 +299,11 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
     [[uint32_t value; atomic_cas_32 (&value, 0, 0); return 0;]])],[
     AC_DEFINE([NN_HAVE_ATOMIC_SOLARIS])],[])
 
-AS_IF([test x"$ac_cv_func_eventfd"=xyes], [
+AS_IF([test x"$ac_cv_func_eventfd" = xyes], [
     AC_DEFINE([NN_USE_EVENTFD])], [
-    AS_IF([test x"$ac_cv_func_pipe"=xyes], [
+    AS_IF([test x"$ac_cv_func_pipe" = xyes], [
         AC_DEFINE([NN_USE_PIPE])], [
-        AS_IF([test x"$ac_cv_func_socketpair"=xyes], [
+        AS_IF([test x"$ac_cv_func_socketpair" = xyes], [
             AC_DEFINE([NN_USE_SOCKETPAIR])], [
             AC_MSG_ERROR([No signaling supported])
         ])

@@ -418,7 +418,7 @@ int nn_setsockopt (int s, int level, int option, const void *optval,
 
     return 0;
 }
- 
+
 int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen)
 {
@@ -532,6 +532,8 @@ int nn_send (int s, const void *buf, size_t len, int flags)
         errno = -rc;
         return -1;
     }
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, len);
 
     return (int) len;
 }
@@ -566,6 +568,8 @@ int nn_recv (int s, void *buf, size_t len, int flags)
         memcpy (buf, nn_chunkref_data (&msg.body), len < sz ? len : sz);
     }
     nn_msg_term (&msg);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_RECEIVED, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_RECEIVED, sz);
 
     return (int) sz;
 }
@@ -663,6 +667,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         errno = -rc;
         return -1;
     }
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, sz);
 
     return (int) sz;
 }
@@ -735,7 +741,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
             /*  TODO: Copy the data to the supplied buffer, prefix them
                 with size. */
             nn_assert (0);
-        }   
+        }
     }
 
     nn_msg_term (&msg);
@@ -749,7 +755,7 @@ static void nn_global_add_transport (struct nn_transport *transport)
         transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
-    
+
 }
 
 static void nn_global_add_socktype (struct nn_socktype *socktype)

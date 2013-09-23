@@ -56,6 +56,7 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     self->epbase = NULL;
     self->sock = sock;
     self->eid = eid;
+    self->last_errno = 0;
     nn_list_item_init (&self->item);
 
     /*  Store the textual form of the address. */

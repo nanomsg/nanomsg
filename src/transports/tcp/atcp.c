@@ -174,6 +174,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
+                nn_epbase_clear_error (atcp->epbase);
 
                 /*  Set the relevant socket options. */
                 sz = sizeof (val);
@@ -201,6 +202,21 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_stcp_start (&atcp->stcp, &atcp->usock);
                 atcp->state = NN_ATCP_STATE_ACTIVE;
 
+                return;
+
+            default:
+                nn_fsm_bad_action (atcp->state, src, type);
+            }
+
+        case NN_ATCP_SRC_LISTENER:
+            switch (type) {
+
+            case NN_USOCK_ACCEPT_ERROR:
+                nn_epbase_set_error (atcp->epbase,
+                    nn_usock_geterrno(atcp->listener));
+                nn_epbase_stat_increment (atcp->epbase,
+                    NN_STAT_ACCEPT_ERRORS, 1);
+                nn_usock_accept (&atcp->usock, atcp->listener);
                 return;
 
             default:

@@ -363,7 +363,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&ctcp->epbase,
-                nn_usock_geterrno (&ctcp->usock));
+                    nn_usock_geterrno (&ctcp->usock));
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
                 nn_epbase_stat_increment (&ctcp->epbase,

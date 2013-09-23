@@ -652,12 +652,19 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    return self->sockbase->vfptr->add (self->sockbase, pipe);
+    int rc;
+
+    rc = self->sockbase->vfptr->add (self->sockbase, pipe);
+    if (nn_slow (rc >= 0)) {
+        nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, 1);
+    }
+    return rc;
 }
 
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
 {
     self->sockbase->vfptr->rm (self->sockbase, pipe);
+    nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, -1);
 }
 
 static void nn_sock_onleave (struct nn_ctx *self)

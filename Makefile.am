@@ -100,6 +100,8 @@ NANOMSG_UTILS = \
     src/utils/chunkref.c \
     src/utils/clock.h \
     src/utils/clock.c \
+    src/utils/closefd.h \
+    src/utils/closefd.c \
     src/utils/cont.h \
     src/utils/efd.h \
     src/utils/efd.c \

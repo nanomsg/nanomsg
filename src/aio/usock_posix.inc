@@ -22,6 +22,7 @@
 */
 
 #include "../utils/alloc.h"
+#include "../utils/closefd.h"
 #include "../utils/cont.h"
 #include "../utils/fast.h"
 #include "../utils/err.h"
@@ -526,8 +527,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_fd (usock->worker, &usock->wfd);
 finish1:
-        rc = close (usock->s);
-        errno_assert (rc == 0);
+        nn_closefd (usock->s);
         usock->s = -1;
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
@@ -657,8 +657,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error,
@@ -677,8 +676,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -727,8 +725,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_FD_ERR:
 error:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -758,8 +755,7 @@ error:
             switch (type) {
             case NN_WORKER_TASK_EXECUTE:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);

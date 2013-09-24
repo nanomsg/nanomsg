@@ -24,6 +24,7 @@
 #include "literal.h"
 
 #include "../../utils/err.h"
+#include "../../utils/closefd.h"
 
 #include <string.h>
 
@@ -150,8 +151,7 @@ int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
 
     /*  Create the interface name resolution request. */
     if (sizeof (req.ifr_name) <= addrlen) {
-        rc = close (s);
-        errno_assert (rc == 0);
+        nn_closefd (s);
         return -ENODEV;
     }
     memcpy (req.ifr_name, addr, addrlen);
@@ -160,8 +160,7 @@ int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
     /*  Execute the request. */
     rc = ioctl (s, SIOCGIFADDR, (caddr_t) &req, sizeof (struct ifreq));
     if (rc == -1) {
-        rc = close (s);
-        errno_assert (rc == 0);
+        nn_closefd (s);
         return -ENODEV;
     }
 
@@ -173,8 +172,7 @@ int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
             sizeof (struct sockaddr_in));
     if (resultlen)
         *resultlen = sizeof (struct sockaddr_in);
-    rc = close (s);
-    errno_assert (rc == 0);
+    nn_closefd (s);
     return 0;
 }
 

@@ -22,6 +22,7 @@
 
 #include "../utils/fast.h"
 #include "../utils/err.h"
+#include "../utils/closefd.h"
 
 #include <unistd.h>
 
@@ -48,10 +49,7 @@ int nn_poller_init (struct nn_poller *self)
 
 void nn_poller_term (struct nn_poller *self)
 {
-    int rc;
-
-    rc = close (self->kq);
-    errno_assert (rc == 0);
+    nn_closefd (self->kq);
 }
 
 void nn_poller_add (struct nn_poller *self, int fd,

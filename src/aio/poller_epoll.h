@@ -21,6 +21,7 @@
 */
 
 #include <sys/epoll.h>
+#include <stdint.h>
 
 #define NN_POLLER_HAVE_ASYNC_ADD 1
 

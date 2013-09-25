@@ -120,6 +120,7 @@ NANOMSG_UTILS = \
     src/utils/glock.c \
     src/utils/hash.h \
     src/utils/hash.c \
+    src/utils/int.h \
     src/utils/list.h \
     src/utils/list.c \
     src/utils/msg.h \
@@ -443,6 +444,8 @@ FEATURE_TESTS = \
     tests/separation \
     tests/zerocopy \
     tests/shutdown
+
+EXTRA_DIST += tests/testutil.h
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \

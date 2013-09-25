@@ -45,7 +45,6 @@ int main ()
     test_connect (req1, SOCKET_ADDRESS);
     req2 = test_socket (AF_SP, NN_REQ);
     test_connect (req2, SOCKET_ADDRESS);
-    errno_assert (rc >= 0);
 
     /*  Check invalid sequence of sends and recvs. */
     rc = nn_send (rep1, "ABC", 3, 0);

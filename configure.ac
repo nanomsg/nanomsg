@@ -180,6 +180,10 @@ AS_IF([test x"$enable_doc" = "xyes"], [
     AS_IF([test x"$XMLTO" = "x"], [
         AC_MSG_ERROR([Please install xmlto to build the documentation])
     ])
+    AS_IF([test ! -d "doc"], [
+        AC_PROG_MKDIR_P
+        AS_MKDIR_P("doc")
+    ])
 ])
 AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
 

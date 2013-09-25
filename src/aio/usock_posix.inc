@@ -701,6 +701,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 rc = nn_usock_recv_raw (usock, usock->in.buf, &sz);
                 if (nn_fast (rc == 0)) {
                     usock->in.len -= sz;
+                    usock->in.buf += sz;
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
                         nn_fsm_raise (&usock->fsm, &usock->event_received,

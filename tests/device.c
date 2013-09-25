@@ -160,7 +160,6 @@ int main ()
     test_connect (ende1, SOCKET_ADDRESS_E);
     ende2 = test_socket (AF_SP, NN_BUS);
     test_connect (ende2, SOCKET_ADDRESS_E);
-    errno_assert (rc >= 0);
 
     /*  BUS is unreliable so wait a bit for connections to be established. */
     nn_sleep (100);

@@ -345,7 +345,8 @@ if DOC
 #  Build instructions.
 
 .txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf \
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
@@ -358,17 +359,20 @@ SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
 
 .txt.1.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .txt.3.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .txt.7.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 #  Cause man pages to be generated and installed.

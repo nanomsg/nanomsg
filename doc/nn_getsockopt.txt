@@ -101,7 +101,7 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
 
 RETURN VALUE
 ------------
-If the function succeeds zero is returned. Otherwise, negative number is
+If the function succeeds zero is returned. Otherwise, -1 is
 returned and 'errno' is set to to one of the values defined below.
 
 

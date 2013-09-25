@@ -36,7 +36,7 @@ set to EAGAIN.
 RETURN VALUE
 ------------
 If the function succeeds number of bytes in the message is returned. Otherwise,
-negative number is returned and 'errno' is set to to one of the values defined
+-1 is returned and 'errno' is set to to one of the values defined
 below.
 
 

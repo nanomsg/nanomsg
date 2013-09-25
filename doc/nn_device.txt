@@ -26,8 +26,8 @@ linknanomsg:nn_term[3] function.
 
 RETURN VALUE
 ------------
-The function loops until it hits an error. In such case it returns a negative
-value and sets 'errno' to one of the values defined below.
+The function loops until it hits an error. In such case it returns -1
+and sets 'errno' to one of the values defined below.
 
 ERRORS
 ------

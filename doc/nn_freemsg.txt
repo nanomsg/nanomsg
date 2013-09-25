@@ -24,7 +24,7 @@ efficient for large messages as it allows for using zero-copy techniques.
 
 RETURN VALUE
 ------------
-If the function succeeds zero is returned. Otherwise, negative number is
+If the function succeeds zero is returned. Otherwise, -1 is
 returned and 'errno' is set to to one of the values defined below.
 
 

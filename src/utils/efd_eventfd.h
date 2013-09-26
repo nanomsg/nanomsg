@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-typedef int nn_fd;
-
 struct nn_efd {
     int efd;
 };

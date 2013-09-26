@@ -108,6 +108,7 @@ set (NN_SOURCES
     utils/err.h
     utils/err.c
     utils/fast.h
+    utils/fd.h
     utils/glock.h
     utils/glock.c
     utils/hash.h

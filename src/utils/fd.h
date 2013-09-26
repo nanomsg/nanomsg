@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 Immanuel Weber, Fraunhofer FHR/AMLS  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,8 +20,14 @@
     IN THE SOFTWARE.
 */
 
-struct nn_efd {
-    int r;
-    int w;
-};
+#ifndef NN_FD_INCLUDED
+#define NN_FD_INCLUDED
 
+#ifdef NN_HAVE_WINDOWS
+#include "win.h"
+typedef SOCKET nn_fd;
+#else
+typedef int nn_fd;
+#endif
+
+#endif

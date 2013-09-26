@@ -24,6 +24,7 @@
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
+#include "../utils/fd.h"
 
 #include <string.h>
 
@@ -37,9 +38,8 @@
 
 /*  Private functions. */
 static int nn_device_loopback (int s);
-static int nn_device_twoway (int s1, int s1rcv, int s1snd,
-    int s2, int s2rcv, int s2snd);
-static int nn_device_oneway (int s1, int s1rcv, int s2, int s2snd);
+static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd, int s2, nn_fd s2rcv, nn_fd s2snd);
+static int nn_device_oneway (int s1, nn_fd s1rcv, int s2, nn_fd s2snd);
 static int nn_device_mvmsg (int from, int to, int flags);
 
 int nn_device (int s1, int s2)
@@ -47,10 +47,10 @@ int nn_device (int s1, int s2)
     int rc;
     int op1;
     int op2;
-    int s1rcv;
-    int s1snd;
-    int s2rcv;
-    int s2snd;
+    nn_fd s1rcv;
+    nn_fd s1snd;
+    nn_fd s2rcv;
+    nn_fd s2snd;
     size_t opsz;
 
     /*  At least one socket must be specified. */
@@ -190,8 +190,8 @@ int nn_device_loopback (int s)
 
 #if defined NN_HAVE_WINDOWS
 
-static int nn_device_twoway (int s1, int s1rcv, int s1snd,
-    int s2, int s2rcv, int s2snd)
+static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
+    int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
     fd_set fds;
@@ -256,8 +256,8 @@ static int nn_device_twoway (int s1, int s1rcv, int s1snd,
 
 #elif defined NN_HAVE_POLL
 
-static int nn_device_twoway (int s1, int s1rcv, int s1snd,
-    int s2, int s2rcv, int s2snd)
+static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
+    int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
     struct pollfd pfd [4];
@@ -316,7 +316,7 @@ static int nn_device_twoway (int s1, int s1rcv, int s1snd,
 #error
 #endif
 
-static int nn_device_oneway (int s1, int s1rcv, int s2, int s2snd)
+static int nn_device_oneway (int s1, nn_fd s1rcv, int s2, nn_fd s2snd)
 {
     int rc;
 

@@ -22,8 +22,6 @@
 
 #include "win.h"
 
-typedef SOCKET nn_fd;
-
 struct nn_efd {
     SOCKET r;
     SOCKET w;

@@ -35,8 +35,6 @@ int sb;
 
 void worker (void *arg)
 {
-    int rc;
-
     /*  Wait 0.1 sec for the main thread to block. */
     nn_sleep (100);
 
@@ -51,8 +49,6 @@ void worker (void *arg)
 
 int main ()
 {
-    int rc;
-    char buf [3];
     struct nn_thread thread;
 
     sb = test_socket (AF_SP, NN_PAIR);

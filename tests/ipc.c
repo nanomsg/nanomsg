@@ -34,11 +34,9 @@
 int main ()
 {
 #if !defined NN_HAVE_WINDOWS
-    int rc;
     int sb;
     int sc;
     int i;
-    char buf [3];
 
     /*  Try closing a IPC socket while it not connected. */
     sc = test_socket (AF_SP, NN_PAIR);

@@ -34,7 +34,6 @@ int main ()
     int pub2;
     int sub1;
     int sub2;
-    char buf [3];
 
     pub1 = test_socket (AF_SP, NN_PUB);
     test_bind (pub1, SOCKET_ADDRESS);

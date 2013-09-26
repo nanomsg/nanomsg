@@ -36,7 +36,6 @@ int main ()
     int pull1;
     int pull2;
     int sndprio;
-    char buf [3];
 
     pull1 = test_socket (AF_SP, NN_PULL);
     test_bind (pull1, SOCKET_ADDRESS_A);

@@ -116,6 +116,7 @@ NANOMSG_UTILS = \
     src/utils/err.h \
     src/utils/err.c \
     src/utils/fast.h \
+    src/utils/fd.h \
     src/utils/glock.h \
     src/utils/glock.c \
     src/utils/hash.h \

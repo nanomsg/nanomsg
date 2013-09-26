@@ -119,7 +119,6 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     const char *hostname;
     const char *colon;
     const char *end;
-    int port;
     struct sockaddr_storage ss;
     size_t sslen;
     int ipv4only;
@@ -160,7 +159,6 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
-    port = rc;
 
     /*  Check whether the host portion of the address is either a literal
         or a valid hostname. */

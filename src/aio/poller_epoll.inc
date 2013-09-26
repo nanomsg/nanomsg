@@ -30,7 +30,9 @@
 
 int nn_poller_init (struct nn_poller *self)
 {
+#ifndef EPOLL_CLOEXEC
     int rc;
+#endif
 
 #ifdef EPOLL_CLOEXEC
     self->ep = epoll_create1 (EPOLL_CLOEXEC);

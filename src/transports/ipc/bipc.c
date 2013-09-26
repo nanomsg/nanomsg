@@ -197,7 +197,6 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_bipc *bipc;
-    struct nn_list_item *it;
     struct nn_aipc *aipc;
 
     bipc = nn_cont (self, struct nn_bipc, fsm);

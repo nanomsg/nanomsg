@@ -67,7 +67,9 @@
 static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
+#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self);
+#endif
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
@@ -118,8 +120,6 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
 void nn_usock_term (struct nn_usock *self)
 {
-    int rc;
-
     nn_assert (self->state == NN_USOCK_STATE_IDLE);
 
     if (self->in.batch)
@@ -478,7 +478,6 @@ static int nn_internal_tasks (struct nn_usock *usock, int src, int type)
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -1033,6 +1032,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     return 0;
 }
 
+#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self)
 {
     int rc;
@@ -1054,4 +1054,4 @@ static int nn_usock_geterr (struct nn_usock *self)
     nn_assert (optsz == sizeof (opt));
     return opt;
 }
-
+#endif

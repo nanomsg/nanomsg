@@ -55,7 +55,7 @@ static int test_socket_impl (char *file, int line, int family, int protocol)
     return sock;
 }
 
-static inline int test_connect_impl (char *file, int line, int sock, char *address)
+static int test_connect_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -70,7 +70,7 @@ static inline int test_connect_impl (char *file, int line, int sock, char *addre
     return rc;
 }
 
-static inline int test_bind_impl (char *file, int line, int sock, char *address)
+static int test_bind_impl (char *file, int line, int sock, char *address)
 {
     int rc;
 
@@ -98,7 +98,7 @@ static void test_close_impl (char *file, int line, int sock)
     }
 }
 
-static inline void test_send_impl (char *file, int line, int sock, char *data)
+static void test_send_impl (char *file, int line, int sock, char *data)
 {
     size_t data_len;
     int rc;
@@ -120,7 +120,7 @@ static inline void test_send_impl (char *file, int line, int sock, char *data)
     }
 }
 
-static inline void test_recv_impl (char *file, int line, int sock, char *data)
+static void test_recv_impl (char *file, int line, int sock, char *data)
 {
     size_t data_len;
     int rc;

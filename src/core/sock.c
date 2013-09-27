@@ -65,7 +65,7 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
-int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
+int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
 {
     int rc;
     int i;
@@ -146,7 +146,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->statistics.current_snd_priority = 0;
     self->statistics.current_ep_errors = 0;
 
-    self->socket_name[0] = '\0';
+    /*  Should be pretty much enough space for just the number  */
+    sprintf(self->socket_name, "%d", fd);
 
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
@@ -961,16 +962,18 @@ static void nn_sock_action_zombify (struct nn_sock *self)
 
 void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
 {
-    if (errnum != 0) {
-        /*  A place to plug error reporting in  */
-        if(ep) {
-            fprintf(stderr, "Recoverable error in nanomsg: %s: %s\n",
-                nn_ep_getaddr(ep), nn_strerror(errnum));
-        } else {
-            fprintf(stderr, "Recoverable error in nanomsg: %s\n",
-                nn_strerror(errnum));
-        }
-        /*  End of plugged error reporting  */
+    if (!nn_global_print_errors())
+        return;
+
+    if (errnum == 0)
+        return;
+
+    if(ep) {
+        fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
+            self->socket_name, nn_ep_getaddr(ep), nn_strerror(errnum));
+    } else {
+        fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
+            self->socket_name, nn_strerror(errnum));
     }
 }
 

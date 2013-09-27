@@ -138,7 +138,7 @@ struct nn_sock
 };
 
 /*  Initialise the socket. */
-int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype);
+int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd);
 
 /*  Called by nn_close() to deallocate the socket. It's a blocking function
     and can return -EINTR. */
@@ -192,3 +192,4 @@ void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
 void nn_sock_stat_increment(struct nn_sock *self, int name, int increment);
 
 #endif
+

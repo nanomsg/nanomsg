@@ -66,6 +66,7 @@
 #include "../protocols/bus/xbus.h"
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if defined NN_HAVE_WINDOWS
@@ -127,6 +128,8 @@ struct nn_global {
     struct nn_fsm fsm;
     int state;
     struct nn_timer stat_timer;
+    int print_errors;
+    int print_statistics;
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -164,6 +167,7 @@ const char *nn_strerror (int errnum)
 static void nn_global_init (void)
 {
     int i;
+    char *envvar;
 #if defined NN_HAVE_WINDOWS
     WSADATA data;
     int rc;
@@ -195,6 +199,15 @@ static void nn_global_init (void)
         self.socks [i] = NULL;
     self.nsocks = 0;
     self.flags = 0;
+
+    /*  Print connection and accepting errors to the stderr  */
+    envvar = getenv("NN_PRINT_ERRORS");
+    /*  any non-empty string is true */
+    self.print_errors = envvar && *envvar;
+
+    /*  Print socket statistics to stderr  */
+    envvar = getenv("NN_PRINT_STATISTICS");
+    self.print_statistics = envvar && *envvar;
 
     /*  Allocate the stack of unused file descriptors. */
     self.unused = (uint16_t*) (self.socks + NN_MAX_SOCKETS);
@@ -241,10 +254,8 @@ static void nn_global_init (void)
         &self.ctx);
     self.state = NN_GLOBAL_STATE_IDLE;
 
-    /*  Start statistics collection timer. */
     nn_ctx_init (&self.ctx, nn_global_getpool (), NULL);
     nn_timer_init (&self.stat_timer, NN_GLOBAL_SRC_STAT_TIMER, &self.fsm);
-
     nn_fsm_start (&self.fsm);
 }
 
@@ -380,7 +391,7 @@ int nn_socket (int domain, int protocol)
             /*  Instantiate the socket. */
             sock = nn_alloc (sizeof (struct nn_sock), "sock");
             alloc_assert (sock);
-            rc = nn_sock_init (sock, socktype);
+            rc = nn_sock_init (sock, socktype, s);
             if (rc < 0)
                 goto error;
 
@@ -803,21 +814,15 @@ static void nn_global_add_socktype (struct nn_socktype *socktype)
 static void nn_global_submit_counter (int i, struct nn_sock *s,
     char *name, uint64_t value)
 {
-    if(*s->socket_name) {
-        fprintf(stderr, "socket.%s:%s: %lu\n", s->socket_name, name, value);
-    } else {
-        fprintf(stderr, "socket.%d:%s: %lu\n", i, name, value);
-    }
+    fprintf(stderr, "nanomsg: socket.%s: %s: %lu\n",
+        s->socket_name, name, value);
 }
 
 static void nn_global_submit_level (int i, struct nn_sock *s,
     char *name, int value)
 {
-    if(*s->socket_name) {
-        fprintf(stderr, "socket.%s:%s: %d\n", s->socket_name, name, value);
-    } else {
-        fprintf(stderr, "socket.%d:%s: %d\n", i, name, value);
-    }
+    fprintf(stderr, "nanomsg: socket.%s: %s: %d\n",
+        s->socket_name, name, value);
 }
 
 static void nn_global_submit_statistics () {
@@ -959,7 +964,10 @@ static void nn_global_handler (struct nn_fsm *self,
             switch (type) {
             case NN_FSM_START:
                 global->state = NN_GLOBAL_STATE_ACTIVE;
-                nn_timer_start (&global->stat_timer, 10000);
+                if (global->print_statistics) {
+                    /*  Start statistics collection timer. */
+                    nn_timer_start (&global->stat_timer, 10000);
+                }
                 return;
             default:
                 nn_fsm_bad_action (global->state, src, type);
@@ -1018,4 +1026,8 @@ static void nn_global_shutdown (struct nn_fsm *self,
             return;
         }
     }
+}
+
+int nn_global_print_errors () {
+    return self.print_errors;
 }

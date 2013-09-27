@@ -972,7 +972,7 @@ void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
         fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
             self->socket_name, nn_ep_getaddr(ep), nn_strerror(errnum));
     } else {
-        fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
+        fprintf(stderr, "nanomsg: socket.%s: Error: %s\n",
             self->socket_name, nn_strerror(errnum));
     }
 }

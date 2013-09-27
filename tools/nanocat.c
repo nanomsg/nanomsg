@@ -61,7 +61,7 @@ typedef struct nn_options {
     float send_timeout;
     float recv_timeout;
     struct nn_string_list subscriptions;
-	char *socket_name;
+    char *socket_name;
 
     /* Output options */
     float send_delay;
@@ -357,11 +357,11 @@ int nn_create_socket (nn_options_t *options)
     if (options->recv_timeout >= 0) {
         nn_set_recv_timeout (sock, options->recv_timeout);
     }
-	if (options->socket_name) {
+    if (options->socket_name) {
         rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SOCKET_NAME,
                            options->socket_name, strlen(options->socket_name));
         nn_assert_errno (rc == 0, "Can't set socket name");
-	}
+    }
 
     /* Specific intitalization */
     switch (options->socket_type) {
@@ -599,7 +599,7 @@ int main (int argc, char **argv)
         /* send_timeout      */ -1.f,
         /* recv_timeout      */ -1.f,
         /* subscriptions     */ {NULL, 0},
-		/* socket_name 		 */ NULL,
+        /* socket_name       */ NULL,
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
         /* data_to_send      */ {NULL, 0},

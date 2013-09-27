@@ -115,8 +115,7 @@ static void test_send_impl (char *file, int line, int sock, char *data)
     if (rc != data_len) {
         fprintf (stderr, "Data to send is truncated: %d != %d (%s:%d)\n",
             rc, (int) data_len,
-            nn_err_strerror (errno),
-            (int) errno, file, line);
+            file, line);
         nn_err_abort ();
     }
 }
@@ -143,8 +142,7 @@ static void test_recv_impl (char *file, int line, int sock, char *data)
     if (rc != data_len) {
         fprintf (stderr, "Received data has wrong length: %d != %d (%s:%d)\n",
             rc, (int) data_len,
-            nn_err_strerror (errno),
-            (int) errno, file, line);
+            file, line);
         nn_err_abort ();
     }
     if (memcmp (data, buf, data_len) != 0) {

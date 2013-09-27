@@ -29,12 +29,10 @@
 
 int main ()
 {
-    int rc;
     int push1;
     int push2;
     int pull1;
     int pull2;
-    char buf [3];
 
     /*  Test fan-out. */
 

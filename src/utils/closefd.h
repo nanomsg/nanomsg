@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,52 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
+#ifndef NN_CLOSEFD_INCLUDED
+#define NN_CLOSEFD_INCLUDED
 
-#include "testutil.h"
-#include "../src/utils/thread.c"
+#if !defined NN_HAVE_WINDOWS
 
-/*  This test checks whether blocking on send/recv works as expected. */
+void nn_closefd (int fd);
 
-#define SOCKET_ADDRESS "inproc://a"
+#endif
 
-int sc;
-int sb;
-
-void worker (void *arg)
-{
-    /*  Wait 0.1 sec for the main thread to block. */
-    nn_sleep (100);
-
-    test_send (sc, "ABC");
-
-    /*  Wait 0.1 sec for the main thread to process the previous message
-        and block once again. */
-    nn_sleep (100);
-
-    test_send (sc, "ABC");
-}
-
-int main ()
-{
-    struct nn_thread thread;
-
-    sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
-    sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
-
-    nn_thread_init (&thread, worker, NULL);
-
-    test_recv (sb, "ABC");
-    test_recv (sb, "ABC");
-
-    nn_thread_term (&thread);
-
-    test_close (sc);
-    test_close (sb);
-
-    return 0;
-}
+#endif
 

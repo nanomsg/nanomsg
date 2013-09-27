@@ -35,10 +35,9 @@
 
 static void routine (void *arg)
 {
-    int rc;
     int s;
 
-    s = test_socket (AF_SP, NN_SUB);
+    s = nn_socket (AF_SP, NN_SUB);
     if (s < 0 && nn_errno () == EMFILE)
         return;
     errno_assert (s >= 0);
@@ -48,7 +47,6 @@ static void routine (void *arg)
 
 int main ()
 {
-    int rc;
     int sb;
     int i;
     int j;

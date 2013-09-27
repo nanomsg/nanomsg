@@ -99,10 +99,8 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     int rc;
     struct nn_btcp *self;
     const char *addr;
-    size_t addrlen;
     const char *end;
     const char *pos;
-    int port;
     struct sockaddr_storage ss;
     size_t sslen;
     int ipv4only;
@@ -115,7 +113,6 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     /*  Initalise the epbase. */
     nn_epbase_init (&self->epbase, &nn_btcp_epbase_vfptr, hint);
     addr = nn_epbase_getaddr (&self->epbase);
-    addrlen = strlen (addr);
 
     /*  Parse the port. */
     end = addr + strlen (addr);
@@ -130,7 +127,6 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
-    port = rc;
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);

@@ -119,7 +119,7 @@ install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
-install (FILES nanocat DESTINATION bin)
+install (TARGETS nanocat RUNTIME DESTINATION bin)
 
 set (CPACK_GENERATOR "NSIS")
 set (CPACK_PACKAGE_NAME "nanomsg")

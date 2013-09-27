@@ -100,6 +100,8 @@ NANOMSG_UTILS = \
     src/utils/chunkref.c \
     src/utils/clock.h \
     src/utils/clock.c \
+    src/utils/closefd.h \
+    src/utils/closefd.c \
     src/utils/cont.h \
     src/utils/efd.h \
     src/utils/efd.c \
@@ -114,10 +116,12 @@ NANOMSG_UTILS = \
     src/utils/err.h \
     src/utils/err.c \
     src/utils/fast.h \
+    src/utils/fd.h \
     src/utils/glock.h \
     src/utils/glock.c \
     src/utils/hash.h \
     src/utils/hash.c \
+    src/utils/int.h \
     src/utils/list.h \
     src/utils/list.c \
     src/utils/msg.h \
@@ -342,7 +346,8 @@ if DOC
 #  Build instructions.
 
 .txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook -f doc/asciidoc.conf \
+	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
@@ -355,17 +360,20 @@ SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
 
 .txt.1.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .txt.3.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 .txt.7.html:
 	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css -f doc/asciidoc.conf \
+        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
+        -f $(abs_srcdir)/doc/asciidoc.conf \
         -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
 
 #  Cause man pages to be generated and installed.
@@ -441,6 +449,8 @@ FEATURE_TESTS = \
     tests/separation \
     tests/zerocopy \
     tests/shutdown
+
+EXTRA_DIST += tests/testutil.h
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \

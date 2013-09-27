@@ -37,12 +37,15 @@ to EAGAIN.
 RETURN VALUE
 ------------
 If the function succeeds, the number of bytes in the message is returned.
-Otherwise, a negative number is returned and 'errno' is set to to one of the
+Otherwise, -1 is returned and 'errno' is set to to one of the
 values defined below.
 
 
 ERRORS
 ------
+*EFAULT*::
+'buf' is NULL or 'len' is NN_MSG and the message pointer (pointed to by
+'buf') is NULL.
 *EBADF*::
 The provided socket is invalid.
 *ENOTSUP*::
@@ -65,8 +68,19 @@ The library is terminating.
 EXAMPLE
 -------
 
+Using data directly:
+
 ----
 nbytes = nn_send (s, "ABC", 3, 0);
+assert (nbytes == 3);
+----
+
+Using a pre-allocated message buffer:
+
+----
+void *msg = nn_allocmsg(3, 0);
+strncpy(msg, "ABC", 3);
+nbytes = nn_send (s, &msg, NN_MSG, 0);
 assert (nbytes == 3);
 ----
 

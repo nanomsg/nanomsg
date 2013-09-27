@@ -44,7 +44,7 @@ _SOCK_SEQPACKET_ type.
 RETURN VALUE
 ------------
 If the function succeeds file descriptor of the new socket is returned.
-Otherwise, negative number is returned and 'errno' is set to to one of
+Otherwise, -1 is returned and 'errno' is set to to one of
 the values defined below.
 
 Note that file descriptors returned by _nn_socket_ function are not standard

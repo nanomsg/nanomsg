@@ -41,8 +41,6 @@ int sc;
 
 void routine1 (void *arg)
 {
-   int rc;
-
    nn_sleep (10);
    test_send (sc, "ABC");
 }

@@ -537,8 +537,10 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
     nn_ctx_enter (&self->ctx);
 
     /*  Compute the deadline for SNDTIMEO timer. */
-    if (self->sndtimeo < 0)
+    if (self->sndtimeo < 0) {
+        deadline = -1;
         timeout = -1;
+    }
     else {
         deadline = nn_clock_now (&self->clock) + self->sndtimeo;
         timeout = self->sndtimeo;
@@ -596,12 +598,9 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;
-    struct nn_sockbase *sockbase;
     uint64_t deadline;
     uint64_t now;
     int timeout;
-
-    sockbase = (struct nn_sockbase*) self;
 
     /*  Some sockets types cannot be used for receiving messages. */
     if (nn_slow (self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
@@ -610,8 +609,10 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
     nn_ctx_enter (&self->ctx);
 
     /*  Compute the deadline for RCVTIMEO timer. */
-    if (self->rcvtimeo < 0)
+    if (self->rcvtimeo < 0) {
+        deadline = -1;
         timeout = -1;
+    }
     else {
         deadline = nn_clock_now (&self->clock) + self->rcvtimeo;
         timeout = self->rcvtimeo;

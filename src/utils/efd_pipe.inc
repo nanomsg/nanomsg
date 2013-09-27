@@ -23,6 +23,7 @@
 #include "err.h"
 #include "fast.h"
 #include "int.h"
+#include "closefd.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -66,12 +67,8 @@ int nn_efd_init (struct nn_efd *self)
 
 void nn_efd_term (struct nn_efd *self)
 {
-    int rc;
-
-    rc = close (self->r);
-    errno_assert (rc == 0);
-    rc = close (self->w);
-    errno_assert (rc == 0);
+    nn_closefd (self->r);
+    nn_closefd (self->w);
 }
 
 nn_fd nn_efd_getfd (struct nn_efd *self)

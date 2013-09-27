@@ -30,7 +30,7 @@ int main ()
     struct nn_hash hash;
     uint32_t k;
     struct nn_hash_item *item;
-    struct nn_hash_item *item5000;
+    struct nn_hash_item *item5000 = NULL;
 
     nn_hash_init (&hash);
 

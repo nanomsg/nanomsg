@@ -197,7 +197,6 @@ static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
 static void nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_dns *dns;
 
     dns = nn_cont (self, struct nn_dns, fsm);

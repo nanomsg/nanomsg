@@ -92,6 +92,8 @@ set (NN_SOURCES
     utils/chunkref.c
     utils/clock.h
     utils/clock.c
+    utils/closefd.h
+    utils/closefd.c
     utils/cont.h
     utils/efd.h
     utils/efd.c
@@ -106,10 +108,12 @@ set (NN_SOURCES
     utils/err.h
     utils/err.c
     utils/fast.h
+    utils/fd.h
     utils/glock.h
     utils/glock.c
     utils/hash.h
     utils/hash.c
+    utils/int.h
     utils/list.h
     utils/list.c
     utils/msg.h

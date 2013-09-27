@@ -35,7 +35,6 @@
 
 static void routine (void *arg)
 {
-    int rc;
     int s;
 
     s = nn_socket (AF_SP, NN_SUB);
@@ -49,7 +48,6 @@ static void routine (void *arg)
 int main ()
 {
 #if !defined NN_HAVE_WINDOWS
-    int rc;
     int sb;
     int i;
     int j;

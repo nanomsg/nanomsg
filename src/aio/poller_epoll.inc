@@ -22,6 +22,7 @@
 
 #include "../utils/fast.h"
 #include "../utils/err.h"
+#include "../utils/closefd.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -29,7 +30,9 @@
 
 int nn_poller_init (struct nn_poller *self)
 {
+#ifndef EPOLL_CLOEXEC
     int rc;
+#endif
 
 #ifdef EPOLL_CLOEXEC
     self->ep = epoll_create1 (EPOLL_CLOEXEC);
@@ -52,10 +55,7 @@ int nn_poller_init (struct nn_poller *self)
 
 void nn_poller_term (struct nn_poller *self)
 {
-    int rc;
-
-    rc = close (self->ep);
-    errno_assert (rc == 0);
+    nn_closefd (self->ep);
 }
 
 void nn_poller_add (struct nn_poller *self, int fd,

@@ -22,6 +22,7 @@
 */
 
 #include "../utils/alloc.h"
+#include "../utils/closefd.h"
 #include "../utils/cont.h"
 #include "../utils/fast.h"
 #include "../utils/err.h"
@@ -67,7 +68,9 @@
 static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
+#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self);
+#endif
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
@@ -119,8 +122,6 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
 void nn_usock_term (struct nn_usock *self)
 {
-    int rc;
-
     nn_assert (self->state == NN_USOCK_STATE_IDLE);
 
     if (self->in.batch)
@@ -501,7 +502,6 @@ static int nn_internal_tasks (struct nn_usock *usock, int src, int type)
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -553,8 +553,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_fd (usock->worker, &usock->wfd);
 finish1:
-        rc = close (usock->s);
-        errno_assert (rc == 0);
+        nn_closefd (usock->s);
         usock->s = -1;
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
@@ -685,8 +684,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error,
@@ -717,8 +715,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -743,6 +740,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 rc = nn_usock_recv_raw (usock, usock->in.buf, &sz);
                 if (nn_fast (rc == 0)) {
                     usock->in.len -= sz;
+                    usock->in.buf += sz;
                     if (!usock->in.len) {
                         nn_worker_reset_in (usock->worker, &usock->wfd);
                         nn_fsm_raise (&usock->fsm, &usock->event_received,
@@ -767,8 +765,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_FD_ERR:
 error:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -798,8 +795,7 @@ error:
             switch (type) {
             case NN_WORKER_TASK_EXECUTE:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
-                rc = close (usock->s);
-                errno_assert (rc == 0);
+                nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -1103,6 +1099,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     return 0;
 }
 
+#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self)
 {
     int rc;
@@ -1124,4 +1121,4 @@ static int nn_usock_geterr (struct nn_usock *self)
     nn_assert (optsz == sizeof (opt));
     return opt;
 }
-
+#endif

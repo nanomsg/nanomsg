@@ -29,10 +29,8 @@
 
 int main ()
 {
-    int rc;
     int sb;
     int sc;
-    char buf [3];
 
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);

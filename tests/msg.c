@@ -28,6 +28,9 @@
 #include <string.h>
 
 #define SOCKET_ADDRESS "inproc://a"
+#define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5557"
+
+char longdata[1 << 20];
 
 int main ()
 {
@@ -87,6 +90,30 @@ int main ()
     nn_assert (buf2);
     for (i = 0; i != 256; ++i)
         nn_assert (buf2 [i] == (unsigned char) i);
+    rc = nn_freemsg (buf2);
+    errno_assert (rc == 0);
+
+    test_close (sc);
+    test_close (sb);
+
+    /*  Test receiving of large message  */
+
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS_TCP);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS_TCP);
+
+    for (i = 0; i < sizeof (longdata); ++i)
+        longdata[i] = '0' + (i % 10);
+    longdata [sizeof (longdata) - 1] = 0;
+    test_send (sb, longdata);
+
+    rc = nn_recv (sc, &buf2, NN_MSG, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == sizeof (longdata) - 1);
+    nn_assert (buf2);
+    for (i = 0; i < sizeof (longdata) - 1; ++i)
+        nn_assert (buf2 [i] == longdata [i]);
     rc = nn_freemsg (buf2);
     errno_assert (rc == 0);
 

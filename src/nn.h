@@ -191,7 +191,7 @@ extern "C" {
 #ifndef EISCONN
 #define EISCONN (NN_HAUSNUMERO + 27)
 #define NN_EISCONN_DEFINED
-#endif 
+#endif
 
 /*  Native error codes.                                                       */
 #ifndef ETERM
@@ -313,6 +313,7 @@ NN_INLINE struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
 #define NN_DOMAIN 12
 #define NN_PROTOCOL 13
 #define NN_IPV4ONLY 14
+#define NN_SOCKET_NAME 15
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

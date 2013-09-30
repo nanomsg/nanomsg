@@ -61,6 +61,7 @@ typedef struct nn_options {
     float send_timeout;
     float recv_timeout;
     struct nn_string_list subscriptions;
+    char *socket_name;
 
     /* Output options */
     float send_delay;
@@ -222,6 +223,10 @@ struct nn_option nn_options[] = {
      NN_OPT_FLOAT, offsetof (nn_options_t, send_timeout), NULL,
      NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_WRITEABLE,
      "Socket Options", "SEC", "Set timeout for sending a message"},
+    {"socket-name", 0, NULL,
+     NN_OPT_STRING, offsetof (nn_options_t, socket_name), NULL,
+     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Socket Options", "NAME", "Name of the socket for statistics"},
 
     /* Pattern-specific options */
     {"subscribe", 0, NULL,
@@ -351,6 +356,11 @@ int nn_create_socket (nn_options_t *options)
     }
     if (options->recv_timeout >= 0) {
         nn_set_recv_timeout (sock, options->recv_timeout);
+    }
+    if (options->socket_name) {
+        rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SOCKET_NAME,
+                           options->socket_name, strlen(options->socket_name));
+        nn_assert_errno (rc == 0, "Can't set socket name");
     }
 
     /* Specific intitalization */
@@ -589,6 +599,7 @@ int main (int argc, char **argv)
         /* send_timeout      */ -1.f,
         /* recv_timeout      */ -1.f,
         /* subscriptions     */ {NULL, 0},
+        /* socket_name       */ NULL,
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
         /* data_to_send      */ {NULL, 0},

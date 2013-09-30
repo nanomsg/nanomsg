@@ -45,6 +45,7 @@
 #define NN_USOCK_STATE_CANCELLING 11
 #define NN_USOCK_STATE_STOPPING 12
 #define NN_USOCK_STATE_STOPPING_ACCEPT 13
+#define NN_USOCK_STATE_ACCEPTING_ERROR 14
 
 #define NN_USOCK_ACTION_ACCEPT 1
 #define NN_USOCK_ACTION_BEING_ACCEPTED 2
@@ -67,9 +68,7 @@
 static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
-#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self);
-#endif
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
@@ -87,6 +86,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
     /*  Actual file descriptor will be generated during 'start' step. */
     self->s = -1;
+    self->errnum = 0;
 
     self->in.buf = NULL;
     self->in.len = 0;
@@ -300,8 +300,10 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     int s;
 
     /*  Start the actual accepting. */
-    nn_fsm_start (&self->fsm);
-    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_BEING_ACCEPTED);
+    if (nn_fsm_isidle(&self->fsm)) {
+        nn_fsm_start (&self->fsm);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_BEING_ACCEPTED);
+    }
     nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_ACCEPT);
 
     /*  Try to accept new connection in synchronous manner. */
@@ -313,6 +315,11 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Immediate success. */
     if (nn_fast (s >= 0)) {
+        /*  Disassociate the listener socket from the accepted
+            socket. Is useful if we restart accepting on ACCEPT_ERROR  */
+        listener->asock = NULL;
+        self->asock = NULL;
+
         nn_usock_init_from_fd (self, s);
         nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_DONE);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
@@ -325,11 +332,25 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
         errno == ECONNABORTED || errno == ENFILE || errno == EMFILE ||
         errno == ENOBUFS || errno == ENOMEM);
 
-    /*  Pair the two sockets. */
-    nn_assert (!self->asock);
+    /*  Pair the two sockets.  They are already paired in case
+        previous attempt failed on ACCEPT_ERROR  */
+    nn_assert (!self->asock || self->asock == listener);
     self->asock = listener;
-    nn_assert (!listener->asock);
+    nn_assert (!listener->asock || listener->asock == self);
     listener->asock = self;
+
+    /*  Some errors are just ok to ignore for now.  We also stop repeating
+        any errors until next IN_FD event so that we are not in a tight loop
+        and allow processing other events in the meantime  */
+    if (nn_slow (errno != EAGAIN && errno != EWOULDBLOCK
+        && errno != ECONNABORTED && errno != listener->errnum))
+    {
+        listener->errnum = errno;
+        listener->state = NN_USOCK_STATE_ACCEPTING_ERROR;
+        nn_fsm_raise (&listener->fsm,
+            &listener->event_error, NN_USOCK_ACCEPT_ERROR);
+        return;
+    }
 
     /*  Ask the worker thread to wait for the new connection. */
     nn_worker_execute (listener->worker, &listener->task_accept);
@@ -359,6 +380,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  Immediate error. */
     if (nn_slow (errno != EINPROGRESS)) {
+        self->errnum = errno;
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -492,6 +514,8 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (usock->state != NN_USOCK_STATE_ACCEPTING &&
             usock->state != NN_USOCK_STATE_CANCELLING);
 
+        usock->errnum = 0;
+
         /*  Synchronous stop. */
         if (usock->state == NN_USOCK_STATE_IDLE)
             goto finish3;
@@ -499,6 +523,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
             goto finish2;
         if (usock->state == NN_USOCK_STATE_STARTING ||
               usock->state == NN_USOCK_STATE_ACCEPTED ||
+              usock->state == NN_USOCK_STATE_ACCEPTING_ERROR ||
               usock->state == NN_USOCK_STATE_LISTENING)
             goto finish1;
 
@@ -545,6 +570,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     struct nn_usock *usock;
     int s;
     size_t sz;
+    int sockerr;
 
     usock = nn_cont (self, struct nn_usock, fsm);
 
@@ -670,8 +696,20 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_FD_OUT:
                 nn_worker_reset_out (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                nn_fsm_raise (&usock->fsm, &usock->event_established,
-                    NN_USOCK_CONNECTED);
+                sockerr = nn_usock_geterr(usock);
+                if (sockerr == 0) {
+                    nn_fsm_raise (&usock->fsm, &usock->event_established,
+                        NN_USOCK_CONNECTED);
+                } else {
+                    usock->errnum = sockerr;
+                    nn_worker_rm_fd (usock->worker, &usock->wfd);
+                    rc = close (usock->s);
+                    errno_assert (rc == 0);
+                    usock->s = -1;
+                    usock->state = NN_USOCK_STATE_DONE;
+                    nn_fsm_raise (&usock->fsm,
+                        &usock->event_error, NN_USOCK_ERROR);
+                }
                 return;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
@@ -842,8 +880,17 @@ error:
                     case it would be wise to wait here for a while to prevent
                     busy looping. */
                 if (nn_slow (s < 0 && (errno == ENFILE || errno == EMFILE ||
-                      errno == ENOBUFS || errno == ENOMEM)))
+                      errno == ENOBUFS || errno == ENOMEM))) {
+                    usock->errnum = errno;
+                    usock->state = NN_USOCK_STATE_ACCEPTING_ERROR;
+
+                    /*  Wait till the user starts accepting once again. */
+                    nn_worker_rm_fd (usock->worker, &usock->wfd);
+
+                    nn_fsm_raise (&usock->fsm,
+                        &usock->event_error, NN_USOCK_ACCEPT_ERROR);
                     return;
+                }
 
                 /* Any other error is unexpected. */
                 errno_assert (s >= 0);
@@ -867,6 +914,24 @@ error:
 
                 return;
 
+            default:
+                nn_fsm_bad_action (usock->state, src, type);
+            }
+        default:
+            nn_fsm_bad_source (usock->state, src, type);
+        }
+
+/******************************************************************************/
+/*  ACCEPTING_ERROR state.                                                    */
+/*  Waiting the socket to accept the error and restart                        */
+/******************************************************************************/
+    case NN_USOCK_STATE_ACCEPTING_ERROR:
+        switch (src) {
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_USOCK_ACTION_ACCEPT:
+                usock->state = NN_USOCK_STATE_ACCEPTING;
+                return;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -1032,7 +1097,6 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     return 0;
 }
 
-#ifdef NOT_USED
 static int nn_usock_geterr (struct nn_usock *self)
 {
     int rc;
@@ -1054,4 +1118,3 @@ static int nn_usock_geterr (struct nn_usock *self)
     nn_assert (optsz == sizeof (opt));
     return opt;
 }
-#endif

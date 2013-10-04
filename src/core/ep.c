@@ -57,6 +57,7 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     self->sock = sock;
     self->eid = eid;
     nn_list_item_init (&self->item);
+    memcpy (&self->options, &sock->ep_template, sizeof(struct nn_ep_options));
 
     /*  Store the textual form of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);

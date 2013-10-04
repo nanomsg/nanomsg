@@ -37,6 +37,7 @@ struct nn_ep {
     int state;
     struct nn_epbase *epbase;
     struct nn_sock *sock;
+    struct nn_ep_options options;
     int eid;
     struct nn_list_item item;
     char addr [NN_SOCKADDR_MAX + 1];

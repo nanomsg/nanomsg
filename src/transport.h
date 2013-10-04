@@ -31,6 +31,7 @@
 #include "utils/list.h"
 #include "utils/msg.h"
 #include "utils/int.h"
+#include "utils/int.h"
 
 #include <stddef.h>
 
@@ -142,6 +143,13 @@ struct nn_pipebase_vfptr {
     int (*recv) (struct nn_pipebase *self, struct nn_msg *msg);
 };
 
+/*  Endpoint specific options. Same restrictions as for nn_pipebase apply  */
+struct nn_ep_options
+{
+    int sndprio;
+    int ipv4only;
+};
+
 /*  The member of this structure are used internally by the core. Never use
     or modify them directly from the transport. */
 struct nn_pipebase {
@@ -154,6 +162,7 @@ struct nn_pipebase {
     void *data;
     struct nn_fsm_event in;
     struct nn_fsm_event out;
+    struct nn_ep_options options;
 };
 
 /*  Initialise the pipe.  */

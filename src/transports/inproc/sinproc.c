@@ -349,7 +349,18 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
 /*  asked to stop.                                                            */
 /******************************************************************************/
         case NN_SINPROC_STATE_DISCONNECTED:
+        {
+            switch (src) {
+            case NN_SINPROC_SRC_PEER:
+                switch (type) {
+                case NN_SINPROC_RECEIVED:
+                    /*  This case can safely be ignored. It may happen when nn_close() comes  */
+                    /*  before the already enqueued NN_SINPROC_RECEIVED has been delivered.   */
+                    return;
+                };
+            };
             nn_fsm_bad_source (sinproc->state, src, type);
+        }
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

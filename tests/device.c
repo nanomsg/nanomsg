@@ -29,6 +29,7 @@
 
 #include "testutil.h"
 #include "../src/utils/thread.c"
+#include "../src/utils/sem.h"
 
 #define SOCKET_ADDRESS_A "inproc://a"
 #define SOCKET_ADDRESS_B "inproc://b"
@@ -41,12 +42,16 @@ void device1 (void *arg)
     int rc;
     int deva;
     int devb;
+    struct nn_sem * semp = (struct nn_sem *)arg;
 
     /*  Intialise the device sockets. */
     deva = test_socket (AF_SP_RAW, NN_PAIR);
     test_bind (deva, SOCKET_ADDRESS_A);
     devb = test_socket (AF_SP_RAW, NN_PAIR);
     test_bind (devb, SOCKET_ADDRESS_B);
+
+    /*  Notify others that bind succeeded */
+    nn_sem_post (semp);
 
     /*  Run the device. */
     rc = nn_device (deva, devb);
@@ -62,12 +67,16 @@ void device2 (void *arg)
     int rc;
     int devc;
     int devd;
+    struct nn_sem * semp = (struct nn_sem *)arg;
 
     /*  Intialise the device sockets. */
     devc = test_socket (AF_SP_RAW, NN_PULL);
     test_bind (devc, SOCKET_ADDRESS_C);
     devd = test_socket (AF_SP_RAW, NN_PUSH);
     test_bind (devd, SOCKET_ADDRESS_D);
+
+    /*  Notify others that bind succeeded */
+    nn_sem_post (semp);
 
     /*  Run the device. */
     rc = nn_device (devc, devd);
@@ -82,10 +91,14 @@ void device3 (void *arg)
 {
     int rc;
     int deve;
+    struct nn_sem * semp = (struct nn_sem *)arg;
 
     /*  Intialise the device socket. */
     deve = test_socket (AF_SP_RAW, NN_BUS);
     test_bind (deve, SOCKET_ADDRESS_E);
+
+    /*  Notify others that bind succeeded */
+    nn_sem_post (semp);
 
     /*  Run the device. */
     rc = nn_device (deve, -1);
@@ -107,19 +120,26 @@ int main ()
     struct nn_thread thread1;
     struct nn_thread thread2;
     struct nn_thread thread3;
+    struct nn_sem sem;
     char buf [3];
     int timeo;
+
+    /*  Init semaphore */
+    nn_sem_init (&sem);
 
     /*  Test the bi-directional device. */
 
     /*  Start the device. */
-    nn_thread_init (&thread1, device1, NULL);
+    nn_thread_init (&thread1, device1, &sem);
 
     /*  Create two sockets to connect to the device. */
     enda = test_socket (AF_SP, NN_PAIR);
     test_connect (enda, SOCKET_ADDRESS_A);
     endb = test_socket (AF_SP, NN_PAIR);
     test_connect (endb, SOCKET_ADDRESS_B);
+
+    /*  Make sure we are not sending data before the socket has been bound */
+    nn_sem_wait (&sem);
 
     /*  Pass a pair of messages between endpoints. */
     test_send (enda, "ABC");
@@ -134,13 +154,16 @@ int main ()
     /*  Test the uni-directional device. */
 
     /*  Start the device. */
-    nn_thread_init (&thread2, device2, NULL);
+    nn_thread_init (&thread2, device2, &sem);
 
     /*  Create two sockets to connect to the device. */
     endc = test_socket (AF_SP, NN_PUSH);
     test_connect (endc, SOCKET_ADDRESS_C);
     endd = test_socket (AF_SP, NN_PULL);
     test_connect (endd, SOCKET_ADDRESS_D);
+
+    /*  Make sure we are not sending data before the socket has been bound */
+    nn_sem_wait (&sem);
 
     /*  Pass a message between endpoints. */
     test_send (endc, "XYZ");
@@ -153,7 +176,7 @@ int main ()
     /*  Test the loopback device. */
 
     /*  Start the device. */
-    nn_thread_init (&thread3, device3, NULL);
+    nn_thread_init (&thread3, device3, &sem);
 
     /*  Create two sockets to connect to the device. */
     ende1 = test_socket (AF_SP, NN_BUS);
@@ -163,6 +186,9 @@ int main ()
 
     /*  BUS is unreliable so wait a bit for connections to be established. */
     nn_sleep (100);
+
+    /*  Make sure we are not sending data before the socket has been bound */
+    nn_sem_wait (&sem);
 
     /*  Pass a message to the bus. */
     test_send (ende1, "KLM");

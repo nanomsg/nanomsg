@@ -145,10 +145,16 @@ int nn_xreq_events (struct nn_sockbase *self)
 
 int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
+    return nn_xreq_send_to (self, msg, NULL);
+}
+
+int nn_xreq_send_to (struct nn_sockbase *self, struct nn_msg *msg,
+    struct nn_pipe **to)
+{
     int rc;
 
     /*  If request cannot be sent due to the pushback, drop it silenly. */
-    rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg);
+    rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg, to);
     if (nn_slow (rc == -EAGAIN))
         return -EAGAIN;
     errnum_assert (rc >= 0, -rc);

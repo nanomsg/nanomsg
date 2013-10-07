@@ -60,7 +60,7 @@ int nn_lb_can_send (struct nn_lb *self)
     return nn_priolist_is_active (&self->priolist);
 }
 
-int nn_lb_send (struct nn_lb *self, struct nn_msg *msg)
+int nn_lb_send (struct nn_lb *self, struct nn_msg *msg, struct nn_pipe **to)
 {
     int rc;
     struct nn_pipe *pipe;
@@ -76,6 +76,9 @@ int nn_lb_send (struct nn_lb *self, struct nn_msg *msg)
 
     /*  Move to the next pipe. */
     nn_priolist_advance (&self->priolist, rc & NN_PIPE_RELEASE);
+
+    if (to != NULL)
+        *to = pipe;
 
     return rc & ~NN_PIPE_RELEASE;
 }

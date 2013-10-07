@@ -154,7 +154,8 @@ static int nn_xpush_events (struct nn_sockbase *self)
 
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb, msg);
+    return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb,
+        msg, NULL);
 }
 
 static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,

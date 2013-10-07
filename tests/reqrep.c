@@ -125,6 +125,39 @@ int main ()
     test_close (req1);
     test_close (rep1);
 
+    /*  Check removing socket request sent to (It should
+        be sent immediatelly to other peer rather than relying
+        on the resend algorithm). */
+    req1 = test_socket (AF_SP, NN_REQ);
+    test_bind (req1, SOCKET_ADDRESS);
+    rep1 = test_socket (AF_SP, NN_REP);
+    test_connect (rep1, SOCKET_ADDRESS);
+    rep2 = test_socket (AF_SP, NN_REP);
+    test_connect (rep2, SOCKET_ADDRESS);
+
+    timeo = 200;
+    rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
+       &timeo, sizeof (timeo));
+    errno_assert (rc == 0);
+    rc = nn_setsockopt (rep2, NN_SOL_SOCKET, NN_RCVTIMEO,
+       &timeo, sizeof (timeo));
+    errno_assert (rc == 0);
+
+    test_send (req1, "ABC");
+    /*  We got request through rep1  */
+    test_recv (rep1, "ABC");
+    /*  But instead replying we simulate crash  */
+    test_close (rep1);
+    /*  The rep2 should get request immediately  */
+    test_recv (rep2, "ABC");
+    /*  Let's check it's delivered well  */
+    test_send (rep2, "REPLY");
+    test_recv (req1, "REPLY");
+
+
+    test_close (req1);
+    test_close (rep2);
+
     /*  Test cancelling delayed request  */
 
     req1 = test_socket (AF_SP, NN_REQ);

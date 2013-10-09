@@ -69,6 +69,11 @@ int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg);
     the call. It will be initialised when the call succeeds. */
 int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
+/*  Get option for pipe. Mostly useful for endpoint-specific options  */
+void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
+    void *optval, size_t *optvallen);
+
+
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
 /******************************************************************************/

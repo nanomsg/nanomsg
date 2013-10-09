@@ -89,9 +89,9 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     xreq = nn_cont (self, struct nn_xreq, sockbase);
 
     sz = sizeof (sndprio);
-    rc = nn_sockbase_getopt (&xreq->sockbase, NN_SNDPRIO, &sndprio, &sz);
-    errnum_assert (rc == 0, -rc);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_SNDPRIO, &sndprio, &sz);
     nn_assert (sz == sizeof (sndprio));
+    nn_assert (sndprio >= 1 && sndprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);

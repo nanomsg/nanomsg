@@ -79,8 +79,9 @@ struct nn_sock
     int rcvtimeo;
     int reconnect_ivl;
     int reconnect_ivl_max;
-    int sndprio;
-    int ipv4only;
+
+    /*  Endpoint-specific options.  */
+    struct nn_ep_options ep_template;
 
     /*  Transport-specific socket options. */
     struct nn_optset *optsets [NN_MAX_TRANSPORT];
@@ -121,7 +122,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags);
 
 /*  Set a socket option. */
 int nn_sock_setopt (struct nn_sock *self, int level, int option,
-    const void *optval, size_t optvallen); 
+    const void *optval, size_t optvallen);
 
 /*  Retrieve a socket option. This function is to be called from the API. */
 int nn_sock_getopt (struct nn_sock *self, int level, int option,

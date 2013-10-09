@@ -107,9 +107,9 @@ static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     xpush = nn_cont (self, struct nn_xpush, sockbase);
 
     sz = sizeof (sndprio);
-    rc = nn_sockbase_getopt (&xpush->sockbase, NN_SNDPRIO, &sndprio, &sz);
-    errnum_assert (rc == 0, -rc);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_SNDPRIO, &sndprio, &sz);
     nn_assert (sz == sizeof (sndprio));
+    nn_assert (sndprio >= 1 && sndprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xpush_data), "pipe data (push)");
     alloc_assert (data);

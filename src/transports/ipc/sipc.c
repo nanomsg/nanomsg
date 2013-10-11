@@ -39,8 +39,9 @@
 #define NN_SIPC_STATE_PROTOHDR 2
 #define NN_SIPC_STATE_STOPPING_STREAMHDR 3
 #define NN_SIPC_STATE_ACTIVE 4
-#define NN_SIPC_STATE_DONE 5
-#define NN_SIPC_STATE_STOPPING 6
+#define NN_SIPC_STATE_SHUTTING_DOWN 5
+#define NN_SIPC_STATE_DONE 6
+#define NN_SIPC_STATE_STOPPING 7
 
 /*  Subordinated srcptr objects. */
 #define NN_SIPC_SRC_USOCK 1
@@ -358,12 +359,40 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     nn_assert (0);
                 }
 
+            case NN_USOCK_SHUTDOWN:
+                nn_pipebase_stop (&sipc->pipebase);
+                sipc->state = NN_SIPC_STATE_SHUTTING_DOWN;
+                return;
+
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&sipc->pipebase);
                 sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
                 return;
 
+
+            default:
+                nn_fsm_bad_action (sipc->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (sipc->state, src, type);
+        }
+
+/******************************************************************************/
+/*  SHUTTING_DOWN state.                                                      */
+/*  The underlying connection is closed. We are just waiting that underlying  */
+/*  usock being closed                                                        */
+/******************************************************************************/
+    case NN_SIPC_STATE_SHUTTING_DOWN:
+        switch (src) {
+
+        case NN_SIPC_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_ERROR:
+                sipc->state = NN_SIPC_STATE_DONE;
+                nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
+                return;
             default:
                 nn_fsm_bad_action (sipc->state, src, type);
             }
@@ -379,6 +408,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
     case NN_SIPC_STATE_DONE:
         nn_fsm_bad_source (sipc->state, src, type);
+
 
 /******************************************************************************/
 /*  Invalid state.                                                            */

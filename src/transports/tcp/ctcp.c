@@ -396,6 +396,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_CTCP_SRC_STCP:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
@@ -417,6 +419,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_CTCP_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_backoff_start (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_WAITING;

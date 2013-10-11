@@ -239,6 +239,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_STCP:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
                 atcp->state = NN_ATCP_STATE_STOPPING_USOCK;
@@ -259,6 +261,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
                 atcp->state = NN_ATCP_STATE_DONE;

@@ -225,6 +225,12 @@ void nn_usock_stop (struct nn_usock *self)
     nn_fsm_stop (&self->fsm);
 }
 
+void nn_usock_async_stop (struct nn_usock *self)
+{
+    nn_worker_execute (self->worker, &self->task_stop);
+    nn_fsm_raise (&self->fsm, &self->event_error, NN_USOCK_SHUTDOWN);
+}
+
 void nn_usock_swap_owner (struct nn_usock *self, struct nn_fsm_owner *owner)
 {
     nn_fsm_swap_owner (&self->fsm, owner);
@@ -512,7 +518,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
 
         /*  Asynchronous stop. */
         if (usock->state != NN_USOCK_STATE_REMOVING_FD)
-            nn_worker_execute (usock->worker, &usock->task_stop);
+            nn_usock_async_stop (usock);
         usock->state = NN_USOCK_STATE_STOPPING;
         return;
     }
@@ -737,7 +743,7 @@ error:
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 usock->state = NN_USOCK_STATE_REMOVING_FD;
-                nn_worker_execute (usock->worker, &usock->task_stop);
+                nn_usock_async_stop (usock);
                 return;
             default:
                 nn_fsm_bad_action (usock->state, src, type);

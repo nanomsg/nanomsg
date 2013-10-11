@@ -240,6 +240,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 
         case NN_AIPC_SRC_SIPC:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&aipc->usock);
                 aipc->state = NN_AIPC_STATE_STOPPING_USOCK;
@@ -260,6 +262,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 
         case NN_AIPC_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;

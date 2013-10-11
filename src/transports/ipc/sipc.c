@@ -89,7 +89,7 @@ void nn_sipc_init (struct nn_sipc *self, int src,
 
 void nn_sipc_term (struct nn_sipc *self)
 {
-    nn_assert (self->state == NN_SIPC_STATE_IDLE);
+    nn_assert_state (self, NN_SIPC_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_msg_term (&self->outmsg);
@@ -129,7 +129,7 @@ static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     sipc = nn_cont (self, struct nn_sipc, pipebase);
 
-    nn_assert (sipc->state == NN_SIPC_STATE_ACTIVE);
+    nn_assert_state (sipc, NN_SIPC_STATE_ACTIVE);
     nn_assert (sipc->outstate == NN_SIPC_OUTSTATE_IDLE);
 
     /*  Move the message to the local storage. */
@@ -161,7 +161,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     sipc = nn_cont (self, struct nn_sipc, pipebase);
 
-    nn_assert (sipc->state == NN_SIPC_STATE_ACTIVE);
+    nn_assert_state (sipc, NN_SIPC_STATE_ACTIVE);
     nn_assert (sipc->instate == NN_SIPC_INSTATE_HASMSG);
 
     /*  Move received message to the user. */

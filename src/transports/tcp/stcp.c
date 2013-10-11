@@ -83,7 +83,7 @@ void nn_stcp_init (struct nn_stcp *self, int src,
 
 void nn_stcp_term (struct nn_stcp *self)
 {
-    nn_assert (self->state == NN_STCP_STATE_IDLE);
+    nn_assert_state (self, NN_STCP_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_msg_term (&self->outmsg);
@@ -123,7 +123,7 @@ static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
 
-    nn_assert (stcp->state == NN_STCP_STATE_ACTIVE);
+    nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->outstate == NN_STCP_OUTSTATE_IDLE);
 
     /*  Move the message to the local storage. */
@@ -154,7 +154,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
 
-    nn_assert (stcp->state == NN_STCP_STATE_ACTIVE);
+    nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->instate == NN_STCP_INSTATE_HASMSG);
 
     /*  Move received message to the user. */

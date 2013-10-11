@@ -122,7 +122,7 @@ static void nn_binproc_connect (struct nn_ins_item *self,
     binproc = nn_cont (self, struct nn_binproc, item);
     cinproc = nn_cont (peer, struct nn_cinproc, item);
 
-    nn_assert (binproc->state == NN_BINPROC_STATE_ACTIVE);
+    nn_assert_state (binproc, NN_BINPROC_STATE_ACTIVE);
 
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
     alloc_assert (sinproc);

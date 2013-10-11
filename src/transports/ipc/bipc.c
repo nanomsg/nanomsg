@@ -126,7 +126,7 @@ static void nn_bipc_destroy (struct nn_epbase *self)
 
     bipc = nn_cont (self, struct nn_bipc, epbase);
 
-    nn_assert (bipc->state == NN_BIPC_STATE_IDLE);
+    nn_assert_state (bipc, NN_BIPC_STATE_IDLE);
     nn_list_term (&bipc->aipcs);
     nn_assert (bipc->aipc == NULL);
     nn_usock_term (&bipc->usock);

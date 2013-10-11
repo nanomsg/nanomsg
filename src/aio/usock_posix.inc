@@ -120,7 +120,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
 void nn_usock_term (struct nn_usock *self)
 {
-    nn_assert (self->state == NN_USOCK_STATE_IDLE);
+    nn_assert_state (self, NN_USOCK_STATE_IDLE);
 
     if (self->in.batch)
         nn_free (self->in.batch);
@@ -263,7 +263,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     int opt;
 
     /*  The socket can be bound only before it's connected. */
-    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+    nn_assert_state (self, NN_USOCK_STATE_STARTING);
 
     /*  Allow re-using the address. */
     opt = 1;
@@ -282,7 +282,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     int rc;
 
     /*  You can start listening only before the socket is connected. */
-    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+    nn_assert_state (self, NN_USOCK_STATE_STARTING);
 
     /*  Start listening for incoming connections. */
     rc = listen (self->s, backlog);
@@ -375,7 +375,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int out;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Copy the iovecs to the socket. */
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
@@ -416,7 +416,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     size_t nbytes;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Try to receive the data immediately. */
     nbytes = len;

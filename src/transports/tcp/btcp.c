@@ -173,7 +173,7 @@ static void nn_btcp_destroy (struct nn_epbase *self)
 
     btcp = nn_cont (self, struct nn_btcp, epbase);
 
-    nn_assert (btcp->state == NN_BTCP_STATE_IDLE);
+    nn_assert_state (btcp, NN_BTCP_STATE_IDLE);
     nn_list_term (&btcp->atcps);
     nn_assert (btcp->atcp == NULL);
     nn_usock_term (&btcp->usock);

@@ -58,7 +58,7 @@ void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
 
 void nn_timer_term (struct nn_timer *self)
 {
-    nn_assert (self->state == NN_TIMER_STATE_IDLE);
+    nn_assert_state (self, NN_TIMER_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_worker_timer_term (&self->wtimer);

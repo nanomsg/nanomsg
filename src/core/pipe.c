@@ -62,7 +62,7 @@ void nn_pipebase_init (struct nn_pipebase *self,
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
-    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+    nn_assert_state (self, NN_PIPEBASE_STATE_IDLE);
 
     nn_fsm_event_term (&self->out);
     nn_fsm_event_term (&self->in);
@@ -73,7 +73,7 @@ int nn_pipebase_start (struct nn_pipebase *self)
 {
     int rc;
 
-    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+    nn_assert_state (self, NN_PIPEBASE_STATE_IDLE);
 
     self->state = NN_PIPEBASE_STATE_ACTIVE;
     self->instate = NN_PIPEBASE_INSTATE_ASYNC;

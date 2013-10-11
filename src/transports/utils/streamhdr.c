@@ -66,7 +66,7 @@ void nn_streamhdr_init (struct nn_streamhdr *self, int src,
 
 void nn_streamhdr_term (struct nn_streamhdr *self)
 {
-    nn_assert (self->state == NN_STREAMHDR_STATE_IDLE);
+    nn_assert_state (self, NN_STREAMHDR_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_timer_term (&self->timer);

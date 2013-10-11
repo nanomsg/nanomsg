@@ -51,6 +51,17 @@
         }\
     } while (0)
 
+#define nn_assert_state(obj, state_name) \
+    do {\
+        if (nn_slow ((obj)->state != state_name)) {\
+            fprintf (stderr, \
+                "Assertion failed: %d == %s (%s:%d)\n", \
+                (obj)->state, #state_name, \
+                __FILE__, __LINE__);\
+            nn_err_abort ();\
+        }\
+    } while (0)
+
 /*  Checks whether memory allocation was successful. */
 #define alloc_assert(x) \
     do {\

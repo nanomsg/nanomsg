@@ -58,6 +58,7 @@
 #define NN_REQ_ACTION_OUT 3
 #define NN_REQ_ACTION_SENT 4
 #define NN_REQ_ACTION_RECEIVED 5
+#define NN_REQ_ACTION_PIPE_RM 6
 
 #define NN_REQ_SRC_RESEND_TIMER 1
 
@@ -85,6 +86,10 @@ struct nn_req {
 
     /*  Protocol-specific socket options. */
     int resend_ivl;
+
+    /*  Pipe the current request has been sent to. Non-null only in ACTIVE
+        state  */
+    struct nn_pipe *sent_to;
 };
 
 /*  Private functions. */
@@ -105,6 +110,7 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_req_events (struct nn_sockbase *self);
 static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg);
+static void nn_req_rm (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
@@ -114,7 +120,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_stop,
     nn_req_destroy,
     nn_xreq_add,
-    nn_xreq_rm,
+    nn_req_rm,
     nn_req_in,
     nn_req_out,
     nn_req_events,
@@ -131,6 +137,7 @@ static void nn_req_init (struct nn_req *self,
     nn_fsm_init_root (&self->fsm, nn_req_handler, nn_req_shutdown,
         nn_sockbase_getctx (&self->xreq.sockbase));
     self->state = NN_REQ_STATE_IDLE;
+    self->sent_to = NULL;
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
@@ -469,6 +476,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 
                 /*  Reply arrived. */
                 nn_timer_stop (&req->timer);
+                req->sent_to = NULL;
                 req->state = NN_REQ_STATE_STOPPING_TIMER;
                 return;
 
@@ -477,7 +485,16 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 /*  New request was sent while the old one was still being
                     processed. Cancel the old request first. */
                 nn_timer_stop (&req->timer);
+                req->sent_to = NULL;
                 req->state = NN_REQ_STATE_CANCELLING;
+                return;
+
+            case NN_REQ_ACTION_PIPE_RM:
+                /*  Pipe that we sent request to is removed  */
+                nn_timer_stop (&req->timer);
+                req->sent_to = NULL;
+                /*  Pretend we timed out so request resent immediately  */
+                req->state = NN_REQ_STATE_TIMED_OUT;
                 return;
 
             default:
@@ -488,6 +505,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&req->timer);
+                req->sent_to = NULL;
                 req->state = NN_REQ_STATE_TIMED_OUT;
                 return;
             default:
@@ -635,10 +653,11 @@ static void nn_req_action_send (struct nn_req *self, int allow_delay)
 {
     int rc;
     struct nn_msg msg;
+    struct nn_pipe *to;
 
     /*  Send the request. */
     nn_msg_cp (&msg, &self->request);
-    rc = nn_xreq_send (&self->xreq.sockbase, &msg);
+    rc = nn_xreq_send_to (&self->xreq.sockbase, &msg, &to);
 
     /*  If the request cannot be sent at the moment wait till
         new outbound pipe arrives. */
@@ -654,6 +673,8 @@ static void nn_req_action_send (struct nn_req *self, int allow_delay)
         in the topology. */
     if (nn_fast (rc == 0)) {
         nn_timer_start (&self->timer, self->resend_ivl);
+        nn_assert (to);
+        self->sent_to = to;
         self->state = NN_REQ_STATE_ACTIVE;
         return;
     }
@@ -672,6 +693,17 @@ static int nn_req_create (void *hint, struct nn_sockbase **sockbase)
     *sockbase = &self->xreq.sockbase;
 
     return 0;
+}
+
+void nn_req_rm (struct nn_sockbase *self, struct nn_pipe *pipe) {
+    struct nn_req *req;
+
+    req = nn_cont (self, struct nn_req, xreq.sockbase);
+
+    nn_xreq_rm (self, pipe);
+    if (nn_slow (pipe == req->sent_to)) {
+        nn_fsm_action (&req->fsm, NN_REQ_ACTION_PIPE_RM);
+    }
 }
 
 static struct nn_socktype nn_req_socktype_struct = {

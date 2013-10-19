@@ -32,7 +32,8 @@
 #define NN_SINPROC_STATE_READY 3
 #define NN_SINPROC_STATE_ACTIVE 4
 #define NN_SINPROC_STATE_DISCONNECTED 5
-#define NN_SINPROC_STATE_STOPPING 6
+#define NN_SINPROC_STATE_STOPPING_PEER 6
+#define NN_SINPROC_STATE_STOPPING 7
 
 #define NN_SINPROC_ACTION_READY 1
 #define NN_SINPROC_ACTION_ACCEPTED 2
@@ -196,6 +197,60 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     return NN_PIPEBASE_PARSED;
 }
+static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
+    int type, void *srcptr)
+{
+    /*  *******************************  */
+    /*  Any-state events                 */
+    /*  *******************************  */
+    switch (src) {
+    case NN_FSM_ACTION:
+        switch (type) {
+        case NN_FSM_STOP:
+            if (self->state != NN_SINPROC_STATE_IDLE &&
+                  self->state != NN_SINPROC_STATE_DISCONNECTED) {
+                nn_pipebase_stop (&self->pipebase);
+                nn_assert (self->fsm.state == 2 || self->fsm.state == 3);
+                nn_fsm_raiseto (&self->fsm, &self->peer->fsm,
+                    &self->peer->event_disconnect, NN_SINPROC_SRC_PEER,
+                    NN_SINPROC_DISCONNECT, self);
+
+                self->state = NN_SINPROC_STATE_STOPPING_PEER;
+            } else {
+                self->state = NN_SINPROC_STATE_STOPPING;
+            }
+            return;
+        }
+    case NN_SINPROC_SRC_PEER:
+        switch (type) {
+        case NN_SINPROC_RECEIVED:
+            return;
+        }
+    }
+
+    /*  *******************************  */
+    /*  Regular events                   */
+    /*  *******************************  */
+    switch (self->state) {
+    case NN_SINPROC_STATE_STOPPING_PEER:
+        switch (src) {
+        case NN_SINPROC_SRC_PEER:
+            switch (type) {
+            case NN_SINPROC_DISCONNECT:
+                self->state = NN_SINPROC_STATE_STOPPING;
+                return;
+            default:
+                nn_fsm_bad_action (self->state, src, type);
+            }
+        default:
+            nn_fsm_bad_source (self->state, src, type);
+        }
+    default:
+        nn_fsm_bad_state (self->state, src, type);
+    }
+
+    nn_fsm_bad_action (self->state, src, type);
+}
 
 static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
@@ -203,27 +258,35 @@ static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_sinproc *sinproc;
 
     sinproc = nn_cont (self, struct nn_sinproc, fsm);
+    nn_assert (sinproc->fsm.state == 3);
 
-    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        if (sinproc->state == NN_SINPROC_STATE_IDLE ||
-              sinproc->state == NN_SINPROC_STATE_DISCONNECTED)
-            goto finish;
-        nn_pipebase_stop (&sinproc->pipebase);
-        nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
-            &sinproc->peer->event_disconnect, NN_SINPROC_SRC_PEER,
-            NN_SINPROC_DISCONNECT, sinproc);
-        sinproc->state = NN_SINPROC_STATE_STOPPING;
-        return;
-    }
-    if (nn_slow (sinproc->state == NN_SINPROC_STATE_STOPPING)) {
-        nn_assert (srcptr == sinproc->peer && type == NN_SINPROC_DISCONNECT);
-        sinproc->state = NN_SINPROC_STATE_IDLE;
-finish:
-        nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
+    nn_sinproc_shutdown_events (sinproc, src, type, srcptr);
+
+    /*  ***************  */
+    /*  States to check  */
+    /*  ***************  */
+
+    /*  Have we got notification that peer is stopped  */
+    if (nn_slow (sinproc->state != NN_SINPROC_STATE_STOPPING)) {
         return;
     }
 
-    nn_fsm_bad_state(sinproc->state, src, type);
+    /*  Are all events processed? We can't cancel them unfortunately  */
+    if (nn_fsm_event_active (&sinproc->event_received)
+        || nn_fsm_event_active (&sinproc->event_disconnect))
+    {
+        return;
+    }
+    /*  These events are deemed to be impossible here  */
+    nn_assert (!nn_fsm_event_active (&sinproc->event_connect));
+    nn_assert (!nn_fsm_event_active (&sinproc->event_sent));
+
+    /*  **********************************************  */
+    /*  All checks are successful. Just stop right now  */
+    /*  **********************************************  */
+
+    nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
+    return;
 }
 
 static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,

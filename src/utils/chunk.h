@@ -24,6 +24,7 @@
 #define NN_CHUNK_INCLUDED
 
 #include <stddef.h>
+#include "int.h"
 
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
 void *nn_chunk_alloc (size_t size, int type);
@@ -33,7 +34,7 @@ void *nn_chunk_alloc (size_t size, int type);
 void nn_chunk_free (void *p);
 
 /*  Increases the reference count of the chunk by 'n'. */
-void nn_chunk_addref (void *p, int n);
+void nn_chunk_addref (void *p, uint32_t n);
 
 /*  Returns size of the chunk buffer. */
 size_t nn_chunk_size (void *p);

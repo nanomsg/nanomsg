@@ -25,7 +25,6 @@
 #include "alloc.h"
 #include "fast.h"
 #include "wire.h"
-#include "int.h"
 #include "err.h"
 
 #include <string.h>
@@ -108,7 +107,7 @@ void nn_chunk_free (void *p)
     }
 }
 
-void nn_chunk_addref (void *p, int n)
+void nn_chunk_addref (void *p, uint32_t n)
 {
     struct nn_chunk *self;
 

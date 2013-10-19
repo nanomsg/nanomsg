@@ -88,7 +88,7 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
 
 void nn_ep_term (struct nn_ep *self)
 {
-    nn_assert (self->state == NN_EP_STATE_IDLE);
+    nn_assert_state (self, NN_EP_STATE_IDLE);
 
     self->epbase->vfptr->destroy (self->epbase);
     nn_list_item_term (&self->item);

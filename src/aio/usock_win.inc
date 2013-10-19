@@ -88,7 +88,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
 
 void nn_usock_term (struct nn_usock *self)
 {
-    nn_assert (self->state == NN_USOCK_STATE_IDLE);
+    nn_assert_state (self, NN_USOCK_STATE_IDLE);
 
     if (self->ainfo)
         nn_free (self->ainfo);
@@ -189,7 +189,7 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
     ULONG opt;
 
     /*  You can set socket options only before the socket is connected. */
-    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+    nn_assert_state (self, NN_USOCK_STATE_STARTING);
 
     /*  On Windows, the bound port can be hijacked
         if SO_EXCLUSIVEADDRUSE is not set. */
@@ -210,7 +210,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
     int rc;
 
     /*  You can start listening only before the socket is connected. */
-    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+    nn_assert_state (self, NN_USOCK_STATE_STARTING);
 
     /*  Start listening for incoming connections. */
     rc = listen (self->s, backlog);
@@ -282,7 +282,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     DWORD nbytes;
 
     /*  Fail if the socket is already connected, closed or such. */
-    nn_assert (self->state == NN_USOCK_STATE_STARTING);
+    nn_assert_state (self, NN_USOCK_STATE_STARTING);
 
     /*  Notify the state machine that we've started connecting. */
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_CONNECT);
@@ -323,7 +323,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int i;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Create a WinAPI-style iovec. */
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
@@ -362,7 +362,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     DWORD wflags;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert (self->state == NN_USOCK_STATE_ACTIVE);
+    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Start the receive operation. */
     wbuf.len = (u_long) len;
@@ -397,7 +397,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
- 
+
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
         /*  Socket in ACCEPTING state cannot be closed.

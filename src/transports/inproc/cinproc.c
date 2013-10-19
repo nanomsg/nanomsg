@@ -111,7 +111,7 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
     cinproc = nn_cont (self, struct nn_cinproc, item);
     binproc = nn_cont (peer, struct nn_binproc, item);
 
-    nn_assert (cinproc->state == NN_CINPROC_STATE_DISCONNECTED);
+    nn_assert_state (cinproc, NN_CINPROC_STATE_DISCONNECTED);
     nn_sinproc_connect (&cinproc->sinproc, &binproc->fsm);
     nn_fsm_action (&cinproc->fsm, NN_CINPROC_ACTION_CONNECT);
 }

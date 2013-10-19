@@ -35,6 +35,7 @@
 #define NN_USOCK_RECEIVED 4
 #define NN_USOCK_ERROR 5
 #define NN_USOCK_STOPPED 6
+#define NN_USOCK_SHUTDOWN 7
 
 /*  Maximum number of iovecs that can be passed to nn_usock_send function. */
 #define NN_USOCK_MAX_IOVCNT 3

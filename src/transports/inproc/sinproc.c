@@ -143,7 +143,7 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
         return -ECONNRESET;
 
     /*  Sanity checks. */
-    nn_assert (sinproc->state == NN_SINPROC_STATE_ACTIVE);
+    nn_assert_state (sinproc, NN_SINPROC_STATE_ACTIVE);
     nn_assert (!(sinproc->flags & NN_SINPROC_FLAG_SENDING));
 
     /*  Expose the message to the peer. */

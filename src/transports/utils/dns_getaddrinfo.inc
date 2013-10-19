@@ -52,7 +52,7 @@ void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
 
 void nn_dns_term (struct nn_dns *self)
 {
-    nn_assert (self->state == NN_DNS_STATE_IDLE);
+    nn_assert_state (self, NN_DNS_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_fsm_term (&self->fsm);
@@ -71,7 +71,7 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     struct addrinfo *reply;
     char hostname [NN_SOCKADDR_MAX];
 
-    nn_assert (self->state == NN_DNS_STATE_IDLE);
+    nn_assert_state (self, NN_DNS_STATE_IDLE);
 
     self->result = result;
 

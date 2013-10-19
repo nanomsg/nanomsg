@@ -33,8 +33,9 @@
 #define NN_STCP_STATE_PROTOHDR 2
 #define NN_STCP_STATE_STOPPING_STREAMHDR 3
 #define NN_STCP_STATE_ACTIVE 4
-#define NN_STCP_STATE_DONE 5
-#define NN_STCP_STATE_STOPPING 6
+#define NN_STCP_STATE_SHUTTING_DOWN 5
+#define NN_STCP_STATE_DONE 6
+#define NN_STCP_STATE_STOPPING 7
 
 /*  Possible states of the inbound part of the object. */
 #define NN_STCP_INSTATE_HDR 1
@@ -83,7 +84,7 @@ void nn_stcp_init (struct nn_stcp *self, int src,
 
 void nn_stcp_term (struct nn_stcp *self)
 {
-    nn_assert (self->state == NN_STCP_STATE_IDLE);
+    nn_assert_state (self, NN_STCP_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_msg_term (&self->outmsg);
@@ -123,7 +124,7 @@ static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
 
-    nn_assert (stcp->state == NN_STCP_STATE_ACTIVE);
+    nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->outstate == NN_STCP_OUTSTATE_IDLE);
 
     /*  Move the message to the local storage. */
@@ -154,7 +155,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
 
-    nn_assert (stcp->state == NN_STCP_STATE_ACTIVE);
+    nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->instate == NN_STCP_INSTATE_HASMSG);
 
     /*  Move received message to the user. */
@@ -350,6 +351,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                         stcp->state, src, type);
                 }
 
+            case NN_USOCK_SHUTDOWN:
+                nn_pipebase_stop (&stcp->pipebase);
+                stcp->state = NN_STCP_STATE_SHUTTING_DOWN;
+                return;
+
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&stcp->pipebase);
                 stcp->state = NN_STCP_STATE_DONE;
@@ -363,6 +369,29 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
         default:
             nn_fsm_bad_source (stcp->state, src, type);
         }
+
+/******************************************************************************/
+/*  SHUTTING_DOWN state.                                                      */
+/*  The underlying connection is closed. We are just waiting that underlying  */
+/*  usock being closed                                                        */
+/******************************************************************************/
+    case NN_STCP_STATE_SHUTTING_DOWN:
+        switch (src) {
+
+        case NN_STCP_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_ERROR:
+                stcp->state = NN_STCP_STATE_DONE;
+                nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
+                return;
+            default:
+                nn_fsm_bad_action (stcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (stcp->state, src, type);
+        }
+
 
 /******************************************************************************/
 /*  DONE state.                                                               */

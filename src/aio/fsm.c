@@ -132,14 +132,14 @@ void nn_fsm_stop (struct nn_fsm *self)
 
 void nn_fsm_stopped (struct nn_fsm *self, int type)
 {
-    nn_assert (self->state == NN_FSM_STATE_STOPPING);
+    nn_assert_state (self, NN_FSM_STATE_STOPPING);
     nn_fsm_raise (self, &self->stopped, type);
     self->state = NN_FSM_STATE_IDLE;
 }
 
 void nn_fsm_stopped_noevent (struct nn_fsm *self)
 {
-    nn_assert (self->state == NN_FSM_STATE_STOPPING);
+    nn_assert_state (self, NN_FSM_STATE_STOPPING);
     self->state = NN_FSM_STATE_IDLE;
 }
 

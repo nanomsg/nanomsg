@@ -66,7 +66,7 @@ void nn_streamhdr_init (struct nn_streamhdr *self, int src,
 
 void nn_streamhdr_term (struct nn_streamhdr *self)
 {
-    nn_assert (self->state == NN_STREAMHDR_STATE_IDLE);
+    nn_assert_state (self, NN_STREAMHDR_STATE_IDLE);
 
     nn_fsm_event_term (&self->done);
     nn_timer_term (&self->timer);
@@ -180,6 +180,9 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
                     sizeof (streamhdr->protohdr));
                 streamhdr->state = NN_STREAMHDR_STATE_RECEIVING;
                 return;
+            case NN_USOCK_SHUTDOWN:
+                /*  Ignore it. Wait for ERROR event  */
+                return;
             case NN_USOCK_ERROR:
                 nn_timer_stop (&streamhdr->timer);
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR;
@@ -222,6 +225,9 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
                 nn_timer_stop (&streamhdr->timer);
                 streamhdr->state = NN_STREAMHDR_STATE_STOPPING_TIMER_DONE;
                 return;
+            case NN_USOCK_SHUTDOWN:
+                /*  Ignore it. Wait for ERROR event  */
+                return;
             case NN_USOCK_ERROR:
 invalidhdr:
                 nn_timer_stop (&streamhdr->timer);
@@ -250,6 +256,10 @@ invalidhdr:
 /******************************************************************************/
     case NN_STREAMHDR_STATE_STOPPING_TIMER_ERROR:
         switch (src) {
+
+        case NN_STREAMHDR_SRC_USOCK:
+            /*  It's safe to ignore usock event when we are stopping  */
+            return;
 
         case NN_STREAMHDR_SRC_TIMER:
             switch (type) {

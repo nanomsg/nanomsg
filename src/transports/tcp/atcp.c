@@ -63,7 +63,7 @@ void nn_atcp_init (struct nn_atcp *self, int src,
 
 void nn_atcp_term (struct nn_atcp *self)
 {
-    nn_assert (self->state == NN_ATCP_STATE_IDLE);
+    nn_assert_state (self, NN_ATCP_STATE_IDLE);
 
     nn_list_item_term (&self->item);
     nn_fsm_event_term (&self->done);
@@ -80,7 +80,7 @@ int nn_atcp_isidle (struct nn_atcp *self)
 
 void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
 {
-    nn_assert (self->state == NN_ATCP_STATE_IDLE);
+    nn_assert_state (self, NN_ATCP_STATE_IDLE);
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
@@ -239,6 +239,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_STCP:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
                 atcp->state = NN_ATCP_STATE_STOPPING_USOCK;
@@ -259,6 +261,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
                 atcp->state = NN_ATCP_STATE_DONE;

@@ -64,7 +64,7 @@ void nn_aipc_init (struct nn_aipc *self, int src,
 
 void nn_aipc_term (struct nn_aipc *self)
 {
-    nn_assert (self->state == NN_AIPC_STATE_IDLE);
+    nn_assert_state (self, NN_AIPC_STATE_IDLE);
 
     nn_list_item_term (&self->item);
     nn_fsm_event_term (&self->done);
@@ -81,7 +81,7 @@ int nn_aipc_isidle (struct nn_aipc *self)
 
 void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 {
-    nn_assert (self->state == NN_AIPC_STATE_IDLE);
+    nn_assert_state (self, NN_AIPC_STATE_IDLE);
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
@@ -240,6 +240,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 
         case NN_AIPC_SRC_SIPC:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&aipc->usock);
                 aipc->state = NN_AIPC_STATE_STOPPING_USOCK;
@@ -260,6 +262,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
 
         case NN_AIPC_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;

@@ -27,8 +27,6 @@ set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set (NN_SOURCES
     nn.h
-    transport.h
-    protocol.h
     inproc.h
     ipc.h
     tcp.h

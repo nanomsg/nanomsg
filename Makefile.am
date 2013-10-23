@@ -31,7 +31,6 @@ EXTRA_DIST =
 nnincludedir = $(includedir)/nanomsg
 nninclude_HEADERS = \
     src/nn.h \
-    src/protocol.h \
     src/inproc.h \
     src/ipc.h \
     src/tcp.h \

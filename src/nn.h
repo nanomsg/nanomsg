@@ -283,10 +283,10 @@ NN_INLINE struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
 /* Extensions to POSIX defined by RFC3542.                                    */
 
 #define NN_CMSG_SPACE(len) \
-    (CMSG_ALIGN (len) + CMSG_ALIGN (sizeof (struct nn_cmsghdr)))
+    (NN_CMSG_ALIGN (len) + NN_CMSG_ALIGN (sizeof (struct nn_cmsghdr)))
 
 #define NN_CMSG_LEN(len) \
-    (CMSG_ALIGN (sizeof (struct nn_cmsghdr)) + (len))
+    (NN_CMSG_ALIGN (sizeof (struct nn_cmsghdr)) + (len))
 
 /*  SP address families.                                                      */
 #define AF_SP 1

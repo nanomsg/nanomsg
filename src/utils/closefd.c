@@ -36,7 +36,7 @@ void nn_closefd (int fd)
     if (nn_fast (rc == 0))
         return;
     errno_assert (errno == EINTR || errno == ETIMEDOUT ||
-        errno == EWOULDBLOCK || errno == EINPROGRESS);
+        errno == EWOULDBLOCK || errno == EINPROGRESS || errno == ECONNRESET);
 }
 
 #endif

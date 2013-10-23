@@ -41,6 +41,7 @@ CT_ASSERT (sizeof (struct nn_chunkref) >= sizeof (struct nn_chunkref_chunk));
 
 void nn_chunkref_init (struct nn_chunkref *self, size_t size)
 {
+    int rc;
     struct nn_chunkref_chunk *ch;
 
     if (size < NN_CHUNKREF_MAX) {
@@ -50,8 +51,8 @@ void nn_chunkref_init (struct nn_chunkref *self, size_t size)
 
     ch = (struct nn_chunkref_chunk*) self;
     ch->tag = 0xff;
-    ch->chunk = nn_chunk_alloc (size, 0);
-    alloc_assert (ch->chunk);
+    rc = nn_chunk_alloc (size, 0, &ch->chunk);
+    errno_assert (rc == 0);
 }
 
 void nn_chunkref_init_chunk (struct nn_chunkref *self, void *chunk)
@@ -75,6 +76,7 @@ void nn_chunkref_term (struct nn_chunkref *self)
 
 void *nn_chunkref_getchunk (struct nn_chunkref *self)
 {
+    int rc;
     struct nn_chunkref_chunk *ch;
     void *chunk;
 
@@ -84,8 +86,8 @@ void *nn_chunkref_getchunk (struct nn_chunkref *self)
         return ch->chunk;
     }
 
-    chunk = nn_chunk_alloc (self->ref [0], 0);
-    alloc_assert (chunk);
+    rc = nn_chunk_alloc (self->ref [0], 0, &chunk);
+    errno_assert (rc == 0);
     memcpy (chunk, &self->ref [1], self->ref [0]);
     self->ref [0] = 0;
     return chunk;

@@ -286,7 +286,14 @@ void nn_term (void)
 
 void *nn_allocmsg (size_t size, int type)
 {
-    return nn_chunk_alloc (size, type);
+    int rc;
+    void *result;
+
+    rc = nn_chunk_alloc (size, type, &result);
+    if (rc == 0)
+        return result;
+    errno = -rc;
+    return NULL;
 }
 
 int nn_freemsg (void *msg)

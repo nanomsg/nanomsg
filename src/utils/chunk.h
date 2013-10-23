@@ -27,7 +27,7 @@
 #include "int.h"
 
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
-void *nn_chunk_alloc (size_t size, int type);
+int nn_chunk_alloc (size_t size, int type, void **result);
 
 /*  Releases a reference to the chunk and once the reference count had dropped
     to zero, deallocates the chunk. */

@@ -189,7 +189,7 @@ static void nn_print_help (struct nn_parse_context *ctx, FILE *stream)
             }
         }
         if (optlen < 23) {
-            fputs ("                        " + optlen, stream);
+            fputs (&"                        "[optlen], stream);
             cursor = nn_print_line (stream, opt->description, 80-24);
         } else {
             cursor = opt->description;

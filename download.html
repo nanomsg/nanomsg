@@ -60,6 +60,14 @@
 <li>On Linux or other platforms which use ld.so for dynamic linking, run <tt>ldconfig</tt> or equivalent as root to update your systems shared library cache.</li>
 </ol>
 
+<h3>OSX platforms</h3>
+
+<p>OSX is a POSIX-compliant platform and so it should be built accordingly.</p>
+
+<p>One special OSX feature though are universal libraries. If you want to build an universal library for both i386 and x86_64 architectures you should replace the <tt>./configure</tt> line with the following:
+
+<p><tt>CFLAGS="-arch i386 -arch x86_64" ./configure -disable-dependency-tracking</tt></p>
+
 <h3>Windows Platforms</h3>
 
 <p>On Windows platforms, nanomsg uses the CMake build system.</p>

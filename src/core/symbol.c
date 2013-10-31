@@ -113,7 +113,6 @@ static const struct sym_value_name sym_value_names [] = {
     { EPROTONOSUPPORT, "EPROTONOSUPPORT"},
     {ETERM, "ETERM"},
     {ETIMEDOUT, "ETIMEDOUT"},
-#ifdef NN_HAVE_WINDOWS
     {EACCES, "EACCES" },
     {ECONNABORTED, "ECONNABORTED"},
     {ECONNRESET, "ECONNRESET"},
@@ -122,7 +121,6 @@ static const struct sym_value_name sym_value_names [] = {
     {ENETRESET, "ENETRESET"},
     {ENETUNREACH, "ENETUNREACH"},
     {ENOTCONN, "ENOTCONN"},
-#endif
 };
 
 const int SYM_VALUE_NAMES_LEN = (sizeof (sym_value_names) /

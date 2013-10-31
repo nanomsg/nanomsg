@@ -95,7 +95,8 @@ void nn_xpair_destroy (struct nn_sockbase *self)
 
 static int nn_xpair_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    return nn_excl_add (&nn_cont (self, struct nn_xpair, sockbase)->excl, pipe);
+    return nn_excl_add (&nn_cont (self, struct nn_xpair, sockbase)->excl,
+        pipe);
 }
 
 static void nn_xpair_rm (struct nn_sockbase *self, struct nn_pipe *pipe)

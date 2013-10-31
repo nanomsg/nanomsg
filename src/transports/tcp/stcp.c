@@ -273,7 +273,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&stcp->pipebase);
-                 errnum_assert (rc == 0, -rc);
+                 if (nn_slow (rc < 0)) {
+                    stcp->state = NN_STCP_STATE_DONE;
+                    nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
+                    return;
+                 }
 
                  /*  Start receiving a message in asynchronous manner. */
                  stcp->instate = NN_STCP_INSTATE_HDR;

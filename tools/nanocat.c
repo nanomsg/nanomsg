@@ -324,10 +324,9 @@ void nn_sub_init (nn_options_t *options, int sock)
     }
 }
 
-void nn_set_recv_timeout (int sock, double timeo)
+void nn_set_recv_timeout (int sock, int millis)
 {
-    int millis, rc;
-    millis = (int)(timeo * 1000);
+    int rc;
     rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO,
                        &millis, sizeof (millis));
     nn_assert_errno (rc == 0, "Can't set recv timeout");
@@ -350,7 +349,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set send timeout");
     }
     if (options->recv_timeout >= 0) {
-        nn_set_recv_timeout (sock, options->recv_timeout);
+        nn_set_recv_timeout (sock, options->recv_timeout*1000);
     }
 
     /* Specific intitalization */
@@ -531,7 +530,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
             {
                 time_to_sleep = recv_timeout;
             }
-            nn_set_recv_timeout (sock, (double) time_to_sleep);
+            nn_set_recv_timeout (sock, time_to_sleep);
             rc = nn_recv (sock, &buf, NN_MSG, 0);
             if (rc < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {

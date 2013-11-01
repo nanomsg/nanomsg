@@ -349,7 +349,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set send timeout");
     }
     if (options->recv_timeout >= 0) {
-        nn_set_recv_timeout (sock, options->recv_timeout*1000);
+        nn_set_recv_timeout (sock, options->recv_timeout);
     }
 
     /* Specific intitalization */
@@ -583,11 +583,11 @@ int main (int argc, char **argv)
     nn_options_t options = {
         /* verbose           */ 0,
         /* socket_type       */ 0,
-        /* bind_addresses    */ {NULL, 0},
-        /* connect_addresses */ {NULL, 0},
+        /* bind_addresses    */ {NULL, NULL, 0, 0},
+        /* connect_addresses */ {NULL, NULL, 0, 0},
         /* send_timeout      */ -1.f,
         /* recv_timeout      */ -1.f,
-        /* subscriptions     */ {NULL, 0},
+        /* subscriptions     */ {NULL, NULL, 0, 0},
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
         /* data_to_send      */ {NULL, 0},
@@ -630,4 +630,5 @@ int main (int argc, char **argv)
     }
 
     nn_close (sock);
+    nn_free_options(&nn_cli, &options);
 }

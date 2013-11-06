@@ -281,7 +281,11 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&sipc->pipebase);
-                 errnum_assert (rc == 0, -rc);
+                 if (nn_slow (rc < 0)) {
+                    sipc->state = NN_SIPC_STATE_DONE;
+                    nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
+                    return;
+                 }
 
                  /*  Start receiving a message in asynchronous manner. */
                  sipc->instate = NN_SIPC_INSTATE_HDR;

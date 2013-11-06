@@ -86,114 +86,87 @@ extern "C" {
 /*  On some platforms some standard POSIX errnos are not defined.    */
 #ifndef ENOTSUP
 #define ENOTSUP (NN_HAUSNUMERO + 1)
-#define NN_ENOTSUP_DEFINED
 #endif
 #ifndef EPROTONOSUPPORT
 #define EPROTONOSUPPORT (NN_HAUSNUMERO + 2)
-#define NN_EPROTONOSUPPORT_DEFINED
 #endif
 #ifndef ENOBUFS
 #define ENOBUFS (NN_HAUSNUMERO + 3)
-#define NN_ENOBUFS_DEFINED
 #endif
 #ifndef ENETDOWN
 #define ENETDOWN (NN_HAUSNUMERO + 4)
-#define NN_ENETDOWN_DEFINED
 #endif
 #ifndef EADDRINUSE
 #define EADDRINUSE (NN_HAUSNUMERO + 5)
-#define NN_EADDRINUSE_DEFINED
 #endif
 #ifndef EADDRNOTAVAIL
 #define EADDRNOTAVAIL (NN_HAUSNUMERO + 6)
-#define NN_EADDRNOTAVAIL_DEFINED
 #endif
 #ifndef ECONNREFUSED
 #define ECONNREFUSED (NN_HAUSNUMERO + 7)
-#define NN_ECONNREFUSED_DEFINED
 #endif
 #ifndef EINPROGRESS
 #define EINPROGRESS (NN_HAUSNUMERO + 8)
-#define NN_EINPROGRESS_DEFINED
 #endif
 #ifndef ENOTSOCK
 #define ENOTSOCK (NN_HAUSNUMERO + 9)
-#define NN_ENOTSOCK_DEFINED
 #endif
 #ifndef EAFNOSUPPORT
 #define EAFNOSUPPORT (NN_HAUSNUMERO + 10)
-#define NN_EAFNOSUPPORT_DEFINED
 #endif
 #ifndef EPROTO
 #define EPROTO (NN_HAUSNUMERO + 11)
-#define NN_EPROTO_DEFINED
 #endif
 #ifndef EAGAIN
 #define EAGAIN (NN_HAUSNUMERO + 12)
-#define NN_EAGAIN_DEFINED
 #endif
 #ifndef EBADF
 #define EBADF (NN_HAUSNUMERO + 13)
-#define NN_EBADF_DEFINED
 #endif
 #ifndef EINVAL
 #define EINVAL (NN_HAUSNUMERO + 14)
-#define NN_EINVAL_DEFINED
 #endif
 #ifndef EMFILE
 #define EMFILE (NN_HAUSNUMERO + 15)
-#define NN_EMFILE_DEFINED
 #endif
 #ifndef EFAULT
 #define EFAULT (NN_HAUSNUMERO + 16)
-#define NN_EFAULT_DEFINED
 #endif
 #ifndef EACCESS
 #define EACCESS (NN_HAUSNUMERO + 17)
-#define NN_EACCESS_DEFINED
 #endif
 #ifndef ENETRESET
 #define ENETRESET (NN_HAUSNUMERO + 18)
-#define NN_ENETRESET_DEFINED
 #endif
 #ifndef ENETUNREACH
 #define ENETUNREACH (NN_HAUSNUMERO + 19)
-#define NN_ENETUNREACH_DEFINED
 #endif
 #ifndef EHOSTUNREACH
 #define EHOSTUNREACH (NN_HAUSNUMERO + 20)
-#define NN_EHOSTUNREACH_DEFINED
 #endif
 #ifndef ENOTCONN
 #define ENOTCONN (NN_HAUSNUMERO + 21)
-#define NN_ENOTCONN_DEFINED
 #endif
 #ifndef EMSGSIZE
 #define EMSGSIZE (NN_HAUSNUMERO + 22)
-#define NN_EMSGSIZE_DEFINED
 #endif
 #ifndef ETIMEDOUT
 #define ETIMEDOUT (NN_HAUSNUMERO + 23)
-#define NN_ETIMEDOUT_DEFINED
 #endif
 #ifndef ECONNABORTED
 #define ECONNABORTED (NN_HAUSNUMERO + 24)
-#define NN_ECONNABORTED_DEFINED
 #endif
 #ifndef ECONNRESET
 #define ECONNRESET (NN_HAUSNUMERO + 25)
-#define NN_ECONNRESET_DEFINED
 #endif
 #ifndef ENOPROTOOPT
 #define ENOPROTOOPT (NN_HAUSNUMERO + 26)
-#define NN_ENOPROTOOPT_DEFINED
 #endif
 #ifndef EISCONN
 #define EISCONN (NN_HAUSNUMERO + 27)
-#define NN_EISCONN_DEFINED
 #endif 
 
-/*  Native error codes.                                                       */
+/*  Native nanomsg error codes.                                               */
 #ifndef ETERM
 #define ETERM (NN_HAUSNUMERO + 53)
 #endif

@@ -32,6 +32,7 @@
 /*  Internal pipe states. */
 #define NN_PIPEBASE_STATE_IDLE 1
 #define NN_PIPEBASE_STATE_ACTIVE 2
+#define NN_PIPEBASE_STATE_FAILED 3
 
 #define NN_PIPEBASE_INSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_INSTATE_IDLE 1
@@ -81,8 +82,10 @@ int nn_pipebase_start (struct nn_pipebase *self)
     self->instate = NN_PIPEBASE_INSTATE_ASYNC;
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
     rc = nn_sock_add (self->sock, (struct nn_pipe*) self);
-    if (nn_slow (rc < 0))
+    if (nn_slow (rc < 0)) {
+        self->state = NN_PIPEBASE_STATE_FAILED;
         return rc;
+    }
     if (self->sock)
         nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
 
@@ -91,9 +94,8 @@ int nn_pipebase_start (struct nn_pipebase *self)
 
 void nn_pipebase_stop (struct nn_pipebase *self)
 {
-    if (self->state != NN_PIPEBASE_STATE_ACTIVE)
-        return;
-    nn_sock_rm (self->sock, (struct nn_pipe*) self);
+    if (self->state == NN_PIPEBASE_STATE_ACTIVE)
+        nn_sock_rm (self->sock, (struct nn_pipe*) self);
     self->state = NN_PIPEBASE_STATE_IDLE;
 }
 

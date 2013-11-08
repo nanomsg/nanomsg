@@ -324,10 +324,9 @@ void nn_sub_init (nn_options_t *options, int sock)
     }
 }
 
-void nn_set_recv_timeout (int sock, double timeo)
+void nn_set_recv_timeout (int sock, int millis)
 {
-    int millis, rc;
-    millis = (int)(timeo * 1000);
+    int rc;
     rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO,
                        &millis, sizeof (millis));
     nn_assert_errno (rc == 0, "Can't set recv timeout");
@@ -458,7 +457,7 @@ void nn_send_loop (nn_options_t *options, int sock)
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
-        if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (rc < 0 && errno == EAGAIN) {
             fprintf (stderr, "Message not sent (EAGAIN)\n");
         } else {
             nn_assert_errno (rc >= 0, "Can't send");
@@ -483,7 +482,7 @@ void nn_recv_loop (nn_options_t *options, int sock)
 
     for (;;) {
         rc = nn_recv (sock, &buf, NN_MSG, 0);
-        if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (rc < 0 && errno == EAGAIN) {
             continue;
         } else if (errno == ETIMEDOUT || errno == EFSM) {
             return;  /*  No more messages possible  */
@@ -512,7 +511,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
-        if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (rc < 0 && errno == EAGAIN) {
             fprintf (stderr, "Message not sent (EAGAIN)\n");
         } else {
             nn_assert_errno (rc >= 0, "Can't send");
@@ -531,10 +530,10 @@ void nn_rw_loop (nn_options_t *options, int sock)
             {
                 time_to_sleep = recv_timeout;
             }
-            nn_set_recv_timeout (sock, (double) time_to_sleep);
+            nn_set_recv_timeout (sock, time_to_sleep);
             rc = nn_recv (sock, &buf, NN_MSG, 0);
             if (rc < 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (errno == EAGAIN) {
                     continue;
                 } else if (errno == ETIMEDOUT || errno == EFSM) {
                     time_to_sleep = (start_time + interval)
@@ -560,7 +559,7 @@ void nn_resp_loop (nn_options_t *options, int sock)
 
     for (;;) {
         rc = nn_recv (sock, &buf, NN_MSG, 0);
-        if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (rc < 0 && errno == EAGAIN) {
                 continue;
         } else {
             nn_assert_errno (rc >= 0, "Can't recv");
@@ -570,7 +569,7 @@ void nn_resp_loop (nn_options_t *options, int sock)
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
-        if (rc < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        if (rc < 0 && errno == EAGAIN) {
             fprintf (stderr, "Message not sent (EAGAIN)\n");
         } else {
             nn_assert_errno (rc >= 0, "Can't send");
@@ -584,11 +583,11 @@ int main (int argc, char **argv)
     nn_options_t options = {
         /* verbose           */ 0,
         /* socket_type       */ 0,
-        /* bind_addresses    */ {NULL, 0},
-        /* connect_addresses */ {NULL, 0},
+        /* bind_addresses    */ {NULL, NULL, 0, 0},
+        /* connect_addresses */ {NULL, NULL, 0, 0},
         /* send_timeout      */ -1.f,
         /* recv_timeout      */ -1.f,
-        /* subscriptions     */ {NULL, 0},
+        /* subscriptions     */ {NULL, NULL, 0, 0},
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
         /* data_to_send      */ {NULL, 0},
@@ -631,4 +630,5 @@ int main (int argc, char **argv)
     }
 
     nn_close (sock);
+    nn_free_options(&nn_cli, &options);
 }

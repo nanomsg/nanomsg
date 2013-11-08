@@ -74,17 +74,21 @@ struct nn_enum_item {
 
 struct nn_string_list {
     char **items;
+    char **to_free;
     int num;
+    int to_free_num;
 };
 
 struct nn_blob {
     char *data;
     int length;
+    int need_free;
 };
 
 
 void nn_parse_options (struct nn_commandline *cline,
                       void *target, int argc, char **argv);
+void nn_free_options (struct nn_commandline *cline, void *target);
 
 
 #endif  /* NN_OPTIONS_HEADER */

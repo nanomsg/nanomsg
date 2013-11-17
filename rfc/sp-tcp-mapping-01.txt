@@ -60,22 +60,17 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 1.  Underlying protocol
 
-   This mapping should be layered directly on the top of TCP or,
-   alternatively, on the top of ETSN (which itself is a thin layer on
-   the top of TCP).
+   This mapping should be layered directly on the top of TCP.
 
-   In the former case there's no fixed TCP port to use for the
-   communication.  Instead, port number are assigned to individual
-   services by the user.  In the latter case the communication happens
-   on the TCP port assigned to ETSN by IANA.  User identifies individual
-   services using ETSN service names.
+   There's no fixed TCP port to use for the communication.  Instead,
+   port number are assigned to individual services by the user.
 
 2.  Connection initiation
 
-   As soon as the underlying connection, whether TCP or ETSN, is
-   established, both parties MUST send the protocol header (described in
-   detail below) immediately.  Both endpoints MUST then wait for the
-   protocol header from the peer before proceeding on.
+   As soon as the underlying TCP connection is established, both parties
+   MUST send the protocol header (described in detail below)
+   immediately.  Both endpoints MUST then wait for the protocol header
+   from the peer before proceeding on.
 
    The goal of this design is to keep connection establishment as fast
    as possible by avoiding any additional protocol handshakes, i.e.
@@ -106,6 +101,11 @@ Internet-Draft             TCP mapping for SPs               August 2013
    eliminates any text-based protocols that were accidentally connected
    to the endpiont.  Subsequent two bytes make the check even more
    rigorous.  At the same time they can be used as a debugging hint to
+   indicate that the connection is supposed to use one of the
+   scalability protocols -- ASCII representation of these bytes is 'SP'
+   that can be easily spotted in when capturing the network traffic.
+   Finally, the fourth byte rules out any incompatible versions of this
+   protocol.
 
 
 
@@ -113,12 +113,6 @@ Sustrik                 Expires February 02, 2014               [Page 2]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
-
-   indicate that the connection is supposed to use one of the
-   scalability protocols -- ASCII representation of these bytes is 'SP'
-   that can be easily spotted in when capturing the network traffic.
-   Finally, the fourth byte rules out any incompatible versions of this
-   protocol.
 
    Fifth and sixth bytes of the header form a 16-bit unsigned integer in
    network byte order representing the type of SP endpoint on the layer
@@ -161,7 +155,13 @@ Internet-Draft             TCP mapping for SPs               August 2013
    portion of the message and the performance impact is not even
    measurable.
 
-
+   For small messages, the overal throughput is heavily CPU-bound, never
+   I/O-bound.  In other words, CPU processing associated with each
+   individual message limits the message rate in such a way that network
+   bandwidth limit is never reached.  In the future we expect it to be
+   even more so: network bandwidth is going to grow faster than CPU
+   speed.  All in all, some performance improvement could be achieved
+   using variable length size field with huge streams of very small
 
 
 
@@ -170,13 +170,6 @@ Sustrik                 Expires February 02, 2014               [Page 3]
 Internet-Draft             TCP mapping for SPs               August 2013
 
 
-   For small messages, the overal throughput is heavily CPU-bound, never
-   I/O-bound.  In other words, CPU processing associated with each
-   individual message limits the message rate in such a way that network
-   bandwidth limit is never reached.  In the future we expect it to be
-   even more so: network bandwidth is going to grow faster than CPU
-   speed.  All in all, some performance improvement could be achieved
-   using variable length size field with huge streams of very small
    messages on very slow networks.  We consider that scenario to be a
    corner case that's almost never seen in a real world.
 
@@ -217,6 +210,13 @@ Internet-Draft             TCP mapping for SPs               August 2013
    streams on the top of the connection, not just the one the missing
    packets belonged to.
 
+   At the same time, implementing multiplexing is a non-trivial matter
+   and results in increased development cost, more bugs and larger
+   attack surface.
+
+   Finally, for multiplexing to work properly, large messages have to be
+   split into smaller data chunks interleaved by chunk headers, which
+   makes receiving stack less efficient, as already discussed above.
 
 
 
@@ -225,14 +225,6 @@ Sustrik                 Expires February 02, 2014               [Page 4]
 
 Internet-Draft             TCP mapping for SPs               August 2013
 
-
-   At the same time, implementing multiplexing is a non-trivial matter
-   and results in increased development cost, more bugs and larger
-   attack surface.
-
-   Finally, for multiplexing to work properly, large messages have to be
-   split into smaller data chunks interleaved by chunk headers, which
-   makes receiving stack less efficient, as already discussed above.
 
 5.  IANA Considerations
 
@@ -277,4 +269,13 @@ Author's Address
 
 
 
+
+
+
+
+
+
+
+
 Sustrik                 Expires February 02, 2014               [Page 5]
+

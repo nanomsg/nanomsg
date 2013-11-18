@@ -60,6 +60,11 @@ int nn_lb_can_send (struct nn_lb *self)
     return nn_priolist_is_active (&self->priolist);
 }
 
+int nn_lb_get_priority (struct nn_lb *self)
+{
+    return nn_priolist_get_priority (&self->priolist);
+}
+
 int nn_lb_send (struct nn_lb *self, struct nn_msg *msg, struct nn_pipe **to)
 {
     int rc;

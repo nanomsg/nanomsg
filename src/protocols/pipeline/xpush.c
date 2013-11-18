@@ -128,6 +128,9 @@ static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_pipe_getdata (pipe);
     nn_lb_rm (&xpush->lb, pipe, &data->lb);
     nn_free (data);
+
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xpush->lb));
 }
 
 static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -144,6 +147,8 @@ static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);
     nn_lb_out (&xpush->lb, pipe, &data->lb);
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xpush->lb));
 }
 
 static int nn_xpush_events (struct nn_sockbase *self)

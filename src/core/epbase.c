@@ -62,3 +62,16 @@ int nn_epbase_ispeer (struct nn_epbase *self, int socktype)
     return nn_ep_ispeer (self->ep, socktype);
 }
 
+void nn_epbase_set_error (struct nn_epbase *self, int errnum)
+{
+    nn_ep_set_error (self->ep, errnum);
+}
+
+void nn_epbase_clear_error (struct nn_epbase *self)
+{
+    nn_ep_clear_error (self->ep);
+}
+
+void nn_epbase_stat_increment(struct nn_epbase *self, int name, int increment) {
+    nn_ep_stat_increment(self->ep, name, increment);
+}

@@ -28,5 +28,6 @@ struct nn_transport *nn_global_transport (int id);
 
 /*  Returns the global worker thread pool. */
 struct nn_pool *nn_global_getpool ();
+int nn_global_print_errors();
 
 #endif

@@ -30,6 +30,7 @@
 #include "ep.h"
 
 #include "../aio/pool.h"
+#include "../aio/timer.h"
 
 #include "../utils/err.h"
 #include "../utils/alloc.h"
@@ -64,8 +65,14 @@
 #include "../protocols/bus/bus.h"
 #include "../protocols/bus/xbus.h"
 
+#include "../pubsub.h"
+#include "../pipeline.h"
+
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #if defined NN_HAVE_WINDOWS
 #include "../utils/win.h"
@@ -88,6 +95,12 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
     }
 
 #define NN_CTX_FLAG_ZOMBIE 1
+
+#define NN_GLOBAL_SRC_STAT_TIMER 1
+
+#define NN_GLOBAL_STATE_IDLE           1
+#define NN_GLOBAL_STATE_ACTIVE         2
+#define NN_GLOBAL_STATE_STOPPING_TIMER 3
 
 struct nn_global {
 
@@ -114,6 +127,22 @@ struct nn_global {
 
     /*  Pool of worker threads. */
     struct nn_pool pool;
+
+    /*  Timer and other machinery for submitting statistics  */
+    struct nn_ctx ctx;
+    struct nn_fsm fsm;
+    int state;
+    struct nn_timer stat_timer;
+
+    int print_errors;
+    int print_statistics;
+
+    /*  Special socket ids  */
+    int statistics_socket;
+
+    /*  Application name for statistics  */
+    char hostname[64];
+    char appname[64];
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -131,6 +160,13 @@ static void nn_global_add_socktype (struct nn_socktype *socktype);
     It returns the ID of the newly created endpoint. */
 static int nn_global_create_ep (int s, const char *addr, int bind);
 
+/*  FSM callbacks  */
+static void nn_global_handler (struct nn_fsm *self,
+    int src, int type, void *srcptr);
+static void nn_global_shutdown (struct nn_fsm *self,
+    int src, int type, void *srcptr);
+
+
 int nn_errno (void)
 {
     return nn_err_errno ();
@@ -144,6 +180,10 @@ const char *nn_strerror (int errnum)
 static void nn_global_init (void)
 {
     int i;
+    char *envvar;
+    int rc;
+    char *addr;
+
 #if defined NN_HAVE_WINDOWS
     WSADATA data;
     int rc;
@@ -175,6 +215,15 @@ static void nn_global_init (void)
         self.socks [i] = NULL;
     self.nsocks = 0;
     self.flags = 0;
+
+    /*  Print connection and accepting errors to the stderr  */
+    envvar = getenv("NN_PRINT_ERRORS");
+    /*  any non-empty string is true */
+    self.print_errors = envvar && *envvar;
+
+    /*  Print socket statistics to stderr  */
+    envvar = getenv("NN_PRINT_STATISTICS");
+    self.print_statistics = envvar && *envvar;
 
     /*  Allocate the stack of unused file descriptors. */
     self.unused = (uint16_t*) (self.socks + NN_MAX_SOCKETS);
@@ -215,6 +264,51 @@ static void nn_global_init (void)
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);
+
+    /*  Start FSM  */
+    nn_fsm_init_root (&self.fsm, nn_global_handler, nn_global_shutdown,
+        &self.ctx);
+    self.state = NN_GLOBAL_STATE_IDLE;
+
+    nn_ctx_init (&self.ctx, nn_global_getpool (), NULL);
+    nn_timer_init (&self.stat_timer, NN_GLOBAL_SRC_STAT_TIMER, &self.fsm);
+    nn_fsm_start (&self.fsm);
+
+    nn_glock_unlock ();  /*  TODO(tailhook) get rid of this hack  */
+
+    /*   Initializing special sockets.  */
+    addr = getenv ("NN_STATISTICS_SOCKET");
+    if (addr) {
+        self.statistics_socket = nn_socket (AF_SP, NN_PUB);
+        errno_assert (self.statistics_socket >= 0);
+
+        rc = nn_connect (self.statistics_socket, addr);
+        errno_assert (rc >= 0);
+    } else {
+        self.statistics_socket = -1;
+    }
+
+    addr = getenv ("NN_APPLICATION_NAME");
+    if (addr) {
+        strncpy (self.appname, addr, 63);
+        self.appname[63] = '\0';
+    } else {
+        /*  No cross-platform way to find out application binary  */
+        sprintf (self.appname, "nanomsg.%d", getpid());
+    }
+
+    addr = getenv ("NN_HOSTNAME");
+    if (addr) {
+        strncpy (self.hostname, addr, 63);
+        self.hostname[63] = '\0';
+    } else {
+        /*  No cross-platform way to find out application binary  */
+        rc = gethostname (self.hostname, 63);
+        errno_assert (rc == 0);
+        self.hostname[63] = '\0';
+    }
+
+    nn_glock_lock ();
 }
 
 static void nn_global_term (void)
@@ -229,6 +323,11 @@ static void nn_global_term (void)
     nn_assert (self.socks);
     if (self.nsocks > 0)
         return;
+
+    /*  Stop the FSM  */
+    nn_ctx_enter (&self.ctx);
+    nn_fsm_stop (&self.fsm);
+    nn_ctx_leave (&self.ctx);
 
     /*  Shut down the worker threads. */
     nn_pool_term (&self.pool);
@@ -351,7 +450,7 @@ int nn_socket (int domain, int protocol)
             /*  Instantiate the socket. */
             sock = nn_alloc (sizeof (struct nn_sock), "sock");
             alloc_assert (sock);
-            rc = nn_sock_init (sock, socktype);
+            rc = nn_sock_init (sock, socktype, s);
             if (rc < 0)
                 goto error;
 
@@ -425,7 +524,7 @@ int nn_setsockopt (int s, int level, int option, const void *optval,
 
     return 0;
 }
- 
+
 int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen)
 {
@@ -539,6 +638,8 @@ int nn_send (int s, const void *buf, size_t len, int flags)
         errno = -rc;
         return -1;
     }
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, len);
 
     return (int) len;
 }
@@ -573,6 +674,8 @@ int nn_recv (int s, void *buf, size_t len, int flags)
         memcpy (buf, nn_chunkref_data (&msg.body), len < sz ? len : sz);
     }
     nn_msg_term (&msg);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_RECEIVED, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_RECEIVED, sz);
 
     return (int) sz;
 }
@@ -670,6 +773,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         errno = -rc;
         return -1;
     }
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, sz);
 
     return (int) sz;
 }
@@ -742,7 +847,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
             /*  TODO: Copy the data to the supplied buffer, prefix them
                 with size. */
             nn_assert (0);
-        }   
+        }
     }
 
     nn_msg_term (&msg);
@@ -756,13 +861,186 @@ static void nn_global_add_transport (struct nn_transport *transport)
         transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
-    
+
 }
 
 static void nn_global_add_socktype (struct nn_socktype *socktype)
 {
     nn_list_insert (&self.socktypes, &socktype->item,
         nn_list_end (&self.socktypes));
+}
+
+static void nn_global_submit_counter (int i, struct nn_sock *s,
+    char *name, uint64_t value)
+{
+    /* Length of buffer is:
+       len(hostname) + len(appname) + len(socket_name) + len(timebuf)
+       + len(str(value)) + len(static characters)
+       63 + 63 + 63 + 20 + 20 + 60 = 289 */
+    char buf[512];
+    char timebuf[20];
+    time_t numtime;
+    struct tm strtime;
+    int len;
+
+    if(self.print_statistics) {
+        fprintf(stderr, "nanomsg: socket.%s: %s: %lu\n",
+            s->socket_name, name, value);
+    }
+
+    if (self.statistics_socket >= 0) {
+        /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
+        time(&numtime);
+        gmtime_r (&numtime, &strtime);
+        strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
+        if(*s->socket_name) {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %lu:c",
+                self.hostname, self.appname, s->socket_name, name,
+                timebuf, value);
+        } else {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %lu:c",
+                self.hostname, self.appname, i, name,
+                timebuf, value);
+        }
+        nn_assert (len < sizeof(buf));
+        (void) nn_send (self.statistics_socket, buf, len, NN_DONTWAIT);
+    }
+}
+
+static void nn_global_submit_level (int i, struct nn_sock *s,
+    char *name, int value)
+{
+    /* Length of buffer is:
+       len(hostname) + len(appname) + len(socket_name) + len(timebuf)
+       + len(str(value)) + len(static characters)
+       63 + 63 + 63 + 20 + 20 + 60 = 289 */
+    char buf[512];
+    char timebuf[20];
+    time_t numtime;
+    struct tm strtime;
+    int len;
+
+    if(self.print_errors) {
+        fprintf(stderr, "nanomsg: socket.%s: %s: %d\n",
+            s->socket_name, name, value);
+    }
+
+    if (self.statistics_socket >= 0) {
+        /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
+        time(&numtime);
+        gmtime_r (&numtime, &strtime);
+        strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
+        if(*s->socket_name) {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %d",
+                self.hostname, self.appname, s->socket_name, name,
+                timebuf, value);
+        } else {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %d",
+                self.hostname, self.appname, i, name,
+                timebuf, value);
+        }
+        nn_assert (len < sizeof(buf));
+        (void) nn_send (self.statistics_socket, buf, len, NN_DONTWAIT);
+    }
+}
+
+static void nn_global_submit_errors (int i, struct nn_sock *s,
+    char *name, int value)
+{
+    /*  TODO(tailhook) dynamically allocate buffer  */
+    char buf[4096];
+    char *curbuf;
+    int buf_left;
+    char timebuf[20];
+    time_t numtime;
+    struct tm strtime;
+    int len;
+    struct nn_list_item *it;
+    struct nn_ep *ep;
+
+    if (self.statistics_socket >= 0) {
+        /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
+        time(&numtime);
+        gmtime_r (&numtime, &strtime);
+        strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
+        if(*s->socket_name) {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %d\n",
+                self.hostname, self.appname, s->socket_name, name,
+                timebuf, value);
+        } else {
+            len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %d\n",
+                self.hostname, self.appname, i, name,
+                timebuf, value);
+        }
+        buf_left = sizeof(buf) - len;
+        curbuf = buf + len;
+
+
+        for (it = nn_list_begin (&s->eps);
+              it != nn_list_end (&s->eps);
+              it = nn_list_next (&s->eps, it)) {
+            ep = nn_cont (it, struct nn_ep, item);
+
+            if (ep->last_errno) {
+                len = snprintf (curbuf, buf_left,
+                    " nanomsg: Endpoint %d [%s] error: %s\n",
+                    ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
+                if (buf_left < len)
+                    break;
+                curbuf += len;
+                buf_left -= len;
+            }
+
+        }
+
+        (void) nn_send (self.statistics_socket,
+            buf, sizeof(buf) - buf_left, NN_DONTWAIT);
+    }
+}
+
+static void nn_global_submit_statistics () {
+    int i;
+
+    /*  TODO(tailhook)  optimized it to use nsocks and unused  */
+    for(i = 0; i < NN_MAX_SOCKETS; ++i) {
+        struct nn_sock *s = self.socks [i];
+        if (!s)
+            continue;
+        if (i == self.statistics_socket)
+            continue;
+        nn_ctx_enter (&s->ctx);
+        nn_global_submit_counter (i, s,
+            "established_connections", s->statistics.established_connections);
+        nn_global_submit_counter (i, s,
+            "accepted_connections", s->statistics.accepted_connections);
+        nn_global_submit_counter (i, s,
+            "dropped_connections", s->statistics.dropped_connections);
+        nn_global_submit_counter (i, s,
+            "broken_connections", s->statistics.broken_connections);
+        nn_global_submit_counter (i, s,
+            "connect_errors", s->statistics.connect_errors);
+        nn_global_submit_counter (i, s,
+            "bind_errors", s->statistics.bind_errors);
+        nn_global_submit_counter (i, s,
+            "accept_errors", s->statistics.accept_errors);
+        nn_global_submit_counter (i, s,
+            "messages_sent", s->statistics.messages_sent);
+        nn_global_submit_counter (i, s,
+            "messages_received", s->statistics.messages_received);
+        nn_global_submit_counter (i, s,
+            "bytes_sent", s->statistics.bytes_sent);
+        nn_global_submit_counter (i, s,
+            "bytes_received", s->statistics.bytes_received);
+        nn_global_submit_level (i, s,
+            "current_connections", s->statistics.current_connections);
+        nn_global_submit_level (i, s,
+            "inprogress_connections", s->statistics.inprogress_connections);
+        nn_global_submit_level (i, s,
+            "current_snd_priority", s->statistics.current_snd_priority);
+        nn_global_submit_errors (i, s,
+            "current_ep_errors", s->statistics.current_ep_errors);
+        nn_ctx_leave (&s->ctx);
+    }
 }
 
 static int nn_global_create_ep (int s, const char *addr, int bind)
@@ -841,3 +1119,92 @@ struct nn_pool *nn_global_getpool ()
     return &self.pool;
 }
 
+static void nn_global_handler (struct nn_fsm *self,
+    int src, int type, void *srcptr)
+{
+
+    struct nn_global *global;
+
+    global = nn_cont (self, struct nn_global, fsm);
+
+    switch (global->state) {
+
+/******************************************************************************/
+/*  IDLE state.                                                               */
+/*  The state machine wasn't yet started.                                     */
+/******************************************************************************/
+    case NN_GLOBAL_STATE_IDLE:
+        switch (src) {
+
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_FSM_START:
+                global->state = NN_GLOBAL_STATE_ACTIVE;
+                if (global->print_statistics || global->statistics_socket >= 0)
+                {
+                    /*  Start statistics collection timer. */
+                    nn_timer_start (&global->stat_timer, 10000);
+                }
+                return;
+            default:
+                nn_fsm_bad_action (global->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (global->state, src, type);
+        }
+
+/******************************************************************************/
+/*  ACTIVE state.                                                             */
+/*  Normal lifetime for global object.                                        */
+/******************************************************************************/
+    case NN_GLOBAL_STATE_ACTIVE:
+        switch (src) {
+
+        case NN_GLOBAL_SRC_STAT_TIMER:
+            switch (type) {
+            case NN_TIMER_TIMEOUT:
+                nn_global_submit_statistics ();
+                /*  No need to change state  */
+                nn_timer_stop (&global->stat_timer);
+                return;
+            case NN_TIMER_STOPPED:
+                nn_timer_start (&global->stat_timer, 10000);
+                return;
+            default:
+                nn_fsm_bad_action (global->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (global->state, src, type);
+        }
+
+/******************************************************************************/
+/*  Invalid state.                                                            */
+/******************************************************************************/
+    default:
+        nn_fsm_bad_state (global->state, src, type);
+    }
+}
+
+static void nn_global_shutdown (struct nn_fsm *self,
+    int src, int type, void *srcptr)
+{
+
+    struct nn_global *global;
+
+    global = nn_cont (self, struct nn_global, fsm);
+
+    nn_assert (global->state == NN_GLOBAL_STATE_ACTIVE
+        || global->state == NN_GLOBAL_STATE_IDLE);
+    if (global->state == NN_GLOBAL_STATE_ACTIVE) {
+        if (!nn_timer_isidle (&global->stat_timer)) {
+            nn_timer_stop (&global->stat_timer);
+            return;
+        }
+    }
+}
+
+int nn_global_print_errors () {
+    return self.print_errors;
+}

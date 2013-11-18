@@ -54,3 +54,8 @@ int nn_sockbase_getopt (struct nn_sockbase *self, int option,
         optval, optvallen);
 }
 
+void nn_sockbase_stat_increment (struct nn_sockbase *self, int name,
+    int increment)
+{
+    nn_sock_stat_increment (self->sock, name, increment);
+}

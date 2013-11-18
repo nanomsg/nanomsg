@@ -65,7 +65,7 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
-int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
+int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
 {
     int rc;
     int i;
@@ -126,6 +126,28 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype)
     self->reconnect_ivl_max = 0;
     self->ep_template.sndprio = 8;
     self->ep_template.ipv4only = 1;
+
+    /* Initialize statistic entries */
+    self->statistics.established_connections = 0;
+    self->statistics.accepted_connections = 0;
+    self->statistics.dropped_connections = 0;
+    self->statistics.broken_connections = 0;
+    self->statistics.connect_errors = 0;
+    self->statistics.bind_errors = 0;
+    self->statistics.accept_errors = 0;
+
+    self->statistics.messages_sent = 0;
+    self->statistics.messages_received = 0;
+    self->statistics.bytes_sent = 0;
+    self->statistics.bytes_received = 0;
+
+    self->statistics.current_connections = 0;
+    self->statistics.inprogress_connections = 0;
+    self->statistics.current_snd_priority = 0;
+    self->statistics.current_ep_errors = 0;
+
+    /*  Should be pretty much enough space for just the number  */
+    sprintf(self->socket_name, "%d", fd);
 
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
@@ -256,6 +278,15 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
         if (!optset)
             return -ENOPROTOOPT;
         return optset->vfptr->setopt (optset, option, optval, optvallen);
+    }
+
+    /*  Special-casing socket name for now as it's the only string option  */
+    if (level == NN_SOL_SOCKET && option == NN_SOCKET_NAME) {
+        if (optvallen > 63)
+            return -EINVAL;
+        memcpy (self->socket_name, optval, optvallen);
+        self->socket_name [optvallen] = 0;
+        return 0;
     }
 
     /*  At this point we assume that all options are of type int. */
@@ -391,6 +422,10 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             memcpy (optval, &fd,
                 *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
             *optvallen = sizeof (nn_fd);
+            return 0;
+        case NN_SOCKET_NAME:
+            strncpy (optval, self->socket_name, *optvallen);
+            *optvallen = strlen(self->socket_name);
             return 0;
         default:
             return -ENOPROTOOPT;
@@ -635,12 +670,19 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
 {
-    return self->sockbase->vfptr->add (self->sockbase, pipe);
+    int rc;
+
+    rc = self->sockbase->vfptr->add (self->sockbase, pipe);
+    if (nn_slow (rc >= 0)) {
+        nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, 1);
+    }
+    return rc;
 }
 
 void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
 {
     self->sockbase->vfptr->rm (self->sockbase, pipe);
+    nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, -1);
 }
 
 static void nn_sock_onleave (struct nn_ctx *self)
@@ -918,3 +960,90 @@ static void nn_sock_action_zombify (struct nn_sock *self)
     }
 }
 
+void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
+{
+    if (!nn_global_print_errors())
+        return;
+
+    if (errnum == 0)
+        return;
+
+    if(ep) {
+        fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
+            self->socket_name, nn_ep_getaddr(ep), nn_strerror(errnum));
+    } else {
+        fprintf(stderr, "nanomsg: socket.%s: Error: %s\n",
+            self->socket_name, nn_strerror(errnum));
+    }
+}
+
+void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
+{
+    switch (name) {
+        case NN_STAT_ESTABLISHED_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.established_connections += increment;
+            break;
+        case NN_STAT_ACCEPTED_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.accepted_connections += increment;
+            break;
+        case NN_STAT_DROPPED_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.dropped_connections += increment;
+            break;
+        case NN_STAT_BROKEN_CONNECTIONS:
+            nn_assert (increment > 0);
+            self->statistics.broken_connections += increment;
+            break;
+        case NN_STAT_CONNECT_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.connect_errors += increment;
+            break;
+        case NN_STAT_BIND_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.bind_errors += increment;
+            break;
+        case NN_STAT_ACCEPT_ERRORS:
+            nn_assert (increment > 0);
+            self->statistics.accept_errors += increment;
+            break;
+        case NN_STAT_MESSAGES_SENT:
+            nn_assert (increment > 0);
+            self->statistics.messages_sent += increment;
+            break;
+        case NN_STAT_MESSAGES_RECEIVED:
+            nn_assert (increment > 0);
+            self->statistics.messages_received += increment;
+            break;
+        case NN_STAT_BYTES_SENT:
+            nn_assert (increment > 0);
+            self->statistics.bytes_sent += increment;
+            break;
+        case NN_STAT_BYTES_RECEIVED:
+            nn_assert (increment > 0);
+            self->statistics.bytes_received += increment;
+            break;
+
+        case NN_STAT_CURRENT_CONNECTIONS:
+            nn_assert (increment > 0 ||
+                self->statistics.current_connections >= -increment);
+            self->statistics.current_connections += increment;
+            break;
+        case NN_STAT_INPROGRESS_CONNECTIONS:
+            nn_assert (increment > 0 ||
+                self->statistics.inprogress_connections >= -increment);
+            self->statistics.inprogress_connections += increment;
+            break;
+        case NN_STAT_CURRENT_SND_PRIORITY:
+            /*  This is an exception, we don't want to increment priority  */
+            nn_assert(increment > 0 && increment <= 16 || increment == -1);
+            self->statistics.current_snd_priority = increment;
+            break;
+        case NN_STAT_CURRENT_EP_ERRORS:
+            nn_assert (increment > 0 ||
+                self->statistics.current_ep_errors >= -increment);
+            self->statistics.current_ep_errors += increment;
+            break;
+    }
+}

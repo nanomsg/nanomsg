@@ -314,7 +314,8 @@ MAN7 = \
     doc/nn_bus.txt \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
-    doc/nn_tcp.txt
+    doc/nn_tcp.txt \
+    doc/nn_env.txt
 
 MAN3 = \
     doc/nn_errno.txt \

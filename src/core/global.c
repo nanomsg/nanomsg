@@ -186,7 +186,6 @@ static void nn_global_init (void)
 
 #if defined NN_HAVE_WINDOWS
     WSADATA data;
-    int rc;
 #endif
 
     /*  Check whether the library was already initialised. If so, do nothing. */

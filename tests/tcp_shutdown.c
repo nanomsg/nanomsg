@@ -23,6 +23,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
+#include "../src/pipeline.h"
 #include "../src/tcp.h"
 
 #include "testutil.h"
@@ -31,10 +32,14 @@
 /*  Stress test the TCP transport. */
 
 #define THREAD_COUNT 100
+#define TEST2_THREAD_COUNT 10
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
+
+volatile int active;
 
 static void routine (void *arg)
 {
+    int rc;
     int s;
 
     s = nn_socket (AF_SP, NN_SUB);
@@ -45,8 +50,29 @@ static void routine (void *arg)
     test_close (s);
 }
 
+static void routine2 (void *arg)
+{
+    int rc;
+    int s;
+    int i;
+
+    s = test_socket (AF_SP, NN_PULL);
+
+    for (i = 0; i < 10; ++i) {
+        test_connect (s, SOCKET_ADDRESS);
+    }
+
+    for (i = 0; i < 10; ++i) {
+        test_recv (s, "hello");
+    }
+
+    test_close (s);
+    active --;
+}
+
 int main ()
 {
+    int rc;
     int sb;
     int i;
     int j;
@@ -66,6 +92,25 @@ int main ()
 
     test_close (sb);
 
+    /*  Test race condition of sending message while socket shutting down  */
+
+    sb = test_socket (AF_SP, NN_PUSH);
+    test_bind (sb, SOCKET_ADDRESS);
+
+    for (j = 0; j != 10; ++j) {
+        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine2, NULL);
+        active = TEST2_THREAD_COUNT;
+
+        while (active) {
+            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+        }
+
+        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
+            nn_thread_term (&threads [i]);
+    }
+
+    test_close (sb);
+
     return 0;
 }
-

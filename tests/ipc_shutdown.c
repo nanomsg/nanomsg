@@ -23,6 +23,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
+#include "../src/pipeline.h"
 #include "../src/ipc.h"
 
 #include "testutil.h"
@@ -31,7 +32,10 @@
 /*  Stress test the IPC transport. */
 
 #define THREAD_COUNT 100
+#define TEST2_THREAD_COUNT 10
 #define SOCKET_ADDRESS "ipc://test-shutdown.ipc"
+
+volatile int active;
 
 static void routine (void *arg)
 {
@@ -43,6 +47,26 @@ static void routine (void *arg)
     errno_assert (s >= 0);
     test_connect (s, SOCKET_ADDRESS);
     test_close (s);
+}
+
+static void routine2 (void *arg)
+{
+    int rc;
+    int s;
+    int i;
+
+    s = test_socket (AF_SP, NN_PULL);
+
+    for (i = 0; i < 10; ++i) {
+        test_connect (s, SOCKET_ADDRESS);
+    }
+
+    for (i = 0; i < 10; ++i) {
+        test_recv (s, "hello");
+    }
+
+    test_close (s);
+    active --;
 }
 
 int main ()
@@ -62,6 +86,26 @@ int main ()
         for (i = 0; i != THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine, NULL);
         for (i = 0; i != THREAD_COUNT; ++i)
+            nn_thread_term (&threads [i]);
+    }
+
+    test_close (sb);
+
+    /*  Test race condition of sending message while socket shutting down  */
+
+    sb = test_socket (AF_SP, NN_PUSH);
+    test_bind (sb, SOCKET_ADDRESS);
+
+    for (j = 0; j != 10; ++j) {
+        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine2, NULL);
+        active = TEST2_THREAD_COUNT;
+
+        while (active) {
+            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+        }
+
+        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_term (&threads [i]);
     }
 

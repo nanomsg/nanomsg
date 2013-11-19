@@ -35,6 +35,16 @@ int main ()
     struct nn_iovec iov;
     struct nn_msghdr hdr;
 
+    /*  Try to create an oversized message. */
+    p = nn_allocmsg (-1, 0);
+    nn_assert (!p && nn_errno () == ENOMEM);
+    p = nn_allocmsg (-1000, 0);
+    nn_assert (!p && nn_errno () == ENOMEM);
+
+    /*  Try to create a message of unknown type. */
+    p = nn_allocmsg (100, 333);
+    nn_assert (!p && nn_errno () == EINVAL);
+
     /*  Create a socket. */
     req = test_socket (AF_SP_RAW, NN_REQ);
 

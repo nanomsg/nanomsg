@@ -56,7 +56,9 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
     self->epbase = NULL;
     self->sock = sock;
     self->eid = eid;
+    self->last_errno = 0;
     nn_list_item_init (&self->item);
+    memcpy (&self->options, &sock->ep_template, sizeof(struct nn_ep_options));
 
     /*  Store the textual form of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
@@ -87,7 +89,7 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
 
 void nn_ep_term (struct nn_ep *self)
 {
-    nn_assert (self->state == NN_EP_STATE_IDLE);
+    nn_assert_state (self, NN_EP_STATE_IDLE);
 
     self->epbase->vfptr->destroy (self->epbase);
     nn_list_item_term (&self->item);
@@ -206,3 +208,28 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
     }
 }
 
+void nn_ep_set_error(struct nn_ep *self, int errnum)
+{
+    if (self->last_errno == errnum)
+        /*  Error is still there, no need to report it again  */
+        return;
+    if (self->last_errno == 0)
+        nn_sock_stat_increment (self->sock, NN_STAT_CURRENT_EP_ERRORS, 1);
+    self->last_errno = errnum;
+    nn_sock_report_error (self->sock, self, errnum);
+}
+
+void nn_ep_clear_error (struct nn_ep *self)
+{
+    if (self->last_errno == 0)
+        /*  Error is already clear, no need to report it  */
+        return;
+    nn_sock_stat_increment (self->sock, NN_STAT_CURRENT_EP_ERRORS, -1);
+    self->last_errno = 0;
+    nn_sock_report_error (self->sock, self, 0);
+}
+
+void nn_ep_stat_increment (struct nn_ep *self, int name, int increment)
+{
+    nn_sock_stat_increment (self->sock, name, increment);
+}

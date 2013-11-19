@@ -28,3 +28,6 @@
 #include "usock_posix.inc"
 #endif
 
+int nn_usock_geterrno (struct nn_usock *self) {
+    return self->errnum;
+}

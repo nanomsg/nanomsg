@@ -62,12 +62,12 @@ void nn_worker_op_init (struct nn_worker_op *self, int src,
 
 void nn_worker_op_term (struct nn_worker_op *self)
 {
-    nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
+    nn_assert_state (self, NN_WORKER_OP_STATE_IDLE);
 }
 
 void nn_worker_op_start (struct nn_worker_op *self, int zeroiserror)
 {
-    nn_assert (self->state == NN_WORKER_OP_STATE_IDLE);
+    nn_assert_state (self, NN_WORKER_OP_STATE_IDLE);
     self->state = zeroiserror ? NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR :
         NN_WORKER_OP_STATE_ACTIVE;
 }

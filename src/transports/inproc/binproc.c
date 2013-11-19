@@ -122,7 +122,7 @@ static void nn_binproc_connect (struct nn_ins_item *self,
     binproc = nn_cont (self, struct nn_binproc, item);
     cinproc = nn_cont (peer, struct nn_cinproc, item);
 
-    nn_assert (binproc->state == NN_BINPROC_STATE_ACTIVE);
+    nn_assert_state (binproc, NN_BINPROC_STATE_ACTIVE);
 
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
     alloc_assert (sinproc);
@@ -131,6 +131,9 @@ static void nn_binproc_connect (struct nn_ins_item *self,
     nn_list_insert (&binproc->sinprocs, &sinproc->item,
         nn_list_end (&binproc->sinprocs));
     nn_sinproc_connect (sinproc, &cinproc->fsm);
+
+    nn_epbase_stat_increment (&binproc->item.epbase,
+        NN_STAT_ACCEPTED_CONNECTIONS, 1);
 }
 
 static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,

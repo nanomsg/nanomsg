@@ -37,6 +37,7 @@ int main ()
     int sb;
     int sc;
     int i;
+    int s1, s2;
 
     /*  Try closing a IPC socket while it not connected. */
     sc = test_socket (AF_SP, NN_PAIR);
@@ -70,6 +71,18 @@ int main ()
     }
 
     test_close (sc);
+    test_close (sb);
+
+    /*  Test whether connection rejection is handled decently. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s1, SOCKET_ADDRESS);
+    s2 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s2, SOCKET_ADDRESS);
+    nn_sleep (100);
+    test_close (s2);
+    test_close (s1);
     test_close (sb);
 
 #endif

@@ -69,6 +69,11 @@ int nn_pipe_send (struct nn_pipe *self, struct nn_msg *msg);
     the call. It will be initialised when the call succeeds. */
 int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg);
 
+/*  Get option for pipe. Mostly useful for endpoint-specific options  */
+void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
+    void *optval, size_t *optvallen);
+
+
 /******************************************************************************/
 /*  Base class for all socket types.                                          */
 /******************************************************************************/
@@ -144,6 +149,12 @@ struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self);
 /*  Retrieve a NN_SOL_SOCKET-level option. */
 int nn_sockbase_getopt (struct nn_sockbase *self, int option,
     void *optval, size_t *optvallen);
+
+/*  Add some statitistics for socket  */
+void nn_sockbase_stat_increment (struct nn_sockbase *self, int name,
+    int increment);
+
+#define NN_STAT_CURRENT_SND_PRIORITY 401
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

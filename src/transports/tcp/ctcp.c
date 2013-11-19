@@ -240,7 +240,11 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_stcp_stop (&ctcp->stcp);
+        if (!nn_stcp_isidle (&ctcp->stcp)) {
+            nn_epbase_stat_increment (&ctcp->epbase,
+                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_stcp_stop (&ctcp->stcp);
+        }
         ctcp->state = NN_CTCP_STATE_STOPPING_STCP_FINAL;
     }
     if (nn_slow (ctcp->state == NN_CTCP_STATE_STOPPING_STCP_FINAL)) {
@@ -353,10 +357,21 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_CONNECTED:
                 nn_stcp_start (&ctcp->stcp, &ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_ACTIVE;
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_ESTABLISHED_CONNECTIONS, 1);
+                nn_epbase_clear_error (&ctcp->epbase);
                 return;
             case NN_USOCK_ERROR:
+                nn_epbase_set_error (&ctcp->epbase,
+                    nn_usock_geterrno (&ctcp->usock));
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_CONNECT_ERRORS, 1);
                 return;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
@@ -378,6 +393,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_STCP_ERROR:
                 nn_stcp_stop (&ctcp->stcp);
                 ctcp->state = NN_CTCP_STATE_STOPPING_STCP;
+                nn_epbase_stat_increment (&ctcp->epbase,
+                    NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
@@ -396,6 +413,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_CTCP_SRC_STCP:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
@@ -417,6 +436,8 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_CTCP_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_backoff_start (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_WAITING;
@@ -599,5 +620,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
     self->state = NN_CTCP_STATE_CONNECTING;
+    nn_epbase_stat_increment (&self->epbase,
+        NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
 

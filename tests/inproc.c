@@ -38,6 +38,7 @@ int main ()
     int i;
     char buf [256];
     int val;
+    int s1, s2;
 
     /*  Create a simple topology. */
     sc = test_socket (AF_SP, NN_PAIR);
@@ -112,6 +113,20 @@ int main ()
 
     test_close (sc);
     test_close (sb);
+
+#if 0
+    /*  Test whether connection rejection is handled decently. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s1, SOCKET_ADDRESS);
+    s2 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s2, SOCKET_ADDRESS);
+    nn_sleep (100);
+    test_close (s2);
+    test_close (s1);
+    test_close (sb);
+#endif
 
     return 0;
 }

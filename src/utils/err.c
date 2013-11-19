@@ -41,114 +41,62 @@ int nn_err_errno (void)
 const char *nn_err_strerror (int errnum)
 {
     switch (errnum) {
-#if defined NN_ENOTSUP_DEFINED
+#if defined NN_HAVE_WINDOWS
     case ENOTSUP:
         return "Not supported";
-#endif
-#if defined NN_EPROTONOSUPPORT_DEFINED
     case EPROTONOSUPPORT:
         return "Protocol not supported";
-#endif
-#if defined NN_ENOBUFS_DEFINED
     case ENOBUFS:
         return "No buffer space available";
-#endif
-#if defined NN_ENETDOWN_DEFINED
     case ENETDOWN:
         return "Network is down";
-#endif
-#if defined NN_EADDRINUSE_DEFINED
     case EADDRINUSE:
         return "Address in use";
-#endif
-#if defined NN_EADDRNOTAVAIL_DEFINED
     case EADDRNOTAVAIL:
         return "Address not available";
-#endif
-#if defined NN_ECONNREFUSED_DEFINED
     case ECONNREFUSED:
         return "Connection refused";
-#endif
-#if defined NN_EINPROGRESS_DEFINED
     case EINPROGRESS:
         return "Operation in progress";
-#endif
-#if defined NN_ENOTSOCK_DEFINED
     case ENOTSOCK:
         return "Not a socket";
-#endif
-#if defined NN_EAFNOSUPPORT_DEFINED
     case EAFNOSUPPORT:
         return "Address family not supported";
-#endif
-#if defined NN_EPROTO_DEFINED
     case EPROTO:
         return "Protocol error";
-#endif
-#if defined NN_EAGAIN_DEFINED
     case EAGAIN:
         return "Resource unavailable, try again";
-#endif
-#if defined NN_EBADF_DEFINED
     case EBADF:
         return "Bad file descriptor";
-#endif
-#if defined NN_EINVAL_DEFINED
     case EINVAL:
         return "Invalid argument";
-#endif
-#if defined NN_EMFILE_DEFINED
     case EMFILE:
         return "Too many open files";
-#endif
-#if defined NN_EFAULT_DEFINED
     case EFAULT:
         return "Bad address";
-#endif
-#if defined NN_EACCESS_DEFINED
     case EACCESS:
         return "Permission denied";
-#endif
-#if defined NN_ENETRESET_DEFINED
     case ENETRESET:
         return "Connection aborted by network";
-#endif
-#if defined NN_ENETUNREACH_DEFINED
     case ENETUNREACH:
         return "Network unreachable";
-#endif
-#if defined NN_EHOSTUNREACH_DEFINED
     case EHOSTUNREACH:
         return "Host is unreachable";
-#endif
-#if defined NN_ENOTCONN_DEFINED
     case ENOTCONN:
         return "The socket is not connected";
-#endif
-#if defined NN_EMSGSIZE_DEFINED
     case EMSGSIZE:
         return "Message too large";
-#endif
-#if defined NN_ETIMEDOUT_DEFINED
     case ETIMEDOUT:
         return "Timed out";
-#endif
-#if defined NN_ECONNABORTED_DEFINED
     case ECONNABORTED:
         return "Connection aborted";
-#endif
-#if defined NN_ECONNRESET_DEFINED
     case ECONNRESET:
         return "Connection reset";
-#endif
-#if defined NN_ENOPROTOOPT_DEFINED
     case ENOPROTOOPT:
         return "Protocol not available";
-#endif
-#if defined NN_EISCONN_DEFINED
     case EISCONN:
         return "Socket is connected";
-#endif 
+#endif
     case ETERM:
         return "Nanomsg library was terminated";
     case EFSM:

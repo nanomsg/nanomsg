@@ -175,3 +175,6 @@ void nn_priolist_advance (struct nn_priolist *self, int release)
     }
 }
 
+int nn_priolist_get_priority (struct nn_priolist *self) {
+    return self->current;
+}

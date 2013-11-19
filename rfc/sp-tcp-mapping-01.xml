@@ -38,24 +38,19 @@
 
     <section title = "Underlying protocol">
 
-      <t>This mapping should be layered directly on the top of TCP or,
-         alternatively, on the top of ETSN (which itself is a thin layer
-         on the top of TCP).</t>
+      <t>This mapping should be layered directly on the top of TCP.</t>
 
-      <t>In the former case there's no fixed TCP port to use for the
-         communication. Instead, port number are assigned to individual
-         services by the user. In the latter case the communication happens
-         on the TCP port assigned to ETSN by IANA. User identifies individual
-         services using ETSN service names.</t>
+      <t>There's no fixed TCP port to use for the communication. Instead, port
+         number are assigned to individual services by the user.</t>
 
     </section>
 
     <section title = "Connection initiation">
 
-      <t>As soon as the underlying connection, whether TCP or ETSN, is
-         established, both parties MUST send the protocol header (described in
-         detail below) immediately. Both endpoints MUST then wait for the
-         protocol header from the peer before proceeding on.</t>
+      <t>As soon as the underlying TCP connection is established, both parties
+         MUST send the protocol header (described in detail below) immediately.
+         Both endpoints MUST then wait for the protocol header from the peer
+         before proceeding on.</t>
 
       <t>The goal of this design is to keep connection establishment as
          fast as possible by avoiding any additional protocol handshakes,

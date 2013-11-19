@@ -111,7 +111,7 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
     cinproc = nn_cont (self, struct nn_cinproc, item);
     binproc = nn_cont (peer, struct nn_binproc, item);
 
-    nn_assert (cinproc->state == NN_CINPROC_STATE_DISCONNECTED);
+    nn_assert_state (cinproc, NN_CINPROC_STATE_DISCONNECTED);
     nn_sinproc_connect (&cinproc->sinproc, &binproc->fsm);
     nn_fsm_action (&cinproc->fsm, NN_CINPROC_ACTION_CONNECT);
 }
@@ -166,6 +166,8 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
+                nn_epbase_stat_increment (&cinproc->item.epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cinproc->state, src, type);
@@ -185,6 +187,10 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_CINPROC_ACTION_CONNECT:
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
+                nn_epbase_stat_increment (&cinproc->item.epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cinproc->item.epbase,
+                    NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cinproc->state, src, type);
@@ -196,6 +202,10 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
             case NN_SINPROC_CONNECT:
                 nn_sinproc_accept (&cinproc->sinproc, sinproc);
                 cinproc->state = NN_CINPROC_STATE_ACTIVE;
+                nn_epbase_stat_increment (&cinproc->item.epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cinproc->item.epbase,
+                    NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cinproc->state, src, type);

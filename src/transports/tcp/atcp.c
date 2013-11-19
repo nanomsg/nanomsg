@@ -63,7 +63,7 @@ void nn_atcp_init (struct nn_atcp *self, int src,
 
 void nn_atcp_term (struct nn_atcp *self)
 {
-    nn_assert (self->state == NN_ATCP_STATE_IDLE);
+    nn_assert_state (self, NN_ATCP_STATE_IDLE);
 
     nn_list_item_term (&self->item);
     nn_fsm_event_term (&self->done);
@@ -80,7 +80,7 @@ int nn_atcp_isidle (struct nn_atcp *self)
 
 void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
 {
-    nn_assert (self->state == NN_ATCP_STATE_IDLE);
+    nn_assert_state (self, NN_ATCP_STATE_IDLE);
 
     /*  Take ownership of the listener socket. */
     self->listener = listener;
@@ -105,7 +105,11 @@ static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     atcp = nn_cont (self, struct nn_atcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_stcp_stop (&atcp->stcp);
+        if (!nn_stcp_isidle (&atcp->stcp)) {
+            nn_epbase_stat_increment (atcp->epbase,
+                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_stcp_stop (&atcp->stcp);
+        }
         atcp->state = NN_ATCP_STATE_STOPPING_STCP_FINAL;
     }
     if (nn_slow (atcp->state == NN_ATCP_STATE_STOPPING_STCP_FINAL)) {
@@ -174,6 +178,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
+                nn_epbase_clear_error (atcp->epbase);
 
                 /*  Set the relevant socket options. */
                 sz = sizeof (val);
@@ -201,6 +206,24 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_stcp_start (&atcp->stcp, &atcp->usock);
                 atcp->state = NN_ATCP_STATE_ACTIVE;
 
+                nn_epbase_stat_increment (atcp->epbase,
+                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+
+                return;
+
+            default:
+                nn_fsm_bad_action (atcp->state, src, type);
+            }
+
+        case NN_ATCP_SRC_LISTENER:
+            switch (type) {
+
+            case NN_USOCK_ACCEPT_ERROR:
+                nn_epbase_set_error (atcp->epbase,
+                    nn_usock_geterrno(atcp->listener));
+                nn_epbase_stat_increment (atcp->epbase,
+                    NN_STAT_ACCEPT_ERRORS, 1);
+                nn_usock_accept (&atcp->usock, atcp->listener);
                 return;
 
             default:
@@ -222,6 +245,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             case NN_STCP_ERROR:
                 nn_stcp_stop (&atcp->stcp);
                 atcp->state = NN_ATCP_STATE_STOPPING_STCP;
+                nn_epbase_stat_increment (atcp->epbase,
+                    NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
@@ -239,6 +264,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_STCP:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
                 atcp->state = NN_ATCP_STATE_STOPPING_USOCK;
@@ -259,6 +286,8 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
 
         case NN_ATCP_SRC_USOCK:
             switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
                 atcp->state = NN_ATCP_STATE_DONE;

@@ -25,7 +25,6 @@
 #include "alloc.h"
 #include "fast.h"
 #include "wire.h"
-#include "int.h"
 #include "err.h"
 
 #include <string.h>
@@ -55,21 +54,27 @@ struct nn_chunk {
 static struct nn_chunk *nn_chunk_getptr (void *p);
 static void nn_chunk_default_free (void *p);
 
-void *nn_chunk_alloc (size_t size, int type)
+int nn_chunk_alloc (size_t size, int type, void **result)
 {
     size_t sz;
     struct nn_chunk *self;
+    const size_t hdrsz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+
+    /*  Compute total size to be allocated. Check for overflow. */
+    sz = hdrsz + size;
+    if (nn_slow (sz < hdrsz))
+        return -ENOMEM;
 
     /*  Allocate the actual memory depending on the type. */
-    sz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t) + size;
     switch (type) {
     case 0:
         self = nn_alloc (sz, "message chunk");
         break;
     default:
-        return NULL;
+        return -EINVAL;
     }
-    alloc_assert (self);
+    if (nn_slow (!self))
+        return -ENOMEM;
 
     /*  Fill in the chunk header. */
     nn_atomic_init (&self->refcount, 1);
@@ -83,7 +88,8 @@ void *nn_chunk_alloc (size_t size, int type)
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), NN_CHUNK_TAG);
 
-    return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
+    *result = ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
+    return 0;
 }
 
 void nn_chunk_free (void *p)
@@ -108,7 +114,7 @@ void nn_chunk_free (void *p)
     }
 }
 
-void nn_chunk_addref (void *p, int n)
+void nn_chunk_addref (void *p, uint32_t n)
 {
     struct nn_chunk *self;
 

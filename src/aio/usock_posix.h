@@ -76,7 +76,7 @@ struct nn_usock {
     struct nn_worker_task task_recv;
     struct nn_worker_task task_stop;
 
-    /*  Events raised by the usock. */ 
+    /*  Events raised by the usock. */
     struct nn_fsm_event event_established;
     struct nn_fsm_event event_sent;
     struct nn_fsm_event event_received;
@@ -85,4 +85,7 @@ struct nn_usock {
     /*  In ACCEPTING state points to the socket being accepted.
         In BEING_ACCEPTED state points to the listener socket. */
     struct nn_usock *asock;
+
+    /*  Errno remembered in NN_USOCK_ERROR state  */
+    int errnum;
 };

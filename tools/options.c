@@ -189,7 +189,7 @@ static void nn_print_help (struct nn_parse_context *ctx, FILE *stream)
             }
         }
         if (optlen < 23) {
-            fputs ("                        " + optlen, stream);
+            fputs (&"                        "[optlen], stream);
             cursor = nn_print_line (stream, opt->description, 80-24);
         } else {
             cursor = opt->description;
@@ -349,6 +349,27 @@ static void nn_append_string (struct nn_parse_context *ctx,
     lst->items[lst->num-1] = str;
 }
 
+static void nn_append_string_to_free (struct nn_parse_context *ctx,
+                                      struct nn_option *opt, char *str)
+{
+    struct nn_string_list *lst;
+
+    lst = (struct nn_string_list *)(
+        ((char *)ctx->target) + opt->offset);
+    if (lst->to_free) {
+        lst->to_free_num += 1;
+        lst->to_free = realloc (lst->items,
+                                sizeof (char *) * lst->to_free_num);
+    } else {
+        lst->to_free = malloc (sizeof (char *));
+        lst->to_free_num = 1;
+    }
+    if (!lst->items) {
+        nn_memory_error (ctx);
+    }
+    lst->to_free[lst->to_free_num-1] = str;
+}
+
 static void nn_process_option (struct nn_parse_context *ctx,
                               int opt_index, char *argument)
 {
@@ -409,6 +430,7 @@ static void nn_process_option (struct nn_parse_context *ctx,
             blob = (struct nn_blob *)(((char *)ctx->target) + opt->offset);
             blob->data = argument;
             blob->length = strlen (argument);
+            blob->need_free = 0;
             return;
         case NN_OPT_FLOAT:
 #if defined NN_HAVE_WINDOWS
@@ -437,6 +459,7 @@ static void nn_process_option (struct nn_parse_context *ctx,
 #endif
             assert (data_len < data_buf);
             nn_append_string (ctx, opt, data);
+            nn_append_string_to_free (ctx, opt, data);
             return;
         case NN_OPT_READ_FILE:
             if (!strcmp (argument, "-")) {
@@ -504,6 +527,7 @@ static void nn_process_option (struct nn_parse_context *ctx,
             blob = (struct nn_blob *)(((char *)ctx->target) + opt->offset);
             blob->data = data;
             blob->length = data_len;
+            blob->need_free = 1;
             return;
     }
     abort ();
@@ -761,4 +785,44 @@ void nn_parse_options (struct nn_commandline *cline,
 
     free (ctx.last_option_usage);
 
+}
+
+void nn_free_options (struct nn_commandline *cline, void *target) {
+    int i, j;
+    struct nn_option *opt;
+    struct nn_blob *blob;
+    struct nn_string_list *lst;
+
+    for (i = 0;; ++i) {
+        opt = &cline->options[i];
+        if (!opt->longname)
+            break;
+        switch(opt->type) {
+        case NN_OPT_LIST_APPEND:
+        case NN_OPT_LIST_APPEND_FMT:
+            lst = (struct nn_string_list *)(((char *)target) + opt->offset);
+            if(lst->items) {
+                free(lst->items);
+                lst->items = NULL;
+            }
+            if(lst->to_free) {
+                for(j = 0; j < lst->to_free_num; ++j) {
+                    free(lst->to_free[j]);
+                }
+                free(lst->to_free);
+                lst->to_free = NULL;
+            }
+            break;
+        case NN_OPT_READ_FILE:
+        case NN_OPT_BLOB:
+            blob = (struct nn_blob *)(((char *)target) + opt->offset);
+            if(blob->need_free && blob->data) {
+                free(blob->data);
+                blob->need_free = 0;
+            }
+            break;
+        default:
+            break;
+        }
+    }
 }

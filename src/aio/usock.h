@@ -34,7 +34,9 @@
 #define NN_USOCK_SENT 3
 #define NN_USOCK_RECEIVED 4
 #define NN_USOCK_ERROR 5
-#define NN_USOCK_STOPPED 6
+#define NN_USOCK_ACCEPT_ERROR 6
+#define NN_USOCK_STOPPED 7
+#define NN_USOCK_SHUTDOWN 8
 
 /*  Maximum number of iovecs that can be passed to nn_usock_send function. */
 #define NN_USOCK_MAX_IOVCNT 3
@@ -84,5 +86,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int iovcnt);
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len);
+
+int nn_usock_geterrno (struct nn_usock *self);
 
 #endif

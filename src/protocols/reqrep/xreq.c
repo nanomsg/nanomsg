@@ -89,9 +89,9 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     xreq = nn_cont (self, struct nn_xreq, sockbase);
 
     sz = sizeof (sndprio);
-    rc = nn_sockbase_getopt (&xreq->sockbase, NN_SNDPRIO, &sndprio, &sz);
-    errnum_assert (rc == 0, -rc);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_SNDPRIO, &sndprio, &sz);
     nn_assert (sz == sizeof (sndprio));
+    nn_assert (sndprio >= 1 && sndprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);
@@ -111,6 +111,9 @@ void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_lb_rm (&xreq->lb, pipe, &data->lb);
     nn_fq_rm (&xreq->fq, pipe, &data->fq);
     nn_free (data);
+
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xreq->lb));
 }
 
 void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -131,6 +134,9 @@ void nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
     nn_lb_out (&xreq->lb, pipe, &data->lb);
+
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xreq->lb));
 }
 
 int nn_xreq_events (struct nn_sockbase *self)
@@ -145,10 +151,16 @@ int nn_xreq_events (struct nn_sockbase *self)
 
 int nn_xreq_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
+    return nn_xreq_send_to (self, msg, NULL);
+}
+
+int nn_xreq_send_to (struct nn_sockbase *self, struct nn_msg *msg,
+    struct nn_pipe **to)
+{
     int rc;
 
     /*  If request cannot be sent due to the pushback, drop it silenly. */
-    rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg);
+    rc = nn_lb_send (&nn_cont (self, struct nn_xreq, sockbase)->lb, msg, to);
     if (nn_slow (rc == -EAGAIN))
         return -EAGAIN;
     errnum_assert (rc >= 0, -rc);

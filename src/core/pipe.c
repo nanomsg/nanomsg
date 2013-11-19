@@ -32,6 +32,7 @@
 /*  Internal pipe states. */
 #define NN_PIPEBASE_STATE_IDLE 1
 #define NN_PIPEBASE_STATE_ACTIVE 2
+#define NN_PIPEBASE_STATE_FAILED 3
 
 #define NN_PIPEBASE_INSTATE_DEACTIVATED 0
 #define NN_PIPEBASE_INSTATE_IDLE 1
@@ -56,13 +57,15 @@ void nn_pipebase_init (struct nn_pipebase *self,
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
     self->sock = epbase->ep->sock;
+    memcpy (&self->options, &epbase->ep->options,
+        sizeof (struct nn_ep_options));
     nn_fsm_event_init (&self->in);
     nn_fsm_event_init (&self->out);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
 {
-    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+    nn_assert_state (self, NN_PIPEBASE_STATE_IDLE);
 
     nn_fsm_event_term (&self->out);
     nn_fsm_event_term (&self->in);
@@ -73,14 +76,16 @@ int nn_pipebase_start (struct nn_pipebase *self)
 {
     int rc;
 
-    nn_assert (self->state == NN_PIPEBASE_STATE_IDLE);
+    nn_assert_state (self, NN_PIPEBASE_STATE_IDLE);
 
     self->state = NN_PIPEBASE_STATE_ACTIVE;
     self->instate = NN_PIPEBASE_INSTATE_ASYNC;
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
     rc = nn_sock_add (self->sock, (struct nn_pipe*) self);
-    if (nn_slow (rc < 0))
+    if (nn_slow (rc < 0)) {
+        self->state = NN_PIPEBASE_STATE_FAILED;
         return rc;
+    }
     if (self->sock)
         nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
 
@@ -89,9 +94,8 @@ int nn_pipebase_start (struct nn_pipebase *self)
 
 void nn_pipebase_stop (struct nn_pipebase *self)
 {
-    if (self->state != NN_PIPEBASE_STATE_ACTIVE)
-        return;
-    nn_sock_rm (self->sock, (struct nn_pipe*) self);
+    if (self->state == NN_PIPEBASE_STATE_ACTIVE)
+        nn_sock_rm (self->sock, (struct nn_pipe*) self);
     self->state = NN_PIPEBASE_STATE_IDLE;
 }
 
@@ -123,6 +127,35 @@ void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     int rc;
+    struct nn_optset *optset;
+    int intval;
+    nn_fd fd;
+
+    if (level == NN_SOL_SOCKET) {
+        switch (option) {
+
+        /*  Endpoint options  */
+        case NN_SNDPRIO:
+            intval = self->options.sndprio;
+            break;
+        case NN_IPV4ONLY:
+            intval = self->options.ipv4only;
+            break;
+
+        /*  Fallback to socket options  */
+        default:
+            rc = nn_sock_getopt_inner (self->sock, level,
+                option, optval, optvallen);
+            errnum_assert (rc == 0, -rc);
+            return;
+        }
+
+        memcpy (optval, &intval,
+            *optvallen < sizeof (int) ? *optvallen : sizeof (int));
+        *optvallen = sizeof (int);
+
+        return;
+    }
 
     rc = nn_sock_getopt_inner (self->sock, level, option, optval, optvallen);
     errnum_assert (rc == 0, -rc);
@@ -180,5 +213,15 @@ int nn_pipe_recv (struct nn_pipe *self, struct nn_msg *msg)
     nn_assert (pipebase->instate == NN_PIPEBASE_INSTATE_RECEIVING);
     pipebase->instate = NN_PIPEBASE_INSTATE_ASYNC;
     return rc | NN_PIPEBASE_RELEASE;
+}
+
+void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
+    void *optval, size_t *optvallen)
+{
+
+    struct nn_pipebase *pipebase;
+
+    pipebase = (struct nn_pipebase*) self;
+    nn_pipebase_getopt (pipebase, level, option, optval, optvallen);
 }
 

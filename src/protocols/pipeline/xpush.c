@@ -107,9 +107,9 @@ static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     xpush = nn_cont (self, struct nn_xpush, sockbase);
 
     sz = sizeof (sndprio);
-    rc = nn_sockbase_getopt (&xpush->sockbase, NN_SNDPRIO, &sndprio, &sz);
-    errnum_assert (rc == 0, -rc);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_SNDPRIO, &sndprio, &sz);
     nn_assert (sz == sizeof (sndprio));
+    nn_assert (sndprio >= 1 && sndprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xpush_data), "pipe data (push)");
     alloc_assert (data);
@@ -128,6 +128,9 @@ static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_pipe_getdata (pipe);
     nn_lb_rm (&xpush->lb, pipe, &data->lb);
     nn_free (data);
+
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xpush->lb));
 }
 
 static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -144,6 +147,8 @@ static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     xpush = nn_cont (self, struct nn_xpush, sockbase);
     data = nn_pipe_getdata (pipe);
     nn_lb_out (&xpush->lb, pipe, &data->lb);
+    nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
+        nn_lb_get_priority (&xpush->lb));
 }
 
 static int nn_xpush_events (struct nn_sockbase *self)
@@ -154,7 +159,8 @@ static int nn_xpush_events (struct nn_sockbase *self)
 
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
-    return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb, msg);
+    return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb,
+        msg, NULL);
 }
 
 static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,

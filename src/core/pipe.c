@@ -127,9 +127,7 @@ void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
     void *optval, size_t *optvallen)
 {
     int rc;
-    struct nn_optset *optset;
     int intval;
-    nn_fd fd;
 
     if (level == NN_SOL_SOCKET) {
         switch (option) {

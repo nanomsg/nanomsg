@@ -328,7 +328,6 @@ static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
 static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, fsm);

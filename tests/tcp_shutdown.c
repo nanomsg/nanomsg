@@ -39,7 +39,6 @@ volatile int active;
 
 static void routine (void *arg)
 {
-    int rc;
     int s;
 
     s = nn_socket (AF_SP, NN_SUB);
@@ -52,7 +51,6 @@ static void routine (void *arg)
 
 static void routine2 (void *arg)
 {
-    int rc;
     int s;
     int i;
 
@@ -72,7 +70,6 @@ static void routine2 (void *arg)
 
 int main ()
 {
-    int rc;
     int sb;
     int i;
     int j;

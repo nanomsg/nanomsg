@@ -26,6 +26,7 @@
 #include "../src/inproc.h"
 
 #include "testutil.h"
+#include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
 /*  Stress test the inproc transport. */
@@ -33,7 +34,7 @@
 #define THREAD_COUNT 100
 #define SOCKET_ADDRESS "inproc://test"
 
-static void routine (void *arg)
+static void routine (NN_UNUSED void *arg)
 {
     int s;
 

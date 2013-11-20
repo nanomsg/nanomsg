@@ -32,6 +32,7 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 #include <string.h>
 
@@ -126,11 +127,11 @@ void nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xrep = nn_cont (self, struct nn_xrep, sockbase);
     data = nn_pipe_getdata (pipe);
-    
+
     nn_fq_in (&xrep->inpipes, pipe, &data->initem);
 }
 
-void nn_xrep_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrep_out (NN_UNUSED struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xrep_data *data;
 
@@ -238,14 +239,16 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-int nn_xrep_setopt (struct nn_sockbase *self, int level, int option,
-    const void *optval, size_t optvallen)
+int nn_xrep_setopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen)
+int nn_xrep_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

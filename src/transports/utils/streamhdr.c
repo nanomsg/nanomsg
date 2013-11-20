@@ -28,6 +28,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -111,7 +112,7 @@ void nn_streamhdr_stop (struct nn_streamhdr *self)
 }
 
 static void nn_streamhdr_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_streamhdr *streamhdr;
 
@@ -133,7 +134,7 @@ static void nn_streamhdr_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_streamhdr *streamhdr;
     struct nn_iovec iovec;

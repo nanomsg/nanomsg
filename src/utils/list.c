@@ -24,6 +24,7 @@
 
 #include "list.h"
 #include "err.h"
+#include "attr.h"
 
 void nn_list_init (struct nn_list *self)
 {
@@ -47,7 +48,7 @@ struct nn_list_item *nn_list_begin (struct nn_list *self)
     return self->first;
 }
 
-struct nn_list_item *nn_list_end (struct nn_list *self)
+struct nn_list_item *nn_list_end (NN_UNUSED struct nn_list *self)
 {
     return NULL;
 }
@@ -61,7 +62,7 @@ struct nn_list_item *nn_list_prev (struct nn_list *self,
     return it->prev;
 }
 
-struct nn_list_item *nn_list_next (struct nn_list *self,
+struct nn_list_item *nn_list_next (NN_UNUSED struct nn_list *self,
     struct nn_list_item *it)
 {
     nn_assert (it->next != NN_LIST_NOTINLIST);
@@ -82,7 +83,7 @@ void nn_list_insert (struct nn_list *self, struct nn_list_item *item,
     if (!self->first || self->first == it)
         self->first = item;
     if (!it)
-        self->last = item;   
+        self->last = item;
 }
 
 struct nn_list_item *nn_list_erase (struct nn_list *self,

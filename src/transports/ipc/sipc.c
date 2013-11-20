@@ -29,6 +29,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 /*  Types of messages passed via IPC transport. */
 #define NN_SIPC_MSG_NORMAL 1
@@ -177,7 +178,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 }
 
 static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_sipc *sipc;
 
@@ -205,7 +206,7 @@ static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     int rc;
     struct nn_sipc *sipc;

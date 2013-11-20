@@ -601,7 +601,7 @@ int main (int argc, char **argv)
         /* socket_name       */ NULL,
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
-        /* data_to_send      */ {NULL, 0},
+        /* data_to_send      */ {NULL, 0, 0},
         /* echo_format       */ NN_NO_ECHO
     };
 
@@ -642,4 +642,5 @@ int main (int argc, char **argv)
 
     nn_close (sock);
     nn_free_options(&nn_cli, &options);
+    return 0;
 }

@@ -25,6 +25,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 
@@ -40,14 +41,14 @@ void nn_dist_term (struct nn_dist *self)
     nn_list_term (&self->pipes);
 }
 
-void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
+void nn_dist_add (NN_UNUSED struct nn_dist *self, struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
     data->pipe = pipe;
     nn_list_item_init (&data->item);
 }
 
-void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
+void nn_dist_rm (struct nn_dist *self, NN_UNUSED struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
     if (nn_list_item_isinlist (&data->item)) {
@@ -57,7 +58,7 @@ void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
     nn_list_item_term (&data->item);
 }
 
-void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
+void nn_dist_out (struct nn_dist *self, NN_UNUSED struct nn_pipe *pipe,
     struct nn_dist_data *data)
 {
     ++self->count;

@@ -26,6 +26,7 @@
 #include "../utils/err.h"
 #include "../utils/fast.h"
 #include "../utils/cont.h"
+#include "../utils/attr.h"
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
@@ -37,7 +38,7 @@ void nn_worker_fd_init (struct nn_worker_fd *self, int src,
     self->owner = owner;
 }
 
-void nn_worker_fd_term (struct nn_worker_fd *self)
+void nn_worker_fd_term (NN_UNUSED struct nn_worker_fd *self)
 {
 }
 

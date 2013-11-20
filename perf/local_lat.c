@@ -63,9 +63,9 @@ int main (int argc, char *argv [])
 
     for (i = 0; i != rts; i++) {
         nbytes = nn_recv (s, buf, sz, 0);
-        assert (nbytes == sz);
+        assert (nbytes == (int)sz);
         nbytes = nn_send (s, buf, sz, 0);
-        assert (nbytes == sz);
+        assert (nbytes == (int)sz);
     }
 
     free (buf);

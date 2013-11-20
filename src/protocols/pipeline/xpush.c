@@ -32,6 +32,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 struct nn_xpush_data {
     struct nn_lb_data lb;
@@ -133,7 +134,8 @@ static void nn_xpush_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
         nn_lb_get_priority (&xpush->lb));
 }
 
-static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpush_in (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED struct nn_pipe *pipe)
 {
     /*  We are not going to receive any messages, so there's no need to store
         the list of inbound pipes. */
@@ -163,14 +165,16 @@ static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
         msg, NULL);
 }
 
-static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen)
+static int nn_xpush_setopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+static int nn_xpush_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

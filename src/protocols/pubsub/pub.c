@@ -32,6 +32,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 
@@ -130,7 +131,8 @@ static void nn_pub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-static void nn_pub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_pub_in (NN_UNUSED struct nn_sockbase *self,
+                       NN_UNUSED struct nn_pipe *pipe)
 {
     /*  We shouldn't get any messages from subscribers. */
     nn_assert (0);
@@ -147,7 +149,7 @@ static void nn_pub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_dist_out (&pub->outpipes, pipe, &data->item);
 }
 
-static int nn_pub_events (struct nn_sockbase *self)
+static int nn_pub_events (NN_UNUSED struct nn_sockbase *self)
 {
     return NN_SOCKBASE_EVENT_OUT;
 }
@@ -158,14 +160,16 @@ static int nn_pub_send (struct nn_sockbase *self, struct nn_msg *msg)
         msg, NULL);
 }
 
-static int nn_pub_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen)
+static int nn_pub_setopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int nn_pub_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+static int nn_pub_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

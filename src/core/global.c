@@ -925,7 +925,7 @@ static void nn_global_submit_level (int i, struct nn_sock *s,
     struct tm strtime;
     int len;
 
-    if(self.print_errors) {
+    if(self.print_statistics) {
         fprintf(stderr, "nanomsg: socket.%s: %s: %d\n",
             s->socket_name, name, value);
     }

@@ -163,6 +163,10 @@ static void nn_global_add_socktype (struct nn_socktype *socktype);
     It returns the ID of the newly created endpoint. */
 static int nn_global_create_ep (int s, const char *addr, int bind);
 
+/*  Private socket creator which doesn't initialize global state and
+    does no locking by itself */
+static int nn_global_create_socket (int domain, int protocol);
+
 /*  FSM callbacks  */
 static void nn_global_handler (struct nn_fsm *self,
     int src, int type, void *srcptr);
@@ -276,12 +280,10 @@ static void nn_global_init (void)
     nn_timer_init (&self.stat_timer, NN_GLOBAL_SRC_STAT_TIMER, &self.fsm);
     nn_fsm_start (&self.fsm);
 
-    nn_glock_unlock ();  /*  TODO(tailhook) get rid of this hack  */
-
     /*   Initializing special sockets.  */
     addr = getenv ("NN_STATISTICS_SOCKET");
     if (addr) {
-        self.statistics_socket = nn_socket (AF_SP, NN_PUB);
+        self.statistics_socket = nn_global_create_socket (AF_SP, NN_PUB);
         errno_assert (self.statistics_socket >= 0);
 
         rc = nn_connect (self.statistics_socket, addr);
@@ -309,8 +311,6 @@ static void nn_global_init (void)
         errno_assert (rc == 0);
         self.hostname[63] = '\0';
     }
-
-    nn_glock_lock ();
 }
 
 static void nn_global_term (void)
@@ -403,40 +403,23 @@ int nn_freemsg (void *msg)
     return 0;
 }
 
-int nn_socket (int domain, int protocol)
+int nn_global_create_socket (int domain, int protocol)
 {
     int rc;
     int s;
     struct nn_list_item *it;
     struct nn_socktype *socktype;
     struct nn_sock *sock;
-
-    nn_glock_lock ();
-
-    /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
-        nn_glock_unlock ();
-        errno = ETERM;
-        return -1;
-    }
-
-    /*  Make sure that global state is initialised. */
-    nn_global_init ();
+    /* The function is called with nn_glock held */
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
-        nn_global_term ();
-        nn_glock_unlock ();
-        errno = EAFNOSUPPORT;
-        return -1;
+        return -EAFNOSUPPORT;
     }
 
     /*  If socket limit was reached, report error. */
     if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
-        nn_global_term ();
-        nn_glock_unlock ();
-        errno = EMFILE;
-        return -1;
+        return -EMFILE;
     }
 
     /*  Find an empty socket slot. */
@@ -454,23 +437,46 @@ int nn_socket (int domain, int protocol)
             alloc_assert (sock);
             rc = nn_sock_init (sock, socktype, s);
             if (rc < 0)
-                goto error;
+                return rc;
 
             /*  Adjust the global socket table. */
             self.socks [s] = sock;
             ++self.nsocks;
-            nn_glock_unlock ();
             return s;
         }
     }
-    rc = -EINVAL;
-
     /*  Specified socket type wasn't found. */
-error:
-    nn_global_term ();
-    nn_glock_unlock ();
-    errno = -rc;
-    return -1;
+    return -EINVAL;
+}
+
+int nn_socket (int domain, int protocol)
+{
+    int rc;
+
+    nn_glock_lock ();
+
+    /*  If nn_term() was already called, return ETERM. */
+    if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
+        nn_glock_unlock ();
+        errno = ETERM;
+        return -1;
+    }
+
+    /*  Make sure that global state is initialised. */
+    nn_global_init ();
+
+    rc = nn_global_create_socket (domain, protocol);
+
+    if(rc < 0) {
+        nn_global_term ();
+        nn_glock_unlock ();
+        errno = -rc;
+        return -1;
+    }
+
+    nn_glock_unlock();
+
+    return rc;
 }
 
 int nn_close (int s)
@@ -926,7 +932,7 @@ static void nn_global_submit_level (int i, struct nn_sock *s,
     struct tm strtime;
     int len;
 
-    if(self.print_errors) {
+    if(self.print_statistics) {
         fprintf(stderr, "nanomsg: socket.%s: %s: %d\n",
             s->socket_name, name, value);
     }

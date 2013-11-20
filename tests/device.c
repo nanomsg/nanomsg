@@ -28,6 +28,7 @@
 #include "../src/inproc.h"
 
 #include "testutil.h"
+#include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
 #define SOCKET_ADDRESS_A "inproc://a"
@@ -36,7 +37,7 @@
 #define SOCKET_ADDRESS_D "inproc://d"
 #define SOCKET_ADDRESS_E "inproc://e"
 
-void device1 (void *arg)
+void device1 (NN_UNUSED void *arg)
 {
     int rc;
     int deva;
@@ -57,7 +58,7 @@ void device1 (void *arg)
     test_close (deva);
 }
 
-void device2 (void *arg)
+void device2 (NN_UNUSED void *arg)
 {
     int rc;
     int devc;
@@ -78,7 +79,7 @@ void device2 (void *arg)
     test_close (devc);
 }
 
-void device3 (void *arg)
+void device3 (NN_UNUSED void *arg)
 {
     int rc;
     int deve;

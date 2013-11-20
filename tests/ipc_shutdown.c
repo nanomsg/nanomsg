@@ -37,7 +37,7 @@
 
 volatile int active;
 
-static void routine (void *arg)
+static void routine (NN_UNUSED void *arg)
 {
     int s;
 
@@ -49,7 +49,7 @@ static void routine (void *arg)
     test_close (s);
 }
 
-static void routine2 (void *arg)
+static void routine2 (NN_UNUSED void *arg)
 {
     int s;
     int i;

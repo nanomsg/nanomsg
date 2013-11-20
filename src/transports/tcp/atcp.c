@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/attr.h"
 
 #define NN_ATCP_STATE_IDLE 1
 #define NN_ATCP_STATE_ACCEPTING 2
@@ -98,7 +99,7 @@ void nn_atcp_stop (struct nn_atcp *self)
 }
 
 static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_atcp *atcp;
 
@@ -137,7 +138,7 @@ static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_atcp *atcp;
     int val;

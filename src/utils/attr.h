@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013 Insollo Entertainment, LLC. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,53 +20,13 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pubsub.h"
-#include "../src/inproc.h"
+#ifndef NN_ATTR_INCLUDED
+#define NN_ATTR_INCLUDED
 
-#include "testutil.h"
-#include "../src/utils/attr.h"
-#include "../src/utils/thread.c"
+#if defined __GNUC__ || defined __llvm__
+#define NN_UNUSED __attribute__ ((unused))
+#else
+#define NN_UNUSED
+#endif
 
-/*  Stress test the inproc transport. */
-
-#define THREAD_COUNT 100
-#define SOCKET_ADDRESS "inproc://test"
-
-static void routine (NN_UNUSED void *arg)
-{
-    int s;
-
-    s = nn_socket (AF_SP, NN_SUB);
-    if (s < 0 && nn_errno () == EMFILE)
-        return;
-    errno_assert (s >= 0);
-    test_connect (s, SOCKET_ADDRESS);
-    test_close (s);
-}
-
-int main ()
-{
-    int sb;
-    int i;
-    int j;
-    struct nn_thread threads [THREAD_COUNT];
-
-    /*  Stress the shutdown algorithm. */
-
-    sb = test_socket (AF_SP, NN_PUB);
-    test_bind (sb, SOCKET_ADDRESS);
-
-    for (j = 0; j != 10; ++j) {
-        for (i = 0; i != THREAD_COUNT; ++i)
-            nn_thread_init (&threads [i], routine, NULL);
-        for (i = 0; i != THREAD_COUNT; ++i)
-            nn_thread_term (&threads [i]);
-    }
-
-    test_close (sb);
-
-    return 0;
-}
-
+#endif

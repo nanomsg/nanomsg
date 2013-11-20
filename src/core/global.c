@@ -41,6 +41,7 @@
 #include "../utils/glock.h"
 #include "../utils/chunk.h"
 #include "../utils/msg.h"
+#include "../utils/attr.h"
 
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
@@ -1139,7 +1140,7 @@ struct nn_pool *nn_global_getpool ()
 }
 
 static void nn_global_handler (struct nn_fsm *self,
-    int src, int type, void *srcptr)
+    int src, int type, NN_UNUSED void *srcptr)
 {
 
     struct nn_global *global;
@@ -1207,7 +1208,7 @@ static void nn_global_handler (struct nn_fsm *self,
 }
 
 static void nn_global_shutdown (struct nn_fsm *self,
-    int src, int type, void *srcptr)
+    NN_UNUSED int src, NN_UNUSED int type, NN_UNUSED void *srcptr)
 {
 
     struct nn_global *global;

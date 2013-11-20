@@ -27,6 +27,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 /*  States of the object as a whole. */
 #define NN_STCP_STATE_IDLE 1
@@ -170,7 +171,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
 }
 
 static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_stcp *stcp;
 
@@ -198,7 +199,7 @@ static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     int rc;
     struct nn_stcp *stcp;

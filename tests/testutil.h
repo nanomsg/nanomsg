@@ -23,6 +23,7 @@
 #ifndef TESTUTIL_H_INCLUDED
 #define TESTUTIL_H_INCLUDED
 
+#include "../src/utils/attr.h"
 #include "../src/utils/err.c"
 #include "../src/utils/sleep.c"
 
@@ -55,7 +56,8 @@ static int test_socket_impl (char *file, int line, int family, int protocol)
     return sock;
 }
 
-static int test_connect_impl (char *file, int line, int sock, char *address)
+static int NN_UNUSED test_connect_impl (char *file, int line,
+    int sock, char *address)
 {
     int rc;
 
@@ -70,7 +72,8 @@ static int test_connect_impl (char *file, int line, int sock, char *address)
     return rc;
 }
 
-static int test_bind_impl (char *file, int line, int sock, char *address)
+static int NN_UNUSED test_bind_impl (char *file, int line,
+    int sock, char *address)
 {
     int rc;
 
@@ -98,7 +101,8 @@ static void test_close_impl (char *file, int line, int sock)
     }
 }
 
-static void test_send_impl (char *file, int line, int sock, char *data)
+static void NN_UNUSED test_send_impl (char *file, int line,
+    int sock, char *data)
 {
     size_t data_len;
     int rc;
@@ -120,7 +124,7 @@ static void test_send_impl (char *file, int line, int sock, char *data)
     }
 }
 
-static void test_recv_impl (char *file, int line, int sock, char *data)
+static void NN_UNUSED test_recv_impl (char *file, int line, int sock, char *data)
 {
     size_t data_len;
     int rc;

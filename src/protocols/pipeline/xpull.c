@@ -33,6 +33,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 struct nn_xpull_data {
     struct nn_fq_data fq;
@@ -123,7 +124,8 @@ static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_free (data);
 }
 
-static void nn_xpull_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpull_in (NN_UNUSED struct nn_sockbase *self,
+                         struct nn_pipe *pipe)
 {
     struct nn_xpull *xpull;
     struct nn_xpull_data *data;
@@ -133,7 +135,8 @@ static void nn_xpull_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_fq_in (&xpull->fq, pipe, &data->fq);
 }
 
-static void nn_xpull_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_xpull_out (NN_UNUSED struct nn_sockbase *self,
+                          NN_UNUSED struct nn_pipe *pipe)
 {
     /*  We are not going to send any messages, so there's no point is
         maintaining a list of pipes ready for sending. */
@@ -156,14 +159,16 @@ static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return rc < 0 ? rc : 0;
 }
 
-static int nn_xpull_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen)
+static int nn_xpull_setopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+static int nn_xpull_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

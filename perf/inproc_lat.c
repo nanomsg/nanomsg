@@ -23,6 +23,8 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 
+#include "../src/utils/attr.h"
+
 #include "../src/utils/err.c"
 #include "../src/utils/thread.c"
 #include "../src/utils/sleep.c"
@@ -36,7 +38,7 @@
 static size_t message_size;
 static int roundtrip_count;
 
-void worker (void *arg)
+void worker (NN_UNUSED void *arg)
 {
     int rc;
     int s;

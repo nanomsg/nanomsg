@@ -26,6 +26,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/err.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 
@@ -48,7 +49,7 @@ void nn_priolist_term (struct nn_priolist *self)
         nn_list_term (&self->slots [i].pipes);
 }
 
-void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
+void nn_priolist_add (NN_UNUSED struct nn_priolist *self, struct nn_pipe *pipe,
     struct nn_priolist_data *data, int priority)
 {
     data->pipe = pipe;
@@ -56,7 +57,7 @@ void nn_priolist_add (struct nn_priolist *self, struct nn_pipe *pipe,
     nn_list_item_init (&data->item);
 }
 
-void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
+void nn_priolist_rm (struct nn_priolist *self, NN_UNUSED struct nn_pipe *pipe,
     struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
@@ -101,8 +102,8 @@ void nn_priolist_rm (struct nn_priolist *self, struct nn_pipe *pipe,
     }
 }
 
-void nn_priolist_activate (struct nn_priolist *self, struct nn_pipe *pipe,
-    struct nn_priolist_data *data)
+void nn_priolist_activate (struct nn_priolist *self,
+    NN_UNUSED struct nn_pipe *pipe, struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
 

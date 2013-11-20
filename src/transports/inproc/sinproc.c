@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 
@@ -198,7 +199,7 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return NN_PIPEBASE_PARSED;
 }
 static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
-    int type, void *srcptr)
+    int type, NN_UNUSED void *srcptr)
 {
     /*  *******************************  */
     /*  Any-state events                 */

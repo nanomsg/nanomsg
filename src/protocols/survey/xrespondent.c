@@ -30,6 +30,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 /*  Private functions. */
 static void nn_xrespondent_destroy (struct nn_sockbase *self);
@@ -146,14 +147,16 @@ int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen)
+int nn_xrespondent_setopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+int nn_xrespondent_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

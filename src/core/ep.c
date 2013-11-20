@@ -29,6 +29,7 @@
 #include "../utils/err.h"
 #include "../utils/cont.h"
 #include "../utils/fast.h"
+#include "../utils/attr.h"
 
 #include <string.h>
 
@@ -142,7 +143,7 @@ int nn_ep_ispeer (struct nn_ep *self, int socktype)
 
 
 static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_ep *ep;
 
@@ -165,7 +166,8 @@ static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 
-static void nn_ep_handler (struct nn_fsm *self, int src, int type, void *srcptr)
+static void nn_ep_handler (struct nn_fsm *self, int src, int type,
+    NN_UNUSED void *srcptr)
 {
     struct nn_ep *ep;
 

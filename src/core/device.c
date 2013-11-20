@@ -25,6 +25,7 @@
 #include "../utils/err.h"
 #include "../utils/fast.h"
 #include "../utils/fd.h"
+#include "../utils/attr.h"
 
 #include <string.h>
 
@@ -316,7 +317,8 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 #error
 #endif
 
-static int nn_device_oneway (int s1, nn_fd s1rcv, int s2, nn_fd s2snd)
+static int nn_device_oneway (int s1, NN_UNUSED nn_fd s1rcv,
+                             int s2, NN_UNUSED nn_fd s2snd)
 {
     int rc;
 

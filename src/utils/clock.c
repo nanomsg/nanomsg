@@ -34,6 +34,7 @@
 #include "clock.h"
 #include "fast.h"
 #include "err.h"
+#include "attr.h"
 
 /* 1 millisecond expressed in CPU ticks. The value is chosen is such a way that
    it works pretty well for CPU frequencies above 500MHz. */
@@ -77,7 +78,7 @@ static uint64_t nn_clock_time ()
 
     QueryPerformanceFrequency (&tps);
     QueryPerformanceCounter (&time);
-    tpms = (double) (tps.QuadPart / 1000);     
+    tpms = (double) (tps.QuadPart / 1000);
     return (uint64_t) (time.QuadPart / tpms);
 
 #elif defined NN_HAVE_OSX
@@ -91,7 +92,7 @@ static uint64_t nn_clock_time ()
     ticks = mach_absolute_time ();
     return ticks * nn_clock_timebase_info.numer /
         nn_clock_timebase_info.denom / 1000000;
- 
+
 #elif defined NN_HAVE_CLOCK_MONOTONIC
 
     int rc;
@@ -125,7 +126,7 @@ void nn_clock_init (struct nn_clock *self)
     self->last_time = nn_clock_time ();
 }
 
-void nn_clock_term (struct nn_clock *self)
+void nn_clock_term (NN_UNUSED struct nn_clock *self)
 {
 }
 

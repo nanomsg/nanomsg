@@ -24,6 +24,7 @@
 #include "../src/pair.h"
 
 #include "testutil.h"
+#include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
 /*  This test checks whether blocking on send/recv works as expected. */
@@ -33,7 +34,7 @@
 int sc;
 int sb;
 
-void worker (void *arg)
+void worker (NN_UNUSED void *arg)
 {
     /*  Wait 0.1 sec for the main thread to block. */
     nn_sleep (100);

@@ -25,6 +25,7 @@
 #include "../src/inproc.h"
 
 #include "testutil.h"
+#include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
 #if defined NN_HAVE_WINDOWS
@@ -39,13 +40,13 @@
 
 int sc;
 
-void routine1 (void *arg)
+void routine1 (NN_UNUSED void *arg)
 {
    nn_sleep (10);
    test_send (sc, "ABC");
 }
 
-void routine2 (void *arg)
+void routine2 (NN_UNUSED void *arg)
 {
    nn_sleep (10);
    nn_term ();

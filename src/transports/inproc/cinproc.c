@@ -28,6 +28,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 
@@ -117,7 +118,7 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
 }
 
 static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_cinproc *cinproc;
 

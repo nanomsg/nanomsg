@@ -31,6 +31,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -190,14 +191,16 @@ int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
-        const void *optval, size_t optvallen)
+int nn_xbus_setopt (NN_UNUSED struct nn_sockbase *self, NN_UNUSED int level,
+    NN_UNUSED int option,
+    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
 {
     return -ENOPROTOOPT;
 }
 
-int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+int nn_xbus_getopt (NN_UNUSED struct nn_sockbase *self, NN_UNUSED int level,
+    NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

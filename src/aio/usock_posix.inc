@@ -26,6 +26,7 @@
 #include "../utils/cont.h"
 #include "../utils/fast.h"
 #include "../utils/err.h"
+#include "../utils/attr.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -504,7 +505,7 @@ static int nn_internal_tasks (struct nn_usock *usock, int src, int type)
 }
 
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_usock *usock;
 
@@ -570,7 +571,7 @@ finish3:
 }
 
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     int rc;
     struct nn_usock *usock;

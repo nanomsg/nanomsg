@@ -34,6 +34,7 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
+#include "../../utils/attr.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -154,7 +155,7 @@ static void nn_cipc_destroy (struct nn_epbase *self)
 }
 
 static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_cipc *cipc;
 
@@ -189,7 +190,7 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_cipc *cipc;
 

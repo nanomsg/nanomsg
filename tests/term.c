@@ -26,7 +26,7 @@
 #include "../src/utils/thread.c"
 #include "testutil.h"
 
-static void worker (void *arg)
+static void worker (NN_UNUSED void *arg)
 {
     int rc;
     int s;

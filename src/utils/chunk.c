@@ -101,7 +101,7 @@ void nn_chunk_free (void *p)
     /*  Decrement the reference count. Actual deallocation happens only if
         it drops to zero. */
     if (nn_atomic_dec (&self->refcount, 1) <= 1) {
-        
+
         /*  Mark chunk as deallocated. */
         nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG_DEALLOCATED);
 
@@ -136,7 +136,7 @@ void *nn_chunk_trim (void *p, size_t n)
     self = nn_chunk_getptr (p);
 
     /*  Sanity check. We cannot trim more bytes than there are in the chunk. */
-    nn_assert (n >= 0 && n <= self->size);
+    nn_assert (n <= self->size);
 
     /*  Adjust the chunk header. */
     p = ((uint8_t*) p) + n;

@@ -24,6 +24,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
+#include "../../utils/attr.h"
 
 #include "../../aio/ctx.h"
 
@@ -156,7 +157,7 @@ static void nn_dns_notify (union sigval sval)
 }
 
 static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     int rc;
     struct nn_dns *dns;
@@ -195,7 +196,7 @@ static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_dns_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_dns *dns;
 

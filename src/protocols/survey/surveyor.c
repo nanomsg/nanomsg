@@ -37,6 +37,7 @@
 #include "../../utils/random.h"
 #include "../../utils/list.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 #include <string.h>
 
@@ -303,7 +304,7 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
 }
 
 static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_surveyor *surveyor;
 
@@ -326,7 +327,7 @@ static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_surveyor *surveyor;
 

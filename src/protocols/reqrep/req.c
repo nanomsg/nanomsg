@@ -36,6 +36,7 @@
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -367,7 +368,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
 }
 
 static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
 
@@ -390,7 +391,7 @@ static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_req_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
 

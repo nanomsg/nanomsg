@@ -26,6 +26,7 @@
 #include "../utils/cont.h"
 #include "../utils/fast.h"
 #include "../utils/err.h"
+#include "../utils/attr.h"
 
 /*  Timer state reflects the state as seen by the user thread. It says nothing
     about the state of affairs in the worker thread. */
@@ -87,7 +88,7 @@ void nn_timer_stop (struct nn_timer *self)
 }
 
 static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_timer *timer;
 

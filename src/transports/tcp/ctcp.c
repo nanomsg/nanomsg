@@ -39,6 +39,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
 #include "../../utils/int.h"
+#include "../../utils/attr.h"
 
 #include <string.h>
 
@@ -233,7 +234,7 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
 }
 
 static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_ctcp *ctcp;
 
@@ -270,7 +271,7 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
 }
 
 static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
-    void *srcptr)
+    NN_UNUSED void *srcptr)
 {
     struct nn_ctcp *ctcp;
 

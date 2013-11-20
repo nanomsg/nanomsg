@@ -34,6 +34,7 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
+#include "../../utils/attr.h"
 
 struct nn_sub_data {
     struct nn_fq_data fq;
@@ -137,7 +138,8 @@ static void nn_sub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_fq_in (&sub->fq, pipe, &data->fq);
 }
 
-static void nn_sub_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+static void nn_sub_out (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED struct nn_pipe *pipe)
 {
     /*  We are not going to send any messages until subscription forwarding
         is implemented, so there's no point is maintaining a list of pipes
@@ -202,8 +204,9 @@ static int nn_sub_setopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_sub_getopt (struct nn_sockbase *self, int level, int option,
-        void *optval, size_t *optvallen)
+static int nn_sub_getopt (NN_UNUSED struct nn_sockbase *self,
+    NN_UNUSED int level, NN_UNUSED int option,
+    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
 {
     return -ENOPROTOOPT;
 }

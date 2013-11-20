@@ -24,6 +24,7 @@
 
 #include "ep.h"
 #include "sock.h"
+#include "../utils/attr.h"
 
 void nn_epbase_init (struct nn_epbase *self,
     const struct nn_epbase_vfptr *vfptr, void *hint)
@@ -32,7 +33,7 @@ void nn_epbase_init (struct nn_epbase *self,
     self->ep = (struct nn_ep*) hint;
 }
 
-void nn_epbase_term (struct nn_epbase *self)
+void nn_epbase_term (NN_UNUSED struct nn_epbase *self)
 {
 }
 

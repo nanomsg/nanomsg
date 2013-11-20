@@ -66,7 +66,7 @@ int main (int argc, char *argv [])
     nn_stopwatch_init (&sw);
     for (i = 0; i != count; i++) {
         nbytes = nn_recv (s, buf, sz, 0);
-        assert (nbytes == sz);
+        assert (nbytes == (int)sz);
     }
     total = nn_stopwatch_term (&sw);
     if (total == 0)

@@ -103,7 +103,7 @@ int main ()
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS_TCP);
 
-    for (i = 0; i < sizeof (longdata); ++i)
+    for (i = 0; i < (int) sizeof (longdata); ++i)
         longdata[i] = '0' + (i % 10);
     longdata [sizeof (longdata) - 1] = 0;
     test_send (sb, longdata);
@@ -112,7 +112,7 @@ int main ()
     errno_assert (rc >= 0);
     nn_assert (rc == sizeof (longdata) - 1);
     nn_assert (buf2);
-    for (i = 0; i < sizeof (longdata) - 1; ++i)
+    for (i = 0; i < (int) sizeof (longdata) - 1; ++i)
         nn_assert (buf2 [i] == longdata [i]);
     rc = nn_freemsg (buf2);
     errno_assert (rc == 0);

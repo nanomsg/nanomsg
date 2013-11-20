@@ -1004,10 +1004,10 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
 
     /*  Some bytes were sent. Adjust the iovecs accordingly. */
     while (nbytes) {
-        if (nbytes >= hdr->msg_iov->iov_len) {
+        if (nbytes >= (ssize_t)hdr->msg_iov->iov_len) {
             --hdr->msg_iovlen;
             if (!hdr->msg_iovlen) {
-                nn_assert (nbytes == hdr->msg_iov->iov_len);
+                nn_assert (nbytes == (ssize_t)hdr->msg_iov->iov_len);
                 return 0;
             }
             nbytes -= hdr->msg_iov->iov_len;
@@ -1093,7 +1093,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     self->in.batch_len = nbytes;
     self->in.batch_pos = 0;
     if (nbytes) {
-        sz = nbytes > length ? length : nbytes;
+        sz = nbytes > (ssize_t)length ? length : (size_t)nbytes;
         memcpy (buf, self->in.batch, sz);
         length -= sz;
         self->in.batch_pos += sz;

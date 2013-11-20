@@ -51,7 +51,6 @@ static void routine (void *arg)
 
 static void routine2 (void *arg)
 {
-    int rc;
     int s;
     int i;
 

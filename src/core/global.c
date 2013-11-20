@@ -907,7 +907,7 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
                 self.hostname, self.appname, i, name,
                 timebuf, value);
         }
-        nn_assert (len < sizeof(buf));
+        nn_assert (len < (int)sizeof(buf));
         (void) nn_send (self.statistics_socket, buf, len, NN_DONTWAIT);
     }
 }
@@ -948,7 +948,7 @@ static void nn_global_submit_level (int i, struct nn_sock *s,
                 self.hostname, self.appname, i, name,
                 timebuf, value);
         }
-        nn_assert (len < sizeof(buf));
+        nn_assert (len < (int)sizeof(buf));
         (void) nn_send (self.statistics_socket, buf, len, NN_DONTWAIT);
     }
 }

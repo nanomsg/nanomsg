@@ -53,9 +53,9 @@ void worker (void *arg)
 
     for (i = 0; i != roundtrip_count; i++) {
         rc = nn_recv (s, buf, message_size, 0);
-        assert (rc == message_size);
+        assert (rc == (int)message_size);
         rc = nn_send (s, buf, message_size, 0);
-        assert (rc == message_size);
+        assert (rc == (int)message_size);
     }
 
     free (buf);
@@ -99,9 +99,9 @@ int main (int argc, char *argv [])
 
     for (i = 0; i != roundtrip_count; i++) {
         rc = nn_send (s, buf, message_size, 0);
-        assert (rc == message_size);
+        assert (rc == (int)message_size);
         rc = nn_recv (s, buf, message_size, 0);
-        assert (rc == message_size);
+        assert (rc == (int)message_size);
     }
 
     elapsed = nn_stopwatch_term (&stopwatch);

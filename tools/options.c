@@ -471,8 +471,15 @@ static void nn_process_option (struct nn_parse_context *ctx,
                 file = fopen (argument, "r");
                 if (!file) {
 #endif
+#if defined _MSC_VER
+#pragma warning (push)
+#pragma warning (disable:4996)
+#endif
                     fprintf (stderr, "Error opening file ``%s'': %s\n",
                         argument, strerror (errno));
+#if defined _MSC_VER
+#pragma warning (pop)
+#endif
                     exit (2);
                 }
             }
@@ -503,8 +510,15 @@ static void nn_process_option (struct nn_parse_context *ctx,
                 assert (data);
             }
             if (ferror (file)) {
+#if defined _MSC_VER
+#pragma warning (push)
+#pragma warning (disable:4996)
+#endif
                 fprintf (stderr, "Error reading file ``%s'': %s\n",
                     argument, strerror (errno));
+#if defined _MSC_VER
+#pragma warning (pop)
+#endif
                 exit (2);
             }
             if (file != stdin) {

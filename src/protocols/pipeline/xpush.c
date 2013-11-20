@@ -99,7 +99,6 @@ void nn_xpush_destroy (struct nn_sockbase *self)
 
 static int nn_xpush_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_xpush *xpush;
     struct nn_xpush_data *data;
     int sndprio;

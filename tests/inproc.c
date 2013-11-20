@@ -38,7 +38,6 @@ int main ()
     int i;
     char buf [256];
     int val;
-    int s1, s2;
 
     /*  Create a simple topology. */
     sc = test_socket (AF_SP, NN_PAIR);

@@ -81,7 +81,6 @@ static void nn_xreq_destroy (struct nn_sockbase *self)
 
 int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
-    int rc;
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
     int sndprio;

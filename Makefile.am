@@ -50,6 +50,7 @@ NANOMSG_CORE = \
     src/core/global.h \
     src/core/global.c \
     src/core/pipe.c \
+    src/core/poll.c \
     src/core/sock.h \
     src/core/sock.c \
     src/core/sockbase.c \
@@ -336,7 +337,8 @@ MAN3 = \
     doc/nn_sendmsg.txt \
     doc/nn_recvmsg.txt \
     doc/nn_device.txt \
-    doc/nn_cmsg.txt
+    doc/nn_cmsg.txt \
+    doc/nn_poll.txt
 
 MAN1 = \
     doc/nanocat.txt

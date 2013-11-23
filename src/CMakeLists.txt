@@ -43,6 +43,7 @@ set (NN_SOURCES
     core/global.h
     core/global.c
     core/pipe.c
+    core/poll.c
     core/sock.h
     core/sock.c
     core/sockbase.c

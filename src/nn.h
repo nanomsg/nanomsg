@@ -307,6 +307,21 @@ NN_EXPORT int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags);
 NN_EXPORT int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags);
 
 /******************************************************************************/
+/*  Socket mutliplexing support.                                              */
+/******************************************************************************/
+
+#define NN_POLLIN 1
+#define NN_POLLOUT 2
+
+struct nn_pollfd {
+    int fd;
+    short events;
+    short revents;
+};
+
+NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
+
+/******************************************************************************/
 /*  Built-in support for devices.                                             */
 /******************************************************************************/
 

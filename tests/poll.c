@@ -125,6 +125,26 @@ int main ()
     int sb;
     char buf [3];
     struct nn_thread thread;
+    struct nn_pollfd pfd [2];
+
+    /* Test nn_poll() function. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    test_send (sc, "ABC");
+    nn_sleep (100);
+    pfd [0].fd = sb;
+    pfd [0].events = NN_POLLIN | NN_POLLOUT;
+    pfd [1].fd = sc;
+    pfd [1].events = NN_POLLIN | NN_POLLOUT;
+    rc = nn_poll (pfd, 2, -1);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 2);
+    nn_assert (pfd [0].revents == NN_POLLIN | NN_POLLOUT);
+    nn_assert (pfd [1].revents == NN_POLLOUT);
+    test_close (sc);
+    test_close (sb);
 
     /*  Create a simple topology. */
     sb = test_socket (AF_SP, NN_PAIR);

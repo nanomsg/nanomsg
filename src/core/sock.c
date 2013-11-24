@@ -1017,11 +1017,11 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
             self->statistics.messages_received += increment;
             break;
         case NN_STAT_BYTES_SENT:
-            nn_assert (increment > 0);
+            nn_assert (increment >= 0);
             self->statistics.bytes_sent += increment;
             break;
         case NN_STAT_BYTES_RECEIVED:
-            nn_assert (increment > 0);
+            nn_assert (increment >= 0);
             self->statistics.bytes_received += increment;
             break;
 

@@ -141,7 +141,7 @@ int main ()
     rc = nn_poll (pfd, 2, -1);
     errno_assert (rc >= 0);
     nn_assert (rc == 2);
-    nn_assert (pfd [0].revents == NN_POLLIN | NN_POLLOUT);
+    nn_assert (pfd [0].revents == (NN_POLLIN | NN_POLLOUT));
     nn_assert (pfd [1].revents == NN_POLLOUT);
     test_close (sc);
     test_close (sb);

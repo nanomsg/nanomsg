@@ -586,6 +586,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EINTR;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
+        self->flags |= NN_SOCK_FLAG_OUT;
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
@@ -658,6 +659,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EINTR;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
+        self->flags |= NN_SOCK_FLAG_IN;
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */

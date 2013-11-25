@@ -33,7 +33,7 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     int rc;
     int i;
     fd_set fdset;
-    int fd;
+    SOCKET fd;
     int res;
     size_t sz;
     struct timeval tv;

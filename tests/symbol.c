@@ -24,23 +24,18 @@
 
 int main ()
 {
-    int value, i;
+    int i;
+    struct nn_symbol_properties sym;
 
-    nn_assert (nn_symbol (-1, NULL) == NULL);
-    nn_assert (nn_errno () == EINVAL);
+    nn_assert (nn_symbol (-1, &sym, (int) sizeof (sym)) == 0);
 
-    nn_assert (nn_symbol (2000, NULL) == NULL);
-    nn_assert (nn_errno () == EINVAL);
+    nn_assert (nn_symbol (2000, &sym, (int) sizeof (sym)) == 0);
 
-    nn_assert (nn_symbol (6, &value) != NULL);
-    nn_assert (value != 0);
+    nn_assert (nn_symbol (6, &sym, (int) sizeof (sym)) == sizeof (sym));
 
     for (i = 0; ; ++i) {
-        const char* name = nn_symbol (i, &value);
-        if (name == NULL) {
-            nn_assert (nn_errno () == EINVAL);
+        if (nn_symbol (i, &sym, sizeof (sym)) == 0)
             break;
-        }
     }
 
     return 0;

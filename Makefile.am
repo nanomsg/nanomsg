@@ -188,7 +188,11 @@ PROTOCOLS_PUBSUB = \
     src/protocols/pubsub/sub.h \
     src/protocols/pubsub/sub.c \
     src/protocols/pubsub/trie.h \
-    src/protocols/pubsub/trie.c
+    src/protocols/pubsub/trie.c \
+    src/protocols/pubsub/xpub.h \
+    src/protocols/pubsub/xpub.c \
+    src/protocols/pubsub/xsub.h \
+    src/protocols/pubsub/xsub.c
 
 PROTOCOLS_REQREP = \
     src/protocols/reqrep/req.h \

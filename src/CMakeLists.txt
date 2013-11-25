@@ -172,6 +172,10 @@ set (NN_SOURCES
     protocols/pubsub/sub.c
     protocols/pubsub/trie.h
     protocols/pubsub/trie.c
+    protocols/pubsub/xpub.h
+    protocols/pubsub/xpub.c
+    protocols/pubsub/xsub.h
+    protocols/pubsub/xsub.c
 
     protocols/reqrep/req.h
     protocols/reqrep/req.c

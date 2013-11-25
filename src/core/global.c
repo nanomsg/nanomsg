@@ -51,6 +51,8 @@
 #include "../protocols/pair/xpair.h"
 #include "../protocols/pubsub/pub.h"
 #include "../protocols/pubsub/sub.h"
+#include "../protocols/pubsub/xpub.h"
+#include "../protocols/pubsub/xsub.h"
 #include "../protocols/reqrep/rep.h"
 #include "../protocols/reqrep/req.h"
 #include "../protocols/reqrep/xrep.h"
@@ -253,6 +255,8 @@ static void nn_global_init (void)
     nn_global_add_socktype (nn_xpair_socktype);
     nn_global_add_socktype (nn_pub_socktype);
     nn_global_add_socktype (nn_sub_socktype);
+    nn_global_add_socktype (nn_xpub_socktype);
+    nn_global_add_socktype (nn_xsub_socktype);
     nn_global_add_socktype (nn_rep_socktype);
     nn_global_add_socktype (nn_req_socktype);
     nn_global_add_socktype (nn_xrep_socktype);

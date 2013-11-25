@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,11 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_SUB_INCLUDED
-#define NN_SUB_INCLUDED
+#ifndef NN_XSUB_INCLUDED
+#define NN_XSUB_INCLUDED
 
 #include "../../protocol.h"
 
-extern struct nn_socktype *nn_sub_socktype;
+extern struct nn_socktype *nn_xsub_socktype;
+
+int nn_xsub_create (void *hint, struct nn_sockbase **sockbase);
+int nn_xsub_ispeer (int socktype);
 
 #endif

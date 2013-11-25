@@ -184,10 +184,63 @@ NN_EXPORT int nn_errno (void);
 /*  Resolves system errors and native errors to human-readable string.        */
 NN_EXPORT const char *nn_strerror (int errnum);
 
+
 /*  Returns the symbol name (e.g. "NN_REQ") and value at a specified index.   */
 /*  If the index is out-of-range, returns NULL and sets errno to EINVAL       */
 /*  General usage is to start at i=0 and iterate until NULL is returned.      */
 NN_EXPORT const char *nn_symbol (int i, int *value);
+
+/*  Constants that are returned in `ns` member of nn_symbol_properties        */
+#define NN_NS_NAMESPACE 0
+#define NN_NS_VERSION 1
+#define NN_NS_DOMAIN 2
+#define NN_NS_TRANSPORT 3
+#define NN_NS_PROTOCOL 4
+#define NN_NS_OPTION_LEVEL 5
+#define NN_NS_SOCKET_OPTION 6
+#define NN_NS_TRANSPORT_OPTION 7
+#define NN_NS_OPTION_TYPE 8
+#define NN_NS_OPTION_UNIT 9
+#define NN_NS_FLAG 10
+#define NN_NS_ERROR 11
+#define NN_NS_LIMIT 12
+
+/*  Constants that are returned in `type` member of nn_symbol_properties      */
+#define NN_TYPE_NONE 0
+#define NN_TYPE_INT 1
+#define NN_TYPE_STR 2
+
+/*  Constants that are returned in the `unit` member of nn_symbol_properties  */
+#define NN_UNIT_NONE 0
+#define NN_UNIT_BYTES 1
+#define NN_UNIT_MILLISECONDS 2
+#define NN_UNIT_PRIORITY 3
+#define NN_UNIT_BOOLEAN 4
+
+/*  Structure that is returned from nn_symbol  */
+struct nn_symbol_properties {
+
+    /*  The constant value  */
+    int value;
+
+    /*  The contant name  */
+    const char* name;
+
+    /*  The constant namespace, or zero for namespaces themselves */
+    int ns;
+
+    /*  The option type for socket option constants  */
+    int type;
+
+    /*  The unit for the option value for socket option constants  */
+    int unit;
+};
+
+/*  Fills in nn_symbol_properties structure and returns it's length           */
+/*  If the index is out-of-range, returns 0                                   */
+/*  General usage is to start at i=0 and iterate until zero is returned.      */
+NN_EXPORT int nn_symbol_info (int i,
+    struct nn_symbol_properties *buf, int buflen);
 
 /******************************************************************************/
 /*  Helper function for shutting down multi-threaded applications.            */

@@ -21,6 +21,7 @@
 */
 
 #define NN_EFD_PORT 5907
+#define NN_EFD_RETRIES 1000
 
 #include "err.h"
 #include "fast.h"
@@ -42,6 +43,7 @@ int nn_efd_init (struct nn_efd *self)
     BOOL reuseaddr;
     BOOL nodelay;
     u_long nonblock;
+    int i;
 
     /*  Make the following critical section accessible to everyone. */
     sa.nLength = sizeof (sa);
@@ -101,26 +103,43 @@ int nn_efd_init (struct nn_efd *self)
     if (nn_slow (rc == SOCKET_ERROR))
         goto wsafail;
 
-    /*  Create the writer socket. */
-    self->w = socket (AF_INET, SOCK_STREAM, 0);
-    if (nn_slow (listener == SOCKET_ERROR))
-        goto wsafail;
-    brc = SetHandleInformation ((HANDLE) self->w, HANDLE_FLAG_INHERIT, 0);
-    win_assert (brc);
+    /*  The following code is in the loop, because windows sometimes delays
+        WSAEADDRINUSE error to the `connect` call. But retrying the connection
+        works like a charm. Still we want to limit number of retries  */
+    for(i = 0; i < NN_EFD_RETRIES; ++i) {
 
-    /*  Set TCP_NODELAY on the writer socket to make efd as fast as possible.
-        There's only one byte going to be written, so batching would not make
-        sense anyway. */
-    nodelay = 1;
-    rc = setsockopt (self->w, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
-        sizeof (nodelay));
-    if (nn_slow (rc == SOCKET_ERROR))
-        goto wsafail;
+        /*  Create the writer socket. */
+        self->w = socket (AF_INET, SOCK_STREAM, 0);
+        if (nn_slow (listener == SOCKET_ERROR))
+            goto wsafail;
+        brc = SetHandleInformation ((HANDLE) self->w, HANDLE_FLAG_INHERIT, 0);
+        win_assert (brc);
 
-    /*  Connect the writer socket to the listener socket. */
-    rc = connect (self->w, (struct sockaddr*) &addr, sizeof (addr));
-    if (nn_slow (rc == SOCKET_ERROR))
-        goto wsafail;
+        /*  Set TCP_NODELAY on the writer socket to make efd as fast as possible.
+            There's only one byte going to be written, so batching would not make
+            sense anyway. */
+        nodelay = 1;
+        rc = setsockopt (self->w, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
+            sizeof (nodelay));
+        if (nn_slow (rc == SOCKET_ERROR))
+            goto wsafail;
+
+        /*  Connect the writer socket to the listener socket. */
+        rc = connect (self->w, (struct sockaddr*) &addr, sizeof (addr));
+        if (nn_slow (rc == SOCKET_ERROR)) {
+            rc = nn_err_wsa_to_posix (WSAGetLastError ());
+            if (rc == EADDRINUSE) {
+                rc = closesocket (self->w);
+                if (nn_slow (rc == INVALID_SOCKET))
+                    goto wsafail;
+                continue;
+            }
+            goto wsafail2;
+        }
+        break;
+    }
+    if (i == NN_EFD_RETRIES)
+        goto wsafail2;
 
     while (1) {
 
@@ -128,7 +147,7 @@ int nn_efd_init (struct nn_efd *self)
         addrlen = sizeof (addr);
         self->r = accept (listener, (struct sockaddr*) &addr, &addrlen);
         if (nn_slow (self->r == INVALID_SOCKET || addrlen != sizeof (addr)))
-            goto wsafail;
+            goto wsafail2;
 
         /*  Check that the connection actually comes from the localhost. */
         if (nn_fast (addr.sin_addr.s_addr == htonl (INADDR_LOOPBACK)))
@@ -164,6 +183,7 @@ int nn_efd_init (struct nn_efd *self)
 
 wsafail:
     rc = nn_err_wsa_to_posix (WSAGetLastError ());
+wsafail2:
     brc = SetEvent (sync);
     win_assert (brc != 0);
     brc = CloseHandle (sync);

@@ -900,7 +900,7 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
     int len;
 
     if(self.print_statistics) {
-        fprintf(stderr, "nanomsg: socket.%s: %s: %lu\n",
+        fprintf(stderr, "nanomsg: socket.%s: %s: %llu\n",
             s->socket_name, name, value);
     }
 
@@ -914,11 +914,11 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {
-            len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %lu:c",
+            len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %llu:c",
                 self.hostname, self.appname, s->socket_name, name,
                 timebuf, value);
         } else {
-            len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %lu:c",
+            len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %llu:c",
                 self.hostname, self.appname, i, name,
                 timebuf, value);
         }

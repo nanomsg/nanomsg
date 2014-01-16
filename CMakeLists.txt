@@ -33,6 +33,10 @@ enable_testing ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions (-DNN_HAVE_WINDOWS)
+
+    if (MINGW)
+        add_definitions (-DNN_HAVE_MINGW -D_WIN32_WINNT=0x0600)
+    endif ()
 else ()
     message (FATAL_ERROR "ERROR: CMake build system is intended only to generate MSVC solution files.\nUse autotools build system for any other purpose." )
 endif ()

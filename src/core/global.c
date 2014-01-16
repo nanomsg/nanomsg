@@ -77,6 +77,14 @@
 #include <stdlib.h>
 #include <time.h>
 
+#if defined NN_HAVE_MINGW
+#include <pthread.h>
+#elif defined NN_HAVE_WINDOWS
+#define gmtime_r(ptr_numtime, ptr_strtime) gmtime_s(ptr_strtime, ptr_numtime)
+#endif
+#define NN_HAVE_GMTIME_R
+
+
 #if defined NN_HAVE_WINDOWS
 #include "../utils/win.h"
 #else
@@ -907,10 +915,10 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {
@@ -948,10 +956,10 @@ static void nn_global_submit_level (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {
@@ -985,10 +993,10 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
     if (self.statistics_socket >= 0) {
         /*  TODO(tailhook) add HAVE_GMTIME_R ifdef  */
         time(&numtime);
-#ifdef NN_HAVE_WINDOWS
-        gmtime_s (&strtime, &numtime);
-#else
+#ifdef NN_HAVE_GMTIME_R
         gmtime_r (&numtime, &strtime);
+#else
+#error
 #endif
         strftime (timebuf, 20, "%Y-%m-%dT%H:%M:%S", &strtime);
         if(*s->socket_name) {

@@ -408,7 +408,7 @@ void nn_print_message (nn_options_t *options, char *buf, int buflen)
                 if (isprint (*buf)) {
                     fputc (*buf, stdout);
                 } else {
-                    fprintf (stdout, "\\x%02x", *buf);
+                    fprintf (stdout, "\\x%02x", (unsigned char)*buf);
                 }
             }
         }

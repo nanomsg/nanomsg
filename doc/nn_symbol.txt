@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*const char *nn_symbol (int 'i', int '*value');*
+*int nn_symbol (int 'i', struct nn_symbol_properties '*buf', int 'buflen');*
 
 
 DESCRIPTION
@@ -19,8 +19,30 @@ Retrieves the symbol name and value at index 'i'.  Indices start at 0.  An index
 has no significance to its associated symbol; the mappings may change between
 library versions.
 
+The nn_symbol_properties has the following definition:
+
+----
+struct nn_symbol_properties {
+
+    /*  The constant value  */
+    int value;
+
+    /*  The contant name  */
+    const char* name;
+
+    /*  The constant namespace, or zero for namespaces themselves */
+    int ns;
+
+    /*  The option type for socket option constants  */
+    int type;
+};
+----
+
+More structure members may be added in future, but input pointer will be
+written only up to 'buflen' so ABI is forward-compatible.
+
 Typically a client will iterate through the symbols until nn_symbol returns
-NULL in order to collect all the symbols.  
+NULL in order to collect all the symbols.
 
 All symbols exposed by 'nn_symbol' are available directly in the C API,
 generally as preprocessor macros.  Thus, this function is useful mostly for
@@ -33,31 +55,66 @@ be exported from language bindings to the user. Instead, language bindings
 should provide the zero-copy functionality in a language-specific way, if at
 all (zero-copy functionality may not make sense for some languages/bindings).
 
+AVAILABLE NAMESPACES
+--------------------
+*NN_NS_NAMESPACE*::
+Equals to zero and denotes the NN_NS_* constants themselves
+*NN_NS_VERSION*::
+Nanomsg version constants
+*NN_NS_DOMAIN*::
+Socket domain (or address family) constants AF_SP, AF_SP_RAW
+*NN_NS_TRANSPORT*::
+Transport name constants (used for socket options mainly)
+*NN_NS_PROTOCOL*::
+Socket protocol constants
+*NN_NS_OPTION_LEVEL*::
+Socket option level constants (NN_SOL_SOCKET)
+*NN_NS_SOCKET_OPTION*::
+Socket options for NN_SOL_SOCKET level
+*NN_NS_TRANSPORT_OPTION*::
+Socket options for transport level (used with transport constants)
+*NN_NS_OPTION_TYPE*::
+The option types (described below)
+*NN_NS_FLAG*::
+The nn_send/nn_recv flags (only NN_DONTWAIT for now)
+*NN_NS_ERROR*::
+The errno values
+*NN_NS_LIMIT*::
+Various nanomsg limits (only NN_SOCKADDR_MAX for now)
+
+AVAILABLE OPTION TYPES
+----------------------
+*NN_TYPE_NONE*::
+No type, is returned for constants that are not socket options
+*NN_TYPE_INT*::
+The integer type
+*NN_TYPE_STR*::
+String (char *) type
+
+More types may be added in future nanomsg. You may enumerate all of them using
+the 'nn_symbol' itself by checking 'NN_NS_OPTION_TYPE' namespace.
+
 
 RETURN VALUE
 ------------
-If 'i' is valid, returns the name of the symbol at that index.  If the pointer
-'value' is not NULL, the symbol's value is stored there.
+If 'i' is valid, returns the number of bytes stored at the structure. The
+maximum value that can be returned is 'buflen'.
 
-If 'i' is out-of-range, nn_symbol returns NULL and sets 'errno' to EINVAL.
-
-
-ERRORS
-------
-*EINVAL*::
-The passed index 'i' was out-of-range; it was less than zero or greater-than-or-
-equal-to the number of symbols.
+If 'i' is out-of-range, nn_symbol returns zero.
 
 
 EXAMPLE
 -------
 
 ----
-int value, i;
+int i;
 for (i = 0; ; ++i) {
-    const char* name = nn_symbol (i, &value);
-    if (name == NULL) break;
-    printf ("'%s' = %d\n", name, value);
+    struct nn_symbol_properties sym;
+    int rc = nn_symbol (i, &sym, sizeof (sym));
+    if(rc == 0)
+        break;
+    assert (rc == sizeof (sym));
+    printf ("'%s' = %d\n", sym->name, sym->value);
 }
 ----
 

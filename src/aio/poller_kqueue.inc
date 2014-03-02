@@ -80,7 +80,7 @@ void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
     /*  Invalidate any subsequent events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
-        if (self->events [i].ident == hndl->fd)
+        if (self->events [i].ident == (unsigned) hndl->fd)
             self->events [i].udata = (nn_poller_udata) NULL;
 }
 
@@ -113,7 +113,7 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
     /*  Invalidate any subsequent IN events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
-        if (self->events [i].ident == hndl->fd &&
+        if (self->events [i].ident == (unsigned) hndl->fd &&
               self->events [i].filter == EVFILT_READ)
             self->events [i].udata = (nn_poller_udata) NULL;
 }
@@ -147,7 +147,7 @@ void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
     /*  Invalidate any subsequent OUT events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
-        if (self->events [i].ident == hndl->fd &&
+        if (self->events [i].ident == (unsigned) hndl->fd &&
               self->events [i].filter == EVFILT_WRITE)
             self->events [i].udata = (nn_poller_udata) NULL;
 }

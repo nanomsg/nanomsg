@@ -20,7 +20,7 @@ has no significance to its associated symbol; the mappings may change between
 library versions.
 
 Typically a client will iterate through the symbols until nn_symbol returns
-NULL in order to collect all the symbols.  
+NULL in order to collect all the symbols.
 
 All symbols exposed by 'nn_symbol' are available directly in the C API,
 generally as preprocessor macros.  Thus, this function is useful mostly for
@@ -63,6 +63,7 @@ for (i = 0; ; ++i) {
 
 SEE ALSO
 --------
+linknanomsg:nn_symbol_info[3]
 linknanomsg:nn_errno[3]
 linknanomsg:nn_strerror[3]
 linknanomsg:nanomsg[7]

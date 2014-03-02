@@ -909,7 +909,7 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
 
     if(self.print_statistics) {
         fprintf(stderr, "nanomsg: socket.%s: %s: %llu\n",
-            s->socket_name, name, value);
+            s->socket_name, name, (long long unsigned int)value);
     }
 
     if (self.statistics_socket >= 0) {
@@ -924,11 +924,11 @@ static void nn_global_submit_counter (int i, struct nn_sock *s,
         if(*s->socket_name) {
             len = sprintf (buf, "ESTP:%s:%s:socket.%s:%s: %sZ 10 %llu:c",
                 self.hostname, self.appname, s->socket_name, name,
-                timebuf, value);
+                timebuf, (long long unsigned int)value);
         } else {
             len = sprintf (buf, "ESTP:%s:%s:socket.%d:%s: %sZ 10 %llu:c",
                 self.hostname, self.appname, i, name,
-                timebuf, value);
+                timebuf, (long long unsigned int)value);
         }
         nn_assert (len < (int)sizeof(buf));
         (void) nn_send (self.statistics_socket, buf, len, NN_DONTWAIT);

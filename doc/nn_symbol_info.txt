@@ -148,4 +148,4 @@ linknanomsg:nanomsg[7]
 
 AUTHORS
 -------
-Evan Wies <evan@neomantra.net>
+Paul Colomiets <paul@colomiets.name>

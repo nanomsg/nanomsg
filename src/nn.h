@@ -67,13 +67,13 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 0
+#define NN_VERSION_CURRENT 1
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 1
+#define NN_VERSION_REVISION 2
 
 /*  How many past interface versions are still supported. */
-#define NN_VERSION_AGE 0
+#define NN_VERSION_AGE 1
 
 /******************************************************************************/
 /*  Errors.                                                                   */

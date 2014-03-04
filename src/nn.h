@@ -70,7 +70,7 @@ extern "C" {
 #define NN_VERSION_CURRENT 1
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 2
+#define NN_VERSION_REVISION 0
 
 /*  How many past interface versions are still supported. */
 #define NN_VERSION_AGE 1

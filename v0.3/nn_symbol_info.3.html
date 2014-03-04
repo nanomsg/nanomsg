@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.6.6" />
-<title>nanomsg(7)</title>
+<title>nn_symbol_info(3)</title>
 <style type="text/css">
 /* Shared CSS for AsciiDoc xhtml11 and html5 backends */
 
@@ -747,12 +747,12 @@ asciidoc.install();
 <body class="manpage">
 <div id="header">
 <h1>
-nanomsg(7) Manual Page
+nn_symbol_info(3) Manual Page
 </h1>
 <h2>NAME</h2>
 <div class="sectionbody">
-<p>nanomsg -
-   scalability protocols library
+<p>nn_symbol_info -
+   query the names and properties of nanomsg symbols
 </p>
 </div>
 </div>
@@ -760,279 +760,276 @@ nanomsg(7) Manual Page
 <div class="sect1">
 <h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p><strong>cc</strong> [<em>flags</em>] <em>files</em> <strong>-lnanomsg</strong> [<em>libraries</em>]</p></div>
+<div class="paragraph"><p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p></div>
+<div class="paragraph"><p><strong>int nn_symbol_info (int <em>i</em>, struct nn_symbol_properties <em>*buf</em>, int <em>buflen</em>);</strong></p></div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Following functions are exported by nanomsg library:</p></div>
+<div class="paragraph"><p>Retrieves the symbol name and value at index <em>i</em>.  Indices start at 0.  An index
+has no significance to its associated symbol; the mappings may change between
+library versions.</p></div>
+<div class="paragraph"><p>The nn_symbol_properties has the following definition:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>struct nn_symbol_properties {
+
+    /*  The constant value  */
+    int value;
+
+    /*  The contant name  */
+    const char* name;
+
+    /*  The constant namespace, or zero for namespaces themselves */
+    int ns;
+
+    /*  The option type for socket option constants  */
+    int type;
+
+    /*  The unit for the option value for socket option constants  */
+    int unit;
+};</tt></pre>
+</div></div>
+<div class="paragraph"><p>More structure members may be added in future, but input pointer will be
+written only up to <em>buflen</em> so ABI is forward-compatible.</p></div>
+<div class="paragraph"><p>Typically a client will iterate through the symbols until nn_symbol_info
+returns NULL in order to collect all the symbols.</p></div>
+<div class="paragraph"><p>All symbols exposed by <em>nn_symbol_info</em> are available directly in the C API,
+generally as preprocessor macros.  Thus, this function is useful mostly for
+language bindings that can&#8217;t parse the header file and rely on retrieving the
+symbols in the runtime.</p></div>
+<div class="paragraph"><p>Note that the NN_MSG symbol is not exported by the <em>nn_symbol</em> function. First,
+it is a pointer rather than an integer; second, the symbol is not supposed to
+be exported from language bindings to the user. Instead, language bindings
+should provide the zero-copy functionality in a language-specific way, if at
+all (zero-copy functionality may not make sense for some languages/bindings).</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_available_namespaces">AVAILABLE NAMESPACES</h2>
+<div class="sectionbody">
 <div class="dlist"><dl>
 <dt class="hdlist1">
-Create an SP socket
+<strong>NN_NS_NAMESPACE</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_socket.3.html">nn_socket(3)</a>
+Equals to zero and denotes the NN_NS_* constants themselves
 </p>
 </dd>
 <dt class="hdlist1">
-Close an SP socket
+<strong>NN_NS_VERSION</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_close.3.html">nn_close(3)</a>
+Nanomsg version constants
 </p>
 </dd>
 <dt class="hdlist1">
-Set a socket option
+<strong>NN_NS_DOMAIN</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_setsockopt.3.html">nn_setsockopt(3)</a>
+Socket domain (or address family) constants AF_SP, AF_SP_RAW
 </p>
 </dd>
 <dt class="hdlist1">
-Retrieve a socket option
+<strong>NN_NS_TRANSPORT</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_getsockopt.3.html">nn_getsockopt(3)</a>
+Transport name constants (used for socket options mainly)
 </p>
 </dd>
 <dt class="hdlist1">
-Add a local endpoint to the socket
+<strong>NN_NS_PROTOCOL</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_bind.3.html">nn_bind(3)</a>
+Socket protocol constants
 </p>
 </dd>
 <dt class="hdlist1">
-Add a remote endpoint to the socket
+<strong>NN_NS_OPTION_LEVEL</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_connect.3.html">nn_connect(3)</a>
+Socket option level constants (NN_SOL_SOCKET)
 </p>
 </dd>
 <dt class="hdlist1">
-Remove an endpoint from the socket
+<strong>NN_NS_SOCKET_OPTION</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_shutdown.3.html">nn_shutdown(3)</a>
+Socket options for NN_SOL_SOCKET level
 </p>
 </dd>
 <dt class="hdlist1">
-Send a message
+<strong>NN_NS_TRANSPORT_OPTION</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_send.3.html">nn_send(3)</a>
+Socket options for transport level (used with transport constants)
 </p>
 </dd>
 <dt class="hdlist1">
-Receive a message
+<strong>NN_NS_OPTION_TYPE</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_recv.3.html">nn_recv(3)</a>
+The option types (described below)
 </p>
 </dd>
 <dt class="hdlist1">
-Fine-grained alternative to nn_send
+<strong>NN_NS_FLAG</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_sendmsg.3.html">nn_sendmsg(3)</a>
+The nn_send/nn_recv flags (only NN_DONTWAIT for now)
 </p>
 </dd>
 <dt class="hdlist1">
-Fine-grained alternative to nn_recv
+<strong>NN_NS_ERROR</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_recvmsg.3.html">nn_recvmsg(3)</a>
+The errno values
 </p>
 </dd>
 <dt class="hdlist1">
-Allocate a message
+<strong>NN_NS_LIMIT</strong>
 </dt>
 <dd>
 <p>
-    <a href="nn_allocmsg.3.html">nn_allocmsg(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Deallocate a message
-</dt>
-<dd>
-<p>
-    <a href="nn_freemsg.3.html">nn_freemsg(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Manipulation of message control data
-</dt>
-<dd>
-<p>
-    <a href="nn_cmsg.3.html">nn_cmsg(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Multiplexing
-</dt>
-<dd>
-<p>
-    <a href="nn_poll.3.html">nn_poll(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Retrieve the current errno
-</dt>
-<dd>
-<p>
-    <a href="nn_errno.3.html">nn_errno(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Convert an error number into human-readable string
-</dt>
-<dd>
-<p>
-    <a href="nn_strerror.3.html">nn_strerror(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Query the names and values of nanomsg symbols
-</dt>
-<dd>
-<p>
-    <a href="nn_symbol.3.html">nn_symbol(3)</a>
-    <a href="nn_symbol_info.3.html">nn_symbol_info(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Start a device
-</dt>
-<dd>
-<p>
-    <a href="nn_device.3.html">nn_device(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Notify all sockets about process termination
-</dt>
-<dd>
-<p>
-    <a href="nn_term.3.html">nn_term(3)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Environment variables that influence nanomsg work
-</dt>
-<dd>
-<p>
-    <a href="nn_env.3.html">nn_env(3)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following scalability protocols are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-One-to-one protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_pair.7.html">nn_pair(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Request/reply protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_reqrep.7.html">nn_reqrep(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Publish/subscribe protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_pubsub.7.html">nn_pubsub(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Survey protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_survey.7.html">nn_survey(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Pipeline protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_pipeline.7.html">nn_pipeline(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Message bus protocol
-</dt>
-<dd>
-<p>
-    <a href="nn_bus.7.html">nn_bus(7)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following transport mechanisms are provided by nanomsg:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-In-process transport
-</dt>
-<dd>
-<p>
-    <a href="nn_inproc.7.html">nn_inproc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-Inter-process transport
-</dt>
-<dd>
-<p>
-    <a href="nn_ipc.7.html">nn_ipc(7)</a>
-</p>
-</dd>
-<dt class="hdlist1">
-TCP transport
-</dt>
-<dd>
-<p>
-    <a href="nn_tcp.7.html">nn_tcp(7)</a>
-</p>
-</dd>
-</dl></div>
-<div class="paragraph"><p>Following tools are installed with the library:</p></div>
-<div class="dlist"><dl>
-<dt class="hdlist1">
-nanocat
-</dt>
-<dd>
-<p>
-    <a href="nanocat.1.html">nanocat(1)</a>
+Various nanomsg limits (only NN_SOCKADDR_MAX for now)
 </p>
 </dd>
 </dl></div>
 </div>
 </div>
 <div class="sect1">
+<h2 id="_available_option_types">AVAILABLE OPTION TYPES</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_TYPE_NONE</strong>
+</dt>
+<dd>
+<p>
+No type, is returned for constants that are not socket options
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_TYPE_INT</strong>
+</dt>
+<dd>
+<p>
+The integer type
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_TYPE_STR</strong>
+</dt>
+<dd>
+<p>
+String (char *) type
+</p>
+</dd>
+</dl></div>
+<div class="paragraph"><p>More types may be added in future nanomsg. You may enumerate all of them using
+the <em>nn_symbol_info</em> itself by checking <em>NN_NS_OPTION_TYPE</em> namespace.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_available_option_units">AVAILABLE OPTION UNITS</h2>
+<div class="sectionbody">
+<div class="dlist"><dl>
+<dt class="hdlist1">
+<strong>NN_UNIT_NONE</strong>
+</dt>
+<dd>
+<p>
+No unit, is returned for constants that are not socket options, or do not have
+any meaningful unit (strings, integer values)
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_UNIT_BYTES</strong>
+</dt>
+<dd>
+<p>
+The option value is expressed in bytes
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_UNIT_MILLISECONDS</strong>
+</dt>
+<dd>
+<p>
+The option value is expressed in milliseconds
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_UNIT_PRIORITY</strong>
+</dt>
+<dd>
+<p>
+The option value is a priority, an integer from 1 to 16
+</p>
+</dd>
+<dt class="hdlist1">
+<strong>NN_UNIT_BOOLEAN</strong>
+</dt>
+<dd>
+<p>
+The option value is boolean, an integer 0 or 1
+</p>
+</dd>
+</dl></div>
+<div class="paragraph"><p>More types may be added in future nanomsg. You may enumerate all of them using
+the <em>nn_symbol_info</em> itself by checking <em>NN_NS_OPTION_TYPE</em> namespace.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>If <em>i</em> is valid, returns the number of bytes stored at the structure. The
+maximum value that can be returned is <em>buflen</em>.</p></div>
+<div class="paragraph"><p>If <em>i</em> is out-of-range, nn_symbol_info returns zero.</p></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>int i;
+for (i = 0; ; ++i) {
+    struct nn_symbol_properties sym;
+    int rc = nn_symbol_info (i, &amp;sym, sizeof (sym));
+    if(rc == 0)
+        break;
+    assert (rc == sizeof (sym));
+    printf ("'%s' = %d\n", sym-&gt;name, sym-&gt;value);
+}</tt></pre>
+</div></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph"><p><a href="nn_symbol.3.html">nn_symbol(3)</a>
+<a href="nn_errno.3.html">nn_errno(3)</a>
+<a href="nn_strerror.3.html">nn_strerror(3)</a>
+<a href="nanomsg.7.html">nanomsg(7)</a></p></div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_authors">AUTHORS</h2>
 <div class="sectionbody">
-<div class="paragraph"><p>Martin Sustrik &lt;<a href="mailto:sustrik@250bpm.com">sustrik@250bpm.com</a>&gt;</p></div>
+<div class="paragraph"><p>Evan Wies &lt;<a href="mailto:evan@neomantra.net">evan@neomantra.net</a>&gt;</p></div>
 </div>
 </div>
 </div>
@@ -1040,7 +1037,7 @@ nanocat
 <div id="footer">
 <div id="footer-text">
 nanomsg 0.3-beta-2-g8ae44eb-dirty<br />
-Last updated 2014-03-04 23:46:35 CET
+Last updated 2014-03-04 23:29:50 CET
 </div>
 </div>
 </body>

@@ -70,7 +70,6 @@ Convert an error number into human-readable string::
 
 Query the names and values of nanomsg symbols::
     linknanomsg:nn_symbol[3]
-    linknanomsg:nn_symbol_info[3]
 
 Query properties of nanomsg symbols::
     linknanomsg:nn_symbol_info[3]

@@ -52,11 +52,12 @@ generally as preprocessor macros.  Thus, this function is useful mostly for
 language bindings that can't parse the header file and rely on retrieving the
 symbols in the runtime.
 
-Note that the NN_MSG symbol is not exported by the _nn_symbol_ function. First,
-it is a pointer rather than an integer; second, the symbol is not supposed to
-be exported from language bindings to the user. Instead, language bindings
-should provide the zero-copy functionality in a language-specific way, if at
-all (zero-copy functionality may not make sense for some languages/bindings).
+Note that the NN_MSG symbol is not exported by the 'nn_symbol_info' function.
+First, it is a pointer rather than an integer; second, the symbol is not
+supposed to be exported from language bindings to the user. Instead, language
+bindings should provide the zero-copy functionality in a language-specific way,
+if at all (zero-copy functionality may not make sense for some
+languages/bindings).
 
 AVAILABLE NAMESPACES
 --------------------

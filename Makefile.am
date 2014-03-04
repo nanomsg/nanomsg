@@ -327,6 +327,7 @@ MAN3 = \
     doc/nn_errno.txt \
     doc/nn_strerror.txt \
     doc/nn_symbol.txt \
+    doc/nn_symbol_info.txt \
     doc/nn_term.txt \
     doc/nn_allocmsg.txt \
     doc/nn_freemsg.txt \

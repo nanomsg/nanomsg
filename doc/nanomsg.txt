@@ -59,6 +59,9 @@ Deallocate a message::
 Manipulation of message control data::
     linknanomsg:nn_cmsg[3]
 
+Multiplexing::
+    linknanomsg:nn_poll[3]
+
 Retrieve the current errno::
     linknanomsg:nn_errno[3]
 

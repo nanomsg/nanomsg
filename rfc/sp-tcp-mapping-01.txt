@@ -4,12 +4,12 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft                                            GoPivotal Inc.
-Intended status: Informational                               August 2013
-Expires: February 02, 2014
+Intended status: Informational                             March 4, 2014
+Expires: September 5, 2014
 
 
                  TCP Mapping for Scalability Protocols
-                           sp-tcp-mapping-01
+                           sp-tcp-mapping-02
 
 Abstract
 
@@ -33,11 +33,11 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on February 02, 2014.
+   This Internet-Draft will expire on September 5, 2014.
 
 Copyright Notice
 
-   Copyright (c) 2013 IETF Trust and the persons identified as the
+   Copyright (c) 2014 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-Sustrik                 Expires February 02, 2014               [Page 1]
+Sustrik                 Expires September 5, 2014               [Page 1]
 
-Internet-Draft             TCP mapping for SPs               August 2013
+Internet-Draft             TCP mapping for SPs                March 2014
 
 
 1.  Underlying protocol
@@ -84,7 +84,6 @@ Internet-Draft             TCP mapping for SPs               August 2013
    | 0x00 | 0x53 | 0x50 | version (8b) | type (16b) | reserved (16b) |
    +------+------+------+--------------+------------+----------------+
 
-
    First four bytes of the protocol header are used to make sure that
    the peer's protocol is compatible with the protocol used by the local
    endpoint.  Keep in mind that this protocol is designed to run on an
@@ -94,7 +93,7 @@ Internet-Draft             TCP mapping for SPs               August 2013
    mechanism.
 
    First four bytes of the protocol header MUST be set to 0x00, 0x53,
-   0x50 and 0x01 respectively.  If the protocol header received from the
+   0x50 and 0x00 respectively.  If the protocol header received from the
    peer differs, the TCP connection MUST be closed immediately.
 
    The fact that the first byte of the protocol header is binary zero
@@ -109,9 +108,10 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 02, 2014               [Page 2]
+
+Sustrik                 Expires September 5, 2014               [Page 2]
 
-Internet-Draft             TCP mapping for SPs               August 2013
+Internet-Draft             TCP mapping for SPs                March 2014
 
 
    Fifth and sixth bytes of the header form a 16-bit unsigned integer in
@@ -142,7 +142,6 @@ Internet-Draft             TCP mapping for SPs               August 2013
    | size (64b) |     payload     |
    +------------+-----------------+
 
-
    It may seem that 64 bit message size is excessive and consumes too
    much of valueable bandwidth, especially given that most scenarios
    call for relatively small messages, in order of bytes or kilobytes.
@@ -165,9 +164,10 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 02, 2014               [Page 3]
+
+Sustrik                 Expires September 5, 2014               [Page 3]
 
-Internet-Draft             TCP mapping for SPs               August 2013
+Internet-Draft             TCP mapping for SPs                March 2014
 
 
    messages on very slow networks.  We consider that scenario to be a
@@ -221,9 +221,9 @@ Internet-Draft             TCP mapping for SPs               August 2013
 
 
 
-Sustrik                 Expires February 02, 2014               [Page 4]
+Sustrik                 Expires September 5, 2014               [Page 4]
 
-Internet-Draft             TCP mapping for SPs               August 2013
+Internet-Draft             TCP mapping for SPs                March 2014
 
 
 5.  IANA Considerations
@@ -235,8 +235,6 @@ Internet-Draft             TCP mapping for SPs               August 2013
    The mapping isn't intended to provide any additional security in
    addition to what TCP does.  DoS concerns are addressed within the
    specification.
-
-7.  References
 
 Author's Address
 
@@ -277,5 +275,7 @@ Author's Address
 
 
 
-Sustrik                 Expires February 02, 2014               [Page 5]
+
+
+Sustrik                 Expires September 5, 2014               [Page 5]
 

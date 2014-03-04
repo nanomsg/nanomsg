@@ -85,6 +85,7 @@ set (NN_SOURCES
     utils/alloc.c
     utils/atomic.h
     utils/atomic.c
+    utils/attr.h
     utils/chunk.h
     utils/chunk.c
     utils/chunkref.h

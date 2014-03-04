@@ -94,6 +94,7 @@ NANOMSG_UTILS = \
     src/utils/alloc.c \
     src/utils/atomic.h \
     src/utils/atomic.c \
+    src/utils/attr.h \
     src/utils/chunk.h \
     src/utils/chunk.c \
     src/utils/chunkref.h \

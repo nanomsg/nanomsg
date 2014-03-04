@@ -35,6 +35,8 @@ Release process
 
 15. Link the docs from "documentation.html" page.
 
-16. Send the announcement about the release.
+16. Send the announcement about the release. These commands might be useful:
+    git log --oneline 0.2-alpha..0.3-beta | wc -l
+    git diff -U0 0.2-alpha..0.3-beta AUTHORS
 
 17. Update the topic in the chatroom accordingly.

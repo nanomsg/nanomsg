@@ -430,6 +430,9 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
             return;
         }
 
+        /*  Notify our parent that pipe socket is shutting down  */
+        nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+
         /*  In all remaining states we'll simply cancel all overlapped
             operations. */
         if (nn_usock_cancel_io (usock) == 0)
@@ -600,6 +603,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
+                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -615,6 +619,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
+                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -627,6 +632,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
+                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }

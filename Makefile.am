@@ -94,6 +94,7 @@ NANOMSG_UTILS = \
     src/utils/alloc.c \
     src/utils/atomic.h \
     src/utils/atomic.c \
+    src/utils/attr.h \
     src/utils/chunk.h \
     src/utils/chunk.c \
     src/utils/chunkref.h \
@@ -326,6 +327,7 @@ MAN3 = \
     doc/nn_errno.txt \
     doc/nn_strerror.txt \
     doc/nn_symbol.txt \
+    doc/nn_symbol_info.txt \
     doc/nn_term.txt \
     doc/nn_allocmsg.txt \
     doc/nn_freemsg.txt \

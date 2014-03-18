@@ -59,6 +59,9 @@ Deallocate a message::
 Manipulation of message control data::
     linknanomsg:nn_cmsg[3]
 
+Multiplexing::
+    linknanomsg:nn_poll[3]
+
 Retrieve the current errno::
     linknanomsg:nn_errno[3]
 
@@ -67,6 +70,9 @@ Convert an error number into human-readable string::
 
 Query the names and values of nanomsg symbols::
     linknanomsg:nn_symbol[3]
+
+Query properties of nanomsg symbols::
+    linknanomsg:nn_symbol_info[3]
 
 Start a device::
     linknanomsg:nn_device[3]

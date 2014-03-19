@@ -24,10 +24,14 @@
 #include "../src/utils/alloc.c"
 #include "../src/utils/err.c"
 
+#include <stdio.h>
+
 int main ()
 {
     int rc;
     struct nn_trie trie;
+    FILE *f;
+    char buf [256];
 
     /*  Try matching with an empty trie. */
     nn_trie_init (&trie);
@@ -157,7 +161,7 @@ int main ()
     nn_assert (rc == 0);
     rc = nn_trie_match (&trie, (const uint8_t*) "A", 1);
     nn_assert (rc == 0);
-    nn_trie_term (&trie);
+    nn_trie_term (&trie);  
 
     /*  Check converting from sparse node to dense node and vice versa. */
     nn_trie_init (&trie);
@@ -202,6 +206,21 @@ int main ()
     rc = nn_trie_unsubscribe (&trie, (const uint8_t*) "b", 1);
     nn_assert (rc == 1);
     nn_trie_term (&trie);
+
+    /* Test a large sample of subscriptions and unsubscriptions. */
+    f = fopen ("tests/trie.txt", "r");
+    errno_assert (f);
+    nn_trie_init (&trie);
+    while (1) {
+        if (!fgets (buf, sizeof (buf), f))
+            break;
+        if (buf [0] == 'S')
+            nn_trie_subscribe (&trie, buf + 2, 36);
+        if (buf [0] == 'U')
+            nn_trie_unsubscribe (&trie, buf + 2, 36);
+    }
+    nn_trie_term (&trie);
+    fclose (f);
 
     return 0;
 }

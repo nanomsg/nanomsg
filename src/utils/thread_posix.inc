@@ -41,7 +41,7 @@ static void *nn_thread_main_routine (void *arg)
     errnum_assert (rc == 0, rc);
 
     /*  Run the thread routine. */
-    self->routine (self->arg);
+    self->rc = self->routine (self->arg);
     return NULL;
 }
 

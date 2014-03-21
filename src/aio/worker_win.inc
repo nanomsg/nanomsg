@@ -39,7 +39,7 @@
 const int nn_worker_stop = 0;
 
 /*  Private functions. */
-static void nn_worker_routine (void *arg);
+static int nn_worker_routine (void *arg);
 
 void nn_worker_task_init (struct nn_worker_task *self, int src,
     struct nn_fsm *owner)
@@ -129,7 +129,7 @@ HANDLE nn_worker_getcp (struct nn_worker *self)
     return self->cp;
 }
 
-static void nn_worker_routine (void *arg)
+static int nn_worker_routine (void *arg)
 {
     int rc;
     BOOL brc;
@@ -209,7 +209,7 @@ static void nn_worker_routine (void *arg)
             /*  Worker thread shutdown is requested. */
             if (nn_slow (entries [i].lpCompletionKey ==
                   (ULONG_PTR) &nn_worker_stop))
-                return;
+                return -1;
 
             /*  Process tasks. */
             task = (struct nn_worker_task*) entries [i].lpCompletionKey;
@@ -219,4 +219,5 @@ static void nn_worker_routine (void *arg)
             nn_ctx_leave (task->owner->ctx);
         }
     }
+    return 0;
 }

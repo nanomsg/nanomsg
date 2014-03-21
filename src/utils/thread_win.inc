@@ -27,7 +27,7 @@ static unsigned int __stdcall nn_thread_main_routine (void *arg)
     struct nn_thread *self;
 
     self = (struct nn_thread*) arg;
-    self->routine (self->arg);
+    self->rc = self->routine (self->arg);
     return 0;
 }
 

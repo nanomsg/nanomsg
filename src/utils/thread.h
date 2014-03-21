@@ -25,7 +25,7 @@
 
 /*  Platform independent implementation of threading. */
 
-typedef void (nn_thread_routine) (void*);
+typedef int (nn_thread_routine) (void*);
 
 #if defined NN_HAVE_WINDOWS
 #include "thread_win.h"

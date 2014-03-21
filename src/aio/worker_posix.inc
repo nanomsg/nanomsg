@@ -29,7 +29,7 @@
 #include "../utils/attr.h"
 
 /*  Private functions. */
-static void nn_worker_routine (void *arg);
+static int nn_worker_routine (void *arg);
 
 void nn_worker_fd_init (struct nn_worker_fd *self, int src,
     struct nn_fsm *owner)
@@ -145,7 +145,7 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_unlock (&self->sync);
 }
 
-static void nn_worker_routine (void *arg)
+static int nn_worker_routine (void *arg)
 {
     int rc;
     struct nn_worker *self;
@@ -213,7 +213,7 @@ static void nn_worker_routine (void *arg)
                     /*  If the worker thread is asked to stop, do so. */
                     if (nn_slow (item == &self->stop)) {
                         nn_queue_term (&tasks);
-                        return;
+                        return -1;
                     }
 
                     /*  It's a user-defined task. Notify the user that it has
@@ -235,5 +235,6 @@ static void nn_worker_routine (void *arg)
             nn_ctx_leave (fd->owner->ctx);
         }
     }
+    return 0;
 }
 

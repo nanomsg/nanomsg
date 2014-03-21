@@ -26,5 +26,6 @@ struct nn_thread
 {
     nn_thread_routine *routine;
     void *arg;
+    int rc;
     pthread_t handle;
 };

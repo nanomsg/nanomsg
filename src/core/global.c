@@ -1010,15 +1010,9 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
             ep = nn_cont (it, struct nn_ep, item);
 
             if (ep->last_errno) {
-#ifdef NN_HAVE_WINDOWS
-                len = _snprintf_s (curbuf, buf_left,
-                    " nanomsg: Endpoint %d [%s] error: %s\n",
-                    ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
-#else
                 len = snprintf (curbuf, buf_left,
                     " nanomsg: Endpoint %d [%s] error: %s\n",
                     ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
-#endif
                 if (buf_left < len)
                     break;
                 curbuf += len;

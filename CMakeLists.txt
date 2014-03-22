@@ -33,6 +33,7 @@ enable_testing ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions (-DNN_HAVE_WINDOWS)
+    add_definitions (-D_CRT_SECURE_NO_WARNINGS)
 else ()
     message (FATAL_ERROR "ERROR: CMake build system is intended only to generate MSVC solution files.\nUse autotools build system for any other purpose." )
 endif ()

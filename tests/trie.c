@@ -30,8 +30,6 @@ int main ()
 {
     int rc;
     struct nn_trie trie;
-    FILE *f;
-    char buf [256];
 
     /*  Try matching with an empty trie. */
     nn_trie_init (&trie);
@@ -206,21 +204,6 @@ int main ()
     rc = nn_trie_unsubscribe (&trie, (const uint8_t*) "b", 1);
     nn_assert (rc == 1);
     nn_trie_term (&trie);
-
-    /* Test a large sample of subscriptions and unsubscriptions. */
-    f = fopen ("tests/trie.txt", "r");
-    errno_assert (f);
-    nn_trie_init (&trie);
-    while (1) {
-        if (!fgets (buf, sizeof (buf), f))
-            break;
-        if (buf [0] == 'S')
-            nn_trie_subscribe (&trie, buf + 2, 36);
-        if (buf [0] == 'U')
-            nn_trie_unsubscribe (&trie, buf + 2, 36);
-    }
-    nn_trie_term (&trie);
-    fclose (f);
 
     return 0;
 }

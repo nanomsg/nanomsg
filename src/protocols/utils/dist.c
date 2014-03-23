@@ -41,15 +41,14 @@ void nn_dist_term (struct nn_dist *self)
     nn_list_term (&self->pipes);
 }
 
-void nn_dist_add (NN_UNUSED struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data)
+void nn_dist_add (NN_UNUSED struct nn_dist *self,
+    struct nn_dist_data *data, struct nn_pipe *pipe)
 {
     data->pipe = pipe;
     nn_list_item_init (&data->item);
 }
 
-void nn_dist_rm (struct nn_dist *self, NN_UNUSED struct nn_pipe *pipe,
-    struct nn_dist_data *data)
+void nn_dist_rm (struct nn_dist *self, struct nn_dist_data *data)
 {
     if (nn_list_item_isinlist (&data->item)) {
         --self->count;
@@ -58,8 +57,7 @@ void nn_dist_rm (struct nn_dist *self, NN_UNUSED struct nn_pipe *pipe,
     nn_list_item_term (&data->item);
 }
 
-void nn_dist_out (struct nn_dist *self, NN_UNUSED struct nn_pipe *pipe,
-    struct nn_dist_data *data)
+void nn_dist_out (struct nn_dist *self, struct nn_dist_data *data)
 {
     ++self->count;
     nn_list_insert (&self->pipes, &data->item, nn_list_end (&self->pipes));

@@ -41,12 +41,10 @@ struct nn_dist {
 
 void nn_dist_init (struct nn_dist *self);
 void nn_dist_term (struct nn_dist *self);
-void nn_dist_add (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
-void nn_dist_rm (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
-void nn_dist_out (struct nn_dist *self, struct nn_pipe *pipe,
-    struct nn_dist_data *data);
+void nn_dist_add (struct nn_dist *self, 
+    struct nn_dist_data *data, struct nn_pipe *pipe);
+void nn_dist_rm (struct nn_dist *self, struct nn_dist_data *data);
+void nn_dist_out (struct nn_dist *self, struct nn_dist_data *data);
 
 /*  Sends the message to all the attached pipes except the one specified
     by 'exclude' parameter. If 'exclude' is NULL, message is sent to all

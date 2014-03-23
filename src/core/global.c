@@ -643,7 +643,6 @@ int nn_send (int s, const void *buf, size_t len, int flags)
     /*  Send it further down the stack. */
     rc = nn_sock_send (self.socks [s], &msg, flags);
     if (nn_slow (rc < 0)) {
-        nn_chunkref_term (&msg.hdr);
 
         /*  If we are dealing with user-supplied buffer, detach it from
             the message object. */

@@ -452,7 +452,7 @@ static void nn_process_option (struct nn_parse_context *ctx,
             data_buf = strlen (argument) + strlen (opt->pointer);
             data = malloc (data_buf);
 #if defined NN_HAVE_WINDOWS
-            data_len = _snprintf_s (data, data_buf, data_buf, opt->pointer,
+            data_len = _snprintf_s (data, data_buf, _TRUNCATE, opt->pointer,
                 argument);
 #else
             data_len = snprintf (data, data_buf, opt->pointer, argument);
@@ -465,21 +465,10 @@ static void nn_process_option (struct nn_parse_context *ctx,
             if (!strcmp (argument, "-")) {
                 file = stdin;
             } else {
-#if defined NN_HAVE_WINDOWS
-                if (fopen_s (&file, argument, "r") != 0) {
-#else
                 file = fopen (argument, "r");
                 if (!file) {
-#endif
-#if defined _MSC_VER
-#pragma warning (push)
-#pragma warning (disable:4996)
-#endif
                     fprintf (stderr, "Error opening file ``%s'': %s\n",
                         argument, strerror (errno));
-#if defined _MSC_VER
-#pragma warning (pop)
-#endif
                     exit (2);
                 }
             }

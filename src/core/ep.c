@@ -63,14 +63,7 @@ int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
 
     /*  Store the textual form of the address. */
     nn_assert (strlen (addr) <= NN_SOCKADDR_MAX);
-#if defined _MSC_VER
-#pragma warning (push)
-#pragma warning (disable:4996)
-#endif
     strcpy (self->addr, addr);
-#if defined _MSC_VER
-#pragma warning (pop)
-#endif
 
     /*  Create transport-specific part of the endpoint. */
     if (bind)

@@ -301,8 +301,18 @@ static void nn_global_init (void)
         strncpy (self.appname, addr, 63);
         self.appname[63] = '\0';
     } else {
-        /*  No cross-platform way to find out application binary  */
+        /*  No cross-platform way to find out application binary.
+            Also, MSVC suggests using _getpid() instead of getpid(),
+            however, it's not clear whether the former is supported
+            by older versions of Winddows/MSVC. */
+#if defined _MSC_VER
+#pragma warning (push)
+#pragma warning (disable:4996)
+#endif
         sprintf (self.appname, "nanomsg.%d", getpid());
+#if defined _MSC_VER
+#pragma warning (pop)
+#endif
     }
 
     addr = getenv ("NN_HOSTNAME");
@@ -1010,13 +1020,13 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
 
             if (ep->last_errno) {
 #ifdef NN_HAVE_WINDOWS
-                len = _snprintf_s (curbuf, buf_left, buf_left,
+                len = _snprintf_s (curbuf, buf_left, _TRUNCATE,
                     " nanomsg: Endpoint %d [%s] error: %s\n",
                     ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
 #else
-                len = snprintf (curbuf, buf_left,
-                    " nanomsg: Endpoint %d [%s] error: %s\n",
-                    ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
+                 len = snprintf (curbuf, buf_left,
+                     " nanomsg: Endpoint %d [%s] error: %s\n",
+                     ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));
 #endif
                 if (buf_left < len)
                     break;

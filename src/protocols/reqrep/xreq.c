@@ -96,8 +96,9 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_lb_add (&xreq->lb, pipe, &data->lb, sndprio);
-    nn_fq_add (&xreq->fq, pipe, &data->fq, 8);
+    nn_lb_add (&xreq->lb, &data->lb, pipe, sndprio);
+    nn_fq_add (&xreq->fq, &data->fq, pipe, 8);
+
     return 0;
 }
 
@@ -108,8 +109,8 @@ void nn_xreq_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_lb_rm (&xreq->lb, pipe, &data->lb);
-    nn_fq_rm (&xreq->fq, pipe, &data->fq);
+    nn_lb_rm (&xreq->lb, &data->lb);
+    nn_fq_rm (&xreq->fq, &data->fq);
     nn_free (data);
 
     nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
@@ -123,7 +124,7 @@ void nn_xreq_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_fq_in (&xreq->fq, pipe, &data->fq);
+    nn_fq_in (&xreq->fq, &data->fq);
 }
 
 void nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
@@ -133,7 +134,7 @@ void nn_xreq_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_lb_out (&xreq->lb, pipe, &data->lb);
+    nn_lb_out (&xreq->lb, &data->lb);
 
     nn_sockbase_stat_increment (self, NN_STAT_CURRENT_SND_PRIORITY,
         nn_lb_get_priority (&xreq->lb));

@@ -91,7 +91,7 @@ int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     data = nn_alloc (sizeof (struct nn_xbus_data), "pipe data (xbus)");
     alloc_assert (data);
-    nn_fq_add (&xbus->inpipes, pipe, &data->initem, 8);
+    nn_fq_add (&xbus->inpipes, &data->initem, pipe, 8);
     nn_dist_add (&xbus->outpipes, pipe, &data->outitem);
     nn_pipe_setdata (pipe, data);
 
@@ -106,7 +106,7 @@ void nn_xbus_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     xbus = nn_cont (self, struct nn_xbus, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_rm (&xbus->inpipes, pipe, &data->initem);
+    nn_fq_rm (&xbus->inpipes, &data->initem);
     nn_dist_rm (&xbus->outpipes, pipe, &data->outitem);
 
     nn_free (data);
@@ -120,7 +120,7 @@ void nn_xbus_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xbus = nn_cont (self, struct nn_xbus, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_in (&xbus->inpipes, pipe, &data->initem);
+    nn_fq_in (&xbus->inpipes, &data->initem);
 }
 
 void nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe)

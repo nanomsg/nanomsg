@@ -108,7 +108,7 @@ static int nn_xpull_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xpull_data), "pipe data (pull)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_fq_add (&xpull->fq, pipe, &data->fq, 8);
+    nn_fq_add (&xpull->fq, &data->fq, pipe, 8);
 
     return 0;
 }
@@ -120,7 +120,7 @@ static void nn_xpull_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xpull = nn_cont (self, struct nn_xpull, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_fq_rm (&xpull->fq, pipe, &data->fq);
+    nn_fq_rm (&xpull->fq, &data->fq);
     nn_free (data);
 }
 
@@ -132,7 +132,7 @@ static void nn_xpull_in (NN_UNUSED struct nn_sockbase *self,
 
     xpull = nn_cont (self, struct nn_xpull, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_fq_in (&xpull->fq, pipe, &data->fq);
+    nn_fq_in (&xpull->fq, &data->fq);
 }
 
 static void nn_xpull_out (NN_UNUSED struct nn_sockbase *self,

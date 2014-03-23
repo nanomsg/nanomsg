@@ -89,7 +89,7 @@ int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
         "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
-    nn_fq_add (&xsurveyor->inpipes, pipe, &data->initem, 8);
+    nn_fq_add (&xsurveyor->inpipes, &data->initem, pipe, 8);
     nn_dist_add (&xsurveyor->outpipes, pipe, &data->outitem);
     nn_pipe_setdata (pipe, data);
 
@@ -104,7 +104,7 @@ void nn_xsurveyor_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_rm (&xsurveyor->inpipes, pipe, &data->initem);
+    nn_fq_rm (&xsurveyor->inpipes, &data->initem);
     nn_dist_rm (&xsurveyor->outpipes, pipe, &data->outitem);
 
     nn_free (data);
@@ -118,7 +118,7 @@ void nn_xsurveyor_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_in (&xsurveyor->inpipes, pipe, &data->initem);
+    nn_fq_in (&xsurveyor->inpipes, &data->initem);
 }
 
 void nn_xsurveyor_out (struct nn_sockbase *self, struct nn_pipe *pipe)

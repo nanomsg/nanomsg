@@ -489,6 +489,7 @@ endif NANOCAT
 
 EXTRA_DIST += \
     ./rfc/sp-tcp-mapping-01.txt \
+    ./rfc/sp-udp-mapping-01.txt \
     ./rfc/sp-request-reply-01.txt
 
 ################################################################################

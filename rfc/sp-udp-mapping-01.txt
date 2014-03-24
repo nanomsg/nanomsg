@@ -67,7 +67,7 @@ Internet-Draft             UDP mapping for SPs                March 2014
 
 2.  Message delimitation
 
-   Each UDP packet maps to exacrly one SP message.
+   Each UDP packet maps to exactly one SP message.
 
    There is no way to split one SP message into mutliple UDP packets and
    therefore SP messages larger than existing path MTU will be dropped

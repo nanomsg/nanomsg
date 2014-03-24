@@ -43,7 +43,7 @@
 
     <section title = "Message delimitation">
 
-        <t>Each UDP packet maps to exacrly one SP message.</t>
+        <t>Each UDP packet maps to exactly one SP message.</t>
 
         <t>There is no way to split one SP message into mutliple UDP packets
            and therefore SP messages larger than existing path MTU will be

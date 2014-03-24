@@ -484,6 +484,14 @@ bin_PROGRAMS += nanocat
 endif NANOCAT
 
 ################################################################################
+#  RFCs                                                                        #
+################################################################################
+
+EXTRA_DIST += \
+    ./rfc/sp-tcp-mapping-01.txt \
+    ./rfc/sp-request-reply-01.txt
+
+################################################################################
 #  additional packaging-related stuff                                          #
 ################################################################################
 
@@ -532,7 +540,6 @@ EXTRA_DIST += \
     ./package_version.sh \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
-
 
 diagrams:
 	-mkdir -p doc/diagrams

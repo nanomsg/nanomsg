@@ -2,10 +2,11 @@
 
 
 
-Internet Engineering Task Force                          M. Sustrik, Ed.
+Internet Engineering Task Force                               M. Sustrik
 Internet-Draft
-Intended status: Informational                            March 24, 2014
+Intended status: Informational                           G. D'Amore, Ed.
 Expires: September 25, 2014
+                                                          March 24, 2014
 
 
                  TLS Mapping for Scalability Protocols
@@ -13,7 +14,8 @@ Expires: September 25, 2014
 
 Abstract
 
-   This document defines the TLS mapping for scalability protocols.
+   This document defines the mapping for scalability protocols (SP)
+   running on top of Transport Layer Security (TLS) v1.2 on top of TCP.
 
 Status of This Memo
 
@@ -51,36 +53,100 @@ Copyright Notice
 
 
 
-
-
-Sustrik                Expires September 25, 2014               [Page 1]
+Sustrik & D'Amore      Expires September 25, 2014               [Page 1]
 
-Internet-Draft             TLS mapping for SPs                March 2014
+Internet-Draft           TLS/TCP mapping for SPs              March 2014
 
 
 1.  Underlying protocol
 
-   This mapping should be layered directly on the top of TLS.
+   This mapping should be layered directly on the top of TLS [TLS]
+   secured connections.  While it is possible to use TLS on top of other
+   transports, this document specifically concerns itself with TLS
+   running on top of TCP [TCP].
 
-   All the details of the protocol are the same as with TCP mapping for
-   SP -- see sp-tcp-mapping I-D.
+   Other combinations may be contemplated, and should follow the same
+   details as discussed here.
 
-2.  IANA Considerations
+   As when running SP over TCP directly, the TCP port number is
+   determined by the applicaton or user.
+
+   This mapping follows the details of SP over TCP [SPoverTCP].
+
+2.  Connection initiation
+
+   An initial connection is first established using TCP, then performing
+   a TLS handshake.  This handshake establishes the security parameters
+   of the connection, including negotiation of cipher suites, exchanging
+   keys, and possibly performing one or two-way authentication.
+
+   The specific details of the TLS negotiation are determined by the the
+   application(s) involved, and are not specified here.  This includes
+   selection of the specific version of TLS or possibly falling back to
+   SSL version 3 (but not SSL version 1 or 2).
+
+   TLS presents an encrypted channel that may be treated as a full
+   duplex byte stream between peers.  This mapping sits within that
+   channel.
+
+   Note also that TLS peers may rekey periodically.  This happens in the
+   without involving the upper protocol, and the details need not
+   concern us here.
+
+   Once the TLS layer connection has been established, the communication
+   commences as detailed in SPoverTCP [SPoverTCP].  This includes the
+   exchange of the initial protocol headers identifying the version of
+   SP in use, and the specific protocol type, as well as requirements to
+   disconnect upon receipt of an invalid protocol header or an
+   unrecognized SP version.
+
+3.  IANA Considerations
 
    This memo includes no request to IANA.
 
-3.  Security Considerations
 
-   The mapping isn't intended to provide any additional security in
-   addition to what TLS does.
 
-Author's Address
 
-   Martin Sustrik (editor)
+
+
+Sustrik & D'Amore      Expires September 25, 2014               [Page 2]
+
+Internet-Draft           TLS/TCP mapping for SPs              March 2014
+
+
+4.  Security Considerations
+
+   Security considerations are explored in depth as part of TLS [TLS].
+   This document does not provide any further implications beyond that
+   in TLS itself.
+
+   The use of SSLv2 is explicitly forbidden [RFC6176], as SSLv2 contains
+   known weaknesses.
+
+5.  References
+
+   [TCP]      Postel, J., "Transmission Control Protocol", STD 7, RFC
+              793, September 1981.
+
+   [TLS]      Dierks, T. and E. Rescorla, "The Transport Layer Security
+              (TLS) Protocol Version 1.2", RFC 5246, August 2008.
+
+   [RFC6176]  Turner, S. and T. Polk, "Prohibiting Secure Sockets Layer
+              (SSL) Version 2.0", RFC 6176, March 2011.
+
+   [SPoverTCP]
+              Sustrik, M., "TCP mapping for SPs", August 2013.
+
+Authors' Addresses
+
+   Martin Sustrik
 
    Email: sustrik@250bpm.com
 
 
+   Garrett D'Amore (editor)
+
+   Email: garrett@damore.org
 
 
 
@@ -99,15 +165,4 @@ Author's Address
 
 
 
-
-
-
-
-
-
-
-
-
-
-Sustrik                Expires September 25, 2014               [Page 2]
-
+Sustrik & D'Amore      Expires September 25, 2014               [Page 3]

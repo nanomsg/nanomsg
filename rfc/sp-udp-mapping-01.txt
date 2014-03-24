@@ -131,20 +131,20 @@ Internet-Draft             UDP mapping for SPs                March 2014
    Packet header is followed by opaque message payload which spans all
    the way to the end of the packet.
 
+4.  IANA Considerations
+
+   This memo includes no request to IANA.
+
+5.  Security Considerations
+
+   The mapping isn't intended to provide any additional security in
+   addition to what UDP does.
+
 Author's Address
 
    Martin Sustrik (editor)
 
    Email: sustrik@250bpm.com
-
-
-
-
-
-
-
-
-
 
 
 

@@ -107,6 +107,15 @@
 
     </section>
 
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This memo includes no request to IANA.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t>The mapping isn't intended to provide any additional security in
+         addition to what UDP does.</t>
+    </section>
+
   </middle>
 
 </rfc>

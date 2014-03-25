@@ -112,7 +112,7 @@ static int nn_xsub_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     data = nn_alloc (sizeof (struct nn_xsub_data), "pipe data (sub)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
-    nn_fq_add (&xsub->fq, pipe, &data->fq, 8);
+    nn_fq_add (&xsub->fq, &data->fq, pipe, 8);
 
     return 0;
 }
@@ -124,7 +124,7 @@ static void nn_xsub_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xsub = nn_cont (self, struct nn_xsub, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_fq_rm (&xsub->fq, pipe, &data->fq);
+    nn_fq_rm (&xsub->fq, &data->fq);
     nn_free (data);
 }
 
@@ -135,7 +135,7 @@ static void nn_xsub_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 
     xsub = nn_cont (self, struct nn_xsub, sockbase);
     data = nn_pipe_getdata (pipe);
-    nn_fq_in (&xsub->fq, pipe, &data->fq);
+    nn_fq_in (&xsub->fq, &data->fq);
 }
 
 static void nn_xsub_out (NN_UNUSED struct nn_sockbase *self,

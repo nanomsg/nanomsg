@@ -98,8 +98,7 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_hash_insert (&xrep->outpipes, xrep->next_key & 0x7fffffff,
         &data->outitem);
     ++xrep->next_key;
-    nn_fq_add (&xrep->inpipes, pipe, &data->initem, 8);
-
+    nn_fq_add (&xrep->inpipes, &data->initem, pipe, 8);
     nn_pipe_setdata (pipe, data);
 
     return 0;
@@ -113,7 +112,7 @@ void nn_xrep_rm (struct nn_sockbase *self, struct nn_pipe *pipe)
     xrep = nn_cont (self, struct nn_xrep, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_rm (&xrep->inpipes, pipe, &data->initem);
+    nn_fq_rm (&xrep->inpipes, &data->initem);
     nn_hash_erase (&xrep->outpipes, &data->outitem);
     nn_hash_item_term (&data->outitem);
 
@@ -128,7 +127,7 @@ void nn_xrep_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     xrep = nn_cont (self, struct nn_xrep, sockbase);
     data = nn_pipe_getdata (pipe);
 
-    nn_fq_in (&xrep->inpipes, pipe, &data->initem);
+    nn_fq_in (&xrep->inpipes, &data->initem);
 }
 
 void nn_xrep_out (NN_UNUSED struct nn_sockbase *self, struct nn_pipe *pipe)

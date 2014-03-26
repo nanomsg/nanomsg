@@ -162,9 +162,10 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     /*  Do the polling itself. */
     rc = poll (pfd, pos, timeout);
     if (nn_slow (rc <= 0)) {
+        res = errno;
         nn_free (pfd);
-        errno = -rc;
-        return -1;
+        errno = res;
+        return rc;
     }
 
     /*  Move the results from OS-level poll to nn_poll's pollset. */

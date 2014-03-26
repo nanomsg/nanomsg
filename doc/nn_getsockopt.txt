@@ -78,6 +78,13 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     (or a limited set of peers), peers with high priority take precedence
     over peers with low priority. The type of the option is int. Highest
     priority is 1, lowest priority is 16. Default value is 8.
+*NN_RCVPRIO*::
+    Sets inbound priority for endpoints subsequently added to the socket. This
+    option has no effect on socket types that are not able to receive messages.
+    When receiving a message, messages from peer with higher priority are
+    received before messages from peer with lower priority. The type of the
+    option is int. Highest priority is 1, lowest priority is 16. Default value
+    is 8.
 *NN_IPV4ONLY*::
     If set to 1, only IPv4 addresses are used. If set to 0, both IPv4 and IPv6
     addresses are used. The type of the option is int. Default value is 1.

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -335,6 +335,7 @@ NN_INLINE struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
 #define NN_RECONNECT_IVL 6
 #define NN_RECONNECT_IVL_MAX 7
 #define NN_SNDPRIO 8
+#define NN_RCVPRIO 9
 #define NN_SNDFD 10
 #define NN_RCVFD 11
 #define NN_DOMAIN 12

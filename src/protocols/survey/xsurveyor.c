@@ -82,14 +82,21 @@ int nn_xsurveyor_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xsurveyor *xsurveyor;
     struct nn_xsurveyor_data *data;
+    int rcvprio;
+    size_t sz;
 
     xsurveyor = nn_cont (self, struct nn_xsurveyor, sockbase);
+
+    sz = sizeof (rcvprio);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_RCVPRIO, &rcvprio, &sz);
+    nn_assert (sz == sizeof (rcvprio));
+    nn_assert (rcvprio >= 1 && rcvprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xsurveyor_data),
         "pipe data (xsurveyor)");
     alloc_assert (data);
     data->pipe = pipe;
-    nn_fq_add (&xsurveyor->inpipes, &data->initem, pipe, 8);
+    nn_fq_add (&xsurveyor->inpipes, &data->initem, pipe, rcvprio);
     nn_dist_add (&xsurveyor->outpipes, &data->outitem, pipe);
     nn_pipe_setdata (pipe, data);
 

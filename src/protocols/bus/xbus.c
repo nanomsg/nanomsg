@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013-2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -86,12 +86,19 @@ int nn_xbus_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xbus *xbus;
     struct nn_xbus_data *data;
+    int rcvprio;
+    size_t sz;
 
     xbus = nn_cont (self, struct nn_xbus, sockbase);
 
+    sz = sizeof (rcvprio);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_RCVPRIO, &rcvprio, &sz);
+    nn_assert (sz == sizeof (rcvprio));
+    nn_assert (rcvprio >= 1 && rcvprio <= 16);
+
     data = nn_alloc (sizeof (struct nn_xbus_data), "pipe data (xbus)");
     alloc_assert (data);
-    nn_fq_add (&xbus->inpipes, &data->initem, pipe, 8);
+    nn_fq_add (&xbus->inpipes, &data->initem, pipe, rcvprio);
     nn_dist_add (&xbus->outpipes, &data->outitem, pipe);
     nn_pipe_setdata (pipe, data);
 

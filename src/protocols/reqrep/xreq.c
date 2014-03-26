@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -84,6 +84,7 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     struct nn_xreq *xreq;
     struct nn_xreq_data *data;
     int sndprio;
+    int rcvprio;
     size_t sz;
 
     xreq = nn_cont (self, struct nn_xreq, sockbase);
@@ -93,11 +94,16 @@ int nn_xreq_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_assert (sz == sizeof (sndprio));
     nn_assert (sndprio >= 1 && sndprio <= 16);
 
+    sz = sizeof (rcvprio);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_RCVPRIO, &rcvprio, &sz);
+    nn_assert (sz == sizeof (rcvprio));
+    nn_assert (rcvprio >= 1 && rcvprio <= 16);
+
     data = nn_alloc (sizeof (struct nn_xreq_data), "pipe data (req)");
     alloc_assert (data);
     nn_pipe_setdata (pipe, data);
     nn_lb_add (&xreq->lb, &data->lb, pipe, sndprio);
-    nn_fq_add (&xreq->fq, &data->fq, pipe, 8);
+    nn_fq_add (&xreq->fq, &data->fq, pipe, rcvprio);
 
     return 0;
 }

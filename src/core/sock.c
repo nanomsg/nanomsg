@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -125,6 +125,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->reconnect_ivl = 100;
     self->reconnect_ivl_max = 0;
     self->ep_template.sndprio = 8;
+    self->ep_template.rcvprio = 8;
     self->ep_template.ipv4only = 1;
 
     /* Initialize statistic entries */
@@ -331,6 +332,11 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
                 return -EINVAL;
             dst = &self->ep_template.sndprio;
             break;
+        case NN_RCVPRIO:
+            if (nn_slow (val < 1 || val > 16))
+                return -EINVAL;
+            dst = &self->ep_template.rcvprio;
+            break;
         case NN_IPV4ONLY:
             if (nn_slow (val != 0 && val != 1))
                 return -EINVAL;
@@ -403,6 +409,9 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             break;
         case NN_SNDPRIO:
             intval = self->ep_template.sndprio;
+            break;
+        case NN_RCVPRIO:
+            intval = self->ep_template.rcvprio;
             break;
         case NN_IPV4ONLY:
             intval = self->ep_template.ipv4only;

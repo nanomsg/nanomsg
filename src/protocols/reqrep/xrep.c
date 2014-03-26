@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -87,8 +87,15 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_xrep *xrep;
     struct nn_xrep_data *data;
+    int rcvprio;
+    size_t sz;
 
     xrep = nn_cont (self, struct nn_xrep, sockbase);
+
+    sz = sizeof (rcvprio);
+    nn_pipe_getopt (pipe, NN_SOL_SOCKET, NN_RCVPRIO, &rcvprio, &sz);
+    nn_assert (sz == sizeof (rcvprio));
+    nn_assert (rcvprio >= 1 && rcvprio <= 16);
 
     data = nn_alloc (sizeof (struct nn_xrep_data), "pipe data (xrep)");
     alloc_assert (data);
@@ -98,7 +105,7 @@ int nn_xrep_add (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_hash_insert (&xrep->outpipes, xrep->next_key & 0x7fffffff,
         &data->outitem);
     ++xrep->next_key;
-    nn_fq_add (&xrep->inpipes, &data->initem, pipe, 8);
+    nn_fq_add (&xrep->inpipes, &data->initem, pipe, rcvprio);
     nn_pipe_setdata (pipe, data);
 
     return 0;

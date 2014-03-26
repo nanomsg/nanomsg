@@ -54,7 +54,7 @@ Copyright Notice
 
 
 Sustrik                 Expires February 10, 2014               [Page 1]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -110,7 +110,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 2]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -166,7 +166,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 3]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -222,7 +222,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 4]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -249,9 +249,9 @@ Internet-Draft              Request/Reply SP                 August 2013
 
    When creating more complex topologies, REQ and REP endpoints are
    paired in the intermediate nodes to form a forwarding component, so
-   called "device".  Device receives requests from the REP endpoint and
-   forwards them to the REQ endpoint.  At the same time it receives
-   replies from the REQ endpoint and forwards them to the REP endpoint:
+   called "device".  Device receives requests from the REQ endpoint and
+   forwards them to the REP endpoint.  At the same time it receives
+   replies from the REP endpoint and forwards them to the REQ endpoint:
 
                    --- requests -->
 
@@ -278,7 +278,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 5]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -334,7 +334,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 6]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -390,7 +390,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 7]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -446,7 +446,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 8]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -502,7 +502,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014               [Page 9]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -558,7 +558,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014              [Page 10]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -614,7 +614,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014              [Page 11]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -670,7 +670,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014              [Page 12]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -726,7 +726,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014              [Page 13]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 
@@ -782,7 +782,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 Sustrik                 Expires February 10, 2014              [Page 14]
-
+
 Internet-Draft              Request/Reply SP                 August 2013
 
 

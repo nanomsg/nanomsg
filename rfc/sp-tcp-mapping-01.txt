@@ -3,13 +3,13 @@
 
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
-Internet-Draft                                            GoPivotal Inc.
-Intended status: Informational                             March 4, 2014
-Expires: September 5, 2014
+Internet-Draft
+Intended status: Informational                            March 27, 2014
+Expires: September 28, 2014
 
 
                  TCP Mapping for Scalability Protocols
-                           sp-tcp-mapping-02
+                           sp-tcp-mapping-01
 
 Abstract
 
@@ -33,7 +33,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 5, 2014.
+   This Internet-Draft will expire on September 28, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                 Expires September 5, 2014               [Page 1]
+Sustrik                Expires September 28, 2014               [Page 1]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
@@ -63,7 +63,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
    This mapping should be layered directly on the top of TCP.
 
    There's no fixed TCP port to use for the communication.  Instead,
-   port number are assigned to individual services by the user.
+   port numbers are assigned to individual services by the user.
 
 2.  Connection initiation
 
@@ -109,7 +109,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
 
 
-Sustrik                 Expires September 5, 2014               [Page 2]
+Sustrik                Expires September 28, 2014               [Page 2]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
@@ -165,7 +165,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
 
 
-Sustrik                 Expires September 5, 2014               [Page 3]
+Sustrik                Expires September 28, 2014               [Page 3]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
@@ -221,7 +221,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
 
 
-Sustrik                 Expires September 5, 2014               [Page 4]
+Sustrik                Expires September 28, 2014               [Page 4]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
@@ -239,10 +239,8 @@ Internet-Draft             TCP mapping for SPs                March 2014
 Author's Address
 
    Martin Sustrik (editor)
-   GoPivotal Inc.
 
-   Email: msustrik@gopivotal.com
-
+   Email: sustrik@250bpm.com
 
 
 
@@ -277,5 +275,7 @@ Author's Address
 
 
 
-Sustrik                 Expires September 5, 2014               [Page 5]
+
+
+Sustrik                Expires September 28, 2014               [Page 5]
 

@@ -140,9 +140,7 @@
       <reference anchor='SPoverTCP'>
          <front>
            <title>TCP mapping for SPs</title>
-           <author initials='M.' surname='Sustrik' fullname='M. Sustrik'>
-               <organization>GoPivotal Inc.</organization>
-           </author>
+           <author initials='M.' surname='Sustrik' fullname='M. Sustrik'/>
            <date month='August' year='2013'/>
          </front>
          <format type='TXT' target='sp-tcp-mapping-01.txt'/>

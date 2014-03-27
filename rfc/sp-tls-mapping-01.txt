@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          G. D'Amore, Ed.
 Internet-Draft
-Intended status: Informational                            March 25, 2014
-Expires: September 26, 2014
+Intended status: Informational                            March 27, 2014
+Expires: September 28, 2014
 
 
                  TLS Mapping for Scalability Protocols
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 26, 2014.
+   This Internet-Draft will expire on September 28, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-D'Amore                Expires September 26, 2014               [Page 1]
+D'Amore                Expires September 28, 2014               [Page 1]
 
 Internet-Draft           TLS/TCP mapping for SPs              March 2014
 
@@ -109,7 +109,7 @@ Internet-Draft           TLS/TCP mapping for SPs              March 2014
 
 
 
-D'Amore                Expires September 26, 2014               [Page 2]
+D'Amore                Expires September 28, 2014               [Page 2]
 
 Internet-Draft           TLS/TCP mapping for SPs              March 2014
 
@@ -165,5 +165,5 @@ Author's Address
 
 
 
-D'Amore                Expires September 26, 2014               [Page 3]
+D'Amore                Expires September 28, 2014               [Page 3]
 

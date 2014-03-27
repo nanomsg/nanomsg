@@ -213,9 +213,9 @@
 
       <t>When creating more complex topologies, REQ and REP endpoints are
          paired in the intermediate nodes to form a forwarding component,
-         so called "device". Device receives requests from the REP endpoint
-         and forwards them to the REQ endpoint. At the same time it receives
-         replies from the REQ endpoint and forwards them to the REP
+         so called "device". Device receives requests from the REQ endpoint
+         and forwards them to the REP endpoint. At the same time it receives
+         replies from the REP endpoint and forwards them to the REQ
          endpoint:</t>
 
       <figure>

@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft                                            GoPivotal Inc.
-Intended status: Informational                           August 09, 2013
-Expires: February 10, 2014
+Intended status: Informational                               August 2013
+Expires: February 2, 2014
 
 
                    Request/Reply Scalability Protocol
@@ -32,7 +32,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on February 10, 2014.
+   This Internet-Draft will expire on February 2, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 1]
+Sustrik                 Expires February 2, 2014                [Page 1]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -102,21 +102,18 @@ Internet-Draft              Request/Reply SP                 August 2013
    that are used for administrative purposes and never returned to the
    clients.
 
+   Also note that "stateless" doesn't necessarily mean "fully
+   deterministic".  For example, a service that generates random numbers
+   is non-deterministic.  However, the client, after receiving a new
 
 
 
 
-
-
-
-Sustrik                 Expires February 10, 2014               [Page 2]
+Sustrik                 Expires February 2, 2014                [Page 2]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
 
-   Also note that "stateless" doesn't necessarily mean "fully
-   deterministic".  For example, a service that generates random numbers
-   is non-deterministic.  However, the client, after receiving a new
    random number cannot tell which instance has produced it, thus, the
    service can be considered stateless.
 
@@ -162,17 +159,16 @@ Internet-Draft              Request/Reply SP                 August 2013
    In addition to distributing tasks to processing nodes, request/reply
    model comes with full end-to-end reliability.  The reliability
    guarantee can be defined as follows: As long as the client is alive
-
-
-
-Sustrik                 Expires February 10, 2014               [Page 3]
-
-Internet-Draft              Request/Reply SP                 August 2013
-
-
    and there's at least one server accessible from the client, the task
    will eventually get processed and the result will be delivered back
    to the client.
+
+
+
+Sustrik                 Expires February 2, 2014                [Page 3]
+
+Internet-Draft              Request/Reply SP                 August 2013
+
 
    End-to-end reliability is achieved, similar to TCP, by re-sending the
    request if the client believes the original instance of the request
@@ -221,7 +217,11 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 4]
+
+
+
+
+Sustrik                 Expires February 2, 2014                [Page 4]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -233,7 +233,6 @@ Internet-Draft              Request/Reply SP                 August 2013
         +---+   IPC   | |  SCTP  +---+    DCCP   +---+
         |   |---------+ +--------|   |-----------|   |
         +---+                    +---+           +---+
-
 
 3.  Overview of the algorithm
 
@@ -249,9 +248,9 @@ Internet-Draft              Request/Reply SP                 August 2013
 
    When creating more complex topologies, REQ and REP endpoints are
    paired in the intermediate nodes to form a forwarding component, so
-   called "device".  Device receives requests from the REP endpoint and
-   forwards them to the REQ endpoint.  At the same time it receives
-   replies from the REQ endpoint and forwards them to the REP endpoint:
+   called "device".  Device receives requests from the REQ endpoint and
+   forwards them to the REP endpoint.  At the same time it receives
+   replies from the REP endpoint and forwards them to the REQ endpoint:
 
                    --- requests -->
 
@@ -262,7 +261,6 @@ Internet-Draft              Request/Reply SP                 August 2013
    +-----+   +-----+-----+   +-----+-----+   +-----+
 
                    <-- replies ---
-
 
    Using devices, arbitrary complex topologies can be built.  The rest
    of this section explains how are the requests routed through a
@@ -277,7 +275,9 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 5]
+
+
+Sustrik                 Expires February 2, 2014                [Page 5]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -333,7 +333,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 6]
+Sustrik                 Expires February 2, 2014                [Page 6]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -376,29 +376,23 @@ Internet-Draft              Request/Reply SP                 August 2013
    |0| Channel ID |0| Channel ID |...|1| Request ID |   payload   |
    +-+------------+-+------------+   +-+------------+ ------------+
 
-
    Payload of the message is preceded by a stack of 32-bit tags.  The
    most significant bit of each tag is set to 0 except for the very last
    tag.  That allows the algorithm to find out where the tags end and
    where the message payload begins.
-
-
-
-
-
-
-
-
-Sustrik                 Expires February 10, 2014               [Page 7]
-
-Internet-Draft              Request/Reply SP                 August 2013
-
 
    As for the reamining 31 bits, they are either request ID (in the last
    tag) or a channel ID (in all the remaining tags).  The first channel
    ID is added and processed by the REP endpoint closest to the
    processing node.  The last channel ID is added and processed by the
    REP endpoint closest to the client.
+
+
+
+Sustrik                 Expires February 2, 2014                [Page 7]
+
+Internet-Draft              Request/Reply SP                 August 2013
+
 
    Following picture shows an example of request saying "Hello" being
    routed from the client through two intermediate nodes to the
@@ -430,7 +424,6 @@ Internet-Draft              Request/Reply SP                 August 2013
                      Hello    |    World
                            service
 
-
 4.  Hop-by-hop vs. End-to-end
 
    All endpoints implement so called "hop-by-hop" functionality.  It's
@@ -445,7 +438,14 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 8]
+
+
+
+
+
+
+
+Sustrik                 Expires February 2, 2014                [Page 8]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -461,7 +461,6 @@ Internet-Draft              Request/Reply SP                 August 2013
       |         |     |         |     |         |
       +---------+     +---------+     +---------+
       hop by hop      hop by hop      hop by hop
-
 
    To make an analogy with the TCP/IP stack, IP provides hop-by-hop
    functionality, i.e. routing of the packets to the adjacent node,
@@ -501,7 +500,8 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014               [Page 9]
+
+Sustrik                 Expires February 2, 2014                [Page 9]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -557,7 +557,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014              [Page 10]
+Sustrik                 Expires February 2, 2014               [Page 10]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -613,7 +613,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014              [Page 11]
+Sustrik                 Expires February 2, 2014               [Page 11]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -663,19 +663,17 @@ Internet-Draft              Request/Reply SP                 August 2013
    the requests in case of failure and with filtering out stray or
    outdated replies.
 
+   To be able to do the latter, the endpoint must tag the requests with
+   unique 31-bit request IDs.  First request ID is picked at random.
 
 
 
 
-
-
-Sustrik                 Expires February 10, 2014              [Page 12]
+Sustrik                 Expires February 2, 2014               [Page 12]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
 
-   To be able to do the latter, the endpoint must tag the requests with
-   unique 31-bit request IDs.  First request ID is picked at random.
    All subsequent request IDs are generated by adding 1 to the last
    request ID and possibly overflowing to 0.
 
@@ -722,16 +720,16 @@ Internet-Draft              Request/Reply SP                 August 2013
    off).  At the same time the stored copy of the original request as
    well as re-transmission timer must be deallocated.
 
+   Finally, REQ endpoint MUST make it possible for the user to cancel a
+   particular request in progress.  What it means technically is
 
 
 
-Sustrik                 Expires February 10, 2014              [Page 13]
+Sustrik                 Expires February 2, 2014               [Page 13]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
 
-   Finally, REQ endpoint MUST make it possible for the user to cancel a
-   particular request in progress.  What it means technically is
    deleting the stored copy of the request and cancelling the associated
    timer.  Thus, once the reply arrives, it will be discarded by the
    algorithm above.
@@ -781,7 +779,9 @@ Internet-Draft              Request/Reply SP                 August 2013
 
 
 
-Sustrik                 Expires February 10, 2014              [Page 14]
+
+
+Sustrik                 Expires February 2, 2014               [Page 14]
 
 Internet-Draft              Request/Reply SP                 August 2013
 
@@ -817,8 +817,6 @@ Internet-Draft              Request/Reply SP                 August 2013
    underlying protocol.  DoS concerns are addressed within the
    specification.
 
-10.  References
-
 Author's Address
 
    Martin Sustrik (editor)
@@ -837,4 +835,6 @@ Author's Address
 
 
 
-Sustrik                 Expires February 10, 2014              [Page 15]
+
+
+Sustrik                 Expires February 2, 2014               [Page 15]

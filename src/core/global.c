@@ -621,88 +621,34 @@ int nn_shutdown (int s, int how)
 
 int nn_send (int s, const void *buf, size_t len, int flags)
 {
-    int rc;
-    struct nn_msg msg;
-    void *chunk;
-    int nnmsg;
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
 
-    NN_BASIC_CHECKS;
+    iov.iov_base = (void*) buf;
+    iov.iov_len = len;
 
-    if (nn_slow (!buf && len)) {
-        errno = EFAULT;
-        return -1;
-    }
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = NULL;
+    hdr.msg_controllen = 0;
 
-    /*  Create a message object. */
-    if (len == NN_MSG) {
-        chunk = *(void**) buf;
-        if (nn_slow (chunk == NULL)) {
-            errno = EFAULT;
-            return -1;
-        }
-        len = nn_chunk_size (chunk);
-        nn_msg_init_chunk (&msg, chunk);
-        nnmsg = 1;
-    }
-    else {
-        nn_msg_init (&msg, len);
-        memcpy (nn_chunkref_data (&msg.body), buf, len);
-        nnmsg = 0;
-    }
-
-    /*  Send it further down the stack. */
-    rc = nn_sock_send (self.socks [s], &msg, flags);
-    if (nn_slow (rc < 0)) {
-
-        /*  If we are dealing with user-supplied buffer, detach it from
-            the message object. */
-        if (nnmsg)
-            nn_chunkref_init (&msg.body, 0);
-
-        nn_msg_term (&msg);
-        errno = -rc;
-        return -1;
-    }
-    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
-    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, len);
-
-    return (int) len;
+    return nn_sendmsg (s, &hdr, flags);
 }
 
 int nn_recv (int s, void *buf, size_t len, int flags)
 {
-    int rc;
-    struct nn_msg msg;
-    size_t sz;
-    void *chunk;
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
 
-    NN_BASIC_CHECKS;
+    iov.iov_base = buf;
+    iov.iov_len = len;
 
-    if (nn_slow (!buf && len)) {
-        errno = EFAULT;
-        return -1;
-    }
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = NULL;
+    hdr.msg_controllen = 0;
 
-    rc = nn_sock_recv (self.socks [s], &msg, flags);
-    if (nn_slow (rc < 0)) {
-        errno = -rc;
-        return -1;
-    }
-
-    if (len == NN_MSG) {
-        chunk = nn_chunkref_getchunk (&msg.body);
-        *(void**) buf = chunk;
-        sz = nn_chunk_size (chunk);
-    }
-    else {
-        sz = nn_chunkref_size (&msg.body);
-        memcpy (buf, nn_chunkref_data (&msg.body), len < sz ? len : sz);
-    }
-    nn_msg_term (&msg);
-    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_RECEIVED, 1);
-    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_RECEIVED, sz);
-
-    return (int) sz;
+    return nn_recvmsg (s, &hdr, flags);
 }
 
 int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
@@ -798,6 +744,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         errno = -rc;
         return -1;
     }
+
+    /*  Adjust the statistics. */
     nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
     nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, sz);
 

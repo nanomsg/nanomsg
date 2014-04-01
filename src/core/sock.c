@@ -568,11 +568,6 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         rc = self->sockbase->vfptr->send (self->sockbase, msg);
         if (nn_fast (rc == 0)) {
             nn_ctx_leave (&self->ctx);
-
-            /*  Adjust the statistics. */
-            nn_sock_stat_increment (self, NN_STAT_MESSAGES_SENT, 1);
-            nn_sock_stat_increment (self, NN_STAT_BYTES_SENT, sz);
-
             return 0;
         }
         nn_assert (rc < 0);

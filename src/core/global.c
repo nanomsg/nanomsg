@@ -668,7 +668,6 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         return -1;
     }
 
-    /*  This error code is kind of strange, but it's defined by POSIX. */
     if (nn_slow (msghdr->msg_iovlen < 0)) {
         errno = EMSGSIZE;
         return -1;
@@ -745,6 +744,10 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         errno = -rc;
         return -1;
     }
+
+    /*  Adjust the statistics. */
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_SENT, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_SENT, sz);
 
     return (int) sz;
 }

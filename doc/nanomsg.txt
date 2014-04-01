@@ -81,7 +81,7 @@ Notify all sockets about process termination::
     linknanomsg:nn_term[3]
 
 Environment variables that influence nanomsg work::
-    linknanomsg:nn_env[3]
+    linknanomsg:nn_env[7]
 
 Following scalability protocols are provided by nanomsg:
 

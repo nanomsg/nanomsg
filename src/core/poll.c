@@ -76,7 +76,15 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     /*  Do the polling itself. */
     tv.tv_sec = timeout / 1000;
     tv.tv_usec = timeout % 1000 * 1000;
-    rc = select (-1, &fdset, NULL, NULL, &tv);
+    if (nfds)
+        rc = select (-1, &fdset, NULL, NULL, &tv);
+    else {
+        // linux will sleep until timeout is expired, so o it the same on windows
+        if (timeout)
+            Sleep(timeout);
+        rc = 0;
+    }
+
     if (nn_slow (rc == 0))
         return 0;
     if (nn_slow (rc == SOCKET_ERROR)) {

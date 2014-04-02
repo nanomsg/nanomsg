@@ -506,6 +506,7 @@ int nn_close (int s)
     /*  Deallocate the socket object. */
     rc = nn_sock_term (self.socks [s]);
     if (nn_slow (rc == -EINTR)) {
+	nn_glock_unlock ();
         errno = EINTR;
         return -1;
     }

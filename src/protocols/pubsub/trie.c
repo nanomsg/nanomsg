@@ -276,7 +276,7 @@ int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size)
 
         /*  Move to the next node. If it is not present, go to step 3. */
         n = nn_node_next (*node, *data);
-        if (!n)
+        if (!n || !*n)
             goto step3;
         node = n;
         ++data;
@@ -350,8 +350,9 @@ step3:
             }
             (*node)->u.dense.min = new_min;
             (*node)->u.dense.max = new_max;
-            ++(*node)->u.dense.nbr;
         }
+        ++(*node)->u.dense.nbr;
+
         node = nn_node_child (*node, c - (*node)->u.dense.min);
         ++data;
         --size;

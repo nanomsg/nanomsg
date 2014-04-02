@@ -49,16 +49,15 @@ void nn_priolist_term (struct nn_priolist *self)
         nn_list_term (&self->slots [i].pipes);
 }
 
-void nn_priolist_add (NN_UNUSED struct nn_priolist *self, struct nn_pipe *pipe,
-    struct nn_priolist_data *data, int priority)
+void nn_priolist_add (NN_UNUSED struct nn_priolist *self,
+    struct nn_priolist_data *data, struct nn_pipe *pipe, int priority)
 {
     data->pipe = pipe;
     data->priority = priority;
     nn_list_item_init (&data->item);
 }
 
-void nn_priolist_rm (struct nn_priolist *self, NN_UNUSED struct nn_pipe *pipe,
-    struct nn_priolist_data *data)
+void nn_priolist_rm (struct nn_priolist *self, struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
     struct nn_list_item *it;
@@ -103,7 +102,7 @@ void nn_priolist_rm (struct nn_priolist *self, NN_UNUSED struct nn_pipe *pipe,
 }
 
 void nn_priolist_activate (struct nn_priolist *self,
-    NN_UNUSED struct nn_pipe *pipe, struct nn_priolist_data *data)
+    struct nn_priolist_data *data)
 {
     struct nn_priolist_slot *slot;
 

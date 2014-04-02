@@ -136,6 +136,9 @@ void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,
         case NN_SNDPRIO:
             intval = self->options.sndprio;
             break;
+        case NN_RCVPRIO:
+            intval = self->options.rcvprio;
+            break;
         case NN_IPV4ONLY:
             intval = self->options.ipv4only;
             break;

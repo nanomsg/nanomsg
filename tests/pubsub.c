@@ -34,12 +34,17 @@ int main ()
     int pub2;
     int sub1;
     int sub2;
+    char buf [8];
+    size_t sz;
 
     pub1 = test_socket (AF_SP, NN_PUB);
     test_bind (pub1, SOCKET_ADDRESS);
     sub1 = test_socket (AF_SP, NN_SUB);
     rc = nn_setsockopt (sub1, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
     errno_assert (rc == 0);
+    sz = sizeof (buf);
+    rc = nn_getsockopt (sub1, NN_SUB, NN_SUB_SUBSCRIBE, buf, &sz);
+    nn_assert (rc == -1 && nn_errno () == ENOPROTOOPT);
     test_connect (sub1, SOCKET_ADDRESS);
     sub2 = test_socket (AF_SP, NN_SUB);
     rc = nn_setsockopt (sub2, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);

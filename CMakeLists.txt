@@ -33,6 +33,7 @@ enable_testing ()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions (-DNN_HAVE_WINDOWS)
+    add_definitions (-D_CRT_SECURE_NO_WARNINGS)
 
     if (MINGW)
         add_definitions (-DNN_HAVE_MINGW -D_WIN32_WINNT=0x0600)

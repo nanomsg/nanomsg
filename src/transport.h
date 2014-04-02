@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,7 +30,6 @@
 
 #include "utils/list.h"
 #include "utils/msg.h"
-#include "utils/int.h"
 #include "utils/int.h"
 
 #include <stddef.h>
@@ -170,6 +169,7 @@ struct nn_pipebase_vfptr {
 struct nn_ep_options
 {
     int sndprio;
+    int rcvprio;
     int ipv4only;
 };
 

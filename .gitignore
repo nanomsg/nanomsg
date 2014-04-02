@@ -8,6 +8,7 @@ build/
 *.o
 *.swo
 *.swp
+*.out
 *Makefile
 *Makefile.in
 .dirstamp

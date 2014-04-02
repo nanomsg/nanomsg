@@ -354,7 +354,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set send timeout");
     }
     if (options->recv_timeout >= 0) {
-        nn_set_recv_timeout (sock, options->recv_timeout);
+        nn_set_recv_timeout (sock, (int) options->recv_timeout);
     }
     if (options->socket_name) {
         rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SOCKET_NAME,
@@ -540,7 +540,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
             {
                 time_to_sleep = recv_timeout;
             }
-            nn_set_recv_timeout (sock, time_to_sleep);
+            nn_set_recv_timeout (sock, (int) time_to_sleep);
             rc = nn_recv (sock, &buf, NN_MSG, 0);
             if (rc < 0) {
                 if (errno == EAGAIN) {

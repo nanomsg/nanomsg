@@ -366,6 +366,7 @@ NN_EXPORT int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags);
 
 #define NN_POLLIN 1
 #define NN_POLLOUT 2
+#define NN_POLLSYS 4
 
 struct nn_pollfd {
     int fd;

@@ -43,7 +43,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     for (i = 0; i != nfds; ++i) {
         if (fds [i].events & NN_POLLIN) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) )
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 errno = -rc;
                 return -1;
@@ -53,7 +58,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
         }
         if (fds [i].events & NN_POLLOUT) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) )
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 errno = -rc;
                 return -1;
@@ -80,7 +90,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
         fds [i].revents = 0;
         if (fds [i].events & NN_POLLIN) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) )
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 errno = -rc;
                 return -1;
@@ -91,7 +106,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
         }
         if (fds [i].events & NN_POLLOUT) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) )
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 errno = -rc;
                 return -1;
@@ -133,7 +153,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     for (i = 0; i != nfds; ++i) {
         if (fds [i].events & NN_POLLIN) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) )
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_RCVFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 nn_free (pfd);
                 errno = -rc;
@@ -146,7 +171,12 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
         }
         if (fds [i].events & NN_POLLOUT) {
             sz = sizeof (fd);
-            rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            if ( !(fds [i].events & NN_POLLSYS) ) 
+                rc = nn_getsockopt (fds [i].fd, NN_SOL_SOCKET, NN_SNDFD, &fd, &sz);
+            else {
+                fd = fds [i].fd;
+                rc = 0;
+            }
             if (nn_slow (rc < 0)) {
                 nn_free (pfd);
                 errno = -rc;

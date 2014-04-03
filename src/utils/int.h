@@ -23,7 +23,7 @@
 #ifndef NN_INT_INCLUDED
 #define NN_INT_INCLUDED
 
-#if defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS && !defined NN_HAVE_STDINT
 
 #if defined HAVE_STDINT_H
 #include <stdint.h>

@@ -221,6 +221,10 @@ AS_CASE([${host_os}],
         AC_DEFINE([NN_HAVE_SOLARIS])
         AC_CHECK_LIB([socket], [socket])
         AC_CHECK_LIB([nsl], [gethostbyname])
+    ],
+    [*nto-qnx*], [
+        AC_DEFINE([NN_HAVE_QNX])
+        AC_CHECK_LIB([socket], [socket])
     ]
 )
 

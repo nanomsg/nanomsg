@@ -244,6 +244,7 @@ AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_HEADERS([sys/socket.h])
 AC_CHECK_HEADERS([sys/ioctl.h])
+AC_CHECK_HEADERS([stdint.h], [AC_DEFINE([NN_HAVE_STDINT])])
 
 AC_CHECK_FUNCS([eventfd], [AC_DEFINE([NN_HAVE_EVENTFD])])
 AC_CHECK_FUNCS([pipe], [AC_DEFINE([NN_HAVE_PIPE])])

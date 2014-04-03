@@ -23,7 +23,7 @@
 #ifndef NN_INT_INCLUDED
 #define NN_INT_INCLUDED
 
-#if defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS && !defined NN_HAVE_STDINT
 
 /*  Old versions of MSVC don't ship with stdint.h header file.
     Thus, we have to define fix-sized integer type ourselves. */

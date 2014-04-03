@@ -22,6 +22,8 @@
 
 #include "poller.h"
 
+#if !defined NN_HAVE_WINDOWS
+
 #if defined NN_USE_POLL
 #include "poller_poll.inc"
 #elif defined NN_USE_EPOLL
@@ -30,3 +32,4 @@
 #include "poller_kqueue.inc"
 #endif
 
+#endif

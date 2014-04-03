@@ -303,6 +303,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnanomsg.pc
 
 libnanomsg_la_LDFLAGS = -version-info @NN_LIBTOOL_VERSION@
+libnanomsg_la_CFLAGS = -DNN_EXPORTS
 
 ################################################################################
 #  documentation                                                               #

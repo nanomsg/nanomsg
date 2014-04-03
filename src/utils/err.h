@@ -59,7 +59,7 @@
                 "Assertion failed: %d == %s (%s:%d)\n", \
                 (obj)->state, #state_name, \
                 __FILE__, __LINE__);\
-            fflush( stderr ); \
+            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -105,7 +105,7 @@
             nn_win_error ((int) GetLastError (), errstr, 256);\
             fprintf (stderr, "%s [%d] (%s:%d)\n",\
                 errstr, (int) GetLastError (), __FILE__, __LINE__);\
-            fflush( stderr ); \
+            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -128,7 +128,7 @@
     do {\
         fprintf (stderr, "%s: state=%d source=%d action=%d (%s:%d)\n", \
             message, state, src, type, __FILE__, __LINE__);\
-        fflush( stderr ); \
+        fflush (stderr);\
         nn_err_abort ();\
     } while (0)
 

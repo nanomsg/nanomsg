@@ -26,6 +26,7 @@
 
 #include "../utils/win.h"
 #include "../utils/fast.h"
+#include "../utils/sleep.h"
 #include "../utils/err.h"
 
 int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
@@ -66,12 +67,22 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     /*  Do the polling itself. */
     tv.tv_sec = timeout / 1000;
     tv.tv_usec = timeout % 1000 * 1000;
-    rc = select (-1, &fdset, NULL, NULL, &tv);
-    if (nn_slow (rc == 0))
+    if (nfds) {
+        rc = select (-1, &fdset, NULL, NULL, &tv);
+        if (nn_slow (rc == 0))
+            return 0;
+        if (nn_slow (rc == SOCKET_ERROR)) {
+            errno = nn_err_wsa_to_posix (WSAGetLastError ());
+            return -1;
+        }
+    }
+    else {
+
+        //  POSIX platforms will sleep until timeout is expired,
+        //  so let's do the same on Windows.
+        if (timeout > 0)
+            nn_sleep(timeout);
         return 0;
-    if (nn_slow (rc == SOCKET_ERROR)) {
-        errno = nn_err_wsa_to_posix (WSAGetLastError ());
-        return -1;
     }
 
     /*  Move the results from fdset to the nanomsg pollset. */

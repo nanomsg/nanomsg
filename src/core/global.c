@@ -253,9 +253,7 @@ static void nn_global_init (void)
 
     /*  Plug in individual transports. */
     nn_global_add_transport (nn_inproc);
-#if !defined NN_HAVE_WINDOWS
     nn_global_add_transport (nn_ipc);
-#endif
     nn_global_add_transport (nn_tcp);
 
     /*  Plug in individual socktypes. */
@@ -312,7 +310,7 @@ static void nn_global_init (void)
         /*  No cross-platform way to find out application binary.
             Also, MSVC suggests using _getpid() instead of getpid(),
             however, it's not clear whether the former is supported
-            by older versions of Winddows/MSVC. */
+            by older versions of Windows/MSVC. */
 #if defined _MSC_VER
 #pragma warning (push)
 #pragma warning (disable:4996)

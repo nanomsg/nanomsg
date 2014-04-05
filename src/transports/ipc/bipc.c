@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "bipc.h"
 #include "aipc.h"
 
@@ -35,8 +33,12 @@
 #include "../../utils/fast.h"
 
 #include <string.h>
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <unistd.h>
 #include <sys/un.h>
+#endif
 
 #define NN_BIPC_BACKLOG 10
 
@@ -321,6 +323,3 @@ static void nn_bipc_start_accepting (struct nn_bipc *self)
     /*  Start waiting for a new incoming connection. */
     nn_aipc_start (self->aipc, &self->usock);
 }
-
-#endif
-

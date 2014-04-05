@@ -70,7 +70,6 @@ static void routine2 (NN_UNUSED void *arg)
 
 int main ()
 {
-#if !defined NN_HAVE_WINDOWS
     int sb;
     int i;
     int j;
@@ -109,8 +108,6 @@ int main ()
     }
 
     test_close (sb);
-
-#endif
 
     return 0;
 }

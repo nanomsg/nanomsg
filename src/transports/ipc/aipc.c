@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "aipc.h"
 
 #include "../../utils/err.h"
@@ -310,6 +308,3 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (aipc->state, src, type);
     }
 }
-
-#endif
-

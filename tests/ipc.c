@@ -33,7 +33,6 @@
 
 int main ()
 {
-#if !defined NN_HAVE_WINDOWS
     int sb;
     int sc;
     int i;
@@ -84,8 +83,6 @@ int main ()
     test_close (s2);
     test_close (s1);
     test_close (sb);
-
-#endif
 
     return 0;
 }

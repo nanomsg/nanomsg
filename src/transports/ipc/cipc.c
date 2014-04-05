@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "cipc.h"
 #include "sipc.h"
 
@@ -37,8 +35,12 @@
 #include "../../utils/attr.h"
 
 #include <string.h>
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <unistd.h>
 #include <sys/un.h>
+#endif
 
 #define NN_CIPC_STATE_IDLE 1
 #define NN_CIPC_STATE_CONNECTING 2
@@ -422,6 +424,3 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
-
-#endif
-

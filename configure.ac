@@ -215,6 +215,7 @@ AS_CASE([${host_os}],
         AC_DEFINE([NN_HAVE_WINDOWS])
         AC_DEFINE([NN_HAVE_MINGW])
         AC_DEFINE([_WIN32_WINNT],0x0600)
+        LIBS="$LIBS -lws2_32 -lMswsock"
     ],
     [*darwin*],  [AC_DEFINE([NN_HAVE_OSX])],
     [*freebsd*], [AC_DEFINE([NN_HAVE_FREEBSD])],

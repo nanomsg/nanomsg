@@ -23,25 +23,26 @@
 #ifndef NN_CHUNK_INCLUDED
 #define NN_CHUNK_INCLUDED
 
+#include "nn.h"
 #include <stddef.h>
 #include "int.h"
 
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
-int nn_chunk_alloc (size_t size, int type, void **result);
+NN_EXPORT int nn_chunk_alloc (size_t size, int type, void **result);
 
 /*  Releases a reference to the chunk and once the reference count had dropped
     to zero, deallocates the chunk. */
-void nn_chunk_free (void *p);
+NN_EXPORT void nn_chunk_free (void *p);
 
 /*  Increases the reference count of the chunk by 'n'. */
-void nn_chunk_addref (void *p, uint32_t n);
+NN_EXPORT void nn_chunk_addref (void *p, uint32_t n);
 
 /*  Returns size of the chunk buffer. */
-size_t nn_chunk_size (void *p);
+NN_EXPORT size_t nn_chunk_size (void *p);
 
 /*  Trims n bytes from the beginning of the chunk. Returns pointer to the new
     chunk. */
-void *nn_chunk_trim (void *p, size_t n);
+NN_EXPORT void *nn_chunk_trim (void *p, size_t n);
 
 #endif
 

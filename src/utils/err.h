@@ -48,7 +48,7 @@
             fprintf (stderr, "Assertion failed: %s (%s:%d)\n", #x, \
                 __FILE__, __LINE__);\
             fflush (stderr);\
-            nn_err_abort ();\
+            nn_abort ();\
         }\
     } while (0)
 
@@ -60,7 +60,7 @@
                 (obj)->state, #state_name, \
                 __FILE__, __LINE__);\
             fflush (stderr);\
-            nn_err_abort ();\
+            nn_abort ();\
         }\
     } while (0)
 
@@ -71,7 +71,7 @@
             fprintf (stderr, "Out of memory (%s:%d)\n",\
                 __FILE__, __LINE__);\
             fflush (stderr);\
-            nn_err_abort ();\
+            nn_abort ();\
         }\
     } while (0)
 
@@ -79,10 +79,10 @@
 #define errno_assert(x) \
     do {\
         if (nn_slow (!(x))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
+            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_strerror (errno),\
                 (int) errno, __FILE__, __LINE__);\
             fflush (stderr);\
-            nn_err_abort ();\
+            nn_abort ();\
         }\
     } while (0)
 
@@ -90,36 +90,10 @@
 #define errnum_assert(cond, err) \
     do {\
         if (nn_slow (!(cond))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (err),\
+            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_strerror (err),\
                 (int) (err), __FILE__, __LINE__);\
             fflush (stderr);\
-            nn_err_abort ();\
-        }\
-    } while (0)
-
-/* Checks the condition. If false prints out the GetLastError info. */
-#define win_assert(x) \
-    do {\
-        if (nn_slow (!(x))) {\
-            char errstr [256];\
-            nn_win_error ((int) GetLastError (), errstr, 256);\
-            fprintf (stderr, "%s [%d] (%s:%d)\n",\
-                errstr, (int) GetLastError (), __FILE__, __LINE__);\
-            fflush (stderr);\
-            nn_err_abort ();\
-        }\
-    } while (0)
-
-/* Checks the condition. If false prints out the WSAGetLastError info. */
-#define wsa_assert(x) \
-    do {\
-        if (nn_slow (!(x))) {\
-            char errstr [256];\
-            nn_win_error (WSAGetLastError (), errstr, 256);\
-            fprintf (stderr, "%s [%d] (%s:%d)\n",\
-                errstr, (int) WSAGetLastError (), __FILE__, __LINE__);\
-            fflush (stderr);\
-            nn_err_abort ();\
+            nn_abort ();\
         }\
     } while (0)
 
@@ -129,7 +103,7 @@
         fprintf (stderr, "%s: state=%d source=%d action=%d (%s:%d)\n", \
             message, state, src, type, __FILE__, __LINE__);\
         fflush (stderr);\
-        nn_err_abort ();\
+        nn_abort ();\
     } while (0)
 
 #define nn_fsm_bad_action(state, src, type) nn_fsm_error(\
@@ -150,13 +124,35 @@
     typedef int CT_ASSERT_HELPER1(ct_assert_,__LINE__) [(x) ? 1 : -1]
 #endif
 
-NN_NORETURN void nn_err_abort (void);
-int nn_err_errno (void);
-const char *nn_err_strerror (int errnum);
-
 #ifdef NN_HAVE_WINDOWS
 int nn_err_wsa_to_posix (int wsaerr);
-void nn_win_error (int err, char *buf, size_t bufsize);
+NN_EXPORT void nn_win_error (int err, char *buf, size_t bufsize);
+
+/* Checks the condition. If false prints out the GetLastError info. */
+#define win_assert(x) \
+    do {\
+        if (nn_slow (!(x))) {\
+            char errstr [256];\
+            nn_win_error ((int) GetLastError (), errstr, 256);\
+            fprintf (stderr, "%s [%d] (%s:%d)\n",\
+                errstr, (int) GetLastError (), __FILE__, __LINE__);\
+            fflush (stderr);\
+            nn_abort ();\
+        }\
+    } while (0)
+
+/* Checks the condition. If false prints out the WSAGetLastError info. */
+#define wsa_assert(x) \
+    do {\
+        if (nn_slow (!(x))) {\
+            char errstr [256];\
+            nn_win_error (WSAGetLastError (), errstr, 256);\
+            fprintf (stderr, "%s [%d] (%s:%d)\n",\
+                errstr, (int) WSAGetLastError (), __FILE__, __LINE__);\
+            fflush (stderr);\
+            nn_abort ();\
+        }\
+    } while (0)
 #endif
 
 #endif

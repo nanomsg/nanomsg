@@ -23,6 +23,7 @@
 #ifndef NN_CLOCK_INCLUDED
 #define NN_CLOCK_INCLUDED
 
+#include "nn.h"
 #include "int.h"
 
 /*  Optimised retrieval of the current time. The clock object is not
@@ -35,17 +36,17 @@ struct nn_clock
 };
 
 /*  Initialise the clock object. */
-void nn_clock_init (struct nn_clock *self);
+NN_EXPORT void nn_clock_init (struct nn_clock *self);
 
 /*  Terminate the clock object. */
-void nn_clock_term (struct nn_clock *self);
+NN_EXPORT void nn_clock_term (struct nn_clock *self);
 
 /*  Returns current time in milliseconds. */
-uint64_t nn_clock_now (struct nn_clock *self);
+NN_EXPORT uint64_t nn_clock_now (struct nn_clock *self);
 
 /*  Returns an unique timestamp. If the system doesn't support producing
     timestamps the return value is zero. */
-uint64_t nn_clock_timestamp ();
+NN_EXPORT uint64_t nn_clock_timestamp ();
 
 #endif
 

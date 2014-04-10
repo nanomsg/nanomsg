@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/reqrep.h"
+#include "nn.h"
+#include "reqrep.h"
 
 #include "testutil.h"
 

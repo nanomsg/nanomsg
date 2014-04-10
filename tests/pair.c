@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
+#include "nn.h"
+#include "pair.h"
 
 #include "testutil.h"
 

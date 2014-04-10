@@ -186,6 +186,10 @@ const char *nn_strerror (int errnum)
     return nn_err_strerror (errnum);
 }
 
+void nn_abort (void)
+{
+    nn_err_abort();
+}
 static void nn_global_init (void)
 {
     int i;

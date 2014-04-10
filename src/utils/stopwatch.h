@@ -23,6 +23,7 @@
 #ifndef NN_STOPWATCH_INCLUDED
 #define NN_STOPWATCH_INCLUDED
 
+#include "nn.h"
 #include "err.h"
 #include "int.h"
 
@@ -38,7 +39,7 @@ struct nn_stopwatch {
     uint64_t start;
 };
 
-void nn_stopwatch_init (struct nn_stopwatch *self);
-uint64_t nn_stopwatch_term (struct nn_stopwatch *self);
+NN_EXPORT void nn_stopwatch_init (struct nn_stopwatch *self);
+NN_EXPORT uint64_t nn_stopwatch_term (struct nn_stopwatch *self);
 
 #endif

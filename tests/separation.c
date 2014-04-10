@@ -21,12 +21,12 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pipeline.h"
-#include "../src/inproc.h"
-#include "../src/ipc.h"
-#include "../src/tcp.h"
+#include "nn.h"
+#include "pair.h"
+#include "pipeline.h"
+#include "inproc.h"
+#include "ipc.h"
+#include "tcp.h"
 #include "testutil.h"
 
 #define SOCKET_ADDRESS_INPROC "inproc://a"

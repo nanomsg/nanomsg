@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
+#include "nn.h"
+#include "pair.h"
 
-#include "../src/utils/attr.h"
+#include "utils/attr.h"
 
-#include "../src/utils/err.c"
-#include "../src/utils/thread.c"
-#include "../src/utils/stopwatch.c"
+#include "utils/err.h"
+#include "utils/thread.h"
+#include "utils/stopwatch.h"
 
 #include <stddef.h>
 #include <assert.h>

@@ -20,9 +20,9 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/tcp.h"
-#include "../src/reqrep.h"
+#include "nn.h"
+#include "tcp.h"
+#include "reqrep.h"
 
 #include "testutil.h"
 

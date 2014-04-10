@@ -23,6 +23,7 @@
 #ifndef NN_HASH_INCLUDED
 #define NN_HASH_INCLUDED
 
+#include "nn.h"
 #include "list.h"
 #include "int.h"
 
@@ -43,28 +44,28 @@ struct nn_hash {
 };
 
 /*  Initialise the hash table. */
-void nn_hash_init (struct nn_hash *self);
+NN_EXPORT void nn_hash_init (struct nn_hash *self);
 
 /*  Terminate the hash. Note that hash must be manually emptied before the
     termination. */
-void nn_hash_term (struct nn_hash *self);
+NN_EXPORT void nn_hash_term (struct nn_hash *self);
 
 /*  Adds an item to the hash. */
-void nn_hash_insert (struct nn_hash *self, uint32_t key,
+NN_EXPORT void nn_hash_insert (struct nn_hash *self, uint32_t key,
     struct nn_hash_item *item);
 
 /*  Removes the element from the hash it is in at the moment. */
-void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item);
+NN_EXPORT void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item);
 
 /*  Gets an item in the hash based on the key. Returns NULL if there's no
     corresponing item in the hash table. */
-struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key);
+NN_EXPORT struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key);
 
 /*  Initialise a hash item. At this point it is not a part of any hash table. */
-void nn_hash_item_init (struct nn_hash_item *self);
+NN_EXPORT void nn_hash_item_init (struct nn_hash_item *self);
 
 /*  Terminate a hash item. The item must not be in a hash table prior to
     this call. */
-void nn_hash_item_term (struct nn_hash_item *self);
+NN_EXPORT void nn_hash_item_term (struct nn_hash_item *self);
 
 #endif

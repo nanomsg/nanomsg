@@ -19,10 +19,10 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pubsub.h"
-#include "../src/inproc.h"
+#include "nn.h"
+#include "pair.h"
+#include "pubsub.h"
+#include "inproc.h"
 
 #include "testutil.h"
 

@@ -23,6 +23,7 @@
 #ifndef NN_THREAD_INCLUDED
 #define NN_THREAD_INCLUDED
 
+#include "nn.h"
 /*  Platform independent implementation of threading. */
 
 typedef void (nn_thread_routine) (void*);
@@ -33,9 +34,9 @@ typedef void (nn_thread_routine) (void*);
 #include "thread_posix.h"
 #endif
 
-void nn_thread_init (struct nn_thread *self,
+NN_EXPORT void nn_thread_init (struct nn_thread *self,
     nn_thread_routine *routine, void *arg);
-void nn_thread_term (struct nn_thread *self);
+NN_EXPORT void nn_thread_term (struct nn_thread *self);
 
 #endif
 

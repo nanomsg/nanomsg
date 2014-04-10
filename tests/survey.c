@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/survey.h"
+#include "nn.h"
+#include "survey.h"
 
 #include "testutil.h"
 

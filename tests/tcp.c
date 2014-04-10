@@ -20,10 +20,10 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pubsub.h"
-#include "../src/tcp.h"
+#include "nn.h"
+#include "pair.h"
+#include "pubsub.h"
+#include "tcp.h"
 
 #include "testutil.h"
 

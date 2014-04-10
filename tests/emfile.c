@@ -20,10 +20,10 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/tcp.h"
-#include "../src/utils/err.c"
+#include "nn.h"
+#include "pair.h"
+#include "tcp.h"
+#include "utils/err.h"
 
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
 #define MAX_SOCKETS 1000

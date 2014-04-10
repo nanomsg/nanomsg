@@ -20,10 +20,10 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/utils/cont.h"
+#include "utils/cont.h"
 
-#include "../src/utils/err.c"
-#include "../src/utils/list.c"
+#include "utils/err.h"
+#include "utils/list.h"
 
 static struct nn_list_item sentinel;
 

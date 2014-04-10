@@ -40,6 +40,13 @@ endif ()
 
 #  Build the library itself.
 
+INCLUDE_DIRECTORIES(
+    src
+    src/aio
+    src/core
+    src/utils
+)
+
 add_subdirectory (src)
 
 #  Build the tools

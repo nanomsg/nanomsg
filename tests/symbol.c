@@ -20,7 +20,7 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/utils/err.c"
+#include "utils/err.h"
 
 int main ()
 {

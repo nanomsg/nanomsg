@@ -22,7 +22,7 @@
 
 #include "options.h"
 
-#include "../src/utils/err.c"
+#include "utils/err.h"
 
 #include <string.h>
 #include <stdio.h>

@@ -20,9 +20,9 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/protocols/pubsub/trie.c"
-#include "../src/utils/alloc.c"
-#include "../src/utils/err.c"
+#include "protocols/pubsub/trie.h"
+#include "utils/alloc.h"
+#include "utils/err.h"
 
 #include <stdio.h>
 

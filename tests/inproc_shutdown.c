@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pubsub.h"
-#include "../src/inproc.h"
+#include "nn.h"
+#include "pair.h"
+#include "pubsub.h"
+#include "inproc.h"
 
 #include "testutil.h"
-#include "../src/utils/attr.h"
-#include "../src/utils/thread.c"
+#include "utils/attr.h"
+#include "utils/thread.h"
 
 /*  Stress test the inproc transport. */
 

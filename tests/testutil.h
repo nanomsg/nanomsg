@@ -23,9 +23,9 @@
 #ifndef TESTUTIL_H_INCLUDED
 #define TESTUTIL_H_INCLUDED
 
-#include "../src/utils/attr.h"
-#include "../src/utils/err.c"
-#include "../src/utils/sleep.c"
+#include "utils/attr.h"
+#include "utils/err.h"
+#include "utils/sleep.h"
 
 static int test_socket_impl (char *file, int line, int family, int protocol);
 static int test_connect_impl (char *file, int line, int sock, char *address);
@@ -48,9 +48,9 @@ static int test_socket_impl (char *file, int line, int family, int protocol)
     sock = nn_socket (family, protocol);
     if (sock == -1) {
         fprintf (stderr, "Failed create socket: %s [%d] (%s:%d)\n",
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
 
     return sock;
@@ -65,9 +65,9 @@ static int NN_UNUSED test_connect_impl (char *file, int line,
     if(rc < 0) {
         fprintf (stderr, "Failed connect to \"%s\": %s [%d] (%s:%d)\n",
             address,
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
     return rc;
 }
@@ -81,9 +81,9 @@ static int NN_UNUSED test_bind_impl (char *file, int line,
     if(rc < 0) {
         fprintf (stderr, "Failed bind to \"%s\": %s [%d] (%s:%d)\n",
             address,
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
     return rc;
 }
@@ -95,9 +95,9 @@ static void test_close_impl (char *file, int line, int sock)
     rc = nn_close (sock);
     if (rc != 0) {
         fprintf (stderr, "Failed to close socket: %s [%d] (%s:%d)\n",
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
 }
 
@@ -112,15 +112,15 @@ static void NN_UNUSED test_send_impl (char *file, int line,
     rc = nn_send (sock, data, data_len, 0);
     if (rc < 0) {
         fprintf (stderr, "Failed to send: %s [%d] (%s:%d)\n",
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
     if (rc != (int)data_len) {
         fprintf (stderr, "Data to send is truncated: %d != %d (%s:%d)\n",
             rc, (int) data_len,
             file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
 }
 
@@ -139,20 +139,20 @@ static void NN_UNUSED test_recv_impl (char *file, int line, int sock, char *data
     rc = nn_recv (sock, buf, data_len+1, 0);
     if (rc < 0) {
         fprintf (stderr, "Failed to recv: %s [%d] (%s:%d)\n",
-            nn_err_strerror (errno),
+            nn_strerror (errno),
             (int) errno, file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
     if (rc != (int)data_len) {
         fprintf (stderr, "Received data has wrong length: %d != %d (%s:%d)\n",
             rc, (int) data_len,
             file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
     if (memcmp (data, buf, data_len) != 0) {
         /*  We don't print the data as it may have binary garbage  */
         fprintf (stderr, "Received data is wrong (%s:%d)\n", file, line);
-        nn_err_abort ();
+        nn_abort ();
     }
 
     free (buf);

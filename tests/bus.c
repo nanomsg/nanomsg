@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/bus.h"
+#include "nn.h"
+#include "bus.h"
 #include "testutil.h"
 
 #define SOCKET_ADDRESS_A "inproc://a"

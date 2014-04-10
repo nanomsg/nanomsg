@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pubsub.h"
+#include "nn.h"
+#include "pubsub.h"
 
 #include "testutil.h"
 

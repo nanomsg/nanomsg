@@ -23,7 +23,9 @@
 #ifndef NN_TRIE_INCLUDED
 #define NN_TRIE_INCLUDED
 
-#include "../../utils/int.h"
+#include "nn.h"
+
+#include "utils/int.h"
 
 #include <stddef.h>
 
@@ -93,28 +95,28 @@ struct nn_trie {
 };
 
 /*  Initialise an empty trie. */
-void nn_trie_init (struct nn_trie *self);
+NN_EXPORT void nn_trie_init (struct nn_trie *self);
 
 /*  Release all the resources associated with the trie. */
-void nn_trie_term (struct nn_trie *self);
+NN_EXPORT void nn_trie_term (struct nn_trie *self);
 
 /*  Add the string to the trie. If the string is not yet there, 1 is returned.
     If it already exists in the trie, its reference count is incremented and
     0 is returned. */
-int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size);
+NN_EXPORT int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size);
 
 /*  Remove the string from the trie. If the string was actually removed,
     1 is returned. If reference count was decremented without falling to zero,
     0 is returned. */
-int nn_trie_unsubscribe (struct nn_trie *self, const uint8_t *data,
+NN_EXPORT int nn_trie_unsubscribe (struct nn_trie *self, const uint8_t *data,
     size_t size);
 
 /*  Checks the supplied string. If it matches it returns 1, if it does not
     it returns 0. */
-int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size);
+NN_EXPORT int nn_trie_match (struct nn_trie *self, const uint8_t *data, size_t size);
 
 /*  Debugging interface. */
-void nn_trie_dump (struct nn_trie *self);
+NN_EXPORT void nn_trie_dump (struct nn_trie *self);
 
 #endif
 

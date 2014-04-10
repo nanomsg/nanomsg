@@ -21,15 +21,15 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/bus.h"
-#include "../src/pair.h"
-#include "../src/pipeline.h"
-#include "../src/inproc.h"
+#include "nn.h"
+#include "bus.h"
+#include "pair.h"
+#include "pipeline.h"
+#include "inproc.h"
 
 #include "testutil.h"
-#include "../src/utils/attr.h"
-#include "../src/utils/thread.c"
+#include "utils/attr.h"
+#include "utils/thread.h"
 
 #define SOCKET_ADDRESS_A "inproc://a"
 #define SOCKET_ADDRESS_B "inproc://b"

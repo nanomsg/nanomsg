@@ -20,17 +20,17 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pubsub.h"
-#include "../src/pipeline.h"
-#include "../src/bus.h"
-#include "../src/pair.h"
-#include "../src/survey.h"
-#include "../src/reqrep.h"
+#include "nn.h"
+#include "pubsub.h"
+#include "pipeline.h"
+#include "bus.h"
+#include "pair.h"
+#include "survey.h"
+#include "reqrep.h"
 
 #include "options.h"
-#include "../src/utils/sleep.c"
-#include "../src/utils/clock.c"
+#include "utils/sleep.h"
+#include "utils/clock.h"
 
 #include <stdio.h>
 #include <string.h>

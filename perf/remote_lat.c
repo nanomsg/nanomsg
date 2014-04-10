@@ -20,16 +20,16 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/tcp.h"
-#include "../src/pair.h"
+#include "nn.h"
+#include "tcp.h"
+#include "pair.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
-#include "../src/utils/stopwatch.c"
+#include "utils/stopwatch.h"
 
 int main (int argc, char *argv [])
 {

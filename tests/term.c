@@ -20,10 +20,10 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
+#include "nn.h"
+#include "pair.h"
 
-#include "../src/utils/thread.c"
+#include "utils/thread.h"
 #include "testutil.h"
 
 static void worker (NN_UNUSED void *arg)

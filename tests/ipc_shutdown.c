@@ -20,14 +20,14 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/pubsub.h"
-#include "../src/pipeline.h"
-#include "../src/ipc.h"
+#include "nn.h"
+#include "pair.h"
+#include "pubsub.h"
+#include "pipeline.h"
+#include "ipc.h"
 
 #include "testutil.h"
-#include "../src/utils/thread.c"
+#include "utils/thread.h"
 
 /*  Stress test the IPC transport. */
 

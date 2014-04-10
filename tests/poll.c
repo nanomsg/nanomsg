@@ -20,16 +20,16 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pair.h"
-#include "../src/inproc.h"
+#include "nn.h"
+#include "pair.h"
+#include "inproc.h"
 
 #include "testutil.h"
-#include "../src/utils/attr.h"
-#include "../src/utils/thread.c"
+#include "utils/attr.h"
+#include "utils/thread.h"
 
 #if defined NN_HAVE_WINDOWS
-#include "../src/utils/win.h"
+#include "utils/win.h"
 #else
 #include <sys/select.h>
 #endif

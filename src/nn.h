@@ -184,6 +184,8 @@ NN_EXPORT int nn_errno (void);
 /*  Resolves system errors and native errors to human-readable string.        */
 NN_EXPORT const char *nn_strerror (int errnum);
 
+/* Terminates the current process .       				                      */
+NN_EXPORT void nn_abort (void);
 
 /*  Returns the symbol name (e.g. "NN_REQ") and value at a specified index.   */
 /*  If the index is out-of-range, returns NULL and sets errno to EINVAL       */
@@ -380,8 +382,6 @@ NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
 /******************************************************************************/
 
 NN_EXPORT int nn_device (int s1, int s2);
-
-#undef NN_EXPORT
 
 #ifdef __cplusplus
 }

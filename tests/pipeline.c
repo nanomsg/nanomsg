@@ -21,8 +21,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../src/nn.h"
-#include "../src/pipeline.h"
+#include "nn.h"
+#include "pipeline.h"
 #include "testutil.h"
 
 #define SOCKET_ADDRESS "inproc://a"

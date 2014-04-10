@@ -23,8 +23,9 @@
 #ifndef NN_SLEEP_INCLUDED
 #define NN_SLEEP_INCLUDED
 
+#include "nn.h"
 /*  Platform independent implementation of sleeping. */
 
-void nn_sleep (int milliseconds);
+NN_EXPORT void nn_sleep (int milliseconds);
 
 #endif

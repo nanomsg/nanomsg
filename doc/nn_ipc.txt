@@ -25,9 +25,7 @@ file references. Note that both relative (ipc://test.ipc) and absolute
 files must be set in such a way that the appropriate applications can actually
 use them.
 
-On Windows, named pipes are used for IPC. IPC address is an arbitrary
-case-insensitive string containing any character except for backslash.
-Internally, address ipc://test means that named pipe \\.\pipe\test will be used.
+On Windows, IPC is not supported.
 
 EXAMPLE
 -------

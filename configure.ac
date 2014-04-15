@@ -226,6 +226,10 @@ AS_CASE([${host_os}],
         AC_DEFINE([NN_HAVE_SOLARIS])
         AC_CHECK_LIB([socket], [socket])
         AC_CHECK_LIB([nsl], [gethostbyname])
+    ],
+    [*nto-qnx*], [
+        AC_DEFINE([NN_HAVE_QNX])
+        AC_CHECK_LIB([socket], [socket])
     ]
 )
 
@@ -245,6 +249,7 @@ AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_HEADERS([sys/socket.h])
 AC_CHECK_HEADERS([sys/ioctl.h])
+AC_CHECK_HEADERS([stdint.h], [AC_DEFINE([NN_HAVE_STDINT])])
 
 AC_CHECK_FUNCS([eventfd], [AC_DEFINE([NN_HAVE_EVENTFD])])
 AC_CHECK_FUNCS([pipe], [AC_DEFINE([NN_HAVE_PIPE])])

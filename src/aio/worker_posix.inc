@@ -122,7 +122,10 @@ void nn_worker_term (struct nn_worker *self)
     /*  Ask worker thread to terminate. */
     nn_mutex_lock (&self->sync);
     nn_queue_push (&self->tasks, &self->stop);
-    nn_efd_signal (&self->efd);
+    while (nn_efd_signal (&self->efd) != 0) {
+	nn_mutex_unlock(&self->sync);
+	nn_mutex_lock(&self->sync);
+    }
     nn_mutex_unlock (&self->sync);
 
     /*  Wait till worker thread terminates. */
@@ -141,7 +144,10 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
 {
     nn_mutex_lock (&self->sync);
     nn_queue_push (&self->tasks, &task->item);
-    nn_efd_signal (&self->efd);
+    while (nn_efd_signal (&self->efd) != 0) {
+	nn_mutex_unlock(&self->sync);
+	nn_mutex_lock(&self->sync);
+    }
     nn_mutex_unlock (&self->sync);
 }
 

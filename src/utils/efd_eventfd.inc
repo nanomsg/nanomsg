@@ -57,13 +57,15 @@ nn_fd nn_efd_getfd (struct nn_efd *self)
     return self->efd;
 }
 
-void nn_efd_signal (struct nn_efd *self)
+int nn_efd_signal (struct nn_efd *self)
 {
     const uint64_t one = 1;
     ssize_t nbytes;
 
     nbytes = write (self->efd, &one, sizeof (one));
-    errno_assert (nbytes == sizeof (one));
+    if (nbytes <= 0)
+       return -1;
+    return 0;
 }
 
 void nn_efd_unsignal (struct nn_efd *self)

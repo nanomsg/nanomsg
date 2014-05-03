@@ -81,3 +81,10 @@ tests/timeo
 tests/trie
 tests/zerocopy
 tests/term
+*.dir
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+Debug
+Release
+CMakeFiles

@@ -81,3 +81,8 @@ void nn_mutex_unlock (struct nn_mutex *self)
 
 #endif
 
+void nn_mutex_relock (struct nn_mutex *self)
+{
+    nn_mutex_unlock (self);
+    nn_mutex_lock (self);
+}

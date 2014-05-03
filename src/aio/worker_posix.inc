@@ -123,8 +123,7 @@ void nn_worker_term (struct nn_worker *self)
     nn_mutex_lock (&self->sync);
     nn_queue_push (&self->tasks, &self->stop);
     while (nn_efd_signal (&self->efd) != 0) {
-	nn_mutex_unlock(&self->sync);
-	nn_mutex_lock(&self->sync);
+	nn_mutex_relock(&self->sync);
     }
     nn_mutex_unlock (&self->sync);
 
@@ -145,8 +144,7 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_lock (&self->sync);
     nn_queue_push (&self->tasks, &task->item);
     while (nn_efd_signal (&self->efd) != 0) {
-	nn_mutex_unlock(&self->sync);
-	nn_mutex_lock(&self->sync);
+	nn_mutex_relock(&self->sync);
     }
     nn_mutex_unlock (&self->sync);
 }

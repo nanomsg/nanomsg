@@ -174,7 +174,8 @@
     <section title = "Underlying protocol">
 
       <t>The request/reply protocol can be run on top of any SP mapping,
-         such as, for example, SP TCP mapping.</t>
+         such as, for example, <xref target='SPoverTCP'>SP TCPmapping</xref>.
+         </t>
 
       <t>Also, given that SP protocols describe the behaviour of entire
          arbitrarily complex topology rather than of a single node-to-node
@@ -728,6 +729,19 @@
     </section>
 
   </middle>
+
+  <back>
+    <references>
+      <reference anchor='SPoverTCP'>
+         <front>
+           <title>TCP mapping for SPs</title>
+           <author initials='M.' surname='Sustrik' fullname='M. Sustrik'/>
+           <date month='August' year='2013'/>
+         </front>
+         <format type='TXT' target='sp-tcp-mapping-01.txt'/>
+       </reference>
+    </references>
+  </back>
 
 </rfc>
 

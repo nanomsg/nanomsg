@@ -206,7 +206,7 @@ Internet-Draft              Request/Reply SP                 August 2013
 2.  Underlying protocol
 
    The request/reply protocol can be run on top of any SP mapping, such
-   as, for example, SP TCP mapping.
+   as, for example, SP TCPmapping [SPoverTCP].
 
    Also, given that SP protocols describe the behaviour of entire
    arbitrarily complex topology rather than of a single node-to-node
@@ -817,16 +817,16 @@ Internet-Draft              Request/Reply SP                 August 2013
    underlying protocol.  DoS concerns are addressed within the
    specification.
 
+10.  References
+
+   [SPoverTCP]
+              Sustrik, M., "TCP mapping for SPs", August 2013.
+
 Author's Address
 
    Martin Sustrik (editor)
 
    Email: sustrik@250bpm.com
-
-
-
-
-
 
 
 

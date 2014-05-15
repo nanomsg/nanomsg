@@ -52,7 +52,7 @@ void nn_efd_term (struct nn_efd *self);
 nn_fd nn_efd_getfd (struct nn_efd *self);
 
 /*  Switch the object into signaled state. */
-void nn_efd_signal (struct nn_efd *self);
+int nn_efd_signal (struct nn_efd *self);
 
 /*  Switch the object into unsignaled state. */
 void nn_efd_unsignal (struct nn_efd *self);

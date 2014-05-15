@@ -50,5 +50,9 @@ void nn_mutex_lock (struct nn_mutex *self);
 /*  Unlock the mutex. Behaviour of unlocking an unlocked mutex is undefined */
 void nn_mutex_unlock (struct nn_mutex *self);
 
+/*  Unlock the mutex and lock again */
+void nn_mutex_relock (struct nn_mutex *self);
+
+
 #endif
 

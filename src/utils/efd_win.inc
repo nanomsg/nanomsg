@@ -171,11 +171,13 @@ int nn_efd_init (struct nn_efd *self)
     brc = CloseHandle (sync);
     win_assert (brc != 0);
 
-    /*  Make the receiving socket non-blocking. */
+    /*  Make the r/w socket non-blocking. */
     nonblock = 1;
     rc = ioctlsocket (self->r, FIONBIO, &nonblock);
     wsa_assert (rc != SOCKET_ERROR);
-
+    rc = ioctlsocket (self->w, FIONBIO, &nonblock);
+    wsa_assert (rc != SOCKET_ERROR);
+    
     /* Initialise the pre-allocated pollset. */
     FD_ZERO (&self->fds);
 
@@ -207,14 +209,15 @@ nn_fd nn_efd_getfd (struct nn_efd *self)
     return self->r;
 }
 
-void nn_efd_signal (struct nn_efd *self)
+int nn_efd_signal (struct nn_efd *self)
 {
     int rc;
     unsigned char c = 0xec;
 
     rc = send (self->w, (char*) &c, 1, 0);
-    wsa_assert (rc != SOCKET_ERROR);
-    nn_assert (rc == 1);
+    if (rc == SOCKET_ERROR)
+       return -1;
+    return 0;
 }
 
 void nn_efd_unsignal (struct nn_efd *self)

@@ -15,9 +15,9 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Receives a message from socket 's' into buffers specified by 'msghdr' paramter
+Receives a message from socket 's' into buffers specified by 'msghdr' parameter
 along with any additional control data. 'msghdr' parameter should be nullified
-before beign used.
+before being used.
 
 Structure 'nn_msghdr' contains at least following members:
 

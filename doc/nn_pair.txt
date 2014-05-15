@@ -24,7 +24,7 @@ separate servers. These applications can then communicate via PAIR sockets.
 The downside of this protocol is that its scaling properties are very limited.
 Splitting the application into two pieces allows to scale the two servers.
 To add the third server to the cluster, application has to be split once more,
-say be separating HR functionality into hiring module and salary computation
+say by separating HR functionality into hiring module and salary computation
 module. Whenever possible, try to use one of the more scalable protocols
 instead.
 

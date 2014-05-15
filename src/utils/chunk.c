@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2014 Achille Roussel All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -52,13 +53,15 @@ struct nn_chunk {
 
 /*  Private functions. */
 static struct nn_chunk *nn_chunk_getptr (void *p);
+static void *nn_chunk_getdata (struct nn_chunk *c);
 static void nn_chunk_default_free (void *p);
+static size_t nn_chunk_hdrsize ();
 
 int nn_chunk_alloc (size_t size, int type, void **result)
 {
     size_t sz;
     struct nn_chunk *self;
-    const size_t hdrsz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+    const size_t hdrsz = nn_chunk_hdrsize ();
 
     /*  Compute total size to be allocated. Check for overflow. */
     sz = hdrsz + size;
@@ -88,7 +91,57 @@ int nn_chunk_alloc (size_t size, int type, void **result)
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), NN_CHUNK_TAG);
 
-    *result = ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
+    *result = nn_chunk_getdata (self);
+    return 0;
+}
+
+int nn_chunk_realloc (size_t size, void **chunk)
+{
+    struct nn_chunk *self;
+    struct nn_chunk *new_chunk;
+    void *new_ptr;
+    size_t hdr_size;
+    size_t new_size;
+    int rc;
+
+    self = nn_chunk_getptr (*chunk);
+
+    /*  Check if we only have one reference to this object, in that case we can
+        reallocate the memory chunk. */
+    if (nn_atomic_inc (&self->refcount, 1) == 1) {
+        nn_atomic_dec (&self->refcount, 1);
+
+        /* Compute new size, check for overflow. */
+        hdr_size = nn_chunk_hdrsize ();
+        new_size = hdr_size + size;
+        if (nn_slow (new_size < hdr_size))
+            return -ENOMEM;
+
+        /*  Reallocate memory chunk. */
+        new_chunk = nn_realloc (self, new_size);
+        if (nn_slow (new_chunk == NULL))
+            return -ENOMEM;
+
+        new_chunk->size = size;
+        *chunk = nn_chunk_getdata (new_chunk);
+    }
+
+    /*  There are many references to this memory chunk, we have to create a new
+        one and copy the data. */
+    else {
+        new_ptr = NULL;
+        rc = nn_chunk_alloc (size, 0, &new_ptr);
+
+        if (nn_slow (rc != 0)) {
+            nn_atomic_dec (&self->refcount, 1);
+            return rc;
+        }
+
+        memcpy (new_ptr, nn_chunk_getdata (self), self->size);
+        *chunk = new_ptr;
+        nn_atomic_dec (&self->refcount, 2);
+    }
+
     return 0;
 }
 
@@ -161,8 +214,17 @@ static struct nn_chunk *nn_chunk_getptr (void *p)
         sizeof (struct nn_chunk));
 }
 
+static void *nn_chunk_getdata (struct nn_chunk *self)
+{
+  return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
+}
+
 static void nn_chunk_default_free (void *p)
 {
     nn_free (p);
 }
 
+static size_t nn_chunk_hdrsize ()
+{
+  return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+}

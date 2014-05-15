@@ -216,7 +216,7 @@ static struct nn_chunk *nn_chunk_getptr (void *p)
 
 static void *nn_chunk_getdata (struct nn_chunk *self)
 {
-  return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
+    return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
 }
 
 static void nn_chunk_default_free (void *p)
@@ -226,5 +226,5 @@ static void nn_chunk_default_free (void *p)
 
 static size_t nn_chunk_hdrsize ()
 {
-  return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+    return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
 }

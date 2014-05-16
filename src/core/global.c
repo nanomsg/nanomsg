@@ -348,6 +348,9 @@ static void nn_global_term (void)
     /*  Shut down the worker threads. */
     nn_pool_term (&self.pool);
 
+    /* Terminate ctx mutex */
+    nn_ctx_term (&self.ctx);
+
     /*  Ask all the transport to deallocate their global resources. */
     while (!nn_list_empty (&self.transports)) {
         it = nn_list_begin (&self.transports);

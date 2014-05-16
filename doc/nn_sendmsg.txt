@@ -15,7 +15,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-Sends data specified by 'msghdr' paramter to socket 's' along with any
+Sends data specified by 'msghdr' parameter to socket 's' along with any
 additional control data. 'msghdr' structure should be nullified before being
 used.
 

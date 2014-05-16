@@ -140,7 +140,7 @@ EXAMPLES
 The ping-pong with nn_req/nn_rep sockets (must be run simultaneously):
 
     nanocat --rep --bind tcp://127.0.0.1:1234 --data pong --format ascii
-    nanocat --req --connect tcp://127.0.0.1:1234 --data ping--format ascii
+    nanocat --req --connect tcp://127.0.0.1:1234 --data ping --format ascii
 
 Or in shorter to write form:
 

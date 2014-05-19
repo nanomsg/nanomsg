@@ -108,8 +108,7 @@ int nn_chunk_realloc (size_t size, void **chunk)
 
     /*  Check if we only have one reference to this object, in that case we can
         reallocate the memory chunk. */
-    if (nn_atomic_inc (&self->refcount, 1) == 1) {
-        nn_atomic_dec (&self->refcount, 1);
+    if (self->refcount == 1) {
 
         /* Compute new size, check for overflow. */
         hdr_size = nn_chunk_hdrsize ();
@@ -133,13 +132,12 @@ int nn_chunk_realloc (size_t size, void **chunk)
         rc = nn_chunk_alloc (size, 0, &new_ptr);
 
         if (nn_slow (rc != 0)) {
-            nn_atomic_dec (&self->refcount, 1);
             return rc;
         }
 
         memcpy (new_ptr, nn_chunk_getdata (self), self->size);
         *chunk = new_ptr;
-        nn_atomic_dec (&self->refcount, 2);
+        nn_atomic_dec (&self->refcount, 1);
     }
 
     return 0;

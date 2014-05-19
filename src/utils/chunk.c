@@ -108,7 +108,7 @@ int nn_chunk_realloc (size_t size, void **chunk)
 
     /*  Check if we only have one reference to this object, in that case we can
         reallocate the memory chunk. */
-    if (self->refcount == 1) {
+    if (self->refcount.n == 1) {
 
         /* Compute new size, check for overflow. */
         hdr_size = nn_chunk_hdrsize ();

@@ -160,6 +160,8 @@ int nn_err_wsa_to_posix (int wsaerr)
         return ECONNABORTED;
     case WSAECONNRESET:
         return ECONNRESET;
+    case WSAESOCKTNOSUPPORT:
+        return ESOCKTNOSUPPORT;
     default:
         nn_assert (0);
     }

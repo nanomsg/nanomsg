@@ -56,9 +56,9 @@ int nn_efd_init (struct nn_efd *self)
 
 #if !defined NN_HAVE_PIPE2
     flags = fcntl (self->r, F_GETFL, 0);
-	if (flags == -1)
+    if (flags == -1)
         flags = 0;
-	rc = fcntl (self->r, F_SETFL, flags | O_NONBLOCK);
+    rc = fcntl (self->r, F_SETFL, flags | O_NONBLOCK);
     errno_assert (rc != -1);
 #endif
 

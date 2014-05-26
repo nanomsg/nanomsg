@@ -31,8 +31,12 @@ struct nn_usock {
     struct nn_fsm fsm;
     int state;
 
-    /*  The actual underlying socket. */
-    SOCKET s;
+    union {
+        /*  The actual underlying socket. Can be used as a HANDLE too. */
+        SOCKET s;
+        /*  Named pipe handle. Cannot be used as a SOCKET. For AF_NN_NAMEDPIPE domain */
+        HANDLE p;
+    };
 
     /*  Asynchronous operations being executed on the socket. */
     struct nn_worker_op in;

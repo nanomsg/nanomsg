@@ -125,7 +125,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 
     /*  Disable inheriting the socket to the child processes. */
 #if defined HANDLE_FLAG_INHERIT
-    brc = SetHandleInformation ((HANDLE) self->s, HANDLE_FLAG_INHERIT, 0);
+    brc = SetHandleInformation (self->p, HANDLE_FLAG_INHERIT, 0);
     win_assert (brc);
 #endif
 
@@ -141,7 +141,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 
     /*  Associate the socket with a worker thread/completion port. */
     worker = nn_fsm_choose_worker (&self->fsm);
-    cp = CreateIoCompletionPort ((HANDLE) self->s,
+    cp = CreateIoCompletionPort ( self->p,
         nn_worker_getcp (worker), (ULONG_PTR) NULL, 0);
     nn_assert (cp);
 
@@ -778,12 +778,12 @@ static int nn_usock_cancel_io (struct nn_usock *self)
         We have to use CancelIoEx instead. */
     rc = 0;
     if (!nn_worker_op_isidle (&self->in)) {
-        brc = CancelIoEx ((HANDLE) self->s, &self->in.olpd);
+        brc = CancelIoEx (self->p, &self->in.olpd);
         win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         rc = 1;
     }
     if (!nn_worker_op_isidle (&self->out)) {
-        brc = CancelIoEx ((HANDLE) self->s, &self->out.olpd);
+        brc = CancelIoEx (self->p, &self->out.olpd);
         win_assert (brc || ERROR_NOT_FOUND);
         rc = 1;
     }

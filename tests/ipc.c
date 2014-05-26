@@ -47,7 +47,7 @@ int main ()
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
 
-    /*  Leave enough time for at least on re-connect attempt. */
+    /*  Leave enough time for at least one re-connect attempt. */
     nn_sleep (200);
 
     sb = test_socket (AF_SP, NN_PAIR);

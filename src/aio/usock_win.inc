@@ -391,10 +391,21 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
+static void nn_usock_close(struct nn_usock *self) {
+    if (self->domain == AF_UNIX) {
+        BOOL brc = CloseHandle(self->p);
+        win_assert(brc);
+    }
+    else
+    {
+        int rc = closesocket(self->s);
+        wsa_assert(rc == 0);
+    }
+}
+
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -450,8 +461,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
               !nn_worker_op_isidle (&usock->out))
             return;
 finish1:
-        rc = closesocket (usock->s);
-        wsa_assert (rc == 0);
+        nn_usock_close(usock);
 finish2:
         usock->state = NN_USOCK_STATE_IDLE;
         nn_fsm_stopped (&usock->fsm, NN_USOCK_STOPPED);
@@ -465,7 +475,6 @@ finish3:
 static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-    int rc;
     struct nn_usock *usock;
 
     usock = nn_cont (self, struct nn_usock, fsm);
@@ -561,8 +570,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_USOCK_ACTION_ERROR:
-                rc = closesocket (usock->s);
-                wsa_assert (rc == 0);
+                nn_usock_close(usock);
                 usock->s = INVALID_SOCKET;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
@@ -578,8 +586,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     NN_USOCK_CONNECTED);
                 return;
             case NN_WORKER_OP_ERROR:
-                rc = closesocket (usock->s);
-                wsa_assert (rc == 0);
+                nn_usock_close(usock);
                 usock->s = INVALID_SOCKET;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);

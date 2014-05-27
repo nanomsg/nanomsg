@@ -110,6 +110,14 @@
         }\
     } while (0)
 
+/* Checks the condition. If false prints out the GetLastError info. */
+#define win_error_check_return(x) \
+    do {\
+        if ((x) != ERROR_SUCCESS) {\
+            return nn_err_wsa_to_posix(x);\
+        }\
+    } while (0)
+
 /* Checks the condition. If false prints out the WSAGetLastError info. */
 #define wsa_assert(x) \
     do {\

@@ -988,7 +988,7 @@ void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
     }
 }
 
-void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
+void nn_sock_stat_increment (struct nn_sock *self, int name, int64_t increment)
 {
     switch (name) {
         case NN_STAT_ESTABLISHED_CONNECTIONS:
@@ -1039,22 +1039,25 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int increment)
         case NN_STAT_CURRENT_CONNECTIONS:
             nn_assert (increment > 0 ||
                 self->statistics.current_connections >= -increment);
-            self->statistics.current_connections += increment;
+            nn_assert(increment < INT_MAX && increment > -INT_MAX);
+            self->statistics.current_connections += (int) increment;
             break;
         case NN_STAT_INPROGRESS_CONNECTIONS:
             nn_assert (increment > 0 ||
                 self->statistics.inprogress_connections >= -increment);
-            self->statistics.inprogress_connections += increment;
+            nn_assert(increment < INT_MAX && increment > -INT_MAX);
+            self->statistics.inprogress_connections += (int) increment;
             break;
         case NN_STAT_CURRENT_SND_PRIORITY:
             /*  This is an exception, we don't want to increment priority  */
             nn_assert((increment > 0 && increment <= 16) || increment == -1);
-            self->statistics.current_snd_priority = increment;
+            self->statistics.current_snd_priority = (int) increment;
             break;
         case NN_STAT_CURRENT_EP_ERRORS:
             nn_assert (increment > 0 ||
                 self->statistics.current_ep_errors >= -increment);
-            self->statistics.current_ep_errors += increment;
+            nn_assert(increment < INT_MAX && increment > -INT_MAX);
+            self->statistics.current_ep_errors += (int) increment;
             break;
     }
 }

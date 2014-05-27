@@ -175,7 +175,8 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
     nn_assert (self->state == NN_USOCK_STATE_STARTING ||
         self->state == NN_USOCK_STATE_ACCEPTED);
 
-    rc = setsockopt (self->s, level, optname, (char*) optval, optlen);
+    nn_assert (optlen < INT_MAX);
+    rc = setsockopt (self->s, level, optname, (char*) optval, (int) optlen);
     if (nn_slow (rc == SOCKET_ERROR))
         return -nn_err_wsa_to_posix (WSAGetLastError ());
 
@@ -198,7 +199,8 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
         (const char*) &opt, sizeof (opt));
     wsa_assert (rc != SOCKET_ERROR);
 
-    rc = bind (self->s, addr, addrlen);
+    nn_assert (addrlen < INT_MAX);
+    rc = bind (self->s, addr, (int) addrlen);
     if (nn_slow (rc == SOCKET_ERROR))
        return -nn_err_wsa_to_posix (WSAGetLastError ());
 
@@ -295,8 +297,9 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     nn_assert (nbytes == sizeof (pconnectex));
 
     /*  Connect itself. */
+	nn_assert(addrlen < INT_MAX);
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-    brc = pconnectex (self->s, (struct sockaddr*) addr, addrlen,
+    brc = pconnectex (self->s, (struct sockaddr*) addr, (int) addrlen,
         NULL, 0, NULL, &self->out.olpd);
 
     /*  Immediate success. */

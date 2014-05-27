@@ -136,7 +136,7 @@ void nn_chunkref_trim (struct nn_chunkref *self, size_t n)
 
     nn_assert (self->ref [0] >= n);
     memmove (&self->ref [1], &self->ref [1 + n], self->ref [0] - n);
-    self->ref [0] -= n;
+    self->ref [0] -= (uint8_t) n;
 }
 
 void nn_chunkref_bulkcopy_start (struct nn_chunkref *self, uint32_t copies)

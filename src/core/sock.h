@@ -190,7 +190,7 @@ void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 
 /*  Monitoring callbacks  */
 void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
-void nn_sock_stat_increment(struct nn_sock *self, int name, int increment);
+void nn_sock_stat_increment(struct nn_sock *self, int name, int64_t increment);
 
 #endif
 

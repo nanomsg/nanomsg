@@ -87,6 +87,10 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int iovcnt);
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len);
 
+int nn_usock_unlink(struct sockaddr_un *un);
+
+void nn_usock_create_ipc_address(struct nn_epbase *self, struct sockaddr_storage *ss);
+
 int nn_usock_geterrno (struct nn_usock *self);
 
 #endif

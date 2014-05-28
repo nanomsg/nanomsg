@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright (c) 2014 Achille Roussel. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,13 +22,14 @@
 */
 
 #include "../src/nn.h"
+#include "../src/pubsub.h"
 #include "../src/reqrep.h"
 
 #include "testutil.h"
 
 #include <string.h>
 
-int main ()
+void test_allocmsg_reqrep ()
 {
     int rc;
     int req;
@@ -75,7 +77,126 @@ int main ()
 
     /*  Clean up. */
     test_close (req);
+}
 
+void test_reallocmsg_reqrep ()
+{
+    int rc;
+    int req;
+    int rep;
+    void *p;
+    void *p2;
+
+    /*  Create sockets. */
+    req = nn_socket (AF_SP, NN_REQ);
+    rep = nn_socket (AF_SP, NN_REP);
+    rc = nn_bind (rep, "inproc://test");
+    errno_assert (rc >= 0);
+    rc = nn_connect (req, "inproc://test");
+    errno_assert (rc >= 0);
+
+    /*  Create message, make sure we handle overflow. */
+    p = nn_allocmsg (100, 0);
+    nn_assert (p);
+    p2 = nn_reallocmsg (p, -1000);
+    errno_assert (nn_errno () == ENOMEM);
+    nn_assert (p2 == NULL);
+
+    /*  Realloc to fit data size. */
+    memcpy (p, "Hello World!", 12);
+    p = nn_reallocmsg (p, 12);
+    nn_assert (p);
+    rc = nn_send (req, &p, NN_MSG, 0);
+    errno_assert (rc == 12);
+
+    /*  Receive request and send response. */
+    rc = nn_recv (rep, &p, NN_MSG, 0);
+    errno_assert (rc == 12);
+    rc = nn_send (rep, &p, NN_MSG, 0);
+    errno_assert (rc == 12);
+
+    /*  Receive response and free message. */
+    rc = nn_recv (req, &p, NN_MSG, 0);
+    errno_assert (rc == 12);
+    rc = memcmp (p, "Hello World!", 12);
+    nn_assert (rc == 0);
+    rc = nn_freemsg (p);
+    errno_assert (rc == 0);
+
+    /*  Clean up. */
+    nn_close (req);
+    nn_close (rep);
+}
+
+void test_reallocmsg_pubsub ()
+{
+    int rc;
+    int pub;
+    int sub1;
+    int sub2;
+    void *p;
+    void *p1;
+    void *p2;
+
+    /*  Create sockets. */
+    pub = nn_socket (AF_SP, NN_PUB);
+    sub1 = nn_socket (AF_SP, NN_SUB);
+    sub2 = nn_socket (AF_SP, NN_SUB);
+    rc = nn_bind (pub, "inproc://test");
+    errno_assert (rc >= 0);
+    rc = nn_connect (sub1, "inproc://test");
+    errno_assert (rc >= 0);
+    rc = nn_connect (sub2, "inproc://test");
+    errno_assert (rc >= 0);
+    rc = nn_setsockopt (sub1, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
+    errno_assert (rc == 0);
+    rc = nn_setsockopt (sub2, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
+    errno_assert (rc == 0);
+
+    /*  Publish message. */
+    p = nn_allocmsg (12, 0);
+    nn_assert (p);
+    memcpy (p, "Hello World!", 12);
+    rc = nn_send (pub, &p, NN_MSG, 0);
+    errno_assert (rc == 12);
+
+    /*  Receive messages, both messages are the same object with inproc. */
+    rc = nn_recv (sub1, &p1, NN_MSG, 0);
+    errno_assert (rc == 12);
+    rc = nn_recv (sub2, &p2, NN_MSG, 0);
+    errno_assert (rc == 12);
+    nn_assert (p1 == p2);
+    rc = memcmp (p1, "Hello World!", 12);
+    nn_assert (rc == 0);
+    rc = memcmp (p2, "Hello World!", 12);
+    nn_assert (rc == 0);
+
+    /*  Reallocate one message, both messages shouldn't be the same object
+        anymore. */
+    p1 = nn_reallocmsg (p1, 15);
+    errno_assert (p1);
+    nn_assert (p1 != p2);
+    memcpy (p1 + 12, " 42", 3);
+    rc = memcmp (p1, "Hello World! 42", 15);
+    nn_assert (rc == 0);
+
+    /*  Release messages. */
+    rc = nn_freemsg (p1);
+    errno_assert (rc == 0);
+    rc = nn_freemsg (p2);
+    errno_assert (rc == 0);
+
+    /*  Clean up. */
+    nn_close (sub2);
+    nn_close (sub1);
+    nn_close (pub);
+}
+
+int main ()
+{
+    test_allocmsg_reqrep ();
+    test_reallocmsg_reqrep ();
+    test_reallocmsg_pubsub ();
     return 0;
 }
 

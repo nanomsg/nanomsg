@@ -29,6 +29,9 @@
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
 int nn_chunk_alloc (size_t size, int type, void **result);
 
+/*  Resizes a chunk previously allocated with nn_chunk_alloc. */
+int nn_chunk_realloc (size_t size, void **chunk);
+
 /*  Releases a reference to the chunk and once the reference count had dropped
     to zero, deallocates the chunk. */
 void nn_chunk_free (void *p);

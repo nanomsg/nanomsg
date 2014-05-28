@@ -414,6 +414,17 @@ void *nn_allocmsg (size_t size, int type)
     return NULL;
 }
 
+void *nn_reallocmsg (void *msg, size_t size)
+{
+    int rc;
+
+    rc = nn_chunk_realloc (size, &msg);
+    if (rc == 0)
+        return msg;
+    errno = -rc;
+    return NULL;
+}
+
 int nn_freemsg (void *msg)
 {
     nn_chunk_free (msg);

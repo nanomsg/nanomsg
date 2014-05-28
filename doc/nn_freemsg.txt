@@ -47,6 +47,7 @@ nn_freemsg (buf);
 SEE ALSO
 --------
 linknanomsg:nn_allocmsg[3]
+linknanomsg:nn_reallocmsg[3]
 linknanomsg:nn_recv[3]
 linknanomsg:nn_recvmsg[3]
 linknanomsg:nanomsg[7]

@@ -330,6 +330,7 @@ MAN3 = \
     doc/nn_symbol_info.txt \
     doc/nn_term.txt \
     doc/nn_allocmsg.txt \
+    doc/nn_reallocmsg.txt \
     doc/nn_freemsg.txt \
     doc/nn_socket.txt \
     doc/nn_close.txt \

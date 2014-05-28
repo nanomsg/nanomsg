@@ -57,6 +57,7 @@ nn_send (s, &buf, NN_MSG, 0);
 SEE ALSO
 --------
 linknanomsg:nn_freemsg[3]
+linknanomsg:nn_reallocmsg[3]
 linknanomsg:nn_send[3]
 linknanomsg:nn_sendmsg[3]
 linknanomsg:nanomsg[7]

@@ -50,10 +50,9 @@ Fine-grained alternative to nn_send::
 Fine-grained alternative to nn_recv::
     linknanomsg:nn_recvmsg[3]
 
-Allocate a message::
+Allocation of messages::
     linknanomsg:nn_allocmsg[3]
-
-Deallocate a message::
+    linknanomsg:nn_reallocmsg[3]
     linknanomsg:nn_freemsg[3]
 
 Manipulation of message control data::

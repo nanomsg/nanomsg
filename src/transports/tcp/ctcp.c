@@ -183,7 +183,7 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_ctcp_handler, nn_ctcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CTCP_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_CTCP_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_CTCP_SRC_USOCK, &self->fsm, &self->epbase);
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);

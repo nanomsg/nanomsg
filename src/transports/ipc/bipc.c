@@ -100,7 +100,7 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm, &self->epbase);
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
 

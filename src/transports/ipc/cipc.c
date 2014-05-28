@@ -108,7 +108,7 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm, &self->epbase);
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);

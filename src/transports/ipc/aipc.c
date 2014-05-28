@@ -52,7 +52,7 @@ void nn_aipc_init (struct nn_aipc *self, int src,
         src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
     self->epbase = epbase;
-    nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm, self->epbase);
     self->listener = NULL;
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;

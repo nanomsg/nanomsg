@@ -75,12 +75,14 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
 static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
-void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
+void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner, struct nn_epbase *ep)
 {
     /*  Initalise the state machine. */
     nn_fsm_init (&self->fsm, nn_usock_handler, nn_usock_shutdown,
         src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
+
+    NN_UNUSED(ep);
 
     /*  Choose a worker thread to handle this socket. */
     self->worker = nn_fsm_choose_worker (&self->fsm);

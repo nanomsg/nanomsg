@@ -63,11 +63,12 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static int nn_usock_cancel_io (struct nn_usock *self);
 
-void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
+void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner, struct nn_epbase *ep)
 {
     nn_fsm_init (&self->fsm, nn_usock_handler, nn_usock_shutdown,
         src, self, owner);
     self->state = NN_USOCK_STATE_IDLE;
+    self->ep = ep;
     self->s = INVALID_SOCKET;
     nn_worker_op_init (&self->in, NN_USOCK_SRC_IN, &self->fsm);
     nn_worker_op_init (&self->out, NN_USOCK_SRC_OUT, &self->fsm);

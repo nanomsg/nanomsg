@@ -52,7 +52,7 @@ void nn_atcp_init (struct nn_atcp *self, int src,
         src, self, owner);
     self->state = NN_ATCP_STATE_IDLE;
     self->epbase = epbase;
-    nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_ATCP_SRC_USOCK, &self->fsm, self->epbase);
     self->listener = NULL;
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;

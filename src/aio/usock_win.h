@@ -31,6 +31,9 @@ struct nn_usock {
     struct nn_fsm fsm;
     int state;
 
+    /* Record ep base to retrieve address for Win32 IPC named pipe */
+    struct nn_epbase *ep;
+
     union {
         /*  The actual underlying socket. Can be used as a HANDLE too. */
         SOCKET s;

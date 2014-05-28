@@ -51,7 +51,7 @@
 #include "usock_posix.h"
 #endif
 
-void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner);
+void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner, struct nn_epbase *ep);
 void nn_usock_term (struct nn_usock *self);
 
 int nn_usock_isidle (struct nn_usock *self);

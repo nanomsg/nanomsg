@@ -78,7 +78,7 @@ void nn_timer_start (struct nn_timer *self, int timeout)
     /*  Negative timeout make no sense. */
     nn_assert (timeout >= 0);
 
-    self->timeout = timeout;
+    self->timeout = timeout; /* FIXME: Setting to very big time when debugging */
     nn_fsm_start (&self->fsm);
 }
 

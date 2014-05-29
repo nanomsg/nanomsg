@@ -43,8 +43,10 @@ int nn_usock_unlink(struct sockaddr_un *un)
         //TODO:
         return 0;
     }
-#endif
+    return _unlink(un->sun_path);
+#else
     return unlink(un->sun_path);
+#endif
 }
 
 void nn_usock_create_ipc_address(struct nn_epbase *ep, struct sockaddr_storage *ss)

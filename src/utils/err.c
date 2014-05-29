@@ -160,8 +160,16 @@ int nn_err_wsa_to_posix (int wsaerr)
         return ECONNABORTED;
     case WSAECONNRESET:
         return ECONNRESET;
+    case ERROR_BROKEN_PIPE:
+        return ECONNRESET;
     case WSAESOCKTNOSUPPORT:
         return ESOCKTNOSUPPORT;
+    case ERROR_NOT_CONNECTED:
+        return ENOTCONN;
+    case ERROR_PIPE_NOT_CONNECTED:
+        return ENOTCONN;
+    case ERROR_NO_DATA:
+        return EPIPE;
     default:
         nn_assert (0);
     }

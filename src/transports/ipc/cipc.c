@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "cipc.h"
 #include "sipc.h"
 
@@ -37,8 +35,12 @@
 #include "../../utils/attr.h"
 
 #include <string.h>
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <unistd.h>
 #include <sys/un.h>
+#endif
 
 #define NN_CIPC_STATE_IDLE 1
 #define NN_CIPC_STATE_CONNECTING 2
@@ -106,7 +108,7 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm, &self->epbase);
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);
@@ -381,13 +383,14 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    struct sockaddr_un *un;
-    const char *addr;
     int val;
     size_t sz;
 
+    /*  Create the IPC address from the address string. */
+    nn_usock_create_ipc_address(&self->epbase, &ss);
+
     /*  Try to start the underlying socket. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start(&self->usock, ss.ss_family, SOCK_STREAM, 0);
     if (nn_slow (rc < 0)) {
         nn_backoff_start (&self->retry);
         self->state = NN_CIPC_STATE_WAITING;
@@ -406,22 +409,11 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
         &val, sizeof (val));
 
-    /*  Create the IPC address from the address string. */
-    addr = nn_epbase_getaddr (&self->epbase);
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
-
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
-        sizeof (struct sockaddr_un));
+        sizeof(struct sockaddr_storage));
     self->state  = NN_CIPC_STATE_CONNECTING;
 
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
-
-#endif
-

@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "sipc.h"
 
 #include "../../utils/err.h"
@@ -422,6 +420,3 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (sipc->state, src, type);
     }
 }
-
-#endif
-

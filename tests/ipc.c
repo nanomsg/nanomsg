@@ -33,7 +33,6 @@
 
 int main ()
 {
-#if !defined NN_HAVE_WINDOWS
     int sb;
     int sc;
     int i;
@@ -48,7 +47,7 @@ int main ()
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
 
-    /*  Leave enough time for at least on re-connect attempt. */
+    /*  Leave enough time for at least one re-connect attempt. */
     nn_sleep (200);
 
     sb = test_socket (AF_SP, NN_PAIR);
@@ -84,8 +83,6 @@ int main ()
     test_close (s2);
     test_close (s1);
     test_close (sb);
-
-#endif
 
     return 0;
 }

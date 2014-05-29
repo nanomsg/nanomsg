@@ -145,7 +145,7 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_btcp_handler, nn_btcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm, &self->epbase);
     self->atcp = NULL;
     nn_list_init (&self->atcps);
 

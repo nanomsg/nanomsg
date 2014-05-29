@@ -60,6 +60,7 @@ void nn_usock_stop (struct nn_usock *self);
 
 void nn_usock_swap_owner (struct nn_usock *self, struct nn_fsm_owner *owner);
 
+/* setsockopt always happens before socket connect and socket bind */
 int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
     const void *optval, size_t optlen);
 

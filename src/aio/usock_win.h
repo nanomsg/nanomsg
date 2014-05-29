@@ -40,7 +40,8 @@ struct nn_usock {
         /*  Named pipe handle. Cannot be used as a SOCKET. For AF_NN_NAMEDPIPE domain */
         HANDLE p;
     };
-
+    BOOL isaccepted;
+    uint8_t *buf;
     /*  Asynchronous operations being executed on the socket. */
     struct nn_worker_op in;
     struct nn_worker_op out;

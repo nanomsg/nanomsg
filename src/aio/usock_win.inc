@@ -604,7 +604,11 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    rc = closesocket (usock->s);
+                    wsa_assert (rc == 0);
+                    usock->s = INVALID_SOCKET;
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -620,7 +624,11 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    rc = closesocket (usock->s);
+                    wsa_assert (rc == 0);
+                    usock->s = INVALID_SOCKET;
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -633,7 +641,11 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_ACTION_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
-                    nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+                    nn_fsm_raise(&usock->fsm, &usock->event_error,
+                        NN_USOCK_SHUTDOWN);
+                    rc = closesocket (usock->s);
+                    wsa_assert (rc == 0);
+                    usock->s = INVALID_SOCKET;
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
                 }
@@ -656,6 +668,10 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             if (!nn_worker_op_isidle (&usock->in) ||
                   !nn_worker_op_isidle (&usock->out))
                 return;
+            nn_fsm_raise(&usock->fsm, &usock->event_error, NN_USOCK_SHUTDOWN);
+            rc = closesocket (usock->s);
+            wsa_assert (rc == 0);
+            usock->s = INVALID_SOCKET;
             usock->state = NN_USOCK_STATE_DONE;
             return;
         default:

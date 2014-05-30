@@ -249,6 +249,12 @@ set (NN_SOURCES
     transports/tcp/tcp.c
 )
 
+if (WIN32)
+    LIST (APPEND NN_SOURCES
+        utils/win.h
+    )
+endif ()
+
 add_library (nanomsg SHARED ${NN_SOURCES})
 
 add_definitions (-DNN_EXPORTS)

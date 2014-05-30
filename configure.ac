@@ -211,7 +211,12 @@ AM_CONDITIONAL([SYMLINKS], [test x"$enable_symlinks" != "xno" ])
 
 AS_CASE([${host_os}],
     [*linux*],   [AC_DEFINE([NN_HAVE_LINUX])],
-    [*mingw32*], [AC_DEFINE([NN_HAVE_WINDOWS])],
+    [*mingw32*], [
+        AC_DEFINE([NN_HAVE_WINDOWS])
+        AC_DEFINE([NN_HAVE_MINGW])
+        AC_DEFINE([_WIN32_WINNT],0x0600)
+        LIBS="$LIBS -lws2_32 -lMswsock"
+    ],
     [*darwin*],  [AC_DEFINE([NN_HAVE_OSX])],
     [*freebsd*], [AC_DEFINE([NN_HAVE_FREEBSD])],
     [*netbsd*],  [AC_DEFINE([NN_HAVE_NETBSD])],
@@ -313,9 +318,8 @@ AS_IF([test x"$ac_cv_func_eventfd" = xyes], [
     AS_IF([test x"$ac_cv_func_pipe" = xyes], [
         AC_DEFINE([NN_USE_PIPE])], [
         AS_IF([test x"$ac_cv_func_socketpair" = xyes], [
-            AC_DEFINE([NN_USE_SOCKETPAIR])], [
-            AC_MSG_ERROR([No signaling supported])
-        ])
+            AC_DEFINE([NN_USE_SOCKETPAIR])]
+        )
     ])
 ])
 

@@ -92,7 +92,7 @@ int main ()
     test_close (sb);
 
     /*  Test race condition of sending message while socket shutting down  */
-    for (int k = 0; k < 100; ++k) {
+    for (int k = 0; k < 10; ++k) {
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
 

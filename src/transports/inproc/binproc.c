@@ -46,9 +46,9 @@ static const struct nn_epbase_vfptr nn_binproc_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+static int nn_binproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_binproc_connect (struct nn_ins_item *self,
     struct nn_ins_item *peer);
@@ -136,7 +136,7 @@ static void nn_binproc_connect (struct nn_ins_item *self,
         NN_STAT_ACCEPTED_CONNECTIONS, 1);
 }
 
-static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_binproc *binproc;
@@ -170,17 +170,17 @@ static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
         nn_free (sinproc);
 finish:
         if (!nn_list_empty (&binproc->sinprocs))
-            return;
+            return 0;
         binproc->state = NN_BINPROC_STATE_IDLE;
         nn_fsm_stopped_noevent (&binproc->fsm);
         nn_epbase_stopped (&binproc->item.epbase);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(binproc->state, src, type);
 }
 
-static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
+static int nn_binproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_binproc *binproc;
@@ -201,7 +201,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 binproc->state = NN_BINPROC_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (binproc->state, src, type);
             }
@@ -227,7 +227,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
                 nn_list_insert (&binproc->sinprocs, &sinproc->item,
                     nn_list_end (&binproc->sinprocs));
                 nn_sinproc_accept (sinproc, peer);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (binproc->state, src, type);
             }

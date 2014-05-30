@@ -59,9 +59,9 @@ static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id);
 static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int option, const void *optval, size_t optvallen);
 static void nn_sock_onleave (struct nn_ctx *self);
-static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+static int nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
@@ -481,7 +481,12 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
         nn_ctx_leave (&self->ctx);
         return rc;
     }
-    nn_ep_start (ep);
+    rc = nn_ep_start (ep);
+    if (nn_slow (rc < 0)) {
+        nn_free (ep);
+        nn_ctx_leave (&self->ctx);
+        return rc;
+    }
 
     /*  Increase the endpoint ID for the next endpoint. */
     eid = self->eid;
@@ -772,7 +777,7 @@ static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
     return self->optsets [index];
 }
 
-static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_sock *sock;
@@ -824,13 +829,13 @@ finish2:
             protocol-specific part of the socket. If there' no stop function
             we can consider it stopped straight away. */
         if (!nn_list_empty (&sock->sdeps))
-            return;
+            return 0;
         nn_assert (nn_list_empty (&sock->eps));
         sock->state = NN_SOCK_STATE_STOPPING;
         if (!sock->sockbase->vfptr->stop)
             goto finish1;
         sock->sockbase->vfptr->stop (sock->sockbase);
-        return;
+        return 0;
     }
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING)) {
 
@@ -848,13 +853,13 @@ finish1:
             the nn_close() call. */
         nn_sem_post (&sock->termsem);
 
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(sock->state, src, type);
 }
 
-static void nn_sock_handler (struct nn_fsm *self, int src, int type,
+static int nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_sock *sock;
@@ -874,10 +879,10 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
-                return;
+                return 0;
             case NN_SOCK_ACTION_ZOMBIFY:
                 nn_sock_action_zombify (sock);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -896,7 +901,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_SOCK_ACTION_ZOMBIFY:
                 nn_sock_action_zombify (sock);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -911,7 +916,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
                 nn_list_erase (&sock->sdeps, &ep->item);
                 nn_ep_term (ep);
                 nn_free (ep);
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (sock->state, src, type);
@@ -924,11 +929,11 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             case NN_PIPE_IN:
                 sock->sockbase->vfptr->in (sock->sockbase,
                     (struct nn_pipe*) srcptr);
-                return;
+                return 0;
             case NN_PIPE_OUT:
                 sock->sockbase->vfptr->out (sock->sockbase,
                     (struct nn_pipe*) srcptr);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -946,6 +951,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (sock->state, src, type);
     }
+    return 0;
 }
 
 /******************************************************************************/

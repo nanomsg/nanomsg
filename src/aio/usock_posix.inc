@@ -70,9 +70,9 @@ static void nn_usock_init_from_fd (struct nn_usock *self, int s);
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr);
 static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len);
 static int nn_usock_geterr (struct nn_usock *self);
-static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+static int nn_usock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
@@ -164,9 +164,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     nn_usock_init_from_fd (self, s);
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
-
-    return 0;
+    return nn_fsm_start (&self->fsm);
 }
 
 static void nn_usock_init_from_fd (struct nn_usock *self, int s)
@@ -297,9 +295,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
         return -errno;
 
     /*  Notify the state machine. */
-    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_LISTEN);
-
-    return 0;
+    return nn_fsm_action (&self->fsm, NN_USOCK_ACTION_LISTEN);
 }
 
 void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
@@ -504,7 +500,7 @@ static int nn_internal_tasks (struct nn_usock *usock, int src, int type)
     return 0;
 }
 
-static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_usock *usock;
@@ -512,7 +508,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     usock = nn_cont (self, struct nn_usock, fsm);
 
     if (nn_internal_tasks (usock, src, type))
-        return;
+        return 0;
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
@@ -539,14 +535,14 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         if (usock->state == NN_USOCK_STATE_BEING_ACCEPTED) {
             nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_CANCEL);
             usock->state = NN_USOCK_STATE_STOPPING_ACCEPT;
-            return;
+            return 0;
         }
 
         /*  Asynchronous stop. */
         if (usock->state != NN_USOCK_STATE_REMOVING_FD)
             nn_usock_async_stop (usock);
         usock->state = NN_USOCK_STATE_STOPPING;
-        return;
+        return 0;
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING_ACCEPT)) {
         nn_assert (src == NN_FSM_ACTION && type == NN_USOCK_ACTION_DONE);
@@ -554,7 +550,7 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (usock->state == NN_USOCK_STATE_STOPPING)) {
         if (src != NN_USOCK_SRC_TASK_STOP)
-            return;
+            return 0;
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_fd (usock->worker, &usock->wfd);
 finish1:
@@ -564,13 +560,13 @@ finish2:
         usock->state = NN_USOCK_STATE_IDLE;
         nn_fsm_stopped (&usock->fsm, NN_USOCK_STOPPED);
 finish3:
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(usock->state, src, type);
 }
 
-static void nn_usock_handler (struct nn_fsm *self, int src, int type,
+static int nn_usock_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     int rc;
@@ -582,7 +578,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
     usock = nn_cont (self, struct nn_usock, fsm);
 
     if(nn_internal_tasks(usock, src, type))
-        return;
+        return 0;
 
     switch (usock->state) {
 
@@ -597,7 +593,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 usock->state = NN_USOCK_STATE_STARTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -619,13 +615,13 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_ACTION_LISTEN:
                 usock->state = NN_USOCK_STATE_LISTENING;
-                return;
+                return 0;
             case NN_USOCK_ACTION_CONNECT:
                 usock->state = NN_USOCK_STATE_CONNECTING;
-                return;
+                return 0;
             case NN_USOCK_ACTION_BEING_ACCEPTED:
                 usock->state = NN_USOCK_STATE_BEING_ACCEPTED;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -646,7 +642,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 usock->state = NN_USOCK_STATE_ACCEPTED;
                 nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_ACCEPTED);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -666,7 +662,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_ACTION_ACTIVATE:
                 nn_worker_add_fd (usock->worker, usock->s, &usock->wfd);
                 usock->state = NN_USOCK_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -687,14 +683,14 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 nn_worker_execute (usock->worker, &usock->task_connected);
                 nn_fsm_raise (&usock->fsm, &usock->event_established,
                     NN_USOCK_CONNECTED);
-                return;
+                return 0;
             case NN_USOCK_ACTION_ERROR:
                 nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error,
                     NN_USOCK_ERROR);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -717,14 +713,14 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     nn_fsm_raise (&usock->fsm,
                         &usock->event_error, NN_USOCK_ERROR);
                 }
-                return;
+                return 0;
             case NN_WORKER_FD_ERR:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
                 nn_closefd (usock->s);
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -751,7 +747,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                         nn_fsm_raise (&usock->fsm, &usock->event_received,
                             NN_USOCK_RECEIVED);
                     }
-                    return;
+                    return 0;
                 }
                 errnum_assert (rc == -ECONNRESET, -rc);
                 goto error;
@@ -761,10 +757,10 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                     nn_worker_reset_out (usock->worker, &usock->wfd);
                     nn_fsm_raise (&usock->fsm, &usock->event_sent,
                         NN_USOCK_SENT);
-                    return;
+                    return 0;
                 }
                 if (nn_fast (rc == -EAGAIN))
-                    return;
+                    return 0;
                 errnum_assert (rc == -ECONNRESET, -rc);
                 goto error;
             case NN_WORKER_FD_ERR:
@@ -774,7 +770,7 @@ error:
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -783,7 +779,7 @@ error:
             case NN_USOCK_ACTION_ERROR:
                 usock->state = NN_USOCK_STATE_REMOVING_FD;
                 nn_usock_async_stop (usock);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -804,7 +800,7 @@ error:
                 usock->s = -1;
                 usock->state = NN_USOCK_STATE_DONE;
                 nn_fsm_raise (&usock->fsm, &usock->event_error, NN_USOCK_ERROR);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -812,7 +808,7 @@ error:
         /*  Events from the file descriptor are ignored while it is being
             removed. */
         case NN_USOCK_SRC_FD:
-            return;
+            return 0;
 
         default:
             nn_fsm_bad_source (usock->state, src, type);
@@ -837,7 +833,7 @@ error:
             switch (type) {
             case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -856,11 +852,11 @@ error:
             switch (type) {
             case NN_USOCK_ACTION_DONE:
                 usock->state = NN_USOCK_STATE_LISTENING;
-                return;
+                return 0;
             case NN_USOCK_ACTION_CANCEL:
                 nn_worker_execute (usock->worker, &usock->task_stop);
                 usock->state = NN_USOCK_STATE_CANCELLING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -879,7 +875,7 @@ error:
                     by the peer before we were able to accept it. If it happens
                     do nothing and wait for next incoming connection. */
                 if (nn_slow (s < 0 && errno == ECONNABORTED))
-                    return;
+                    return 0;
 
                 /*  Resource allocation errors. It's not clear from POSIX
                     specification whether the new connection is closed in this
@@ -896,7 +892,7 @@ error:
 
                     nn_fsm_raise (&usock->fsm,
                         &usock->event_error, NN_USOCK_ACCEPT_ERROR);
-                    return;
+                    return 0;
                 }
 
                 /* Any other error is unexpected. */
@@ -919,7 +915,7 @@ error:
                 nn_worker_rm_fd (usock->worker, &usock->wfd);
                 usock->state = NN_USOCK_STATE_LISTENING;
 
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (usock->state, src, type);
@@ -938,7 +934,7 @@ error:
             switch (type) {
             case NN_USOCK_ACTION_ACCEPT:
                 usock->state = NN_USOCK_STATE_ACCEPTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -959,11 +955,11 @@ error:
             /*  Notify the accepted socket that it was stopped. */
             nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
 
-            return;
+            return 0;
         case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_IN:
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }
@@ -977,6 +973,7 @@ error:
     default:
         nn_fsm_bad_state (usock->state, src, type);
     }
+    return 0;
 }
 
 static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)

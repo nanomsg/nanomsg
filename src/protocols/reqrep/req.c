@@ -94,13 +94,13 @@ struct nn_req {
 };
 
 /*  Private functions. */
-static void nn_req_init (struct nn_req *self,
+static int nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_req_term (struct nn_req *self);
 static int nn_req_inprogress (struct nn_req *self);
-static void nn_req_handler (struct nn_fsm *self, int src, int type,
+static int nn_req_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_req_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_req_action_send (struct nn_req *self, int allow_delay);
 
@@ -131,7 +131,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_getopt
 };
 
-static void nn_req_init (struct nn_req *self,
+static int nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_xreq_init (&self->xreq, vfptr, hint);
@@ -150,7 +150,7 @@ static void nn_req_init (struct nn_req *self,
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 static void nn_req_term (struct nn_req *self)
@@ -367,7 +367,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_req_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
@@ -380,17 +380,17 @@ static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (req->state == NN_REQ_STATE_STOPPING)) {
         if (!nn_timer_isidle (&req->timer))
-            return;
+            return 0;
         req->state = NN_REQ_STATE_IDLE;
         nn_fsm_stopped_noevent (&req->fsm);
         nn_sockbase_stopped (&req->xreq.sockbase);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(req->state, src, type);
 }
 
-static void nn_req_handler (struct nn_fsm *self, int src, int type,
+static int nn_req_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
@@ -411,7 +411,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 req->state = NN_REQ_STATE_PASSIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -431,7 +431,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_REQ_ACTION_SENT:
                 nn_req_action_send (req, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -453,9 +453,9 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_REQ_ACTION_OUT:
                 nn_req_action_send (req, 0);
-                return;
+                return 0;
             case NN_REQ_ACTION_SENT:
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -479,7 +479,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_timer_stop (&req->timer);
                 req->sent_to = NULL;
                 req->state = NN_REQ_STATE_STOPPING_TIMER;
-                return;
+                return 0;
 
             case NN_REQ_ACTION_SENT:
 
@@ -488,7 +488,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_timer_stop (&req->timer);
                 req->sent_to = NULL;
                 req->state = NN_REQ_STATE_CANCELLING;
-                return;
+                return 0;
 
             case NN_REQ_ACTION_PIPE_RM:
                 /*  Pipe that we sent request to is removed  */
@@ -496,7 +496,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 req->sent_to = NULL;
                 /*  Pretend we timed out so request resent immediately  */
                 req->state = NN_REQ_STATE_TIMED_OUT;
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (req->state, src, type);
@@ -508,7 +508,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                 nn_timer_stop (&req->timer);
                 req->sent_to = NULL;
                 req->state = NN_REQ_STATE_TIMED_OUT;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -529,7 +529,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_TIMER_STOPPED:
                 nn_req_action_send (req, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -538,7 +538,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_REQ_ACTION_SENT:
                 req->state = NN_REQ_STATE_CANCELLING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -562,7 +562,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 
                 /*  Timer is stopped. Now we can send the delayed request. */
                 nn_req_action_send (req, 1);
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (req->state, src, type);
@@ -575,7 +575,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
                  /*  No need to do anything here. Old delayed request is just
                      replaced by the new one that will be sent once the timer
                      is closed. */
-                 return;
+                 return 0;
 
              default:
                  nn_fsm_bad_action (req->state, src, type);
@@ -597,7 +597,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_TIMER_STOPPED:
                 req->state = NN_REQ_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -606,7 +606,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_REQ_ACTION_SENT:
                 req->state = NN_REQ_STATE_CANCELLING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (req->state, src, type);
             }
@@ -626,10 +626,10 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
              switch (type) {
              case NN_REQ_ACTION_RECEIVED:
                  req->state = NN_REQ_STATE_PASSIVE;
-                 return;
+                 return 0;
              case NN_REQ_ACTION_SENT:
                  nn_req_action_send (req, 1);
-                 return;
+                 return 0;
              default:
                  nn_fsm_bad_action (req->state, src, type);
              }
@@ -644,6 +644,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (req->state, src, type);
     }
+    return 0;
 }
 
 /******************************************************************************/

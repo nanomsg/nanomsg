@@ -170,9 +170,9 @@ static int nn_global_create_ep (int s, const char *addr, int bind);
 static int nn_global_create_socket (int domain, int protocol);
 
 /*  FSM callbacks  */
-static void nn_global_handler (struct nn_fsm *self,
+static int nn_global_handler (struct nn_fsm *self,
     int src, int type, void *srcptr);
-static void nn_global_shutdown (struct nn_fsm *self,
+static int nn_global_shutdown (struct nn_fsm *self,
     int src, int type, void *srcptr);
 
 
@@ -1122,7 +1122,7 @@ struct nn_pool *nn_global_getpool ()
     return &self.pool;
 }
 
-static void nn_global_handler (struct nn_fsm *self,
+static int nn_global_handler (struct nn_fsm *self,
     int src, int type, NN_UNUSED void *srcptr)
 {
 
@@ -1148,7 +1148,7 @@ static void nn_global_handler (struct nn_fsm *self,
                     /*  Start statistics collection timer. */
                     nn_timer_start (&global->stat_timer, 10000);
                 }
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (global->state, src, type);
             }
@@ -1170,10 +1170,10 @@ static void nn_global_handler (struct nn_fsm *self,
                 nn_global_submit_statistics ();
                 /*  No need to change state  */
                 nn_timer_stop (&global->stat_timer);
-                return;
+                return 0;
             case NN_TIMER_STOPPED:
                 nn_timer_start (&global->stat_timer, 10000);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (global->state, src, type);
             }
@@ -1188,9 +1188,10 @@ static void nn_global_handler (struct nn_fsm *self,
     default:
         nn_fsm_bad_state (global->state, src, type);
     }
+    return 0;
 }
 
-static void nn_global_shutdown (struct nn_fsm *self,
+static int nn_global_shutdown (struct nn_fsm *self,
     NN_UNUSED int src, NN_UNUSED int type, NN_UNUSED void *srcptr)
 {
 
@@ -1203,7 +1204,7 @@ static void nn_global_shutdown (struct nn_fsm *self,
     if (global->state == NN_GLOBAL_STATE_ACTIVE) {
         if (!nn_timer_isidle (&global->stat_timer)) {
             nn_timer_stop (&global->stat_timer);
-            return;
+            return 0;
         }
     }
 }

@@ -40,9 +40,9 @@
 #define NN_ATCP_SRC_LISTENER 3
 
 /*  Private functions. */
-static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+static int nn_atcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_atcp_init (struct nn_atcp *self, int src,
@@ -79,7 +79,7 @@ int nn_atcp_isidle (struct nn_atcp *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
+int nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
 {
     nn_assert_state (self, NN_ATCP_STATE_IDLE);
 
@@ -90,7 +90,7 @@ void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener)
     nn_usock_swap_owner (listener, &self->listener_owner);
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_atcp_stop (struct nn_atcp *self)
@@ -98,7 +98,7 @@ void nn_atcp_stop (struct nn_atcp *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_atcp *atcp;
@@ -115,13 +115,13 @@ static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (atcp->state == NN_ATCP_STATE_STOPPING_STCP_FINAL)) {
         if (!nn_stcp_isidle (&atcp->stcp))
-            return;
+            return 0;
         nn_usock_stop (&atcp->usock);
         atcp->state = NN_ATCP_STATE_STOPPING;
     }
     if (nn_slow (atcp->state == NN_ATCP_STATE_STOPPING)) {
         if (!nn_usock_isidle (&atcp->usock))
-            return;
+            return 0;
        if (atcp->listener) {
             nn_assert (atcp->listener_owner.fsm);
             nn_usock_swap_owner (atcp->listener, &atcp->listener_owner);
@@ -131,13 +131,13 @@ static void nn_atcp_shutdown (struct nn_fsm *self, int src, int type,
         }
         atcp->state = NN_ATCP_STATE_IDLE;
         nn_fsm_stopped (&atcp->fsm, NN_ATCP_STOPPED);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_action(atcp->state, src, type);
 }
 
-static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
+static int nn_atcp_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_atcp *atcp;
@@ -160,7 +160,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 nn_usock_accept (&atcp->usock, atcp->listener);
                 atcp->state = NN_ATCP_STATE_ACCEPTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
             }
@@ -210,7 +210,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (atcp->epbase,
                     NN_STAT_ACCEPTED_CONNECTIONS, 1);
 
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
@@ -225,7 +225,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (atcp->epbase,
                     NN_STAT_ACCEPT_ERRORS, 1);
                 nn_usock_accept (&atcp->usock, atcp->listener);
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
@@ -248,7 +248,7 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 atcp->state = NN_ATCP_STATE_STOPPING_STCP;
                 nn_epbase_stat_increment (atcp->epbase,
                     NN_STAT_BROKEN_CONNECTIONS, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
             }
@@ -266,11 +266,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         case NN_ATCP_SRC_STCP:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&atcp->usock);
                 atcp->state = NN_ATCP_STATE_STOPPING_USOCK;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
             }
@@ -288,11 +288,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
         case NN_ATCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&atcp->fsm, &atcp->done, NN_ATCP_ERROR);
                 atcp->state = NN_ATCP_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (atcp->state, src, type);
             }
@@ -307,5 +307,6 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (atcp->state, src, type);
     }
+    return 0;
 }
 

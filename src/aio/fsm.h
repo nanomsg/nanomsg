@@ -55,7 +55,7 @@ void nn_fsm_event_process (struct nn_fsm_event *self);
 
 /*  Virtual function to be implemented by the derived class to handle the
     incoming events. */
-typedef void (*nn_fsm_fn) (struct nn_fsm *self, int src, int type,
+typedef int (*nn_fsm_fn) (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 struct nn_fsm_owner {
@@ -82,7 +82,7 @@ void nn_fsm_init (struct nn_fsm *self, nn_fsm_fn fn,
 void nn_fsm_term (struct nn_fsm *self);
 
 int nn_fsm_isidle (struct nn_fsm *self);
-void nn_fsm_start (struct nn_fsm *self);
+int nn_fsm_start (struct nn_fsm *self);
 void nn_fsm_stop (struct nn_fsm *self);
 void nn_fsm_stopped (struct nn_fsm *self, int type);
 void nn_fsm_stopped_noevent (struct nn_fsm *self);
@@ -94,7 +94,7 @@ void nn_fsm_swap_owner (struct nn_fsm *self, struct nn_fsm_owner *owner);
 struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self);
 
 /*  Using this function state machine can trigger an action on itself. */
-void nn_fsm_action (struct nn_fsm *self, int type);
+int nn_fsm_action (struct nn_fsm *self, int type);
 
 /*  Send event from the state machine to its owner. */
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type);
@@ -111,7 +111,7 @@ void nn_fsm_raiseto (struct nn_fsm *self, struct nn_fsm *dst,
 /*  This function is very lowlevel action feeding
     Used in worker threads and timers, shouldn't be used by others
     use nn_fsm_action/nn_fsm_raise/nn_fsm_raiseto instread*/
-void nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr);
+int nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr);
 
 #endif
 

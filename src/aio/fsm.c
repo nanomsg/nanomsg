@@ -66,13 +66,14 @@ void nn_fsm_event_process (struct nn_fsm_event *self)
     nn_fsm_feed (self->fsm, src, type, srcptr);
 }
 
-void nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr)
+int nn_fsm_feed (struct nn_fsm *self, int src, int type, void *srcptr)
 {
     if (nn_slow (self->state != NN_FSM_STATE_STOPPING)) {
-        self->fn (self, src, type, srcptr);
+        return self->fn (self, src, type, srcptr);
     } else {
         self->shutdown_fn (self, src, type, srcptr);
     }
+    return 0;
 }
 
 void nn_fsm_init_root (struct nn_fsm *self, nn_fsm_fn fn,
@@ -107,11 +108,12 @@ void nn_fsm_term (struct nn_fsm *self)
     nn_fsm_event_term (&self->stopped);
 }
 
-void nn_fsm_start (struct nn_fsm *self)
+int nn_fsm_start (struct nn_fsm *self)
 {
     nn_assert (nn_fsm_isidle (self));
-    self->fn (self, NN_FSM_ACTION, NN_FSM_START, NULL);
-    self->state = NN_FSM_STATE_ACTIVE;
+    int rc = self->fn (self, NN_FSM_ACTION, NN_FSM_START, NULL);
+    if (!rc) self->state = NN_FSM_STATE_ACTIVE;
+    return rc;
 }
 
 int nn_fsm_isidle (struct nn_fsm *self)
@@ -161,10 +163,10 @@ struct nn_worker *nn_fsm_choose_worker (struct nn_fsm *self)
     return nn_ctx_choose_worker (self->ctx);
 }
 
-void nn_fsm_action (struct nn_fsm *self, int type)
+int nn_fsm_action (struct nn_fsm *self, int type)
 {
     nn_assert (type > 0);
-    nn_fsm_feed (self, NN_FSM_ACTION, type, NULL);
+    return nn_fsm_feed (self, NN_FSM_ACTION, type, NULL);
 }
 
 void nn_fsm_raise (struct nn_fsm *self, struct nn_fsm_event *event, int type)

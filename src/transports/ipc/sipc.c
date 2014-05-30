@@ -66,9 +66,9 @@ const struct nn_pipebase_vfptr nn_sipc_pipebase_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
+static int nn_sipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_sipc_init (struct nn_sipc *self, int src,
@@ -106,7 +106,7 @@ int nn_sipc_isidle (struct nn_sipc *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
+int nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
 {
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
@@ -116,7 +116,7 @@ void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock)
     self->usock = usock;
 
     /*  Launch the state machine. */
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_sipc_stop (struct nn_sipc *self)
@@ -177,7 +177,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     return 0;
 }
 
-static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_sipc *sipc;
@@ -197,15 +197,15 @@ static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
             sipc->usock_owner.fsm = NULL;
             sipc->state = NN_SIPC_STATE_IDLE;
             nn_fsm_stopped (&sipc->fsm, NN_SIPC_STOPPED);
-            return;
+            return 0;
         }
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(sipc->state, src, type);
 }
 
-static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
+static int nn_sipc_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     int rc;
@@ -229,7 +229,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 nn_streamhdr_start (&sipc->streamhdr, sipc->usock,
                     &sipc->pipebase);
                 sipc->state = NN_SIPC_STATE_PROTOHDR;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sipc->state, src, type);
             }
@@ -252,7 +252,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     state machine. */
                 nn_streamhdr_stop (&sipc->streamhdr);
                 sipc->state = NN_SIPC_STATE_STOPPING_STREAMHDR;
-                return;
+                return 0;
 
             case NN_STREAMHDR_ERROR:
 
@@ -260,7 +260,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                    streamhdr object will be stopped later on. */
                 sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (sipc->state, src, type);
@@ -285,7 +285,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  if (nn_slow (rc < 0)) {
                     sipc->state = NN_SIPC_STATE_DONE;
                     nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
-                    return;
+                    return 0;
                  }
 
                  /*  Start receiving a message in asynchronous manner. */
@@ -297,7 +297,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  sipc->outstate = NN_SIPC_OUTSTATE_IDLE;
 
                  sipc->state = NN_SIPC_STATE_ACTIVE;
-                 return;
+                 return 0;
 
             default:
                 nn_fsm_bad_action (sipc->state, src, type);
@@ -323,7 +323,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 nn_msg_term (&sipc->outmsg);
                 nn_msg_init (&sipc->outmsg, 0);
                 nn_pipebase_sent (&sipc->pipebase);
-                return;
+                return 0;
 
             case NN_USOCK_RECEIVED:
 
@@ -341,7 +341,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     if (!size) {
                         sipc->instate = NN_SIPC_INSTATE_HASMSG;
                         nn_pipebase_received (&sipc->pipebase);
-                        return;
+                        return 0;
                     }
 
                     /*  Start receiving the message body. */
@@ -349,7 +349,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     nn_usock_recv (sipc->usock,
                         nn_chunkref_data (&sipc->inmsg.body), (size_t) size);
 
-                    return;
+                    return 0;
 
                 case NN_SIPC_INSTATE_BODY:
 
@@ -358,7 +358,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     sipc->instate = NN_SIPC_INSTATE_HASMSG;
                     nn_pipebase_received (&sipc->pipebase);
 
-                    return;
+                    return 0;
 
                 default:
                     nn_assert (0);
@@ -367,13 +367,13 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SHUTDOWN:
                 nn_pipebase_stop (&sipc->pipebase);
                 sipc->state = NN_SIPC_STATE_SHUTTING_DOWN;
-                return;
+                return 0;
 
             case NN_USOCK_ERROR:
                 nn_pipebase_stop (&sipc->pipebase);
                 sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
-                return;
+                return 0;
 
 
             default:
@@ -397,7 +397,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_ERROR:
                 sipc->state = NN_SIPC_STATE_DONE;
                 nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sipc->state, src, type);
             }

@@ -38,9 +38,9 @@
 #define NN_TIMER_SRC_STOP_TASK 2
 
 /*  Private functions. */
-static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+static int nn_timer_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_timer_init (struct nn_timer *self, int src, struct nn_fsm *owner)
@@ -73,13 +73,13 @@ int nn_timer_isidle (struct nn_timer *self)
      return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_timer_start (struct nn_timer *self, int timeout)
+int nn_timer_start (struct nn_timer *self, int timeout)
 {
     /*  Negative timeout make no sense. */
     nn_assert (timeout >= 0);
 
     self->timeout = timeout;
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_timer_stop (struct nn_timer *self)
@@ -87,7 +87,7 @@ void nn_timer_stop (struct nn_timer *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_timer *timer;
@@ -97,22 +97,22 @@ static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
-        return;
+        return 0;
     }
     if (nn_slow (timer->state == NN_TIMER_STATE_STOPPING)) {
         if (src != NN_TIMER_SRC_STOP_TASK)
-            return;
+            return 0;
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_timer (timer->worker, &timer->wtimer);
         timer->state = NN_TIMER_STATE_IDLE;
         nn_fsm_stopped (&timer->fsm, NN_TIMER_STOPPED);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(timer->state, src, type);
 }
 
-static void nn_timer_handler (struct nn_fsm *self, int src, int type,
+static int nn_timer_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_timer *timer;
@@ -133,7 +133,7 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
                 /*  Send start event to the worker thread. */
                 nn_worker_execute (timer->worker, &timer->start_task);
                 timer->state = NN_TIMER_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (timer->state, src, type);
             }
@@ -151,7 +151,7 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
             nn_worker_add_timer (timer->worker, timer->timeout,
                 &timer->wtimer);
             timer->timeout = -1;
-            return;
+            return 0;
         }
         if (srcptr == &timer->wtimer) {
             switch (type) {
@@ -160,7 +160,7 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
                 /*  Notify the user about the timeout. */
                 nn_assert (timer->timeout == -1);
                 nn_fsm_raise (&timer->fsm, &timer->done, NN_TIMER_TIMEOUT);
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (timer->state, src, type);
@@ -174,5 +174,6 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (timer->state, src, type);
     }
+    return 0;
 }
 

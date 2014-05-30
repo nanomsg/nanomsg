@@ -16,8 +16,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 This protocol is used to distribute the workload among multiple stateless
-workers. For each request/reply socket, the request is sent to one replier,
-and the reply is only respond to one request sender.
+workers.
 
 Socket Types
 ~~~~~~~~~~~~

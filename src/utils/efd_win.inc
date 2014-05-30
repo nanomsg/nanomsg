@@ -20,7 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#define NN_EFD_PORT 5907
 #define NN_EFD_RETRIES 1000
 
 #include "err.h"
@@ -91,9 +90,15 @@ int nn_efd_init (struct nn_efd *self)
     memset (&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
-    addr.sin_port = htons (NN_EFD_PORT);
+    /* Let windows assign the port number */
+    addr.sin_port = htons (0);
     rc = bind (listener, (const struct sockaddr*) &addr, sizeof (addr));
     if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /* Get the assigned port */    
+    addrlen =  sizeof(addr);
+    if (nn_slow(getsockname(listener, (struct sockaddr*)&addr, &addrlen)) )
         goto wsafail;
 
     /*  Start listening for the incomming connections. In normal case we are

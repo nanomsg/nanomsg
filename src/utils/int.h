@@ -25,6 +25,10 @@
 
 #if defined NN_HAVE_WINDOWS && !defined NN_HAVE_STDINT
 
+#if defined HAVE_STDINT_H
+#include <stdint.h>
+
+#else
 /*  Old versions of MSVC don't ship with stdint.h header file.
     Thus, we have to define fix-sized integer type ourselves. */
 
@@ -51,6 +55,8 @@ typedef __int64 int64_t;
 #endif
 #ifndef uint64_t
 typedef unsigned __int64 uint64_t;
+#endif
+
 #endif
 
 #elif defined NN_HAVE_SOLARIS || defined NN_HAVE_OPENVMS

@@ -47,7 +47,7 @@
         if (nn_slow (!(x))) {\
             fprintf (stderr, "Assertion failed: %s (%s:%d)\n", #x, \
                 __FILE__, __LINE__);\
-            fflush (stderr);\
+            fflush( stderr ); \
             nn_err_abort ();\
         }\
     } while (0)
@@ -70,7 +70,7 @@
         if (nn_slow (!x)) {\
             fprintf (stderr, "Out of memory (%s:%d)\n",\
                 __FILE__, __LINE__);\
-            fflush (stderr);\
+            fflush( stderr ); \
             nn_err_abort ();\
         }\
     } while (0)
@@ -81,7 +81,7 @@
         if (nn_slow (!(x))) {\
             fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
                 (int) errno, __FILE__, __LINE__);\
-            fflush (stderr);\
+            fflush( stderr ); \
             nn_err_abort ();\
         }\
     } while (0)
@@ -92,7 +92,7 @@
         if (nn_slow (!(cond))) {\
             fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (err),\
                 (int) (err), __FILE__, __LINE__);\
-            fflush (stderr);\
+            fflush( stderr ); \
             nn_err_abort ();\
         }\
     } while (0)
@@ -118,7 +118,7 @@
             nn_win_error (WSAGetLastError (), errstr, 256);\
             fprintf (stderr, "%s [%d] (%s:%d)\n",\
                 errstr, (int) WSAGetLastError (), __FILE__, __LINE__);\
-            fflush (stderr);\
+            fflush( stderr ); \
             nn_err_abort ();\
         }\
     } while (0)

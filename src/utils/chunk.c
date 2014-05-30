@@ -183,6 +183,8 @@ size_t nn_chunk_size (void *p)
 void *nn_chunk_trim (void *p, size_t n)
 {
     struct nn_chunk *self;
+    const size_t hdrsz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+    size_t empty_space;
 
     self = nn_chunk_getptr (p);
 
@@ -192,8 +194,9 @@ void *nn_chunk_trim (void *p, size_t n)
     /*  Adjust the chunk header. */
     p = ((uint8_t*) p) + n;
     nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG);
-    nn_putl ((uint8_t*) (((uint32_t*) p) - 2), (uint8_t*) p - (uint8_t*) self -
-        2 * sizeof (uint32_t) - sizeof (struct nn_chunk));
+    empty_space = (uint8_t*) p - (uint8_t*) self - hdrsz;
+    nn_assert(empty_space < UINT32_MAX);
+    nn_putl ((uint8_t*) (((uint32_t*) p) - 2), (uint32_t) empty_space);
 
     /*  Adjust the size of the message. */
     self->size -= n;

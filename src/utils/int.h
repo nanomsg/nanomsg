@@ -53,6 +53,43 @@ typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #endif
 
+#ifndef INT8_MIN
+#define INT8_MIN 0x80i8
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN 0x8000i16
+#endif
+#ifndef INT32_MIN
+#define INT32_MIN 0x80000000i32
+#endif
+#ifndef INT64_MIN
+#define INT64_MIN 0x8000000000000000i64
+#endif
+#ifndef INT8_MAX
+#define INT8_MAX 0x7fi8
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX 0x7fffi16
+#endif
+#ifndef INT32_MAX
+#define INT32_MAX 0x7fffffffi32
+#endif
+#ifndef INT64_MAX
+#define INT64_MAX 0x7fffffffffffffffi64
+#endif
+#ifndef UINT8_MAX
+#define UINT8_MAX 0xffui8
+#endif
+#ifndef UINT16_MAX
+#define UINT16_MAX 0xffffui16
+#endif
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffffui32
+#endif
+#ifndef UINT64_MAX
+#define UINT64_MAX 0xffffffffffffffffui64
+#endif
+
 #elif defined NN_HAVE_SOLARIS || defined NN_HAVE_OPENVMS
 
 /*  Solaris and OpenVMS don't have standard stdint.h header, rather the fixed

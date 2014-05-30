@@ -40,9 +40,9 @@
 #define NN_EP_ACTION_STOPPED 1
 
 /*  Private functions. */
-static void nn_ep_handler (struct nn_fsm *self, int src, int type,
+static int nn_ep_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_ep_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
@@ -90,9 +90,9 @@ void nn_ep_term (struct nn_ep *self)
     nn_fsm_term (&self->fsm);
 }
 
-void nn_ep_start (struct nn_ep *self)
+int nn_ep_start (struct nn_ep *self)
 {
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_ep_stop (struct nn_ep *self)
@@ -135,7 +135,7 @@ int nn_ep_ispeer (struct nn_ep *self, int socktype)
 }
 
 
-static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_ep_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ep *ep;
@@ -145,21 +145,21 @@ static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         ep->epbase->vfptr->stop (ep->epbase);
         ep->state = NN_EP_STATE_STOPPING;
-        return;
+        return 0;
     }
     if (nn_slow (ep->state == NN_EP_STATE_STOPPING)) {
         if (src != NN_FSM_ACTION || type != NN_EP_ACTION_STOPPED)
-            return;
+            return 0;
         ep->state = NN_EP_STATE_IDLE;
         nn_fsm_stopped (&ep->fsm, NN_EP_STOPPED);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state (ep->state, src, type);
 }
 
 
-static void nn_ep_handler (struct nn_fsm *self, int src, int type,
+static int nn_ep_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ep *ep;
@@ -178,7 +178,7 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 ep->state = NN_EP_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ep->state, src, type);
             }
@@ -201,6 +201,7 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (ep->state, src, type);
     }
+    return 0;
 }
 
 void nn_ep_set_error(struct nn_ep *self, int errnum)

@@ -37,9 +37,9 @@
 #define NN_DNS_STATE_DONE 2
 
 /*  Private functions. */
-static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+static int nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_dns_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
@@ -63,7 +63,7 @@ int nn_dns_isidle (struct nn_dns *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
+int nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     int ipv4only, struct nn_dns_result *result)
 {
     int rc;
@@ -81,8 +81,7 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
         &self->result->addrlen);
     if (rc == 0) {
         self->result->error = 0;
-        nn_fsm_start (&self->fsm);
-        return;
+        return nn_fsm_start (&self->fsm);
     }
     errnum_assert (rc == -EINVAL, -rc);
 
@@ -104,8 +103,7 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     /*  Perform the DNS lookup itself. */
     self->result->error = getaddrinfo (hostname, NULL, &query, &reply);
     if (self->result->error) {
-        nn_fsm_start (&self->fsm);
-        return;
+        return nn_fsm_start (&self->fsm);
     }
 
     /*  Check that exactly one address is returned and store it. */
@@ -115,7 +113,7 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     self->result->addrlen = reply->ai_addrlen;
     freeaddrinfo (reply);
 
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_dns_stop (struct nn_dns *self)
@@ -123,7 +121,7 @@ void nn_dns_stop (struct nn_dns *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_dns_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_dns *dns;
@@ -132,13 +130,13 @@ static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(dns->state, src, type);
 }
 
-static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+static int nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_dns *dns;
@@ -156,7 +154,7 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (dns->state, src, type);
             }

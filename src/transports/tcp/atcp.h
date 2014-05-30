@@ -73,7 +73,7 @@ void nn_atcp_init (struct nn_atcp *self, int src,
 void nn_atcp_term (struct nn_atcp *self);
 
 int nn_atcp_isidle (struct nn_atcp *self);
-void nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener);
+int nn_atcp_start (struct nn_atcp *self, struct nn_usock *listener);
 void nn_atcp_stop (struct nn_atcp *self);
 
 #endif

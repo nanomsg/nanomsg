@@ -78,12 +78,12 @@ struct nn_surveyor {
 };
 
 /*  Private functions. */
-static void nn_surveyor_init (struct nn_surveyor *self,
+static int nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint);
 static void nn_surveyor_term (struct nn_surveyor *self);
-static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+static int nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static int nn_surveyor_inprogress (struct nn_surveyor *self);
 static void nn_surveyor_resend (struct nn_surveyor *self);
@@ -112,7 +112,7 @@ static const struct nn_sockbase_vfptr nn_surveyor_sockbase_vfptr = {
     nn_surveyor_getopt
 };
 
-static void nn_surveyor_init (struct nn_surveyor *self,
+static int nn_surveyor_init (struct nn_surveyor *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_xsurveyor_init (&self->xsurveyor, vfptr, hint);
@@ -129,7 +129,7 @@ static void nn_surveyor_init (struct nn_surveyor *self,
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 static void nn_surveyor_term (struct nn_surveyor *self)
@@ -303,7 +303,7 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_surveyor *surveyor;
@@ -316,17 +316,17 @@ static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (surveyor->state == NN_SURVEYOR_STATE_STOPPING)) {
         if (!nn_timer_isidle (&surveyor->timer))
-            return;
+            return 0;
         surveyor->state = NN_SURVEYOR_STATE_IDLE;
         nn_fsm_stopped_noevent (&surveyor->fsm);
         nn_sockbase_stopped (&surveyor->xsurveyor.sockbase);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(surveyor->state, src, type);
 }
 
-static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
+static int nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_surveyor *surveyor;
@@ -346,7 +346,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -368,7 +368,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 nn_surveyor_resend (surveyor);
                 nn_timer_start (&surveyor->timer, surveyor->deadline);
                 surveyor->state = NN_SURVEYOR_STATE_ACTIVE;
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
@@ -390,7 +390,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             case NN_SURVEYOR_ACTION_CANCEL:
                 nn_timer_stop (&surveyor->timer);
                 surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -400,7 +400,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&surveyor->timer);
                 surveyor->state = NN_SURVEYOR_STATE_STOPPING_TIMER;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -420,7 +420,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
         case NN_FSM_ACTION:
             switch (type) {
             case NN_SURVEYOR_ACTION_CANCEL:
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -431,7 +431,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
                 nn_surveyor_resend (surveyor);
                 nn_timer_start (&surveyor->timer, surveyor->deadline);
                 surveyor->state = NN_SURVEYOR_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -451,7 +451,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_SURVEYOR_ACTION_CANCEL:
                 surveyor->state = NN_SURVEYOR_STATE_CANCELLING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }
@@ -460,7 +460,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_TIMER_STOPPED:
                 surveyor->state = NN_SURVEYOR_STATE_PASSIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);
             }

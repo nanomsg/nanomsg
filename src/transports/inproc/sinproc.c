@@ -49,9 +49,9 @@
 #define NN_SINPROC_FLAG_RECEIVING 2
 
 /*  Private functions. */
-static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+static int nn_sinproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg);
@@ -253,7 +253,7 @@ static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
     nn_fsm_bad_action (self->state, src, type);
 }
 
-static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     struct nn_sinproc *sinproc;
@@ -269,14 +269,14 @@ static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
 
     /*  Have we got notification that peer is stopped  */
     if (nn_slow (sinproc->state != NN_SINPROC_STATE_STOPPING)) {
-        return;
+        return 0;
     }
 
     /*  Are all events processed? We can't cancel them unfortunately  */
     if (nn_fsm_event_active (&sinproc->event_received)
         || nn_fsm_event_active (&sinproc->event_disconnect))
     {
-        return;
+        return 0;
     }
     /*  These events are deemed to be impossible here  */
     nn_assert (!nn_fsm_event_active (&sinproc->event_connect));
@@ -287,10 +287,10 @@ static void nn_sinproc_shutdown (struct nn_fsm *self, int src, int type,
     /*  **********************************************  */
 
     nn_fsm_stopped (&sinproc->fsm, NN_SINPROC_STOPPED);
-    return;
+    return 0;
 }
 
-static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
+static int nn_sinproc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
     int rc;
@@ -311,7 +311,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 sinproc->state = NN_SINPROC_STATE_CONNECTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
             }
@@ -332,7 +332,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_SINPROC_ACTION_READY:
                 sinproc->state = NN_SINPROC_STATE_READY;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
             }
@@ -347,7 +347,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                 nn_fsm_raiseto (&sinproc->fsm, &sinproc->peer->fsm,
                     &sinproc->event_connect,
                     NN_SINPROC_SRC_PEER, NN_SINPROC_ACCEPTED, self);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
             }
@@ -371,12 +371,12 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                 rc = nn_pipebase_start (&sinproc->pipebase);
                 errnum_assert (rc == 0, -rc);
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;
-                return;
+                return 0;
             case NN_SINPROC_ACCEPTED:
                 rc = nn_pipebase_start (&sinproc->pipebase);
                 errnum_assert (rc == 0, -rc);
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
             }
@@ -402,7 +402,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                     &sinproc->peer->msg);
                 if (rc == -EAGAIN) {
                     sinproc->flags |= NN_SINPROC_FLAG_RECEIVING;
-                    return;
+                    return 0;
                 }
                 errnum_assert (rc == 0, -rc);
                 nn_msg_init (&sinproc->peer->msg, 0);
@@ -416,13 +416,13 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                     &sinproc->peer->event_received, NN_SINPROC_SRC_PEER,
                     NN_SINPROC_RECEIVED, sinproc);
 
-                return;
+                return 0;
 
             case NN_SINPROC_RECEIVED:
                 nn_assert (sinproc->flags & NN_SINPROC_FLAG_SENDING);
                 nn_pipebase_sent (&sinproc->pipebase);
                 sinproc->flags &= ~NN_SINPROC_FLAG_SENDING;
-                return;
+                return 0;
 
             case NN_SINPROC_DISCONNECT:
                 nn_pipebase_stop (&sinproc->pipebase);
@@ -430,7 +430,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                     &sinproc->peer->event_disconnect, NN_SINPROC_SRC_PEER,
                     NN_SINPROC_DISCONNECT, sinproc);
                 sinproc->state = NN_SINPROC_STATE_DISCONNECTED;
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
@@ -453,7 +453,7 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                 /*  This case can safely be ignored. It may happen when
                     nn_close() comes before the already enqueued
                     NN_SINPROC_RECEIVED has been delivered.  */
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (sinproc->state, src, type);
             };

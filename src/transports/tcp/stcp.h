@@ -83,7 +83,7 @@ void nn_stcp_init (struct nn_stcp *self, int src,
 void nn_stcp_term (struct nn_stcp *self);
 
 int nn_stcp_isidle (struct nn_stcp *self);
-void nn_stcp_start (struct nn_stcp *self, struct nn_usock *usock);
+int nn_stcp_start (struct nn_stcp *self, struct nn_usock *usock);
 void nn_stcp_stop (struct nn_stcp *self);
 
 #endif

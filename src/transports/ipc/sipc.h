@@ -85,7 +85,7 @@ void nn_sipc_init (struct nn_sipc *self, int src,
 void nn_sipc_term (struct nn_sipc *self);
 
 int nn_sipc_isidle (struct nn_sipc *self);
-void nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock);
+int nn_sipc_start (struct nn_sipc *self, struct nn_usock *usock);
 void nn_sipc_stop (struct nn_sipc *self);
 
 #endif

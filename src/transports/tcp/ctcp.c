@@ -103,9 +103,9 @@ const struct nn_epbase_vfptr nn_ctcp_epbase_vfptr = {
 };
 
 /*  Private functions. */
-static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+static int nn_ctcp_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_ctcp_start_resolving (struct nn_ctcp *self);
 static void nn_ctcp_start_connecting (struct nn_ctcp *self,
@@ -200,12 +200,12 @@ int nn_ctcp_create (void *hint, struct nn_epbase **epbase)
     nn_dns_init (&self->dns, NN_CTCP_SRC_DNS, &self->fsm);
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
+    rc = nn_fsm_start (&self->fsm);
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
 
-    return 0;
+    return rc;
 }
 
 static void nn_ctcp_stop (struct nn_epbase *self)
@@ -233,7 +233,7 @@ static void nn_ctcp_destroy (struct nn_epbase *self)
     nn_free (ctcp);
 }
 
-static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ctcp *ctcp;
@@ -250,7 +250,7 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (ctcp->state == NN_CTCP_STATE_STOPPING_STCP_FINAL)) {
         if (!nn_stcp_isidle (&ctcp->stcp))
-            return;
+            return 0;
         nn_backoff_stop (&ctcp->retry);
         nn_usock_stop (&ctcp->usock);
         nn_dns_stop (&ctcp->dns);
@@ -260,17 +260,17 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
         if (!nn_backoff_isidle (&ctcp->retry) ||
               !nn_usock_isidle (&ctcp->usock) ||
               !nn_dns_isidle (&ctcp->dns))
-            return;
+            return 0;
         ctcp->state = NN_CTCP_STATE_IDLE;
         nn_fsm_stopped_noevent (&ctcp->fsm);
         nn_epbase_stopped (&ctcp->epbase);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state (ctcp->state, src, type);
 }
 
-static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
+static int nn_ctcp_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ctcp *ctcp;
@@ -290,7 +290,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 nn_ctcp_start_resolving (ctcp);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -311,7 +311,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_DNS_DONE:
                 nn_dns_stop (&ctcp->dns);
                 ctcp->state = NN_CTCP_STATE_STOPPING_DNS;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -333,11 +333,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 if (ctcp->dns_result.error == 0) {
                     nn_ctcp_start_connecting (ctcp, &ctcp->dns_result.addr,
                         ctcp->dns_result.addrlen);
-                    return;
+                    return 0;
                 }
                 nn_backoff_start (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_WAITING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -363,7 +363,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (&ctcp->epbase,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 nn_epbase_clear_error (&ctcp->epbase);
-                return;
+                return 0;
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&ctcp->epbase,
                     nn_usock_geterrno (&ctcp->usock));
@@ -373,7 +373,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
                 nn_epbase_stat_increment (&ctcp->epbase,
                     NN_STAT_CONNECT_ERRORS, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -396,7 +396,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 ctcp->state = NN_CTCP_STATE_STOPPING_STCP;
                 nn_epbase_stat_increment (&ctcp->epbase,
                     NN_STAT_BROKEN_CONNECTIONS, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -415,11 +415,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
         case NN_CTCP_SRC_STCP:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_STCP_STOPPED:
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -438,11 +438,11 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
         case NN_CTCP_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_USOCK_STOPPED:
                 nn_backoff_start (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_WAITING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -464,7 +464,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_BACKOFF_TIMEOUT:
                 nn_backoff_stop (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_STOPPING_BACKOFF;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
@@ -484,7 +484,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_BACKOFF_STOPPED:
                 nn_ctcp_start_resolving (ctcp);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }

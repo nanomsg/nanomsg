@@ -42,9 +42,9 @@
 #define NN_AIPC_SRC_LISTENER 3
 
 /*  Private functions. */
-static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+static int nn_aipc_handler (struct nn_fsm *self, int src, int type,
    void *srcptr);
-static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
    void *srcptr);
 
 void nn_aipc_init (struct nn_aipc *self, int src,
@@ -81,7 +81,7 @@ int nn_aipc_isidle (struct nn_aipc *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
+int nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 {
     nn_assert_state (self, NN_AIPC_STATE_IDLE);
 
@@ -92,7 +92,7 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
     nn_usock_swap_owner (listener, &self->listener_owner);
 
     /*  Start the state machine. */
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_aipc_stop (struct nn_aipc *self)
@@ -100,7 +100,7 @@ void nn_aipc_stop (struct nn_aipc *self)
     nn_fsm_stop (&self->fsm);
 }
 
-static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_aipc *aipc;
@@ -117,13 +117,13 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING_SIPC_FINAL)) {
         if (!nn_sipc_isidle (&aipc->sipc))
-            return;
+            return 0;
         nn_usock_stop (&aipc->usock);
         aipc->state = NN_AIPC_STATE_STOPPING;
     }
     if (nn_slow (aipc->state == NN_AIPC_STATE_STOPPING)) {
         if (!nn_usock_isidle (&aipc->usock))
-            return;
+            return 0;
        if (aipc->listener) {
             nn_assert (aipc->listener_owner.fsm);
             nn_usock_swap_owner (aipc->listener, &aipc->listener_owner);
@@ -133,13 +133,13 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
         }
         aipc->state = NN_AIPC_STATE_IDLE;
         nn_fsm_stopped (&aipc->fsm, NN_AIPC_STOPPED);
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state(aipc->state, src, type);
 }
 
-static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
+static int nn_aipc_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_aipc *aipc;
@@ -162,7 +162,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 nn_usock_accept (&aipc->usock, aipc->listener);
                 aipc->state = NN_AIPC_STATE_ACCEPTING;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
             }
@@ -212,7 +212,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (aipc->epbase,
                     NN_STAT_ACCEPTED_CONNECTIONS, 1);
 
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
@@ -227,7 +227,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                     NN_STAT_ACCEPT_ERRORS, 1);
                 nn_usock_accept (&aipc->usock, aipc->listener);
 
-                return;
+                return 0;
 
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
@@ -250,7 +250,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 aipc->state = NN_AIPC_STATE_STOPPING_SIPC;
                 nn_epbase_stat_increment (aipc->epbase,
                     NN_STAT_BROKEN_CONNECTIONS, 1);
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
             }
@@ -268,11 +268,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_SIPC:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_SIPC_STOPPED:
                 nn_usock_stop (&aipc->usock);
                 aipc->state = NN_AIPC_STATE_STOPPING_USOCK;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
             }
@@ -290,11 +290,11 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SHUTDOWN:
-                return;
+                return 0;
             case NN_USOCK_STOPPED:
                 nn_fsm_raise (&aipc->fsm, &aipc->done, NN_AIPC_ERROR);
                 aipc->state = NN_AIPC_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (aipc->state, src, type);
             }

@@ -34,6 +34,8 @@
 #include "../utils/alloc.h"
 #include "../utils/msg.h"
 
+#include <limits.h>
+
 /*  These bits specify whether individual efds are signalled or not at
     the moment. Storing this information allows us to avoid redundant signalling
     and unsignalling of the efd objects. */

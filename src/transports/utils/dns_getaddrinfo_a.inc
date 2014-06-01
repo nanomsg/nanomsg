@@ -40,9 +40,9 @@
 
 /*  Private functions. */
 static void nn_dns_notify (union sigval);
-static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+static int nn_dns_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_dns_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_dns_init (struct nn_dns *self, int src, struct nn_fsm *owner)
@@ -120,7 +120,7 @@ void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     nn_assert (rc == 0);
 
     self->result->error = EINPROGRESS;
-    nn_fsm_start (&self->fsm);
+    return nn_fsm_start (&self->fsm);
 }
 
 void nn_dns_stop (struct nn_dns *self)
@@ -156,7 +156,7 @@ static void nn_dns_notify (union sigval sval)
     nn_ctx_leave (self->fsm.ctx);
 }
 
-static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
+static int nn_dns_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     int rc;
@@ -170,32 +170,33 @@ static void nn_dns_shutdown (struct nn_fsm *self, int src, int type,
             if (rc == EAI_CANCELED) {
                 nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
                 dns->state = NN_DNS_STATE_IDLE;
-                return;
+                return 0;
             }
             if (rc == EAI_NOTCANCELED || rc == EAI_ALLDONE) {
                 dns->state = NN_DNS_STATE_STOPPING;
-                return;
+                return 0;
             }
             nn_assert (0);
         }
         nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
         dns->state = NN_DNS_STATE_IDLE;
-        return;
+        return 0;
     }
     if (nn_slow (dns->state == NN_DNS_STATE_STOPPING)) {
         if (src == NN_FSM_ACTION && (type == NN_DNS_ACTION_CANCELLED ||
               type == NN_DNS_ACTION_DONE)) {
             nn_fsm_stopped (&dns->fsm, NN_DNS_STOPPED);
             dns->state = NN_DNS_STATE_IDLE;
-            return;
+            return 0;
         }
-        return;
+        return 0;
     }
 
     nn_fsm_bad_state (dns->state, src, type);
+    return 0;
 }
 
-static void nn_dns_handler (struct nn_fsm *self, int src, int type,
+static int nn_dns_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_dns *dns;
@@ -213,11 +214,11 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 if (dns->result->error == EINPROGRESS) {
                     dns->state = NN_DNS_STATE_RESOLVING;
-                    return;
+                    return 0;
                 }
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (dns->state, src, type);
             }
@@ -235,7 +236,7 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
             case NN_DNS_ACTION_DONE:
                 nn_fsm_raise (&dns->fsm, &dns->done, NN_DNS_DONE);
                 dns->state = NN_DNS_STATE_DONE;
-                return;
+                return 0;
             default:
                 nn_fsm_bad_action (dns->state, src, type);
             }
@@ -255,5 +256,6 @@ static void nn_dns_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (dns->state, src, type);
     }
+    return 0;
 }
 

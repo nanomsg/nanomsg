@@ -83,7 +83,7 @@ int nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     if (rc == 0) {
         self->result->error = 0;
         nn_fsm_start (&self->fsm);
-        return;
+        return 0;
     }
     errnum_assert (rc == -EINVAL, -rc);
 

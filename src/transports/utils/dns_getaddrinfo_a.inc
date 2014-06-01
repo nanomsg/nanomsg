@@ -65,7 +65,7 @@ int nn_dns_isidle (struct nn_dns *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
+int nn_dns_start (struct nn_dns *self, const char *addr, size_t addrlen,
     int ipv4only, struct nn_dns_result *result)
 {
     int rc;

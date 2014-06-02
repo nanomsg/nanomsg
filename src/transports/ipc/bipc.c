@@ -297,8 +297,10 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
 
     /*  Delete the IPC file left over by eventual previous runs of
         the application. */
+#if !defined NN_HAVE_WINDOWS
     rc = unlink (addr);
     errno_assert (rc == 0 || errno == ENOENT);
+#endif
 
     /*  Start listening for incoming connections. */
     rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);

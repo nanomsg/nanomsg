@@ -296,7 +296,8 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
     strncpy (un->sun_path, addr, sizeof (un->sun_path));
 
     /*  Delete the IPC file left over by eventual previous runs of
-        the application. */
+        the application. On Windows plaform, NamedPipe is used which
+        does not have an underlying file. */
 #if !defined NN_HAVE_WINDOWS
     rc = unlink (addr);
     errno_assert (rc == 0 || errno == ENOENT);

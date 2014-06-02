@@ -802,7 +802,7 @@ static int nn_usock_cancel_io (struct nn_usock *self)
     }
     if (!nn_worker_op_isidle (&self->out)) {
         brc = CancelIoEx (self->p, &self->out.olpd);
-        win_assert (brc || ERROR_NOT_FOUND);
+        win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         rc = 1;
     }
 

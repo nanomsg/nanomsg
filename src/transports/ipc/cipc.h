@@ -23,14 +23,10 @@
 #ifndef NN_CIPC_INCLUDED
 #define NN_CIPC_INCLUDED
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "../../transport.h"
 
 /*  State machine managing connected IPC socket. */
 
 int nn_cipc_create (void *hint, struct nn_epbase **epbase);
-
-#endif
 
 #endif

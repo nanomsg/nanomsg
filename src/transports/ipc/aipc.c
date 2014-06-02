@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "aipc.h"
 
 #include "../../utils/err.h"
@@ -54,7 +52,7 @@ void nn_aipc_init (struct nn_aipc *self, int src,
         src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
     self->epbase = epbase;
-    nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm, self->epbase);
     self->listener = NULL;
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;
@@ -310,6 +308,3 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (aipc->state, src, type);
     }
 }
-
-#endif
-

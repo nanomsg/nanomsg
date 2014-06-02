@@ -166,6 +166,9 @@ extern "C" {
 #define EISCONN (NN_HAUSNUMERO + 27)
 #define NN_EISCONN_DEFINED
 #endif
+#ifndef ESOCKTNOSUPPORT
+#define ESOCKTNOSUPPORT (NN_HAUSNUMERO + 28)
+#endif
 
 /*  Native nanomsg error codes.                                               */
 #ifndef ETERM

@@ -20,8 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "bipc.h"
 #include "aipc.h"
 
@@ -35,8 +33,12 @@
 #include "../../utils/fast.h"
 
 #include <string.h>
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <unistd.h>
 #include <sys/un.h>
+#endif
 
 #define NN_BIPC_BACKLOG 10
 
@@ -98,7 +100,7 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BIPC_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm);
+    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm, &self->epbase);
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
 
@@ -282,24 +284,17 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    struct sockaddr_un *un;
-    const char *addr;
 
     /*  First, create the AF_UNIX address. */
-    addr = nn_epbase_getaddr (&self->epbase);
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    nn_usock_create_ipc_address(&self->epbase, &ss);
 
     /*  Delete the IPC file left over by eventual previous runs of
         the application. */
-    rc = unlink (addr);
+    rc = nn_usock_unlink((struct sockaddr_un *)&ss);
     errno_assert (rc == 0 || errno == ENOENT);
 
     /*  Start listening for incoming connections. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
     /*  TODO: EMFILE error can happen here. We can wait a bit and re-try. */
     errnum_assert (rc == 0, -rc);
     rc = nn_usock_bind (&self->usock,
@@ -321,6 +316,3 @@ static void nn_bipc_start_accepting (struct nn_bipc *self)
     /*  Start waiting for a new incoming connection. */
     nn_aipc_start (self->aipc, &self->usock);
 }
-
-#endif
-

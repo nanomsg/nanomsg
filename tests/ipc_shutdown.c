@@ -33,6 +33,8 @@
 
 #define THREAD_COUNT 100
 #define TEST2_THREAD_COUNT 10
+#define MESSAGES_PER_THREAD 10
+#define TEST_LOOPS 10
 #define SOCKET_ADDRESS "ipc://test-shutdown.ipc"
 
 volatile int active;
@@ -60,7 +62,7 @@ static void routine2 (NN_UNUSED void *arg)
         test_connect (s, SOCKET_ADDRESS);
     }
 
-    for (i = 0; i < 10; ++i) {
+    for (i = 0; i < MESSAGES_PER_THREAD; ++i) {
         test_recv (s, "hello");
     }
 
@@ -70,7 +72,6 @@ static void routine2 (NN_UNUSED void *arg)
 
 int main ()
 {
-#if !defined NN_HAVE_WINDOWS
     int sb;
     int i;
     int j;
@@ -81,7 +82,7 @@ int main ()
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, SOCKET_ADDRESS);
 
-    for (j = 0; j != 10; ++j) {
+    for (j = 0; j != TEST_LOOPS; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine, NULL);
         for (i = 0; i != THREAD_COUNT; ++i)
@@ -95,7 +96,7 @@ int main ()
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
 
-    for (j = 0; j != 10; ++j) {
+    for (j = 0; j != TEST_LOOPS; ++j) {
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine2, NULL);
         active = TEST2_THREAD_COUNT;
@@ -109,8 +110,6 @@ int main ()
     }
 
     test_close (sb);
-
-#endif
 
     return 0;
 }

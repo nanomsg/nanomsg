@@ -71,6 +71,8 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner, struct
     self->ep = ep;
     self->s = INVALID_SOCKET;
     self->isaccepted = FALSE;
+    self->sndbuf = 4096;
+    self->rcvbuf = 4096;
     self->buf = NULL;
     nn_worker_op_init (&self->in, NN_USOCK_SRC_IN, &self->fsm);
     nn_worker_op_init (&self->out, NN_USOCK_SRC_OUT, &self->fsm);
@@ -190,9 +192,26 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
         self->state == NN_USOCK_STATE_ACCEPTED);
 
     nn_assert (optlen < INT_MAX);
+    nn_assert (optval != NULL);
     if (self->domain == AF_UNIX)
     {
-        /* TODO: implement Named Pipe setsockopt */
+        switch (level) {
+        default: break; /* not used, just ignore, TODO: implement it when needed */
+        case SOL_SOCKET:
+            switch (optname) {
+            case SO_SNDBUF:
+                nn_assert(sizeof(self->sndbuf) == optlen);
+                memcpy((void*)&self->sndbuf, optval, sizeof(self->sndbuf));
+                nn_assert(self->sndbuf >= 0);
+                break;
+            case SO_RCVBUF:
+                nn_assert(sizeof(self->rcvbuf) == optlen);
+                memcpy((void*)&self->rcvbuf, optval, sizeof(self->rcvbuf));
+                nn_assert(self->rcvbuf >= 0);
+                break;
+            }
+            break;
+        }
         rc = 0;
     }
     else
@@ -225,7 +244,7 @@ static void nn_pipe_create(struct nn_usock *self)
     nn_usock_create_ipc_address(self->ep, &ss);
     _snprintf(win_pipe_name, sizeof(win_pipe_name), "\\\\.\\pipe\\%s", addr->sun_path);
 
-    /* TODO: expose custom nOutBufferSize, nInBufferSize, nDefaultTimeOut, lpSecurityAttributes */
+    /* TODO: expose custom nDefaultTimeOut, lpSecurityAttributes */
     /* NOTE: FILE_FLAG_OVERLAPPED + PIPE_WAIT: http://blogs.msdn.com/b/oldnewthing/archive/2011/01/14/10115610.aspx?Redirected=true */
     self->p = CreateNamedPipeA(
         win_pipe_name,
@@ -233,8 +252,8 @@ static void nn_pipe_create(struct nn_usock *self)
         FILE_FLAG_OVERLAPPED,
         mode,
         PIPE_UNLIMITED_INSTANCES,
-        4096,
-        4096,
+        self->sndbuf,
+        self->rcvbuf,
         0,
         NULL);
 
@@ -276,6 +295,8 @@ DWORD nn_pipe_open(struct nn_usock *self)
         self->p = INVALID_HANDLE_VALUE;
         return GetLastError();
     }
+    /*TODO: use DeviceIoControl to setting connection buffer size */
+    /* Try to use METHOD_BUFFERED to handling buffer */
     self->isaccepted = FALSE;
     nn_uscok_create_io_completeion(self);
 

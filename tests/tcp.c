@@ -129,7 +129,7 @@ int main ()
     test_bind (sb, SOCKET_ADDRESS);
 
     /*  Ping-pong test. */
-    for (i = 0; i != 100; ++i) {
+    for (i = 0; i != 100000; ++i) {
 
         test_send (sc, "ABC");
         test_recv (sb, "ABC");

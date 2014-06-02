@@ -41,6 +41,8 @@ struct nn_usock {
         HANDLE p;
     };
     BOOL isaccepted;
+    int sndbuf;
+    int rcvbuf;
     uint8_t *buf;
     /*  Asynchronous operations being executed on the socket. */
     struct nn_worker_op in;

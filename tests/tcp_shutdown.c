@@ -36,7 +36,7 @@
 #define THREAD_COUNT 100
 #define TEST2_THREAD_COUNT 10
 #define MESSAGES_PER_THREAD 10
-#define TEST_LOOPS 10
+#define TEST_LOOPS 800
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
 
 struct nn_atomic active;
@@ -94,7 +94,7 @@ int main ()
     test_close (sb);
 
     /*  Test race condition of sending message while socket shutting down  */
-
+    for (int k = 0; k != 1; ++k) {
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
 
@@ -113,6 +113,6 @@ int main ()
     }
 
     test_close (sb);
-
+    }
     return 0;
 }

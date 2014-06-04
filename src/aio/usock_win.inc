@@ -394,6 +394,21 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
+static void nn_usock_create_io_completion (struct nn_usock *self)
+{
+    struct nn_worker *worker;
+    HANDLE cp;
+
+    /*  Associate the socket with a worker thread/completion port. */
+    worker = nn_fsm_choose_worker (&self->fsm);
+    cp = CreateIoCompletionPort (
+	    self->p,
+        nn_worker_getcp(worker),
+		(ULONG_PTR) NULL,
+		0);
+    nn_assert(cp);
+}
+
 static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
 {
     char fullname [256];
@@ -404,7 +419,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
     /* TODO: Expose custom nOutBufferSize, nInBufferSize, nDefaultTimeOut,
              lpSecurityAttributes */
     self->p = CreateNamedPipeA (
-        win_pipe_name,
+        (char*) fullname,
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |
             PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
@@ -417,7 +432,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
     /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
     nn_assert (self->p != INVALID_HANDLE_VALUE);
 
-    self->isaccepted = TRUE;
+    //self->isaccepted = TRUE;
     nn_usock_create_io_completion (self);
 }
 
@@ -425,6 +440,8 @@ DWORD nn_usock_open_pipe (struct nn_usock *self, const char *name)
 {
     char fullname [256];
     DWORD winerror;
+	DWORD mode;
+	BOOL brc;
 
     /*  First, create a fully qualified name for the named pipe. */
     _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
@@ -442,12 +459,18 @@ DWORD nn_usock_open_pipe (struct nn_usock *self, const char *name)
     if (self->p == INVALID_HANDLE_VALUE)
         return GetLastError ();
 
-    if (!SetNamedPipeHandleState (self->p, &mode, NULL, NULL)) {
+    mode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT;
+    brc = SetNamedPipeHandleState (
+	    self->p,
+		&mode,
+		NULL,
+		NULL);
+	if (!brc) {
         CloseHandle (self->p);
         self->p = INVALID_HANDLE_VALUE;
         return GetLastError ();
     }
-    self->isaccepted = FALSE;
+    //self->isaccepted = FALSE;
     nn_usock_create_io_completion (self);
 
     winerror = GetLastError ();
@@ -479,7 +502,7 @@ void nn_usock_accept_pipe (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Wait for the incoming connection. */
     memset (&listener->in.olpd, 0, sizeof(listener->in.olpd));
-    nn_pipe_create (self);
+    nn_usock_create_pipe (self, NULL);
     brc = ConnectNamedPipe (self->p, (LPOVERLAPPED) &listener->in.olpd);
 
     /*  TODO: Can this function possibly succeed? */

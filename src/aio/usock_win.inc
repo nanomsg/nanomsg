@@ -394,17 +394,129 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wsa_assert (0);
 }
 
-static void nn_usock_close(struct nn_usock *self) {
-    if (self->domain == AF_UNIX) {
-        BOOL brc = CloseHandle(self->p);
+static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
+{
+    char fullname [256];
+
+    /*  First, create a fully qualified name for the named pipe. */
+    _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
+
+    /* TODO: Expose custom nOutBufferSize, nInBufferSize, nDefaultTimeOut,
+             lpSecurityAttributes */
+    self->p = CreateNamedPipeA (
+        win_pipe_name,
+        PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |
+            PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+        PIPE_UNLIMITED_INSTANCES,
+        4096,
+        4096,
+        0,
+        NULL);
+
+    /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
+    nn_assert (self->p != INVALID_HANDLE_VALUE);
+
+    self->isaccepted = TRUE;
+    nn_usock_create_io_completion (self);
+}
+
+DWORD nn_usock_open_pipe (struct nn_usock *self, const char *name)
+{
+    char fullname [256];
+    DWORD winerror;
+
+    /*  First, create a fully qualified name for the named pipe. */
+    _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
+
+    /* TODO: Expose a way to pass lpSecurityAttributes */
+    self->p = CreateFileA (
+        fullname,
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        NULL,
+        OPEN_ALWAYS,
+        FILE_FLAG_OVERLAPPED,
+        NULL);
+
+    if (self->p == INVALID_HANDLE_VALUE)
+        return GetLastError ();
+
+    if (!SetNamedPipeHandleState (self->p, &mode, NULL, NULL)) {
+        CloseHandle (self->p);
         self->p = INVALID_HANDLE_VALUE;
-        win_assert(brc);
+        return GetLastError ();
+    }
+    self->isaccepted = FALSE;
+    nn_usock_create_io_completion (self);
+
+    winerror = GetLastError ();
+    if (winerror != ERROR_SUCCESS && winerror != ERROR_ALREADY_EXISTS)
+        return winerror;
+
+    return ERROR_SUCCESS;
+}
+
+void nn_usock_accept_pipe (struct nn_usock *self, struct nn_usock *listener)
+{
+    int rc;
+    BOOL brc;
+    DWORD winerror;
+
+    /*  TODO: EMFILE can be returned here. */
+    rc = nn_usock_start (self, listener->domain, listener->type,
+        listener->protocol);
+    errnum_assert(rc == 0, -rc);
+
+    nn_fsm_action(&listener->fsm, NN_USOCK_ACTION_ACCEPT);
+    nn_fsm_action(&self->fsm, NN_USOCK_ACTION_BEING_ACCEPTED);
+
+    /*  If the memory for accept information is not yet allocated, do so now. */
+    if (!listener->ainfo) {
+        listener->ainfo = nn_alloc (512, "accept info");
+        alloc_assert (listener->ainfo);
+    }
+
+    /*  Wait for the incoming connection. */
+    memset (&listener->in.olpd, 0, sizeof(listener->in.olpd));
+    nn_pipe_create (self);
+    brc = ConnectNamedPipe (self->p, (LPOVERLAPPED) &listener->in.olpd);
+
+    /*  TODO: Can this function possibly succeed? */
+    nn_assert (brc == 0);
+    winerror = GetLastError();
+
+    /*  Immediate success. */
+    if (nn_fast (winerror == ERROR_PIPE_CONNECTED)) {
+        nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_DONE);
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
+        return;
+    }
+
+    /*  We don't expect a synchronous failure at this point. */
+    wsa_assert (nn_slow (winerror == WSA_IO_PENDING));
+
+    /*  Pair the two sockets. */
+    nn_assert (!self->asock);
+    self->asock = listener;
+    nn_assert (!listener->asock);
+    listener->asock = self;
+
+    /*  Asynchronous accept. */
+    nn_worker_op_start (&listener->in, 0);
+}
+
+static void nn_usock_close (struct nn_usock *self) {
+    if (self->domain == AF_UNIX) {
+        BOOL brc = CloseHandle (self->p);
+        self->p = INVALID_HANDLE_VALUE;
+        win_assert (brc);
     }
     else
     {
-        int rc = closesocket(self->s);
+        int rc = closesocket (self->s);
         self->s = INVALID_SOCKET;
-        wsa_assert(rc == 0);
+        wsa_assert (rc == 0);
     }
 }
 

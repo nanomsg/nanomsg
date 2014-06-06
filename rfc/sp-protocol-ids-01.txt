@@ -2,19 +2,19 @@
 
 
 
-Internet Engineering Task Force                          G. D'Amore, Ed.
+Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft
-Intended status: Informational                            March 27, 2014
-Expires: September 28, 2014
+Intended status: Informational                              June 5, 2014
+Expires: December 7, 2014
 
 
-                 TLS Mapping for Scalability Protocols
-                           sp-tls-mapping-01
+                        List of SP protocol IDs
+                           sp-protocol-ids-01
 
 Abstract
 
-   This document defines the mapping for scalability protocols (SP)
-   running on top of Transport Layer Security (TLS) v1.2 on top of TCP.
+   This document is intended to be a central repository of SP protocol
+   IDs.  The intention is to pass the task to IANA later on.
 
 Status of This Memo
 
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 28, 2014.
+   This Internet-Draft will expire on December 7, 2014.
 
 Copyright Notice
 
@@ -53,97 +53,81 @@ Copyright Notice
 
 
 
-D'Amore                Expires September 28, 2014               [Page 1]
+Sustrik                 Expires December 7, 2014                [Page 1]
 
-Internet-Draft           TLS/TCP mapping for SPs              March 2014
+Internet-Draft           List of SP protocol IDs               June 2014
 
 
-1.  Underlying protocol
+1.  Introduction
 
-   This mapping should be layered directly on the top of TLS [TLS]
-   secured connections.  While it is possible to use TLS on top of other
-   transports, this document specifically concerns itself with TLS
-   running on top of TCP [TCP].
+   Different mappings for scalability protocols (see, for example
+   SPoverTCP [SPoverTCP]) define a protocol header which in turn
+   contains SP endpoint type ID.  The ID consists of protocol ID and end
+   the endpoint role:
 
-   Other combinations may be contemplated, and should follow the same
-   details as discussed here.
+   +-----------------------+------------------------+
+   | Protocol ID (12 bits) | Endpoint role (4 bits) |
+   +-----------------------+------------------------+
 
-   As when running SP over TCP directly, the TCP port number is
-   determined by the applicaton or user.
+   Protocol IDs denote the SP protocol used (such as request/reply or
+   publish/subscribe), while endpoint role determines the role of the
+   endpoint within the topology (requester vs. replier, publisher vs.
+   subscriber et c.)  Both numbers are in network byte order.
 
-   This mapping follows the details of SP over TCP [SPoverTCP].
+   Protocol IDs are global, while endpoint roles are specific to any
+   given protocol.  As such, protocol IDs are defined in this document,
+   while endpoint roles are defined in specific SP protocol RFCs.
 
-2.  Connection initiation
+   Note that there's no versioning of SP protocols.  New versions of old
+   protocols should register with new protocol ID.
 
-   An initial connection is first established using TCP, then performing
-   a TLS handshake.  This handshake establishes the security parameters
-   of the connection, including negotiation of cipher suites, exchanging
-   keys, and possibly performing one or two-way authentication.
+2.  Protocol IDs
 
-   The specific details of the TLS negotiation are determined by the the
-   application(s) involved, and are not specified here.  This includes
-   selection of the specific version of TLS or possibly falling back to
-   SSL version 3 (but not SSL version 1 or 2).
+   1 - pair (v1)
 
-   TLS presents an encrypted channel that may be treated as a full
-   duplex byte stream between peers.  This mapping sits within that
-   channel.
+   2 - publish/subscribe (v1)
 
-   Note also that TLS peers may rekey periodically.  This happens in the
-   without involving the upper protocol, and the details need not
-   concern us here.
+   3 - request/reply (v1)
 
-   Once the TLS layer connection has been established, the communication
-   commences as detailed in SPoverTCP [SPoverTCP].  This includes the
-   exchange of the initial protocol headers identifying the version of
-   SP in use, and the specific protocol type, as well as requirements to
-   disconnect upon receipt of an invalid protocol header or an
-   unrecognized SP version.
+   4 - unassigned
+
+   5 - pipeline (v1)
+
+   6 - survey (v1)
+
+   7 - bus (v1)
+
+   8-3839 - unassigned
+
+   3840-4095 local and experimental
 
 3.  IANA Considerations
 
-   This memo includes no request to IANA.
+   This memo describes numbers that should be eventually managed by
+   IANA.
 
 
 
 
-
-
-D'Amore                Expires September 28, 2014               [Page 2]
+Sustrik                 Expires December 7, 2014                [Page 2]
 
-Internet-Draft           TLS/TCP mapping for SPs              March 2014
+Internet-Draft           List of SP protocol IDs               June 2014
 
 
 4.  Security Considerations
 
-   Security considerations are explored in depth as part of TLS [TLS].
-   This document does not provide any further implications beyond that
-   in TLS itself.
-
-   The use of SSLv2 is explicitly forbidden [RFC6176], as SSLv2 contains
-   known weaknesses.
+   There are no security considerations.
 
 5.  References
-
-   [TCP]      Postel, J., "Transmission Control Protocol", STD 7, RFC
-              793, September 1981.
-
-   [TLS]      Dierks, T. and E. Rescorla, "The Transport Layer Security
-              (TLS) Protocol Version 1.2", RFC 5246, August 2008.
-
-   [RFC6176]  Turner, S. and T. Polk, "Prohibiting Secure Sockets Layer
-              (SSL) Version 2.0", RFC 6176, March 2011.
 
    [SPoverTCP]
               Sustrik, M., "TCP mapping for SPs", August 2013.
 
 Author's Address
 
-   Garrett D'Amore (editor)
+   Martin Sustrik (editor)
 
-   Email: garrett@damore.org
-
-
+   Email: sustrik@250bpm.com
 
 
 
@@ -165,5 +149,21 @@ Author's Address
 
 
 
-D'Amore                Expires September 28, 2014               [Page 3]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sustrik                 Expires December 7, 2014                [Page 3]
 

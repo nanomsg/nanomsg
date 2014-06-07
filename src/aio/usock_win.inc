@@ -388,8 +388,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         /* TODO: Do not copy the buffer, find an efficent way to Write 
            multiple buffers that doesn't affect the state machine. */
 
-        if (self->pipesendbuf)
-            nn_free (self->pipesendbuf);
+        nn_assert (!self->pipesendbuf);
         self->pipesendbuf = nn_alloc (len, "named pipe sendbuf");
 
         idx = 0;
@@ -464,7 +463,8 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 
     if (error == WSAECONNABORTED || error == WSAECONNRESET ||
           error == WSAENETDOWN || error == WSAENETRESET ||
-          error == WSAETIMEDOUT || error == WSAEWOULDBLOCK) {
+          error == WSAETIMEDOUT || error == WSAEWOULDBLOCK ||
+          error == ERROR_PIPE_NOT_CONNECTED || error == ERROR_BROKEN_PIPE) {
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }

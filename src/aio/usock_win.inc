@@ -181,8 +181,10 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
 {
     int rc;
 
-    /*  NamedPipes aren't sockets. We can't set socket options on them. */
-    nn_assert (self->domain != AF_UNIX);
+    /*  NamedPipes aren't sockets. We can't set socket options on them.
+        For now we'll ignore the options. */
+    if (self->domain == AF_UNIX)
+        return 0;
 
     /*  The socket can be modified only before it's active. */
     nn_assert (self->state == NN_USOCK_STATE_STARTING ||
@@ -580,7 +582,7 @@ void nn_usock_accept_pipe (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Wait for the incoming connection. */
     memset (&listener->in.olpd, 0, sizeof(listener->in.olpd));
-    nn_usock_create_pipe (self, NULL);
+    nn_usock_create_pipe (self, listener->pipename.sun_path);
     brc = ConnectNamedPipe (self->p, (LPOVERLAPPED) &listener->in.olpd);
 
     /*  TODO: Can this function possibly succeed? */

@@ -399,33 +399,32 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
             idx += iov [i].iov_len;
         }
         brc = WriteFile (self->p, self->pipesendbuf, len, NULL, &self->out.olpd);
-        error = brc ? ERROR_SUCCESS : GetLastError();
-    }
-    else {
-        rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
-        error = (rc == 0) ? ERROR_SUCCESS : WSAGetLastError();
-    }
-
-    if (nn_fast (error == ERROR_SUCCESS)) {
-        nn_worker_op_start (&self->out, 0);
+        if (nn_fast (brc)) {
+            nn_worker_op_start (&self->out, 0);
+            return;
+        }
+        error = GetLastError();
+        win_assert (error == ERROR_NO_DATA);
+        self->errnum = EINVAL;
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
 
+    rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
+    if (nn_fast (rc == 0)) {
+        nn_worker_op_start (&self->out, 0);
+        return;
+    }
+    error = WSAGetLastError();
     if (nn_fast (error == WSA_IO_PENDING)) {
         nn_worker_op_start (&self->out, 0);
         return;
     }
-
-    if (error == WSAECONNABORTED || error == WSAECONNRESET ||
-          error == WSAENETDOWN || error == WSAENETRESET ||
-          error == WSAENOBUFS || error == WSAEWOULDBLOCK ||
-          error == ERROR_NO_DATA) {
-        self->errnum = nn_err_wsa_to_posix (error);
-        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
-        return;
-   }
-
-   wsa_assert (0);
+    wsa_assert (error == WSAECONNABORTED || error == WSAECONNRESET ||
+        error == WSAENETDOWN || error == WSAENETRESET ||
+        error == WSAENOBUFS || error == WSAEWOULDBLOCK);
+    self->errnum = nn_err_wsa_to_posix (error);
+    nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
 }
 
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)

@@ -362,36 +362,64 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int iovcnt)
 {
     int rc;
+    BOOL brc;
     WSABUF wbuf [NN_USOCK_MAX_IOVCNT];
     int i;
+    size_t len;
+    size_t idx;
+    DWORD error;
 
     /*  Make sure that the socket is actually alive. */
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Create a WinAPI-style iovec. */
+    len = 0;
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
     for (i = 0; i != iovcnt; ++i) {
         wbuf [i].buf = (char FAR*) iov [i].iov_base;
         wbuf [i].len = (u_long) iov [i].iov_len;
+        len += iov [i].iov_len;
     }
 
-    /*  Start the send opertation. */
+    /*  Start the send operation. */
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-    rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
-    if (nn_fast (rc == 0)) {
-        nn_worker_op_start (&self->out, 0);
-        return;
+    if (self->domain == AF_UNIX)
+    {
+        /* TODO: Do not copy the buffer, find an efficent way to Write 
+           multiple buffers that doesn't affect the state machine. */
+
+        if (self->pipesendbuf)
+            nn_free (self->pipesendbuf);
+        self->pipesendbuf = nn_alloc (len, "named pipe sendbuf");
+
+        idx = 0;
+        for (i = 0; i != iovcnt; ++i) {
+            memcpy ((char*)(self->pipesendbuf) + idx, iov [i].iov_base, iov [i].iov_len);
+            idx += iov [i].iov_len;
+        }
+        brc = WriteFile (self->p, self->pipesendbuf, len, NULL, &self->out.olpd);
+        error = brc ? ERROR_SUCCESS : GetLastError();
     }
-    rc = WSAGetLastError ();
-    if (nn_fast (rc == WSA_IO_PENDING)) {
+    else {
+        rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
+        error = (rc == 0) ? ERROR_SUCCESS : WSAGetLastError();
+    }
+
+    if (nn_fast (error == ERROR_SUCCESS)) {
         nn_worker_op_start (&self->out, 0);
         return;
     }
 
-    if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
-          rc == WSAENETDOWN || rc == WSAENETRESET ||
-          rc == WSAENOBUFS || rc == WSAEWOULDBLOCK) {
-        self->errnum = nn_err_wsa_to_posix(rc);
+    if (nn_fast (error == WSA_IO_PENDING)) {
+        nn_worker_op_start (&self->out, 0);
+        return;
+    }
+
+    if (error == WSAECONNABORTED || error == WSAECONNRESET ||
+          error == WSAENETDOWN || error == WSAENETRESET ||
+          error == WSAENOBUFS || error == WSAEWOULDBLOCK ||
+          error == ERROR_NO_DATA) {
+        self->errnum = nn_err_wsa_to_posix (error);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }

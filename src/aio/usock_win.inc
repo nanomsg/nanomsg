@@ -607,15 +607,23 @@ void nn_usock_accept_pipe (struct nn_usock *self, struct nn_usock *listener)
     nn_worker_op_start (&listener->in, 0);
 }
 
-static void nn_usock_close (struct nn_usock *self) {
+static void nn_usock_close (struct nn_usock *self)
+{
+    int rc;
+    BOOL brc;
+
     if (self->domain == AF_UNIX) {
-        BOOL brc = CloseHandle (self->p);
+        if (self->p == INVALID_HANDLE_VALUE)
+            return;
+        if (self->isaccepted)
+            DisconnectNamedPipe(self->p);
+        brc = CloseHandle (self->p);
         self->p = INVALID_HANDLE_VALUE;
         win_assert (brc);
     }
     else
     {
-        int rc = closesocket (self->s);
+        rc = closesocket (self->s);
         self->s = INVALID_SOCKET;
         wsa_assert (rc == 0);
     }
@@ -841,6 +849,10 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
         case NN_USOCK_SRC_OUT:
             switch (type) {
             case NN_WORKER_OP_DONE:
+                if (usock->pipesendbuf) {
+                    nn_free(usock->pipesendbuf);
+                    usock->pipesendbuf = NULL;
+                }
                 nn_fsm_raise (&usock->fsm, &usock->event_sent, NN_USOCK_SENT);
                 return;
             case NN_WORKER_OP_ERROR:
@@ -927,7 +939,15 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_ACTION_CANCEL:
-                nn_usock_cancel_io (usock);
+                if (usock->p == INVALID_HANDLE_VALUE && usock->asock != NULL && usock->domain == AF_UNIX) {
+                    usock->p = usock->asock->p;
+                    nn_usock_cancel_io (usock);
+                    usock->p = INVALID_HANDLE_VALUE;
+                }
+                else
+                {
+                    nn_usock_cancel_io(usock);
+                }
                 usock->state = NN_USOCK_STATE_CANCELLING;
                 return;
             default:

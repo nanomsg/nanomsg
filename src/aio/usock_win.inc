@@ -430,8 +430,10 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
 {
     int rc;
+    BOOL brc;
     WSABUF wbuf;
     DWORD wflags;
+    DWORD error;
 
     /*  Make sure that the socket is actually alive. */
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
@@ -441,20 +443,28 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
     wbuf.buf = (char FAR*) buf;
     wflags = MSG_WAITALL;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-    rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
-    if (nn_fast (rc == 0)) {
-        nn_worker_op_start (&self->in, 1);
-        return;
+    if (self->domain == AF_UNIX) {
+        brc = ReadFile(self->p, buf, len, NULL, &self->in.olpd);
+        error = brc ? ERROR_SUCCESS : GetLastError();
     }
-    rc = WSAGetLastError ();
-    if (nn_fast (rc == WSA_IO_PENDING)) {
+    else {
+        rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
+        error = (rc == 0) ? ERROR_SUCCESS : WSAGetLastError ();
+    }
+
+    if (nn_fast (error == ERROR_SUCCESS)) {
         nn_worker_op_start (&self->in, 1);
         return;
     }
 
-    if (rc == WSAECONNABORTED || rc == WSAECONNRESET ||
-          rc == WSAENETDOWN || rc == WSAENETRESET ||
-          rc == WSAETIMEDOUT || rc == WSAEWOULDBLOCK) {
+    if (nn_fast (error == WSA_IO_PENDING)) {
+        nn_worker_op_start (&self->in, 1);
+        return;
+    }
+
+    if (error == WSAECONNABORTED || error == WSAECONNRESET ||
+          error == WSAENETDOWN || error == WSAENETRESET ||
+          error == WSAETIMEDOUT || error == WSAEWOULDBLOCK) {
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
    }

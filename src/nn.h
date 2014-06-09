@@ -32,7 +32,7 @@ extern "C" {
 #include <stddef.h>
 
 /*  Handle DSO symbol visibility                                             */
-#if defined NO_NN_EXPORTS
+#if defined NN_NO_EXPORTS
 #   define NN_EXPORT
 #else
 #   if defined _WIN32
@@ -51,7 +51,7 @@ extern "C" {
 #          define NN_EXPORT
 #      endif
 #   endif
-#endif // NO_NN_EXPORTS
+#endif
 
 /*  Inline functions are everywhere, but MSVC requires underscores           */
 #if defined _WIN32

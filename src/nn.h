@@ -32,22 +32,26 @@ extern "C" {
 #include <stddef.h>
 
 /*  Handle DSO symbol visibility                                             */
-#if defined _WIN32
-#   if defined NN_EXPORTS
-#       define NN_EXPORT __declspec(dllexport)
-#   else
-#       define NN_EXPORT __declspec(dllimport)
-#   endif
+#if defined NO_NN_EXPORTS
+#   define NN_EXPORT
 #else
-#   if defined __SUNPRO_C
-#       define NN_EXPORT __global
-#   elif (defined __GNUC__ && __GNUC__ >= 4) || \
-          defined __INTEL_COMPILER || defined __clang__
-#       define NN_EXPORT __attribute__ ((visibility("default")))
+#   if defined _WIN32
+#      if defined NN_EXPORTS
+#          define NN_EXPORT __declspec(dllexport)
+#      else
+#          define NN_EXPORT __declspec(dllimport)
+#      endif
 #   else
-#       define NN_EXPORT
+#      if defined __SUNPRO_C
+#          define NN_EXPORT __global
+#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
+             defined __INTEL_COMPILER || defined __clang__
+#          define NN_EXPORT __attribute__ ((visibility("default")))
+#      else
+#          define NN_EXPORT
+#      endif
 #   endif
-#endif
+#endif // NO_NN_EXPORTS
 
 /*  Inline functions are everywhere, but MSVC requires underscores           */
 #if defined _WIN32

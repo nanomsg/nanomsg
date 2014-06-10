@@ -34,7 +34,7 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
 *NN_PROTOCOL*::
     Returns the protocol constant as it was passed to _nn_socket()_.
 *NN_LINGER*::
-    Specifies how long should the socket try to send pending outbound messages
+    Specifies how long the socket should try to send pending outbound messages
     after _nn_close()_ have been called, in milliseconds. Negative value means
     infinite linger. The type of the option is int. Default value
     is 1000 (1 second).

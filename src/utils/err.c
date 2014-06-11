@@ -74,7 +74,7 @@ const char *nn_err_strerror (int errnum)
         return "Too many open files";
     case EFAULT:
         return "Bad address";
-    case EACCESS:
+    case EACCES:
         return "Permission denied";
     case ENETRESET:
         return "Connection aborted by network";

@@ -136,8 +136,11 @@ extern "C" {
 #ifndef EFAULT
 #define EFAULT (NN_HAUSNUMERO + 16)
 #endif
+#ifndef EACCES
+#define EACCES (NN_HAUSNUMERO + 17)
+#endif
 #ifndef EACCESS
-#define EACCESS (NN_HAUSNUMERO + 17)
+#define EACCESS (EACCES)
 #endif
 #ifndef ENETRESET
 #define ENETRESET (NN_HAUSNUMERO + 18)

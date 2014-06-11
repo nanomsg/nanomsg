@@ -326,7 +326,6 @@ static void nn_global_init (void)
         strncpy (self.hostname, addr, 63);
         self.hostname[63] = '\0';
     } else {
-        /*  No cross-platform way to find out application binary  */
         rc = gethostname (self.hostname, 63);
         errno_assert (rc == 0);
         self.hostname[63] = '\0';

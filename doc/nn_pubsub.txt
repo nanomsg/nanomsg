@@ -17,6 +17,22 @@ DESCRIPTION
 -----------
 Broadcasts messages to multiple destinations.
 
+Messages sent from NN_PUB sockets will only be received by NN_SUB sockets that
+have subscribed to the matching 'topic'. The NN_SUB socket will determine a
+comparing the subscribed topics (using NN_SUB_SUBSCRIBE on a full SUB socket)
+to the bytes in the incomming message, up to the first NULL (\0) character.
+
+The empty string is allowed, meaning that a subscription of:
+
+---
+nn_setsockopt(s, NN_SUB, NN_SUB_SUBSCRIBE, "", (size_t) 1 ); //the NULL is needed
+---
+
+Will match a message containing "\0Hello, World!"
+
+The entire message, including the the topic string and the following NULL
+is included in the message. 
+
 Socket Types
 ~~~~~~~~~~~~
 
@@ -34,10 +50,35 @@ Socket Options
 
 NN_SUB_SUBSCRIBE::
     Defined on full SUB socket. Subscribes for a particular topic. Type of the
-    option is string.
+    option is string. A single NN_SUB socket can handle multiple subscriptions.
 NN_SUB_UNSUBSCRIBE::
     Defined on full SUB socket. Unsubscribes from a particular topic. Type of
     the option is string.
+
+EXAMPLE
+~~~~~~~
+
+----
+int pub = nn_socket (AF_SP, NN_PUB);
+int sub = nn_socket (AF_SP, NN_SUB);
+int nbytes;
+void *buf = NULL;
+
+nn_setsockopt(sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 1 );
+nn_setsockopt(sub, NN_SUB, NN_SUB_SUBSCRIBE, "foo",4);
+
+nbytes = nn_send(pub, "foo\0Hello!", 10);
+assert(nbytes == 10);
+nbytes = nn_recv(sub, &buf, NN_MSG, 0);
+assert(nbytes == 10);
+nn_freemsg(buf);
+
+nbytes = nn_send(pub, "\0World!", 7);
+assert(nbytes ==7);
+nbytes = nn_recv(sub, &buf, NN_MSG, 0);
+assert(nbytes == 7);
+nn_freemsg(buf);
+----
 
 
 SEE ALSO

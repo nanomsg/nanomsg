@@ -39,23 +39,6 @@
 
 #define NN_REP_INPROGRESS 1
 
-struct nn_rep {
-    struct nn_xrep xrep;
-    uint32_t flags;
-    struct nn_chunkref backtrace;
-};
-
-/*  Private functions. */
-static void nn_rep_init (struct nn_rep *self,
-    const struct nn_sockbase_vfptr *vfptr, void *hint);
-static void nn_rep_term (struct nn_rep *self);
-
-/*  Implementation of nn_sockbase's virtual functions. */
-static void nn_rep_destroy (struct nn_sockbase *self);
-static int nn_rep_events (struct nn_sockbase *self);
-static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
-
 static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     NULL,
     nn_rep_destroy,

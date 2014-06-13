@@ -26,6 +26,7 @@
 #include "../utils/fast.h"
 #include "../utils/fd.h"
 #include "../utils/attr.h"
+#include "device.h"
 
 #include <string.h>
 
@@ -36,14 +37,17 @@
 #else
 #error
 #endif
-
-/*  Private functions. */
-static int nn_device_loopback (int s);
-static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd, int s2, nn_fd s2rcv, nn_fd s2snd);
-static int nn_device_oneway (int s1, nn_fd s1rcv, int s2, nn_fd s2snd);
-static int nn_device_mvmsg (int from, int to, int flags);
+int nn_custom_device(struct nn_device_recipe *device, int s1, int s2, int flags) 
+{
+    return nn_device_entry(device,s1,s2,flags);
+}
 
 int nn_device (int s1, int s2)
+{
+    return nn_custom_device(&nn_ordinary_device,s1,s2,0);
+}
+
+int nn_device_entry(struct nn_device_recipe *device,int s1, int s2, int flags) 
 {
     int rc;
     int op1;
@@ -55,43 +59,51 @@ int nn_device (int s1, int s2)
     size_t opsz;
 
     /*  At least one socket must be specified. */
-    if (s1 < 0 && s2 < 0) {
-        errno = EBADF;
-        return -1;
+    if (device->required_checks & NN_CHECK_AT_LEAST_ONE_SOCKET) {
+        if (s1 < 0 && s2 < 0) {
+            errno = EBADF;
+            return -1;
+        }
     }
 
     /*  Handle the case when there's only one socket in the device. */
-    if (s2 < 0)
-        return nn_device_loopback (s1);
-    if (s1 < 0)
-        return nn_device_loopback (s2);
+    if (device->required_checks & NN_CHECK_ALLOW_LOOPBACK) {
+        if (s2 < 0)
+            return nn_device_loopback (device,s1);
+        if (s1 < 0)
+            return nn_device_loopback (device,s2);
+    }
 
     /*  Check whether both sockets are "raw" sockets. */
-    opsz = sizeof (op1);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_DOMAIN, &op1, &opsz);
-    errno_assert (rc == 0);
-    nn_assert (opsz == sizeof (op1));
-    opsz = sizeof (op2);
-    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_DOMAIN, &op2, &opsz);
-    errno_assert (rc == 0);
-    nn_assert (opsz == sizeof (op2));
-    if (op1 != AF_SP_RAW || op2 != AF_SP_RAW) {
-        errno = EINVAL;
-        return -1;
+    if (device->required_checks & NN_CHECK_REQUIRE_RAW_SOCKETS) {
+        opsz = sizeof (op1);
+        rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_DOMAIN, &op1, &opsz);
+        errno_assert (rc == 0);
+        nn_assert (opsz == sizeof (op1));
+        opsz = sizeof (op2);
+        rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_DOMAIN, &op2, &opsz);
+        errno_assert (rc == 0);
+        nn_assert (opsz == sizeof (op2));
+        if (op1 != AF_SP_RAW || op2 != AF_SP_RAW) {
+            errno = EINVAL;
+            return -1;
+        }
     }
 
     /*  Check whether both sockets are from the same protocol. */
-    opsz = sizeof (op1);
-    rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_PROTOCOL, &op1, &opsz);
-    errno_assert (rc == 0);
-    nn_assert (opsz == sizeof (op1));
-    opsz = sizeof (op2);
-    rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_PROTOCOL, &op2, &opsz);
-    errno_assert (rc == 0);
-    nn_assert (opsz == sizeof (op2));
-    if (op1 / 16 != op2 / 16) {
-        errno = EINVAL;
-        return -1;
+    if (device->required_checks & NN_CHECK_SAME_PROTOCOL_FAMILY) {
+        opsz = sizeof (op1);
+        rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_PROTOCOL, &op1, &opsz);
+        errno_assert (rc == 0);
+        nn_assert (opsz == sizeof (op1));
+        opsz = sizeof (op2);
+        rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_PROTOCOL, &op2, &opsz);
+        errno_assert (rc == 0);
+        nn_assert (opsz == sizeof (op2));
+        if (op1 / 16 != op2 / 16) {
+            errno = EINVAL;
+            return -1;
+        }
     }
 
     /*  Get the file descriptors for polling. */
@@ -131,42 +143,47 @@ int nn_device (int s1, int s2)
         nn_assert (opsz == sizeof (s2snd));
         nn_assert (s2snd >= 0);
     }
-
-    /*  Check the directionality of the sockets. */
-    if (s1rcv != -1 && s2snd == -1) {
-        errno = EINVAL;
-        return -1;
-    }
-    if (s1snd != -1 && s2rcv == -1) {
-        errno = EINVAL;
-        return -1;
-    }
-    if (s2rcv != -1 && s1snd == -1) {
-        errno = EINVAL;
-        return -1;
-    }
-    if (s2snd != -1 && s1rcv == -1) {
-        errno = EINVAL;
-        return -1;
+    if (device->required_checks & NN_CHECK_SOCKET_DIRECTIONALITY) {
+        /*  Check the directionality of the sockets. */
+        if (s1rcv != -1 && s2snd == -1) {
+            errno = EINVAL;
+            return -1;
+        }
+        if (s1snd != -1 && s2rcv == -1) {
+            errno = EINVAL;
+            return -1;
+        }
+        if (s2rcv != -1 && s1snd == -1) {
+            errno = EINVAL;
+            return -1;
+        }
+        if (s2snd != -1 && s1rcv == -1) {
+            errno = EINVAL;
+            return -1;
+        }
     }
 
     /*  Two-directional device. */
-    if (s1rcv != -1 && s1snd != -1 && s2rcv != -1 && s2snd != -1)
-        return nn_device_twoway (s1, s1rcv, s1snd, s2, s2rcv, s2snd);
+    if (device->required_checks & NN_CHECK_ALLOW_BIDIRECTIONAL) {
+        if (s1rcv != -1 && s1snd != -1 && s2rcv != -1 && s2snd != -1)
+            return nn_device_twoway (device,s1, s1rcv, s1snd, s2, s2rcv, s2snd);
+    }
 
-    /*  Single-directional device passing messages from s1 to s2. */
-    if (s1rcv != -1 && s1snd == -1 && s2rcv == -1 && s2snd != -1)
-        return nn_device_oneway (s1, s1rcv, s2, s2snd);
+    if (device->required_checks & NN_CHECK_ALLOW_UNIDIRECTIONAL) {
+        /*  Single-directional device passing messages from s1 to s2. */
+        if (s1rcv != -1 && s1snd == -1 && s2rcv == -1 && s2snd != -1)
+            return nn_device_oneway (device,s1, s1rcv, s2, s2snd);
 
-    /*  Single-directional device passing messages from s2 to s1. */
-    if (s1rcv == -1 && s1snd != -1 && s2rcv != -1 && s2snd == -1)
-        return nn_device_oneway (s2, s2rcv, s1, s1snd);
+        /*  Single-directional device passing messages from s2 to s1. */
+        if (s1rcv == -1 && s1snd != -1 && s2rcv != -1 && s2snd == -1)
+            return nn_device_oneway (device,s2, s2rcv, s1, s1snd);
+    }
 
     /*  This should never happen. */
     nn_assert (0);
 }
 
-int nn_device_loopback (int s)
+int nn_device_loopback (struct nn_device_recipe *device,int s)
 {
     int rc;
     int op;
@@ -183,7 +200,7 @@ int nn_device_loopback (int s)
     }
 
     while (1) {
-        rc = nn_device_mvmsg (s, s, 0);
+        rc = nn_device_mvmsg (device,s, s, 0);
         if (nn_slow (rc < 0))
             return -1;
     }
@@ -191,7 +208,7 @@ int nn_device_loopback (int s)
 
 #if defined NN_HAVE_WINDOWS
 
-static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
+int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd s1snd,
     int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
@@ -237,7 +254,7 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 
         /*  If possible, pass the message from s1 to s2. */
         if (s1rcv_isready && s2snd_isready) {
-            rc = nn_device_mvmsg (s1, s2, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device,s1, s2, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             s1rcv_isready = 0;
@@ -246,7 +263,7 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 
         /*  If possible, pass the message from s2 to s1. */
         if (s2rcv_isready && s1snd_isready) {
-            rc = nn_device_mvmsg (s2, s1, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device,s2, s1, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             s2rcv_isready = 0;
@@ -257,7 +274,7 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 
 #elif defined NN_HAVE_POLL
 
-static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
+int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd s1snd,
     int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
@@ -295,7 +312,7 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 
         /*  If possible, pass the message from s1 to s2. */
         if (pfd [0].events == 0 && pfd [3].events == 0) {
-            rc = nn_device_mvmsg (s1, s2, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device,s1, s2, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             pfd [0].events = POLLIN;
@@ -304,7 +321,7 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 
         /*  If possible, pass the message from s2 to s1. */
         if (pfd [2].events == 0 && pfd [1].events == 0) {
-            rc = nn_device_mvmsg (s2, s1, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device,s2, s1, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             pfd [2].events = POLLIN;
@@ -317,19 +334,19 @@ static int nn_device_twoway (int s1, nn_fd s1rcv, nn_fd s1snd,
 #error
 #endif
 
-static int nn_device_oneway (int s1, NN_UNUSED nn_fd s1rcv,
+int nn_device_oneway (struct nn_device_recipe *device,int s1, NN_UNUSED nn_fd s1rcv,
                              int s2, NN_UNUSED nn_fd s2snd)
 {
     int rc;
 
     while (1) {
-        rc = nn_device_mvmsg (s1, s2, 0);
+        rc = nn_device_mvmsg (device,s1, s2, 0);
         if (nn_slow (rc < 0))
             return -1;
     }
 }
 
-static int nn_device_mvmsg (int from, int to, int flags)
+int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags)
 {
     int rc;
     void *body;
@@ -353,4 +370,9 @@ static int nn_device_mvmsg (int from, int to, int flags)
         return -1;
     errno_assert (rc >= 0);
     return 0;
+}
+
+int nn_device_rewritemsg(struct nn_device_recipe *device,int from, int to, int flags, struct nn_msghdr *msghdr) 
+{
+    return 1; //always forward
 }

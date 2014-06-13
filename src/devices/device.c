@@ -366,7 +366,7 @@ int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags
         return -1;
     errno_assert (rc >= 0);
     
-    rc = device->nn_device_rewritemsg(device,from,to,flags,&hdr);
+    rc = device->nn_device_rewritemsg(device,from,to,flags,&hdr,rc);
     if (nn_slow(rc==-1)) return -1;
     else if (rc==0) return 0;
     nn_assert(rc==1);
@@ -378,7 +378,7 @@ int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags
     return 0;
 }
 
-int nn_device_rewritemsg(struct nn_device_recipe *device,int from, int to, int flags, struct nn_msghdr *msghdr) 
+int nn_device_rewritemsg(struct nn_device_recipe *device,int from, int to, int flags, struct nn_msghdr *msghdr,int bytes) 
 {
     return 1; //always forward
 }

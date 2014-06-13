@@ -47,6 +47,7 @@ struct nn_device_recipe {
     to - the socket where it is going
     flags - the flags that are being used for send and receive functions
     msghdr - the nn_msghdr that was received from the from socket
+    bytes - the actual received length of the msg.  The nn_msghdr->msg_iov->iov_len is not valid because it contains NN_MSG
 
     return values:
 
@@ -54,7 +55,7 @@ struct nn_device_recipe {
     0 indicates that the msghdr should *not* be forwarded, e.g. the message is dropped in the device
     -1 indicates an error.  Set errno.
     */
-    int (*nn_device_rewritemsg)(struct nn_device_recipe *device, int from, int to, int flags, struct nn_msghdr *msghdr);
+    int (*nn_device_rewritemsg)(struct nn_device_recipe *device, int from, int to, int flags, struct nn_msghdr *msghdr, int bytes);
 
 };
 
@@ -66,7 +67,7 @@ int nn_device_oneway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, int s
 int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags);
 
 int nn_device_entry(struct nn_device_recipe *device,int s1, int s2, int flags);
-int nn_device_rewritemsg(struct nn_device_recipe *device, int from, int to, int flags, struct nn_msghdr *msghdr);
+int nn_device_rewritemsg(struct nn_device_recipe *device, int from, int to, int flags, struct nn_msghdr *msghdr, int bytes);
 
 
 /* At least one socket must be passed to the device */

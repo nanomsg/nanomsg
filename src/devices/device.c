@@ -367,9 +367,9 @@ int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags
     errno_assert (rc >= 0);
     
     rc = device->nn_device_rewritemsg(device,from,to,flags,&hdr);
-    if (rc==-1) return -1;
+    if (nn_slow(rc==-1)) return -1;
     else if (rc==0) return 0;
-    assert(rc==1);
+    nn_assert(rc==1);
 
     rc = nn_sendmsg (to, &hdr, flags);
     if (nn_slow (rc < 0 && nn_errno () == ETERM))

@@ -62,5 +62,9 @@ void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src);
 void nn_msg_bulkcopy_start (struct nn_msg *self, uint32_t copies);
 void nn_msg_bulkcopy_cp (struct nn_msg *dst, struct nn_msg *src);
 
+/** Replaces the message body with entirely new data.  This allows protocols
+    that substantially rewrite or preprocess the userland message to be written. */
+void nn_msg_replace_body(struct nn_msg *self, struct nn_chunkref newBody);
+
 #endif
 

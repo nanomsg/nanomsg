@@ -23,12 +23,8 @@
 #ifndef NN_IPC_INCLUDED
 #define NN_IPC_INCLUDED
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "../../transport.h"
 
 extern struct nn_transport *nn_ipc;
-
-#endif
 
 #endif

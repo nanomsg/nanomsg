@@ -490,6 +490,7 @@ endif NANOCAT
 ################################################################################
 
 EXTRA_DIST += \
+    ./rfc/sp-protocol-ids-01.txt \
     ./rfc/sp-tcp-mapping-01.txt \
     ./rfc/sp-udp-mapping-01.txt \
     ./rfc/sp-tls-mapping-01.txt \

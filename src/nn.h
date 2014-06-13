@@ -32,20 +32,24 @@ extern "C" {
 #include <stddef.h>
 
 /*  Handle DSO symbol visibility                                             */
-#if defined _WIN32
-#   if defined NN_EXPORTS
-#       define NN_EXPORT __declspec(dllexport)
-#   else
-#       define NN_EXPORT __declspec(dllimport)
-#   endif
+#if defined NN_NO_EXPORTS
+#   define NN_EXPORT
 #else
-#   if defined __SUNPRO_C
-#       define NN_EXPORT __global
-#   elif (defined __GNUC__ && __GNUC__ >= 4) || \
-          defined __INTEL_COMPILER || defined __clang__
-#       define NN_EXPORT __attribute__ ((visibility("default")))
+#   if defined _WIN32
+#      if defined NN_EXPORTS
+#          define NN_EXPORT __declspec(dllexport)
+#      else
+#          define NN_EXPORT __declspec(dllimport)
+#      endif
 #   else
-#       define NN_EXPORT
+#      if defined __SUNPRO_C
+#          define NN_EXPORT __global
+#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
+             defined __INTEL_COMPILER || defined __clang__
+#          define NN_EXPORT __attribute__ ((visibility("default")))
+#      else
+#          define NN_EXPORT
+#      endif
 #   endif
 #endif
 
@@ -67,13 +71,13 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 1
+#define NN_VERSION_CURRENT 2
 
 /*  The latest revision of the current interface. */
 #define NN_VERSION_REVISION 0
 
 /*  How many past interface versions are still supported. */
-#define NN_VERSION_AGE 1
+#define NN_VERSION_AGE 2
 
 /******************************************************************************/
 /*  Errors.                                                                   */
@@ -132,8 +136,11 @@ extern "C" {
 #ifndef EFAULT
 #define EFAULT (NN_HAUSNUMERO + 16)
 #endif
+#ifndef EACCES
+#define EACCES (NN_HAUSNUMERO + 17)
+#endif
 #ifndef EACCESS
-#define EACCESS (NN_HAUSNUMERO + 17)
+#define EACCESS (EACCES)
 #endif
 #ifndef ENETRESET
 #define ENETRESET (NN_HAUSNUMERO + 18)
@@ -165,6 +172,9 @@ extern "C" {
 #ifndef EISCONN
 #define EISCONN (NN_HAUSNUMERO + 27)
 #define NN_EISCONN_DEFINED
+#endif
+#ifndef ESOCKTNOSUPPORT
+#define ESOCKTNOSUPPORT (NN_HAUSNUMERO + 28)
 #endif
 
 /*  Native nanomsg error codes.                                               */

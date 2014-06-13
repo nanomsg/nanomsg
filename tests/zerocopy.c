@@ -176,7 +176,7 @@ void test_reallocmsg_pubsub ()
     p1 = nn_reallocmsg (p1, 15);
     errno_assert (p1);
     nn_assert (p1 != p2);
-    memcpy (p1 + 12, " 42", 3);
+    memcpy (((char*) p1) + 12, " 42", 3);
     rc = memcmp (p1, "Hello World! 42", 15);
     nn_assert (rc == 0);
 

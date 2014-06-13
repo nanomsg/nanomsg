@@ -21,8 +21,6 @@
     IN THE SOFTWARE.
 */
 
-#if !defined NN_HAVE_WINDOWS
-
 #include "ipc.h"
 #include "bipc.h"
 #include "cipc.h"
@@ -35,8 +33,12 @@
 #include "../../utils/list.h"
 
 #include <string.h>
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <sys/un.h>
 #include <unistd.h>
+#endif
 
 /*  nn_transport interface. */
 static int nn_ipc_bind (void *hint, struct nn_epbase **epbase);
@@ -64,6 +66,4 @@ static int nn_ipc_connect (void *hint, struct nn_epbase **epbase)
 {
     return nn_cipc_create (hint, epbase);
 }
-
-#endif
 

@@ -23,30 +23,11 @@
 #ifndef NN_REQ_INCLUDED
 #define NN_REQ_INCLUDED
 
-#include "../../protocol.h"
 #include "xreq.h"
+#include "task.h"
+
+#include "../../protocol.h"
 #include "../../aio/fsm.h"
-#include "../../aio/timer.h"
-
-struct nn_task {
-
-    /*  ID of the request being currently processed. Replies for different
-        requests are considered stale and simply dropped. */
-    uint32_t id;
-
-    /*  Stored request, so that it can be re-sent if needed. */
-    struct nn_msg request;
-
-    /*  Stored reply, so that user can retrieve it later on. */
-    struct nn_msg reply;
-
-    /*  Timer used to wait while request should be re-sent. */
-    struct nn_timer timer;
-
-    /*  Pipe the current request has been sent to. Non-null only in ACTIVE
-        state  */
-    struct nn_pipe *sent_to;
-};
 
 struct nn_req {
 

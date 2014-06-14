@@ -182,6 +182,8 @@ set (NN_SOURCES
     protocols/reqrep/req.c
     protocols/reqrep/rep.h
     protocols/reqrep/rep.c
+    protocols/reqrep/task.h
+    protocols/reqrep/task.c
     protocols/reqrep/xrep.h
     protocols/reqrep/xrep.c
     protocols/reqrep/xreq.h

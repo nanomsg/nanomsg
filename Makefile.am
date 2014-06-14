@@ -200,6 +200,8 @@ PROTOCOLS_REQREP = \
     src/protocols/reqrep/req.c \
     src/protocols/reqrep/rep.h \
     src/protocols/reqrep/rep.c \
+    src/protocols/reqrep/task.h \
+    src/protocols/reqrep/task.c \
     src/protocols/reqrep/xrep.h \
     src/protocols/reqrep/xrep.c \
     src/protocols/reqrep/xreq.h \

@@ -17,21 +17,26 @@ DESCRIPTION
 -----------
 Broadcasts messages to multiple destinations.
 
-Messages sent from NN_PUB sockets will only be received by NN_SUB sockets that
-have subscribed to the matching 'topic'. The NN_SUB socket will determine a
-comparing the subscribed topics (using NN_SUB_SUBSCRIBE on a full SUB socket)
-to the bytes in the incomming message, up to the first NULL (\0) character.
+Messages are sent from NN_PUB sockets and will only be received by NN_SUB
+sockets that have subscribed to the matching 'topic'. Topic is an arbitrary
+sequence of bytes at the beginning of the message body. The NN_SUB socket will
+determine whether a message should be delivered to the user by comparing the
+subscribed topics (using NN_SUB_SUBSCRIBE on a full SUB socket) to the bytes
+initial bytes in the incomming message, up to the size of the topic.
 
-The empty string is allowed, meaning that a subscription of:
+----
+nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "Hello", 5);
+----
 
----
-nn_setsockopt(s, NN_SUB, NN_SUB_SUBSCRIBE, "", (size_t) 1 ); //the NULL is needed
----
+Will match any message with intial 5 bytes being "Hello", for example,
+message "Hello, World!" will match.
 
-Will match a message containing "\0Hello, World!"
+Topic with zero length matches any message.
 
-The entire message, including the the topic string and the following NULL
-is included in the message. 
+If the socket is subscribed to multiple topics, message matching any of them
+will be delivered to the user.
+
+The entire message, including the the topic, is delivered to the user.
 
 Socket Types
 ~~~~~~~~~~~~
@@ -64,20 +69,19 @@ int sub = nn_socket (AF_SP, NN_SUB);
 int nbytes;
 void *buf = NULL;
 
-nn_setsockopt(sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 1 );
-nn_setsockopt(sub, NN_SUB, NN_SUB_SUBSCRIBE, "foo",4);
+nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "foo", 3);
+nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "bar", 3);
 
-nbytes = nn_send(pub, "foo\0Hello!", 10);
+nbytes = nn_send (pub, "foo|Hello!", 10);
 assert(nbytes == 10);
-nbytes = nn_recv(sub, &buf, NN_MSG, 0);
-assert(nbytes == 10);
-nn_freemsg(buf);
+nbytes = nn_recv (sub, &buf, NN_MSG, 0);
+assert (nbytes == 10);
+nn_freemsg (buf);
 
-nbytes = nn_send(pub, "\0World!", 7);
-assert(nbytes ==7);
+nbytes = nn_send (pub, "baz|World!", 10);
+
+/* Message is not delivered because if matches no subscription. */
 nbytes = nn_recv(sub, &buf, NN_MSG, 0);
-assert(nbytes == 7);
-nn_freemsg(buf);
 ----
 
 

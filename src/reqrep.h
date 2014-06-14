@@ -23,6 +23,8 @@
 #ifndef REQREP_H_INCLUDED
 #define REQREP_H_INCLUDED
 
+#include "nn.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,6 +35,14 @@ extern "C" {
 #define NN_REP (NN_PROTO_REQREP * 16 + 1)
 
 #define NN_REQ_RESEND_IVL 1
+
+typedef union nn_req_handle {
+    int i;
+    void *ptr;
+} nn_req_handle;
+
+NN_EXPORT int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len, int flags);
+NN_EXPORT int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len, int flags);
 
 #ifdef __cplusplus
 }

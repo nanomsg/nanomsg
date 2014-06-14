@@ -392,8 +392,6 @@ NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
 
 NN_EXPORT int nn_device (int s1, int s2);
 
-#undef NN_EXPORT
-
 #ifdef __cplusplus
 }
 #endif

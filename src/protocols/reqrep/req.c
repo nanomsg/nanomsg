@@ -71,8 +71,8 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_in,
     nn_req_out,
     nn_req_events,
-    nn_req_send,
-    nn_req_recv,
+    nn_req_csend,
+    nn_req_crecv,
     nn_req_setopt,
     nn_req_getopt
 };
@@ -223,7 +223,13 @@ static int nn_req_events (struct nn_sockbase *self)
     return rc;
 }
 
-static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len,
+    int flags)
+{
+    nn_assert (0);
+}
+
+static int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
 {
     struct nn_req *req;
 
@@ -248,7 +254,14 @@ static int nn_req_send (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_req_recv (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len,
+    int flags)
+{
+    nn_assert (0);
+}
+
+
+static int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     struct nn_req *req;
 

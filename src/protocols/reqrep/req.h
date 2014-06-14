@@ -28,19 +28,11 @@
 #include "../../aio/fsm.h"
 #include "../../aio/timer.h"
 
-
-struct nn_req {
-
-    /*  The base class. Raw REQ socket. */
-    struct nn_xreq xreq;
-
-    /*  The state machine. */
-    struct nn_fsm fsm;
-    int state;
+struct nn_task {
 
     /*  ID of the request being currently processed. Replies for different
         requests are considered stale and simply dropped. */
-    uint32_t reqid;
+    uint32_t id;
 
     /*  Stored request, so that it can be re-sent if needed. */
     struct nn_msg request;
@@ -51,12 +43,25 @@ struct nn_req {
     /*  Timer used to wait while request should be re-sent. */
     struct nn_timer timer;
 
-    /*  Protocol-specific socket options. */
-    int resend_ivl;
-
     /*  Pipe the current request has been sent to. Non-null only in ACTIVE
         state  */
     struct nn_pipe *sent_to;
+};
+
+struct nn_req {
+
+    /*  The base class. Raw REQ socket. */
+    struct nn_xreq xreq;
+
+    /*  The state machine. */
+    struct nn_fsm fsm;
+    int state;
+
+    /*  Protocol-specific socket options. */
+    int resend_ivl;
+
+    /*  The request being processed. */
+    struct nn_task task;
 };
 
 extern struct nn_socktype *nn_req_socktype;

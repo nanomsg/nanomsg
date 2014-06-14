@@ -84,15 +84,16 @@ static void nn_req_init (struct nn_req *self,
     nn_fsm_init_root (&self->fsm, nn_req_handler, nn_req_shutdown,
         nn_sockbase_getctx (&self->xreq.sockbase));
     self->state = NN_REQ_STATE_IDLE;
-    self->sent_to = NULL;
+
+    self->task.sent_to = NULL;
 
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
-    nn_random_generate (&self->reqid, sizeof (self->reqid));
+    nn_random_generate (&self->task.id, sizeof (self->task.id));
 
-    nn_msg_init (&self->request, 0);
-    nn_msg_init (&self->reply, 0);
-    nn_timer_init (&self->timer, NN_REQ_SRC_RESEND_TIMER, &self->fsm);
+    nn_msg_init (&self->task.request, 0);
+    nn_msg_init (&self->task.reply, 0);
+    nn_timer_init (&self->task.timer, NN_REQ_SRC_RESEND_TIMER, &self->fsm);
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
 
     /*  Start the state machine. */
@@ -101,9 +102,9 @@ static void nn_req_init (struct nn_req *self,
 
 static void nn_req_term (struct nn_req *self)
 {
-    nn_timer_term (&self->timer);
-    nn_msg_term (&self->reply);
-    nn_msg_term (&self->request);
+    nn_timer_term (&self->task.timer);
+    nn_msg_term (&self->task.reply);
+    nn_msg_term (&self->task.request);
     nn_fsm_term (&self->fsm);
     nn_xreq_term (&self->xreq);
 }
@@ -149,37 +150,38 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     while (1) {
 
         /*  Get new reply. */
-        rc = nn_xreq_recv (&req->xreq.sockbase, &req->reply);
+        rc = nn_xreq_recv (&req->xreq.sockbase, &req->task.reply);
         if (nn_slow (rc == -EAGAIN))
             return;
         errnum_assert (rc == 0, -rc);
 
         /*  No request was sent. Getting a reply doesn't make sense. */
         if (nn_slow (!nn_req_inprogress (req))) {
-            nn_msg_term (&req->reply);
+            nn_msg_term (&req->task.reply);
             continue;
         }
 
         /*  Ignore malformed replies. */
-        if (nn_slow (nn_chunkref_size (&req->reply.hdr) != sizeof (uint32_t))) {
-            nn_msg_term (&req->reply);
+        if (nn_slow (nn_chunkref_size (&req->task.reply.hdr) !=
+              sizeof (uint32_t))) {
+            nn_msg_term (&req->task.reply);
             continue;
         }
 
         /*  Ignore replies with incorrect request IDs. */
-        reqid = nn_getl (nn_chunkref_data (&req->reply.hdr));
+        reqid = nn_getl (nn_chunkref_data (&req->task.reply.hdr));
         if (nn_slow (!(reqid & 0x80000000))) {
-            nn_msg_term (&req->reply);
+            nn_msg_term (&req->task.reply);
             continue;
         }
-        if (nn_slow (reqid != (req->reqid | 0x80000000))) {
-            nn_msg_term (&req->reply);
+        if (nn_slow (reqid != (req->task.id | 0x80000000))) {
+            nn_msg_term (&req->task.reply);
             continue;
         }
 
         /*  Trim the request ID. */
-        nn_chunkref_term (&req->reply.hdr);
-        nn_chunkref_init (&req->reply.hdr, 0);
+        nn_chunkref_term (&req->task.reply.hdr);
+        nn_chunkref_init (&req->task.reply.hdr, 0);
 
         /*  TODO: Deallocate the request here? */
 
@@ -238,15 +240,15 @@ static int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Generate new request ID for the new request and put it into message
         header. The most important bit is set to 1 to indicate that this is
         the bottom of the backtrace stack. */
-    ++req->reqid;
+    ++req->task.id;
     nn_assert (nn_chunkref_size (&msg->hdr) == 0);
     nn_chunkref_term (&msg->hdr);
     nn_chunkref_init (&msg->hdr, 4);
-    nn_putl (nn_chunkref_data (&msg->hdr), req->reqid | 0x80000000);
+    nn_putl (nn_chunkref_data (&msg->hdr), req->task.id | 0x80000000);
 
     /*  Store the message so that it can be re-sent if there's no reply. */
-    nn_msg_term (&req->request);
-    nn_msg_mv (&req->request, msg);
+    nn_msg_term (&req->task.request);
+    nn_msg_mv (&req->task.request, msg);
 
     /*  Notify the state machine. */
     nn_fsm_action (&req->fsm, NN_REQ_ACTION_SENT);
@@ -276,8 +278,8 @@ static int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
         return -EAGAIN;
 
     /*  If the reply was already received, just pass it to the caller. */
-    nn_msg_mv (msg, &req->reply);
-    nn_msg_init (&req->reply, 0);
+    nn_msg_mv (msg, &req->task.reply);
+    nn_msg_init (&req->task.reply, 0);
 
     /*  Notify the state machine. */
     nn_fsm_action (&req->fsm, NN_REQ_ACTION_RECEIVED);
@@ -334,11 +336,11 @@ static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
     req = nn_cont (self, struct nn_req, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_timer_stop (&req->timer);
+        nn_timer_stop (&req->task.timer);
         req->state = NN_REQ_STATE_STOPPING;
     }
     if (nn_slow (req->state == NN_REQ_STATE_STOPPING)) {
-        if (!nn_timer_isidle (&req->timer))
+        if (!nn_timer_isidle (&req->task.timer))
             return;
         req->state = NN_REQ_STATE_IDLE;
         nn_fsm_stopped_noevent (&req->fsm);
@@ -435,8 +437,8 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
             case NN_REQ_ACTION_IN:
 
                 /*  Reply arrived. */
-                nn_timer_stop (&req->timer);
-                req->sent_to = NULL;
+                nn_timer_stop (&req->task.timer);
+                req->task.sent_to = NULL;
                 req->state = NN_REQ_STATE_STOPPING_TIMER;
                 return;
 
@@ -444,15 +446,15 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 
                 /*  New request was sent while the old one was still being
                     processed. Cancel the old request first. */
-                nn_timer_stop (&req->timer);
-                req->sent_to = NULL;
+                nn_timer_stop (&req->task.timer);
+                req->task.sent_to = NULL;
                 req->state = NN_REQ_STATE_CANCELLING;
                 return;
 
             case NN_REQ_ACTION_PIPE_RM:
                 /*  Pipe that we sent request to is removed  */
-                nn_timer_stop (&req->timer);
-                req->sent_to = NULL;
+                nn_timer_stop (&req->task.timer);
+                req->task.sent_to = NULL;
                 /*  Pretend we timed out so request resent immediately  */
                 req->state = NN_REQ_STATE_TIMED_OUT;
                 return;
@@ -464,8 +466,8 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
         case NN_REQ_SRC_RESEND_TIMER:
             switch (type) {
             case NN_TIMER_TIMEOUT:
-                nn_timer_stop (&req->timer);
-                req->sent_to = NULL;
+                nn_timer_stop (&req->task.timer);
+                req->task.sent_to = NULL;
                 req->state = NN_REQ_STATE_TIMED_OUT;
                 return;
             default:
@@ -616,7 +618,7 @@ static void nn_req_action_send (struct nn_req *self, int allow_delay)
     struct nn_pipe *to;
 
     /*  Send the request. */
-    nn_msg_cp (&msg, &self->request);
+    nn_msg_cp (&msg, &self->task.request);
     rc = nn_xreq_send_to (&self->xreq.sockbase, &msg, &to);
 
     /*  If the request cannot be sent at the moment wait till
@@ -632,9 +634,9 @@ static void nn_req_action_send (struct nn_req *self, int allow_delay)
         in case the request gets lost somewhere further out
         in the topology. */
     if (nn_fast (rc == 0)) {
-        nn_timer_start (&self->timer, self->resend_ivl);
+        nn_timer_start (&self->task.timer, self->resend_ivl);
         nn_assert (to);
-        self->sent_to = to;
+        self->task.sent_to = to;
         self->state = NN_REQ_STATE_ACTIVE;
         return;
     }
@@ -661,7 +663,7 @@ void nn_req_rm (struct nn_sockbase *self, struct nn_pipe *pipe) {
     req = nn_cont (self, struct nn_req, xreq.sockbase);
 
     nn_xreq_rm (self, pipe);
-    if (nn_slow (pipe == req->sent_to)) {
+    if (nn_slow (pipe == req->task.sent_to)) {
         nn_fsm_action (&req->fsm, NN_REQ_ACTION_PIPE_RM);
     }
 }

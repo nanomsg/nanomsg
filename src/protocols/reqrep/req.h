@@ -38,6 +38,9 @@ struct nn_req {
     struct nn_fsm fsm;
     int state;
 
+    /*  Last request ID assigned. */
+    uint32_t lastid;
+
     /*  Protocol-specific socket options. */
     int resend_ivl;
 

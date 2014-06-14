@@ -80,21 +80,27 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
 static void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
+    nn_req_handle hndl;
+
     nn_xreq_init (&self->xreq, vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_req_handler, nn_req_shutdown,
         nn_sockbase_getctx (&self->xreq.sockbase));
     self->state = NN_REQ_STATE_IDLE;
 
-    self->task.sent_to = NULL;
-
     /*  Start assigning request IDs beginning with a random number. This way
         there should be no key clashes even if the executable is re-started. */
-    nn_random_generate (&self->task.id, sizeof (self->task.id));
+    nn_random_generate (&self->lastid, sizeof (self->lastid));
+
+    self->task.sent_to = NULL;
 
     nn_msg_init (&self->task.request, 0);
     nn_msg_init (&self->task.reply, 0);
     nn_timer_init (&self->task.timer, NN_REQ_SRC_RESEND_TIMER, &self->fsm);
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
+
+    /*  For now, handle is empty. */
+    memset (&hndl, 0, sizeof (hndl));
+    nn_task_init (&self->task, self->lastid, hndl);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -103,6 +109,7 @@ static void nn_req_init (struct nn_req *self,
 static void nn_req_term (struct nn_req *self)
 {
     nn_timer_term (&self->task.timer);
+    nn_task_term (&self->task);
     nn_msg_term (&self->task.reply);
     nn_msg_term (&self->task.request);
     nn_fsm_term (&self->fsm);

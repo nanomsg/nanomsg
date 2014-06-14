@@ -36,6 +36,9 @@ struct nn_task {
         requests are considered stale and simply dropped. */
     uint32_t id;
 
+    /*  User-defined handle of the task. */
+    nn_req_handle hndl;
+
     /*  Stored request, so that it can be re-sent if needed. */
     struct nn_msg request;
 
@@ -45,10 +48,13 @@ struct nn_task {
     /*  Timer used to wait while request should be re-sent. */
     struct nn_timer timer;
 
-    /*  Pipe the current request has been sent to. Non-null only in ACTIVE
-        state  */
+    /*  Pipe the current request has been sent to. This is an optimisation so
+        that request can be re-sent immediately if the pipe disappears.  */
     struct nn_pipe *sent_to;
 };
+
+void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl);
+void nn_task_term (struct nn_task *self);
 
 #endif
 

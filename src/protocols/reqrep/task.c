@@ -22,3 +22,13 @@
 
 #include "task.h"
 
+void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl)
+{
+    self->id = id;
+    self->hndl = hndl;
+}
+
+void nn_task_term (struct nn_task *self)
+{
+}
+

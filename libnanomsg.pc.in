@@ -8,5 +8,5 @@ Description: nanomsg library is a high-performance implementation of several sca
 URL: http://nanomsg.org/
 Version: @NN_ABI_VERSION@
 Requires:
-Libs: -L${libdir} -lnanomsg
+Libs: -L${libdir} -lnanomsg @LIBS@
 Cflags: -I${includedir}

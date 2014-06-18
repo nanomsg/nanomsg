@@ -54,8 +54,11 @@ NANOMSG_CORE = \
     src/core/sock.h \
     src/core/sock.c \
     src/core/sockbase.c \
-    src/core/device.c \
     src/core/symbol.c
+
+NANOMSG_DEVICES =\
+    src/devices/device.c
+
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -299,7 +302,8 @@ libnanomsg_la_SOURCES = \
     $(NANOMSG_AIO) \
     $(NANOMSG_UTILS) \
     $(NANOMSG_PROTOCOLS) \
-    $(NANOMSG_TRANSPORTS)
+    $(NANOMSG_TRANSPORTS) \
+    $(NANOMSG_DEVICES)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libnanomsg.pc

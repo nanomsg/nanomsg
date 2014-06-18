@@ -47,7 +47,6 @@ set (NN_SOURCES
     core/sock.h
     core/sock.c
     core/sockbase.c
-    core/device.c
     core/symbol.c
 
     aio/ctx.h
@@ -136,6 +135,9 @@ set (NN_SOURCES
     utils/thread_win.inc
     utils/wire.h
     utils/wire.c
+
+    devices/device.h
+    devices/device.c
 
     protocols/utils/dist.h
     protocols/utils/dist.c

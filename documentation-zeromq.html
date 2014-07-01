@@ -44,7 +44,7 @@
 <ul>
 <li>Sockets are represented as ints, not void pointers.</li>
 <li>Contexts, as known in ZeroMQ, don't exist in nanomsg. This means simpler API (sockets can be created in a single step) as well as the possibility of using the library for communication between different modules in a single process (think of plugins implemented in different languages speaking each to another). More discussion can be found <a href="http://250bpm.com/blog:23">here</a>.</li>
-<li>Sending are receiving functions (nn_send, nn_sendmsg, nn_recv and nn_recvmsg) fully match POSIX syntax and semantics.</li>
+<li>Sending and receiving functions (nn_send, nn_sendmsg, nn_recv and nn_recvmsg) fully match POSIX syntax and semantics.</li>
 </ul>
 
 <h3>Implementation Language</h3>

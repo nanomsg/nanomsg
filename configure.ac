@@ -257,12 +257,25 @@ AC_CHECK_FUNCS([pipe2], [
     AC_DEFINE([NN_HAVE_PIPE2])
     CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 ])
+
 AC_CHECK_FUNCS([gethrtime], [AC_DEFINE([NN_HAVE_GETHRTIME])])
-AC_CHECK_FUNCS([clock_gettime], [
-    AC_EGREP_HEADER([_POSIX_MONOTONIC_CLOCK], [unistd.h], [
-        AC_DEFINE([NN_HAVE_CLOCK_MONOTONIC])
-    ])
+
+AC_MSG_CHECKING([for CLOCK_MONOTONIC])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    #include <time.h>
+]], [[
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return 0;
+]])], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([NN_HAVE_CLOCK_MONOTONIC])
+], [
+    AC_MSG_RESULT([no])
 ])
+
+AC_CHECK_LIB([rt], [clock_gettime])
+AC_CHECK_FUNCS([clock_gettime])
 
 AC_CHECK_FUNCS([poll], [AC_DEFINE([NN_HAVE_POLL])])
 

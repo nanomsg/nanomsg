@@ -399,7 +399,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
             idx += iov [i].iov_len;
         }
         brc = WriteFile (self->p, self->pipesendbuf, len, NULL, &self->out.olpd);
-        if (nn_fast (brc)) {
+        if (nn_fast (brc || GetLastError() == ERROR_IO_PENDING)) {
             nn_worker_op_start (&self->out, 0);
             return;
         }

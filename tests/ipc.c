@@ -38,6 +38,9 @@ int main ()
     int i;
     int s1, s2;
 
+	size_t size;
+	char * buf;
+
     /*  Try closing a IPC socket while it not connected. */
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
@@ -68,6 +71,17 @@ int main ()
     for (i = 0; i != 100; ++i) {
         test_recv (sb, "XYZ");
     }
+
+	/*  Send something large enough to trigger overlapped I/O on Windows. */
+	size = 10000;
+	buf = malloc( size );
+	for (i =0; i != size - 1; ++i) {
+		buf[i] = 48 + i % 10;
+	}
+	buf[size-1] = '\0';
+	test_send (sc, buf);
+	test_recv (sb, buf);
+	free( buf );
 
     test_close (sc);
     test_close (sb);

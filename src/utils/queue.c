@@ -54,6 +54,39 @@ void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
     self->tail = item;
 }
 
+void nn_queue_maybe_remove (struct nn_queue *self, struct nn_queue_item *item)
+{
+   if (item->next == NN_QUEUE_NOTINQUEUE)
+       return;
+
+   if (self->head == item) {
+       self->head = self->head->next;
+       if (!self->head)
+           self->tail = NULL;
+       item->next = NN_QUEUE_NOTINQUEUE;
+   } else {
+       struct nn_queue_item *prev = self->head;
+
+       while (1) {
+           if (!prev) break;
+
+           struct nn_queue_item *curr = prev->next;
+
+           if (curr == item) {
+               prev->next = curr->next;
+               if (self->tail == curr)
+                   self->tail = prev;
+
+               item->next = NN_QUEUE_NOTINQUEUE;
+               break;
+           }
+           prev = curr;
+       }
+   }
+
+   nn_assert (item->next == NN_QUEUE_NOTINQUEUE);
+}
+
 struct nn_queue_item *nn_queue_pop (struct nn_queue *self)
 {
     struct nn_queue_item *result;

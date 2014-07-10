@@ -95,8 +95,8 @@ static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     timer = nn_cont (self, struct nn_timer, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_worker_execute (timer->worker, &timer->stop_task);
         timer->state = NN_TIMER_STATE_STOPPING;
+        nn_worker_execute (timer->worker, &timer->stop_task);
         return;
     }
     if (nn_slow (timer->state == NN_TIMER_STATE_STOPPING)) {
@@ -131,8 +131,8 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
 
                 /*  Send start event to the worker thread. */
-                nn_worker_execute (timer->worker, &timer->start_task);
                 timer->state = NN_TIMER_STATE_ACTIVE;
+                nn_worker_execute (timer->worker, &timer->start_task);
                 return;
             default:
                 nn_fsm_bad_action (timer->state, src, type);

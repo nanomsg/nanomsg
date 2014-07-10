@@ -58,6 +58,7 @@ struct nn_worker;
 int nn_worker_init (struct nn_worker *self);
 void nn_worker_term (struct nn_worker *self);
 void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task);
+void nn_worker_maybe_cancel (struct nn_worker *self, struct nn_worker_task *task);
 
 void nn_worker_add_timer (struct nn_worker *self, int timeout,
     struct nn_worker_timer *timer);

@@ -64,6 +64,7 @@ tests/inproc_shutdown
 tests/iovec
 tests/ipc
 tests/ipc_shutdown
+tests/ipc_stress
 tests/list
 tests/msg
 tests/pair

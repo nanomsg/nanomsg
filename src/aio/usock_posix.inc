@@ -130,6 +130,9 @@ void nn_usock_term (struct nn_usock *self)
     nn_fsm_event_term (&self->event_received);
     nn_fsm_event_term (&self->event_sent);
     nn_fsm_event_term (&self->event_established);
+
+    nn_worker_maybe_cancel (self->worker, &self->task_recv);
+
     nn_worker_task_term (&self->task_stop);
     nn_worker_task_term (&self->task_recv);
     nn_worker_task_term (&self->task_send);
@@ -858,8 +861,8 @@ error:
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_ACTION_CANCEL:
-                nn_worker_execute (usock->worker, &usock->task_stop);
                 usock->state = NN_USOCK_STATE_CANCELLING;
+                nn_worker_execute (usock->worker, &usock->task_stop);
                 return;
             default:
                 nn_fsm_bad_action (usock->state, src, type);

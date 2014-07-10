@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013-2014 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,6 +27,7 @@
 #include "../utils/fast.h"
 #include "../utils/cont.h"
 #include "../utils/attr.h"
+#include "../utils/queue.h"
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);

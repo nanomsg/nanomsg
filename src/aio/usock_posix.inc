@@ -952,14 +952,18 @@ error:
     case NN_USOCK_STATE_CANCELLING:
         switch (src) {
         case NN_USOCK_SRC_TASK_STOP:
-            nn_assert (type == NN_WORKER_TASK_EXECUTE);
-            nn_worker_rm_fd (usock->worker, &usock->wfd);
-            usock->state = NN_USOCK_STATE_LISTENING;
+            switch (type) {
+            case NN_WORKER_TASK_EXECUTE:
+                nn_worker_rm_fd (usock->worker, &usock->wfd);
+                usock->state = NN_USOCK_STATE_LISTENING;
 
-            /*  Notify the accepted socket that it was stopped. */
-            nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
+                /*  Notify the accepted socket that it was stopped. */
+                nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
 
-            return;
+                return;
+            default:
+                nn_fsm_bad_action (usock->state, src, type);
+            }
         case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_IN:

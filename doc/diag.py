@@ -144,7 +144,10 @@ class Visitor(object):
         self.visit(cursor)
 
     def visit(self, cursor):
-        name = cursor.kind.name
+        try:
+            name = cursor.kind.name
+        except ValueError:
+            name = 'VERY_BAD_NAME'
         meth = getattr(self, 'enter_' + name, None)
         if meth is not None:
             res = meth(cursor)

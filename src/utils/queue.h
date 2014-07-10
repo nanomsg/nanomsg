@@ -53,8 +53,7 @@ int nn_queue_empty (struct nn_queue *self);
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
 
 /*  Remove the item if it is present in the queue. */
-void nn_queue_maybe_remove (struct nn_queue *self,
-    struct nn_queue_item *item);
+void nn_queue_remove (struct nn_queue *self, struct nn_queue_item *item);
 
 /*  Retrieves one element from the queue. The element is removed
     from the queue. Returns NULL if the queue is empty. */

@@ -146,10 +146,10 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_unlock (&self->sync);
 }
 
-void nn_worker_maybe_cancel (struct nn_worker *self, struct nn_worker_task *task)
+void nn_worker_cancel (struct nn_worker *self, struct nn_worker_task *task)
 {
     nn_mutex_lock (&self->sync);
-    nn_queue_maybe_remove (&self->tasks, &task->item);
+    nn_queue_remove (&self->tasks, &task->item);
     nn_mutex_unlock (&self->sync);
 }
 

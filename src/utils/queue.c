@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012 250bpm s.r.o.  All rights reserv
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -54,37 +54,28 @@ void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
     self->tail = item;
 }
 
-void nn_queue_maybe_remove (struct nn_queue *self, struct nn_queue_item *item)
+void nn_queue_remove (struct nn_queue *self, struct nn_queue_item *item)
 {
-   if (item->next == NN_QUEUE_NOTINQUEUE)
-       return;
+    struct nn_queue_item *it;
+    struct nn_queue_item *prev;
 
-   if (self->head == item) {
-       self->head = self->head->next;
-       if (!self->head)
-           self->tail = NULL;
-       item->next = NN_QUEUE_NOTINQUEUE;
-   } else {
-       struct nn_queue_item *prev = self->head;
+    if (item->next == NN_QUEUE_NOTINQUEUE)
+        return;
 
-       while (1) {
-           if (!prev) break;
-
-           struct nn_queue_item *curr = prev->next;
-
-           if (curr == item) {
-               prev->next = curr->next;
-               if (self->tail == curr)
-                   self->tail = prev;
-
-               item->next = NN_QUEUE_NOTINQUEUE;
-               break;
-           }
-           prev = curr;
-       }
-   }
-
-   nn_assert (item->next == NN_QUEUE_NOTINQUEUE);
+    prev = NULL;
+    for (it = self->head; it != NULL; it = it->next) {
+        if (it == item) {
+            if (self->head == it)
+                self->head = it->next;
+            if (self->tail == it)
+                self->tail = prev;
+            if (prev)
+                prev->next = it->next;
+            item->next = NN_QUEUE_NOTINQUEUE;
+            return;
+        }
+        prev = it;
+    }
 }
 
 struct nn_queue_item *nn_queue_pop (struct nn_queue *self)

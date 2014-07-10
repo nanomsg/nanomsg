@@ -32,8 +32,8 @@
 
 /*  Stress test the IPC transport. */
 
-#define THREAD_COUNT 100
-#define TEST_LOOPS 100
+#define THREAD_COUNT 10
+#define TEST_LOOPS 10
 #define SOCKET_ADDRESS "ipc://test-stress.ipc"
 
 struct nn_atomic active;

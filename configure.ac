@@ -350,4 +350,4 @@ AC_OUTPUT([
 Makefile
 libnanomsg.pc
 ])
-
+cp confdefs.h config.h

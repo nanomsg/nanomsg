@@ -40,6 +40,7 @@ struct nn_atomic active;
 
 static void server(NN_UNUSED void *arg)
 {
+	int bytes;
     int sock = nn_socket(AF_SP, NN_PULL);
     nn_assert(sock >= 0);
     nn_assert(nn_bind(sock, SOCKET_ADDRESS) >= 0);
@@ -47,7 +48,7 @@ static void server(NN_UNUSED void *arg)
     {
         char *buf = NULL;
         if (!active.n) break;
-        const int bytes = nn_recv(sock, &buf, NN_MSG, 0);
+        bytes = nn_recv(sock, &buf, NN_MSG, 0);
         nn_assert(bytes >= 0);
         nn_freemsg(buf);
     }
@@ -56,6 +57,7 @@ static void server(NN_UNUSED void *arg)
 
 static void client(NN_UNUSED void *arg)
 {
+	int bytes;
     char msg[] = "0";
     int sz_msg = strlen (msg) + 1; // '\0' too
     int i;
@@ -64,7 +66,7 @@ static void client(NN_UNUSED void *arg)
         int cli_sock = nn_socket(AF_SP, NN_PUSH);
         nn_assert(cli_sock >= 0);
         nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
-        const int bytes = nn_send(cli_sock, msg, sz_msg, 0);
+        bytes = nn_send(cli_sock, msg, sz_msg, 0);
         nn_assert(bytes == sz_msg);
         nn_close(cli_sock);
     }
@@ -73,8 +75,9 @@ static void client(NN_UNUSED void *arg)
 
 int main()
 {
-    int sb;
     int i;
+	int cli_sock;
+	int bytes;
     struct nn_thread srv_thread;
     struct nn_thread cli_threads[THREAD_COUNT];
     nn_atomic_init (&active, THREAD_COUNT);
@@ -87,10 +90,10 @@ int main()
         nn_thread_term(&cli_threads[i]);
 
     active.n = 0;
-    int cli_sock = nn_socket(AF_SP, NN_PUSH);
+    cli_sock = nn_socket(AF_SP, NN_PUSH);
     nn_assert(cli_sock >= 0);
     nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
-    const int bytes = nn_send(cli_sock, &i, sizeof(i), 0);
+    bytes = nn_send(cli_sock, &i, sizeof(i), 0);
     nn_assert(bytes == sizeof(i));
     nn_close(cli_sock);
     nn_thread_term(&srv_thread);

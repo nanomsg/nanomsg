@@ -23,6 +23,8 @@
 #ifndef NN_ATOMIC_INCLUDED
 #define NN_ATOMIC_INCLUDED
 
+#include "../nn.h"
+
 #if defined NN_HAVE_WINDOWS
 #include "win.h"
 #define NN_ATOMIC_WINAPI
@@ -46,16 +48,16 @@ struct nn_atomic {
 };
 
 /*  Initialise the object. Set it to value 'n'. */
-void nn_atomic_init (struct nn_atomic *self, uint32_t n);
+NN_EXPORT void nn_atomic_init (struct nn_atomic *self, uint32_t n);
 
 /*  Destroy the object. */
-void nn_atomic_term (struct nn_atomic *self);
+NN_EXPORT void nn_atomic_term (struct nn_atomic *self);
 
 /*  Atomically add n to the object, return old value of the object. */
-uint32_t nn_atomic_inc (struct nn_atomic *self, uint32_t n);
+NN_EXPORT uint32_t nn_atomic_inc (struct nn_atomic *self, uint32_t n);
 
 /*  Atomically subtract n from the object, return old value of the object. */
-uint32_t nn_atomic_dec (struct nn_atomic *self, uint32_t n);
+NN_EXPORT uint32_t nn_atomic_dec (struct nn_atomic *self, uint32_t n);
 
 #endif
 

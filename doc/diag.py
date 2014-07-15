@@ -325,11 +325,12 @@ def main():
     global index
 
     index = Index.create()
+    script_dir = os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0])) + '/../')
 
     with open('doc/diagrams.html', 'wt') as f:
         sys.stdout = f
         print(HTML_HEADER)
-        for dirpath, dirs, files in os.walk('src'):
+        for dirpath, dirs, files in os.walk(os.path.join(script_dir,'src' )):
             for f in files:
                 if not f.endswith('.c'):
                     continue

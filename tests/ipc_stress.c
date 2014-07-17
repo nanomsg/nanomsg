@@ -29,6 +29,7 @@
 #include "testutil.h"
 #include "../src/utils/thread.c"
 #include "../src/utils/atomic.h"
+#include "../src/utils/atomic.c"
 
 /*  Stress test the IPC transport. */
 

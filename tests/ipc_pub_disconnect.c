@@ -27,9 +27,11 @@
 
 #include "testutil.h"
 
-/*  Tests IPC transport. */
-
+/* This will hang both on Windows and OSX */
 #define SOCKET_ADDRESS "ipc://test.ipc"
+
+/* This will hang on Windows, but work on OSX */
+/* #define SOCKET_ADDRESS "tcp://0.0.0.0:8861" */
 
 #define BATCH_SEND 10
 

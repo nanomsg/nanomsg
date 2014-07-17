@@ -437,6 +437,7 @@ TRANSPORT_TESTS = \
     tests/ipc \
     tests/ipc_shutdown \
     tests/ipc_stress \
+    tests/ipc_pub_disconnect \
     tests/tcp \
     tests/tcp_shutdown
 

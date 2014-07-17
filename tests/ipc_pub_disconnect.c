@@ -53,7 +53,7 @@ int main ()
 	nn_sleep (10);
 
 	test_send (pub, "one");
-	test_recv (sub, "one");
+	test_recv (sub, "one"); /* If TCP on Windows, this never completes. */
 
 	test_close (pub);
 	pub = test_socket (AF_SP, NN_PUB);
@@ -62,7 +62,7 @@ int main ()
 	nn_sleep (10);
 
 	test_send (pub, "two");
-	test_recv (sub, "two"); /* Never completes. */
+	test_recv (sub, "two"); /* If IPC, no matter the platform: never completes. */
 
 	test_close (sub);
 	test_close (pub);

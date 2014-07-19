@@ -112,6 +112,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
         return rc;
     }
 
+    self->socket_parse_type = NN_PARSE_PIPE_TYPE_UNKNOWN;
+
     self->flags = 0;
     nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
@@ -438,6 +440,9 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             strncpy (optval, self->socket_name, *optvallen);
             *optvallen = strlen(self->socket_name);
             return 0;
+        case NN_PARSE_PIPE_TYPE:
+            intval = self->socket_parse_type;
+            break;
         default:
             return -ENOPROTOOPT;
         }
@@ -491,6 +496,31 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
 
     /*  Add it to the list of active endpoints. */
     nn_list_insert (&self->eps, &ep->item, nn_list_end (&self->eps));
+
+    /* update parsed type */
+    char addingParsedType = -1;
+    if(strcmp(transport->name,"inproc")==0) { //inproc is the only parsed transport
+        addingParsedType = 1;
+    }
+    else {
+        addingParsedType = 0;
+    }
+    switch(self->socket_parse_type) {
+        case NN_PARSE_PIPE_TYPE_UNKNOWN:
+            self->socket_parse_type = addingParsedType ? NN_PARSE_PIPE_TYPE_PARSED : NN_PARSE_PIPE_TYPE_UNPARSED;
+            break;
+
+        case NN_PARSE_PIPE_TYPE_PARSED:
+            self->socket_parse_type = addingParsedType ? NN_PARSE_PIPE_TYPE_PARSED : NN_PARSE_PIPE_TYPE_MIXED;
+            break;
+
+        case NN_PARSE_PIPE_TYPE_UNPARSED:
+            self->socket_parse_type = addingParsedType ? NN_PARSE_PIPE_TYPE_MIXED : NN_PARSE_PIPE_TYPE_UNPARSED;
+            break;
+        default:
+            //already mixed
+            break;
+    }
 
     nn_ctx_leave (&self->ctx);
 

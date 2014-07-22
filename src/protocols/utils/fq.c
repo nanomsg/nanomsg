@@ -63,12 +63,12 @@ int nn_fq_recv (struct nn_fq *self, struct nn_msg *msg, struct nn_pipe **pipe)
     int rc;
     struct nn_pipe *p;
 
-    /*  Pipe is NULL only when there are no avialable pipes. */
+    /*  Pipe is NULL only when there are no available pipes. */
     p = nn_priolist_getpipe (&self->priolist);
     if (nn_slow (!p))
         return -EAGAIN;
 
-    /*  Receive the messsage. */
+    /*  Receive the message. */
     rc = nn_pipe_recv (p, msg);
     errnum_assert (rc >= 0, -rc);
 

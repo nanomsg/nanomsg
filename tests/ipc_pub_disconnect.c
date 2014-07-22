@@ -56,33 +56,39 @@ int main ()
 	test_send (pub, "one");
 	/*
 	  If TCP on Windows, this never completes.
-	  I am seeing this with IPC too if I have breakpoints in usock_win.c, so this looks like a race condition.
-    */
+	  I am seeing this with Windows IPC too if I have breakpoints in usock_win.c, so this looks like a race condition?
+	*/
 	test_recv (sub, "one");
 
 	test_close (pub);
 
-#if 0
 	pub = test_socket (AF_SP, NN_PUB);
 	test_bind (pub, SOCKET_ADDRESS);
 
-	nn_sleep (200);
-
-	test_send (pub, "two");
-	test_recv (sub, "two"); /* If IPC, no matter the platform: never completes. */
-
-	test_close (sub);
-	test_close (pub);
-#else
-	/* A more simple test */
+	/* Wait for the sub to reconnect. */
 	nn_sleep (100);
 
+	test_send (pub, "two");
+#if 0
+	/*
+	  On both Windows and OSX, this never completes.
+	  This should either reconnect, or return with an error indicating that the remote peer has closed.
+	*/
+	test_recv (sub, "two");
+#else
+	/* A more simple test, with NN_DONTWAIT this time. */
 	rc = nn_recv (sub, buf, sizeof(buf), NN_DONTWAIT);
 	nn_assert (rc<0);
 	rc = nn_errno();
-	/* The pub was closed, the sub should detect the problem rather than behaving as if no data was read. */
+	/*
+          The pub was closed, the sub should either detect the problem or reconnect and read successfully rather than behaving as if no data is coming, forever.
+	  This happens on both Windows and OSX.
+        */
 	nn_assert (rc!=EAGAIN);
 #endif
+
+	test_close (sub);
+	test_close (pub);
 
 	return 0;
 }

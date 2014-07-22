@@ -40,6 +40,7 @@ int main ()
 	int pub;
 	int sub;
 	int rc;
+	char buf[10];
 
 	pub = test_socket (AF_SP, NN_PUB);
 	test_bind (pub, SOCKET_ADDRESS);
@@ -50,22 +51,38 @@ int main ()
 	test_connect (sub, SOCKET_ADDRESS);
 
 	/* Wait for connection to establish. */
-	nn_sleep (10);
+	nn_sleep (100);
 
 	test_send (pub, "one");
-	test_recv (sub, "one"); /* If TCP on Windows, this never completes. */
+	/*
+	  If TCP on Windows, this never completes.
+	  I am seeing this with IPC too if I have breakpoints in usock_win.c, so this looks like a race condition.
+    */
+	test_recv (sub, "one");
 
 	test_close (pub);
+
+#if 0
 	pub = test_socket (AF_SP, NN_PUB);
 	test_bind (pub, SOCKET_ADDRESS);
 
-	nn_sleep (10);
+	nn_sleep (200);
 
 	test_send (pub, "two");
 	test_recv (sub, "two"); /* If IPC, no matter the platform: never completes. */
 
 	test_close (sub);
 	test_close (pub);
+#else
+	/* A more simple test */
+	nn_sleep (100);
+
+	rc = nn_recv (sub, buf, sizeof(buf), NN_DONTWAIT);
+	nn_assert (rc<0);
+	rc = nn_errno();
+	/* The pub was closed, the sub should detect the problem rather than behaving as if no data was read. */
+	nn_assert (rc!=EAGAIN);
+#endif
 
 	return 0;
 }

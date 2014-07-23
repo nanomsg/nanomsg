@@ -74,17 +74,20 @@ int main ()
 	  On both Windows and OSX, this never completes.
 	  This should either reconnect, or return with an error indicating that the remote peer has closed.
 	*/
-	test_recv (sub, "two");
+	rc = nn_recv (sub, buf, sizeof(buf), 0);
+	nn_assert (rc<0);
+	rc = nn_errno();
+	nn_assert (rc==ECONNBROKEN);
 #else
 	/* A more simple test, with NN_DONTWAIT this time. */
 	rc = nn_recv (sub, buf, sizeof(buf), NN_DONTWAIT);
 	nn_assert (rc<0);
 	rc = nn_errno();
 	/*
-          The pub was closed, the sub should either detect the problem or reconnect and read successfully rather than behaving as if no data is coming, forever.
+	  The pub was closed, the sub should either detect the problem or reconnect and read successfully rather than behaving as if no data is coming, forever.
 	  This happens on both Windows and OSX.
-        */
-	nn_assert (rc!=EAGAIN);
+	*/
+	nn_assert (rc==ECONNBROKEN);
 #endif
 
 	test_close (sub);

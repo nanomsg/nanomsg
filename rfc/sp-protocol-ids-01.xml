@@ -70,7 +70,8 @@
       <t>5 - pipeline (v1)</t>
       <t>6 - survey (v1)</t>
       <t>7 - bus (v1)</t>
-      <t>8-3839 - unassigned</t>
+      <t>8 - slowsand (v1)</t>
+      <t>9-3839 - unassigned</t>
       <t>3840-4095 local and experimental</t>
 
     </section>

@@ -53,21 +53,21 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_xrep_getopt
 };
 
-static void nn_rep_init (struct nn_rep *self,
+void nn_rep_init (struct nn_rep *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_xrep_init (&self->xrep, vfptr, hint);
     self->flags = 0;
 }
 
-static void nn_rep_term (struct nn_rep *self)
+void nn_rep_term (struct nn_rep *self)
 {
     if (self->flags & NN_REP_INPROGRESS)
         nn_chunkref_term (&self->backtrace);
     nn_xrep_term (&self->xrep);
 }
 
-static void nn_rep_destroy (struct nn_sockbase *self)
+void nn_rep_destroy (struct nn_sockbase *self)
 {
     struct nn_rep *rep;
 
@@ -77,7 +77,7 @@ static void nn_rep_destroy (struct nn_sockbase *self)
     nn_free (rep);
 }
 
-static int nn_rep_events (struct nn_sockbase *self)
+int nn_rep_events (struct nn_sockbase *self)
 {
     struct nn_rep *rep;
     int events;
@@ -89,7 +89,7 @@ static int nn_rep_events (struct nn_sockbase *self)
     return events;
 }
 
-static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_rep *rep;
@@ -114,7 +114,7 @@ static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
     struct nn_rep *rep;

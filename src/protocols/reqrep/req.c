@@ -77,7 +77,7 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
     nn_req_getopt
 };
 
-static void nn_req_init (struct nn_req *self,
+void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
     nn_req_handle hndl;
@@ -106,7 +106,7 @@ static void nn_req_init (struct nn_req *self,
     nn_fsm_start (&self->fsm);
 }
 
-static void nn_req_term (struct nn_req *self)
+void nn_req_term (struct nn_req *self)
 {
     nn_timer_term (&self->task.timer);
     nn_task_term (&self->task);
@@ -116,7 +116,7 @@ static void nn_req_term (struct nn_req *self)
     nn_xreq_term (&self->xreq);
 }
 
-static void nn_req_stop (struct nn_sockbase *self)
+void nn_req_stop (struct nn_sockbase *self)
 {
     struct nn_req *req;
 
@@ -125,7 +125,7 @@ static void nn_req_stop (struct nn_sockbase *self)
     nn_fsm_stop (&req->fsm);
 }
 
-static void nn_req_destroy (struct nn_sockbase *self)
+void nn_req_destroy (struct nn_sockbase *self)
 {
     struct nn_req *req;
 
@@ -135,7 +135,7 @@ static void nn_req_destroy (struct nn_sockbase *self)
     nn_free (req);
 }
 
-static int nn_req_inprogress (struct nn_req *self)
+int nn_req_inprogress (struct nn_req *self)
 {
     /*  Return 1 if there's a request submitted. 0 otherwise. */
     return self->state == NN_REQ_STATE_IDLE ||
@@ -143,7 +143,7 @@ static int nn_req_inprogress (struct nn_req *self)
         self->state == NN_REQ_STATE_STOPPING ? 0 : 1;
 }
 
-static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     int rc;
     struct nn_req *req;
@@ -200,7 +200,7 @@ static void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     }
 }
 
-static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe)
 {
     struct nn_req *req;
 
@@ -214,7 +214,7 @@ static void nn_req_out (struct nn_sockbase *self, struct nn_pipe *pipe)
         nn_fsm_action (&req->fsm, NN_REQ_ACTION_OUT);
 }
 
-static int nn_req_events (struct nn_sockbase *self)
+int nn_req_events (struct nn_sockbase *self)
 {
     int rc;
     struct nn_req *req;
@@ -238,7 +238,7 @@ int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len,
     nn_assert (0);
 }
 
-static int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
 {
     struct nn_req *req;
 
@@ -270,7 +270,7 @@ int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len,
 }
 
 
-static int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
+int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     struct nn_req *req;
 
@@ -294,7 +294,7 @@ static int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
+int nn_req_setopt (struct nn_sockbase *self, int level, int option,
         const void *optval, size_t optvallen)
 {
     struct nn_req *req;
@@ -314,7 +314,7 @@ static int nn_req_setopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
+int nn_req_getopt (struct nn_sockbase *self, int level, int option,
         void *optval, size_t *optvallen)
 {
     struct nn_req *req;
@@ -335,7 +335,7 @@ static int nn_req_getopt (struct nn_sockbase *self, int level, int option,
     return -ENOPROTOOPT;
 }
 
-static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
+void nn_req_shutdown (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
@@ -358,7 +358,7 @@ static void nn_req_shutdown (struct nn_fsm *self, int src, int type,
     nn_fsm_bad_state(req->state, src, type);
 }
 
-static void nn_req_handler (struct nn_fsm *self, int src, int type,
+void nn_req_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_req *req;
@@ -618,7 +618,7 @@ static void nn_req_handler (struct nn_fsm *self, int src, int type,
 /*  State machine actions.                                                    */
 /******************************************************************************/
 
-static void nn_req_action_send (struct nn_req *self, int allow_delay)
+void nn_req_action_send (struct nn_req *self, int allow_delay)
 {
     int rc;
     struct nn_msg msg;

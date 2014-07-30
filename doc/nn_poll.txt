@@ -50,7 +50,7 @@ block if there are no events to report.
 
 RETURN VALUE
 ------------
-Upon successful completion, the number of nn_pollds structures with events
+Upon successful completion, the number of nn_pollfds structures with events
 signaled is returned. In case of timeout, return value is 0. In case of error,
 -1 is returned and 'errno' is set the one of the values below.
 
@@ -77,7 +77,7 @@ EXAMPLE
 -------
 
 ----
-struct nn_polld pfd [2];
+struct nn_pollfd pfd [2];
 pfd [0].fd = s1;
 pfd [0].events = NN_POLLIN | NN_POLLOUT;
 pfd [1].fd = s2;

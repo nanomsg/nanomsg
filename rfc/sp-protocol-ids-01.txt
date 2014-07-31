@@ -97,7 +97,9 @@ Internet-Draft           List of SP protocol IDs               June 2014
 
    7 - bus (v1)
 
-   8-3839 - unassigned
+   8 - slowsand (v1)
+
+   9-3839 - unassigned
 
    3840-4095 local and experimental
 

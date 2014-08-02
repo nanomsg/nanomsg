@@ -57,9 +57,9 @@ void nn_efd_signal (struct nn_efd *self);
 /*  Switch the object into unsignaled state. */
 void nn_efd_unsignal (struct nn_efd *self);
 
-/*  Wait till efd object becomes signaled or when timeout (in milliseconds,
-    nagative value meaning 'infinite') expires. In the former case 0 is
-    returened. In the latter, -ETIMEDOUT. */
+/*  Wait until efd object becomes signaled or when timeout (in milliseconds,
+    negative value meaning 'infinite') expires. In the former case 0 is
+    returned. In the latter, -ETIMEDOUT. */
 int nn_efd_wait (struct nn_efd *self, int timeout);
 
 #endif

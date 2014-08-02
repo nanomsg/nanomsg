@@ -600,7 +600,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         /*
          *  Double check if pipes are still available for sending
          */
-        if (!nn_efd_wait (&self->rcvfd, 0)) {
+        if (!nn_efd_wait (&self->sndfd, 0)) {
             self->flags |= NN_SOCK_FLAG_OUT;
         }
 

@@ -57,7 +57,7 @@ while (hdr != NULL) {
     printf ("level: %d property: %d length: %dB data: ",
         (int) hdr->cmsg_level,
         (int) hdr->cmsg_type,
-        (int) len));
+        (int) len);
     unsigned char *data = NN_CMSG_DATA(hdr);
     while (len) {
         printf ("%02X", *data);

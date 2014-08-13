@@ -53,14 +53,6 @@ extern "C" {
 #   endif
 #endif
 
-/*  Inline functions are everywhere, but MSVC requires underscores           */
-#if defined _WIN32
-#  define NN_INLINE static __inline
-#else
-#  define NN_INLINE static inline
-#endif
-
-
 /******************************************************************************/
 /*  ABI versioning support.                                                   */
 /******************************************************************************/
@@ -291,18 +283,9 @@ struct nn_cmsghdr {
 };
 
 /*  Internal function. Not to be used directly.                               */
-/*  Use NN_CMSG_NEXTHDR macro instead.                                        */
-NN_INLINE struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
-    const struct nn_cmsghdr *cmsg)
-{
-    size_t sz;
-
-    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
-    if (((char*) cmsg) - ((char*) mhdr->msg_control) + sz >=
-           mhdr->msg_controllen)
-        return NULL;
-    return (struct nn_cmsghdr*) (((char*) cmsg) + sz);
-}
+/*  Use NN_CMSG_NXTHDR macro instead.                                         */
+struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg);
 
 #define NN_CMSG_FIRSTHDR(mhdr) \
     ((mhdr)->msg_controllen >= sizeof (struct nn_cmsghdr) \

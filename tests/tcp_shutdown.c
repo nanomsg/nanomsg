@@ -95,6 +95,8 @@ int main ()
 
     /*  Test race condition of sending message while socket shutting down  */
 
+	/*  Windows: test fails, only passes on occasion. So race condition is likely there. */
+
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
 

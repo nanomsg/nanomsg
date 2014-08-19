@@ -98,7 +98,7 @@ Internet-Draft             UDP mapping for SPs                March 2014
    peer differs, the UDP packets MUST be ignored.
 
    The fact that the first byte of the protocol header is binary zero
-   eliminates any text-based protocols that were accidentally connected
+   eliminates any text-based protocols that were accidentally sending
    to the endpiont.  Subsequent two bytes make the check even more
    rigorous.  At the same time they can be used as a debugging hint to
    indicate that the connection is supposed to use one of the

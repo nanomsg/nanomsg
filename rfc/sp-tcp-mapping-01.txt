@@ -98,7 +98,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
    The fact that the first byte of the protocol header is binary zero
    eliminates any text-based protocols that were accidentally connected
-   to the endpiont.  Subsequent two bytes make the check even more
+   to the endpoint.  Subsequent two bytes make the check even more
    rigorous.  At the same time they can be used as a debugging hint to
    indicate that the connection is supposed to use one of the
    scalability protocols -- ASCII representation of these bytes is 'SP'
@@ -143,7 +143,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
    +------------+-----------------+
 
    It may seem that 64 bit message size is excessive and consumes too
-   much of valueable bandwidth, especially given that most scenarios
+   much of valuable bandwidth, especially given that most scenarios
    call for relatively small messages, in order of bytes or kilobytes.
 
    Variable length field may seem like a better solution, however, our
@@ -154,7 +154,7 @@ Internet-Draft             TCP mapping for SPs                March 2014
    portion of the message and the performance impact is not even
    measurable.
 
-   For small messages, the overal throughput is heavily CPU-bound, never
+   For small messages, the overall throughput is heavily CPU-bound, never
    I/O-bound.  In other words, CPU processing associated with each
    individual message limits the message rate in such a way that network
    bandwidth limit is never reached.  In the future we expect it to be

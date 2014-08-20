@@ -233,7 +233,7 @@ struct nn_symbol_properties {
     /*  The constant value  */
     int value;
 
-    /*  The contant name  */
+    /*  The constant name  */
     const char* name;
 
     /*  The constant namespace, or zero for namespaces themselves */

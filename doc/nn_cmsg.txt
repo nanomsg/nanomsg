@@ -25,7 +25,7 @@ DESCRIPTION
 
 These functions can be used to iterate over ancillary data attached to a message.
 
-Structure 'nn_cmsghdr' represents a single anciallary property and contains following members:
+Structure 'nn_cmsghdr' represents a single ancillary property and contains following members:
 
     size_t cmsg_len;
     int cmsg_level;

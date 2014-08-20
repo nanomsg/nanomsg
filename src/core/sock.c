@@ -720,7 +720,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
     if (nn_slow (sock->state != NN_SOCK_STATE_ACTIVE))
         return;
 
-    /*  Check whether socket is readable and/or writeable at the moment. */
+    /*  Check whether socket is readable and/or writable at the moment. */
     events = sock->sockbase->vfptr->events (sock->sockbase);
     errnum_assert (events >= 0, -events);
 

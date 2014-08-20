@@ -67,7 +67,7 @@
          no matter what instance of the service have computed it.</t>
 
       <t>Service that accepts empty requests and produces the number
-         of requests processed so far (1, 2, 3 et c.), on the other hand, is
+         of requests processed so far (1, 2, 3 etc.), on the other hand, is
          not stateless. To prove it you can run two instances of the service.
          First reply, no matter which instance produces it is going to be 1.
          Second reply though is going to be either 2 (if processed by the same
@@ -123,7 +123,7 @@
              The "enterprise service bus" model. In the simplest case the bus
              can be implemented as a simple hub-and-spokes topology. In complex
              cases the bus can span multiple physical locations or multiple
-             oraganisations with intermediate nodes at the boundaries connecting
+             organisations with intermediate nodes at the boundaries connecting
              different parts of the topology.</t>
         </list>
 
@@ -149,9 +149,9 @@
       <t>As can be seen from the above, one request may be processed multiple
          times. For example, reply may be lost on its way back to the client.
          Client will assume that the request was not processed yet, it will
-         resend it and thus cause duplicit execution of the task.</t>
+         resend it and thus cause duplicate execution of the task.</t>
 
-      <t>Some applications may want to prevent duplicit execution of tasks. It
+      <t>Some applications may want to prevent duplicate execution of tasks. It
          often turns out that hardening such applications to be idempotent is
          relatively easy as they already possess the tools to do so. For
          example, a payment processing server already has access to a shared
@@ -159,8 +159,8 @@
          was not yet processed.</t>
 
       <t>On the other hand, many applications don't care about occasional
-         duplicitly processed tasks. Therefore, request/reply protocol does not
-         require the service to be idempotent. Instead, the idempotancy issue
+         duplicate processed tasks. Therefore, request/reply protocol does not
+         require the service to be idempotent. Instead, the idempotence issue
          is left to the user to decide on.</t>
 
       <t>Finally, it should be noted that this specification discusses several
@@ -182,7 +182,7 @@
          communication, several underlying protocols can be used in parallel.
          For example, a client may send a request via WebSocket, then, on the
          edge of the company network an intermediary node may retransmit it
-         using TCP et c.</t>
+         using TCP etc.</t>
 
       <figure>
         <artwork>
@@ -248,14 +248,14 @@
 
       <t>Thus, when a node is about to send a request, it can choose to send
          it only to one of the channels that don't report pushback at the
-         moment. To implement approximately fair distibution of the workload
+         moment. To implement approximately fair distribution of the workload
          the node choses a channel from that pool using the round-robin
          algorithm.</t>
 
       <t>As for delivering replies back to the clients, it should be understood
          that the client may not be directly accessible (say using TCP/IP) from
          the processing node. It may be beyond a firewall, have no static IP
-         address et c. Furthermore, the client and the processing may not even
+         address etc. Furthermore, the client and the processing may not even
          speak the same transport protocol -- imagine client connecting to the
          topology using WebSockets and processing node via SCTP.</t>
 
@@ -276,7 +276,7 @@
 
       <t>The upside, on the other hand, is that the nodes in the topology don't
          have to maintain any routing tables beside the simple table of
-         adjacent channels along with thier IDs. There's also no need for any
+         adjacent channels along with their IDs. There's also no need for any
          additional protocols for distributing routing information within
          the topology.</t>
 
@@ -334,7 +334,7 @@
          That allows the algorithm to find out where the tags end and where
          the message payload begins.</t>
 
-      <t>As for the reamining 31 bits, they are either request ID (in the last
+      <t>As for the remaining 31 bits, they are either request ID (in the last
          tag) or a channel ID (in all the remaining tags). The first channel ID
          is added and processed by the REP endpoint closest to the processing
          node. The last channel ID is added and processed by the REP endpoint
@@ -445,7 +445,7 @@
            responsive. It can be thought of as a crude scheduling algorithm.
            However crude though, it's probably still the  best you can get
            without knowing estimates of execution time for individual tasks,
-           CPU capacity of individual processing nodes et c.</t>
+           CPU capacity of individual processing nodes etc.</t>
 
         <t>Alternatively, backpressure can be thought of as a congestion control
            mechanism. When all available processing nodes are busy, it slows
@@ -613,7 +613,7 @@
         <t>If the request is successfully sent, the endpoint stores the request
            including its request ID, so that it can be resent later on if
            needed. At the same time it sets up a timer to trigger the
-           re-transimission in case the reply is not received within a specified
+           re-transmission in case the reply is not received within a specified
            timeout. The user MUST be allowed to specify the timeout interval.
            The default timeout interval must be 60 seconds.</t>
 
@@ -704,7 +704,7 @@
          legitimate setups can cause loop to be created.</t>
 
       <t>With no additional guards against the loops, it's likely that
-         requests will be caugth inside the loop, rotating there forever,
+         requests will be caught inside the loop, rotating there forever,
          each message gradually growing in size as new prefixes are added to it
          by each REP endpoint on the way. Eventually, a loop can cause
          congestion and bring the whole system to a halt.</t>

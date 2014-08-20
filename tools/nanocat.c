@@ -362,7 +362,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set socket name");
     }
 
-    /* Specific intitalization */
+    /* Specific initialization */
     switch (options->socket_type) {
     case NN_SUB:
         nn_sub_init (options, sock);

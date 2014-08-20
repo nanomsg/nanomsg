@@ -36,7 +36,7 @@ Topic with zero length matches any message.
 If the socket is subscribed to multiple topics, message matching any of them
 will be delivered to the user.
 
-The entire message, including the the topic, is delivered to the user.
+The entire message, including the topic, is delivered to the user.
 
 Socket Types
 ~~~~~~~~~~~~

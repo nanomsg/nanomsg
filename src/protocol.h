@@ -98,14 +98,14 @@ struct nn_sockbase_vfptr {
         to send to or to be received from at the moment. 'rm' unregisters the
         pipe. The pipe should not be used after this call as it may already be
         deallocated. 'in' informs the socket that pipe is readable. 'out'
-        informs it that it is writeable. */
+        informs it that it is writable. */
     int (*add) (struct nn_sockbase *self, struct nn_pipe *pipe);
     void (*rm) (struct nn_sockbase *self, struct nn_pipe *pipe);
     void (*in) (struct nn_sockbase *self, struct nn_pipe *pipe);
     void (*out) (struct nn_sockbase *self, struct nn_pipe *pipe);
 
     /*  Return any combination of event flags defined above, thus specifying
-        whether the socket should be readable, writeable, both or none. */
+        whether the socket should be readable, writable, both or none. */
     int (*events) (struct nn_sockbase *self);
 
     /*  Send a message to the socket. Returns -EAGAIN if it cannot be done at
@@ -150,7 +150,7 @@ struct nn_ctx *nn_sockbase_getctx (struct nn_sockbase *self);
 int nn_sockbase_getopt (struct nn_sockbase *self, int option,
     void *optval, size_t *optvallen);
 
-/*  Add some statitistics for socket  */
+/*  Add some statistics for socket  */
 void nn_sockbase_stat_increment (struct nn_sockbase *self, int name,
     int increment);
 

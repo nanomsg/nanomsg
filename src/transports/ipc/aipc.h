@@ -26,6 +26,7 @@
 #include "sipc.h"
 
 #include "../../transport.h"
+#include "../../ipc.h"
 
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"

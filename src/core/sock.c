@@ -159,6 +159,12 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     /*  Should be pretty much enough space for just the number  */
     sprintf(self->socket_name, "%d", fd);
 
+    /* Security attribute */
+    self->sec_attr = NULL;
+    self->sec_attr_size = 0;
+    self->inbuffersz = 4096;
+    self->outbuffersz = 4096;
+
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)

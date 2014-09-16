@@ -7,6 +7,11 @@ NAME
 nn_env - nanomsg environment variables
 
 
+SYNOPSIS
+--------
+Environment variables that influence the way nanomsg works
+
+
 DESCRIPTION
 -----------
 

@@ -152,6 +152,10 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     /*  Should be pretty much enough space for just the number  */
     sprintf(self->socket_name, "%d", fd);
 
+    /* Security attribute*/
+    self->sec_attr = NULL;
+    self->sec_attr_size = 0;
+
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */
     for (i = 0; i != NN_MAX_TRANSPORT; ++i)
@@ -292,6 +296,12 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
         return 0;
     }
 
+    if (level == NN_SOL_SOCKET && option == NN_SEC_ATTR) {
+        self->sec_attr = (void*)optval;
+        self->sec_attr_size = optvallen;
+        return 0;
+    }
+
     /*  At this point we assume that all options are of type int. */
     if (optvallen != sizeof (int))
         return -EINVAL;
@@ -343,6 +353,12 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
             if (nn_slow (val != 0 && val != 1))
                 return -EINVAL;
             dst = &self->ep_template.ipv4only;
+            break;
+        case NN_OUTBUFSZ:
+            dst = &self->outbuffersz;
+            break;
+        case NN_INBUFSZ:
+            dst = &self->inbuffersz;
             break;
         default:
             return -ENOPROTOOPT;
@@ -438,6 +454,16 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             strncpy (optval, self->socket_name, *optvallen);
             *optvallen = strlen(self->socket_name);
             return 0;
+        case NN_SEC_ATTR:
+            memcpy (optval, self->sec_attr, self->sec_attr_size);
+            *optvallen = self->sec_attr_size;
+            return 0;
+        case NN_OUTBUFSZ:
+            intval = self->outbuffersz;
+            break;
+        case NN_INBUFSZ:
+            intval = self->inbuffersz;
+            break;
         default:
             return -ENOPROTOOPT;
         }

@@ -24,6 +24,7 @@
 #define NN_CIPC_INCLUDED
 
 #include "../../transport.h"
+#include "../../ipc.h"
 
 /*  State machine managing connected IPC socket. */
 

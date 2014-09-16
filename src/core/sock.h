@@ -141,6 +141,13 @@ struct nn_sock
 
     /*  The socket name for statistics  */
     char socket_name[64];
+
+    /* Win32 Security Attribute */
+    void * sec_attr;
+    size_t sec_attr_size;
+    int outbuffersz;
+    int inbuffersz;
+
 };
 
 /*  Initialise the socket. */

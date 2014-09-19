@@ -176,7 +176,7 @@ int main ()
        &timeo, sizeof (timeo));
     errno_assert (rc == 0);
     rc = nn_recv (ende1, buf, sizeof (buf), 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    errno_assert (rc < 0 && nn_errno () == ETIMEDOUT);
 
     /*  Clean up. */
     test_close (ende2);

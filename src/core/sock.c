@@ -592,7 +592,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         nn_ctx_leave (&self->ctx);
         rc = nn_efd_wait (&self->sndfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
-            return -EAGAIN;
+            return -ETIMEDOUT;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
         errnum_assert (rc == 0, rc);
@@ -670,7 +670,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         nn_ctx_leave (&self->ctx);
         rc = nn_efd_wait (&self->rcvfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
-            return -EAGAIN;
+            return -ETIMEDOUT;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
         errnum_assert (rc == 0, rc);

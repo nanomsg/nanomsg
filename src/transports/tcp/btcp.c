@@ -474,6 +474,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
         nn_epbase_set_error (&self->epbase, -rc);
+        nn_epbase_stat_increment (&self->epbase, NN_STAT_BIND_ERRORS, 1);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }
@@ -482,6 +483,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
         nn_epbase_set_error (&self->epbase, -rc);
+        nn_epbase_stat_increment (&self->epbase, NN_STAT_BIND_ERRORS, 1);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }

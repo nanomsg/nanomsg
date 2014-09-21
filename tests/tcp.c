@@ -161,6 +161,19 @@ int main ()
     test_close (s1);
     test_close (sb);
 
+    /*  Test same address bind for 2 sockets, should not crash but keep rebinding */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_bind (sc, SOCKET_ADDRESS);
+
+    nn_sleep (1000);
+    test_close (sb);
+
+    nn_sleep (1000);
+    test_close (sc);
+
     return 0;
 }
 

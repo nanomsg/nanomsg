@@ -489,6 +489,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     }
     nn_btcp_start_accepting(self);
     self->state = NN_BTCP_STATE_ACTIVE;
+    nn_epbase_clear_error (&self->epbase);
 }
 
 static void nn_btcp_start_accepting (struct nn_btcp *self)

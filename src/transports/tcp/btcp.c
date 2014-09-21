@@ -473,6 +473,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
+        nn_epbase_set_error (&self->epbase, -rc);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }
@@ -480,6 +481,7 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
+        nn_epbase_set_error (&self->epbase, -rc);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }

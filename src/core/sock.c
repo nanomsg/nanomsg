@@ -535,6 +535,29 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     return 0;
 }
 
+int nn_sock_geterrno_ep (struct nn_sock *self, int eid)
+{
+    struct nn_list_item *it;
+    struct nn_ep *ep;
+    int err = 0;
+
+    nn_ctx_enter (&self->ctx);
+
+    /*  Find the specified enpoint. */
+    ep = NULL;
+    for (it = nn_list_begin (&self->eps);
+          it != nn_list_end (&self->eps);
+          it = nn_list_next (&self->eps, it)) {
+        ep = nn_cont (it, struct nn_ep, item);
+        if (ep->eid == eid) {
+            err = ep->last_errno;
+            break;
+        }
+    }
+    nn_ctx_leave (&self->ctx);
+    return err;
+}
+
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 {
     int rc;

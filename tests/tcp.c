@@ -38,6 +38,7 @@ int main ()
     int sc;
     int i;
     int opt;
+    int eid;
     size_t sz;
     int s1, s2;
 
@@ -166,12 +167,14 @@ int main ()
     test_bind (sb, SOCKET_ADDRESS);
 
     sc = test_socket (AF_SP, NN_PAIR);
-    test_bind (sc, SOCKET_ADDRESS);
+    eid = test_bind (sc, SOCKET_ADDRESS);
 
     nn_sleep (1000);
     test_close (sb);
+    errno_assert (nn_geterrno (sc, eid) == EADDRINUSE);
 
     nn_sleep (1000);
+    errno_assert (nn_geterrno (sc, eid) == 0);
     test_close (sc);
 
     return 0;

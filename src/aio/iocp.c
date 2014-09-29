@@ -38,7 +38,7 @@ BOOL nn_getqueuedcompletionstatusex(HANDLE CompletionPort, LPOVERLAPPED_ENTRY lp
 
 	return ptr_api_GetQueuedCompletionStatusEx(CompletionPort, lpCompletionPortEntries, ulCount, ulNumEntriesRemoved, dwMilliseconds, fAlertable);
 }
-#define SIM_XP 1
+#define SIM_XP 0
 BOOL nn_isvistaplus()
 {
 #if SIM_XP

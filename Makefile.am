@@ -57,7 +57,8 @@ NANOMSG_CORE = \
     src/core/symbol.c
 
 NANOMSG_DEVICES =\
-    src/devices/device.c
+    src/devices/device.c \
+    src/devices/device.h
 
 
 NANOMSG_AIO = \

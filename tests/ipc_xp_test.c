@@ -39,6 +39,8 @@
 
 volatile int active;
 
+extern int nn_test_force_xp;
+
 static void routine (NN_UNUSED void *arg)
 {
     int s;
@@ -51,14 +53,36 @@ static void routine (NN_UNUSED void *arg)
     }
 
     for (i = 0; i < MESSAGES_PER_THREAD; ++i) {
-        test_recv (s, "hello");
+        if (nn_test_force_xp) {
+            /* Observed in XP mode:
+               - nn_recv will return with 'Connection Reset'.
+               - nn_recv will not return. */
+            char buf[16];
+            int rc;
+            memset (buf, 0, sizeof(buf));
+            rc = nn_recv (s, buf, sizeof(buf), 0);
+            if (rc < 0) {
+                fprintf (stderr, "nn_recv failed (expected Windows XP behavior) %s [%d]\n", nn_err_strerror (errno), (int) errno);
+                break;
+            } else {
+                if (rc != 5) {
+                    fprintf (stderr, "nn_recv wrong length\n");
+                    nn_err_abort ();
+                }
+                if (memcmp ("hello", buf, 5) != 0) {
+                    fprintf (stderr, "Received data is wrong\n");
+                    nn_err_abort ();
+                }
+            }            
+        } else {
+            /* On Vista+ the send operation will always complete. */
+            test_recv (s, "hello");
+        }
     }
 
     test_close (s);
     active --;
 }
-
-extern int nn_test_force_xp;
 
 int main ()
 {

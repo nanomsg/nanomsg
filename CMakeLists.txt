@@ -46,6 +46,8 @@ endif ()
 
 add_subdirectory (src)
 
+add_subdirectory (nanomsg_xp)
+
 #  Build the tools
 
 add_executable (nanocat tools/nanocat.c tools/options.c)
@@ -62,6 +64,13 @@ macro (add_libnanomsg_test NAME)
     add_test (NAME ${NAME} COMMAND ${NAME})
 endmacro (add_libnanomsg_test)
 
+macro (add_libnanomsg_xp_test NAME)
+    list (APPEND all_tests ${NAME})
+    add_executable (${NAME} tests/${NAME}.c)
+    target_link_libraries (${NAME} nanomsg_xp)
+    add_test (NAME ${NAME} COMMAND ${NAME})
+endmacro (add_libnanomsg_xp_test)
+
 #  Transport tests.
 add_libnanomsg_test (inproc)
 add_libnanomsg_test (inproc_shutdown)
@@ -72,6 +81,9 @@ add_libnanomsg_test (tcp)
 add_libnanomsg_test (tcp_shutdown)
 add_libnanomsg_test (ws)
 add_libnanomsg_test (tcpmux)
+
+# XP issue test
+add_libnanomsg_xp_test (ipc_xp_test)
 
 #  Protocol tests.
 add_libnanomsg_test (pair)

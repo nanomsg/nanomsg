@@ -436,6 +436,18 @@ int nn_freemsg (void *msg)
     return 0;
 }
 
+struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg)
+{
+    size_t sz;
+
+    sz = sizeof (struct nn_cmsghdr) + cmsg->cmsg_len;
+    if (((char*) cmsg) - ((char*) mhdr->msg_control) + sz >=
+           mhdr->msg_controllen)
+        return NULL;
+    return (struct nn_cmsghdr*) (((char*) cmsg) + sz);
+}
+
 int nn_global_create_socket (int domain, int protocol)
 {
     int rc;

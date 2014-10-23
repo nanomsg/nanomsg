@@ -36,7 +36,10 @@ Topic with zero length matches any message.
 If the socket is subscribed to multiple topics, message matching any of them
 will be delivered to the user.
 
-The entire message, including the the topic, is delivered to the user.
+Since the filtering is performed on the Subscriber side, all the messages 
+from Publisher will be sent over the transport layer. 
+
+The entire message, including the topic, is delivered to the user.
 
 Socket Types
 ~~~~~~~~~~~~

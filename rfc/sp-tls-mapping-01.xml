@@ -44,7 +44,7 @@
          and should follow the same details as discussed here.</t>
 
       <t>As when running SP over TCP directly, the TCP port number is
-         determined by the applicaton or user.</t>
+         determined by the application or user.</t>
 
       <t>This mapping follows the details of
 	 <xref target='SPoverTCP'>SP over TCP</xref>.</t>
@@ -59,7 +59,7 @@
          keys, and possibly performing one or two-way authentication.</t>
 
       <t>The specific details of the TLS negotiation are determined by the
-         the application(s) involved, and are not specified here.  This includes
+         application(s) involved, and are not specified here.  This includes
          selection of the specific version of TLS or possibly falling back to
          SSL version 3 (but not SSL version 1 or 2).</t>
 

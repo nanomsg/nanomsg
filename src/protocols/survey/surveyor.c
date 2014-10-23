@@ -174,7 +174,7 @@ static int nn_surveyor_events (struct nn_sockbase *self)
 
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
 
-    /*  Determine the actual readability/writeability of the socket. */
+    /*  Determine the actual readability/writability of the socket. */
     rc = nn_xsurveyor_events (&surveyor->xsurveyor.sockbase);
 
     /*  If there's no survey going on we'll signal IN to interrupt polling

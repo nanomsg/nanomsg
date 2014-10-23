@@ -69,7 +69,7 @@ Internet-Draft             UDP mapping for SPs                March 2014
 
    Each UDP packet maps to exactly one SP message.
 
-   There is no way to split one SP message into mutliple UDP packets and
+   There is no way to split one SP message into multiple UDP packets and
    therefore SP messages larger than existing path MTU will be dropped
    silently.
 
@@ -98,8 +98,8 @@ Internet-Draft             UDP mapping for SPs                March 2014
    peer differs, the UDP packets MUST be ignored.
 
    The fact that the first byte of the protocol header is binary zero
-   eliminates any text-based protocols that were accidentally connected
-   to the endpiont.  Subsequent two bytes make the check even more
+   eliminates any text-based protocols that were accidentally sending
+   to the endpoint.  Subsequent two bytes make the check even more
    rigorous.  At the same time they can be used as a debugging hint to
    indicate that the connection is supposed to use one of the
    scalability protocols -- ASCII representation of these bytes is 'SP'

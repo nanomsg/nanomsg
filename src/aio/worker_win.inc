@@ -108,6 +108,7 @@ void nn_worker_term (struct nn_worker *self)
     win_assert (brc);
 }
 
+/* Only used on Windows XP. */
 void nn_worker_cancelio(struct nn_worker *self, HANDLE p)
 {
     BOOL brc;

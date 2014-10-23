@@ -1050,8 +1050,9 @@ static int nn_usock_cancel_io (struct nn_usock *self)
             win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         }
         else {
-            CancelIo(self->p);
-            nn_worker_cancelio(worker, self->p);
+            brc = CancelIo (self->p);
+            win_assert (brc);
+            nn_worker_cancelio (worker, self->p);
         }
         rc = 1;
     }
@@ -1061,8 +1062,9 @@ static int nn_usock_cancel_io (struct nn_usock *self)
             win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
         }
         else {
-            CancelIo(self->p);
-            nn_worker_cancelio(worker, self->p);
+            brc = CancelIo (self->p);
+            win_assert (brc);
+            nn_worker_cancelio (worker, self->p);
         }
         rc = 1;
     }

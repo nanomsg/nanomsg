@@ -58,6 +58,8 @@ static void routine (NN_UNUSED void *arg)
     active --;
 }
 
+extern int nn_test_force_xp;
+
 int main ()
 {
     int sb;
@@ -65,7 +67,11 @@ int main ()
     int j;
     struct nn_thread threads [THREAD_COUNT];
 
-    /*  Test race condition of sending message while socket shutting down  */
+    /*  Test race condition of sending message while socket shutting down.
+        This is stable in the Vista+ implementation, and will work unreliably in the XP implementation. */
+
+    /*  Force XP mode since not everyone has an array of test VMs. */
+    nn_test_force_xp = 1;
 
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);

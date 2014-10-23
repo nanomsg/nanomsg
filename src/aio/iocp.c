@@ -39,22 +39,21 @@ BOOL nn_getqueuedcompletionstatusex(HANDLE CompletionPort, LPOVERLAPPED_ENTRY lp
 	return ptr_api_GetQueuedCompletionStatusEx(CompletionPort, lpCompletionPortEntries, ulCount, ulNumEntriesRemoved, dwMilliseconds, fAlertable);
 }
 
+int nn_test_force_xp = 0;
+
 BOOL nn_isvistaplus()
 {
-#ifdef SIM_XP
-	return FALSE;
-#else
 	OSVERSIONINFO osvi;
-	if(bOSQueried) return bIsVistaPlus;
+    if(nn_test_force_xp) { return FALSE; }
+    if(bOSQueried) { return bIsVistaPlus; }
 
-	memset(&osvi, 0, sizeof(osvi));
-	osvi.dwOSVersionInfoSize = sizeof(osvi);
-	nn_assert(GetVersionEx(&osvi));	
-	if(osvi.dwMajorVersion < 6) bIsVistaPlus = FALSE;
+	memset (&osvi, 0, sizeof(osvi));
+	osvi.dwOSVersionInfoSize = sizeof (osvi);
+	nn_assert (GetVersionEx (&osvi));	
+    if(osvi.dwMajorVersion < 6) { bIsVistaPlus = FALSE; }
 	bOSQueried = TRUE;
 
 	return bIsVistaPlus;
-#endif
 }
 
 #endif

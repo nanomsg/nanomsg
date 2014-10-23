@@ -73,6 +73,8 @@ add_libnanomsg_test (tcp_shutdown)
 add_libnanomsg_test (ws)
 add_libnanomsg_test (tcpmux)
 
+add_libnanomsg_test (ipc_xp_test)
+
 #  Protocol tests.
 add_libnanomsg_test (pair)
 add_libnanomsg_test (pubsub)

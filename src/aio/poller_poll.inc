@@ -126,12 +126,15 @@ int nn_poller_wait (struct nn_poller *self, int timeout)
         --self->size;
         if (i != self->size) { 
             self->pollset [i] = self->pollset [self->size];
+            if (self->hndls [i].next != -1)
+                self->hndls [self->hndls [i].next].prev = -1;
             self->hndls [i] = self->hndls [self->size];
-            self->hndls [i].hndl->index = i;
+            if (self->hndls [i].hndl)
+                self->hndls [i].hndl->index = i;
         }
 
         /*  The fd from the end of the pollset may have been on removed fds
-            list itself. If so, adjust the list. */
+            list itself. If so, adjust the removed list. */
         if (nn_slow (!self->hndls [i].hndl)) {
             if (self->hndls [i].prev != -1)
                self->hndls [self->hndls [i].prev].next = i;

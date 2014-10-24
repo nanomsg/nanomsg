@@ -37,7 +37,13 @@
     we can avoid additional memory allocation per message. */
 
 struct nn_chunkref {
-    uint8_t ref [NN_CHUNKREF_MAX];
+    union {
+        uint8_t ref [NN_CHUNKREF_MAX];
+
+        /* This option is present only to force alignemt of nn_chunkref to
+           the word boudnary. */
+        void *unused;
+    } u;
 };
 
 /*  Initialise the chunkref. The actual storage will be either on stack (for

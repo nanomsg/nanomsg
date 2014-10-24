@@ -37,14 +37,14 @@ struct nn_rep {
 
 /*  Some users may want to extend the REP protocol similar to how REP extends XREP.
     Expose these methods to improve extensibility. */
-static void nn_rep_init (struct nn_rep *self,
+void nn_rep_init (struct nn_rep *self,
 const struct nn_sockbase_vfptr *vfptr, void *hint);
-static void nn_rep_term (struct nn_rep *self);
+void nn_rep_term (struct nn_rep *self);
 
 /*  Implementation of nn_sockbase's virtual functions. */
-static void nn_rep_destroy (struct nn_sockbase *self);
-static int nn_rep_events (struct nn_sockbase *self);
-static int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
+void nn_rep_destroy (struct nn_sockbase *self);
+int nn_rep_events (struct nn_sockbase *self);
+int nn_rep_send (struct nn_sockbase *self, struct nn_msg *msg);
+int nn_rep_recv (struct nn_sockbase *self, struct nn_msg *msg);
 
 #endif

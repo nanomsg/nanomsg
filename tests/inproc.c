@@ -84,7 +84,7 @@ int main ()
     i = 0;
     while (1) {
         rc = nn_send (sc, "0123456789", 10, 0);
-        if (rc < 0 && nn_errno () == EAGAIN)
+        if (rc < 0 && nn_errno () == ETIMEDOUT)
             break;
         errno_assert (rc >= 0);
         nn_assert (rc == 10);
@@ -94,7 +94,7 @@ int main ()
     test_recv (sb, "0123456789");
     test_send (sc, "0123456789");
     rc = nn_send (sc, "0123456789", 10, 0);
-    nn_assert (rc < 0 && nn_errno () == EAGAIN);
+    nn_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     for (i = 0; i != 20; ++i) {
         test_recv (sb, "0123456789");
     }

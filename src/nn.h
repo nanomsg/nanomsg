@@ -336,6 +336,16 @@ struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
 #define NN_PROTOCOL 13
 #define NN_IPV4ONLY 14
 #define NN_SOCKET_NAME 15
+#define NN_PARSE_PIPE_TYPE 16
+
+/*The socket's parse type isn't known (e.g. no transport specified) */
+#define NN_PARSE_PIPE_TYPE_UNKNOWN -1
+/* The socket doesn't parse the pipe. (e.g. ipc, tcp) */
+#define NN_PARSE_PIPE_TYPE_UNPARSED 0
+/*The socket parses the pipe (e.g. inproc) */
+#define NN_PARSE_PIPE_TYPE_PARSED 1
+/*The socket may or may not parse the pipe (e.g. mix of unparsed and parsed types) */
+#define NN_PARSE_PIPE_TYPE_MIXED 2
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

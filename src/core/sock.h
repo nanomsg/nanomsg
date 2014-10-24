@@ -136,6 +136,9 @@ struct nn_sock
 
     /*  The socket name for statistics  */
     char socket_name[64];
+
+    /* the type of parsing for the socket */
+    char socket_parse_type;
 };
 
 /*  Initialise the socket. */

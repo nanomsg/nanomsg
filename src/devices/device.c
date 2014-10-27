@@ -37,7 +37,8 @@
 #else
 #error
 #endif
-int nn_custom_device(struct nn_device_recipe *device, int s1, int s2, int flags) 
+int nn_custom_device(struct nn_device_recipe *device, int s1, int s2,
+    int flags) 
 {
     return nn_device_entry(device,s1,s2,flags);
 }
@@ -47,7 +48,8 @@ int nn_device (int s1, int s2)
     return nn_custom_device(&nn_ordinary_device,s1,s2,0);
 }
 
-int nn_device_entry(struct nn_device_recipe *device,int s1, int s2, int flags) 
+int nn_device_entry(struct nn_device_recipe *device,int s1, int s2,
+    int flags) 
 {
     int rc;
     int op1;
@@ -166,7 +168,8 @@ int nn_device_entry(struct nn_device_recipe *device,int s1, int s2, int flags)
     /*  Two-directional device. */
     if (device->required_checks & NN_CHECK_ALLOW_BIDIRECTIONAL) {
         if (s1rcv != -1 && s1snd != -1 && s2rcv != -1 && s2snd != -1)
-            return nn_device_twoway (device,s1, s1rcv, s1snd, s2, s2rcv, s2snd);
+            return nn_device_twoway (device, s1, s1rcv, s1snd,
+                s2, s2rcv, s2snd);
     }
 
     if (device->required_checks & NN_CHECK_ALLOW_UNIDIRECTIONAL) {
@@ -208,7 +211,8 @@ int nn_device_loopback (struct nn_device_recipe *device,int s)
 
 #if defined NN_HAVE_WINDOWS
 
-int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd s1snd,
+int nn_device_twoway (struct nn_device_recipe *device,
+    int s1, nn_fd s1rcv, nn_fd s1snd,
     int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
@@ -274,7 +278,8 @@ int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd
 
 #elif defined NN_HAVE_POLL
 
-int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd s1snd,
+int nn_device_twoway (struct nn_device_recipe *device,
+    int s1, nn_fd s1rcv, nn_fd s1snd,
     int s2, nn_fd s2rcv, nn_fd s2snd)
 {
     int rc;
@@ -334,8 +339,9 @@ int nn_device_twoway (struct nn_device_recipe *device,int s1, nn_fd s1rcv, nn_fd
 #error
 #endif
 
-int nn_device_oneway (struct nn_device_recipe *device,int s1, NN_UNUSED nn_fd s1rcv,
-                             int s2, NN_UNUSED nn_fd s2snd)
+int nn_device_oneway (struct nn_device_recipe *device,
+    int s1, NN_UNUSED nn_fd s1rcv,
+    int s2, NN_UNUSED nn_fd s2snd)
 {
     int rc;
 
@@ -346,7 +352,8 @@ int nn_device_oneway (struct nn_device_recipe *device,int s1, NN_UNUSED nn_fd s1
     }
 }
 
-int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags)
+int nn_device_mvmsg (struct nn_device_recipe *device,
+    int from, int to, int flags)
 {
     int rc;
     void *body;
@@ -378,7 +385,9 @@ int nn_device_mvmsg (struct nn_device_recipe *device,int from, int to, int flags
     return 0;
 }
 
-int nn_device_rewritemsg(struct nn_device_recipe *device,int from, int to, int flags, struct nn_msghdr *msghdr,int bytes) 
+int nn_device_rewritemsg(struct nn_device_recipe *device,
+    int from, int to, int flags, struct nn_msghdr *msghdr, int bytes) 
 {
-    return 1; //always forward
+    return 1; /* always forward */
 }
+

@@ -113,6 +113,27 @@ To build the diagrams yourself, use "make diagrams" command.
 
 If you want to implement a new language binding for nanomsg, check this <a href="development-bindings.html">document</a> describing best practices and offering helpful tips.
 
+<h3>Release process</h3>
+
+These instructions are intended for the project maintainers.
+
+<ol>
+<li>Check CI (<a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a>).
+<li>Do "make distcheck" to check whether the packaging process still works.
+<li>Bump ABI version as appropriate (see here: <a href="http://250bpm.com/blog:41">http://250bpm.com/blog:41</a>). Commit it and push it back to the master on GitHub.
+<li>Tag the new version and push the tag to GitHub (e.g. <tt>git tag -a 0.3-beta; git push origin 0.3-beta</tt>).
+<li>Clone a clean repo from GitHub.
+<li>Build the package (make distcheck).
+<li>Upload the packages to <tt>download.nanomsg.org</tt>.
+<li>Get the checksums (md5sum) of the packages.
+<li>Upload thr <tt>download.html</tt> page on the website (git branch <tt>gh-pages</tt>).
+<li>Generate the docs (<tt>./configure --enable-docs; make</tt>)
+<li>In online docs (git branch <tt>gh-pages</tt>) make a new folder (e.g. <tt>v0.3</tt>) and copy the HTML docs there.
+<li>Link the docs from <tt>documentation.html</tt> page.
+<li>Send the announcement about the release to the project mailing list.
+<li>Update the topic in the IRC chatroom accordingly.
+</ol>
+
 </div>
 </body>
 </html>

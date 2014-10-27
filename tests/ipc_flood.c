@@ -28,6 +28,8 @@
 #include "testutil.h"
 
 #define SOCKET_ADDRESS "ipc://test_flood.ipc"
+/* Not specific to IPC. Found that TCP sockets have the same problem. */
+/* #define SOCKET_ADDRESS "tcp://127.0.0.1:9876" */
 
 #define BATCH_SEND 10
 
@@ -50,12 +52,16 @@ int main ()
 	test_connect (sub, SOCKET_ADDRESS);
 
 	/* Wait for connection to establish. */
-	nn_sleep (10);
+	nn_sleep (50);
 
 	counter = 0;
 	for (i=0; i<BATCH_SEND; i++) {
+#if 0
+        /* With sufficient wait everything will be transmitted. */
+        nn_sleep (50);
+#endif
 		if (i==BATCH_SEND-1) {
-			/* Wait before sending the last one. */
+			/* Wait before sending the last one to show it's a 'flood' problem. */
 			nn_sleep (50);
 		}
 		rc = nn_send (pub, &counter, sizeof(counter), 0);
@@ -67,7 +73,7 @@ int main ()
 	for (i=0; i<BATCH_SEND; i++) {
 		rc = nn_recv (sub, &recv_tmp, sizeof(recv_tmp), 0);
 		nn_assert (rc == sizeof(recv_tmp));
-		/* Before fix, would only see first and last message. */
+		/* Before fix, only first and last message gets through (last also because we special case a wait for it to demonstrate). */
 		nn_assert (recv_expect == recv_tmp);
 		recv_expect++;
 	}

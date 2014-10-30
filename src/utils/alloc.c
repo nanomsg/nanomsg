@@ -95,7 +95,7 @@ void *nn_realloc (void *ptr, size_t size)
         nn_alloc_bytes, nn_alloc_blocks);
     nn_mutex_unlock (&nn_alloc_sync);
 
-    return newchunk + sizeof (size_t);
+    return newchunk + sizeof (struct nn_alloc_hdr);
 }
 
 void nn_free (void *ptr)

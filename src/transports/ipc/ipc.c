@@ -36,6 +36,7 @@
 #if defined NN_HAVE_WINDOWS
 #include "../../utils/win.h"
 #else
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
 #endif

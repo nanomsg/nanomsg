@@ -30,6 +30,8 @@
 #include "../../aio/usock.h"
 #include "../utils/backoff.h"
 
+#include "../utils/backoff.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -55,6 +57,10 @@
 #define NN_BTCP_STATE_STOPPING_ATCP 3
 #define NN_BTCP_STATE_STOPPING_USOCK 4
 #define NN_BTCP_STATE_STOPPING_ATCPS 5
+#define NN_BTCP_STATE_LISTENING 6
+#define NN_BTCP_STATE_WAITING 7
+#define NN_BTCP_STATE_CLOSING 8
+#define NN_BTCP_STATE_STOPPING_BACKOFF 9
 
 #define NN_BTCP_STATE_LISTENING 6
 #define NN_BTCP_STATE_WAITING 7
@@ -158,7 +164,6 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_btcp_handler, nn_btcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
-
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);
@@ -169,10 +174,8 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     nn_assert (sz == sizeof (reconnect_ivl_max));
     if (reconnect_ivl_max == 0)
         reconnect_ivl_max = reconnect_ivl;
-
     nn_backoff_init (&self->retry, NN_BTCP_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
-
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
     self->atcp = NULL;
     nn_list_init (&self->atcps);
@@ -226,7 +229,8 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
         if (btcp->atcp) {
             nn_atcp_stop (btcp->atcp);
             btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
-        } else {
+        }
+        else {
             btcp->state = NN_BTCP_STATE_STOPPING_USOCK;
         }
     }
@@ -473,8 +477,6 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
-        nn_epbase_set_error (&self->epbase, -rc);
-        nn_epbase_stat_increment (&self->epbase, NN_STAT_BIND_ERRORS, 1);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }
@@ -482,14 +484,11 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     if (nn_slow (rc < 0)) {
         nn_usock_stop (&self->usock);
-        nn_epbase_set_error (&self->epbase, -rc);
-        nn_epbase_stat_increment (&self->epbase, NN_STAT_BIND_ERRORS, 1);
         self->state = NN_BTCP_STATE_CLOSING;
         return;
     }
     nn_btcp_start_accepting(self);
     self->state = NN_BTCP_STATE_ACTIVE;
-    nn_epbase_clear_error (&self->epbase);
 }
 
 static void nn_btcp_start_accepting (struct nn_btcp *self)

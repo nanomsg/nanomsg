@@ -509,7 +509,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
         NULL);
 
     /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
-    nn_assert (self->p != INVALID_HANDLE_VALUE);
+    win_assert (self->p != INVALID_HANDLE_VALUE);
 
     self->isaccepted = 1;
     nn_usock_create_io_completion (self);

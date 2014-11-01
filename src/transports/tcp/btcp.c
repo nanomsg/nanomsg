@@ -29,6 +29,8 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
+#include "../utils/backoff.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -54,9 +56,14 @@
 #define NN_BTCP_STATE_STOPPING_ATCP 3
 #define NN_BTCP_STATE_STOPPING_USOCK 4
 #define NN_BTCP_STATE_STOPPING_ATCPS 5
+#define NN_BTCP_STATE_LISTENING 6
+#define NN_BTCP_STATE_WAITING 7
+#define NN_BTCP_STATE_CLOSING 8
+#define NN_BTCP_STATE_STOPPING_BACKOFF 9
 
 #define NN_BTCP_SRC_USOCK 1
 #define NN_BTCP_SRC_ATCP 2
+#define NN_BTCP_SRC_RECONNECT_TIMER 3
 
 struct nn_btcp {
 
@@ -76,6 +83,9 @@ struct nn_btcp {
 
     /*  List of accepted connections. */
     struct nn_list atcps;
+
+    /*  Used to wait before retrying to connect. */
+    struct nn_backoff retry;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -105,6 +115,9 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     size_t sslen;
     int ipv4only;
     size_t ipv4onlylen;
+    int reconnect_ivl;
+    int reconnect_ivl_max;
+    size_t sz;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_btcp), "btcp");
@@ -145,6 +158,18 @@ int nn_btcp_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_btcp_handler, nn_btcp_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BTCP_STATE_IDLE;
+    sz = sizeof (reconnect_ivl);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
+        &reconnect_ivl, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl));
+    sz = sizeof (reconnect_ivl_max);
+    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+        &reconnect_ivl_max, &sz);
+    nn_assert (sz == sizeof (reconnect_ivl_max));
+    if (reconnect_ivl_max == 0)
+        reconnect_ivl_max = reconnect_ivl;
+    nn_backoff_init (&self->retry, NN_BTCP_SRC_RECONNECT_TIMER,
+        reconnect_ivl, reconnect_ivl_max, &self->fsm);
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
     self->atcp = NULL;
     nn_list_init (&self->atcps);
@@ -177,6 +202,7 @@ static void nn_btcp_destroy (struct nn_epbase *self)
     nn_list_term (&btcp->atcps);
     nn_assert (btcp->atcp == NULL);
     nn_usock_term (&btcp->usock);
+    nn_backoff_term (&btcp->retry);
     nn_epbase_term (&btcp->epbase);
     nn_fsm_term (&btcp->fsm);
 
@@ -193,8 +219,14 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_atcp_stop (btcp->atcp);
-        btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
+        nn_backoff_stop (&btcp->retry);
+        if (btcp->atcp) {
+            nn_atcp_stop (btcp->atcp);
+            btcp->state = NN_BTCP_STATE_STOPPING_ATCP;
+        }
+        else {
+            btcp->state = NN_BTCP_STATE_STOPPING_USOCK;
+        }
     }
     if (nn_slow (btcp->state == NN_BTCP_STATE_STOPPING_ATCP)) {
         if (!nn_atcp_isidle (btcp->atcp))
@@ -260,8 +292,6 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 nn_btcp_start_listening (btcp);
-                nn_btcp_start_accepting (btcp);
-                btcp->state = NN_BTCP_STATE_ACTIVE;
                 return;
             default:
                 nn_fsm_bad_action (btcp->state, src, type);
@@ -311,6 +341,71 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
             return;
         default:
             nn_fsm_bad_action (btcp->state, src, type);
+        }
+
+/******************************************************************************/
+/*  CLOSING_USOCK state.                                                     */
+/*  usock object was asked to stop but it haven't stopped yet.                */
+/******************************************************************************/
+    case NN_BTCP_STATE_CLOSING:
+        switch (src) {
+
+        case NN_BTCP_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
+            case NN_USOCK_STOPPED:
+                nn_backoff_start (&btcp->retry);
+                btcp->state = NN_BTCP_STATE_WAITING;
+                return;
+            default:
+                nn_fsm_bad_action (btcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (btcp->state, src, type);
+        }
+
+/******************************************************************************/
+/*  WAITING state.                                                            */
+/*  Waiting before re-bind is attempted. This way we won't overload           */
+/*  the system by continuous re-bind attemps.                                 */
+/******************************************************************************/
+    case NN_BTCP_STATE_WAITING:
+        switch (src) {
+
+        case NN_BTCP_SRC_RECONNECT_TIMER:
+            switch (type) {
+            case NN_BACKOFF_TIMEOUT:
+                nn_backoff_stop (&btcp->retry);
+                btcp->state = NN_BTCP_STATE_STOPPING_BACKOFF;
+                return;
+            default:
+                nn_fsm_bad_action (btcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (btcp->state, src, type);
+        }
+
+/******************************************************************************/
+/*  STOPPING_BACKOFF state.                                                   */
+/*  backoff object was asked to stop, but it haven't stopped yet.             */
+/******************************************************************************/
+    case NN_BTCP_STATE_STOPPING_BACKOFF:
+        switch (src) {
+
+        case NN_BTCP_SRC_RECONNECT_TIMER:
+            switch (type) {
+            case NN_BACKOFF_STOPPED:
+                nn_btcp_start_listening (btcp);
+                return;
+            default:
+                nn_fsm_bad_action (btcp->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (btcp->state, src, type);
         }
 
 /******************************************************************************/
@@ -372,12 +467,27 @@ static void nn_btcp_start_listening (struct nn_btcp *self)
 
     /*  Start listening for incoming connections. */
     rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
-    /*  TODO: EMFILE error can happen here. We can wait a bit and re-try. */
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc < 0)) {
+        nn_backoff_start (&self->retry);
+        self->state = NN_BTCP_STATE_WAITING;
+        return;
+    }
+
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc < 0)) {
+        nn_usock_stop (&self->usock);
+        self->state = NN_BTCP_STATE_CLOSING;
+        return;
+    }
+
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc < 0)) {
+        nn_usock_stop (&self->usock);
+        self->state = NN_BTCP_STATE_CLOSING;
+        return;
+    }
+    nn_btcp_start_accepting(self);
+    self->state = NN_BTCP_STATE_ACTIVE;
 }
 
 static void nn_btcp_start_accepting (struct nn_btcp *self)

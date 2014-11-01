@@ -162,22 +162,6 @@ int main ()
     test_close (s1);
     test_close (sb);
 
-<<<<<<< HEAD
-    /*  Test same address bind for 2 sockets, should not crash but keep rebinding */
-    sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
-
-    sc = test_socket (AF_SP, NN_PAIR);
-    eid = test_bind (sc, SOCKET_ADDRESS);
-
-    nn_sleep (1000);
-    test_close (sb);
-    errno_assert (nn_geterrno (sc, eid) == EADDRINUSE);
-
-    nn_sleep (1000);
-    errno_assert (nn_geterrno (sc, eid) == 0);
-    test_close (sc);
-=======
 #ifndef NN_HAVE_WINDOWS
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
@@ -200,7 +184,6 @@ int main ()
     test_close (sc);
     test_close (s1);
 #endif
->>>>>>> upstream/master
 
     return 0;
 }

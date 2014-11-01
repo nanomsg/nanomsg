@@ -28,7 +28,6 @@
 
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
-#include "../utils/backoff.h"
 
 #include "../utils/backoff.h"
 
@@ -57,11 +56,6 @@
 #define NN_BTCP_STATE_STOPPING_ATCP 3
 #define NN_BTCP_STATE_STOPPING_USOCK 4
 #define NN_BTCP_STATE_STOPPING_ATCPS 5
-#define NN_BTCP_STATE_LISTENING 6
-#define NN_BTCP_STATE_WAITING 7
-#define NN_BTCP_STATE_CLOSING 8
-#define NN_BTCP_STATE_STOPPING_BACKOFF 9
-
 #define NN_BTCP_STATE_LISTENING 6
 #define NN_BTCP_STATE_WAITING 7
 #define NN_BTCP_STATE_CLOSING 8
@@ -315,11 +309,16 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
         if (srcptr == btcp->atcp) {
             switch (type) {
             case NN_ATCP_ACCEPTED:
-                /*  Move the newly created connection to the list of existing connections. */
-                nn_list_insert (&btcp->atcps, &btcp->atcp->item, nn_list_end (&btcp->atcps));
+
+                /*  Move the newly created connection to the list of existing
+                    connections. */
+                nn_list_insert (&btcp->atcps, &btcp->atcp->item,
+                    nn_list_end (&btcp->atcps));
                 btcp->atcp = NULL;
+
                 /*  Start waiting for a new incoming connection. */
                 nn_btcp_start_accepting (btcp);
+
                 return;
 
             default:

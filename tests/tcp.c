@@ -26,20 +26,28 @@
 #include "../src/tcp.h"
 
 #include "testutil.h"
+#include "../src/utils/thread.c"
 
 /*  Tests TCP transport. */
 
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
 
+int sc;
+
+void routine1 (NN_UNUSED void *arg)
+{
+   test_recv (sc, "ABC");
+}
+
 int main ()
 {
     int rc;
     int sb;
-    int sc;
     int i;
     int opt;
     size_t sz;
     int s1, s2;
+    struct nn_thread thread;
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
@@ -175,11 +183,11 @@ int main ()
     test_recv (sc, "ABC");
 
     test_close (sb);
-    nn_sleep (300);
 
+    nn_thread_init (&thread, routine1, NULL);
     test_send (s1, "ABC");
-    test_recv (sc, "ABC");
-
+    nn_thread_term (&thread);
+    
     test_close (sc);
     test_close (s1);
 #endif

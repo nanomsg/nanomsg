@@ -169,6 +169,7 @@ int main ()
     test_close (s1);
     test_close (sb);
 
+#ifndef NN_HAVE_WINDOWS
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
@@ -189,6 +190,7 @@ int main ()
     
     test_close (sc);
     test_close (s1);
+#endif
 
     return 0;
 }

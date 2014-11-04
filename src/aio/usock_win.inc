@@ -837,7 +837,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close (usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
@@ -859,7 +859,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close(usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;

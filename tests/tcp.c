@@ -31,11 +31,12 @@
 
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
 
+int sc;
+
 int main ()
 {
     int rc;
     int sb;
-    int sc;
     int i;
     int opt;
     int eid;
@@ -162,7 +163,6 @@ int main ()
     test_close (s1);
     test_close (sb);
 
-#ifndef NN_HAVE_WINDOWS
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
@@ -176,14 +176,12 @@ int main ()
     test_recv (sc, "ABC");
 
     test_close (sb);
-    nn_sleep (300);
 
     test_send (s1, "ABC");
     test_recv (sc, "ABC");
-
+    
     test_close (sc);
     test_close (s1);
-#endif
 
     return 0;
 }

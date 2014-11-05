@@ -510,7 +510,7 @@ void nn_recv_loop (nn_options_t *options, int sock)
         rc = nn_recv (sock, &buf, NN_MSG, 0);
         if (rc < 0 && errno == EAGAIN) {
             continue;
-        } else if (errno == ETIMEDOUT || errno == EFSM) {
+        } else if (rc < 0 && (errno == ETIMEDOUT || errno == EFSM)) {
             return;  /*  No more messages possible  */
         } else {
             nn_assert_errno (rc >= 0, "Can't recv");

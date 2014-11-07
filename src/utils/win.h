@@ -35,9 +35,9 @@
 
 /* This structure does not exist on Windows platform. Let's fake it. */
 struct sockaddr_un {
-    ADDRESS_FAMILY sun_family;
+    short sun_family;
     char sun_path [sizeof (struct sockaddr_storage) -
-        sizeof (ADDRESS_FAMILY)];
+        sizeof (short)];
 };
 
 #define ssize_t int

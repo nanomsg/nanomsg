@@ -171,15 +171,11 @@ int main ()
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
     nn_sleep (100);
-
     test_send (sb, "ABC");
     test_recv (sc, "ABC");
-
     test_close (sb);
-
     test_send (s1, "ABC");
     test_recv (sc, "ABC");
-    
     test_close (sc);
     test_close (s1);
 

@@ -406,7 +406,7 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
         errno_assert (rc != -1 || errno == EINVAL);
         rc = connect (fd, (struct sockaddr*) &ss,
             sizeof (struct sockaddr_un));
-        if (rc == -1 && errno != EINPROGRESS) {
+        if (rc == -1 && errno == ECONNREFUSED) {
             rc = unlink (addr);
             errno_assert (rc == 0 || errno == ENOENT);
         }

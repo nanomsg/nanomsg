@@ -30,7 +30,10 @@
 struct nn_msg {
 
     /*  Contains SP protocol message header. */
-    struct nn_chunkref hdr;
+    struct nn_chunkref sphdr;
+
+    /*  Contains any additional message headers. */
+    struct nn_chunkref hdrs;
 
     /*  Contains application level message payload. */
     struct nn_chunkref body;

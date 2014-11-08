@@ -115,10 +115,10 @@ static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg)
         return -EFSM;
 
     /*  Tag the message with survey ID. */
-    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, 4);
-    nn_putl (nn_chunkref_data (&msg->hdr), respondent->surveyid);
+    nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, 4);
+    nn_putl (nn_chunkref_data (&msg->sphdr), respondent->surveyid);
 
     /*  Try to send the message. If it cannot be sent due to pushback, drop it
         silently. */
@@ -152,10 +152,10 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     errnum_assert (rc == 0, -rc);
 
     /*  Remember the survey ID. */
-    nn_assert (nn_chunkref_size (&msg->hdr) == sizeof (uint32_t));
-    respondent->surveyid = nn_getl (nn_chunkref_data (&msg->hdr));
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, 0);
+    nn_assert (nn_chunkref_size (&msg->sphdr) == sizeof (uint32_t));
+    respondent->surveyid = nn_getl (nn_chunkref_data (&msg->sphdr));
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, 0);
 
     /*  Remember that survey is being processed. */
     respondent->flags |= NN_RESPONDENT_INPROGRESS;

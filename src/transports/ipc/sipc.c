@@ -138,14 +138,14 @@ static int nn_sipc_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Serialise the message header. */
     sipc->outhdr [0] = NN_SIPC_MSG_NORMAL;
-    nn_putll (sipc->outhdr + 1, nn_chunkref_size (&sipc->outmsg.hdr) +
+    nn_putll (sipc->outhdr + 1, nn_chunkref_size (&sipc->outmsg.sphdr) +
         nn_chunkref_size (&sipc->outmsg.body));
 
     /*  Start async sending. */
     iov [0].iov_base = sipc->outhdr;
     iov [0].iov_len = sizeof (sipc->outhdr);
-    iov [1].iov_base = nn_chunkref_data (&sipc->outmsg.hdr);
-    iov [1].iov_len = nn_chunkref_size (&sipc->outmsg.hdr);
+    iov [1].iov_base = nn_chunkref_data (&sipc->outmsg.sphdr);
+    iov [1].iov_len = nn_chunkref_size (&sipc->outmsg.sphdr);
     iov [2].iov_base = nn_chunkref_data (&sipc->outmsg.body);
     iov [2].iov_len = nn_chunkref_size (&sipc->outmsg.body);
     nn_usock_send (sipc->usock, iov, 3);

@@ -753,8 +753,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
             chunk = *((void**) msghdr->msg_control);
-            nn_chunkref_term (&msg.hdr);
-            nn_chunkref_init_chunk (&msg.hdr, chunk);
+            nn_chunkref_term (&msg.sphdr);
+            nn_chunkref_init_chunk (&msg.sphdr, chunk);
         }
         else {
 
@@ -844,7 +844,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            chunk = nn_chunkref_getchunk (&msg.hdr);
+            chunk = nn_chunkref_getchunk (&msg.sphdr);
             *((void**) msghdr->msg_control) = chunk;
         }
         else {

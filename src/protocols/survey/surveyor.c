@@ -195,10 +195,10 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
     ++surveyor->surveyid;
 
     /*  Tag the survey body with survey ID. */
-    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, 4);
-    nn_putl (nn_chunkref_data (&msg->hdr), surveyor->surveyid);
+    nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, 4);
+    nn_putl (nn_chunkref_data (&msg->sphdr), surveyor->surveyid);
 
     /*  Store the survey, so that it can be sent later on. */
     nn_msg_term (&surveyor->tosend);
@@ -247,15 +247,15 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
         /*  Get the survey ID. Ignore any stale responses. */
         /*  TODO: This should be done asynchronously! */
-        if (nn_slow (nn_chunkref_size (&msg->hdr) != sizeof (uint32_t)))
+        if (nn_slow (nn_chunkref_size (&msg->sphdr) != sizeof (uint32_t)))
             continue;
-        surveyid = nn_getl (nn_chunkref_data (&msg->hdr));
+        surveyid = nn_getl (nn_chunkref_data (&msg->sphdr));
         if (nn_slow (surveyid != surveyor->surveyid))
             continue;
 
         /*  Discard the header and return the message to the user. */
-        nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, 0);
+        nn_chunkref_term (&msg->sphdr);
+        nn_chunkref_init (&msg->sphdr, 0);
         break;
     }
 

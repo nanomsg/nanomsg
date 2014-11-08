@@ -161,14 +161,14 @@ int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)
     xrep = nn_cont (self, struct nn_xrep, sockbase);
 
     /*  We treat invalid peer ID as if the peer was non-existent. */
-    if (nn_slow (nn_chunkref_size (&msg->hdr) < sizeof (uint32_t))) {
+    if (nn_slow (nn_chunkref_size (&msg->sphdr) < sizeof (uint32_t))) {
         nn_msg_term (msg);
         return 0;
     }
 
     /*  Retrieve the destination peer ID. Trim it from the header. */
-    key = nn_getl (nn_chunkref_data (&msg->hdr));
-    nn_chunkref_trim (&msg->hdr, 4);
+    key = nn_getl (nn_chunkref_data (&msg->sphdr));
+    nn_chunkref_trim (&msg->sphdr, 4);
 
     /*  Find the appropriate pipe to send the message to. If there's none,
         or if it's not ready for sending, silently drop the message. */
@@ -226,21 +226,22 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
         ++i;
 
         /*  Split the header and the body. */
-        nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-        nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, i * sizeof (uint32_t));
-        memcpy (nn_chunkref_data (&msg->hdr), data, i * sizeof (uint32_t));
+        nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
+        nn_chunkref_term (&msg->sphdr);
+        nn_chunkref_init (&msg->sphdr, i * sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->sphdr), data, i * sizeof (uint32_t));
         nn_chunkref_trim (&msg->body, i * sizeof (uint32_t));
     }
 
     /*  Prepend the header by the pipe key. */
     pipedata = nn_pipe_getdata (pipe);
-    nn_chunkref_init (&ref, nn_chunkref_size (&msg->hdr) + sizeof (uint32_t));
+    nn_chunkref_init (&ref,
+        nn_chunkref_size (&msg->sphdr) + sizeof (uint32_t));
     nn_putl (nn_chunkref_data (&ref), pipedata->outitem.key);
     memcpy (((uint8_t*) nn_chunkref_data (&ref)) + sizeof (uint32_t),
-        nn_chunkref_data (&msg->hdr), nn_chunkref_size (&msg->hdr));
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_mv (&msg->hdr, &ref);
+        nn_chunkref_data (&msg->sphdr), nn_chunkref_size (&msg->sphdr));
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_mv (&msg->sphdr, &ref);
 
     return 0;
 }

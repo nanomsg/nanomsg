@@ -340,6 +340,10 @@ struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1
 
+/*  Ancillary data.                                                           */
+#define PROTO_SP 1
+#define SP_HDR 1
+
 NN_EXPORT int nn_socket (int domain, int protocol);
 NN_EXPORT int nn_close (int s);
 NN_EXPORT int nn_setsockopt (int s, int level, int option, const void *optval,

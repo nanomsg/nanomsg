@@ -29,10 +29,13 @@
 
 struct nn_msg {
 
-    /*  Contains SP protocol message header. */
+    /*  Contains SP message header. This field directly corresponds
+        to SP message header as defined in SP RFCs. There's no leading
+        cmsghdr or trailing padding. */
     struct nn_chunkref sphdr;
 
-    /*  Contains any additional message headers. */
+    /*  Contains any additional transport-level message headers. Format of this
+        buffer is a list of cmsgs as defined by POSIX (see "ancillary data"). */
     struct nn_chunkref hdrs;
 
     /*  Contains application level message payload. */

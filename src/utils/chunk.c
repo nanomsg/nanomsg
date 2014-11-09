@@ -229,3 +229,4 @@ static size_t nn_chunk_hdrsize ()
 {
     return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
 }
+

@@ -74,7 +74,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdlib.h>
 #include <time.h>
 
 #if defined NN_HAVE_MINGW

@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft
-Intended status: Informational                            March 24, 2014
-Expires: September 25, 2014
+Intended status: Informational                                March 2014
+Expires: September 2, 2014
 
 
                  UDP Mapping for Scalability Protocols
@@ -30,7 +30,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 25, 2014.
+   This Internet-Draft will expire on September 2, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                Expires September 25, 2014               [Page 1]
+Sustrik                 Expires September 2, 2014               [Page 1]
 
 Internet-Draft             UDP mapping for SPs                March 2014
 
@@ -69,7 +69,7 @@ Internet-Draft             UDP mapping for SPs                March 2014
 
    Each UDP packet maps to exactly one SP message.
 
-   There is no way to split one SP message into mutliple UDP packets and
+   There is no way to split one SP message into multiple UDP packets and
    therefore SP messages larger than existing path MTU will be dropped
    silently.
 
@@ -81,9 +81,15 @@ Internet-Draft             UDP mapping for SPs                March 2014
    Each packet consists of an 8-byte header followed by the opaque
    message payload:
 
-+------+------+------+--------------+------------+----------------+----------
-| 0x00 | 0x53 | 0x50 | version (8b) | type (16b) | reserved (16b) | payload
-+------+------+------+--------------+------------+----------------+----------
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      0x00     |      0x53     |      0x50     |    version    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |             type              |           reserved            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        payload ...
+   +-+-+-+-+-+-+-+-+-+-+-+-+-
 
    First four bytes of the protocol header are used to make sure that
    the peer's protocol is compatible with the protocol used by the local
@@ -98,21 +104,22 @@ Internet-Draft             UDP mapping for SPs                March 2014
    peer differs, the UDP packets MUST be ignored.
 
    The fact that the first byte of the protocol header is binary zero
-   eliminates any text-based protocols that were accidentally connected
-   to the endpiont.  Subsequent two bytes make the check even more
+   eliminates any text-based protocols that were accidentally sending to
+   the endpoint.  Subsequent two bytes make the check even more
+
+
+
+Sustrik                 Expires September 2, 2014               [Page 2]
+
+Internet-Draft             UDP mapping for SPs                March 2014
+
+
    rigorous.  At the same time they can be used as a debugging hint to
    indicate that the connection is supposed to use one of the
    scalability protocols -- ASCII representation of these bytes is 'SP'
    that can be easily spotted in when capturing the network traffic.
    Finally, the fourth byte rules out any incompatible versions of this
    protocol.
-
-
-
-Sustrik                Expires September 25, 2014               [Page 2]
-
-Internet-Draft             UDP mapping for SPs                March 2014
-
 
    Fifth and sixth bytes of the header form a 16-bit unsigned integer in
    network byte order representing the type of SP endpoint on the layer
@@ -158,12 +165,5 @@ Author's Address
 
 
 
-
-
-
-
-
-
-
-Sustrik                Expires September 25, 2014               [Page 3]
+Sustrik                 Expires September 2, 2014               [Page 3]
 

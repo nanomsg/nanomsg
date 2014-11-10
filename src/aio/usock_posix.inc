@@ -130,6 +130,9 @@ void nn_usock_term (struct nn_usock *self)
     nn_fsm_event_term (&self->event_received);
     nn_fsm_event_term (&self->event_sent);
     nn_fsm_event_term (&self->event_established);
+
+    nn_worker_cancel (self->worker, &self->task_recv);
+
     nn_worker_task_term (&self->task_stop);
     nn_worker_task_term (&self->task_recv);
     nn_worker_task_term (&self->task_send);
@@ -858,8 +861,8 @@ error:
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_ACTION_CANCEL:
-                nn_worker_execute (usock->worker, &usock->task_stop);
                 usock->state = NN_USOCK_STATE_CANCELLING;
+                nn_worker_execute (usock->worker, &usock->task_stop);
                 return;
             default:
                 nn_fsm_bad_action (usock->state, src, type);
@@ -952,14 +955,18 @@ error:
     case NN_USOCK_STATE_CANCELLING:
         switch (src) {
         case NN_USOCK_SRC_TASK_STOP:
-            nn_assert (type == NN_WORKER_TASK_EXECUTE);
-            nn_worker_rm_fd (usock->worker, &usock->wfd);
-            usock->state = NN_USOCK_STATE_LISTENING;
+            switch (type) {
+            case NN_WORKER_TASK_EXECUTE:
+                nn_worker_rm_fd (usock->worker, &usock->wfd);
+                usock->state = NN_USOCK_STATE_LISTENING;
 
-            /*  Notify the accepted socket that it was stopped. */
-            nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
+                /*  Notify the accepted socket that it was stopped. */
+                nn_fsm_action (&usock->asock->fsm, NN_USOCK_ACTION_DONE);
 
-            return;
+                return;
+            default:
+                nn_fsm_bad_action (usock->state, src, type);
+            }
         case NN_USOCK_SRC_FD:
             switch (type) {
             case NN_WORKER_FD_IN:

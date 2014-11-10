@@ -597,7 +597,12 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EINTR;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
-        self->flags |= NN_SOCK_FLAG_OUT;
+        /*
+         *  Double check if pipes are still available for sending
+         */
+        if (!nn_efd_wait (&self->sndfd, 0)) {
+            self->flags |= NN_SOCK_FLAG_OUT;
+        }
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
@@ -670,7 +675,12 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EINTR;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
-        self->flags |= NN_SOCK_FLAG_IN;
+        /*
+         *  Double check if pipes are still available for receiving
+         */
+        if (!nn_efd_wait (&self->rcvfd, 0)) {
+            self->flags |= NN_SOCK_FLAG_IN;
+        }
 
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
@@ -710,7 +720,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
     if (nn_slow (sock->state != NN_SOCK_STATE_ACTIVE))
         return;
 
-    /*  Check whether socket is readable and/or writeable at the moment. */
+    /*  Check whether socket is readable and/or writable at the moment. */
     events = sock->sockbase->vfptr->events (sock->sockbase);
     errnum_assert (events >= 0, -events);
 

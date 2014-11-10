@@ -44,7 +44,7 @@ struct nn_stcp {
     struct nn_fsm fsm;
     int state;
 
-    /*  The undelrying socket. */
+    /*  The underlying socket. */
     struct nn_usock *usock;
 
     /*  Child state machine to do protocol header exchange. */

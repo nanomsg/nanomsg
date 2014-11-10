@@ -57,7 +57,8 @@ NANOMSG_CORE = \
     src/core/symbol.c
 
 NANOMSG_DEVICES =\
-    src/devices/device.c
+    src/devices/device.c \
+    src/devices/device.h
 
 
 NANOMSG_AIO = \
@@ -436,6 +437,7 @@ TRANSPORT_TESTS = \
     tests/inproc_shutdown \
     tests/ipc \
     tests/ipc_shutdown \
+    tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown
 
@@ -489,7 +491,7 @@ nanocat_SOURCES = \
 
 if NANOCAT
 bin_PROGRAMS += nanocat
-endif NANOCAT
+endif #NANOCAT
 
 ################################################################################
 #  RFCs                                                                        #
@@ -542,8 +544,25 @@ install-exec-hook:
           $(LN_S) -f nanocat nn_bus$(EXEEXT) && \
           $(LN_S) -f nanocat nn_pair$(EXEEXT)
 
-endif SYMLINKS
-endif NANOCAT
+uninstall-hook:
+	cd $(DESTDIR)$(bindir) && \
+          rm -f nn_push$(EXEEXT) ; \
+          rm -f nn_pull$(EXEEXT) ; \
+          rm -f nn_pub$(EXEEXT) ; \
+          rm -f nn_sub$(EXEEXT) ; \
+          rm -f nn_req$(EXEEXT) ; \
+          rm -f nn_rep$(EXEEXT) ; \
+          rm -f nn_surveyor$(EXEEXT) ; \
+          rm -f nn_respondent$(EXEEXT) ; \
+          rm -f nn_bus$(EXEEXT) ; \
+          rm -f nn_pair$(EXEEXT)
+	cd $(DESTDIR)$(libdir) && \
+          rm -f libnanomsg.*
+	cd $(DESTDIR)$(includedir) && \
+          rm -rf nanomsg
+
+endif #SYMLINKS
+endif #NANOCAT
 
 
 EXTRA_DIST += \
@@ -554,6 +573,10 @@ EXTRA_DIST += \
 
 diagrams:
 	-mkdir -p doc/diagrams
-	./doc/diag.py $(DEFS) $(CPPFLAGS) \
+	$(abs_srcdir)/doc/diag.py $(DEFS) $(CPPFLAGS) \
 		$(shell clang -E - -v < /dev/null 2>&1 | \
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
+
+clean-local:
+	-rm -f test.ipc test-shutdown.ipc test-separation.ipc
+

@@ -27,7 +27,7 @@
     <abstract>
       <t>This document defines the TCP mapping for scalability protocols.
          The main purpose of the mapping is to turn the stream of bytes
-         into stream of messages. Additionaly, the mapping provides some
+         into stream of messages. Additionally, the mapping provides some
          additional checks during the connection establishment phase.</t>
     </abstract>
 
@@ -61,9 +61,13 @@
 
       <figure>
         <artwork>
-+------+------+------+--------------+------------+----------------+
-| 0x00 | 0x53 | 0x50 | version (8b) | type (16b) | reserved (16b) |
-+------+------+------+--------------+------------+----------------+
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x00     |      0x53     |      0x50     |    version    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             type              |           reserved            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
         </artwork>
       </figure>
 
@@ -80,7 +84,7 @@
 
       <t>The fact that the first byte of the protocol header is binary zero
          eliminates any text-based protocols that were accidentally connected
-         to the endpiont. Subsequent two bytes make the check even more
+         to the endpoint. Subsequent two bytes make the check even more
          rigorous. At the same time they can be used as a debugging hint to
          indicate that the connection is supposed to use one of the scalability
          protocols -- ASCII representation of these bytes is 'SP' that can
@@ -123,7 +127,7 @@
       </figure>
 
       <t>It may seem that 64 bit message size is excessive and consumes too much
-         of valueable bandwidth, especially given that most scenarios call for
+         of valuable bandwidth, especially given that most scenarios call for
          relatively small messages, in order of bytes or kilobytes.</t>
 
       <t>Variable length field may seem like a better solution, however, our
@@ -133,7 +137,7 @@
       <t>For large messages, 64 bits used by the field form a negligible portion
          of the message and the performance impact is not even measurable.</t>
 
-      <t>For small messages, the overal throughput is heavily CPU-bound, never
+      <t>For small messages, the overall throughput is heavily CPU-bound, never
          I/O-bound. In other words, CPU processing associated with each
          individual message limits the message rate in such a way that network
          bandwidth limit is never reached. In the future we expect it to be

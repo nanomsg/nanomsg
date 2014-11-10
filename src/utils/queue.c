@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012 250bpm s.r.o.  All rights reserv
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -52,6 +52,30 @@ void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item)
     if (self->tail)
         self->tail->next = item;
     self->tail = item;
+}
+
+void nn_queue_remove (struct nn_queue *self, struct nn_queue_item *item)
+{
+    struct nn_queue_item *it;
+    struct nn_queue_item *prev;
+
+    if (item->next == NN_QUEUE_NOTINQUEUE)
+        return;
+
+    prev = NULL;
+    for (it = self->head; it != NULL; it = it->next) {
+        if (it == item) {
+            if (self->head == it)
+                self->head = it->next;
+            if (self->tail == it)
+                self->tail = prev;
+            if (prev)
+                prev->next = it->next;
+            item->next = NN_QUEUE_NOTINQUEUE;
+            return;
+        }
+        prev = it;
+    }
 }
 
 struct nn_queue_item *nn_queue_pop (struct nn_queue *self)

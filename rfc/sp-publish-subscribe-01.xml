@@ -53,7 +53,7 @@
          arbitrarily complex topology rather than of a single node-to-node
          communication, several underlying protocols can be used in parallel.
          For example, publisher can send a message to intermediary node via TCP.
-         The intermediate node can then forward the message via PGM et c.</t>
+         The intermediate node can then forward the message via PGM etc.</t>
 
       <figure>
         <artwork>

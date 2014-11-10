@@ -92,7 +92,7 @@ int nn_priolist_is_active (struct nn_priolist *self);
 struct nn_pipe *nn_priolist_getpipe (struct nn_priolist *self);
 
 /*  Moves to the next pipe in the list. If 'release' is set to 1, the current
-    pipe is removed from the list. To re-insert it into thr list use
+    pipe is removed from the list. To re-insert it into the list use
     nn_priolist_activate function. */
 void nn_priolist_advance (struct nn_priolist *self, int release);
 

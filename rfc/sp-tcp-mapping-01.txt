@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft
-Intended status: Informational                            March 27, 2014
-Expires: September 28, 2014
+Intended status: Informational                                March 2014
+Expires: September 2, 2014
 
 
                  TCP Mapping for Scalability Protocols
@@ -15,7 +15,7 @@ Abstract
 
    This document defines the TCP mapping for scalability protocols.  The
    main purpose of the mapping is to turn the stream of bytes into
-   stream of messages.  Additionaly, the mapping provides some
+   stream of messages.  Additionally, the mapping provides some
    additional checks during the connection establishment phase.
 
 Status of This Memo
@@ -33,7 +33,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 28, 2014.
+   This Internet-Draft will expire on September 2, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                Expires September 28, 2014               [Page 1]
+Sustrik                 Expires September 2, 2014               [Page 1]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
@@ -80,9 +80,13 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
    The protocol header is 8 bytes long and looks like this:
 
-   +------+------+------+--------------+------------+----------------+
-   | 0x00 | 0x53 | 0x50 | version (8b) | type (16b) | reserved (16b) |
-   +------+------+------+--------------+------------+----------------+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      0x00     |      0x53     |      0x50     |    version    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |             type              |           reserved            |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
    First four bytes of the protocol header are used to make sure that
    the peer's protocol is compatible with the protocol used by the local
@@ -98,21 +102,21 @@ Internet-Draft             TCP mapping for SPs                March 2014
 
    The fact that the first byte of the protocol header is binary zero
    eliminates any text-based protocols that were accidentally connected
-   to the endpiont.  Subsequent two bytes make the check even more
+   to the endpoint.  Subsequent two bytes make the check even more
    rigorous.  At the same time they can be used as a debugging hint to
    indicate that the connection is supposed to use one of the
    scalability protocols -- ASCII representation of these bytes is 'SP'
-   that can be easily spotted in when capturing the network traffic.
-   Finally, the fourth byte rules out any incompatible versions of this
-   protocol.
 
 
 
-
-Sustrik                Expires September 28, 2014               [Page 2]
+Sustrik                 Expires September 2, 2014               [Page 2]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
+
+   that can be easily spotted in when capturing the network traffic.
+   Finally, the fourth byte rules out any incompatible versions of this
+   protocol.
 
    Fifth and sixth bytes of the header form a 16-bit unsigned integer in
    network byte order representing the type of SP endpoint on the layer
@@ -143,8 +147,8 @@ Internet-Draft             TCP mapping for SPs                March 2014
    +------------+-----------------+
 
    It may seem that 64 bit message size is excessive and consumes too
-   much of valueable bandwidth, especially given that most scenarios
-   call for relatively small messages, in order of bytes or kilobytes.
+   much of valuable bandwidth, especially given that most scenarios call
+   for relatively small messages, in order of bytes or kilobytes.
 
    Variable length field may seem like a better solution, however, our
    experience is that variable length size field doesn't provide any
@@ -154,22 +158,21 @@ Internet-Draft             TCP mapping for SPs                March 2014
    portion of the message and the performance impact is not even
    measurable.
 
-   For small messages, the overal throughput is heavily CPU-bound, never
-   I/O-bound.  In other words, CPU processing associated with each
+   For small messages, the overall throughput is heavily CPU-bound,
+   never I/O-bound.  In other words, CPU processing associated with each
    individual message limits the message rate in such a way that network
    bandwidth limit is never reached.  In the future we expect it to be
-   even more so: network bandwidth is going to grow faster than CPU
-   speed.  All in all, some performance improvement could be achieved
-   using variable length size field with huge streams of very small
 
 
 
-
-Sustrik                Expires September 28, 2014               [Page 3]
+Sustrik                 Expires September 2, 2014               [Page 3]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
 
+   even more so: network bandwidth is going to grow faster than CPU
+   speed.  All in all, some performance improvement could be achieved
+   using variable length size field with huge streams of very small
    messages on very slow networks.  We consider that scenario to be a
    corner case that's almost never seen in a real world.
 
@@ -214,17 +217,18 @@ Internet-Draft             TCP mapping for SPs                March 2014
    and results in increased development cost, more bugs and larger
    attack surface.
 
-   Finally, for multiplexing to work properly, large messages have to be
-   split into smaller data chunks interleaved by chunk headers, which
-   makes receiving stack less efficient, as already discussed above.
 
 
 
 
-Sustrik                Expires September 28, 2014               [Page 4]
+Sustrik                 Expires September 2, 2014               [Page 4]
 
 Internet-Draft             TCP mapping for SPs                March 2014
 
+
+   Finally, for multiplexing to work properly, large messages have to be
+   split into smaller data chunks interleaved by chunk headers, which
+   makes receiving stack less efficient, as already discussed above.
 
 5.  IANA Considerations
 
@@ -273,9 +277,5 @@ Author's Address
 
 
 
-
-
-
-
-Sustrik                Expires September 28, 2014               [Page 5]
+Sustrik                 Expires September 2, 2014               [Page 5]
 

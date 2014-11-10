@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 
-/*  These functions allows for interception of memory allocation-related
+/*  These functions allow for interception of memory allocation-related
     functionality. */
 
 void nn_alloc_init (void);
@@ -42,3 +42,4 @@ void *nn_alloc_ (size_t size);
 #endif
 
 #endif
+

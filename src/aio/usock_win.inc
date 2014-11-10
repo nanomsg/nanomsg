@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2
@@ -399,7 +400,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
             idx += iov [i].iov_len;
         }
         brc = WriteFile (self->p, self->pipesendbuf, len, NULL, &self->out.olpd);
-        if (nn_fast (brc)) {
+        if (nn_fast (brc || GetLastError() == ERROR_IO_PENDING)) {
             nn_worker_op_start (&self->out, 0);
             return;
         }
@@ -509,7 +510,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
         NULL);
 
     /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
-    nn_assert (self->p != INVALID_HANDLE_VALUE);
+    win_assert (self->p != INVALID_HANDLE_VALUE);
 
     self->isaccepted = 1;
     nn_usock_create_io_completion (self);
@@ -837,7 +838,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close (usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;
@@ -859,7 +860,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
-                        NN_USOCK_SHUTDOWN);
+                        NN_USOCK_ERROR);
                     nn_usock_close(usock);
                     usock->state = NN_USOCK_STATE_DONE;
                     return;

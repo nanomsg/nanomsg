@@ -47,7 +47,8 @@ enum echo_format {
     NN_ECHO_RAW,
     NN_ECHO_ASCII,
     NN_ECHO_QUOTED,
-    NN_ECHO_MSGPACK
+    NN_ECHO_MSGPACK,
+    NN_ECHO_HEX
 };
 
 typedef struct nn_options {
@@ -105,6 +106,7 @@ static const int nn_echo_raw = NN_ECHO_RAW;
 static const int nn_echo_ascii = NN_ECHO_ASCII;
 static const int nn_echo_quoted = NN_ECHO_QUOTED;
 static const int nn_echo_msgpack = NN_ECHO_MSGPACK;
+static const int nn_echo_hex = NN_ECHO_HEX;
 
 struct nn_enum_item echo_formats[] = {
     {"no", NN_NO_ECHO},
@@ -112,6 +114,7 @@ struct nn_enum_item echo_formats[] = {
     {"ascii", NN_ECHO_ASCII},
     {"quoted", NN_ECHO_QUOTED},
     {"msgpack", NN_ECHO_MSGPACK},
+    {"hex", NN_ECHO_HEX},
     {NULL, 0},
 };
 
@@ -263,6 +266,11 @@ struct nn_option nn_options[] = {
      "Input Options", NULL, "Print each message as msgpacked string (raw type)."
                            " This is useful for programmatic parsing."},
 
+    {"hex", 0, NULL,
+     NN_OPT_SET_ENUM, offsetof (nn_options_t, echo_format), &nn_echo_hex,
+     NN_NO_PROVIDES, NN_NO_CONFLICTS, NN_MASK_READABLE,
+     "Input Options", NULL, "Print each message on separate line in double "
+                           "quotes with hex values"},
     /* Output Options */
     {"interval", 'i', NULL,
      NN_OPT_FLOAT, offsetof (nn_options_t, send_interval), NULL,
@@ -362,7 +370,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set socket name");
     }
 
-    /* Specific intitalization */
+    /* Specific initialization */
     switch (options->socket_type) {
     case NN_SUB:
         nn_sub_init (options, sock);
@@ -433,6 +441,14 @@ void nn_print_message (nn_options_t *options, char *buf, int buflen)
             fwrite (buf, 1, buflen, stdout);
         }
         break;
+    case NN_ECHO_HEX:
+        fputc ('"', stdout);
+        for (; buflen > 0; --buflen, ++buf) {
+             fprintf (stdout, "\\x%02x", (unsigned char)*buf);
+        }
+        fprintf (stdout, "\"\n");
+        break;
+    
     }
     fflush (stdout);
 }
@@ -494,7 +510,7 @@ void nn_recv_loop (nn_options_t *options, int sock)
         rc = nn_recv (sock, &buf, NN_MSG, 0);
         if (rc < 0 && errno == EAGAIN) {
             continue;
-        } else if (errno == ETIMEDOUT || errno == EFSM) {
+        } else if (rc < 0 && (errno == ETIMEDOUT || errno == EFSM)) {
             return;  /*  No more messages possible  */
         } else {
             nn_assert_errno (rc >= 0, "Can't recv");

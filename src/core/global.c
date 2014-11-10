@@ -436,6 +436,43 @@ int nn_freemsg (void *msg)
     return 0;
 }
 
+struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+    const struct nn_cmsghdr *cmsg)
+{
+    char *data;
+    size_t sz;
+    struct nn_cmsghdr *next;
+    size_t headsz;
+
+    /*  Get the actual data. */
+    if (mhdr->msg_controllen == NN_MSG) {
+        data = *((void**) mhdr->msg_control);
+        sz = nn_chunk_size (data);
+    }
+    else {
+        data = (char*) mhdr->msg_control;
+        sz = mhdr->msg_controllen;
+    }
+
+    /*  If cmsg is set to NULL we are going to return first property.
+        Otherwise move to the next property. */
+    if (!cmsg)
+        next = (struct nn_cmsghdr*) data;
+    else
+        next = (struct nn_cmsghdr*)
+            (((char*) cmsg) + NN_CMSG_SPACE (cmsg->cmsg_len));
+
+    /*  If there's no space for next property, treat it as the end
+        of the property list. */
+    headsz = ((char*) next) - ((char*) mhdr->msg_control);
+    if (headsz + sizeof (struct nn_cmsghdr) > sz ||
+          headsz + NN_CMSG_SPACE (next->cmsg_len) > sz)
+        return NULL;
+    
+    /*  Success. */
+    return next;
+}
+
 int nn_global_create_socket (int domain, int protocol)
 {
     int rc;
@@ -741,8 +778,8 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
             chunk = *((void**) msghdr->msg_control);
-            nn_chunkref_term (&msg.hdr);
-            nn_chunkref_init_chunk (&msg.hdr, chunk);
+            nn_chunkref_term (&msg.sphdr);
+            nn_chunkref_init_chunk (&msg.sphdr, chunk);
         }
         else {
 
@@ -832,7 +869,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     /*  Retrieve the ancillary data from the message. */
     if (msghdr->msg_control) {
         if (msghdr->msg_controllen == NN_MSG) {
-            chunk = nn_chunkref_getchunk (&msg.hdr);
+            chunk = nn_chunkref_getchunk (&msg.sphdr);
             *((void**) msghdr->msg_control) = chunk;
         }
         else {

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -51,6 +51,9 @@ int nn_queue_empty (struct nn_queue *self);
 
 /*  Inserts one element into the queue. */
 void nn_queue_push (struct nn_queue *self, struct nn_queue_item *item);
+
+/*  Remove the item if it is present in the queue. */
+void nn_queue_remove (struct nn_queue *self, struct nn_queue_item *item);
 
 /*  Retrieves one element from the queue. The element is removed
     from the queue. Returns NULL if the queue is empty. */

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2013-2014 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,6 +27,7 @@
 #include "../utils/fast.h"
 #include "../utils/cont.h"
 #include "../utils/attr.h"
+#include "../utils/queue.h"
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
@@ -142,6 +143,13 @@ void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_lock (&self->sync);
     nn_queue_push (&self->tasks, &task->item);
     nn_efd_signal (&self->efd);
+    nn_mutex_unlock (&self->sync);
+}
+
+void nn_worker_cancel (struct nn_worker *self, struct nn_worker_task *task)
+{
+    nn_mutex_lock (&self->sync);
+    nn_queue_remove (&self->tasks, &task->item);
     nn_mutex_unlock (&self->sync);
 }
 

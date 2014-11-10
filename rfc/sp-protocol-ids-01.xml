@@ -50,7 +50,7 @@
       <t>Protocol IDs denote the SP protocol used (such as request/reply or
          publish/subscribe), while endpoint role determines the role of the
          endpoint within the topology (requester vs. replier, publisher vs.
-         subscriber et c.) Both numbers are in network byte order.</t>
+         subscriber etc.) Both numbers are in network byte order.</t>
 
       <t>Protocol IDs are global, while endpoint roles are specific to any given
          protocol. As such, protocol IDs are defined in this document, while
@@ -70,7 +70,8 @@
       <t>5 - pipeline (v1)</t>
       <t>6 - survey (v1)</t>
       <t>7 - bus (v1)</t>
-      <t>8-3839 - unassigned</t>
+      <t>8 - slowsand (v1)</t>
+      <t>9-3839 - unassigned</t>
       <t>3840-4095 local and experimental</t>
 
     </section>

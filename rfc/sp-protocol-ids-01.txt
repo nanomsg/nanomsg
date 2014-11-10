@@ -72,7 +72,7 @@ Internet-Draft           List of SP protocol IDs               June 2014
    Protocol IDs denote the SP protocol used (such as request/reply or
    publish/subscribe), while endpoint role determines the role of the
    endpoint within the topology (requester vs. replier, publisher vs.
-   subscriber et c.)  Both numbers are in network byte order.
+   subscriber etc.)  Both numbers are in network byte order.
 
    Protocol IDs are global, while endpoint roles are specific to any
    given protocol.  As such, protocol IDs are defined in this document,
@@ -97,7 +97,9 @@ Internet-Draft           List of SP protocol IDs               June 2014
 
    7 - bus (v1)
 
-   8-3839 - unassigned
+   8 - slowsand (v1)
+
+   9-3839 - unassigned
 
    3840-4095 local and experimental
 

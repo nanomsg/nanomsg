@@ -69,7 +69,7 @@ Internet-Draft           TLS/TCP mapping for SPs              March 2014
    details as discussed here.
 
    As when running SP over TCP directly, the TCP port number is
-   determined by the applicaton or user.
+   determined by the application or user.
 
    This mapping follows the details of SP over TCP [SPoverTCP].
 
@@ -80,7 +80,7 @@ Internet-Draft           TLS/TCP mapping for SPs              March 2014
    of the connection, including negotiation of cipher suites, exchanging
    keys, and possibly performing one or two-way authentication.
 
-   The specific details of the TLS negotiation are determined by the the
+   The specific details of the TLS negotiation are determined by the
    application(s) involved, and are not specified here.  This includes
    selection of the specific version of TLS or possibly falling back to
    SSL version 3 (but not SSL version 1 or 2).

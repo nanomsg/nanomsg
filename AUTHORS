@@ -2,8 +2,12 @@ Complete list of copyright holders to nanomsg codebase:
 
 Achille Roussel <ach@fb.com>
 Aleksandar Fabijanic <alex@pocoproject.org>
+Alex Brem <alex@fluktuation.net>
 Andre Jonsson <andre.jonsson@dataductus.se>
 Andrew Starks <andrew.starks@trms.com>
+Aram Santogidis <aram.santogidis@cern.ch>
+Ark Degtiarov <a@amcloud.co>
+Bill McCroskey <Bill.McCroskey@Crown.com>
 Boris Zentner <bzm@2bz.de>
 Bruce Mitchener <bruce.mitchener@gmail.com>
 Bruno Bigras <bigras.bruno@gmail.com>
@@ -21,17 +25,20 @@ Garrett D'Amore <garrett@damore.org>
 Gonzalo Diethelm <gonzalo.diethelm@diethelm.org>
 Gaurav Gupta <g.gupta@samsung.com>
 Hajime Saito <emijah.s@gmail.com>
+Harlan Lieberman-Berg <H.LiebermanBerg@gmail.com>
 Immanuel Weber <immanuel.weber@fhr.fraunhofer.de>
 Ivan Pechorin <ivan.pechorin@gmail.com>
 Joshua Foster <jhawk28@gmail.com>
 Julien Ammous <schmurfy@gmail.com>
 Kaspar Schiess <kaspar.schiess@absurd.li>
+Kristian Lein-Mathisen <kristianlein@gmail.com>
 Luca Barbato <luca.barbato@gmail.com>
 Manuel Mendez <mmendez534@gmail.com>
 Mark Ellzey <socket@gmail.com>
 Martin Sustrik <sustrik@250bpm.com>
 Matt Howlett <matt.howlett@gmail.com>
 Max Drechsler <max.drechsler@web.de>
+Michael John <gosh.mike@gmail.com>
 Mikko Koppanen <mikko@kuut.io>
 Nick Desaulniers <ndesaulniers@mozilla.com>
 Nicolas Hillegeer <nicolashillegeer@gmail.com>
@@ -40,6 +47,7 @@ Nir Soffer <nirsof@gmail.com>
 Oskari Timperi <oskari.timperi@iki.fi>
 Paul Colomiets <paul@colomiets.name>
 Pavlo Kapyshin <i@93z.org>
+Remy Brunno <remy.bruno@trinnov.com>
 Rob Sciuk <rob@controlq.com>
 Robert G. Jakabosky <bobby@sharedrealm.com>
 Sergey Avseyev <sergey.avseyev@gmail.com>

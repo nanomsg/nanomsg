@@ -45,7 +45,7 @@
 
         <t>Each UDP packet maps to exactly one SP message.</t>
 
-        <t>There is no way to split one SP message into mutliple UDP packets
+        <t>There is no way to split one SP message into multiple UDP packets
            and therefore SP messages larger than existing path MTU will be
            dropped silently.</t>
 
@@ -61,9 +61,15 @@
 
       <figure>
         <artwork>
-+------+------+------+--------------+------------+----------------+----------
-| 0x00 | 0x53 | 0x50 | version (8b) | type (16b) | reserved (16b) | payload
-+------+------+------+--------------+------------+----------------+----------
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      0x00     |      0x53     |      0x50     |    version    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|             type              |           reserved            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|        payload ...
++-+-+-+-+-+-+-+-+-+-+-+-+-
         </artwork>
       </figure>
 
@@ -79,8 +85,8 @@
          differs, the UDP packets MUST be ignored.</t>
 
       <t>The fact that the first byte of the protocol header is binary zero
-         eliminates any text-based protocols that were accidentally connected
-         to the endpiont. Subsequent two bytes make the check even more
+         eliminates any text-based protocols that were accidentally sending
+         to the endpoint. Subsequent two bytes make the check even more
          rigorous. At the same time they can be used as a debugging hint to
          indicate that the connection is supposed to use one of the scalability
          protocols -- ASCII representation of these bytes is 'SP' that can

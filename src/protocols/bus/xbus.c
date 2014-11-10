@@ -152,13 +152,13 @@ int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg)
     size_t hdrsz;
     struct nn_pipe *exclude;
 
-    hdrsz = nn_chunkref_size (&msg->hdr);
+    hdrsz = nn_chunkref_size (&msg->sphdr);
     if (hdrsz == 0)
         exclude = NULL;
     else if (hdrsz == sizeof (uint64_t)) {
-        memcpy (&exclude, nn_chunkref_data (&msg->hdr), sizeof (exclude));
-        nn_chunkref_term (&msg->hdr);
-        nn_chunkref_init (&msg->hdr, 0);
+        memcpy (&exclude, nn_chunkref_data (&msg->sphdr), sizeof (exclude));
+        nn_chunkref_term (&msg->sphdr);
+        nn_chunkref_init (&msg->sphdr, 0);
     }
     else
         return -EINVAL;
@@ -183,16 +183,16 @@ int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg)
             return rc;
 
         /*  The message should have no header. Drop malformed messages. */
-        if (nn_chunkref_size (&msg->hdr) == 0)
+        if (nn_chunkref_size (&msg->sphdr) == 0)
             break;
         nn_msg_term (msg);
     }
 
     /*  Add pipe ID to the message header. */
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, sizeof (uint64_t));
-    memset (nn_chunkref_data (&msg->hdr), 0, sizeof (uint64_t));
-    memcpy (nn_chunkref_data (&msg->hdr), &pipe, sizeof (pipe));
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, sizeof (uint64_t));
+    memset (nn_chunkref_data (&msg->sphdr), 0, sizeof (uint64_t));
+    memcpy (nn_chunkref_data (&msg->sphdr), &pipe, sizeof (pipe));
 
     return 0;
 }

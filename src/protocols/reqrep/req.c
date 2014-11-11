@@ -169,14 +169,14 @@ void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         }
 
         /*  Ignore malformed replies. */
-        if (nn_slow (nn_chunkref_size (&req->task.reply.hdr) !=
+        if (nn_slow (nn_chunkref_size (&req->task.reply.sphdr) !=
               sizeof (uint32_t))) {
             nn_msg_term (&req->task.reply);
             continue;
         }
 
         /*  Ignore replies with incorrect request IDs. */
-        reqid = nn_getl (nn_chunkref_data (&req->task.reply.hdr));
+        reqid = nn_getl (nn_chunkref_data (&req->task.reply.sphdr));
         if (nn_slow (!(reqid & 0x80000000))) {
             nn_msg_term (&req->task.reply);
             continue;
@@ -187,8 +187,8 @@ void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         }
 
         /*  Trim the request ID. */
-        nn_chunkref_term (&req->task.reply.hdr);
-        nn_chunkref_init (&req->task.reply.hdr, 0);
+        nn_chunkref_term (&req->task.reply.sphdr);
+        nn_chunkref_init (&req->task.reply.sphdr, 0);
 
         /*  TODO: Deallocate the request here? */
 
@@ -248,10 +248,10 @@ int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
         header. The most important bit is set to 1 to indicate that this is
         the bottom of the backtrace stack. */
     ++req->task.id;
-    nn_assert (nn_chunkref_size (&msg->hdr) == 0);
-    nn_chunkref_term (&msg->hdr);
-    nn_chunkref_init (&msg->hdr, 4);
-    nn_putl (nn_chunkref_data (&msg->hdr), req->task.id | 0x80000000);
+    nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
+    nn_chunkref_term (&msg->sphdr);
+    nn_chunkref_init (&msg->sphdr, 4);
+    nn_putl (nn_chunkref_data (&msg->sphdr), req->task.id | 0x80000000);
 
     /*  Store the message so that it can be re-sent if there's no reply. */
     nn_msg_term (&req->task.request);

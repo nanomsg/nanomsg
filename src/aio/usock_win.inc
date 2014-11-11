@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <limits.h>
 
 #define NN_USOCK_STATE_IDLE 1
 #define NN_USOCK_STATE_STARTING 2

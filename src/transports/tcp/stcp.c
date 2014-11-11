@@ -133,14 +133,14 @@ static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_msg_mv (&stcp->outmsg, msg);
 
     /*  Serialise the message header. */
-    nn_putll (stcp->outhdr, nn_chunkref_size (&stcp->outmsg.hdr) +
+    nn_putll (stcp->outhdr, nn_chunkref_size (&stcp->outmsg.sphdr) +
         nn_chunkref_size (&stcp->outmsg.body));
 
     /*  Start async sending. */
     iov [0].iov_base = stcp->outhdr;
     iov [0].iov_len = sizeof (stcp->outhdr);
-    iov [1].iov_base = nn_chunkref_data (&stcp->outmsg.hdr);
-    iov [1].iov_len = nn_chunkref_size (&stcp->outmsg.hdr);
+    iov [1].iov_base = nn_chunkref_data (&stcp->outmsg.sphdr);
+    iov [1].iov_len = nn_chunkref_size (&stcp->outmsg.sphdr);
     iov [2].iov_base = nn_chunkref_data (&stcp->outmsg.body);
     iov [2].iov_len = nn_chunkref_size (&stcp->outmsg.body);
     nn_usock_send (stcp->usock, iov, 3);

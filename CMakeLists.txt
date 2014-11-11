@@ -97,6 +97,7 @@ add_libnanomsg_test (symbol)
 add_libnanomsg_test (separation)
 add_libnanomsg_test (zerocopy)
 add_libnanomsg_test (shutdown)
+add_libnanomsg_test (cmsg)
 
 #  Build the performance tests.
 

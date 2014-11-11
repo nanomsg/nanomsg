@@ -37,18 +37,19 @@
 #else
 #error
 #endif
+
 int nn_custom_device(struct nn_device_recipe *device, int s1, int s2,
     int flags) 
 {
-    return nn_device_entry(device,s1,s2,flags);
+    return nn_device_entry (device, s1, s2, flags);
 }
 
 int nn_device (int s1, int s2)
 {
-    return nn_custom_device(&nn_ordinary_device,s1,s2,0);
+    return nn_custom_device (&nn_ordinary_device, s1, s2, 0);
 }
 
-int nn_device_entry(struct nn_device_recipe *device,int s1, int s2,
+int nn_device_entry (struct nn_device_recipe *device, int s1, int s2,
     int flags) 
 {
     int rc;
@@ -186,7 +187,7 @@ int nn_device_entry(struct nn_device_recipe *device,int s1, int s2,
     nn_assert (0);
 }
 
-int nn_device_loopback (struct nn_device_recipe *device,int s)
+int nn_device_loopback (struct nn_device_recipe *device, int s)
 {
     int rc;
     int op;
@@ -346,7 +347,7 @@ int nn_device_oneway (struct nn_device_recipe *device,
     int rc;
 
     while (1) {
-        rc = nn_device_mvmsg (device,s1, s2, 0);
+        rc = nn_device_mvmsg (device, s1, s2, 0);
         if (nn_slow (rc < 0))
             return -1;
     }
@@ -373,10 +374,12 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
         return -1;
     errno_assert (rc >= 0);
     
-    rc = device->nn_device_rewritemsg(device,from,to,flags,&hdr,rc);
-    if (nn_slow(rc==-1)) return -1;
-    else if (rc==0) return 0;
-    nn_assert(rc==1);
+    rc = device->nn_device_rewritemsg (device, from, to, flags, &hdr, rc);
+    if (nn_slow (rc == -1))
+        return -1;
+    else if (rc == 0)
+        return 0;
+    nn_assert(rc == 1);
 
     rc = nn_sendmsg (to, &hdr, flags);
     if (nn_slow (rc < 0 && nn_errno () == ETERM))
@@ -385,7 +388,7 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
     return 0;
 }
 
-int nn_device_rewritemsg(struct nn_device_recipe *device,
+int nn_device_rewritemsg (struct nn_device_recipe *device,
     int from, int to, int flags, struct nn_msghdr *msghdr, int bytes) 
 {
     return 1; /* always forward */

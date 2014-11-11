@@ -282,8 +282,9 @@ struct nn_cmsghdr {
     int cmsg_type;
 };
 
-/*  Internal stuff. Not to be used directly.                               */
-struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+/*  Internal stuff. Not to be used directly.                                  */
+NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nexthdr_ (
+    const struct nn_msghdr *mhdr,
     const struct nn_cmsghdr *cmsg);
 #define NN_CMSG_ALIGN_(len) \
     (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1))

@@ -849,7 +849,6 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     int i;
     struct nn_iovec *iov;
     void *chunk;
-    size_t totalsz;
     size_t hdrssz;
     void *ctrl;
     size_t ctrlsz;

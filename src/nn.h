@@ -283,7 +283,7 @@ struct nn_cmsghdr {
 };
 
 /*  Internal stuff. Not to be used directly.                                  */
-NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nexthdr_ (
+NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nxthdr_ (
     const struct nn_msghdr *mhdr,
     const struct nn_cmsghdr *cmsg);
 #define NN_CMSG_ALIGN_(len) \
@@ -292,10 +292,10 @@ NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nexthdr_ (
 /* POSIX-defined msghdr manipulation. */
 
 #define NN_CMSG_FIRSTHDR(mhdr) \
-    nn_cmsg_nexthdr_ ((struct nn_msghdr*) (mhdr), NULL)
+    nn_cmsg_nxthdr_ ((struct nn_msghdr*) (mhdr), NULL)
 
 #define NN_CMSG_NXTHDR(mhdr, cmsg) \
-    nn_cmsg_nexthdr_ ((struct nn_msghdr*) (mhdr), (struct nn_cmsghdr*) (cmsg))
+    nn_cmsg_nxthdr_ ((struct nn_msghdr*) (mhdr), (struct nn_cmsghdr*) (cmsg))
 
 #define NN_CMSG_DATA(cmsg) \
     ((unsigned char*) (((struct nn_cmsghdr*) (cmsg)) + 1))

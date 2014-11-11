@@ -435,7 +435,7 @@ int nn_freemsg (void *msg)
     return 0;
 }
 
-struct nn_cmsghdr *nn_cmsg_nexthdr_ (const struct nn_msghdr *mhdr,
+struct nn_cmsghdr *nn_cmsg_nxthdr_ (const struct nn_msghdr *mhdr,
     const struct nn_cmsghdr *cmsg)
 {
     char *data;

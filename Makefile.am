@@ -466,7 +466,8 @@ FEATURE_TESTS = \
     tests/symbol \
     tests/separation \
     tests/zerocopy \
-    tests/shutdown
+    tests/shutdown \
+    tests/cmsg
 
 EXTRA_DIST += tests/testutil.h
 

@@ -1,0 +1,20 @@
+ID        protocol     protocol  endpoint
+                       version   type
+--------------------------------------------------
+0-15      <unused>
+16        pair         1         pair
+17-31     <unused>
+32        pubsub       1         pub
+33        pubsub       1         sub
+34-47     <unused>
+48        reqrep       1         req
+49        reqrep       1         rep
+50-79     <unused>
+80        pipeline     1         push
+81        pipeline     1         pull
+82-95     <unused>
+96        survey       1         surveyor
+97        survey       1         respondent
+98-111    <unused>
+112       bus          1         bus
+113-65535 <unused>

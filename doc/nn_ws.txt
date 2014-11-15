@@ -38,28 +38,7 @@ in the connection:
 When calling either `nn_bind()` or `nn_connect()`, omitting the port defaults
 to the RFC 6455 default port 80 for HTTP. Example:
 
-ws://127.0.0.1 _is equivalent to_ ws://127.0.0.1:80
-
-
-The Significance of the Pair Scalability Protocol
--------------------------------------------------
-When using the NN_PAIR scalability protocol (e.g., during connection initiation,
-the opening handshake includes `Sec-WebSocket-Protocol: x-nanomsg-pair`), a
-nanomsg connection is able to have bidirectional communication with any
-arbitrary WebSocket connection.
-
-For example, a socket of type NN_PAIR may connect to an arbitrary WebSocket
-service that is nanomsg-agnostic. Assuming the nanomsg application is able
-to intelligibly produce and consume the protocol of the remote service, they
-are able to communicate, with the remote service remaining unaware its remote
-peer is a nanomsg PAIR socket.
-
-This ability is only enabled with NN_PAIR, and no other scalability protocol,
-since other scalability protocols may add additional wire-level framing to
-Rx/Tx traffic, or additional semantics or restrictions to send/recv order.
-NN_PAIR adds no such additional framing nor semantics on send/recv order, and
-for this reason is conducive to interoperability.
-
+ws://127.0.0.1 is equivalent to ws://127.0.0.1:80
 
 Connecting to an Arbitrary WebSocket Service
 --------------------------------------------

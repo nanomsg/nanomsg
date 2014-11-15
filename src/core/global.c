@@ -1116,7 +1116,7 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
 static void nn_global_submit_statistics ()
 {
     int i;
-    struct nn_sock *s
+    struct nn_sock *s;
 
     /*  TODO(tailhook)  optimized it to use nsocks and unused  */
     for(i = 0; i < NN_MAX_SOCKETS; ++i) {

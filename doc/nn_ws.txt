@@ -1,9 +1,9 @@
-nn_websocket(7)
-=========
+nn_ws(7)
+========
 
 NAME
 ----
-nn_websocket - WebSocket transport mechanism
+nn_ws - WebSocket transport mechanism
 
 
 SYNOPSIS

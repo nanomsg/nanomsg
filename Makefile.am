@@ -340,7 +340,7 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
-    doc/nn_websocket.txt \
+    doc/nn_ws.txt \
     doc/nn_env.txt
 
 MAN3 = \

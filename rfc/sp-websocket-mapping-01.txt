@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft
-Intended status: Informational                         November 13, 2014
-Expires: May 17, 2015
+Intended status: Informational                         November 15, 2014
+Expires: May 19, 2015
 
 
               WebSocket Mapping for Scalability Protocols
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on May 17, 2015.
+   This Internet-Draft will expire on May 19, 2015.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                   Expires May 17, 2015                  [Page 1]
+Sustrik                   Expires May 19, 2015                  [Page 1]
 
 Internet-Draft          WebSocket mapping for SPs          November 2014
 
@@ -66,7 +66,27 @@ Internet-Draft          WebSocket mapping for SPs          November 2014
 2.  Connection initiation
 
    Standard WebSocket handshake is done.  Sec-WebSocket-Protocol field
-   MUST be set to "x-nanomsg-pair".
+   MUST be set according to the following table:
+
+   x-nanomsg-pair for NN_PAIR sockets
+
+   x-nanomsg-req for NN_REQ sockets
+
+   x-nanomsg-rep for NN_REP sockets
+
+   x-nanomsg-pub for NN_PUB sockets
+
+   x-nanomsg-sub for NN_SUB sockets
+
+   x-nanomsg-surveyor for NN_SURVEYOR sockets
+
+   x-nanomsg-respondent for NN_RESPONDENT sockets
+
+   x-nanomsg-push for NN_PUSH sockets
+
+   x-nanomsg-pull for NN_PULL sockets
+
+   x-nanomsg-bus for NN_BUS sockets
 
 3.  Message
 
@@ -82,6 +102,17 @@ Internet-Draft          WebSocket mapping for SPs          November 2014
    The mapping isn't intended to provide any additional security in
    addition to what WebSocket does.  DoS concerns are addressed within
    the specification.
+
+
+
+
+
+
+
+Sustrik                   Expires May 19, 2015                  [Page 2]
+
+Internet-Draft          WebSocket mapping for SPs          November 2014
+
 
 Author's Address
 
@@ -109,5 +140,30 @@ Author's Address
 
 
 
-Sustrik                   Expires May 17, 2015                  [Page 2]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sustrik                   Expires May 19, 2015                  [Page 3]
 

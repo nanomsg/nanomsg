@@ -43,7 +43,18 @@
     <section title = "Connection initiation">
 
       <t>Standard WebSocket handshake is done. Sec-WebSocket-Protocol field
-         MUST be set to "x-nanomsg-pair".</t>
+         MUST be set according to the following table:</t>
+
+      <t>x-nanomsg-pair for NN_PAIR sockets</t>
+      <t>x-nanomsg-req for NN_REQ sockets</t>
+      <t>x-nanomsg-rep for NN_REP sockets</t>
+      <t>x-nanomsg-pub for NN_PUB sockets</t>
+      <t>x-nanomsg-sub for NN_SUB sockets</t>
+      <t>x-nanomsg-surveyor for NN_SURVEYOR sockets</t>
+      <t>x-nanomsg-respondent for NN_RESPONDENT sockets</t>
+      <t>x-nanomsg-push for NN_PUSH sockets</t>
+      <t>x-nanomsg-pull for NN_PULL sockets</t>
+      <t>x-nanomsg-bus for NN_BUS sockets</t>
 
     </section>
 

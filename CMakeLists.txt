@@ -70,7 +70,7 @@ add_libnanomsg_test (ipc_shutdown)
 add_libnanomsg_test (ipc_stress)
 add_libnanomsg_test (tcp)
 add_libnanomsg_test (tcp_shutdown)
-add_libnanomsg_test (websocket)
+add_libnanomsg_test (ws)
 
 #  Protocol tests.
 add_libnanomsg_test (pair)

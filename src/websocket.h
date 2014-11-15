@@ -25,7 +25,7 @@
 #define WS_H_INCLUDED
 
 #include "nn.h"
-#include "utils\int.h"
+#include "utils/int.h"
 
 #ifdef __cplusplus
 extern "C" {

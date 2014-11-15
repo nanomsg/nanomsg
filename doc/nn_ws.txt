@@ -19,22 +19,6 @@ DESCRIPTION
 THIS IS AN EXPERIMENTAL FEATURE. DO NOT USE. THE FUNCTIONALITY IS SUBJECT TO
 CHANGE WITHOUT NOTICE.
 
-When connecting to a nanomsg socket that has been bound with `nn_bind()`, the
-following header values for `Sec-WebSocket-Protocol` are used during the
-opening handshake to determine scalability protocol roles of the two endpoints
-in the connection:
-
-* x-nanomsg-pair maps to NN_PAIR
-* x-nanomsg-req maps to NN_REQ
-* x-nanomsg-rep maps to NN_REP
-* x-nanomsg-pub maps to NN_PUB
-* x-nanomsg-sub maps to NN_SUB
-* x-nanomsg-surveyor maps to NN_SURVEYOR
-* x-nanomsg-respondent maps to NN_RESPONDENT
-* x-nanomsg-push maps to NN_PUSH
-* x-nanomsg-pull maps to NN_PULL
-* x-nanomsg-bus maps to NN_BUS
-
 When calling either `nn_bind()` or `nn_connect()`, omitting the port defaults
 to the RFC 6455 default port 80 for HTTP. Example:
 

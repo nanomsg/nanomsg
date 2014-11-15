@@ -81,7 +81,7 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
         "--spec=fuzzingclient.json");
 #else
     rc = system (
-        "start wstest "
+        "wstest "
         "--mode=fuzzingclient "
         "--spec=fuzzingclient.json &");
 #endif
@@ -152,7 +152,7 @@ static void nn_ws_kill_autobahn (NN_UNUSED void)
 #if defined NN_HAVE_WINDOWS
     rc = system ("taskkill /IM wstest.exe");
 #else
-    rc = system ("pkill wstest");
+    rc = system ("pkill Python");
 #endif
     nn_assert (rc == 0);
 }

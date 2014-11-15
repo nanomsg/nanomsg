@@ -1,0 +1,116 @@
+nn_websocket(7)
+=========
+
+NAME
+----
+nn_websocket - WebSocket transport mechanism
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/websocket.h>*
+
+
+DESCRIPTION
+-----------
+
+When connecting to a nanomsg socket that has been bound with `nn_bind()`, the
+following header values for `Sec-WebSocket-Protocol` are used during the
+opening handshake to determine scalability protocol roles of the two endpoints
+in the connection:
+
+* x-nanomsg-pair maps to NN_PAIR
+* x-nanomsg-req maps to NN_REQ
+* x-nanomsg-rep maps to NN_REP
+* x-nanomsg-pub maps to NN_PUB
+* x-nanomsg-sub maps to NN_SUB
+* x-nanomsg-surveyor maps to NN_SURVEYOR
+* x-nanomsg-respondent maps to NN_RESPONDENT
+* x-nanomsg-push maps to NN_PUSH
+* x-nanomsg-pull maps to NN_PULL
+* x-nanomsg-bus maps to NN_BUS
+
+When calling either `nn_bind()` or `nn_connect()`, omitting the port defaults
+to the RFC 6455 default port 80 for HTTP. Example:
+
+ws://127.0.0.1 _is equivalent to_ ws://127.0.0.1:80
+
+
+The Significance of the Pair Scalability Protocol
+-------------------------------------------------
+When using the NN_PAIR scalability protocol (e.g., during connection initiation,
+the opening handshake includes `Sec-WebSocket-Protocol: x-nanomsg-pair`), a
+nanomsg connection is able to have bidirectional communication with any
+arbitrary WebSocket connection.
+
+For example, a socket of type NN_PAIR may connect to an arbitrary WebSocket
+service that is nanomsg-agnostic. Assuming the nanomsg application is able
+to intelligibly produce and consume the protocol of the remote service, they
+are able to communicate, with the remote service remaining unaware its remote
+peer is a nanomsg PAIR socket.
+
+This ability is only enabled with NN_PAIR, and no other scalability protocol,
+since other scalability protocols may add additional wire-level framing to
+Rx/Tx traffic, or additional semantics or restrictions to send/recv order.
+NN_PAIR adds no such additional framing nor semantics on send/recv order, and
+for this reason is conducive to interoperability.
+
+
+Connecting to an Arbitrary WebSocket Service
+--------------------------------------------
+When calling `nn_connect()`, the URI may also optionally include the path to a
+resource and/or query parameters.
+
+  _Example_
+  s1 = nn_socket (AF_SP, NN_PAIR);
+  nn_connect (s1, "ws://example.com/path?query=value");
+
+This extended URI may help in situations with service protocol requirements, or
+routing through existing HTTP infrastructure such as reverse proxies. The URI
+is effectively only useful for routing and establishing the connection with
+non-nanomsg services. Once established, this additional information is not
+available via the nanomsg API.
+
+The spirit of these extended URIs is to enable interoperability with existing
+services and infrastructure, and not necessarily to give nanomsg connections a
+new means of controlling the opening handshake.
+
+A nanomsg socket accepting connections after calling `nn_bind()` does not use
+this additional path or query parameters, except for incidentally satisfying any
+intermediate HTTP infrastructure used to route the connection to the nanomsg
+socket accepting connections.
+
+
+Socket Options
+~~~~~~~~~~~~~~
+
+TODO: NN_TCP_NODELAY::
+    This option, when set to 1, disables Nagle's algorithm. It also disables
+    delaying of TCP acknowledgments. Using this option improves latency at
+    the expense of throughput. Type of this option is int. Default value is 0.
+
+
+EXAMPLE
+-------
+
+----
+nn_bind (s1, "ws://*:5555");
+nn_connect (s2, "ws://myserver:5555");
+----
+
+SEE ALSO
+--------
+linknanomsg:nn_tcp[7]
+linknanomsg:nn_inproc[7]
+linknanomsg:nn_ipc[7]
+linknanomsg:nn_bind[3]
+linknanomsg:nn_connect[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+Jack R. Dunaway <jack@wirebirdlabs.com>

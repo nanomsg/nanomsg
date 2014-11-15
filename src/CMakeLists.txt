@@ -30,6 +30,7 @@ set (NN_SOURCES
     inproc.h
     ipc.h
     tcp.h
+    websocket.h
     pair.h
     pubsub.h
     reqrep.h
@@ -251,6 +252,19 @@ set (NN_SOURCES
     transports/tcp/stcp.c
     transports/tcp/tcp.h
     transports/tcp/tcp.c
+
+    transports/websocket/aws.h
+    transports/websocket/aws.c
+    transports/websocket/bws.h
+    transports/websocket/bws.c
+    transports/websocket/cws.h
+    transports/websocket/cws.c
+    transports/websocket/sws.h
+    transports/websocket/sws.c
+    transports/websocket/ws.h
+    transports/websocket/ws.c
+    transports/websocket/ws_handshake.h
+    transports/websocket/ws_handshake.c
 )
 
 if (WIN32)

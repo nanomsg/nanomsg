@@ -34,6 +34,7 @@ nninclude_HEADERS = \
     src/inproc.h \
     src/ipc.h \
     src/tcp.h \
+    src/websocket.h \
     src/pair.h \
     src/pubsub.h \
     src/reqrep.h \
@@ -59,7 +60,6 @@ NANOMSG_CORE = \
 NANOMSG_DEVICES =\
     src/devices/device.c \
     src/devices/device.h
-
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -228,11 +228,7 @@ NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_PUBSUB) \
     $(PROTOCOLS_REQREP) \
     $(PROTOCOLS_SURVEY) \
-    $(PROTOCOLS_UTILS) \
-    $(PROTOCOLS_INPROC) \
-    $(PROTOCOLS_IPC) \
-    $(PROTOCOLS_TCP)
-
+    $(PROTOCOLS_UTILS)
 
 TRANSPORTS_UTILS = \
     src/transports/utils/backoff.h \
@@ -290,11 +286,26 @@ TRANSPORTS_TCP = \
     src/transports/tcp/tcp.h \
     src/transports/tcp/tcp.c
 
+TRANSPORTS_WS = \
+    src/transports/websocket/aws.h \
+    src/transports/websocket/aws.c \
+    src/transports/websocket/bws.h \
+    src/transports/websocket/bws.c \
+    src/transports/websocket/cws.h \
+    src/transports/websocket/cws.c \
+    src/transports/websocket/sws.h \
+    src/transports/websocket/sws.c \
+    src/transports/websocket/ws.h \
+    src/transports/websocket/ws.c \
+    src/transports/websocket/ws_handshake.h \
+    src/transports/websocket/ws_handshake.c
+
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
-    $(TRANSPORTS_TCP)
+    $(TRANSPORTS_TCP) \
+    $(TRANSPORTS_WS)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \
@@ -329,6 +340,7 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
+    doc/nn_websocket.txt \
     doc/nn_env.txt
 
 MAN3 = \
@@ -439,7 +451,9 @@ TRANSPORT_TESTS = \
     tests/ipc_shutdown \
     tests/ipc_stress \
     tests/tcp \
-    tests/tcp_shutdown
+    tests/tcp_shutdown \
+    tests/websocket \
+    tests/websocket_stress
 
 PROTOCOL_TESTS = \
     tests/pair \

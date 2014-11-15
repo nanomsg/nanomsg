@@ -82,6 +82,8 @@ tests/timeo
 tests/trie
 tests/zerocopy
 tests/term
+tests/cmsg
+tests/ws
 *.dir
 *.vcxproj
 *.vcxproj.filters

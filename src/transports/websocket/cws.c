@@ -171,7 +171,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     hostlen = resource - hostname;
 
     /*  Parse the port; assume port 80 if not explicitly declared. */
-    if (nn_slow (colon)) {
+    if (nn_slow (colon != NULL)) {
         rc = nn_port_resolve (colon + 1, resource - colon - 1);
         if (nn_slow (rc < 0)) {
             nn_epbase_term (&self->epbase);

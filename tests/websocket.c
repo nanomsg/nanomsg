@@ -36,8 +36,8 @@ int main ()
     int rc;
     int sb;
     int sc;
-    int opt;
-    size_t sz;
+    //int opt;
+    //size_t sz;
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);

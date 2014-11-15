@@ -97,47 +97,47 @@ struct nn_ws_handshake {
 
     /*  Expected handshake fields from client as per RFC 6455 4.1,
         where these pointers reference the opening_hs. */
-    uint8_t *host;
+    const uint8_t *host;
     size_t host_len;
 
-    uint8_t *origin;
+    const uint8_t *origin;
     size_t origin_len;
 
-    uint8_t *key;
+    const uint8_t *key;
     size_t key_len;
 
-    uint8_t *upgrade;
+    const uint8_t *upgrade;
     size_t upgrade_len;
 
-    uint8_t *conn;
+    const uint8_t *conn;
     size_t conn_len;
 
-    uint8_t *version;
+    const uint8_t *version;
     size_t version_len;
 
     /*  Expected handshake fields from client required by nanomsg. */
-    uint8_t *protocol;
+    const uint8_t *protocol;
     size_t protocol_len;
 
     /*  Expected handshake fields from server as per RFC 6455 4.2.2. */
-    uint8_t *server;
+    const uint8_t *server;
     size_t server_len;
 
-    uint8_t *accept_key;
+    const uint8_t *accept_key;
     size_t accept_key_len;
 
     char expected_accept_key [NN_WS_HANDSHAKE_ACCEPT_KEY_LEN + 1];
 
-    uint8_t *status_code;
+    const uint8_t *status_code;
     size_t status_code_len;
 
-    uint8_t *reason_phrase;
+    const uint8_t *reason_phrase;
     size_t reason_phrase_len;
 
     /*  Unused, optional handshake fields. */
-    uint8_t *uri;
+    const uint8_t *uri;
     size_t uri_len;
-    uint8_t *extensions;
+    const uint8_t *extensions;
     size_t extensions_len;
 
     /*  Identifies the response to be sent to client's opening handshake. */

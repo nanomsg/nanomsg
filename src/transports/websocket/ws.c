@@ -237,7 +237,7 @@ int nn_ws_sendmsg (int s, const struct nn_msghdr *msghdr, uint8_t ws_hdr,
 
     orig_buf = *((void**) msghdr->msg_iov[0].iov_base);
     orig_len = nn_chunk_size (orig_buf);
-    rc = nn_chunk_alloc (orig_len + added_len, 0, &new_chunk_buf);
+    rc = nn_chunk_alloc (orig_len + added_len, 0, (void**) &new_chunk_buf);
     if (rc != 0)
         return rc;
 

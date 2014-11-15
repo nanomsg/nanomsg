@@ -37,6 +37,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <ctype.h>
 
 /*****************************************************************************/
 /***  BEGIN undesirable dependency *******************************************/
@@ -126,7 +127,7 @@ const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /
 #define SHA1_BLOCK_LEN 64
 #define sha1_rol32(num,bits) ((num << bits) | (num >> (32 - bits)))
 
-typedef struct sha1hash {
+struct sha1hash {
     uint32_t buffer [SHA1_BLOCK_LEN / sizeof (uint32_t)];
     uint32_t state [SHA1_HASH_LEN / sizeof (uint32_t)];
     uint32_t bytes_hashed;
@@ -159,7 +160,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self);
 static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self);
 static void nn_ws_handshake_client_request (struct nn_ws_handshake *self);
 static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self);
-static int nn_ws_handshake_hash_key (uint8_t *key, size_t key_len,
+static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
     uint8_t *hashed, size_t hashed_len);
 
 /*  String parsing support functions. */
@@ -878,7 +879,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         headers. */
 
     int rc;
-    char *pos;
+    const char *pos;
     unsigned i;
 
     /*  Guarantee that a NULL terminator exists to enable treating this
@@ -1080,7 +1081,7 @@ static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self)
         headers. */
 
     int rc;
-    char *pos;
+    const char *pos;
 
     /*  Guarantee that a NULL terminator exists to enable treating this
         recv buffer like a string. The lack of such would indicate a failure
@@ -1366,7 +1367,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
     return;
 }
 
-static int nn_ws_handshake_hash_key (uint8_t *key, size_t key_len,
+static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
     uint8_t *hashed, size_t hashed_len)
 {
     int rc;

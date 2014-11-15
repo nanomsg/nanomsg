@@ -27,6 +27,8 @@
 
 #include "../../core/sock.h"
 
+#include "../utils/base64.h"
+
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -138,15 +140,6 @@ struct sha1hash {
 static void sha1_init (struct sha1hash *s);
 static void sha1_hashbyte (struct sha1hash *s, uint8_t data);
 static uint8_t* sha1_result (struct sha1hash *s);
-
-/*  Based on base64.c (Public Domain) by Jon Mayo, this function encodes an
-    arbitrary octect array into a base64 null-terminated string into supplied
-    buffer as per RFC 2045 MIME. */
-static int base64_encode (const uint8_t *in, size_t in_len, char *out, size_t out_len);
-
-/* Based on base64.c (Public Domain) by Jon Mayo, this function decodes
-   a base64 string into supplied buffer as per RFC 2045 MIME. */
-static int base64_decode (const char *in, size_t in_len, uint8_t *out, size_t out_len);
 
 /*  Private functions. */
 static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
@@ -1240,7 +1233,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     nn_random_generate (rand_key, sizeof (rand_key));
 
-    rc = base64_encode (rand_key, sizeof (rand_key),
+    rc = nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
 
     encoded_key_len = strlen (encoded_key);
@@ -1382,7 +1375,7 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
     for (i = 0; i < strlen (NN_WS_HANDSHAKE_MAGIC_GUID); i++)
         sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
 
-    rc = base64_encode (sha1_result (&hash),
+    rc = nn_base64_encode (sha1_result (&hash),
         sizeof (hash.state), hashed, hashed_len);
 
     return rc;
@@ -1504,126 +1497,3 @@ static uint8_t* sha1_result (struct sha1hash *s)
     return (uint8_t*) s->state;
 }
 
-int base64_decode (const char *in, size_t in_len, uint8_t *out, size_t out_len)
-{
-    unsigned ii;
-    unsigned io;
-    unsigned rem;
-    uint32_t v;
-    uint8_t ch;
-
-    /*  Unrolled lookup of ASCII code points.
-        0xFF represents a non-base64 valid character. */
-    const uint8_t DECODEMAP [256] = {
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0x3E, 0xFF, 0xFF, 0xFF, 0x3F,
-        0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B,
-        0x3C, 0x3D, 0xFF, 0xFF, 0xFF, 0x3E, 0xFF, 0xFF,
-        0xFF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-        0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
-        0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
-        0x17, 0x18, 0x19, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
-        0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
-        0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30,
-        0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-
-    for (io = 0, ii = 0, v = 0, rem = 0; ii < in_len; ii++) {
-        if (isspace (in [ii]))
-            continue;
-        
-        if (in [ii] == '=')
-            break;
-        
-        ch = DECODEMAP [in [ii]];
-        
-        /*  Discard invalid characters as per RFC 2045. */
-        if (ch == 0xFF)
-            break; 
-        
-        v = (v << 6) | ch;
-        rem += 6;
-
-        if (rem >= 8) {
-            rem -= 8;
-            if (io >= out_len)
-                return -ENOBUFS;
-            out [io++] = (v >> rem) & 255;
-        }
-    }
-    if (rem >= 8) {
-        rem -= 8;
-        if (io >= out_len)
-            return -ENOBUFS;
-        out [io++] = (v >> rem) & 255;
-    }
-    return io;
-}
-
-static int base64_encode (const uint8_t *in, size_t in_len, char *out,
-    size_t out_len)
-{
-    unsigned ii;
-    unsigned io;
-    unsigned rem;
-    uint32_t v;
-    uint8_t ch;
-
-    const uint8_t ENCODEMAP [64] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz"
-        "0123456789+/";
-
-    for (io = 0, ii = 0, v = 0, rem = 0; ii < in_len; ii++) {
-        ch = in [ii];
-        v = (v << 8) | ch;
-        rem += 8;
-        while (rem >= 6) {
-            rem -= 6;
-            if (io >= out_len)
-                return -ENOBUFS;
-            out [io++] = ENCODEMAP [(v >> rem) & 63];
-        }
-    }
-
-    if (rem) {
-        v <<= (6 - rem);
-        if (io >= out_len)
-            return -ENOBUFS;
-        out [io++] = ENCODEMAP [v & 63];
-    }
-
-    /*  Pad to a multiple of 3. */
-    while (io & 3) {
-        if (io >= out_len)
-            return -ENOBUFS;
-        out [io++] = '=';
-    }
-
-    if (io >= out_len)
-        return -ENOBUFS;
-    
-    out [io] = '\0';
-
-    return io;
-}

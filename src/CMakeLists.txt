@@ -217,6 +217,8 @@ set (NN_SOURCES
     transports/utils/port.c
     transports/utils/streamhdr.h
     transports/utils/streamhdr.c
+    transports/utils/base64.h
+    transports/utils/base64.c
 
     transports/inproc/binproc.h
     transports/inproc/binproc.c

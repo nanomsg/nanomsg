@@ -246,7 +246,9 @@ TRANSPORTS_UTILS = \
     src/transports/utils/port.h \
     src/transports/utils/port.c \
     src/transports/utils/streamhdr.h \
-    src/transports/utils/streamhdr.c
+    src/transports/utils/streamhdr.c \
+    src/transports/utils/base64.h \
+    src/transports/utils/base64.c
 
 TRANSPORTS_INPROC = \
     src/transports/inproc/binproc.h \

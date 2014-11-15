@@ -405,14 +405,10 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
         nn_puts (&sws->outhdr [hdr_len], (uint16_t) nn_msg_size);
         hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_16;
     }
-    else if (nn_msg_size <= NN_SWS_PAYLOAD_MAX_LENGTH_63) {
+    else {
         sws->outhdr [1] |= NN_SWS_PAYLOAD_FRAME_63;
         nn_putll (&sws->outhdr [hdr_len], (uint64_t) nn_msg_size);
         hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_63;
-    }
-    else {
-        /*  9 exabytes is impossibly large. */
-        nn_assert (0);
     }
 
     if (sws->mode == NN_WS_CLIENT) {

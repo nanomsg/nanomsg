@@ -16,6 +16,9 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
+THIS IS AN EXPERIMENTAL FEATURE. DO NOT USE. THE FUNCTIONALITY IS SUBJECT TO
+CHANGE WITHOUT NOTICE.
+
 When connecting to a nanomsg socket that has been bound with `nn_bind()`, the
 following header values for `Sec-WebSocket-Protocol` are used during the
 opening handshake to determine scalability protocol roles of the two endpoints

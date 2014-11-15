@@ -24,7 +24,7 @@
 #include "cws.h"
 #include "sws.h"
 
-#include "../../websocket.h"
+#include "../../ws.h"
 
 #include "../utils/dns.h"
 #include "../utils/port.h"

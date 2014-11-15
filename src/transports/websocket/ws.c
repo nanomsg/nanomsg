@@ -27,7 +27,7 @@
 #include "cws.h"
 #include "sws.h"
 
-#include "../../websocket.h"
+#include "../../ws.h"
 
 #include "../utils/port.h"
 #include "../utils/iface.h"

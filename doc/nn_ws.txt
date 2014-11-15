@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*#include <nanomsg/websocket.h>*
+*#include <nanomsg/ws.h>*
 
 
 DESCRIPTION

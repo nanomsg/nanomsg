@@ -30,7 +30,7 @@ set (NN_SOURCES
     inproc.h
     ipc.h
     tcp.h
-    websocket.h
+    ws.h
     pair.h
     pubsub.h
     reqrep.h

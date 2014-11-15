@@ -23,7 +23,7 @@
 
 #include "../src/nn.h"
 #include "../src/pair.h"
-#include "../src/websocket.h"
+#include "../src/ws.h"
 
 #include "../src/utils/int.h"
 

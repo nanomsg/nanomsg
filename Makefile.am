@@ -34,7 +34,7 @@ nninclude_HEADERS = \
     src/inproc.h \
     src/ipc.h \
     src/tcp.h \
-    src/websocket.h \
+    src/ws.h \
     src/pair.h \
     src/pubsub.h \
     src/reqrep.h \

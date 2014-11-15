@@ -22,7 +22,7 @@
 */
 
 #include "sws.h"
-#include "../../websocket.h"
+#include "../../ws.h"
 
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"

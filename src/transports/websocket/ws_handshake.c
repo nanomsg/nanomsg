@@ -25,6 +25,8 @@
 
 #include "../../aio/timer.h"
 
+#include "../../core/sock.h"
+
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
@@ -1032,7 +1034,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     if (self->protocol) {
         /*  Ensure the client SP is a compatible socket type. */
         for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
-            if (nn_ws_validate_value (NN_WS_HANDSHAKE_SP_MAP[i].ws_sp,
+            if (nn_ws_validate_value (NN_WS_HANDSHAKE_SP_MAP [i].ws_sp,
                 self->protocol, self->protocol_len, 1)) {
                 if (nn_pipebase_ispeer (self->pipebase,
                     NN_WS_HANDSHAKE_SP_MAP [i].sp)) {
@@ -1226,6 +1228,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
     struct nn_iovec open_request;
     size_t encoded_key_len;
     int rc;
+    unsigned i;
 
     /*  Generate random 16-byte key as per RFC 6455 4.1 */
     uint8_t rand_key [16];
@@ -1250,14 +1253,27 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     nn_assert (rc == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
+    /*  Lookup SP header value. */
+    for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
+        if (NN_WS_HANDSHAKE_SP_MAP [i].sp ==
+            self->pipebase->sock->socktype->protocol) {
+            break;
+        }
+    }
+
+    /*  Guarantee that the socket type was found in the map. */
+    nn_assert (i < NN_WS_HANDSHAKE_SP_MAP_LEN);
+
     sprintf (self->opening_hs,
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Upgrade: websocket\r\n"
         "Connection: Upgrade\r\n"
         "Sec-WebSocket-Key: %s\r\n"
-        "Sec-WebSocket-Version: 13\r\n\r\n",
-        self->resource, self->remote_host, encoded_key);
+        "Sec-WebSocket-Version: 13\r\n"
+        "Sec-WebSocket-Protocol: %s\r\n\r\n",
+        self->resource, self->remote_host, encoded_key,
+        NN_WS_HANDSHAKE_SP_MAP[i].ws_sp);
 
     open_request.iov_len = strlen (self->opening_hs);
     open_request.iov_base = self->opening_hs;

@@ -452,8 +452,7 @@ TRANSPORT_TESTS = \
     tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown \
-    tests/websocket \
-    tests/websocket_stress
+    tests/websocket
 
 PROTOCOL_TESTS = \
     tests/pair \

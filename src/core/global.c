@@ -1118,12 +1118,16 @@ static void nn_global_submit_statistics () {
 
     /*  TODO(tailhook)  optimized it to use nsocks and unused  */
     for(i = 0; i < NN_MAX_SOCKETS; ++i) {
+
+        nn_glock_lock ();
         struct nn_sock *s = self.socks [i];
         if (!s)
             continue;
         if (i == self.statistics_socket)
             continue;
         nn_ctx_enter (&s->ctx);
+        nn_glock_unlock ();
+
         nn_global_submit_counter (i, s,
             "established_connections", s->statistics.established_connections);
         nn_global_submit_counter (i, s,

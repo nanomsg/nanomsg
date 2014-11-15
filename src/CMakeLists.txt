@@ -253,18 +253,18 @@ set (NN_SOURCES
     transports/tcp/tcp.h
     transports/tcp/tcp.c
 
-    transports/websocket/aws.h
-    transports/websocket/aws.c
-    transports/websocket/bws.h
-    transports/websocket/bws.c
-    transports/websocket/cws.h
-    transports/websocket/cws.c
-    transports/websocket/sws.h
-    transports/websocket/sws.c
-    transports/websocket/ws.h
-    transports/websocket/ws.c
-    transports/websocket/ws_handshake.h
-    transports/websocket/ws_handshake.c
+    transports/ws/aws.h
+    transports/ws/aws.c
+    transports/ws/bws.h
+    transports/ws/bws.c
+    transports/ws/cws.h
+    transports/ws/cws.c
+    transports/ws/sws.h
+    transports/ws/sws.c
+    transports/ws/ws.h
+    transports/ws/ws.c
+    transports/ws/ws_handshake.h
+    transports/ws/ws_handshake.c
 )
 
 if (WIN32)

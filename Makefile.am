@@ -287,18 +287,18 @@ TRANSPORTS_TCP = \
     src/transports/tcp/tcp.c
 
 TRANSPORTS_WS = \
-    src/transports/websocket/aws.h \
-    src/transports/websocket/aws.c \
-    src/transports/websocket/bws.h \
-    src/transports/websocket/bws.c \
-    src/transports/websocket/cws.h \
-    src/transports/websocket/cws.c \
-    src/transports/websocket/sws.h \
-    src/transports/websocket/sws.c \
-    src/transports/websocket/ws.h \
-    src/transports/websocket/ws.c \
-    src/transports/websocket/ws_handshake.h \
-    src/transports/websocket/ws_handshake.c
+    src/transports/ws/aws.h \
+    src/transports/ws/aws.c \
+    src/transports/ws/bws.h \
+    src/transports/ws/bws.c \
+    src/transports/ws/cws.h \
+    src/transports/ws/cws.c \
+    src/transports/ws/sws.h \
+    src/transports/ws/sws.c \
+    src/transports/ws/ws.h \
+    src/transports/ws/ws.c \
+    src/transports/ws/ws_handshake.h \
+    src/transports/ws/ws_handshake.c
 
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \

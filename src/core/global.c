@@ -46,7 +46,7 @@
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
 #include "../transports/tcp/tcp.h"
-#include "../transports/websocket/ws.h"
+#include "../transports/ws/ws.h"
 
 #include "../protocols/pair/pair.h"
 #include "../protocols/pair/xpair.h"

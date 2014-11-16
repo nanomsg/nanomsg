@@ -22,6 +22,7 @@
 */
 
 #include "ws_handshake.h"
+#include "sha1.h"
 
 #include "../../aio/timer.h"
 
@@ -112,34 +113,6 @@ const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /
 #define NN_WS_HANDSHAKE_RESPONSE_NNPROTO 5
 #define NN_WS_HANDSHAKE_RESPONSE_NOTPEER 6
 #define NN_WS_HANDSHAKE_RESPONSE_UNKNOWNTYPE 7
-
-/*****************************************************************************/
-/*  SHA-1 SECURITY NOTICE:                                                   */
-/*  The algorithm as designed below is not intended for general purpose use. */
-/*  As-designed, it is a single-purpose function for this WebSocket          */
-/*  Opening Handshake. As per RFC 6455 10.8, SHA-1 usage "doesn't depend on  */
-/*  any security properties of SHA-1, such as collision resistance or        */
-/*  resistance to the second pre-image attack (as described in [RFC4270])".  */
-/*  Caveat emptor for uses of this function elsewhere.                       */
-/*                                                                           */
-/*  Based on sha1.c (Public Domain) by Steve Reid, these functions calculate */
-/*  the SHA1 hash of arbitrary byte locations byte-by-byte.                  */
-/*****************************************************************************/
-#define SHA1_HASH_LEN 20
-#define SHA1_BLOCK_LEN 64
-#define sha1_rol32(num,bits) ((num << bits) | (num >> (32 - bits)))
-
-struct sha1hash {
-    uint32_t buffer [SHA1_BLOCK_LEN / sizeof (uint32_t)];
-    uint32_t state [SHA1_HASH_LEN / sizeof (uint32_t)];
-    uint32_t bytes_hashed;
-    uint8_t buffer_offset;
-    uint8_t is_little_endian;
-};
-
-static void sha1_init (struct sha1hash *s);
-static void sha1_hashbyte (struct sha1hash *s, uint8_t data);
-static uint8_t* sha1_result (struct sha1hash *s);
 
 /*  Private functions. */
 static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
@@ -1365,135 +1338,19 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
 {
     int rc;
     unsigned i;
-    struct sha1hash hash;
+    struct nn_sha1 hash;
 
-    sha1_init (&hash);
+    nn_sha1_init (&hash);
 
     for (i = 0; i < key_len; i++)
-        sha1_hashbyte (&hash, key [i]);
+        nn_sha1_hashbyte (&hash, key [i]);
 
     for (i = 0; i < strlen (NN_WS_HANDSHAKE_MAGIC_GUID); i++)
-        sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
+        nn_sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
 
-    rc = nn_base64_encode (sha1_result (&hash),
+    rc = nn_base64_encode (nn_sha1_result (&hash),
         sizeof (hash.state), hashed, hashed_len);
 
     return rc;
-}
-
-static void sha1_init (struct sha1hash *s)
-{
-    /*  Detect endianness. */
-    union {
-        uint32_t i;
-        char c[4];
-    } test = { 0x00000001 };
-
-    s->is_little_endian = test.c[0];
-
-    /*  Initial state of the hash. */
-    s->state [0] = 0x67452301;
-    s->state [1] = 0xefcdab89;
-    s->state [2] = 0x98badcfe;
-    s->state [3] = 0x10325476;
-    s->state [4] = 0xc3d2e1f0;
-    s->bytes_hashed = 0;
-    s->buffer_offset = 0;
-}
-
-static void sha1_add (struct sha1hash *s, uint8_t data)
-{
-    uint8_t i;
-    uint32_t a, b, c, d, e, t;
-    uint8_t * const buf = (uint8_t*) s->buffer;
-    if (s->is_little_endian)
-        buf [s->buffer_offset ^ 3] = data;
-    else
-        buf [s->buffer_offset] = data;
-
-    s->buffer_offset++;
-    if (s->buffer_offset == SHA1_BLOCK_LEN) {
-        a = s->state [0];
-        b = s->state [1];
-        c = s->state [2];
-        d = s->state [3];
-        e = s->state [4];
-        for (i = 0; i < 80; i++) {
-            if (i >= 16) {
-                t = s->buffer [(i + 13) & 15] ^
-                    s->buffer [(i + 8) & 15] ^
-                    s->buffer [(i + 2) & 15] ^
-                    s->buffer [i & 15];
-                s->buffer [i & 15] = sha1_rol32 (t, 1);
-            }
-
-            if (i < 20)
-                t = (d ^ (b & (c ^ d))) + 0x5A827999;
-            else if (i < 40)
-                t = (b ^ c ^ d) + 0x6ED9EBA1;
-            else if (i < 60)
-                t = ((b & c) | (d & (b | c))) + 0x8F1BBCDC;
-            else
-                t = (b ^ c ^ d) + 0xCA62C1D6;
-
-            t += sha1_rol32 (a, 5) + e + s->buffer [i & 15];
-            e = d;
-            d = c;
-            c = sha1_rol32 (b, 30);
-            b = a;
-            a = t;
-        }
-
-        s->state [0] += a;
-        s->state [1] += b;
-        s->state [2] += c;
-        s->state [3] += d;
-        s->state [4] += e;
-
-        s->buffer_offset = 0;
-    }
-}
-
-static void sha1_hashbyte (struct sha1hash *s, uint8_t data)
-{
-    ++s->bytes_hashed;
-    sha1_add (s, data);
-}
-
-static uint8_t* sha1_result (struct sha1hash *s)
-{
-    int i;
-
-    /*  Pad to complete the last block. */
-    sha1_add (s, 0x80);
-
-    while (s->buffer_offset != 56)
-        sha1_add (s, 0x00);
-
-    /*  Append length in the last 8 bytes. SHA-1 supports 64-bit hashes, so
-        zero-pad the top bits. Shifting to multiply by 8 as SHA-1 supports
-        bit- as well as byte-streams. */
-    sha1_add (s, 0);
-    sha1_add (s, 0);
-    sha1_add (s, 0);
-    sha1_add (s, s->bytes_hashed >> 29);
-    sha1_add (s, s->bytes_hashed >> 21);
-    sha1_add (s, s->bytes_hashed >> 13);
-    sha1_add (s, s->bytes_hashed >> 5);
-    sha1_add (s, s->bytes_hashed << 3);
-
-    /*  Correct byte order for little-endian systems. */
-    if (s->is_little_endian) {
-        for (i = 0; i < 5; i++) {
-            s->state [i] =
-                (((s->state [i]) << 24) & 0xFF000000) |
-                (((s->state [i]) << 8) & 0x00FF0000) |
-                (((s->state [i]) >> 8) & 0x0000FF00) |
-                (((s->state [i]) >> 24) & 0x000000FF);
-        }
-    }
-
-    /* 20-octet pointer to hash. */
-    return (uint8_t*) s->state;
 }
 

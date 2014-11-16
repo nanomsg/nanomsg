@@ -300,7 +300,9 @@ TRANSPORTS_WS = \
     src/transports/ws/ws.h \
     src/transports/ws/ws.c \
     src/transports/ws/ws_handshake.h \
-    src/transports/ws/ws_handshake.c
+    src/transports/ws/ws_handshake.c \
+    src/transports/ws/sha1.h \
+    src/transports/ws/sha1.c
 
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \

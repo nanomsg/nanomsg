@@ -267,6 +267,8 @@ set (NN_SOURCES
     transports/ws/ws.c
     transports/ws/ws_handshake.h
     transports/ws/ws_handshake.c
+    transports/ws/sha1.h
+    transports/ws/sha1.c
 )
 
 if (WIN32)

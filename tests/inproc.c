@@ -22,6 +22,7 @@
 #include "../src/nn.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
+#include "../src/reqrep.h"
 #include "../src/inproc.h"
 
 #include "testutil.h"
@@ -38,6 +39,12 @@ int main ()
     int i;
     char buf [256];
     int val;
+    struct nn_msghdr hdr;
+    struct nn_iovec iovec;
+    unsigned char body [3];
+    void *control;
+    struct nn_cmsghdr *cmsg;
+    unsigned char *data;
 
     /*  Create a simple topology. */
     sc = test_socket (AF_SP, NN_PAIR);
@@ -127,6 +134,40 @@ int main ()
     test_close (sb);
 #endif
 
+    /* Check whether SP message header is transferred correctly. */
+    sb = test_socket (AF_SP_RAW, NN_REP);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_REQ);
+    test_connect (sc, SOCKET_ADDRESS);
+
+    test_send (sc, "ABC");
+
+    iovec.iov_base = body;
+    iovec.iov_len = sizeof (body);
+    hdr.msg_iov = &iovec;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = &control;
+    hdr.msg_controllen = NN_MSG;
+    rc = nn_recvmsg (sb, &hdr, 0);
+    errno_assert (rc == 3);
+
+    cmsg = NN_CMSG_FIRSTHDR (&hdr);
+    while (1) {
+        nn_assert (cmsg);
+        if (cmsg->cmsg_level == PROTO_SP && cmsg->cmsg_type == SP_HDR)
+            break;
+        cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
+    }
+    nn_assert (cmsg->cmsg_len == 8);
+    data = NN_CMSG_DATA (cmsg);
+    nn_assert (!(data[0] & 0x80));
+    nn_assert (data[4] & 0x80);
+
+    nn_freemsg (control);
+
+    test_close (sc);
+    test_close (sb);
+    
     return 0;
 }
 

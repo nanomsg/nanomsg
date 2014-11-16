@@ -1,0 +1,82 @@
+nn_ws(7)
+========
+
+NAME
+----
+nn_ws - WebSocket transport mechanism
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/ws.h>*
+
+
+DESCRIPTION
+-----------
+
+THIS IS AN EXPERIMENTAL FEATURE. DO NOT USE. THE FUNCTIONALITY IS SUBJECT TO
+CHANGE WITHOUT NOTICE.
+
+When calling either `nn_bind()` or `nn_connect()`, omitting the port defaults
+to the RFC 6455 default port 80 for HTTP. Example:
+
+ws://127.0.0.1 is equivalent to ws://127.0.0.1:80
+
+Connecting to an Arbitrary WebSocket Service
+--------------------------------------------
+When calling `nn_connect()`, the URI may also optionally include the path to a
+resource and/or query parameters.
+
+  _Example_
+  s1 = nn_socket (AF_SP, NN_PAIR);
+  nn_connect (s1, "ws://example.com/path?query=value");
+
+This extended URI may help in situations with service protocol requirements, or
+routing through existing HTTP infrastructure such as reverse proxies. The URI
+is effectively only useful for routing and establishing the connection with
+non-nanomsg services. Once established, this additional information is not
+available via the nanomsg API.
+
+The spirit of these extended URIs is to enable interoperability with existing
+services and infrastructure, and not necessarily to give nanomsg connections a
+new means of controlling the opening handshake.
+
+A nanomsg socket accepting connections after calling `nn_bind()` does not use
+this additional path or query parameters, except for incidentally satisfying any
+intermediate HTTP infrastructure used to route the connection to the nanomsg
+socket accepting connections.
+
+
+Socket Options
+~~~~~~~~~~~~~~
+
+TODO: NN_TCP_NODELAY::
+    This option, when set to 1, disables Nagle's algorithm. It also disables
+    delaying of TCP acknowledgments. Using this option improves latency at
+    the expense of throughput. Type of this option is int. Default value is 0.
+
+
+EXAMPLE
+-------
+
+----
+nn_bind (s1, "ws://*:5555");
+nn_connect (s2, "ws://myserver:5555");
+----
+
+SEE ALSO
+--------
+linknanomsg:nn_tcp[7]
+linknanomsg:nn_inproc[7]
+linknanomsg:nn_ipc[7]
+linknanomsg:nn_bind[3]
+linknanomsg:nn_connect[3]
+linknanomsg:nanomsg[7]
+
+
+AUTHORS
+-------
+Martin Sustrik <sustrik@250bpm.com>
+Jack R. Dunaway <jack@wirebirdlabs.com>

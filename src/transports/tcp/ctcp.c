@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -616,7 +616,11 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc != 0)) {
+        nn_backoff_start (&self->retry);
+        self->state = NN_CTCP_STATE_WAITING;
+        return;
+    }
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);

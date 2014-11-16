@@ -1,0 +1,169 @@
+
+
+
+
+Internet Engineering Task Force                          M. Sustrik, Ed.
+Internet-Draft
+Intended status: Informational                         November 15, 2014
+Expires: May 19, 2015
+
+
+              WebSocket Mapping for Scalability Protocols
+                        sp-websocket-mapping-01
+
+Abstract
+
+   This document defines the WebSocket mapping for scalability
+   protocols.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on May 19, 2015.
+
+Copyright Notice
+
+   Copyright (c) 2014 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (http://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with respect
+   to this document.  Code Components extracted from this document must
+   include Simplified BSD License text as described in Section 4.e of
+   the Trust Legal Provisions and are provided without warranty as
+   described in the Simplified BSD License.
+
+
+
+
+
+
+Sustrik                   Expires May 19, 2015                  [Page 1]
+
+Internet-Draft          WebSocket mapping for SPs          November 2014
+
+
+1.  Underlying protocol
+
+   This mapping should be layered on the top of WebSocket protocol as
+   defined in RFC 6455.
+
+2.  Connection initiation
+
+   Standard WebSocket handshake is done.  Sec-WebSocket-Protocol field
+   MUST be set according to the following table:
+
+   x-nanomsg-pair for NN_PAIR sockets
+
+   x-nanomsg-req for NN_REQ sockets
+
+   x-nanomsg-rep for NN_REP sockets
+
+   x-nanomsg-pub for NN_PUB sockets
+
+   x-nanomsg-sub for NN_SUB sockets
+
+   x-nanomsg-surveyor for NN_SURVEYOR sockets
+
+   x-nanomsg-respondent for NN_RESPONDENT sockets
+
+   x-nanomsg-push for NN_PUSH sockets
+
+   x-nanomsg-pull for NN_PULL sockets
+
+   x-nanomsg-bus for NN_BUS sockets
+
+3.  Message
+
+   SP message maps directly to WebSocket message.  The message can be
+   fragmented as needed.  Frame boundaries are ignored by the SP layer.
+
+4.  IANA Considerations
+
+   This memo includes no request to IANA.
+
+5.  Security Considerations
+
+   The mapping isn't intended to provide any additional security in
+   addition to what WebSocket does.  DoS concerns are addressed within
+   the specification.
+
+
+
+
+
+
+
+Sustrik                   Expires May 19, 2015                  [Page 2]
+
+Internet-Draft          WebSocket mapping for SPs          November 2014
+
+
+Author's Address
+
+   Martin Sustrik (editor)
+
+   Email: sustrik@250bpm.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sustrik                   Expires May 19, 2015                  [Page 3]
+

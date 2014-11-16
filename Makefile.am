@@ -34,6 +34,7 @@ nninclude_HEADERS = \
     src/inproc.h \
     src/ipc.h \
     src/tcp.h \
+    src/ws.h \
     src/pair.h \
     src/pubsub.h \
     src/reqrep.h \
@@ -59,7 +60,6 @@ NANOMSG_CORE = \
 NANOMSG_DEVICES =\
     src/devices/device.c \
     src/devices/device.h
-
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -228,11 +228,7 @@ NANOMSG_PROTOCOLS = \
     $(PROTOCOLS_PUBSUB) \
     $(PROTOCOLS_REQREP) \
     $(PROTOCOLS_SURVEY) \
-    $(PROTOCOLS_UTILS) \
-    $(PROTOCOLS_INPROC) \
-    $(PROTOCOLS_IPC) \
-    $(PROTOCOLS_TCP)
-
+    $(PROTOCOLS_UTILS)
 
 TRANSPORTS_UTILS = \
     src/transports/utils/backoff.h \
@@ -250,7 +246,9 @@ TRANSPORTS_UTILS = \
     src/transports/utils/port.h \
     src/transports/utils/port.c \
     src/transports/utils/streamhdr.h \
-    src/transports/utils/streamhdr.c
+    src/transports/utils/streamhdr.c \
+    src/transports/utils/base64.h \
+    src/transports/utils/base64.c
 
 TRANSPORTS_INPROC = \
     src/transports/inproc/binproc.h \
@@ -290,11 +288,28 @@ TRANSPORTS_TCP = \
     src/transports/tcp/tcp.h \
     src/transports/tcp/tcp.c
 
+TRANSPORTS_WS = \
+    src/transports/ws/aws.h \
+    src/transports/ws/aws.c \
+    src/transports/ws/bws.h \
+    src/transports/ws/bws.c \
+    src/transports/ws/cws.h \
+    src/transports/ws/cws.c \
+    src/transports/ws/sws.h \
+    src/transports/ws/sws.c \
+    src/transports/ws/ws.h \
+    src/transports/ws/ws.c \
+    src/transports/ws/ws_handshake.h \
+    src/transports/ws/ws_handshake.c \
+    src/transports/ws/sha1.h \
+    src/transports/ws/sha1.c
+
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
-    $(TRANSPORTS_TCP)
+    $(TRANSPORTS_TCP) \
+    $(TRANSPORTS_WS)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \
@@ -329,6 +344,7 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
+    doc/nn_ws.txt \
     doc/nn_env.txt
 
 MAN3 = \
@@ -439,7 +455,8 @@ TRANSPORT_TESTS = \
     tests/ipc_shutdown \
     tests/ipc_stress \
     tests/tcp \
-    tests/tcp_shutdown
+    tests/tcp_shutdown \
+    tests/ws
 
 PROTOCOL_TESTS = \
     tests/pair \

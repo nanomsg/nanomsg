@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -66,7 +66,7 @@ extern "C" {
 #define NN_VERSION_CURRENT 2
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 0
+#define NN_VERSION_REVISION 1
 
 /*  How many past interface versions are still supported. */
 #define NN_VERSION_AGE 2

@@ -1,5 +1,5 @@
 #
-#   Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
+#   Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -30,6 +30,7 @@ set (NN_SOURCES
     inproc.h
     ipc.h
     tcp.h
+    ws.h
     pair.h
     pubsub.h
     reqrep.h
@@ -216,6 +217,8 @@ set (NN_SOURCES
     transports/utils/port.c
     transports/utils/streamhdr.h
     transports/utils/streamhdr.c
+    transports/utils/base64.h
+    transports/utils/base64.c
 
     transports/inproc/binproc.h
     transports/inproc/binproc.c
@@ -251,6 +254,21 @@ set (NN_SOURCES
     transports/tcp/stcp.c
     transports/tcp/tcp.h
     transports/tcp/tcp.c
+
+    transports/ws/aws.h
+    transports/ws/aws.c
+    transports/ws/bws.h
+    transports/ws/bws.c
+    transports/ws/cws.h
+    transports/ws/cws.c
+    transports/ws/sws.h
+    transports/ws/sws.c
+    transports/ws/ws.h
+    transports/ws/ws.c
+    transports/ws/ws_handshake.h
+    transports/ws/ws_handshake.c
+    transports/ws/sha1.h
+    transports/ws/sha1.c
 )
 
 if (WIN32)

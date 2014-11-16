@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012-2014 250bpm s.r.o.  All rights reserved.
+    Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -46,6 +46,7 @@
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
 #include "../transports/tcp/tcp.h"
+#include "../transports/ws/ws.h"
 
 #include "../protocols/pair/pair.h"
 #include "../protocols/pair/xpair.h"
@@ -254,6 +255,7 @@ static void nn_global_init (void)
     nn_global_add_transport (nn_inproc);
     nn_global_add_transport (nn_ipc);
     nn_global_add_transport (nn_tcp);
+    nn_global_add_transport (nn_ws);
 
     /*  Plug in individual socktypes. */
     nn_global_add_socktype (nn_pair_socktype);
@@ -1122,17 +1124,23 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
     }
 }
 
-static void nn_global_submit_statistics () {
+static void nn_global_submit_statistics ()
+{
     int i;
+    struct nn_sock *s;
 
     /*  TODO(tailhook)  optimized it to use nsocks and unused  */
     for(i = 0; i < NN_MAX_SOCKETS; ++i) {
-        struct nn_sock *s = self.socks [i];
+
+        nn_glock_lock ();
+        s = self.socks [i];
         if (!s)
             continue;
         if (i == self.statistics_socket)
             continue;
         nn_ctx_enter (&s->ctx);
+        nn_glock_unlock ();
+
         nn_global_submit_counter (i, s,
             "established_connections", s->statistics.established_connections);
         nn_global_submit_counter (i, s,

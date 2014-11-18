@@ -457,7 +457,8 @@ TRANSPORT_TESTS = \
     tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown \
-    tests/ws
+    tests/ws \
+    tests/tcpmux
 
 PROTOCOL_TESTS = \
     tests/pair \

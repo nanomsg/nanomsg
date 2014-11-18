@@ -378,6 +378,12 @@ NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
 
 NN_EXPORT int nn_device (int s1, int s2);
 
+/******************************************************************************/
+/*  Built-in support for multiplexers.                                        */
+/******************************************************************************/
+
+NN_EXPORT int nn_tcpmuxd (int port);
+
 #ifdef __cplusplus
 }
 #endif

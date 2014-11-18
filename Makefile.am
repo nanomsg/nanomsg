@@ -59,7 +59,8 @@ NANOMSG_CORE = \
 
 NANOMSG_DEVICES =\
     src/devices/device.c \
-    src/devices/device.h
+    src/devices/device.h \
+    src/devices/tcpmuxd.c
 
 NANOMSG_AIO = \
     src/aio/ctx.h \

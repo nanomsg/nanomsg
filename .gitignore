@@ -85,6 +85,7 @@ tests/zerocopy
 tests/term
 tests/cmsg
 tests/ws
+tests/tcpmux
 *.dir
 *.vcxproj
 *.vcxproj.filters

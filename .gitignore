@@ -37,6 +37,7 @@ doltcompile
 doltlibtool
 libnanomsg.pc
 nanocat
+tcpmuxd
 *.tar.gz
 *.zip
 perf/inproc_lat

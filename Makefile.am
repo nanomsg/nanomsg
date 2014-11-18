@@ -305,12 +305,25 @@ TRANSPORTS_WS = \
     src/transports/ws/sha1.h \
     src/transports/ws/sha1.c
 
+TRANSPORTS_TCPMUX = \
+    src/transports/tcpmux/atcpmux.h \
+    src/transports/tcpmux/atcpmux.c \
+    src/transports/tcpmux/btcpmux.h \
+    src/transports/tcpmux/btcpmux.c \
+    src/transports/tcpmux/ctcpmux.h \
+    src/transports/tcpmux/ctcpmux.c \
+    src/transports/tcpmux/stcpmux.h \
+    src/transports/tcpmux/stcpmux.c \
+    src/transports/tcpmux/tcpmux.h \
+    src/transports/tcpmux/tcpmux.c
+
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
     $(TRANSPORTS_TCP) \
-    $(TRANSPORTS_WS)
+    $(TRANSPORTS_WS) \
+    $(TRANSPORTS_TCPMUX)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \

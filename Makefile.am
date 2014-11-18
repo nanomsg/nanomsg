@@ -511,6 +511,13 @@ if NANOCAT
 bin_PROGRAMS += nanocat
 endif #NANOCAT
 
+tcpmuxd_SOURCES = \
+	tools/tcpmuxd.c
+
+if TCPMUXD
+bin_PROGRAMS += tcpmuxd
+endif #TCPMUXD
+
 ################################################################################
 #  RFCs                                                                        #
 ################################################################################

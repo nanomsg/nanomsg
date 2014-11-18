@@ -40,20 +40,194 @@
 #include <sys/un.h>
 #include <stddef.h>
 #include <ctype.h>
+#include <poll.h>
 
-struct ipc_connection {
+struct nn_tcpmuxd_ctx {
+    int tcp_listener;
+    int ipc_listener;
+    struct nn_list conns;
+    struct nn_thread thread;
+};
+
+struct nn_tcpmuxd_conn {
     int fd;
     char *service;
     struct nn_list_item item;
 };
 
-struct ipc_connections {
-    struct nn_mutex sync;
-    struct nn_list connections;
-};
+/*  Forward declarations. */
+static void nn_tcpmuxd_routine (void *arg);
+static int send_fd (int s, int fd);
 
-struct ipc_connections ipcs;
+int nn_tcpmuxd (int port)
+{
+    int rc;
+    int tcp_listener;
+    int ipc_listener;
+    int opt;
+    struct sockaddr_in tcp_addr;
+    struct sockaddr_un ipc_addr;
+    struct nn_tcpmuxd_ctx *ctx;
 
+    /*  Start listening on the specified TCP port. */
+    tcp_listener = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    errno_assert (tcp_listener >= 0);
+    opt = 1;
+    rc = setsockopt (tcp_listener, SOL_SOCKET, SO_REUSEADDR, &opt,
+        sizeof (opt));
+    errno_assert (rc == 0);
+    memset (&tcp_addr, 0, sizeof (tcp_addr));
+    tcp_addr.sin_family = AF_INET;
+    tcp_addr.sin_port = htons (port);
+    tcp_addr.sin_addr.s_addr = INADDR_ANY;
+    rc = bind (tcp_listener, (struct sockaddr*) &tcp_addr, sizeof (tcp_addr));
+    errno_assert (rc == 0);
+    rc = listen (tcp_listener, 100);
+    errno_assert (rc == 0);
+
+    /*  Start listening for incoming IPC connections. */
+    ipc_addr.sun_family = AF_UNIX;
+    snprintf (ipc_addr.sun_path, sizeof (ipc_addr.sun_path),
+        "/tmp/tcpmux-%d.ipc", (int) port);
+    unlink (ipc_addr.sun_path);
+    ipc_listener = socket (AF_UNIX, SOCK_STREAM, 0);
+    errno_assert (ipc_listener >= 0);
+    rc = bind (ipc_listener, (struct sockaddr*) &ipc_addr, sizeof (ipc_addr));
+    errno_assert (rc == 0);
+    rc = listen (ipc_listener, 100);
+    errno_assert (rc == 0);
+
+    /*  Allocate a context for the daemon. */
+    ctx = nn_alloc (sizeof (struct nn_tcpmuxd_ctx), "tcpmuxd context");
+    alloc_assert (ctx);
+    ctx->tcp_listener = tcp_listener;
+    ctx->ipc_listener = ipc_listener;
+    nn_list_init (&ctx->conns);
+
+    /*  Run the daemon in a dedicated thread. */
+    nn_thread_init (&ctx->thread, nn_tcpmuxd_routine, ctx);
+
+    return 0;
+}
+
+/*  Main body of the daemon. */
+static void nn_tcpmuxd_routine (void *arg)
+{
+    int rc;
+    struct nn_tcpmuxd_ctx *ctx;
+    struct pollfd pfd [2];
+    int conn;
+    int pos;
+    char service [256];
+    struct nn_tcpmuxd_conn *tc;
+    size_t sz;
+    ssize_t ssz;
+    int i;
+    struct nn_list_item *it;
+    unsigned char buf [2];
+
+    ctx = (struct nn_tcpmuxd_ctx*) arg;
+
+    pfd [0].fd = ctx->tcp_listener;
+    pfd [0].events = POLLIN;
+    pfd [1].fd = ctx->ipc_listener;
+    pfd [1].events = POLLIN;
+
+    while (1) {
+
+        /*  Wait for events. */
+        rc = poll (pfd, 2, -1);
+        errno_assert (rc >= 0);
+        nn_assert (rc != 0);
+
+        /*  There's an incoming TCP connection. */
+        if (pfd [0].revents & POLLIN) {
+
+            /*  Accept the connection. */
+            conn = accept (ctx->tcp_listener, NULL, NULL);
+            if (conn < 0 && errno == ECONNABORTED)
+                continue;
+            errno_assert (conn >= 0);
+
+            /*  Read TCPMUX header. */
+            pos = 0;
+            while (1) {
+                nn_assert (pos < sizeof (service));
+                ssz = recv (conn, &service [pos], 1, 0);
+                errno_assert (ssz >= 0);
+                nn_assert (ssz == 1);
+                service [pos] = tolower (service [pos]);
+                if (pos > 0 && service [pos - 1] == 0x0d &&
+                      service [pos] == 0x0a)
+                    break;
+                ++pos;
+            }
+            service [pos - 1] = 0;
+            
+            /*  Check whether specified service is listening. */
+            for (it = nn_list_begin (&ctx->conns);
+                  it != nn_list_end (&ctx->conns);
+                  it = nn_list_next (&ctx->conns, it)) {
+                tc = nn_cont (it, struct nn_tcpmuxd_conn, item);
+                if (strcmp (service, tc->service) == 0)
+                    break;
+            }
+
+            /* If no one is listening, tear down the connection. */
+            if (it == nn_list_end (&ctx->conns)) {
+                ssz = send (conn, "-Service not available.\x0d\x0a", 25, 0);
+                errno_assert (ssz >= 0);
+                nn_assert (ssz == 25);
+                close (conn);
+                continue;
+            }
+
+            /*  Send TCPMUX reply. */
+            ssz = send (conn, "+\x0d\x0a", 3, 0);
+            errno_assert (ssz >= 0);
+            nn_assert (ssz == 3);
+
+            /*  Pass the file descriptor to the listening process. */
+            rc = send_fd (tc->fd, conn);
+            errno_assert (rc == 0);
+        }
+
+        /*  There's an incoming IPC connection. */
+        if (pfd [1].revents & POLLIN) {
+
+            /*  Accept the connection. */
+            conn = accept (ctx->ipc_listener, NULL, NULL);
+            if (conn < 0 && errno == ECONNABORTED)
+                continue;
+            errno_assert (conn >= 0);
+
+            /*  Create new connection entry. */
+            tc = nn_alloc (sizeof (struct nn_tcpmuxd_conn), "tcpmuxd_conn");
+            nn_assert (tc);
+            tc->fd = conn;
+            nn_list_item_init (&tc->item);    
+
+            /*  Read the connection header. */
+            ssz = recv (conn, buf, 2, 0);
+            errno_assert (ssz >= 0);
+            nn_assert (ssz == 2);
+            sz = nn_gets (buf);
+            tc->service = nn_alloc (sz + 1, "tcpmuxd_conn.service");
+            nn_assert (tc->service);
+            ssz = recv (conn, tc->service, sz, 0);
+            errno_assert (ssz >= 0);
+            nn_assert (ssz == sz);
+            for (i = 0; i != sz; ++i)
+                tc->service [sz] = tolower (tc->service [sz]);
+            tc->service [sz] = 0;
+            
+            /*  Add the entry to the IPC connections list. */
+            nn_list_insert (&ctx->conns, &tc->item, nn_list_end (&ctx->conns));
+        }
+    }
+}
+
+/*  Send file descriptor fd to IPC socket s. */
 static int send_fd (int s, int fd)
 {
     int rc;
@@ -91,158 +265,5 @@ static int send_fd (int s, int fd)
     nn_assert (rc == 1);
 
     return 0;
-}
-
-static void ipc_listener_routine (void *arg)
-{
-    int rc;
-    char ipcaddr [32];
-    struct sockaddr_un unaddr;
-    int listener;
-    int conn;
-    unsigned char buf [2];
-    ssize_t ssz;
-    uint16_t sz;
-    struct ipc_connection *ipcc;
-    int i;
-    
-    /*  Start listening for AF_UNIX connections. */
-    snprintf (ipcaddr, sizeof (ipcaddr), "/tmp/tcpmux-%d.ipc", *((int*) arg));
-    unlink (ipcaddr);
-    listener = socket (AF_UNIX, SOCK_STREAM, 0);
-    errno_assert (listener >= 0);
-    nn_assert (strlen (ipcaddr) < sizeof (unaddr.sun_path));
-    unaddr.sun_family = AF_UNIX;
-    strcpy (unaddr.sun_path, ipcaddr);
-    rc = bind (listener, (struct sockaddr*) &unaddr, sizeof (unaddr));
-    errno_assert (rc == 0);
-    rc = listen (listener, 100);
-    errno_assert (rc == 0);
-
-    while (1) {
-
-        /*  Accept new IPC connection. */
-        conn = accept (listener, NULL, NULL);
-        if (conn < 0 && errno == ECONNABORTED)
-            continue;
-        errno_assert (conn >= 0);
-
-        /*  Create new connection entry. */
-        ipcc = nn_alloc (sizeof (struct ipc_connection), "ipc_connection");
-        nn_assert (ipcc);
-        ipcc->fd = conn;
-        nn_list_item_init (&ipcc->item);    
-
-        /*  Read the connection header. */
-        ssz = recv (conn, buf, 2, 0);
-        errno_assert (ssz >= 0);
-        nn_assert (ssz == 2);
-        sz = nn_gets (buf);
-        ipcc->service = nn_alloc (sz + 1, "service");
-        nn_assert (ipcc->service);
-        ssz = recv (conn, ipcc->service, sz, 0);
-        errno_assert (ssz >= 0);
-        nn_assert (ssz == sz);
-        for (i = 0; i != sz; ++i)
-            ipcc->service [sz] = tolower (ipcc->service [sz]);
-        ipcc->service [sz] = 0;
-        
-        /*  Add the entry to the global IPC connections list. */
-        nn_mutex_lock (&ipcs.sync);
-        nn_list_insert (&ipcs.connections, &ipcc->item,
-            nn_list_end (&ipcs.connections));
-        nn_mutex_unlock (&ipcs.sync);
-    }
-}
-
-int nn_tcpmuxd (int port)
-{
-    int rc;
-    struct nn_thread ipc_listener;
-    int listener;
-    struct sockaddr_in addr;
-    int opt;
-    struct nn_list_item *it;
-    struct ipc_connection *ipcc;
-    int conn;
-    char service [256];
-    int pos;
-    ssize_t ssz;
-
-    /*  Initialise the global structures. */
-    nn_mutex_init (&ipcs.sync);
-    nn_list_init (&ipcs.connections);
-
-    /*  Start listening for incoming IPC connections. */
-    nn_thread_init (&ipc_listener, ipc_listener_routine, &port);
-
-    /*  Start listening for incoming TCP connections. */
-    listener = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    errno_assert (listener >= 0);
-    opt = 1;
-    rc = setsockopt (listener, SOL_SOCKET, SO_REUSEADDR, &opt,
-        sizeof (opt));
-    errno_assert (rc == 0);
-    memset (&addr, 0, sizeof (addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons (port);
-    addr.sin_addr.s_addr = INADDR_ANY;
-    rc = bind (listener, (struct sockaddr*) &addr, sizeof (addr));
-    errno_assert (rc == 0);
-    rc = listen (listener, 100);
-    errno_assert (rc == 0);
-
-    while (1) {
-
-        /*  Accept new TCP connection. */
-        conn = accept (listener, NULL, NULL);
-        if (conn < 0 && errno == ECONNABORTED)
-            continue;
-        errno_assert (conn >= 0);
-
-        /*  Read TCPMUX header. */
-        pos = 0;
-        while (1) {
-            nn_assert (pos < sizeof (service));
-            ssz = recv (conn, &service [pos], 1, 0);
-            errno_assert (ssz >= 0);
-            nn_assert (ssz == 1);
-            service [pos] = tolower (service [pos]);
-            if (pos > 0 && service [pos - 1] == 0x0d && service [pos] == 0x0a)
-                break;
-            ++pos;
-        }
-        service [pos - 1] = 0;
-        
-        /*  Check whether specified service is listening. */
-        nn_mutex_lock (&ipcs.sync);
-        for (it = nn_list_begin (&ipcs.connections);
-              it != nn_list_end (&ipcs.connections);
-              it = nn_list_next (&ipcs.connections, it)) {
-            ipcc = nn_cont (it, struct ipc_connection, item);
-            if (strcmp (service, ipcc->service) == 0)
-                break;
-        }
-
-        /* If no one is listening, tear down the connection. */
-        if (it == nn_list_end (&ipcs.connections)) {
-            nn_mutex_unlock (&ipcs.sync);
-            ssz = send (conn, "-Service not available.\x0d\x0a", 25, 0);
-            errno_assert (ssz >= 0);
-            nn_assert (ssz == 25);
-            close (conn);
-            continue;
-        }
-        nn_mutex_unlock (&ipcs.sync);
-
-        /*  Send TCPMUX reply. */
-        ssz = send (conn, "+\x0d\x0a", 3, 0);
-        errno_assert (ssz >= 0);
-        nn_assert (ssz == 3);
-
-        /*  Pass the file descriptor to the listening process. */
-        rc = send_fd (ipcc->fd, conn);
-        errno_assert (rc == 0);
-    }
 }
 

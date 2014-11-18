@@ -23,6 +23,7 @@
 #include "../src/nn.h"
 
 #include "../src/utils/err.h"
+#include "../src/utils/sleep.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,6 +35,7 @@ int main (int argc, const char *argv [])
     int rc;
     int port = TCPMUX_DEFAULT_PORT;
 
+    /*  Parse the command line arguments. */
     if (argc < 1 || argc > 2) {
         fprintf (stderr, "usage: tcpmuxd [port]\n");
         return 1;
@@ -41,12 +43,17 @@ int main (int argc, const char *argv [])
 
     if (argc == 2) {
         /* TODO: Use strtol here to detect malformed port numbers. */
-        port = atoi (argv [2]);
+        port = atoi (argv [1]);
     }
 
+    /*  Start the daemon. */
     rc = nn_tcpmuxd (port);
     errno_assert (rc == 0);
 
-    return 0;
+    /*  Block the main thread forever so that deamon isn't killed
+        immediately. */
+    while (1) {
+        nn_sleep (24 * 60 * 60 * 1000);
+    }
 }
 

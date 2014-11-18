@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <stddef.h>
 #include <ctype.h>
@@ -125,6 +126,7 @@ static void nn_tcpmuxd_routine (void *arg)
     int i;
     struct nn_list_item *it;
     unsigned char buf [2];
+    struct timeval tv;
 
     ctx = (struct nn_tcpmuxd_ctx*) arg;
 
@@ -148,12 +150,22 @@ static void nn_tcpmuxd_routine (void *arg)
             if (conn < 0 && errno == ECONNABORTED)
                 continue;
             errno_assert (conn >= 0);
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+            rc = setsockopt (conn, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof (tv));
+            errno_assert (rc == 0);
+            rc = setsockopt (conn, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof (tv));
+            errno_assert (rc == 0);
 
             /*  Read TCPMUX header. */
             pos = 0;
             while (1) {
                 nn_assert (pos < sizeof (service));
                 ssz = recv (conn, &service [pos], 1, 0);
+                if (ssz < 0 && errno == EAGAIN) {
+                    close (conn);
+                    continue;
+                }
                 errno_assert (ssz >= 0);
                 nn_assert (ssz == 1);
                 service [pos] = tolower (service [pos]);
@@ -175,7 +187,11 @@ static void nn_tcpmuxd_routine (void *arg)
 
             /* If no one is listening, tear down the connection. */
             if (it == nn_list_end (&ctx->conns)) {
-                ssz = send (conn, "-Service not available.\x0d\x0a", 25, 0);
+                ssz = send (conn, "-\x0d\x0a", 3, 0);
+                if (ssz < 0 && errno == EAGAIN) {
+                    close (conn);
+                    continue;
+                }
                 errno_assert (ssz >= 0);
                 nn_assert (ssz == 25);
                 close (conn);
@@ -184,6 +200,10 @@ static void nn_tcpmuxd_routine (void *arg)
 
             /*  Send TCPMUX reply. */
             ssz = send (conn, "+\x0d\x0a", 3, 0);
+            if (ssz < 0 && errno == EAGAIN) {
+                close (conn);
+                continue;
+            }
             errno_assert (ssz >= 0);
             nn_assert (ssz == 3);
 

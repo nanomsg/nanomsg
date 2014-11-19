@@ -193,7 +193,7 @@ static void nn_tcpmuxd_routine (void *arg)
                     continue;
                 }
                 errno_assert (ssz >= 0);
-                nn_assert (ssz == 25);
+                nn_assert (ssz == 3);
                 close (conn);
                 continue;
             }

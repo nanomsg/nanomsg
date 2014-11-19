@@ -55,13 +55,15 @@
 #define NN_CTCPMUX_STATE_RESOLVING 2
 #define NN_CTCPMUX_STATE_STOPPING_DNS 3
 #define NN_CTCPMUX_STATE_CONNECTING 4
-#define NN_CTCPMUX_STATE_ACTIVE 5
-#define NN_CTCPMUX_STATE_STOPPING_STCPMUX 6
-#define NN_CTCPMUX_STATE_STOPPING_USOCK 7
-#define NN_CTCPMUX_STATE_WAITING 8
-#define NN_CTCPMUX_STATE_STOPPING_BACKOFF 9
-#define NN_CTCPMUX_STATE_STOPPING_STCPMUX_FINAL 10
-#define NN_CTCPMUX_STATE_STOPPING 11
+#define NN_CTCPMUX_STATE_SENDING_TCPMUXHDR 5
+#define NN_CTCPMUX_STATE_RECEIVING_TCPMUXHDR 6
+#define NN_CTCPMUX_STATE_ACTIVE 7
+#define NN_CTCPMUX_STATE_STOPPING_STCPMUX 8
+#define NN_CTCPMUX_STATE_STOPPING_USOCK 9
+#define NN_CTCPMUX_STATE_WAITING 10
+#define NN_CTCPMUX_STATE_STOPPING_BACKOFF 11
+#define NN_CTCPMUX_STATE_STOPPING_STCPMUX_FINAL 12
+#define NN_CTCPMUX_STATE_STOPPING 13
 
 #define NN_CTCPMUX_SRC_USOCK 1
 #define NN_CTCPMUX_SRC_RECONNECT_TIMER 2
@@ -92,6 +94,9 @@ struct nn_ctcpmux {
         along with the variable to hold the result. */
     struct nn_dns dns;
     struct nn_dns_result dns_result;
+
+    /*  Buffer used in TCPMUX header exchange. */
+    char buffer [256];
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -119,6 +124,7 @@ int nn_ctcpmux_create (void *hint, struct nn_epbase **epbase)
     const char *semicolon;
     const char *hostname;
     const char *colon;
+    const char *slash;
     const char *end;
     struct sockaddr_storage ss;
     size_t sslen;
@@ -148,14 +154,17 @@ int nn_ctcpmux_create (void *hint, struct nn_epbase **epbase)
     semicolon = strchr (addr, ';');
     hostname = semicolon ? semicolon + 1 : addr;
     colon = strrchr (addr, ':');
+    slash = strchr (colon + 1, '/');
     end = addr + addrlen;
 
-    /*  Parse the port. */
-    if (nn_slow (!colon)) {
+    if (nn_slow (!colon || !slash ||
+          end - (slash + 1) > sizeof (self->buffer) - 3)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
-    rc = nn_port_resolve (colon + 1, end - colon - 1);
+
+    /*  Parse the port. */
+    rc = nn_port_resolve (colon + 1, slash  - colon - 1);
     if (nn_slow (rc < 0)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
@@ -274,6 +283,7 @@ static void nn_ctcpmux_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ctcpmux *ctcpmux;
+    struct nn_iovec iovec;
 
     ctcpmux = nn_cont (self, struct nn_ctcpmux, fsm);
 
@@ -357,13 +367,15 @@ static void nn_ctcpmux_handler (struct nn_fsm *self, int src, int type,
         case NN_CTCPMUX_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
-                nn_stcpmux_start (&ctcpmux->stcpmux, &ctcpmux->usock);
-                ctcpmux->state = NN_CTCPMUX_STATE_ACTIVE;
                 nn_epbase_stat_increment (&ctcpmux->epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
                 nn_epbase_stat_increment (&ctcpmux->epbase,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 nn_epbase_clear_error (&ctcpmux->epbase);
+                iovec.iov_base = ctcpmux->buffer;
+                iovec.iov_len = strlen (ctcpmux->buffer);
+                nn_usock_send (&ctcpmux->usock, &iovec, 1);
+                ctcpmux->state = NN_CTCPMUX_STATE_SENDING_TCPMUXHDR;
                 return;
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&ctcpmux->epbase,
@@ -379,6 +391,58 @@ static void nn_ctcpmux_handler (struct nn_fsm *self, int src, int type,
                 nn_fsm_bad_action (ctcpmux->state, src, type);
             }
 
+        default:
+            nn_fsm_bad_source (ctcpmux->state, src, type);
+        }
+
+/******************************************************************************/
+/* SENDING_TCPMUXHDR state.                                                   */
+/******************************************************************************/
+    case NN_CTCPMUX_STATE_SENDING_TCPMUXHDR:
+        switch (src) {
+        case NN_CTCPMUX_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_SENT:
+                nn_usock_recv (&ctcpmux->usock, ctcpmux->buffer, 3);
+                ctcpmux->state = NN_CTCPMUX_STATE_RECEIVING_TCPMUXHDR;
+                return;
+            case NN_USOCK_ERROR:
+                nn_epbase_set_error (&ctcpmux->epbase,
+                    nn_usock_geterrno (&ctcpmux->usock));
+                nn_usock_stop (&ctcpmux->usock);
+                ctcpmux->state = NN_CTCPMUX_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (ctcpmux->state, src, type);
+            }
+        default:
+            nn_fsm_bad_source (ctcpmux->state, src, type);
+        }
+
+/******************************************************************************/
+/* RECEIVING_TCPMUXHDR state.                                                 */
+/******************************************************************************/
+    case NN_CTCPMUX_STATE_RECEIVING_TCPMUXHDR:
+        switch (src) {
+        case NN_CTCPMUX_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+                if (ctcpmux->buffer [0] == '+' &&
+                      ctcpmux->buffer [1] == 0x0d &&
+                      ctcpmux->buffer [2] == 0x0a) {
+                    nn_stcpmux_start (&ctcpmux->stcpmux, &ctcpmux->usock);
+                    ctcpmux->state = NN_CTCPMUX_STATE_ACTIVE;
+                    return;
+                }
+            case NN_USOCK_ERROR:
+                nn_epbase_set_error (&ctcpmux->epbase,
+                    nn_usock_geterrno (&ctcpmux->usock));
+                nn_usock_stop (&ctcpmux->usock);
+                ctcpmux->state = NN_CTCPMUX_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (ctcpmux->state, src, type);
+            }
         default:
             nn_fsm_bad_source (ctcpmux->state, src, type);
         }
@@ -547,6 +611,7 @@ static void nn_ctcpmux_start_connecting (struct nn_ctcpmux *self,
     const char *addr;
     const char *end;
     const char *colon;
+    const char *slash;
     const char *semicolon;
     uint16_t port;
     int ipv4only;
@@ -558,12 +623,22 @@ static void nn_ctcpmux_start_connecting (struct nn_ctcpmux *self,
     addr = nn_epbase_getaddr (&self->epbase);
     memset (&remote, 0, sizeof (remote));
 
-    /*  Parse the port. */
+    semicolon = strchr (addr, ';');
+    colon = strchr ((semicolon ? semicolon : addr) + 1, ':');
+    slash = strchr (colon + 1, '/');
     end = addr + strlen (addr);
-    colon = strrchr (addr, ':');
-    rc = nn_port_resolve (colon + 1, end - colon - 1);
+
+    /*  Parse the port. */
+    rc = nn_port_resolve (colon + 1, slash - colon - 1);
     errnum_assert (rc > 0, -rc);
     port = rc;
+
+    /*  Copy the URL to the buffer. Append it by CRLF. */
+    sz = end - (slash + 1);
+    memcpy (self->buffer, slash + 1, sz);
+    self->buffer [sz] = 0x0d;
+    self->buffer [sz + 1] = 0x0a;
+    self->buffer [sz + 2] = 0;
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
@@ -572,7 +647,6 @@ static void nn_ctcpmux_start_connecting (struct nn_ctcpmux *self,
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
     /*  Parse the local address, if any. */
-    semicolon = strchr (addr, ';');
     memset (&local, 0, sizeof (local));
     if (semicolon)
         rc = nn_iface_resolve (addr, semicolon - addr, ipv4only,

@@ -43,7 +43,7 @@ int main ()
 
     /*  Create a connection. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, "tcpmux://*:5555/foo");
+    //test_bind (sb, "tcpmux://*:5555/foo");
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, "tcpmux://127.0.0.1:5555/foo");
 

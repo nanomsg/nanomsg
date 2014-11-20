@@ -122,10 +122,6 @@ int nn_btcpmux_create (void *hint, struct nn_epbase **epbase)
     const char *colon;
     const char *slash;
     const char *end;
-    struct sockaddr_storage ss;
-    size_t sslen;
-    int ipv4only;
-    size_t ipv4onlylen;
     int reconnect_ivl;
     int reconnect_ivl_max;
     size_t sz;
@@ -481,8 +477,6 @@ static void nn_btcpmux_start_connecting (struct nn_btcpmux *self)
     struct sockaddr_storage ss;
     struct sockaddr_un *un;
     const char *addr;
-    int val;
-    size_t sz;
     const char *colon;
     const char *slash;
     int port;

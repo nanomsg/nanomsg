@@ -82,7 +82,11 @@ struct nn_transport *nn_tcpmux = &nn_tcpmux_vfptr;
 
 static int nn_tcpmux_bind (void *hint, struct nn_epbase **epbase)
 {
+#if defined NN_HAVE_WINDOWS
+    return -EPROTONOSUPPORT;
+#else
     return nn_btcpmux_create (hint, epbase);
+#endif
 }
 
 static int nn_tcpmux_connect (void *hint, struct nn_epbase **epbase)

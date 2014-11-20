@@ -32,6 +32,7 @@ int sc;
 
 int main ()
 {
+#if !defined NN_HAVE_WINDOWS
     int rc;
     int sb;
     int sc;
@@ -56,6 +57,7 @@ int main ()
     /*  Cleanup. */
     test_close (sc);
     test_close (sb);
+#endif
 
     return 0;
 }

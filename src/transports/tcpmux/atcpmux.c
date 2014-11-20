@@ -129,8 +129,6 @@ static void nn_atcpmux_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_atcpmux *atcpmux;
-    int val;
-    size_t sz;
 
     atcpmux = nn_cont (self, struct nn_atcpmux, fsm);
 

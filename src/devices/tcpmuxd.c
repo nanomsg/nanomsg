@@ -22,6 +22,18 @@
 
 #include "../nn.h"
 
+#if defined NN_HAVE_WINDOWS
+
+#include "../utils/err.h"
+
+int nn_tcpmuxd (int port)
+{
+    errno = EPROTONOSUPPORT;
+    return -1;
+}
+
+#else
+
 #include "../utils/thread.h"
 #include "../utils/attr.h"
 #include "../utils/err.h"
@@ -292,3 +304,4 @@ static int send_fd (int s, int fd)
     return 0;
 }
 
+#endif

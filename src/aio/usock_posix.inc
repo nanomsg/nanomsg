@@ -1119,7 +1119,6 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     /*  Extract the associated file descriptor, if any. */
     cmsg = CMSG_FIRSTHDR (&hdr);
     while (cmsg) {
-printf ("cmsg=%p\n", (void*) cmsg);
         if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
             if (self->in.pfd) {
                 *self->in.pfd = *((int*) CMSG_DATA (cmsg));

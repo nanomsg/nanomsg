@@ -1117,6 +1117,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     }
 
     /*  Extract the associated file descriptor, if any. */
+#if defined NN_HAVE_MSG_CONTROL
     cmsg = CMSG_FIRSTHDR (&hdr);
     while (cmsg) {
         if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
@@ -1131,6 +1132,8 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         }
         cmsg = CMSG_NXTHDR (&hdr, cmsg);
     }
+#else
+#endif
 
     /*  If the data were received directly into the place we can return
         straight away. */

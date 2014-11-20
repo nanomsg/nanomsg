@@ -339,6 +339,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
     [[uint32_t value; atomic_cas_32 (&value, 0, 0); return 0;]])],[
     AC_DEFINE([NN_HAVE_ATOMIC_SOLARIS])],[])
 
+AC_MSG_CHECKING([for msghdr.msg_control])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    #include <sys/socket.h>
+]], [[
+    struct msghdr hdr;
+    hdr.msg_control = 0;
+    return 0;
+]])], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([NN_HAVE_MSG_CONTROL])
+], [
+    AC_MSG_RESULT([no])
+])
+
 AS_IF([test x"$ac_cv_func_eventfd" = xyes], [
     AC_DEFINE([NN_USE_EVENTFD])], [
     AS_IF([test x"$ac_cv_func_pipe" = xyes], [

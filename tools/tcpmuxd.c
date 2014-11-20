@@ -28,16 +28,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define TCPMUX_DEFAULT_PORT 1
-
 int main (int argc, const char *argv [])
 {
     int rc;
-    int port = TCPMUX_DEFAULT_PORT;
+    int port;
 
     /*  Parse the command line arguments. */
-    if (argc < 1 || argc > 2) {
-        fprintf (stderr, "usage: tcpmuxd [port]\n");
+    if (argc != 2) {
+        fprintf (stderr, "usage: tcpmuxd <port>\n");
         return 1;
     }
 

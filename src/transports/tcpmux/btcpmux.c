@@ -44,7 +44,8 @@
 #include "../../utils/win.h"
 #else
 #include <unistd.h>
-#include <netinet/in.h>
+#include <sys/un.h>
+#include <arpa/inet.h>
 #endif
 
 /*  The backlog is set relatively high so that there are not too many failed
@@ -52,14 +53,15 @@
 #define NN_BTCPMUX_BACKLOG 100
 
 #define NN_BTCPMUX_STATE_IDLE 1
-#define NN_BTCPMUX_STATE_ACTIVE 2
-#define NN_BTCPMUX_STATE_STOPPING_ATCPMUX 3
-#define NN_BTCPMUX_STATE_STOPPING_USOCK 4
-#define NN_BTCPMUX_STATE_STOPPING_ATCPMUXES 5
-#define NN_BTCPMUX_STATE_LISTENING 6
-#define NN_BTCPMUX_STATE_WAITING 7
-#define NN_BTCPMUX_STATE_CLOSING 8
-#define NN_BTCPMUX_STATE_STOPPING_BACKOFF 9
+#define NN_BTCPMUX_STATE_CONNECTING 2
+#define NN_BTCPMUX_STATE_SENDING_BINDREQ 3
+#define NN_BTCPMUX_STATE_ACTIVE 4
+#define NN_BTCPMUX_STATE_STOPPING_USOCK 5
+#define NN_BTCPMUX_STATE_STOPPING_ATCPMUXES 6
+#define NN_BTCPMUX_STATE_LISTENING 7
+#define NN_BTCPMUX_STATE_WAITING 8
+#define NN_BTCPMUX_STATE_CLOSING 9
+#define NN_BTCPMUX_STATE_STOPPING_BACKOFF 10
 
 #define NN_BTCPMUX_SRC_USOCK 1
 #define NN_BTCPMUX_SRC_ATCPMUX 2
@@ -78,14 +80,23 @@ struct nn_btcpmux {
     /*  The underlying listening TCPMUX socket. */
     struct nn_usock usock;
 
-    /*  The connection being accepted at the moment. */
-    struct nn_atcpmux *atcpmux;
-
     /*  List of accepted connections. */
     struct nn_list atcpmuxes;
 
     /*  Used to wait before retrying to connect. */
     struct nn_backoff retry;
+
+    /*  Service name. */
+    const char *service;
+
+    /*  Service name length, in network byte order. */
+    uint16_t servicelen;
+
+    /*  File descriptor of newly accepted connection. */
+    int newfd;
+
+    /*  Temporary buffer. */
+    char code;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -101,16 +112,16 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_btcpmux_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_btcpmux_start_listening (struct nn_btcpmux *self);
-static void nn_btcpmux_start_accepting (struct nn_btcpmux *self);
+static void nn_btcpmux_start_connecting (struct nn_btcpmux *self);
 
 int nn_btcpmux_create (void *hint, struct nn_epbase **epbase)
 {
     int rc;
     struct nn_btcpmux *self;
     const char *addr;
+    const char *colon;
+    const char *slash;
     const char *end;
-    const char *pos;
     struct sockaddr_storage ss;
     size_t sslen;
     int ipv4only;
@@ -125,34 +136,32 @@ int nn_btcpmux_create (void *hint, struct nn_epbase **epbase)
 
     /*  Initalise the epbase. */
     nn_epbase_init (&self->epbase, &nn_btcpmux_epbase_vfptr, hint);
+
+    /*  Parse the connection string. For now, we can only bind to all
+        interfaces. */
     addr = nn_epbase_getaddr (&self->epbase);
+    colon = strchr (addr, ':');
+    if (nn_slow (!colon || colon - addr != 1 || addr [0] != '*')) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    slash = strchr (colon + 1, '/');
+    if (nn_slow (!slash)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
+    }
+    end = addr + strlen (addr);
 
     /*  Parse the port. */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    if (nn_slow (!pos)) {
-        nn_epbase_term (&self->epbase);
-        return -EINVAL;
-    }
-    ++pos;
-    rc = nn_port_resolve (pos, end - pos);
+    rc = nn_port_resolve (colon + 1, slash - (colon + 1));
     if (nn_slow (rc < 0)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
 
-    /*  Check whether IPv6 is to be used. */
-    ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-        &ipv4only, &ipv4onlylen);
-    nn_assert (ipv4onlylen == sizeof (ipv4only));
-
-    /*  Parse the address. */
-    rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
-    if (nn_slow (rc < 0)) {
-        nn_epbase_term (&self->epbase);
-        return -ENODEV;
-    }
+    /*  Store the service name. */
+    self->service = slash + 1;
+    self->servicelen = htons (end - (slash + 1));
 
     /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_btcpmux_handler, nn_btcpmux_shutdown,
@@ -171,7 +180,6 @@ int nn_btcpmux_create (void *hint, struct nn_epbase **epbase)
     nn_backoff_init (&self->retry, NN_BTCPMUX_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
     nn_usock_init (&self->usock, NN_BTCPMUX_SRC_USOCK, &self->fsm);
-    self->atcpmux = NULL;
     nn_list_init (&self->atcpmuxes);
 
     /*  Start the state machine. */
@@ -200,7 +208,6 @@ static void nn_btcpmux_destroy (struct nn_epbase *self)
 
     nn_assert_state (btcpmux, NN_BTCPMUX_STATE_IDLE);
     nn_list_term (&btcpmux->atcpmuxes);
-    nn_assert (btcpmux->atcpmux == NULL);
     nn_usock_term (&btcpmux->usock);
     nn_backoff_term (&btcpmux->retry);
     nn_epbase_term (&btcpmux->epbase);
@@ -220,21 +227,6 @@ static void nn_btcpmux_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_backoff_stop (&btcpmux->retry);
-        if (btcpmux->atcpmux) {
-            nn_atcpmux_stop (btcpmux->atcpmux);
-            btcpmux->state = NN_BTCPMUX_STATE_STOPPING_ATCPMUX;
-        }
-        else {
-            btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
-        }
-    }
-    if (nn_slow (btcpmux->state == NN_BTCPMUX_STATE_STOPPING_ATCPMUX)) {
-        if (!nn_atcpmux_isidle (btcpmux->atcpmux))
-            return;
-        nn_atcpmux_term (btcpmux->atcpmux);
-        nn_free (btcpmux->atcpmux);
-        btcpmux->atcpmux = NULL;
-        nn_usock_stop (&btcpmux->usock);
         btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
     }
     if (nn_slow (btcpmux->state == NN_BTCPMUX_STATE_STOPPING_USOCK)) {
@@ -277,6 +269,7 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_btcpmux *btcpmux;
     struct nn_atcpmux *atcpmux;
+    struct nn_iovec iovecs [2];
 
     btcpmux = nn_cont (self, struct nn_btcpmux, fsm);
 
@@ -291,7 +284,7 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
         case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
-                nn_btcpmux_start_listening (btcpmux);
+                nn_btcpmux_start_connecting (btcpmux);
                 return;
             default:
                 nn_fsm_bad_action (btcpmux->state, src, type);
@@ -302,25 +295,86 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
+/*  CONNECTING state.                                                         */
+/******************************************************************************/
+    case NN_BTCPMUX_STATE_CONNECTING:
+        switch (src) {
+        case NN_BTCPMUX_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_CONNECTED:
+                iovecs [0].iov_base = &btcpmux->servicelen;
+                iovecs [0].iov_len = 2;
+                iovecs [1].iov_base = (void*) btcpmux->service;
+                iovecs [1].iov_len = ntohs (btcpmux->servicelen);
+                nn_usock_send (&btcpmux->usock, iovecs, 2);
+                btcpmux->state = NN_BTCPMUX_STATE_SENDING_BINDREQ;
+                return;
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&btcpmux->usock);
+                btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (btcpmux->state, src, type);
+            }
+        default:
+            nn_fsm_bad_source (btcpmux->state, src, type);
+        }
+
+/******************************************************************************/
+/*  SENDING_BINDREQ state.                                                    */
+/******************************************************************************/
+    case NN_BTCPMUX_STATE_SENDING_BINDREQ:
+        switch (src) {
+        case NN_BTCPMUX_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_SENT:
+                nn_usock_recv (&btcpmux->usock, &btcpmux->code, 1,
+                    &btcpmux->newfd);
+                btcpmux->state = NN_BTCPMUX_STATE_ACTIVE;
+                return;
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&btcpmux->usock);
+                btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (btcpmux->state, src, type);
+            }
+        default:
+            nn_fsm_bad_source (btcpmux->state, src, type);
+        }
+
+/******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  The execution is yielded to the atcpmux state machine in this state.      */
 /******************************************************************************/
     case NN_BTCPMUX_STATE_ACTIVE:
-        if (srcptr == btcpmux->atcpmux) {
+        if (src == NN_BTCPMUX_SRC_USOCK) {
             switch (type) {
-            case NN_ATCPMUX_ACCEPTED:
+            case NN_USOCK_RECEIVED:
+                if (btcpmux->code != 0 || btcpmux->newfd < 0) {
+                    nn_usock_stop (&btcpmux->usock);
+                    btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
+                    return;
+                }
 
-                /*  Move the newly created connection to the list of existing
-                    connections. */
-                nn_list_insert (&btcpmux->atcpmuxes, &btcpmux->atcpmux->item,
+                /*  Allocate new atcpmux state machine. */
+                atcpmux = nn_alloc (sizeof (struct nn_atcpmux), "atcpmux");
+                alloc_assert (atcpmux);
+                nn_atcpmux_init (atcpmux, NN_BTCPMUX_SRC_ATCPMUX,
+                   &btcpmux->epbase, &btcpmux->fsm);
+                nn_atcpmux_start (atcpmux, btcpmux->newfd);
+
+                nn_list_insert (&btcpmux->atcpmuxes, &atcpmux->item,
                     nn_list_end (&btcpmux->atcpmuxes));
-                btcpmux->atcpmux = NULL;
 
-                /*  Start waiting for a new incoming connection. */
-                nn_btcpmux_start_accepting (btcpmux);
-
+                /*  Start accepting new connection straight away. */
+                nn_usock_recv (&btcpmux->usock, &btcpmux->code, 1,
+                    &btcpmux->newfd);
                 return;
-
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&btcpmux->usock);
+                btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
+                return;
             default:
                 nn_fsm_bad_action (btcpmux->state, src, type);
             }
@@ -398,7 +452,7 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
         case NN_BTCPMUX_SRC_RECONNECT_TIMER:
             switch (type) {
             case NN_BACKOFF_STOPPED:
-                nn_btcpmux_start_listening (btcpmux);
+                nn_btcpmux_start_connecting (btcpmux);
                 return;
             default:
                 nn_fsm_bad_action (btcpmux->state, src, type);
@@ -420,87 +474,40 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
 /*  State machine actions.                                                    */
 /******************************************************************************/
 
-static void nn_btcpmux_start_listening (struct nn_btcpmux *self)
+static void nn_btcpmux_start_connecting (struct nn_btcpmux *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    size_t sslen;
-    int ipv4only;
-    size_t ipv4onlylen;
+    struct sockaddr_un *un;
     const char *addr;
-    const char *end;
-    const char *pos;
-    uint16_t port;
+    int val;
+    size_t sz;
+    const char *colon;
+    const char *slash;
+    int port;
 
-    /*  First, resolve the IP address. */
-    addr = nn_epbase_getaddr (&self->epbase);
-    memset (&ss, 0, sizeof (ss));
-
-    /*  Parse the port. */
-    end = addr + strlen (addr);
-    pos = strrchr (addr, ':');
-    nn_assert (pos);
-    ++pos;
-    rc = nn_port_resolve (pos, end - pos);
-    nn_assert (rc >= 0);
-    port = rc;
-
-    /*  Parse the address. */
-    ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-        &ipv4only, &ipv4onlylen);
-    nn_assert (ipv4onlylen == sizeof (ipv4only));
-    rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
-    errnum_assert (rc == 0, -rc);
-
-    /*  Combine the port and the address. */
-    if (ss.ss_family == AF_INET) {
-        ((struct sockaddr_in*) &ss)->sin_port = htons (port);
-        sslen = sizeof (struct sockaddr_in);
-    }
-    else if (ss.ss_family == AF_INET6) {
-        ((struct sockaddr_in6*) &ss)->sin6_port = htons (port);
-        sslen = sizeof (struct sockaddr_in6);
-    }
-    else
-        nn_assert (0);
-
-    /*  Start listening for incoming connections. */
-    rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
+    /*  Try to start the underlying socket. */
+    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
     if (nn_slow (rc < 0)) {
         nn_backoff_start (&self->retry);
         self->state = NN_BTCPMUX_STATE_WAITING;
         return;
     }
 
-    rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
-    if (nn_slow (rc < 0)) {
-        nn_usock_stop (&self->usock);
-        self->state = NN_BTCPMUX_STATE_CLOSING;
-        return;
-    }
+    /*  Create the IPC address from the address string. */
+    addr = nn_epbase_getaddr (&self->epbase);
+    colon = strchr (addr, ':');
+    slash = strchr (colon + 1, '/');
 
-    rc = nn_usock_listen (&self->usock, NN_BTCPMUX_BACKLOG);
-    if (nn_slow (rc < 0)) {
-        nn_usock_stop (&self->usock);
-        self->state = NN_BTCPMUX_STATE_CLOSING;
-        return;
-    }
-    nn_btcpmux_start_accepting(self);
-    self->state = NN_BTCPMUX_STATE_ACTIVE;
-}
+    port = nn_port_resolve (colon + 1, slash - (colon + 1));
+    memset (&ss, 0, sizeof (ss));
+    un = (struct sockaddr_un*) &ss;
+    ss.ss_family = AF_UNIX;
+    sprintf (un->sun_path, "/tmp/tcpmux-%d.ipc", (int) port);
 
-static void nn_btcpmux_start_accepting (struct nn_btcpmux *self)
-{
-    nn_assert (self->atcpmux == NULL);
-
-    /*  Allocate new atcpmux state machine. */
-    self->atcpmux = nn_alloc (sizeof (struct nn_atcpmux), "atcpmux");
-    alloc_assert (self->atcpmux);
-    nn_atcpmux_init (self->atcpmux, NN_BTCPMUX_SRC_ATCPMUX,
-        &self->epbase, &self->fsm);
-
-    /*  Start waiting for a new incoming connection. */
-    nn_atcpmux_start (self->atcpmux, &self->usock);
+    /*  Start connecting. */
+    nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
+        sizeof (struct sockaddr_un));
+    self->state  = NN_BTCPMUX_STATE_CONNECTING;
 }
 

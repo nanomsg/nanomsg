@@ -31,6 +31,7 @@
 #include "../utils/alloc.h"
 #include "../utils/list.h"
 #include "../utils/mutex.h"
+#include "../utils/closefd.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -283,6 +284,10 @@ static int send_fd (int s, int fd)
     if (rc < 0)
         return -1;
     nn_assert (rc == 1);
+
+    /*  Sending the file descriptor to other process acts as dup().
+        Therefore, we have to close the local copy of the file descriptor. */
+    nn_closefd (fd);
 
     return 0;
 }

@@ -474,6 +474,7 @@ TRANSPORT_TESTS = \
     tests/tcp \
     tests/tcp_shutdown \
     tests/ws \
+    tests/ws_stress \
     tests/tcpmux
 
 PROTOCOL_TESTS = \

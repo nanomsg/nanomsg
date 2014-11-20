@@ -227,6 +227,7 @@ static void nn_btcpmux_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_backoff_stop (&btcpmux->retry);
+        nn_usock_stop (&btcpmux->usock);
         btcpmux->state = NN_BTCPMUX_STATE_STOPPING_USOCK;
     }
     if (nn_slow (btcpmux->state == NN_BTCPMUX_STATE_STOPPING_USOCK)) {

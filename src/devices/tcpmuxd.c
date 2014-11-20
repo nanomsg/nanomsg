@@ -48,6 +48,7 @@ int nn_tcpmuxd (int port)
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/time.h>

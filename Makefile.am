@@ -358,6 +358,7 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
+    doc/nn_tcpmux.txt \
     doc/nn_ws.txt \
     doc/nn_env.txt
 
@@ -386,7 +387,8 @@ MAN3 = \
     doc/nn_poll.txt
 
 MAN1 = \
-    doc/nanocat.txt
+    doc/nanocat.txt \
+    doc/tcpmuxd.txt
 
 if DOC
 

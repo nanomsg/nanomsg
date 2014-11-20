@@ -53,10 +53,6 @@ struct nn_atcpmux {
     /*  Underlying socket. */
     struct nn_usock usock;
 
-    /*  Listening socket. Valid only while accepting new connection. */
-    struct nn_usock *listener;
-    struct nn_fsm_owner listener_owner;
-
     /*  State machine that takes care of the connection in the active state. */
     struct nn_stcpmux stcpmux;
 
@@ -74,7 +70,7 @@ void nn_atcpmux_init (struct nn_atcpmux *self, int src,
 void nn_atcpmux_term (struct nn_atcpmux *self);
 
 int nn_atcpmux_isidle (struct nn_atcpmux *self);
-void nn_atcpmux_start (struct nn_atcpmux *self, struct nn_usock *listener);
+void nn_atcpmux_start (struct nn_atcpmux *self, int fd);
 void nn_atcpmux_stop (struct nn_atcpmux *self);
 
 #endif

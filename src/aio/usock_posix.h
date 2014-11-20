@@ -57,6 +57,9 @@ struct nn_usock {
             position were already received by the user. The data that follow
             will be received in the future. */
         size_t batch_pos;
+
+        /*  File descriptor received via SCM_RIGHTS, if any. */
+        int *pfd;
     } in;
 
     /*  Members related to sending data. */

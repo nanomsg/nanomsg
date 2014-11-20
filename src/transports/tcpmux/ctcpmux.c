@@ -403,7 +403,7 @@ static void nn_ctcpmux_handler (struct nn_fsm *self, int src, int type,
         case NN_CTCPMUX_SRC_USOCK:
             switch (type) {
             case NN_USOCK_SENT:
-                nn_usock_recv (&ctcpmux->usock, ctcpmux->buffer, 3);
+                nn_usock_recv (&ctcpmux->usock, ctcpmux->buffer, 3, NULL);
                 ctcpmux->state = NN_CTCPMUX_STATE_RECEIVING_TCPMUXHDR;
                 return;
             case NN_USOCK_ERROR:

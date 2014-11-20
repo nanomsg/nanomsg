@@ -424,3 +424,4 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
+

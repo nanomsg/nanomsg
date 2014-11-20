@@ -165,7 +165,8 @@ static int nn_stcpmux_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Start receiving new message. */
     stcpmux->instate = NN_STCPMUX_INSTATE_HDR;
-    nn_usock_recv (stcpmux->usock, stcpmux->inhdr, sizeof (stcpmux->inhdr));
+    nn_usock_recv (stcpmux->usock, stcpmux->inhdr, sizeof (stcpmux->inhdr),
+        NULL);
 
     return 0;
 }
@@ -284,7 +285,7 @@ static void nn_stcpmux_handler (struct nn_fsm *self, int src, int type,
                  /*  Start receiving a message in asynchronous manner. */
                  stcpmux->instate = NN_STCPMUX_INSTATE_HDR;
                  nn_usock_recv (stcpmux->usock, &stcpmux->inhdr,
-                     sizeof (stcpmux->inhdr));
+                     sizeof (stcpmux->inhdr), NULL);
 
                  /*  Mark the pipe as available for sending. */
                  stcpmux->outstate = NN_STCPMUX_OUTSTATE_IDLE;
@@ -339,7 +340,8 @@ static void nn_stcpmux_handler (struct nn_fsm *self, int src, int type,
                     /*  Start receiving the message body. */
                     stcpmux->instate = NN_STCPMUX_INSTATE_BODY;
                     nn_usock_recv (stcpmux->usock,
-                        nn_chunkref_data (&stcpmux->inmsg.body), (size_t) size);
+                        nn_chunkref_data (&stcpmux->inmsg.body),
+                        (size_t) size, NULL);
 
                     return;
 

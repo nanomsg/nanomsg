@@ -424,7 +424,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                         sizeof (handshaker->opening_hs));
                     handshaker->state = NN_WS_HANDSHAKE_STATE_SERVER_RECV;
                     nn_usock_recv (handshaker->usock, handshaker->opening_hs,
-                        handshaker->recv_len);
+                        handshaker->recv_len, NULL);
                     return;
                 default:
                     /*  Unexpected mode. */
@@ -508,7 +508,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                         handshaker->retries++;
                         nn_usock_recv (handshaker->usock,
                             handshaker->opening_hs + handshaker->recv_pos,
-                            handshaker->recv_len);
+                            handshaker->recv_len, NULL);
                     }
                     return;
                 default:
@@ -590,7 +590,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SENT:
                 handshaker->state = NN_WS_HANDSHAKE_STATE_CLIENT_RECV;
                 nn_usock_recv (handshaker->usock, handshaker->response,
-                    handshaker->recv_len);
+                    handshaker->recv_len, NULL);
                 return;
             case NN_USOCK_SHUTDOWN:
                 /*  Ignore it and wait for ERROR event. */
@@ -684,7 +684,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                         handshaker->retries++;
                         nn_usock_recv (handshaker->usock,
                             handshaker->response + handshaker->recv_pos,
-                            handshaker->recv_len);
+                            handshaker->recv_len, NULL);
                     }
                     return;
                 default:

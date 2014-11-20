@@ -170,7 +170,7 @@ static int nn_sipc_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Start receiving new message. */
     sipc->instate = NN_SIPC_INSTATE_HDR;
-    nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr));
+    nn_usock_recv (sipc->usock, sipc->inhdr, sizeof (sipc->inhdr), NULL);
 
     return 0;
 }
@@ -289,7 +289,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                  /*  Start receiving a message in asynchronous manner. */
                  sipc->instate = NN_SIPC_INSTATE_HDR;
                  nn_usock_recv (sipc->usock, &sipc->inhdr,
-                     sizeof (sipc->inhdr));
+                     sizeof (sipc->inhdr), NULL);
 
                  /*  Mark the pipe as available for sending. */
                  sipc->outstate = NN_SIPC_OUTSTATE_IDLE;
@@ -345,7 +345,8 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                     /*  Start receiving the message body. */
                     sipc->instate = NN_SIPC_INSTATE_BODY;
                     nn_usock_recv (sipc->usock,
-                        nn_chunkref_data (&sipc->inmsg.body), (size_t) size);
+                        nn_chunkref_data (&sipc->inmsg.body),
+                        (size_t) size, NULL);
 
                     return;
 

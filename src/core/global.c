@@ -445,6 +445,10 @@ struct nn_cmsghdr *nn_cmsg_nxthdr_ (const struct nn_msghdr *mhdr,
     struct nn_cmsghdr *next;
     size_t headsz;
 
+    /*  Early return if no message is provided. */
+    if (nn_slow (mhdr == NULL))
+        return NULL;
+
     /*  Get the actual data. */
     if (mhdr->msg_controllen == NN_MSG) {
         data = *((void**) mhdr->msg_control);
@@ -455,19 +459,23 @@ struct nn_cmsghdr *nn_cmsg_nxthdr_ (const struct nn_msghdr *mhdr,
         sz = mhdr->msg_controllen;
     }
 
+    /*  Ancillary data allocation was not even large enough for one element. */
+    if (nn_slow (sz < NN_CMSG_SPACE (0)))
+        return NULL;
+
     /*  If cmsg is set to NULL we are going to return first property.
         Otherwise move to the next property. */
     if (!cmsg)
         next = (struct nn_cmsghdr*) data;
     else
         next = (struct nn_cmsghdr*)
-            (((char*) cmsg) + NN_CMSG_SPACE (cmsg->cmsg_len));
+            (((char*) cmsg) + NN_CMSG_ALIGN_ (cmsg->cmsg_len));
 
     /*  If there's no space for next property, treat it as the end
         of the property list. */
     headsz = ((char*) next) - data;
-    if (headsz + sizeof (struct nn_cmsghdr) > sz ||
-          headsz + NN_CMSG_SPACE (next->cmsg_len) > sz)
+    if (headsz + NN_CMSG_SPACE (0) > sz ||
+          headsz + NN_CMSG_ALIGN_ (next->cmsg_len) > sz)
         return NULL;
     
     /*  Success. */
@@ -713,6 +721,7 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
 {
     int rc;
     size_t sz;
+    size_t spsz;
     int i;
     struct nn_iovec *iov;
     struct nn_msg msg;
@@ -779,45 +788,33 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     /*  Add ancillary data to the message. */
     if (msghdr->msg_control) {
 
-        /* Find SP_HDR property. */
-        cmsg = NN_CMSG_FIRSTHDR (msghdr);
-        while (1) {
-            if (!cmsg)
-                return -1;
-            if (cmsg->cmsg_level == PROTO_SP && cmsg->cmsg_type == SP_HDR)
-                break;
-            cmsg = NN_CMSG_NXTHDR (msghdr, cmsg);
-        }
-
-        if (!cmsg) {
-
-            /* If there is no SP_HDR property we'll just use the ancillary
-               data with no modification */
-            if (msghdr->msg_controllen == NN_MSG) {
-                chunk = *((void**) msghdr->msg_control);
-                nn_chunkref_term (&msg.hdrs);
-                nn_chunkref_init_chunk (&msg.hdrs, chunk);
-            }
-            else {
-                nn_chunkref_term (&msg.hdrs);
-                nn_chunkref_init (&msg.hdrs, msghdr->msg_controllen);
-                memcpy (nn_chunkref_data (&msg.hdrs),
-                    msghdr->msg_control, msghdr->msg_controllen);
-            }
+        /*  Copy all headers. */
+        /*  TODO: SP_HDR should not be copied here! */
+        if (msghdr->msg_controllen == NN_MSG) {
+            chunk = *((void**) msghdr->msg_control);
+            nn_chunkref_term (&msg.hdrs);
+            nn_chunkref_init_chunk (&msg.hdrs, chunk);
         }
         else {
+            nn_chunkref_term (&msg.hdrs);
+            nn_chunkref_init (&msg.hdrs, msghdr->msg_controllen);
+            memcpy (nn_chunkref_data (&msg.hdrs),
+                msghdr->msg_control, msghdr->msg_controllen);
+        }
 
-            /*  Copy body of SP_HDR property into 'sphdr'. */
-            nn_chunkref_term (&msg.sphdr);
-            nn_chunkref_init (&msg.sphdr, cmsg->cmsg_len);
-            memcpy (nn_chunkref_data (&msg.sphdr),
-                NN_CMSG_DATA (cmsg), cmsg->cmsg_len);
-
-            /* TODO: Copy all remaining properties into 'hdrs'. */
-
-            /* Clean-up, if needed. */
-            if (msghdr->msg_controllen == NN_MSG)
-                nn_freemsg (*((void**) msghdr->msg_control));
+        /* Search for SP_HDR property. */
+        cmsg = NN_CMSG_FIRSTHDR (msghdr);
+        while (cmsg) {
+            if (cmsg->cmsg_level == PROTO_SP && cmsg->cmsg_type == SP_HDR) {
+                /*  Copy body of SP_HDR property into 'sphdr'. */
+                nn_chunkref_term (&msg.sphdr);
+                spsz = cmsg->cmsg_len - NN_CMSG_SPACE (0);
+                nn_chunkref_init (&msg.sphdr, spsz);
+                memcpy (nn_chunkref_data (&msg.sphdr),
+                    NN_CMSG_DATA (cmsg), spsz);
+                break;
+            }
+            cmsg = NN_CMSG_NXTHDR (msghdr, cmsg);
         }
     }
 
@@ -934,7 +931,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
             /*  Fill in SP_HDR ancillary property. */
             chdr = (struct nn_cmsghdr*) ctrl;
-            chdr->cmsg_len = spsz;
+            chdr->cmsg_len = sptotalsz;
             chdr->cmsg_level = PROTO_SP;
             chdr->cmsg_type = SP_HDR;
             memcpy (chdr + 1, nn_chunkref_data (&msg.sphdr), spsz);

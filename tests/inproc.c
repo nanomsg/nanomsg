@@ -158,7 +158,7 @@ int main ()
             break;
         cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
     }
-    nn_assert (cmsg->cmsg_len == 8);
+    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8));
     data = NN_CMSG_DATA (cmsg);
     nn_assert (!(data[0] & 0x80));
     nn_assert (data[4] & 0x80);

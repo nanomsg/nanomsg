@@ -94,3 +94,5 @@ CMakeFiles
 .cproject
 .project
 .pydevproject
+*.sdf
+*.opensdf

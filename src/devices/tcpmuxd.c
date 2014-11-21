@@ -273,7 +273,7 @@ static void nn_tcpmuxd_routine (void *arg)
             errno_assert (ssz >= 0);
             nn_assert (ssz == sz);
             for (i = 0; i != sz; ++i)
-                tc->service [sz] = tolower (tc->service [sz]);
+                tc->service [i] = tolower (tc->service [i]);
             tc->service [sz] = 0;
             
             /*  Add the entry to the IPC connections list. */

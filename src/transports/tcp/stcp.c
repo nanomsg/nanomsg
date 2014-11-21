@@ -165,7 +165,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     /*  Start receiving new message. */
     stcp->instate = NN_STCP_INSTATE_HDR;
-    nn_usock_recv (stcp->usock, stcp->inhdr, sizeof (stcp->inhdr));
+    nn_usock_recv (stcp->usock, stcp->inhdr, sizeof (stcp->inhdr), NULL);
 
     return 0;
 }
@@ -283,7 +283,7 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                  /*  Start receiving a message in asynchronous manner. */
                  stcp->instate = NN_STCP_INSTATE_HDR;
                  nn_usock_recv (stcp->usock, &stcp->inhdr,
-                     sizeof (stcp->inhdr));
+                     sizeof (stcp->inhdr), NULL);
 
                  /*  Mark the pipe as available for sending. */
                  stcp->outstate = NN_STCP_OUTSTATE_IDLE;
@@ -338,7 +338,8 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                     /*  Start receiving the message body. */
                     stcp->instate = NN_STCP_INSTATE_BODY;
                     nn_usock_recv (stcp->usock,
-                        nn_chunkref_data (&stcp->inmsg.body), (size_t) size);
+                        nn_chunkref_data (&stcp->inmsg.body),
+                       (size_t) size, NULL);
 
                     return;
 

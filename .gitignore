@@ -37,6 +37,7 @@ doltcompile
 doltlibtool
 libnanomsg.pc
 nanocat
+tcpmuxd
 *.tar.gz
 *.zip
 perf/inproc_lat
@@ -84,6 +85,7 @@ tests/zerocopy
 tests/term
 tests/cmsg
 tests/ws
+tests/tcpmux
 *.dir
 *.vcxproj
 *.vcxproj.filters
@@ -94,3 +96,5 @@ CMakeFiles
 .cproject
 .project
 .pydevproject
+*.sdf
+*.opensdf

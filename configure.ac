@@ -188,7 +188,7 @@ AS_IF([test x"$enable_doc" = "xyes"], [
 AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
 
 ################################################################################
-#  Build the nanocat
+#  Build nanocat                                                               #
 ################################################################################
 
 AC_ARG_ENABLE([nanocat],
@@ -204,6 +204,19 @@ AS_IF([test x"$enable_nanocat" != "xno" -a x"$enable_symlinks" != x"no"], [
 ])
 AM_CONDITIONAL([NANOCAT], [test x"$enable_nanocat" != "xno" ])
 AM_CONDITIONAL([SYMLINKS], [test x"$enable_symlinks" != "xno" ])
+
+################################################################################
+#  Build tcpmuxd                                                               #
+################################################################################
+
+AC_ARG_ENABLE([tcpmuxd],
+    AS_HELP_STRING([--enable-tcpmuxd], [Build tcpmuxd executable [default=yes]])
+)
+
+AS_IF([test x"$enable_tcpmuxd" != "xno"], [
+    AC_PROG_LN_S
+])
+AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 
 ################################################################################
 #  Check which OS we are building for.                                         #
@@ -325,6 +338,20 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
     [[#include <atomic.h>]],
     [[uint32_t value; atomic_cas_32 (&value, 0, 0); return 0;]])],[
     AC_DEFINE([NN_HAVE_ATOMIC_SOLARIS])],[])
+
+AC_MSG_CHECKING([for msghdr.msg_control])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+    #include <sys/socket.h>
+]], [[
+    struct msghdr hdr;
+    hdr.msg_control = 0;
+    return 0;
+]])], [
+    AC_MSG_RESULT([yes])
+    AC_DEFINE([NN_HAVE_MSG_CONTROL])
+], [
+    AC_MSG_RESULT([no])
+])
 
 AS_IF([test x"$ac_cv_func_eventfd" = xyes], [
     AC_DEFINE([NN_USE_EVENTFD])], [

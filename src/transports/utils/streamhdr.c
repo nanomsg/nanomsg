@@ -178,7 +178,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_SENT:
                 nn_usock_recv (streamhdr->usock, streamhdr->protohdr,
-                    sizeof (streamhdr->protohdr));
+                    sizeof (streamhdr->protohdr), NULL);
                 streamhdr->state = NN_STREAMHDR_STATE_RECEIVING;
                 return;
             case NN_USOCK_SHUTDOWN:

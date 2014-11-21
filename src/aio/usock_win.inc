@@ -167,6 +167,11 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     return 0;
 }
 
+void nn_usock_start_fd (struct nn_usock *self, int fd)
+{
+    nn_assert (0);
+}
+
 void nn_usock_stop (struct nn_usock *self)
 {
     nn_fsm_stop (&self->fsm);
@@ -428,13 +433,17 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
 }
 
-void nn_usock_recv (struct nn_usock *self, void *buf, size_t len)
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
 {
     int rc;
     BOOL brc;
     WSABUF wbuf;
     DWORD wflags;
     DWORD error;
+
+    /*  Passing file descriptors is not implemented on Windows platform. */
+    if (fd)
+        *fd = -1;
 
     /*  Make sure that the socket is actually alive. */
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);

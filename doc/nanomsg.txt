@@ -113,10 +113,19 @@ Inter-process transport::
 TCP transport::
     linknanomsg:nn_tcp[7]
 
+TCPMUX transport::
+    linknanomsg:nn_tcpmux[7]
+
+WebSocket transport::
+    linknanomsg:nn_ws[7]
+
 Following tools are installed with the library:
 
 nanocat::
     linknanomsg:nanocat[1]
+
+tcpmuxd::
+    linknanomsg:tcpmuxd[1]
 
 AUTHORS
 -------

@@ -354,7 +354,7 @@ static int nn_sws_recv_hdr (struct nn_sws *self)
     memset (self->inmsg_control, 0, NN_SWS_PAYLOAD_MAX_LENGTH);
     memset (self->inhdr, 0, NN_SWS_FRAME_MAX_HDR_LEN);
     self->instate = NN_SWS_INSTATE_RECV_HDR;
-    nn_usock_recv (self->usock, self->inhdr, NN_SWS_FRAME_SIZE_INITIAL);
+    nn_usock_recv (self->usock, self->inhdr, NN_SWS_FRAME_SIZE_INITIAL, NULL);
 
     return 0;
 }
@@ -1276,7 +1276,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         }
 
                         nn_usock_recv (sws->usock, sws->inmsg_current_chunk_buf,
-                            sws->inmsg_current_chunk_len);
+                            sws->inmsg_current_chunk_len, NULL);
                         return;
                     }
                     else {
@@ -1284,7 +1284,8 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         sws->instate = NN_SWS_INSTATE_RECV_HDREXT;
                         nn_usock_recv (sws->usock,
                             sws->inhdr + NN_SWS_FRAME_SIZE_INITIAL,
-                            sws->ext_hdr_len);
+                            sws->ext_hdr_len,
+                            NULL);
                         return;
                     }
 
@@ -1368,7 +1369,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                     sws->instate = NN_SWS_INSTATE_RECV_PAYLOAD;
                     nn_usock_recv (sws->usock, sws->inmsg_current_chunk_buf,
-                        sws->inmsg_current_chunk_len);
+                        sws->inmsg_current_chunk_len, NULL);
                     return;
 
                 case NN_SWS_INSTATE_RECV_PAYLOAD:

@@ -261,6 +261,7 @@ static void nn_tcpmuxd_routine (void *arg)
             }
             ctx->pfd [ctx->pfd_size - 1].fd = conn;
             ctx->pfd [ctx->pfd_size - 1].events = 0;
+            ctx->pfd [ctx->pfd_size - 1].revents = 0;
 
             /*  Read the connection header. */
             ssz = recv (conn, buf, 2, 0);

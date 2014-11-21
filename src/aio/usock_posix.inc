@@ -1056,7 +1056,9 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     struct iovec iov;
     struct msghdr hdr;
     unsigned char ctrl [256];
+#if defined NN_HAVE_MSG_CONTROL
     struct cmsghdr *cmsg;
+#endif
 
     /*  If batch buffer doesn't exist, allocate it. The point of delayed
         deallocation to allow non-receiving sockets, such as TCP listening
@@ -1093,8 +1095,14 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     memset (&hdr, 0, sizeof (hdr));
     hdr.msg_iov = &iov;
     hdr.msg_iovlen = 1;
+#if defined NN_HAVE_MSG_CONTROL
     hdr.msg_control = ctrl;
     hdr.msg_controllen = sizeof (ctrl);
+#else
+    *((int*) ctrl) = -1;
+    hdr.msg_accrights = ctrl;
+    hdr.msg_accrightslen = sizeof (int);
+#endif
     nbytes = recvmsg (self->s, &hdr, 0);
 
     /*  Handle any possible errors. */
@@ -1117,23 +1125,35 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     }
 
     /*  Extract the associated file descriptor, if any. */
+    if (nbytes > 0) {
 #if defined NN_HAVE_MSG_CONTROL
-    cmsg = CMSG_FIRSTHDR (&hdr);
-    while (cmsg) {
-        if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
+        cmsg = CMSG_FIRSTHDR (&hdr);
+        while (cmsg) {
+            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_RIGHTS) {
+                if (self->in.pfd) {
+                    *self->in.pfd = *((int*) CMSG_DATA (cmsg));
+                    self->in.pfd = NULL;
+                }
+                else {
+                    nn_closefd (*((int*) CMSG_DATA (cmsg)));
+                }
+                break;
+            }
+            cmsg = CMSG_NXTHDR (&hdr, cmsg);
+        }
+#else
+        if (hdr.msg_accrightslen > 0) {
+            nn_assert (hdr.msg_accrightslen == sizeof (int));
             if (self->in.pfd) {
-                *self->in.pfd = *((int*) CMSG_DATA (cmsg));
+                *self->in.pfd = *((int*) hdr.msg_accrights);
                 self->in.pfd = NULL;
             }
             else {
-                nn_closefd (*((int*) CMSG_DATA (cmsg)));
+                nn_closefd (*((int*) hdr.msg_accrights));
             }
-            break;
         }
-        cmsg = CMSG_NXTHDR (&hdr, cmsg);
-    }
-#else
 #endif
+    }
 
     /*  If the data were received directly into the place we can return
         straight away. */

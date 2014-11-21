@@ -164,12 +164,15 @@ static void nn_tcpmuxd_routine (void *arg)
             if (conn < 0 && errno == ECONNABORTED)
                 continue;
             errno_assert (conn >= 0);
+
+            /*  Set timeouts to prevent malevolent client blocking the service.
+                Note that these options are not supported on Solaris. */
             tv.tv_sec = 0;
             tv.tv_usec = 100000;
             rc = setsockopt (conn, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof (tv));
-            errno_assert (rc == 0);
+            errno_assert (rc == 0 || (rc < 0 && errno == ENOPROTOOPT));
             rc = setsockopt (conn, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof (tv));
-            errno_assert (rc == 0);
+            errno_assert (rc == 0 || (rc < 0 && errno == ENOPROTOOPT));
 
             /*  Read TCPMUX header. */
             pos = 0;
@@ -269,7 +272,9 @@ static int send_fd (int s, int fd)
     char c = 0;
     struct msghdr msg;
     char control [sizeof (struct cmsghdr) + 10];
+#if defined NN_HAVE_MSG_CONTROL
     struct cmsghdr *cmsg;
+#endif
 
     /*  Compose the message. We'll send one byte long dummy message
         accompanied with the fd.*/
@@ -278,19 +283,22 @@ static int send_fd (int s, int fd)
     memset (&msg, 0, sizeof (msg));
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
-    msg.msg_control = control;
-    msg.msg_controllen = sizeof (control);
 
     /*  Attach the file descriptor to the message. */
+#if defined NN_HAVE_MSG_CONTROL
+    msg.msg_control = control;
+    msg.msg_controllen = sizeof (control);
     cmsg = CMSG_FIRSTHDR (&msg);
     cmsg->cmsg_level = SOL_SOCKET;
     cmsg->cmsg_type = SCM_RIGHTS;
     cmsg->cmsg_len = CMSG_LEN (sizeof (fd));
     int *data = (int*) CMSG_DATA (cmsg);
     *data = fd;
-
-    /*  Adjust the size of the control to match the data. */
     msg.msg_controllen = cmsg->cmsg_len;
+#else
+    msg.msg_accrights = (caddr_t) &fd;
+    msg.msg_accrightslen = sizeof (fd);
+#endif
 
     /*  Pass the file descriptor to the registered process. */
     rc = sendmsg (s, &msg, 0);

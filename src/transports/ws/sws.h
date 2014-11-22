@@ -59,7 +59,7 @@
 /*  The longest possible header frame length. As per RFC 6455 5.2:
     first 2 bytes of initial framing + up to 8 bytes of additional
     extended payload length header + 4 byte mask = 14bytes
-    Not all messages will use the maximum amount allocated, but
+    Not all messages will use the maximum amount allocated, but we are
     statically allocating this buffer for convenience. */
 #define NN_SWS_FRAME_MAX_HDR_LEN 14
 
@@ -79,7 +79,7 @@ struct nn_sws {
     struct nn_fsm fsm;
     int state;
 
-    /*  Controls Tx/Rx framing based on whether this peer is acting as
+    /*  Controls framing based on whether this peer is acting as
         a Client or a Server. */
     int mode;
 

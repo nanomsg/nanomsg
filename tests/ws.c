@@ -117,5 +117,15 @@ int main ()
 
     test_close (sc);
 
+    /*  Test transferring one message. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, "ws://127.0.0.1:5555");
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, "ws://127.0.0.1:5555");
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_close (sc);
+    test_close (sb);
+
     return 0;
 }

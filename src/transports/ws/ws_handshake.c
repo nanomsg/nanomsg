@@ -93,35 +93,18 @@ static void nn_ws_handshake_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_ws_handshake_leave (struct nn_ws_handshake *self, int rc);
 
-/*  WebSocket protocol support functions. */
+/*  Private functions. */
 static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self);
 static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self);
 static void nn_ws_handshake_client_request (struct nn_ws_handshake *self);
 static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self);
 static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
     uint8_t *hashed, size_t hashed_len);
-
-/*  String parsing support functions. */
-
-/*  Scans for reference token against subject string, optionally ignoring
-    case sensitivity and/or leading spaces in subject. On match, advances
-    the subject pointer to the next non-ignored character past match. Both
-    strings must be NULL terminated to avoid undefined behavior. Returns
-    NN_WS_HANDSHAKE_MATCH on match; else, NN_WS_HANDSHAKE_NOMATCH. */
 static int nn_ws_match_token (const char* token, const char **subj,
     int case_insensitive, int ignore_leading_sp);
-
-/*  Scans subject string for termination sequence, optionally ignoring
-    leading and/or trailing spaces in subject. On match, advances
-    the subject pointer to the next character past match. Both
-    strings must be NULL terminated to avoid undefined behavior. If the
-    match succeeds, values are stored into *addr and *len. */
 static int nn_ws_match_value (const char* termseq, const char **subj,
     int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
     size_t* const len);
-
-/*  Compares subject octet stream to expected value, optionally ignoring
-    case sensitivity. Returns non-zero on success, zero on failure. */
 static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
     size_t subj_len, int case_insensitive);
 
@@ -179,30 +162,6 @@ void nn_ws_handshake_start (struct nn_ws_handshake *self,
     self->recv_pos = 0;
     self->retries = 0;
 
-    /*  Calculate the absolute minimum length possible for a valid opening
-        handshake. This is an optimization since we must poll for the
-        remainder of the opening handshake in small byte chunks. */
-    switch (self->mode) {
-    case NN_WS_SERVER:
-        self->recv_len = strlen (
-            "GET x HTTP/1.1\r\n"
-            "Upgrade: websocket\r\n"
-            "Connection: Upgrade\r\n"
-            "Host: x\r\n"
-            "Origin: x\r\n"
-            "Sec-WebSocket-Key: xxxxxxxxxxxxxxxxxxxxxxxx\r\n"
-            "Sec-WebSocket-Version: xx\r\n\r\n");
-        break;
-    case NN_WS_CLIENT:
-        /*  Shortest conceiveable response from server is a terse status. */
-        self->recv_len = strlen ("HTTP/1.1 xxx\r\n\r\n");
-        break;
-    default:
-        /*  Developer error; unexpected mode. */
-        nn_assert (0);
-        break;
-    }
-
     /*  Launch the state machine. */
     nn_fsm_start (&self->fsm);
 }
@@ -234,129 +193,6 @@ static void nn_ws_handshake_shutdown (struct nn_fsm *self, int src, int type,
     nn_fsm_bad_state (handshaker->state, src, type);
 }
 
-static int nn_ws_match_token (const char* token, const char **subj,
-    int case_insensitive, int ignore_leading_sp)
-{
-    const char *pos;
-
-    nn_assert (token && *subj);
-
-    pos = *subj;
-
-    if (ignore_leading_sp) {
-        while (*pos == '\x20' && *pos) {
-            pos++;
-        }
-    }
-
-    if (case_insensitive) {
-        while (*token && *pos) {
-            if (tolower (*token) != tolower (*pos))
-                return NN_WS_HANDSHAKE_NOMATCH;
-            token++;
-            pos++;
-        }
-    }
-    else {
-        while (*token && *pos) {
-            if (*token != *pos)
-                return NN_WS_HANDSHAKE_NOMATCH;
-            token++;
-            pos++;
-        }
-    }
-
-    /*  Encountered end of subject before matching completed. */
-    if (!*pos && *token)
-        return NN_WS_HANDSHAKE_NOMATCH;
-
-    /*  Entire token has been matched. */
-    nn_assert (!*token);
-
-    /*  On success, advance subject position. */
-    *subj = pos;
-
-    return NN_WS_HANDSHAKE_MATCH;
-}
-
-static int nn_ws_match_value (const char* termseq, const char **subj,
-    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
-    size_t* const len)
-{
-    const char *start;
-    const char *end;
-
-    nn_assert (termseq && *subj);
-
-    start = *subj;
-    if (addr)
-        *addr = NULL;
-    if (len)
-        *len = 0;
-
-    /*  Find first occurence of termination sequence. */
-    end = strstr (start, termseq);
-
-    /*  Was a termination sequence found? */
-    if (end) {
-        *subj = end + strlen (termseq);
-    }
-    else {
-        return NN_WS_HANDSHAKE_NOMATCH;
-    }
-        
-    if (ignore_leading_sp) {
-        while (*start == '\x20' && start < end) {
-            start++;
-        }
-    }
-
-    if (addr)
-        *addr = start;
-
-    /*  In this special case, the value was "found", but is just empty or
-        ignored space. */
-    if (start == end)
-        return NN_WS_HANDSHAKE_MATCH;
-
-    if (ignore_trailing_sp) {
-        while (*(end - 1) == '\x20' && start < end) {
-            end--;
-        }
-    }
-
-    if (len)
-        *len = end - start;
-
-    return NN_WS_HANDSHAKE_MATCH;
-}
-
-static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
-    size_t subj_len, int case_insensitive)
-{
-    if (strlen (expected) != subj_len)
-        return NN_WS_HANDSHAKE_NOMATCH;
-
-    if (case_insensitive) {
-        while (*expected && *subj) {
-            if (tolower (*expected) != tolower (*subj))
-                return NN_WS_HANDSHAKE_NOMATCH;
-            expected++;
-            subj++;
-        }
-    }
-    else {
-        while (*expected && *subj) {
-            if (*expected != *subj)
-                return NN_WS_HANDSHAKE_NOMATCH;
-            expected++;
-            subj++;
-        }
-    }
-
-    return NN_WS_HANDSHAKE_MATCH;
-}
-
 static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
@@ -377,27 +213,29 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
         case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
-                nn_assert (handshaker->recv_pos == 0);
-                nn_assert (handshaker->recv_len >= NN_WS_HANDSHAKE_TERMSEQ_LEN);
 
+                /*  The timeout for the handshake to get rid of stuck or
+                    DoS-attacking peers. */
                 nn_timer_start (&handshaker->timer, handshaker->timeout);
 
                 switch (handshaker->mode) {
                 case NN_WS_CLIENT:
+
                     /*  Send opening handshake to server. */
-                    nn_assert (handshaker->recv_len <=
-                        sizeof (handshaker->response));
-                    handshaker->state = NN_WS_HANDSHAKE_STATE_CLIENT_SEND;
+                    handshaker->recv_len = NN_WS_REP_MIN_SIZE;
                     nn_ws_handshake_client_request (handshaker);
+                    handshaker->state = NN_WS_HANDSHAKE_STATE_CLIENT_SEND;
                     return;
+
                 case NN_WS_SERVER:
+
                     /*  Begin receiving opening handshake from client. */
-                    nn_assert (handshaker->recv_len <=
-                        sizeof (handshaker->opening_hs));
-                    handshaker->state = NN_WS_HANDSHAKE_STATE_SERVER_RECV;
+                    handshaker->recv_len = NN_WS_REQ_MIN_SIZE;
                     nn_usock_recv (handshaker->usock, handshaker->opening_hs,
                         handshaker->recv_len, NULL);
+                    handshaker->state = NN_WS_HANDSHAKE_STATE_SERVER_RECV;
                     return;
+
                 default:
                     /*  Unexpected mode. */
                     nn_assert (0);
@@ -1153,36 +991,33 @@ static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self)
     return NN_WS_HANDSHAKE_VALID;
 }
 
+/*  Send the initial part of the handshake from client to server. */
 static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 {
-    struct nn_iovec open_request;
+    struct nn_iovec iov;
     size_t encoded_key_len;
     int rc;
+    uint8_t rand_key [16];
+    char encoded_key [25];
 
     /*  Generate random 16-byte key as per RFC 6455 4.1 */
-    uint8_t rand_key [16];
-
-    /*  Known length required to base64 encode above random key plus
-        string NULL terminator. */
-    char encoded_key [24 + 1];
-
     nn_random_generate (rand_key, sizeof (rand_key));
 
+    /*  Convert the key into Base64. */
     rc = nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
-
     encoded_key_len = strlen (encoded_key);
-
     nn_assert (encoded_key_len == sizeof (encoded_key) - 1);
 
     /*  Pre-calculated expected Accept Key value as per
         RFC 6455 section 4.2.2.5.4 (version December 2011). */
     rc = nn_ws_handshake_hash_key (encoded_key, encoded_key_len,
         self->expected_accept_key, sizeof (self->expected_accept_key));
-
     nn_assert (rc == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
-    sprintf (self->opening_hs,
+    /*  Generate the request. */
+    rc = snprintf (self->opening_hs,
+        sizeof (self->opening_hs),
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Upgrade: websocket\r\n"
@@ -1190,13 +1025,16 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
         "Sec-WebSocket-Key: %s\r\n"
         "Sec-WebSocket-Version: 13\r\n"
         "Sec-WebSocket-Protocol: SP-%d\r\n\r\n",
-        self->resource, self->remote_host, encoded_key,
+        self->resource,
+        self->remote_host,
+        encoded_key,
         (int) self->pipebase->sock->socktype->protocol);
+    nn_assert (rc < sizeof (self->opening_hs));
 
-    open_request.iov_len = strlen (self->opening_hs);
-    open_request.iov_base = self->opening_hs;
-
-    nn_usock_send (self->usock, &open_request, 1);
+    /*  Send the request to the peer. */
+    iov.iov_len = strlen (self->opening_hs);
+    iov.iov_base = self->opening_hs;
+    nn_usock_send (self->usock, &iov, 1);
 }
 
 static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
@@ -1304,5 +1142,140 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
         sizeof (hash.state), hashed, hashed_len);
 
     return rc;
+}
+
+/*  Scans for reference token against subject string, optionally ignoring
+    case sensitivity and/or leading spaces in subject. On match, advances
+    the subject pointer to the next non-ignored character past match. Both
+    strings must be NULL terminated to avoid undefined behavior. Returns
+    NN_WS_HANDSHAKE_MATCH on match; else, NN_WS_HANDSHAKE_NOMATCH. */
+static int nn_ws_match_token (const char* token, const char **subj,
+    int case_insensitive, int ignore_leading_sp)
+{
+    const char *pos;
+
+    nn_assert (token && *subj);
+
+    pos = *subj;
+
+    if (ignore_leading_sp) {
+        while (*pos == '\x20' && *pos) {
+            pos++;
+        }
+    }
+
+    if (case_insensitive) {
+        while (*token && *pos) {
+            if (tolower (*token) != tolower (*pos))
+                return NN_WS_HANDSHAKE_NOMATCH;
+            token++;
+            pos++;
+        }
+    }
+    else {
+        while (*token && *pos) {
+            if (*token != *pos)
+                return NN_WS_HANDSHAKE_NOMATCH;
+            token++;
+            pos++;
+        }
+    }
+
+    /*  Encountered end of subject before matching completed. */
+    if (!*pos && *token)
+        return NN_WS_HANDSHAKE_NOMATCH;
+
+    /*  Entire token has been matched. */
+    nn_assert (!*token);
+
+    /*  On success, advance subject position. */
+    *subj = pos;
+
+    return NN_WS_HANDSHAKE_MATCH;
+}
+
+/*  Scans subject string for termination sequence, optionally ignoring
+    leading and/or trailing spaces in subject. On match, advances
+    the subject pointer to the next character past match. Both
+    strings must be NULL terminated to avoid undefined behavior. If the
+    match succeeds, values are stored into *addr and *len. */
+static int nn_ws_match_value (const char* termseq, const char **subj,
+    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
+    size_t* const len)
+{
+    const char *start;
+    const char *end;
+
+    nn_assert (termseq && *subj);
+
+    start = *subj;
+    if (addr)
+        *addr = NULL;
+    if (len)
+        *len = 0;
+
+    /*  Find first occurence of termination sequence. */
+    end = strstr (start, termseq);
+
+    /*  Was a termination sequence found? */
+    if (end) {
+        *subj = end + strlen (termseq);
+    }
+    else {
+        return NN_WS_HANDSHAKE_NOMATCH;
+    }
+        
+    if (ignore_leading_sp) {
+        while (*start == '\x20' && start < end) {
+            start++;
+        }
+    }
+
+    if (addr)
+        *addr = start;
+
+    /*  In this special case, the value was "found", but is just empty or
+        ignored space. */
+    if (start == end)
+        return NN_WS_HANDSHAKE_MATCH;
+
+    if (ignore_trailing_sp) {
+        while (*(end - 1) == '\x20' && start < end) {
+            end--;
+        }
+    }
+
+    if (len)
+        *len = end - start;
+
+    return NN_WS_HANDSHAKE_MATCH;
+}
+
+/*  Compares subject octet stream to expected value, optionally ignoring
+    case sensitivity. Returns non-zero on success, zero on failure. */
+static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
+    size_t subj_len, int case_insensitive)
+{
+    if (strlen (expected) != subj_len)
+        return NN_WS_HANDSHAKE_NOMATCH;
+
+    if (case_insensitive) {
+        while (*expected && *subj) {
+            if (tolower (*expected) != tolower (*subj))
+                return NN_WS_HANDSHAKE_NOMATCH;
+            expected++;
+            subj++;
+        }
+    }
+    else {
+        while (*expected && *subj) {
+            if (*expected != *subj)
+                return NN_WS_HANDSHAKE_NOMATCH;
+            expected++;
+            subj++;
+        }
+    }
+
+    return NN_WS_HANDSHAKE_MATCH;
 }
 

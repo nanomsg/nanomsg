@@ -49,6 +49,12 @@
     headers. */
 #define NN_WS_HANDSHAKE_MAX_SIZE 4096
 
+/*  Size of minimal valid handshare request and reply. This amount of bytes
+    is read initially so that we don't have to read the whole handshake
+    in one-byte-at-a-time manner. */
+#define NN_WS_REQ_MIN_SIZE 150
+#define NN_WS_REP_MIN_SIZE 16
+
 /*  Expected Accept Key length based on RFC 6455 4.2.2.5.4. */
 #define NN_WS_HANDSHAKE_ACCEPT_KEY_LEN 28
 

@@ -131,7 +131,7 @@ struct nn_sws {
     uint8_t inmsg_hdr;
 
     /*  Control message being received at the moment. Because these can be
-        interspersed between fragmented TEXT and BINARY messages, they are
+        interspersed between fragmented payload messages, they are
         stored in this buffer so as not to interrupt the message array. */
     uint8_t inmsg_control [NN_SWS_PAYLOAD_MAX_LENGTH];
 
@@ -152,27 +152,9 @@ struct nn_sws {
     struct nn_fsm_event done;
 };
 
-/*  Scatter/gather array element type forincoming message chunks. Fragmented
-    message frames are reassembled prior to notifying the user. */
-struct msg_chunk {
-    struct nn_list_item item;
-    struct nn_chunkref chunk;
-};
-
-/*  Allocate a new message chunk, append it to message array, and return
-    pointer to its buffer. */
-void *nn_msg_chunk_new (size_t size, struct nn_list *msg_array);
-
-/*  Deallocate a message chunk and remove it from array. */
-void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array);
-
-/*  Deallocate an entire message array. */
-void nn_msg_array_term (struct nn_list *msg_array);
-
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_sws_term (struct nn_sws *self);
-
 int nn_sws_isidle (struct nn_sws *self);
 void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
     const char *resource, const char *host);

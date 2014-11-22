@@ -81,6 +81,20 @@
 #define NN_SWS_CLOSE_ERR_EXTENSION 1010
 #define NN_SWS_CLOSE_ERR_SERVER 1011
 
+/*  Scatter/gather array element type forincoming message chunks. Fragmented
+    message frames are reassembled prior to notifying the user. */
+struct msg_chunk {
+    struct nn_list_item item;
+    struct nn_chunkref chunk;
+};
+
+/*  Local functions. */
+static void *nn_msg_chunk_new (size_t size, struct nn_list *msg_array);
+static void nn_msg_chunk_term (struct msg_chunk *it,
+    struct nn_list *msg_array);
+static void nn_msg_array_term (struct nn_list *msg_array);
+
+
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -171,7 +185,9 @@ void nn_sws_stop (struct nn_sws *self)
     nn_fsm_stop (&self->fsm);
 }
 
-void *nn_msg_chunk_new (size_t size, struct nn_list *msg_array)
+/*  Allocate a new message chunk, append it to message array, and return
+    pointer to its buffer. */
+static void *nn_msg_chunk_new (size_t size, struct nn_list *msg_array)
 {
     struct msg_chunk *self;
 
@@ -186,7 +202,9 @@ void *nn_msg_chunk_new (size_t size, struct nn_list *msg_array)
     return nn_chunkref_data (&self->chunk);
 }
 
-void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array)
+/*  Deallocate a message chunk and remove it from array. */
+static void nn_msg_chunk_term (struct msg_chunk *it,
+    struct nn_list *msg_array)
 {
     nn_chunkref_term (&it->chunk);
     nn_list_erase (msg_array, &it->item);
@@ -194,7 +212,8 @@ void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array)
     nn_free (it);
 }
 
-void nn_msg_array_term (struct nn_list *msg_array)
+/*  Deallocate an entire message array. */
+static void nn_msg_array_term (struct nn_list *msg_array)
 {
     struct nn_list_item *it;
     struct msg_chunk *ch;

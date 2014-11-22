@@ -164,7 +164,6 @@ struct nn_ws_sp_map {
 void nn_ws_handshake_init (struct nn_ws_handshake *self, int src,
     struct nn_fsm *owner);
 void nn_ws_handshake_term (struct nn_ws_handshake *self);
-
 int nn_ws_handshake_isidle (struct nn_ws_handshake *self);
 void nn_ws_handshake_start (struct nn_ws_handshake *self,
     struct nn_usock *usock, struct nn_pipebase *pipebase,

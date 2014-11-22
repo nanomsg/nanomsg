@@ -119,7 +119,7 @@ void nn_sws_init (struct nn_sws *self, int src,
     nn_fsm_init (&self->fsm, nn_sws_handler, nn_sws_shutdown,
         src, self, owner);
     self->state = NN_SWS_STATE_IDLE;
-    nn_ws_handshake_init (&self->handshaker, NN_SWS_SRC_HANDSHAKE, &self->fsm);
+    nn_wshdr_init (&self->wshdr, NN_SWS_SRC_HANDSHAKE, &self->fsm);
     self->usock = NULL;
     self->usock_owner.src = -1;
     self->usock_owner.fsm = NULL;
@@ -142,7 +142,7 @@ void nn_sws_term (struct nn_sws *self)
     nn_msg_term (&self->outmsg);
     nn_msg_array_term (&self->inmsg_array);
     nn_pipebase_term (&self->pipebase);
-    nn_ws_handshake_term (&self->handshaker);
+    nn_wshdr_term (&self->wshdr);
     nn_fsm_term (&self->fsm);
 }
 
@@ -183,11 +183,11 @@ static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         /*  TODO: Consider sending a close code here? */
         nn_pipebase_stop (&sws->pipebase);
-        nn_ws_handshake_stop (&sws->handshaker);
+        nn_wshdr_stop (&sws->wshdr);
         sws->state = NN_SWS_STATE_STOPPING;
     }
     if (nn_slow (sws->state == NN_SWS_STATE_STOPPING)) {
-        if (nn_ws_handshake_isidle (&sws->handshaker)) {
+        if (nn_wshdr_isidle (&sws->wshdr)) {
             nn_usock_swap_owner (sws->usock, &sws->usock_owner);
             sws->usock = NULL;
             sws->usock_owner.src = -1;
@@ -221,7 +221,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
         case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
-                nn_ws_handshake_start (&sws->handshaker, sws->usock,
+                nn_wshdr_start (&sws->wshdr, sws->usock,
                     &sws->pipebase, sws->mode, sws->resource, sws->remote_host);
                 sws->state = NN_SWS_STATE_HANDSHAKE;
                 return;
@@ -241,18 +241,18 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
         case NN_SWS_SRC_HANDSHAKE:
             switch (type) {
-            case NN_WS_HANDSHAKE_OK:
+            case NN_WSHDR_OK:
 
                 /*  Before moving to the active state stop the handshake
                     state machine. */
-                nn_ws_handshake_stop (&sws->handshaker);
+                nn_wshdr_stop (&sws->wshdr);
                 sws->state = NN_SWS_STATE_STOPPING_HANDSHAKE;
                 return;
 
-            case NN_WS_HANDSHAKE_ERROR:
+            case NN_WSHDR_ERROR:
 
                 /* Raise the error and move directly to the DONE state.
-                   ws_handshake object will be stopped later on. */
+                   wshdr object will be stopped later on. */
                 sws->state = NN_SWS_STATE_DONE;
                 nn_fsm_raise (&sws->fsm, &sws->done,
                     NN_SWS_RETURN_CLOSE_HANDSHAKE);
@@ -274,7 +274,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
         case NN_SWS_SRC_HANDSHAKE:
             switch (type) {
-            case NN_WS_HANDSHAKE_STOPPED:
+            case NN_WSHDR_STOPPED:
 
                  /*  Start the pipe. */
                  rc = nn_pipebase_start (&sws->pipebase);

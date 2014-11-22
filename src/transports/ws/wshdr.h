@@ -21,8 +21,8 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_WS_HANDSHAKE_INCLUDED
-#define NN_WS_HANDSHAKE_INCLUDED
+#ifndef NN_WSHDR_INCLUDED
+#define NN_WSHDR_INCLUDED
 
 #include "../../transport.h"
 
@@ -35,9 +35,9 @@
 /*  This state machine exchanges a handshake with a WebSocket client. */
 
 /*  Return codes of this state machine. */
-#define NN_WS_HANDSHAKE_OK 1
-#define NN_WS_HANDSHAKE_ERROR 2
-#define NN_WS_HANDSHAKE_STOPPED 3
+#define NN_WSHDR_OK 1
+#define NN_WSHDR_ERROR 2
+#define NN_WSHDR_STOPPED 3
 
 /*  WebSocket endpoint modes that determine framing of Tx/Rx and
     Opening Handshake HTTP headers. */
@@ -47,18 +47,18 @@
 /*  A ws:// buffer for nanomsg is intentionally smaller than recommendation of
     RFC 7230 3.1.1 since it neither requires nor accepts arbitrarily large
     headers. */
-#define NN_WS_HANDSHAKE_MAX_SIZE 4096
+#define NN_WSHDR_MAX_SIZE 4096
 
 /*  Size of minimal valid handshare request and reply. This amount of bytes
     is read initially so that we don't have to read the whole handshake
     in one-byte-at-a-time manner. */
-#define NN_WS_REQ_MIN_SIZE 150
-#define NN_WS_REP_MIN_SIZE 16
+#define NN_WSHDR_REQ_MIN_SIZE 150
+#define NN_WSHDR_REP_MIN_SIZE 16
 
 /*  Expected Accept Key length based on RFC 6455 4.2.2.5.4. */
-#define NN_WS_HANDSHAKE_ACCEPT_KEY_LEN 28
+#define NN_WSHDR_ACCEPT_KEY_LEN 28
 
-struct nn_ws_handshake {
+struct nn_wshdr {
 
     /*  The state machine. */
     struct nn_fsm fsm;
@@ -88,7 +88,7 @@ struct nn_ws_handshake {
     const char* remote_host;
 
     /*  Opening handshake verbatim from client as per RFC 6455 1.3. */
-    uint8_t opening_hs [NN_WS_HANDSHAKE_MAX_SIZE];
+    uint8_t opening_hs [NN_WSHDR_MAX_SIZE];
 
     /*  Monitor/control the opening recv poll. */
     int retries;
@@ -126,7 +126,7 @@ struct nn_ws_handshake {
     const uint8_t *accept_key;
     size_t accept_key_len;
 
-    char expected_accept_key [NN_WS_HANDSHAKE_ACCEPT_KEY_LEN + 1];
+    char expected_accept_key [NN_WSHDR_ACCEPT_KEY_LEN + 1];
 
     const uint8_t *status_code;
     size_t status_code_len;
@@ -161,14 +161,14 @@ struct nn_ws_sp_map {
     const char* ws_sp;
 };
 
-void nn_ws_handshake_init (struct nn_ws_handshake *self, int src,
+void nn_wshdr_init (struct nn_wshdr *self, int src,
     struct nn_fsm *owner);
-void nn_ws_handshake_term (struct nn_ws_handshake *self);
-int nn_ws_handshake_isidle (struct nn_ws_handshake *self);
-void nn_ws_handshake_start (struct nn_ws_handshake *self,
+void nn_wshdr_term (struct nn_wshdr *self);
+int nn_wshdr_isidle (struct nn_wshdr *self);
+void nn_wshdr_start (struct nn_wshdr *self,
     struct nn_usock *usock, struct nn_pipebase *pipebase,
     int mode, const char *resource, const char *host);
-void nn_ws_handshake_stop (struct nn_ws_handshake *self);
+void nn_wshdr_stop (struct nn_wshdr *self);
 
 #endif
 

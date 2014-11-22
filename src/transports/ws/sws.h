@@ -29,7 +29,7 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
-#include "ws_handshake.h"
+#include "wshdr.h"
 
 #include "../../utils/msg.h"
 #include "../../utils/list.h"
@@ -87,7 +87,7 @@ struct nn_sws {
     struct nn_usock *usock;
 
     /*  Child state machine to do protocol header exchange. */
-    struct nn_ws_handshake handshaker;
+    struct nn_wshdr wshdr;
 
     /*  The original owner of the underlying socket. */
     struct nn_fsm_owner usock_owner;

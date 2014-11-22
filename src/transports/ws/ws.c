@@ -46,27 +46,9 @@
 #include <unistd.h>
 #endif
 
-/*  WebSocket-specific socket options. */
-struct nn_ws_optset {
-    struct nn_optset base;
-    int placeholder;
-};
-
-static void nn_ws_optset_destroy (struct nn_optset *self);
-static int nn_ws_optset_setopt (struct nn_optset *self, int option,
-    const void *optval, size_t optvallen);
-static int nn_ws_optset_getopt (struct nn_optset *self, int option,
-    void *optval, size_t *optvallen);
-static const struct nn_optset_vfptr nn_ws_optset_vfptr = {
-    nn_ws_optset_destroy,
-    nn_ws_optset_setopt,
-    nn_ws_optset_getopt
-};
-
 /*  nn_transport interface. */
 static int nn_ws_bind (void *hint, struct nn_epbase **epbase);
 static int nn_ws_connect (void *hint, struct nn_epbase **epbase);
-static struct nn_optset *nn_ws_optset (void);
 
 static struct nn_transport nn_ws_vfptr = {
     "ws",
@@ -75,7 +57,7 @@ static struct nn_transport nn_ws_vfptr = {
     NULL,
     nn_ws_bind,
     nn_ws_connect,
-    nn_ws_optset,
+    NULL,
     NN_LIST_ITEM_INITIALIZER
 };
 
@@ -89,64 +71,6 @@ static int nn_ws_bind (void *hint, struct nn_epbase **epbase)
 static int nn_ws_connect (void *hint, struct nn_epbase **epbase)
 {
     return nn_cws_create (hint, epbase); 
-}
-
-static struct nn_optset *nn_ws_optset ()
-{
-    struct nn_ws_optset *optset;
-
-    optset = nn_alloc (sizeof (struct nn_ws_optset), "optset (ws)");
-    alloc_assert (optset);
-    optset->base.vfptr = &nn_ws_optset_vfptr;
-
-    /*  Default values for WebSocket options. */
-    optset->placeholder = 1000;
-
-    return &optset->base;   
-}
-
-static void nn_ws_optset_destroy (struct nn_optset *self)
-{
-    struct nn_ws_optset *optset;
-
-    optset = nn_cont (self, struct nn_ws_optset, base);
-    nn_free (optset);
-}
-
-static int nn_ws_optset_setopt (struct nn_optset *self, int option,
-    const void *optval, size_t optvallen)
-{
-    struct nn_ws_optset *optset;
-
-    optset = nn_cont (self, struct nn_ws_optset, base);
-
-    switch (option) {
-    case NN_WS_OPTION_PLACEHOLDER:
-        if (optvallen != sizeof (int))
-            return -EINVAL;
-        optset->placeholder = *(int*) optval;
-        return 0;
-    default:
-        return -ENOPROTOOPT;
-    }
-}
-
-static int nn_ws_optset_getopt (struct nn_optset *self, int option,
-    void *optval, size_t *optvallen)
-{
-    struct nn_ws_optset *optset;
-
-    optset = nn_cont (self, struct nn_ws_optset, base);
-
-    switch (option) {
-    case NN_WS_OPTION_PLACEHOLDER:
-        memcpy (optval, &optset->placeholder,
-            *optvallen < sizeof (int) ? *optvallen : sizeof (int));
-        *optvallen = sizeof (int);
-        return 0;
-    default:
-        return -ENOPROTOOPT;
-    }
 }
 
 /*  Trims the WebSocket header from the message body. */

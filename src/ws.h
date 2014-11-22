@@ -33,9 +33,6 @@ extern "C" {
 
 #define NN_WS -4
 
-/*  Socket options  */
-#define NN_WS_OPTION_PLACEHOLDER 1
-
 /*  WebSocket opcode constants as per RFC 6455 5.2  */
 #define NN_WS_MSG_TYPE_TEXT 0x01
 #define NN_WS_MSG_TYPE_BINARY 0x02

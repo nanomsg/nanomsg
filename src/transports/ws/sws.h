@@ -56,9 +56,6 @@
 #define NN_SWS_FRAME_BITMASK_RSV3 0x10
 #define NN_SWS_FRAME_BITMASK_OPCODE 0x0F
 
-/*  UTF-8 validation. */
-#define NN_SWS_UTF8_MAX_CODEPOINT_LEN 4
-
 /*  The longest possible header frame length. As per RFC 6455 5.2:
     first 2 bytes of initial framing + up to 8 bytes of additional
     extended payload length header + 4 byte mask = 14bytes
@@ -125,13 +122,6 @@ struct nn_sws {
         connection. */
     int continuing;
 
-    /*  When validating continuation frames of UTF-8, it may be necessary
-        to buffer tail-end of the previous frame in order to continue
-        validation in the case that frames are chopped on intra-code point
-        boundaries. */
-    uint8_t utf8_code_pt_fragment [NN_SWS_UTF8_MAX_CODEPOINT_LEN];
-    size_t utf8_code_pt_fragment_len;
-
     /*  Statistics on control frames. */
     int pings_sent;
     int pongs_sent;
@@ -184,12 +174,6 @@ void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array);
 
 /*  Deallocate an entire message array. */
 void nn_msg_array_term (struct nn_list *msg_array);
-
-/*  Returns the length in octets of a single UTF-8 codepoint,
-    NN_SWS_UTF8_FRAGMENT if a codepoint began correctly but the length
-    of the buffer ran out before validating a full code point, or
-    NN_SWS_UTF8_INVALID if an invalid code point is detected. */
-static int nn_utf8_code_point (const uint8_t *buffer, size_t len);
 
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner);

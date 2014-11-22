@@ -94,10 +94,6 @@
 #define NN_SWS_CLOSE_ERR_EXTENSION 1010
 #define NN_SWS_CLOSE_ERR_SERVER 1011
 
-/*  UTF-8 validation. */
-#define NN_SWS_UTF8_INVALID -2
-#define NN_SWS_UTF8_FRAGMENT -1
-
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg);
 static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg);
@@ -123,9 +119,6 @@ static int nn_sws_recv_hdr (struct nn_sws *self);
 static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,
     const uint8_t *mask, size_t mask_len, int *mask_start_pos);
 
-/*  Validates incoming text chunks for UTF-8 compliance as per RFC 3629. */
-static void nn_sws_validate_utf8_chunk (struct nn_sws *self);
-
 /*  Ensures that Close frames received from peer conform to
     RFC 6455 section 7. */
 static void nn_sws_validate_close_handshake (struct nn_sws *self);
@@ -148,10 +141,6 @@ void nn_sws_init (struct nn_sws *self, int src,
     nn_msg_init (&self->outmsg, 0);
 
     self->continuing = 0;
-
-    memset (self->utf8_code_pt_fragment, 0,
-        NN_SWS_UTF8_MAX_CODEPOINT_LEN);
-    self->utf8_code_pt_fragment_len = 0;
 
     self->pings_sent;
     self->pongs_sent;
@@ -235,87 +224,6 @@ void nn_msg_array_term (struct nn_list *msg_array)
     }
 
     nn_list_term (msg_array);
-}
-
-static int nn_utf8_code_point (const uint8_t *buffer, size_t len)
-{
-    /*  The lack of information is considered neither valid nor invalid. */
-    if (!buffer || !len)
-        return NN_SWS_UTF8_FRAGMENT;
-    
-    /*  RFC 3629 section 4 UTF8-1. */
-    if (buffer [0] <= 0x7F)
-        return 1;
-
-    /*  0xC2, or 11000001, is the smallest conceivable multi-octet code
-        point that is not an illegal overlong encoding. */
-    if (buffer [0] < 0xC2)
-        return NN_SWS_UTF8_INVALID;
-
-    /*  Largest 2-octet code point starts with 0xDF (11011111). */
-    if (buffer [0] <= 0xDF) {
-        if (len < 2)
-            return NN_SWS_UTF8_FRAGMENT;
-        /*  Ensure continuation byte in form of 10xxxxxx */
-        else if ((buffer [1] & 0xC0) != 0x80)
-            return NN_SWS_UTF8_INVALID;
-        else
-            return 2;
-    }
-
-    /*  RFC 3629 section 4 UTF8-3, where 0xEF is 11101111. */
-    if (buffer [0] <= 0xEF) {
-        /*  Fragment. */
-        if (len < 2)
-            return NN_SWS_UTF8_FRAGMENT;
-        /*  Illegal overlong sequence detection. */
-        else if (buffer [0] == 0xE0 && (buffer [1] < 0xA0 || buffer [1] == 0x80))
-            return NN_SWS_UTF8_INVALID;
-        /*  Illegal UTF-16 surrogate pair half U+D800 through U+DFFF. */
-        else if (buffer [0] == 0xED && buffer [1] >= 0xA0)
-            return NN_SWS_UTF8_INVALID;
-        /*  Fragment. */
-        else if (len < 3)
-            return NN_SWS_UTF8_FRAGMENT;
-        /*  Ensure continuation bytes 2 and 3 in form of 10xxxxxx */
-        else if ((buffer [1] & 0xC0) != 0x80 || (buffer [2] & 0xC0) != 0x80)
-            return NN_SWS_UTF8_INVALID;
-        else
-            return 3;
-    }
-
-    /*  RFC 3629 section 4 UTF8-4, where 0xF4 is 11110100. Why
-        not 11110111 to follow the pattern? Because UTF-8 encoding
-        stops at 0x10FFFF as per RFC 3629. */
-    if (buffer [0] <= 0xF4) {
-        /*  Fragment. */
-        if (len < 2)
-            return NN_SWS_UTF8_FRAGMENT;
-        /*  Illegal overlong sequence detection. */
-        else if (buffer [0] == 0xF0 && buffer [1] < 0x90)
-            return NN_SWS_UTF8_INVALID;
-        /*  Illegal code point greater than U+10FFFF. */
-        else if (buffer [0] == 0xF4 && buffer [1] >= 0x90)
-            return NN_SWS_UTF8_INVALID;
-        /*  Fragment. */
-        else if (len < 4)
-            return NN_SWS_UTF8_FRAGMENT;
-        /*  Ensure continuation bytes 2, 3, and 4 in form of 10xxxxxx */
-        else if ((buffer [1] & 0xC0) != 0x80 ||
-            (buffer [2] & 0xC0) != 0x80 ||
-            (buffer [3] & 0xC0) != 0x80)
-            return NN_SWS_UTF8_INVALID;
-        else
-            return 4;
-    }
-
-    /*  UTF-8 encoding stops at U+10FFFF and only defines up to 4-octet
-        code point sequences. */
-    if (buffer [0] >= 0xF5)
-        return NN_SWS_UTF8_INVALID;
-
-    /*  Algorithm error; a case above should have been satisfied. */
-    nn_assert (0);
 }
 
 static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,
@@ -583,144 +491,13 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     }
 }
 
-static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
-{
-    uint8_t *pos;
-    int code_point_len;
-    int len;
-
-    len = self->inmsg_current_chunk_len;
-    pos = self->inmsg_current_chunk_buf;
-
-    /*  For chunked transfers, it's possible that a previous chunk was cut
-        intra-code point. That partially-validated code point is reassembled
-        with the beginning of the current chunk and checked. */
-    if (self->utf8_code_pt_fragment_len) {
-
-        nn_assert (self->utf8_code_pt_fragment_len <
-            NN_SWS_UTF8_MAX_CODEPOINT_LEN);
-
-        /*  Keep adding octets from fresh buffer to previous code point
-            fragment to check for validity. */
-        while (len > 0) {
-            self->utf8_code_pt_fragment [self->utf8_code_pt_fragment_len] = *pos;
-            self->utf8_code_pt_fragment_len++;
-            pos++;
-            len--;
-
-            code_point_len = nn_utf8_code_point (self->utf8_code_pt_fragment,
-                self->utf8_code_pt_fragment_len);
-            
-            if (code_point_len > 0) {
-                /*  Valid code point found; continue validating. */
-                break;
-            }
-            else if (code_point_len == NN_SWS_UTF8_INVALID) {
-                nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_INVALID_FRAME,
-                    "Invalid UTF-8 code point split on previous frame.");
-                return;
-            }
-            else if (code_point_len == NN_SWS_UTF8_FRAGMENT) {
-                if (self->is_final_frame) {
-                    nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_INVALID_FRAME,
-                        "Truncated UTF-8 payload with invalid code point.");
-                    return;
-                }
-                else {
-                    /*  This chunk is well-formed; now recv the next chunk. */
-                    nn_sws_recv_hdr (self);
-                    return;
-                }
-            }
-        }
-    }
-
-    if (self->utf8_code_pt_fragment_len >= NN_SWS_UTF8_MAX_CODEPOINT_LEN)
-        nn_assert (0);
-
-    while (len > 0) {
-
-        code_point_len = nn_utf8_code_point (pos, len);
-
-        if (code_point_len > 0) {
-            /*  Valid code point found; continue validating. */
-            pos += code_point_len;
-            len -= code_point_len;
-            nn_assert (len >= 0);
-            continue;
-        }
-        else if (code_point_len == NN_SWS_UTF8_INVALID) {
-            self->utf8_code_pt_fragment_len = 0;
-            memset (self->utf8_code_pt_fragment, 0,
-                NN_SWS_UTF8_MAX_CODEPOINT_LEN);
-            nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_INVALID_FRAME,
-                "Invalid UTF-8 code point in payload.");
-            return;
-        }
-        else if (code_point_len == NN_SWS_UTF8_FRAGMENT) {
-            nn_assert (len < NN_SWS_UTF8_MAX_CODEPOINT_LEN);
-            self->utf8_code_pt_fragment_len = len;
-            memcpy (self->utf8_code_pt_fragment, pos, len);
-            if (self->is_final_frame) {
-                nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_INVALID_FRAME,
-                    "Truncated UTF-8 payload with invalid code point.");
-            }
-            else {
-                /*  Previous frame ended in the middle of a code point;
-                    receive more. */
-                nn_sws_recv_hdr (self);
-            }
-            return;
-        }
-    }
-
-    /*  Entire buffer is well-formed. */
-    nn_assert (len == 0);
-
-    self->utf8_code_pt_fragment_len = 0;
-    memset (self->utf8_code_pt_fragment, 0, NN_SWS_UTF8_MAX_CODEPOINT_LEN);
-
-    if (self->is_final_frame) {
-        self->instate = NN_SWS_INSTATE_RECVD_CHUNKED;
-        nn_pipebase_received (&self->pipebase);
-    }
-    else {
-        nn_sws_recv_hdr (self);
-    }
-
-    return;
-}
-
 static void nn_sws_validate_close_handshake (struct nn_sws *self)
 {
-    uint8_t *pos;
     uint16_t close_code;
-    int code_point_len;
-    int len;
-    
-    len = self->inmsg_current_chunk_len - NN_SWS_CLOSE_CODE_LEN;
-    pos = self->inmsg_current_chunk_buf + NN_SWS_CLOSE_CODE_LEN;
 
-    /*  As per RFC 6455 7.1.6, the Close Reason following the Close Code
-        must be well-formed UTF-8. */
-    while (len > 0) {
-        code_point_len = nn_utf8_code_point (pos, len);
-
-        if (code_point_len > 0) {
-            len -= code_point_len;
-            pos += code_point_len;
-            continue;
-        }
-        else {
-            /*  RFC 6455 7.1.6 */
-            nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,
-                "Invalid UTF-8 sent as Close Reason.");
-            return;
-        }
-    }
-
-    /*  Entire Close Reason is well-formed UTF-8 (or empty) */
-    nn_assert (len == 0);
+    /*  TODO: As per RFC 6455 7.1.6, the Close Reason following the Close Code
+        must be well-formed UTF-8. Can we be liberal here (as per Postel
+        principle) and not check the validity of the UTF-8 here? */
 
     close_code = nn_gets (self->inmsg_current_chunk_buf);
 
@@ -1384,8 +1161,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     switch (sws->opcode) {
 
                     case NN_WS_OPCODE_TEXT:
-                        nn_sws_validate_utf8_chunk (sws);
-                        return;
+                        nn_assert (0);
 
                     case NN_WS_OPCODE_BINARY:
                         if (sws->is_final_frame) {
@@ -1398,13 +1174,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         return;
 
                     case NN_WS_OPCODE_FRAGMENT:
-                        /*  Must check original opcode to see if this fragment
-                            needs UTF-8 validation. */
-                        if ((sws->inmsg_hdr & NN_SWS_FRAME_BITMASK_OPCODE) ==
-                            NN_WS_OPCODE_TEXT) {
-                            nn_sws_validate_utf8_chunk (sws);
-                        }
-                        else if (sws->is_final_frame) {
+                        if (sws->is_final_frame) {
                             sws->instate = NN_SWS_INSTATE_RECVD_CHUNKED;
                             nn_pipebase_received (&sws->pipebase);
                         }

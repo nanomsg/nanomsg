@@ -62,21 +62,8 @@
 
 /*  WebSocket opcode constants as per RFC 6455 5.2. */
 #define NN_WS_OPCODE_FRAGMENT 0x00
-#define NN_WS_OPCODE_TEXT 0x01
 #define NN_WS_OPCODE_BINARY 0x02
-#define NN_WS_OPCODE_UNUSED3 0x03
-#define NN_WS_OPCODE_UNUSED4 0x04
-#define NN_WS_OPCODE_UNUSED5 0x05
-#define NN_WS_OPCODE_UNUSED6 0x06
-#define NN_WS_OPCODE_UNUSED7 0x07
 #define NN_WS_OPCODE_CLOSE 0x08
-#define NN_WS_OPCODE_PING 0x09
-#define NN_WS_OPCODE_PONG 0x0A
-#define NN_WS_OPCODE_UNUSEDB 0x0B
-#define NN_WS_OPCODE_UNUSEDC 0x0C
-#define NN_WS_OPCODE_UNUSEDD 0x0D
-#define NN_WS_OPCODE_UNUSEDE 0x0E
-#define NN_WS_OPCODE_UNUSEDF 0x0F
 
 /*  WebSocket protocol header bit masks as per RFC 6455. */
 #define NN_SWS_FRAME_BITMASK_MASKED 0x80
@@ -141,11 +128,6 @@ void nn_sws_init (struct nn_sws *self, int src,
     nn_msg_init (&self->outmsg, 0);
 
     self->continuing = 0;
-
-    self->pings_sent;
-    self->pongs_sent;
-    self->pings_received;
-    self->pongs_received;
 
     nn_fsm_event_init (&self->done);
 }
@@ -840,8 +822,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                     switch (sws->opcode) {
 
-                    case NN_WS_OPCODE_TEXT:
-                        /*  Fall thru; TEXT and BINARY handled alike. */
                     case NN_WS_OPCODE_BINARY:
 
                         sws->is_control_frame = 0;
@@ -904,68 +884,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                                 nn_pipebase_received (&sws->pipebase);
                                 return;
                             }
-                        }
-                        /*  Continue to receive extended header+payload. */
-                        break;
-
-                    case NN_WS_OPCODE_PING:
-                        sws->is_control_frame = 1;
-                        sws->pings_received++;
-                        if (sws->payload_ctl > NN_SWS_PAYLOAD_MAX_LENGTH) {
-                            /*  As per RFC 6455 section 5.4, large payloads on
-                                control frames is not allowed, and on receipt the
-                                endpoint MUST close connection immediately. */
-                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
-                                "Control frame payload exceeds allowable length.");
-                            return;
-                        }
-                        if (!sws->is_final_frame) {
-                            /*  As per RFC 6455 section 5.4, fragmentation of
-                                control frames is not allowed; on receipt the
-                                endpoint MUST close connection immediately. */
-                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
-                                "Cannot fragment control message (FIN=0).");
-                            return;
-                        }
-
-                        if (sws->ext_hdr_len == 0 && sws->payload_ctl == 0) {
-                            /*  Special case when there is no payload,
-                                mask, or additional frames. */
-                            sws->inmsg_current_chunk_len = 0;
-                            sws->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-                            nn_pipebase_received (&sws->pipebase);
-                            return;
-                        }
-                        /*  Continue to receive extended header+payload. */
-                        break;
-                    
-                    case NN_WS_OPCODE_PONG:
-                        sws->is_control_frame = 1;
-                        sws->pongs_received++;
-                        if (sws->payload_ctl > NN_SWS_PAYLOAD_MAX_LENGTH) {
-                            /*  As per RFC 6455 section 5.4, large payloads on
-                                control frames is not allowed, and on receipt the
-                                endpoint MUST close connection immediately. */
-                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
-                                "Control frame payload exceeds allowable length.");
-                            return;
-                        }
-                        if (!sws->is_final_frame) {
-                            /*  As per RFC 6455 section 5.4, fragmentation of
-                                control frames is not allowed; on receipt the
-                                endpoint MUST close connection immediately. */
-                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
-                                "Cannot fragment control message (FIN=0).");
-                            return;
-                        }
-
-                        if (sws->ext_hdr_len == 0 && sws->payload_ctl == 0) {
-                            /*  Special case when there is no payload,
-                                mask, or additional frames. */
-                            sws->inmsg_current_chunk_len = 0;
-                            sws->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-                            nn_pipebase_received (&sws->pipebase);
-                            return;
                         }
                         /*  Continue to receive extended header+payload. */
                         break;
@@ -1160,9 +1078,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                     switch (sws->opcode) {
 
-                    case NN_WS_OPCODE_TEXT:
-                        nn_assert (0);
-
                     case NN_WS_OPCODE_BINARY:
                         if (sws->is_final_frame) {
                             sws->instate = NN_SWS_INSTATE_RECVD_CHUNKED;
@@ -1181,16 +1096,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         else {
                             nn_sws_recv_hdr (sws);
                         }
-                        return;
-
-                    case NN_WS_OPCODE_PING:
-                        sws->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-                        nn_pipebase_received (&sws->pipebase);
-                        return;
-
-                    case NN_WS_OPCODE_PONG:
-                        sws->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-                        nn_pipebase_received (&sws->pipebase);
                         return;
 
                     case NN_WS_OPCODE_CLOSE:

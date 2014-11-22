@@ -122,12 +122,6 @@ struct nn_sws {
         connection. */
     int continuing;
 
-    /*  Statistics on control frames. */
-    int pings_sent;
-    int pongs_sent;
-    int pings_received;
-    int pongs_received;
-
     /*  Fragments of message being received at the moment. */
     struct nn_list inmsg_array;
     uint8_t *inmsg_current_chunk_buf;

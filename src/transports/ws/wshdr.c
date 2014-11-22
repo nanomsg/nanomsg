@@ -107,7 +107,7 @@ static int nn_wshdr_parse_server_response (struct nn_wshdr *self);
 static int nn_wshdr_hash_key (const uint8_t *key, size_t key_len,
     uint8_t *hashed, size_t hashed_len);
 static int nn_ws_match_token (const char* token, const char **subj,
-    int case_insensitive, int ignore_leading_sp);
+    int case_insensitive);
 static int nn_ws_match_value (const char* termseq, const char **subj,
     int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
     size_t* const len);
@@ -642,6 +642,7 @@ static void nn_wshdr_handler (struct nn_fsm *self, int src, int type,
 /*  State machine actions.                                                    */
 /******************************************************************************/
 
+/*  Get the state machine into the terminal state. */
 static void nn_wshdr_leave (struct nn_wshdr *self, int rc)
 {
     nn_usock_swap_owner (self->usock, &self->usock_owner);
@@ -704,7 +705,7 @@ static int nn_wshdr_parse_client_opening (struct nn_wshdr *self)
 
     /*  RFC 7230 3.1.1 Request Line: HTTP Method
         Note requirement of one space and case sensitivity. */
-    if (!nn_ws_match_token ("GET\x20", &pos, 0, 0))
+    if (!nn_ws_match_token ("GET\x20", &pos, 0))
         return NN_WSHDR_RECV_MORE;
 
     /*  RFC 7230 3.1.1 Request Line: Requested Resource. */
@@ -712,56 +713,56 @@ static int nn_wshdr_parse_client_opening (struct nn_wshdr *self)
         return NN_WSHDR_RECV_MORE;
 
     /*  RFC 7230 3.1.1 Request Line: HTTP version. Note case sensitivity. */
-    if (!nn_ws_match_token ("HTTP/1.1", &pos, 0, 0))
+    if (!nn_ws_match_token ("HTTP/1.1", &pos, 0))
         return NN_WSHDR_RECV_MORE;
-    if (!nn_ws_match_token (NN_WSHDR_CRLF, &pos, 0, 0))
+    if (!nn_ws_match_token (NN_WSHDR_CRLF, &pos, 0))
         return NN_WSHDR_RECV_MORE;
 
     /*  It's expected the current position is now at the first
         header field. Match them one by one. */
     while (strlen (pos))
     {
-        if (nn_ws_match_token ("Host:", &pos, 1, 0)) {
+        if (nn_ws_match_token ("Host:", &pos, 1)) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->host, &self->host_len);
         }
         else if (nn_ws_match_token ("Origin:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->origin, &self->origin_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Key:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->key, &self->key_len);
         }
         else if (nn_ws_match_token ("Upgrade:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->upgrade, &self->upgrade_len);
         }
         else if (nn_ws_match_token ("Connection:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->conn, &self->conn_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Version:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->version, &self->version_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Protocol:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->protocol, &self->protocol_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Extensions:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->extensions, &self->extensions_len);
         }
         else if (nn_ws_match_token (NN_WSHDR_CRLF,
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             /*  Exit loop since all headers are parsed. */
             break;
         }
@@ -890,7 +891,7 @@ static int nn_wshdr_parse_server_response (struct nn_wshdr *self)
     self->protocol_len = 0;
 
     /*  RFC 7230 3.1.2 Status Line: HTTP Version. */
-    if (!nn_ws_match_token ("HTTP/1.1\x20", &pos, 0, 0))
+    if (!nn_ws_match_token ("HTTP/1.1\x20", &pos, 0))
         return NN_WSHDR_RECV_MORE;
 
     /*  RFC 7230 3.1.2 Status Line: Status Code. */
@@ -907,42 +908,42 @@ static int nn_wshdr_parse_server_response (struct nn_wshdr *self)
         header field. Match them one by one. */
     while (strlen (pos))
     {
-        if (nn_ws_match_token ("Server:", &pos, 1, 0)) {
+        if (nn_ws_match_token ("Server:", &pos, 1)) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->server, &self->server_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Accept:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->accept_key, &self->accept_key_len);
         }
         else if (nn_ws_match_token ("Upgrade:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->upgrade, &self->upgrade_len);
         }
         else if (nn_ws_match_token ("Connection:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->conn, &self->conn_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Version-Server:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->version, &self->version_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Protocol-Server:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->protocol, &self->protocol_len);
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Extensions:",
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             rc = nn_ws_match_value (NN_WSHDR_CRLF, &pos, 1, 1,
                 &self->extensions, &self->extensions_len);
         }
         else if (nn_ws_match_token (NN_WSHDR_CRLF,
-            &pos, 1, 0) == NN_WSHDR_MATCH) {
+            &pos, 1) == NN_WSHDR_MATCH) {
             /*  Exit loop since all headers are parsed. */
             break;
         }
@@ -1000,9 +1001,9 @@ static int nn_wshdr_parse_server_response (struct nn_wshdr *self)
 /*  Send the initial part of the handshake from client to server. */
 static void nn_wshdr_client_request (struct nn_wshdr *self)
 {
+    int rc;
     struct nn_iovec iov;
     size_t encoded_key_len;
-    int rc;
     uint8_t rand_key [16];
     char encoded_key [25];
 
@@ -1022,7 +1023,8 @@ static void nn_wshdr_client_request (struct nn_wshdr *self)
     nn_assert (rc == NN_WSHDR_ACCEPT_KEY_LEN);
 
     /*  Generate the request. */
-    rc = snprintf (self->opening_hs,
+    iov.iov_base = self->opening_hs;
+    iov.iov_len = snprintf (self->opening_hs,
         sizeof (self->opening_hs),
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
@@ -1035,51 +1037,45 @@ static void nn_wshdr_client_request (struct nn_wshdr *self)
         self->remote_host,
         encoded_key,
         (int) self->pipebase->sock->socktype->protocol);
-    nn_assert (rc < sizeof (self->opening_hs));
+    nn_assert (iov.iov_len < sizeof (self->opening_hs));
 
     /*  Send the request to the peer. */
-    iov.iov_len = strlen (self->opening_hs);
-    iov.iov_base = self->opening_hs;
     nn_usock_send (self->usock, &iov, 1);
 }
 
 static void nn_wshdr_server_reply (struct nn_wshdr *self)
 {
-    struct nn_iovec response;
+    struct nn_iovec iov;
     char *code;
-    char *version;
-    char *protocol;
     int rc;
 
     /*  Allow room for NULL terminator. */
     char accept_key [NN_WSHDR_ACCEPT_KEY_LEN + 1];
 
-    memset (self->response, 0, sizeof (self->response));
+    
 
     if (self->response_code == NN_WSHDR_RESPONSE_OK) {
+
         /*  Upgrade connection as per RFC 6455 section 4.2.2. */
         
         rc = nn_wshdr_hash_key (self->key, self->key_len,
             accept_key, sizeof (accept_key));
-
         nn_assert (strlen (accept_key) == NN_WSHDR_ACCEPT_KEY_LEN);
 
-        protocol = nn_alloc (self->protocol_len + 1, "WebSocket protocol");
-        alloc_assert (protocol);
-        strncpy (protocol, self->protocol, self->protocol_len);
-        protocol [self->protocol_len] = '\0';
-
-        sprintf (self->response,
+        iov.iov_base = &self->response;
+        iov.iov_len = snprintf (self->response,
+            sizeof (self->response),
             "HTTP/1.1 101 Switching Protocols\r\n"
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"
             "Sec-WebSocket-Accept: %s\r\n"
-            "Sec-WebSocket-Protocol: %s\r\n\r\n",
-            accept_key, protocol);
-
-        nn_free (protocol);
+            "Sec-WebSocket-Protocol: %.*s\r\n\r\n",
+            accept_key,
+            (int) self->protocol_len, self->protocol);
+        nn_assert (iov.iov_len < sizeof (self->response));
     }
     else {
+
         /*  Fail the connection with a helpful hint. */
         switch (self->response_code) {
         case NN_WSHDR_RESPONSE_TOO_BIG:
@@ -1106,26 +1102,19 @@ static void nn_wshdr_server_reply (struct nn_wshdr *self)
             break;
         }
 
-        version = nn_alloc (self->version_len + 1, "WebSocket version");
-        alloc_assert (version);
-        strncpy (version, self->version, self->version_len);
-        version [self->version_len] = '\0';
-
         /*  Fail connection as per RFC 6455 4.4. */
-        sprintf (self->response,
+        iov.iov_base = &self->response;
+        iov.iov_len = snprintf (self->response,
+            sizeof (self->response),
             "HTTP/1.1 %s\r\n"
-            "Sec-WebSocket-Version: %s\r\n",
-            code, version);
-
-        nn_free (version);
+            "Sec-WebSocket-Version: %.*s\r\n",
+            code,
+            (int) self->version_len, self->version);
+        nn_assert (iov.iov_len < sizeof (self->response));
     }
 
-    response.iov_len = strlen (self->response);
-    response.iov_base = &self->response;
-
-    nn_usock_send (self->usock, &response, 1);
-
-    return;
+    /*  Send the reply. */
+    nn_usock_send (self->usock, &iov, 1);
 }
 
 static int nn_wshdr_hash_key (const uint8_t *key, size_t key_len,
@@ -1151,24 +1140,18 @@ static int nn_wshdr_hash_key (const uint8_t *key, size_t key_len,
 }
 
 /*  Scans for reference token against subject string, optionally ignoring
-    case sensitivity and/or leading spaces in subject. On match, advances
-    the subject pointer to the next non-ignored character past match. Both
-    strings must be NULL terminated to avoid undefined behavior. Returns
-    NN_WSHDR_MATCH on match; else, NN_WSHDR_NOMATCH. */
+    case sensitivity. On match, advances the subject pointer to the next
+    non-ignored character past match. Both strings must be NULL terminated to
+    avoid undefined behavior. Returns NN_WSHDR_MATCH on match; else,
+    NN_WSHDR_NOMATCH. */
 static int nn_ws_match_token (const char* token, const char **subj,
-    int case_insensitive, int ignore_leading_sp)
+    int case_insensitive)
 {
     const char *pos;
 
     nn_assert (token && *subj);
 
     pos = *subj;
-
-    if (ignore_leading_sp) {
-        while (*pos == '\x20' && *pos) {
-            pos++;
-        }
-    }
 
     if (case_insensitive) {
         while (*token && *pos) {

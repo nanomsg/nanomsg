@@ -62,16 +62,16 @@
 
 /*  WebSocket opcode constants as per RFC 6455 5.2. */
 #define NN_WS_OPCODE_FRAGMENT 0x00
-#define NN_WS_OPCODE_TEXT NN_WS_MSG_TYPE_TEXT
-#define NN_WS_OPCODE_BINARY NN_WS_MSG_TYPE_BINARY
+#define NN_WS_OPCODE_TEXT 0x01
+#define NN_WS_OPCODE_BINARY 0x02
 #define NN_WS_OPCODE_UNUSED3 0x03
 #define NN_WS_OPCODE_UNUSED4 0x04
 #define NN_WS_OPCODE_UNUSED5 0x05
 #define NN_WS_OPCODE_UNUSED6 0x06
 #define NN_WS_OPCODE_UNUSED7 0x07
-#define NN_WS_OPCODE_CLOSE NN_WS_MSG_TYPE_CLOSE
-#define NN_WS_OPCODE_PING NN_WS_MSG_TYPE_PING
-#define NN_WS_OPCODE_PONG NN_WS_MSG_TYPE_PONG
+#define NN_WS_OPCODE_CLOSE 0x08
+#define NN_WS_OPCODE_PING 0x09
+#define NN_WS_OPCODE_PONG 0x0A
 #define NN_WS_OPCODE_UNUSEDB 0x0B
 #define NN_WS_OPCODE_UNUSEDC 0x0C
 #define NN_WS_OPCODE_UNUSEDD 0x0D
@@ -391,7 +391,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
         /*  Inform user this connection has been failed. */
         nn_msg_init (msg, 1);
-        *(uint8_t *) nn_chunkref_data (&msg->body) = NN_WS_MSG_TYPE_GONE |
+        *(uint8_t *) nn_chunkref_data (&msg->body) = 0x7f |
             NN_SWS_FRAME_BITMASK_FIN;
 
         iov [0].iov_base = sws->fail_msg;
@@ -1304,3 +1304,4 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (sws->state, src, type);
     }
 }
+

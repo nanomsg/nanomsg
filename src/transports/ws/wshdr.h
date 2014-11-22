@@ -49,12 +49,6 @@
     headers. */
 #define NN_WSHDR_MAX_SIZE 4096
 
-/*  Size of minimal valid handshare request and reply. This amount of bytes
-    is read initially so that we don't have to read the whole handshake
-    in one-byte-at-a-time manner. */
-#define NN_WSHDR_REQ_MIN_SIZE 150
-#define NN_WSHDR_REP_MIN_SIZE 16
-
 /*  Expected Accept Key length based on RFC 6455 4.2.2.5.4. */
 #define NN_WSHDR_ACCEPT_KEY_LEN 28
 
@@ -148,17 +142,6 @@ struct nn_wshdr {
 
     /*  Event fired when the state machine ends. */
     struct nn_fsm_event done;
-};
-
-/*  Structure that maps scalability protocol to corresponding
-    WebSocket header values. */
-struct nn_ws_sp_map {
-
-    /*  Scalability Protocol ID... */
-    int sp;
-
-    /*  ... and corresponding WebSocket header field value. */
-    const char* ws_sp;
 };
 
 void nn_wshdr_init (struct nn_wshdr *self, int src,

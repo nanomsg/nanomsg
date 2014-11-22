@@ -86,6 +86,12 @@
 #define NN_WSHDR_TERMSEQ "\r\n\r\n"
 #define NN_WSHDR_TERMSEQ_LEN 4
 
+/*  Size of minimal valid handshare request and reply. This amount of bytes
+    is read initially so that we don't have to read the whole handshake
+    in one-byte-at-a-time manner. */
+#define NN_WSHDR_REQ_MIN_SIZE 150
+#define NN_WSHDR_REP_MIN_SIZE 16
+
 /*  Private functions. */
 static void nn_wshdr_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);

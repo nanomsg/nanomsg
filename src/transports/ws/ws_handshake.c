@@ -42,39 +42,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/*****************************************************************************/
-/***  BEGIN undesirable dependency *******************************************/
-/*****************************************************************************/
-/*  TODO: A transport should be SP agnostic; alas, these includes are        */
-/*        required for the map. Ideally, this map would live in another      */
-/*        abstraction layer; perhaps a "registry" of Scalability Protocols?  */
-/*****************************************************************************/
-#include "../../pair.h"
-#include "../../reqrep.h"
-#include "../../pubsub.h"
-#include "../../survey.h"
-#include "../../pipeline.h"
-#include "../../bus.h"
-
-static const struct nn_ws_sp_map NN_WS_HANDSHAKE_SP_MAP[] = {
-        { NN_PAIR, "x-nanomsg-pair" },
-        { NN_REQ, "x-nanomsg-req" },
-        { NN_REP, "x-nanomsg-rep" },
-        { NN_PUB, "x-nanomsg-pub" },
-        { NN_SUB, "x-nanomsg-sub" },
-        { NN_SURVEYOR, "x-nanomsg-surveyor" },
-        { NN_RESPONDENT, "x-nanomsg-respondent" },
-        { NN_PUSH, "x-nanomsg-push" },
-        { NN_PULL, "x-nanomsg-pull" },
-        { NN_BUS, "x-nanomsg-bus" }
-};
-
-const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /
-    sizeof (NN_WS_HANDSHAKE_SP_MAP [0]);
-/*****************************************************************************/
-/***  END undesirable dependency *********************************************/
-/*****************************************************************************/
-
 /*  State machine finite states. */
 #define NN_WS_HANDSHAKE_STATE_IDLE 1
 #define NN_WS_HANDSHAKE_STATE_SERVER_RECV 2
@@ -847,6 +814,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     int rc;
     const char *pos;
     unsigned i;
+    int id;
 
     /*  Guarantee that a NULL terminator exists to enable treating this
         recv buffer like a string. */
@@ -970,7 +938,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
 
     /*  These header fields are required as per RFC 6455 section 4.1. */
     if (!self->host || !self->upgrade || !self->conn ||
-        !self->key || !self->version) {
+        !self->key || !self->version || !self->protocol) {
         self->response_code = NN_WS_HANDSHAKE_RESPONSE_WSPROTO;
         return NN_WS_HANDSHAKE_INVALID;
     }
@@ -998,44 +966,34 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
 
     /*  At this point, client meets RFC 6455 compliance for opening handshake.
         Now it's time to check nanomsg-imposed required handshake values. */
-    if (self->protocol) {
-        /*  Ensure the client SP is a compatible socket type. */
-        for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
-            if (nn_ws_validate_value (NN_WS_HANDSHAKE_SP_MAP [i].ws_sp,
-                self->protocol, self->protocol_len, 1)) {
-                if (nn_pipebase_ispeer (self->pipebase,
-                    NN_WS_HANDSHAKE_SP_MAP [i].sp)) {
-                    self->response_code = NN_WS_HANDSHAKE_RESPONSE_OK;
-                    return NN_WS_HANDSHAKE_VALID;
-                }
-                else {
-                    self->response_code = NN_WS_HANDSHAKE_RESPONSE_NOTPEER;
-                    return NN_WS_HANDSHAKE_INVALID;
-                }
-                break;
-            }
-        }
 
-        self->response_code = NN_WS_HANDSHAKE_RESPONSE_UNKNOWNTYPE;
+    /*  Valid protocol values start with SP- prefix. */
+    if (self->protocol_len < 4 || memcmp (self->protocol, "SP-", 3) != 0)
+        return NN_WS_HANDSHAKE_INVALID;
+
+    /*  After the prefix there should be only decimal digits.
+        Compute the protocol ID along the way. */
+    id = 0;
+    for (i = 3; i != self->protocol_len; ++i) {
+        if (self->protocol [i] < '0' || self->protocol [i] > '9')
+            return NN_WS_HANDSHAKE_INVALID;
+        id *= 10;
+        id += self->protocol [i] - '0';
+    }
+
+    /*  No leading zeroes. */
+    if (self->protocol_len > 4 && self->protocol [3] == '0')
+        return NN_WS_HANDSHAKE_INVALID;
+
+    /*  Check whether the peer speaks compatible SP protocol. */
+    if (!nn_pipebase_ispeer (self->pipebase, id)) {
+        self->response_code = NN_WS_HANDSHAKE_RESPONSE_NOTPEER;
         return NN_WS_HANDSHAKE_INVALID;
     }
-    else {
-        /*  Be permissive and generous here, assuming that if a protocol is
-            not explicitly declared, PAIR is presumed. This enables
-            interoperability with non-nanomsg remote peers, nominally by
-            making the local socket PAIR type. For any other local
-            socket type, we expect connection to be rejected as
-            incompatible if the header is not specified. */
 
-        if (nn_pipebase_ispeer (self->pipebase, NN_PAIR)) {
-            self->response_code = NN_WS_HANDSHAKE_RESPONSE_OK;
-            return NN_WS_HANDSHAKE_VALID;
-        }
-        else {
-            self->response_code = NN_WS_HANDSHAKE_RESPONSE_NOTPEER;
-            return NN_WS_HANDSHAKE_INVALID;
-        }
-    }
+    /*  Done. Handshake is valid. */
+    self->response_code = NN_WS_HANDSHAKE_RESPONSE_OK;
+    return NN_WS_HANDSHAKE_VALID;
 }
 
 static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self)
@@ -1195,7 +1153,6 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
     struct nn_iovec open_request;
     size_t encoded_key_len;
     int rc;
-    unsigned i;
 
     /*  Generate random 16-byte key as per RFC 6455 4.1 */
     uint8_t rand_key [16];
@@ -1220,17 +1177,6 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     nn_assert (rc == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
-    /*  Lookup SP header value. */
-    for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
-        if (NN_WS_HANDSHAKE_SP_MAP [i].sp ==
-            self->pipebase->sock->socktype->protocol) {
-            break;
-        }
-    }
-
-    /*  Guarantee that the socket type was found in the map. */
-    nn_assert (i < NN_WS_HANDSHAKE_SP_MAP_LEN);
-
     sprintf (self->opening_hs,
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
@@ -1238,9 +1184,9 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
         "Connection: Upgrade\r\n"
         "Sec-WebSocket-Key: %s\r\n"
         "Sec-WebSocket-Version: 13\r\n"
-        "Sec-WebSocket-Protocol: %s\r\n\r\n",
+        "Sec-WebSocket-Protocol: SP-%d\r\n\r\n",
         self->resource, self->remote_host, encoded_key,
-        NN_WS_HANDSHAKE_SP_MAP[i].ws_sp);
+        (int) self->pipebase->sock->socktype->protocol);
 
     open_request.iov_len = strlen (self->opening_hs);
     open_request.iov_base = self->opening_hs;

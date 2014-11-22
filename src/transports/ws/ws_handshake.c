@@ -81,6 +81,11 @@
 #define NN_WS_HANDSHAKE_RESPONSE_NOTPEER 6
 #define NN_WS_HANDSHAKE_RESPONSE_UNKNOWNTYPE 7
 
+/*  WebSocket protocol tokens as per RFC 6455. */
+#define NN_WS_HANDSHAKE_CRLF "\r\n"
+#define NN_WS_HANDSHAKE_TERMSEQ "\r\n\r\n"
+#define NN_WS_HANDSHAKE_TERMSEQ_LEN 4
+
 /*  Private functions. */
 static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
@@ -1285,14 +1290,15 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
     int rc;
     unsigned i;
     struct nn_sha1 hash;
+    const char *magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
     nn_sha1_init (&hash);
 
     for (i = 0; i < key_len; i++)
         nn_sha1_hashbyte (&hash, key [i]);
 
-    for (i = 0; i < strlen (NN_WS_HANDSHAKE_MAGIC_GUID); i++)
-        nn_sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
+    for (i = 0; i < 36; i++)
+        nn_sha1_hashbyte (&hash, magic [i]);
 
     rc = nn_base64_encode (nn_sha1_result (&hash),
         sizeof (hash.state), hashed, hashed_len);

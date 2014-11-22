@@ -49,12 +49,6 @@
     headers. */
 #define NN_WS_HANDSHAKE_MAX_SIZE 4096
 
-/*  WebSocket protocol tokens as per RFC 6455. */
-#define NN_WS_HANDSHAKE_MAGIC_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-#define NN_WS_HANDSHAKE_CRLF "\r\n"
-#define NN_WS_HANDSHAKE_TERMSEQ "\r\n\r\n"
-#define NN_WS_HANDSHAKE_TERMSEQ_LEN strlen (NN_WS_HANDSHAKE_TERMSEQ)
-
 /*  Expected Accept Key length based on RFC 6455 4.2.2.5.4. */
 #define NN_WS_HANDSHAKE_ACCEPT_KEY_LEN 28
 

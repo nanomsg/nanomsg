@@ -47,7 +47,6 @@
 #define NN_SWS_FRAME_SIZE_PAYLOAD_0 0
 #define NN_SWS_FRAME_SIZE_PAYLOAD_16 2
 #define NN_SWS_FRAME_SIZE_PAYLOAD_63 8
-#define NN_SWS_FRAME_SIZE_MASK 4
 
 /*  WebSocket control bitmasks as per RFC 6455 5.2. */
 #define NN_SWS_FRAME_BITMASK_FIN 0x80
@@ -63,12 +62,8 @@
     statically allocating this buffer for convenience. */
 #define NN_SWS_FRAME_MAX_HDR_LEN 14
 
-/*  WebSocket protocol payload length framing RFC 6455 section 5.2. */
-#define NN_SWS_PAYLOAD_MAX_LENGTH 125
-#define NN_SWS_PAYLOAD_MAX_LENGTH_16 65535
-#define NN_SWS_PAYLOAD_MAX_LENGTH_63 9223372036854775807
-#define NN_SWS_PAYLOAD_FRAME_16 0x7E
-#define NN_SWS_PAYLOAD_FRAME_63 0x7F
+/*  Maximal payload size for messages with 7-bit size field. */
+#define NN_SWS_MAX_SMALL_PAYLOAD 0x7d
 
 /*  WebSocket Close Status Code length. */
 #define NN_SWS_CLOSE_CODE_LEN 2
@@ -133,10 +128,10 @@ struct nn_sws {
     /*  Control message being received at the moment. Because these can be
         interspersed between fragmented payload messages, they are
         stored in this buffer so as not to interrupt the message array. */
-    uint8_t inmsg_control [NN_SWS_PAYLOAD_MAX_LENGTH];
+    uint8_t inmsg_control [NN_SWS_MAX_SMALL_PAYLOAD];
 
     /*  Reason this connection is closing to send as closing handshake. */
-    char fail_msg [NN_SWS_PAYLOAD_MAX_LENGTH];
+    char fail_msg [NN_SWS_MAX_SMALL_PAYLOAD];
     size_t fail_msg_len;
 
     /*  State of the outbound state machine. */

@@ -344,7 +344,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         /*  Require mask bit to be set from client. */
                         if (sws->masked) {
                             /*  Continue receiving header for this frame. */
-                            sws->ext_hdr_len = NN_SWS_FRAME_SIZE_MASK;
+                            sws->ext_hdr_len = 4;
                             break;
                         }
                         else {
@@ -389,19 +389,14 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         sws->inmsg_hdr = sws->inhdr [0] |
                         NN_SWS_FRAME_BITMASK_FIN;
 
-                    if (sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH) {
+                    if (sws->payload_ctl <= 0x7d) {
                         sws->ext_hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_0;
                     }
-                    else if (sws->payload_ctl == NN_SWS_PAYLOAD_FRAME_16) {
+                    else if (sws->payload_ctl <= 0xffff) {
                         sws->ext_hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_16;
                     }
-                    else if (sws->payload_ctl == NN_SWS_PAYLOAD_FRAME_63) {
-                        sws->ext_hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_63;
-                    }
                     else {
-                        /*  Developer error parsing/handling length. */
-                        nn_assert (0);
-                        return;
+                        sws->ext_hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_63;
                     }
 
                     switch (sws->opcode) {
@@ -484,10 +479,11 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             return;
                         }
 
-                        if (sws->payload_ctl > NN_SWS_PAYLOAD_MAX_LENGTH) {
+                        if (sws->payload_ctl > NN_SWS_MAX_SMALL_PAYLOAD) {
                             /*  As per RFC 6455 section 5.4, large payloads on
-                                control frames is not allowed, and on receipt the
-                                endpoint MUST close connection immediately. */
+                                control frames is not allowed, and on receipt
+                                the endpoint MUST close connection
+                                immediately. */
                             nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
                                 "Control frame payload exceeds allowable length.");
                             return;
@@ -529,7 +525,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                         /*  In the case of no additional header, the payload
                             is known to not exceed this threshold. */
-                        nn_assert (sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH);
+                        nn_assert (sws->payload_ctl <= 0x7d);
 
                         /*  In the case of no additional header, the payload
                             is known to not exceed this threshold. */
@@ -571,7 +567,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                 case NN_SWS_INSTATE_RECV_HDREXT:
                     nn_assert (sws->ext_hdr_len > 0);
 
-                    if (sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH) {
+                    if (sws->payload_ctl <= 0x7d) {
                         sws->inmsg_current_chunk_len = sws->payload_ctl;
                         if (sws->masked) {
                             sws->mask = sws->inhdr + NN_SWS_FRAME_SIZE_INITIAL;
@@ -580,7 +576,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             sws->mask = NULL;
                         }
                     }
-                    else if (sws->payload_ctl == NN_SWS_PAYLOAD_FRAME_16) {
+                    else if (sws->payload_ctl == 0xffff) {
                         sws->inmsg_current_chunk_len =
                             nn_gets (sws->inhdr + NN_SWS_FRAME_SIZE_INITIAL);
                         if (sws->masked) {
@@ -592,7 +588,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             sws->mask = NULL;
                         }
                     }
-                    else if (sws->payload_ctl == NN_SWS_PAYLOAD_FRAME_63) {
+                    else {
                         sws->inmsg_current_chunk_len =
                             (size_t) nn_getll (sws->inhdr +
                             NN_SWS_FRAME_SIZE_INITIAL);
@@ -604,13 +600,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         else {
                             sws->mask = NULL;
                         }
-                    }
-                    else {
-                        /*  Client sent invalid data; as per RFC 6455,
-                            server closes the connection immediately. */
-                        nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_PROTO,
-                                "Invalid payload length.");
-                        return;
                     }
 
                     /*  Handle zero-length message bodies. */
@@ -656,8 +645,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     /*  Unmask if necessary. */
                     if (sws->masked) {
                         nn_sws_mask_payload (sws->inmsg_current_chunk_buf,
-                            sws->inmsg_current_chunk_len, sws->mask,
-                            NN_SWS_FRAME_SIZE_MASK, NULL);
+                            sws->inmsg_current_chunk_len, sws->mask, 4, NULL);
                     }
 
                     switch (sws->opcode) {
@@ -871,7 +859,7 @@ static int nn_sws_recv_hdr (struct nn_sws *self)
         self->inmsg_total_size = 0;
     }
 
-    memset (self->inmsg_control, 0, NN_SWS_PAYLOAD_MAX_LENGTH);
+    memset (self->inmsg_control, 0, sizeof (self->inmsg_control));
     memset (self->inhdr, 0, NN_SWS_FRAME_MAX_HDR_LEN);
     self->instate = NN_SWS_INSTATE_RECV_HDR;
     nn_usock_recv (self->usock, self->inhdr, NN_SWS_FRAME_SIZE_INITIAL, NULL);
@@ -879,14 +867,15 @@ static int nn_sws_recv_hdr (struct nn_sws *self)
     return 0;
 }
 
+/*  Start sending a message. */
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
     struct nn_sws *sws;
     struct nn_iovec iov [3];
     int mask_pos;
-    size_t nn_msg_size;
-    size_t hdr_len;
-    uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
+    size_t sz;
+    size_t hdrsz;
+    uint8_t mask [4];
 
     sws = nn_cont (self, struct nn_sws, pipebase);
 
@@ -897,62 +886,60 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_msg_term (&sws->outmsg);
     nn_msg_mv (&sws->outmsg, msg);
 
+    /*  Compose the message header. See RFC 6455, section 5.2. */
     memset (sws->outhdr, 0, sizeof (sws->outhdr));
 
-    hdr_len = NN_SWS_FRAME_SIZE_INITIAL;
+    /*  Messages are always sent in a single fragment.
+        They may be split up on the way to the peer though. */
     sws->outhdr [0] = NN_WS_OPCODE_BINARY | NN_SWS_FRAME_BITMASK_FIN;
-
-    nn_msg_size = nn_chunkref_size (&sws->outmsg.sphdr) +
+    hdrsz = 1;
+    
+    /*  Frame the payload size. Don't set the mask bit yet. */
+    sz = nn_chunkref_size (&sws->outmsg.sphdr) +
         nn_chunkref_size (&sws->outmsg.body);
-
-    /*  Framing WebSocket payload size in network byte order (big endian). */
-    if (nn_msg_size <= NN_SWS_PAYLOAD_MAX_LENGTH) {
-        sws->outhdr [1] |= (uint8_t) nn_msg_size;
-        hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_0;
+    if (sz <= 0x7d) {
+        sws->outhdr [1] = (uint8_t) sz;
+        hdrsz += 1;
     }
-    else if (nn_msg_size <= NN_SWS_PAYLOAD_MAX_LENGTH_16) {
-        sws->outhdr [1] |= NN_SWS_PAYLOAD_FRAME_16;
-        nn_puts (&sws->outhdr [hdr_len], (uint16_t) nn_msg_size);
-        hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_16;
+    else if (sz <= 0xffff) {
+        sws->outhdr [1] = 0x7e;
+        nn_puts (&sws->outhdr [2], (uint16_t) sz);
+        hdrsz += 3;
     }
     else {
-        sws->outhdr [1] |= NN_SWS_PAYLOAD_FRAME_63;
-        nn_putll (&sws->outhdr [hdr_len], (uint64_t) nn_msg_size);
-        hdr_len += NN_SWS_FRAME_SIZE_PAYLOAD_63;
+        sws->outhdr [1] = 0x7f;
+        nn_putll (&sws->outhdr [2], (uint64_t) sz);
+        hdrsz += 9;
     }
 
+    /*  Client-to-server communication has to be masked. See RFC 6455 5.3. */
     if (sws->mode == NN_WS_CLIENT) {
-        sws->outhdr [1] |= NN_SWS_FRAME_BITMASK_MASKED;
 
-        /*  Generate 32-bit mask as per RFC 6455 5.3. */
+        /*  Generate 32-bit mask and store it in the frame. */
         /*  TODO: This is not a strong source of entropy. However, can we
-            afford one wihout exhausting it at the high message rates? */
-        nn_random_generate (rand_mask, NN_SWS_FRAME_SIZE_MASK);
-        
-        memcpy (&sws->outhdr [hdr_len], rand_mask, NN_SWS_FRAME_SIZE_MASK);
-        hdr_len += NN_SWS_FRAME_SIZE_MASK;
+            afford one wihout exhausting all the available entropy in the
+            system at the high message rates? */
+        nn_random_generate (mask, 4);
+        sws->outhdr [1] |= NN_SWS_FRAME_BITMASK_MASKED;
+        memcpy (&sws->outhdr [hdrsz], mask, 4);
+        hdrsz += 4;
 
         /*  Mask payload, beginning with header and moving to body. */
+        /*  TODO: This won't work if the message is shared among muliple
+                   transports. We probably want to send the message in multiple
+                   operations, masking only as much data at a time. */
         mask_pos = 0;
         nn_sws_mask_payload (nn_chunkref_data (&sws->outmsg.sphdr),
             nn_chunkref_size (&sws->outmsg.sphdr),
-            rand_mask, NN_SWS_FRAME_SIZE_MASK, &mask_pos);
+            mask, 4, &mask_pos);
         nn_sws_mask_payload (nn_chunkref_data (&sws->outmsg.body),
             nn_chunkref_size (&sws->outmsg.body),
-            rand_mask, NN_SWS_FRAME_SIZE_MASK, &mask_pos);
-
-    }
-    else if (sws->mode == NN_WS_SERVER) {
-        sws->outhdr [1] |= NN_SWS_FRAME_BITMASK_NOT_MASKED;
-    }
-    else {
-        /*  Developer error; sws object was not constructed properly. */
-        nn_assert (0);
+            mask, 4, &mask_pos);
     }
 
     /*  Start async sending. */
     iov [0].iov_base = sws->outhdr;
-    iov [0].iov_len = hdr_len;
+    iov [0].iov_len = hdrsz;
     iov [1].iov_base = nn_chunkref_data (&sws->outmsg.sphdr);
     iov [1].iov_len = nn_chunkref_size (&sws->outmsg.sphdr);
     iov [2].iov_base = nn_chunkref_data (&sws->outmsg.body);
@@ -1088,13 +1075,13 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
 }
 
 /*  Ensures that Close frames received from peer conform to
-    RFC 6455 section 7. */
+    RFC 6455, section 7. */
 static void nn_sws_validate_close_handshake (struct nn_sws *self)
 {
     uint16_t close_code;
 
     /*  TODO: As per RFC 6455 7.1.6, the Close Reason following the Close Code
-        must be well-formed UTF-8. Can we be liberal here (as per Postel
+        must be well-formed UTF-8. Can we be liberal (as per Postel
         principle) and not check the validity of the UTF-8 here? */
 
     close_code = nn_gets (self->inmsg_current_chunk_buf);
@@ -1134,7 +1121,7 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 {
     size_t reason_len;
     size_t payload_len;
-    uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
+    uint8_t mask [4];
     uint8_t *payload_pos;
 
     nn_assert_state (self, NN_SWS_STATE_ACTIVE);
@@ -1147,7 +1134,7 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     payload_len = reason_len + NN_SWS_CLOSE_CODE_LEN;
 
     /*  Ensure text is short enough to also include code and framing. */
-    nn_assert (payload_len <= NN_SWS_PAYLOAD_MAX_LENGTH);
+    nn_assert (payload_len <= NN_SWS_MAX_SMALL_PAYLOAD);
 
     /*  RFC 6455 section 5.5.1. */
     self->fail_msg [0] = NN_SWS_FRAME_BITMASK_FIN | NN_WS_OPCODE_CLOSE;
@@ -1164,12 +1151,11 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
         self->fail_msg [1] |= NN_SWS_FRAME_BITMASK_MASKED;
 
         /*  Generate 32-bit mask as per RFC 6455 5.3. */
-        nn_random_generate (rand_mask, NN_SWS_FRAME_SIZE_MASK);
+        nn_random_generate (mask, sizeof (mask));
         
-        memcpy (&self->fail_msg [NN_SWS_FRAME_SIZE_INITIAL],
-            rand_mask, NN_SWS_FRAME_SIZE_MASK);
+        memcpy (&self->fail_msg [NN_SWS_FRAME_SIZE_INITIAL], mask, 4);
 
-        self->fail_msg_len += NN_SWS_FRAME_SIZE_MASK;
+        self->fail_msg_len += 4;
     }
     else {
         /*  Developer error. */
@@ -1187,8 +1173,7 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 
     /*  If this is a client, apply mask. */
     if (self->mode == NN_WS_CLIENT) {
-        nn_sws_mask_payload (payload_pos, payload_len,
-            rand_mask, NN_SWS_FRAME_SIZE_MASK, NULL);
+        nn_sws_mask_payload (payload_pos, payload_len, mask, 4, NULL);
     }
 
     self->fail_msg_len += payload_len;

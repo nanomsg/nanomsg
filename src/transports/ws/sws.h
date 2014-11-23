@@ -42,19 +42,6 @@
 #define NN_SWS_RETURN_CLOSE_HANDSHAKE 2
 #define NN_SWS_RETURN_STOPPED 3
 
-/*  WebSocket protocol header frame sizes. */
-#define NN_SWS_FRAME_SIZE_INITIAL 2
-#define NN_SWS_FRAME_SIZE_PAYLOAD_0 0
-#define NN_SWS_FRAME_SIZE_PAYLOAD_16 2
-#define NN_SWS_FRAME_SIZE_PAYLOAD_63 8
-
-/*  WebSocket control bitmasks as per RFC 6455 5.2. */
-#define NN_SWS_FRAME_BITMASK_FIN 0x80
-#define NN_SWS_FRAME_BITMASK_RSV1 0x40
-#define NN_SWS_FRAME_BITMASK_RSV2 0x20
-#define NN_SWS_FRAME_BITMASK_RSV3 0x10
-#define NN_SWS_FRAME_BITMASK_OPCODE 0x0F
-
 /*  The longest possible header frame length. As per RFC 6455 5.2:
     first 2 bytes of initial framing + up to 8 bytes of additional
     extended payload length header + 4 byte mask = 14bytes
@@ -64,9 +51,6 @@
 
 /*  Maximal payload size for messages with 7-bit size field. */
 #define NN_SWS_MAX_SMALL_PAYLOAD 0x7d
-
-/*  WebSocket Close Status Code length. */
-#define NN_SWS_CLOSE_CODE_LEN 2
 
 struct nn_sws {
 

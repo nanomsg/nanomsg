@@ -81,6 +81,19 @@
 #define NN_SWS_CLOSE_ERR_EXTENSION 1010
 #define NN_SWS_CLOSE_ERR_SERVER 1011
 
+/*  WebSocket protocol header frame sizes. */
+#define NN_SWS_FRAME_SIZE_INITIAL 2
+#define NN_SWS_FRAME_SIZE_PAYLOAD_0 0
+#define NN_SWS_FRAME_SIZE_PAYLOAD_16 2
+#define NN_SWS_FRAME_SIZE_PAYLOAD_63 8
+
+/*  WebSocket control bitmasks as per RFC 6455 5.2. */
+#define NN_SWS_FRAME_BITMASK_FIN 0x80
+#define NN_SWS_FRAME_BITMASK_RSV1 0x40
+#define NN_SWS_FRAME_BITMASK_RSV2 0x20
+#define NN_SWS_FRAME_BITMASK_RSV3 0x10
+#define NN_SWS_FRAME_BITMASK_OPCODE 0x0F
+
 /*  Scatter/gather array element type forincoming message chunks. Fragmented
     message frames are reassembled prior to notifying the user. */
 struct msg_chunk {
@@ -674,8 +687,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         /*  If the payload is not even long enough for the
                             required 2-octet Close Code, the connection
                             should have been failed upstream. */
-                        nn_assert (sws->inmsg_current_chunk_len >=
-                            NN_SWS_CLOSE_CODE_LEN);
+                        nn_assert (sws->inmsg_current_chunk_len >= 2);
                         
                         nn_sws_validate_close_handshake (sws);
                         return;
@@ -1129,9 +1141,9 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     /*  Destroy any remnant incoming message fragments. */
     nn_msg_array_term (&self->inmsg_array);
 
+    /*  Reason string + code. */
     reason_len = strlen (reason);
-
-    payload_len = reason_len + NN_SWS_CLOSE_CODE_LEN;
+    payload_len = reason_len + 2;
 
     /*  Ensure text is short enough to also include code and framing. */
     nn_assert (payload_len <= NN_SWS_MAX_SMALL_PAYLOAD);
@@ -1166,10 +1178,10 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     
     /*  Copy Status Code in network order (big-endian). */
     nn_puts (payload_pos, (uint16_t) code);
-    self->fail_msg_len += NN_SWS_CLOSE_CODE_LEN;
+    self->fail_msg_len += 2;
 
     /*  Copy Close Reason immediately following the code. */
-    memcpy (payload_pos + NN_SWS_CLOSE_CODE_LEN, reason, reason_len);
+    memcpy (payload_pos + 2, reason, reason_len);
 
     /*  If this is a client, apply mask. */
     if (self->mode == NN_WS_CLIENT) {

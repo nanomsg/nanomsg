@@ -325,7 +325,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                 case NN_SWS_INSTATE_RECV_HDR:
 
                     /*  Require RSV1, RSV2, and RSV3 bits to be unset for
-                        x-nanomsg protocol as per RFC 6455 section 5.2. */
+                        as per RFC 6455 section 5.2. */
                     if (sws->inhdr [0] & NN_SWS_FRAME_BITMASK_RSV1 ||
                         sws->inhdr [0] & NN_SWS_FRAME_BITMASK_RSV2 ||
                         sws->inhdr [0] & NN_SWS_FRAME_BITMASK_RSV3) {
@@ -859,7 +859,7 @@ static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,
     }
 }
 
-/*  Start receiving new message chunk. */
+/*  Start receiving new frame. */
 static int nn_sws_recv_hdr (struct nn_sws *self)
 {
     if (!self->continuing) {
@@ -900,17 +900,7 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     memset (sws->outhdr, 0, sizeof (sws->outhdr));
 
     hdr_len = NN_SWS_FRAME_SIZE_INITIAL;
-
-    /*  If the outgoing message has specified an opcode and control framing in
-        its header, properly frame it as per RFC 6455 5.2. */
-    if (nn_chunkref_size (&sws->outmsg.body) >= 1) {
-        memcpy (sws->outhdr, nn_chunkref_data (&sws->outmsg.body), 1);
-        nn_chunkref_trim (&sws->outmsg.body, 1);
-    }
-    else {
-        /*  If the header does not specify an opcode, assume this default. */
-        sws->outhdr [0] = NN_WS_OPCODE_BINARY | NN_SWS_FRAME_BITMASK_FIN;
-    }
+    sws->outhdr [0] = NN_WS_OPCODE_BINARY | NN_SWS_FRAME_BITMASK_FIN;
 
     nn_msg_size = nn_chunkref_size (&sws->outmsg.sphdr) +
         nn_chunkref_size (&sws->outmsg.body);
@@ -935,6 +925,8 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
         sws->outhdr [1] |= NN_SWS_FRAME_BITMASK_MASKED;
 
         /*  Generate 32-bit mask as per RFC 6455 5.3. */
+        /*  TODO: This is not a strong source of entropy. However, can we
+            afford one wihout exhausting it at the high message rates? */
         nn_random_generate (rand_mask, NN_SWS_FRAME_SIZE_MASK);
         
         memcpy (&sws->outhdr [hdr_len], rand_mask, NN_SWS_FRAME_SIZE_MASK);
@@ -942,11 +934,9 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 
         /*  Mask payload, beginning with header and moving to body. */
         mask_pos = 0;
-
         nn_sws_mask_payload (nn_chunkref_data (&sws->outmsg.sphdr),
             nn_chunkref_size (&sws->outmsg.sphdr),
             rand_mask, NN_SWS_FRAME_SIZE_MASK, &mask_pos);
-
         nn_sws_mask_payload (nn_chunkref_data (&sws->outmsg.body),
             nn_chunkref_size (&sws->outmsg.body),
             rand_mask, NN_SWS_FRAME_SIZE_MASK, &mask_pos);
@@ -1035,15 +1025,9 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
             so it's expected that this is the final frame. */
         nn_assert (sws->is_final_frame);
 
-        len = sws->inmsg_total_size + sizeof (sws->inmsg_hdr);
+        len = sws->inmsg_total_size;
 
         nn_msg_init (msg, len);
-            
-        /*  Relay opcode, RSV and FIN bits to the user in order to
-            interpret payload. */
-        memcpy (nn_chunkref_data (&msg->body),
-            &sws->inmsg_hdr, sizeof (sws->inmsg_hdr));
-        pos = sizeof (sws->inmsg_hdr);
 
         /*  Reassemble incoming message scatter array. */
         while (!nn_list_empty (&sws->inmsg_array)) {

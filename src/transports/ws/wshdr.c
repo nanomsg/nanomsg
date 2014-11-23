@@ -1052,8 +1052,6 @@ static void nn_wshdr_server_reply (struct nn_wshdr *self)
     /*  Allow room for NULL terminator. */
     char accept_key [NN_WSHDR_ACCEPT_KEY_LEN + 1];
 
-    
-
     if (self->response_code == NN_WSHDR_RESPONSE_OK) {
 
         /*  Upgrade connection as per RFC 6455 section 4.2.2. */

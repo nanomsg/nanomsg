@@ -41,8 +41,9 @@
 
 /*  Possible states of the inbound part of the object. */
 #define NN_SWS_INSTATE_HDR 1
-#define NN_SWS_INSTATE_BODY 2
-#define NN_SWS_INSTATE_HASMSG 3
+#define NN_SWS_INSTATE_HDR_EXT 2
+#define NN_SWS_INSTATE_BODY 3
+#define NN_SWS_INSTATE_HASMSG 4
 
 /*  Possible states of the outbound part of the object. */
 #define NN_SWS_OUTSTATE_IDLE 1
@@ -51,6 +52,22 @@
 /*  Subordinate srcptr objects. */
 #define NN_SWS_SRC_USOCK 1
 #define NN_SWS_SRC_STREAMHDR 2
+
+/*  Constants to compose first byte of WebSocket message header from. */
+#define NN_SWS_FIN 0x80
+#define NN_SWS_RSV1 0x40
+#define NN_SWS_RSV2 0x20
+#define NN_SWS_RSV3 0x10
+#define NN_SWS_OPCODE 0x0f
+#define NN_SWS_OPCODE_CONTINUATION 0x00
+#define NN_SWS_OPCODE_BINARY 0x02
+#define NN_SWS_OPCODE_CLOSE 0x08
+
+/*  Constants for the second byte of WebSocket message header. */
+#define NN_SWS_MASK 0x80
+#define NN_SWS_SIZE 0x7f
+#define NN_SWS_SIZE_16 0x7e
+#define NN_SWS_SIZE_64 0x7f
 
 /*  Stream is a special type of pipe. Implementation of the virtual pipe API. */
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg);
@@ -122,6 +139,8 @@ void nn_sws_stop (struct nn_sws *self)
 static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
     struct nn_sws *sws;
+    size_t sz;
+    size_t hdrsz;
     struct nn_iovec iov [3];
 
     sws = nn_cont (self, struct nn_sws, pipebase);
@@ -134,12 +153,32 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_msg_mv (&sws->outmsg, msg);
 
     /*  Serialise the message header. */
-    nn_putll (sws->outhdr, nn_chunkref_size (&sws->outmsg.sphdr) +
-        nn_chunkref_size (&sws->outmsg.body));
+    sws->outhdr [0] = NN_SWS_FIN | NN_SWS_OPCODE_BINARY;
+    hdrsz = 1;
+    
+    /*  Frame the payload size. Don't set the mask bit yet. */
+    sz = nn_chunkref_size (&sws->outmsg.sphdr) +
+        nn_chunkref_size (&sws->outmsg.body);
+    if (sz <= 0x7d) {
+        sws->outhdr [1] = (uint8_t) sz;
+        hdrsz += 1;
+    }
+    else if (sz <= 0xffff) {
+        sws->outhdr [1] = 0x7e;
+        nn_puts (&sws->outhdr [2], (uint16_t) sz);
+        hdrsz += 3;
+    }
+    else {
+        sws->outhdr [1] = 0x7f;
+        nn_putll (&sws->outhdr [2], (uint64_t) sz);
+        hdrsz += 9;
+    }
+
+    /*  TODO: Add masking here. */
 
     /*  Start async sending. */
     iov [0].iov_base = sws->outhdr;
-    iov [0].iov_len = sizeof (sws->outhdr);
+    iov [0].iov_len = hdrsz;
     iov [1].iov_base = nn_chunkref_data (&sws->outmsg.sphdr);
     iov [1].iov_len = nn_chunkref_size (&sws->outmsg.sphdr);
     iov [2].iov_base = nn_chunkref_data (&sws->outmsg.body);
@@ -164,9 +203,11 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     nn_msg_mv (msg, &sws->inmsg);
     nn_msg_init (&sws->inmsg, 0);
 
-    /*  Start receiving new message. */
+    /*  Start receiving new message by reading 2 bytes. That's a minimal
+        message header and by looking at it we'll find out whether any
+        additional bytes have to be read. */
     sws->instate = NN_SWS_INSTATE_HDR;
-    nn_usock_recv (sws->usock, sws->inhdr, sizeof (sws->inhdr), NULL);
+    nn_usock_recv (sws->usock, sws->inhdr, 2, NULL);
 
     return 0;
 }
@@ -283,8 +324,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                  /*  Start receiving a message in asynchronous manner. */
                  sws->instate = NN_SWS_INSTATE_HDR;
-                 nn_usock_recv (sws->usock, &sws->inhdr,
-                     sizeof (sws->inhdr), NULL);
+                 nn_usock_recv (sws->usock, &sws->inhdr, 2, NULL);
 
                  /*  Mark the pipe as available for sending. */
                  sws->outstate = NN_SWS_OUTSTATE_IDLE;
@@ -323,9 +363,39 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                 switch (sws->instate) {
                 case NN_SWS_INSTATE_HDR:
 
-                    /*  Message header was received. Allocate memory for the
-                        message. */
-                    size = nn_getll (sws->inhdr);
+                    /*  Find out how many additional bytes we have to read
+                        to get the entire message header. */
+                    size = 0;
+                    if (sws->inhdr [1] & NN_SWS_MASK)
+                        size += 4;
+                    if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_16)
+                        size += 2;
+                    else if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_64)
+                        size += 8;
+
+                    /*  Get the additional bytes. */
+                    sws->instate = NN_SWS_INSTATE_HDR_EXT;
+                    if (size > 0) {
+                        nn_usock_recv (sws->usock, &sws->inhdr [2],
+                           (size_t) size, NULL);
+                        return;
+                    }
+
+                    /*  If there are no additional bytes to read fall through
+                        to the next state. */
+
+                case NN_SWS_INSTATE_HDR_EXT:
+
+                    /*  Message header was fully received.
+                        Now determine the payload size. */
+                    if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_16)
+                        size = nn_gets (&sws->inhdr [2]);
+                    else if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_64)
+                        size = nn_getll (&sws->inhdr [2]);
+                    else
+                        size = sws->inhdr [1] & NN_SWS_SIZE;
+ 
+                    /* Allocate memory for the message. */
                     nn_msg_term (&sws->inmsg);
                     nn_msg_init (&sws->inmsg, (size_t) size);
 

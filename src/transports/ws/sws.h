@@ -60,8 +60,9 @@ struct nn_sws {
     /*  State of inbound state machine. */
     int instate;
 
-    /*  Buffer used to store the header of incoming message. */
-    uint8_t inhdr [8];
+    /*  Buffer used to store the header of incoming message. The longest
+        possible header is 14 bytes long, see RFC 6455, section 5.2. */
+    uint8_t inhdr [14];
 
     /*  Message being received at the moment. */
     struct nn_msg inmsg;
@@ -69,8 +70,9 @@ struct nn_sws {
     /*  State of the outbound state machine. */
     int outstate;
 
-    /*  Buffer used to store the header of outgoing message. */
-    uint8_t outhdr [8];
+    /*  Buffer used to store the header of outgoing message. The longest
+        possible header is 14 bytes long, see RFC 6455, section 5.2. */
+    uint8_t outhdr [14];
 
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;

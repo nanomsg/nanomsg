@@ -165,7 +165,7 @@ int nn_sws_isidle (struct nn_sws *self)
 }
 
 void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
-    const char *resource, const char *host)
+    const char *host)
 {
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
@@ -174,7 +174,6 @@ void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
     nn_usock_swap_owner (usock, &self->usock_owner);
     self->usock = usock;
     self->mode = mode;
-    self->resource = resource;
     self->remote_host = host;
 
     /*  Launch the state machine. */
@@ -235,7 +234,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_FSM_START:
                 nn_wshdr_start (&sws->wshdr, sws->usock,
-                    &sws->pipebase, sws->mode, sws->resource, sws->remote_host);
+                    &sws->pipebase, sws->mode, sws->remote_host);
                 sws->state = NN_SWS_STATE_HANDSHAKE;
                 return;
             default:
@@ -899,7 +898,6 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_msg_mv (&sws->outmsg, msg);
 
     /*  Compose the message header. See RFC 6455, section 5.2. */
-    memset (sws->outhdr, 0, sizeof (sws->outhdr));
 
     /*  Messages are always sent in a single fragment.
         They may be split up on the way to the peer though. */
@@ -1020,8 +1018,8 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     
     case NN_SWS_INSTATE_RECVD_CHUNKED:
 
-        /*  This library should not deliver fragmented messages to the application,
-            so it's expected that this is the final frame. */
+        /*  This library should not deliver fragmented messages to the
+            application, so it's expected that this is the final frame. */
         nn_assert (sws->is_final_frame);
 
         len = sws->inmsg_total_size;

@@ -213,8 +213,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
 
                 /*  Start the sws state machine. */
                 nn_usock_activate (&aws->usock);
-                nn_sws_start (&aws->sws, &aws->usock, NN_WS_SERVER,
-                    NULL, NULL);
+                nn_sws_start (&aws->sws, &aws->usock, NN_WS_SERVER, NULL);
                 aws->state = NN_AWS_STATE_ACTIVE;
 
                 nn_epbase_stat_increment (aws->epbase,

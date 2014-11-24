@@ -145,12 +145,8 @@ int nn_wshdr_isidle (struct nn_wshdr *self)
 
 void nn_wshdr_start (struct nn_wshdr *self,
     struct nn_usock *usock, struct nn_pipebase *pipebase,
-    int mode, const char *resource, const char *host)
+    int mode, const char *host)
 {
-    /*  It's expected this resource has been allocated during intial connect. */
-    if (mode == NN_WS_CLIENT)
-        nn_assert (strlen (resource) >= 1);
-
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
     self->usock_owner.src = NN_WSHDR_SRC_USOCK;
@@ -159,7 +155,6 @@ void nn_wshdr_start (struct nn_wshdr *self,
     self->usock = usock;
     self->pipebase = pipebase;
     self->mode = mode;
-    self->resource = resource;
     self->remote_host = host;
 
     memset (self->opening_hs, 0, sizeof (self->opening_hs));
@@ -1026,14 +1021,13 @@ static void nn_wshdr_client_request (struct nn_wshdr *self)
     iov.iov_base = self->opening_hs;
     iov.iov_len = snprintf (self->opening_hs,
         sizeof (self->opening_hs),
-        "GET %s HTTP/1.1\r\n"
+        "GET / HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Upgrade: websocket\r\n"
         "Connection: Upgrade\r\n"
         "Sec-WebSocket-Key: %s\r\n"
         "Sec-WebSocket-Version: 13\r\n"
         "Sec-WebSocket-Protocol: SP-%d\r\n\r\n",
-        self->resource,
         self->remote_host,
         encoded_key,
         (int) self->pipebase->sock->socktype->protocol);

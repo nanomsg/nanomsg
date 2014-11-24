@@ -75,9 +75,6 @@ struct nn_wshdr {
     /*  Handle to the pipe. */
     struct nn_pipebase *pipebase;
 
-    /*  Requested resource when acting as client. */
-    const char* resource;
-
     /*  Remote Host in header request when acting as client. */
     const char* remote_host;
 
@@ -150,7 +147,7 @@ void nn_wshdr_term (struct nn_wshdr *self);
 int nn_wshdr_isidle (struct nn_wshdr *self);
 void nn_wshdr_start (struct nn_wshdr *self,
     struct nn_usock *usock, struct nn_pipebase *pipebase,
-    int mode, const char *resource, const char *host);
+    int mode, const char *host);
 void nn_wshdr_stop (struct nn_wshdr *self);
 
 #endif

@@ -90,7 +90,6 @@ struct nn_cws {
     struct nn_sws sws;
 
     /*  Parsed parts of the connection URI. */
-    struct nn_chunkref resource;
     struct nn_chunkref remote_host;
     struct nn_chunkref nic;
     int remote_port;
@@ -132,9 +131,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     const char *hostname;
     size_t hostlen;
     const char *colon;
-    const char *slash;
-    const char *resource;
-    size_t resourcelen;
+    const char *end;
     struct sockaddr_storage ss;
     size_t sslen;
     int ipv4only;
@@ -163,24 +160,21 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     semicolon = strchr (addr, ';');
     hostname = semicolon ? semicolon + 1 : addr;
     colon = strrchr (addr, ':');
-    slash = colon ? strchr (colon, '/') : strchr (addr, '/');
-    resource = slash ? slash : addr + addrlen;
-    self->remote_hostname_len = colon ? colon - hostname : resource - hostname;
+    end = addr + strlen (addr);
+    self->remote_hostname_len = colon ? colon - hostname : end - hostname;
     
     /*  Host contains both hostname and port. */
-    hostlen = resource - hostname;
+    hostlen = end - hostname;
 
     /*  Parse the port; assume port 80 if not explicitly declared. */
+    self->remote_port = 80;
     if (nn_slow (colon != NULL)) {
-        rc = nn_port_resolve (colon + 1, resource - colon - 1);
+        rc = nn_port_resolve (colon + 1, end - colon - 1);
         if (nn_slow (rc < 0)) {
             nn_epbase_term (&self->epbase);
             return -EINVAL;
         }
         self->remote_port = rc;
-    }
-    else {
-        self->remote_port = 80;
     }
 
     /*  Check whether the host portion of the address is either a literal
@@ -214,19 +208,6 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     else {
         nn_chunkref_init (&self->nic, 1);
         memcpy (nn_chunkref_data (&self->nic), "*", 1);
-    }
-
-    /*  The requested resource is used in opening handshake. */
-    resourcelen = strlen (resource);
-    if (resourcelen) {
-        nn_chunkref_init (&self->resource, resourcelen + 1);
-        strncpy (nn_chunkref_data (&self->resource),
-            resource, resourcelen + 1);
-    }
-    else {
-        /*  No resource specified, so allocate base path. */
-        nn_chunkref_init (&self->resource, 2);
-        strncpy (nn_chunkref_data (&self->resource), "/", 2);
     }
 
     /*  Initialise the structure. */
@@ -273,7 +254,6 @@ static void nn_cws_destroy (struct nn_epbase *self)
 
     cws = nn_cont (self, struct nn_cws, epbase);
 
-    nn_chunkref_term (&cws->resource);
     nn_chunkref_term (&cws->remote_host);
     nn_chunkref_term (&cws->nic);
     nn_dns_term (&cws->dns);
@@ -410,7 +390,6 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_CONNECTED:
                 nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
-                    nn_chunkref_data (&cws->resource),
                     nn_chunkref_data (&cws->remote_host));
                 cws->state = NN_CWS_STATE_ACTIVE;
                 cws->peer_gone = 0;

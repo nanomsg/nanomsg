@@ -46,7 +46,7 @@
     first 2 bytes of initial framing + up to 8 bytes of additional
     extended payload length header + 4 byte mask = 14bytes
     Not all messages will use the maximum amount allocated, but we are
-    statically allocating this buffer for convenience. */
+    statically allocating this buffer as an optimisation. */
 #define NN_SWS_FRAME_MAX_HDR_LEN 14
 
 /*  Maximal payload size for messages with 7-bit size field. */
@@ -73,9 +73,6 @@ struct nn_sws {
 
     /*  Pipe connecting this WebSocket connection to the nanomsg core. */
     struct nn_pipebase pipebase;
-
-    /*  Requested resource when acting as client. */
-    const char* resource;
 
     /*  Remote Host in header request when acting as client. */
     const char* remote_host;
@@ -136,7 +133,7 @@ void nn_sws_init (struct nn_sws *self, int src,
 void nn_sws_term (struct nn_sws *self);
 int nn_sws_isidle (struct nn_sws *self);
 void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
-    const char *resource, const char *host);
+    const char *host);
 void nn_sws_stop (struct nn_sws *self);
 
 #endif

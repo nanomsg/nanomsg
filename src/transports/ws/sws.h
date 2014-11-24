@@ -83,11 +83,13 @@ struct nn_sws {
     /*  Buffer used to store the framing of incoming message. */
     uint8_t inhdr [NN_SWS_FRAME_MAX_HDR_LEN];
 
+    /*  On the server side this field contains mask of the incoming message.
+        On the client side it is unused. */
+    uint8_t mask [4];
+
     /*  Parsed header frames. */
     uint8_t opcode;
     uint8_t payload_ctl;
-    uint8_t masked;
-    uint8_t *mask;
     size_t ext_hdr_len;
     int is_final_frame;
     int is_control_frame;

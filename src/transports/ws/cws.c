@@ -1,6 +1,6 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -89,17 +89,6 @@ struct nn_cws {
         lifetime. */
     struct nn_sws sws;
 
-    /*  Parsed parts of the connection URI. */
-    struct nn_chunkref resource;
-    struct nn_chunkref remote_host;
-    struct nn_chunkref nic;
-    int remote_port;
-    int remote_hostname_len;
-
-    /*  If a close handshake is performed, this flag signals to not
-        begin automatic reconnect retries. */
-    int peer_gone;
-
     /*  DNS resolver used to convert textual address into actual IP address
         along with the variable to hold the result. */
     struct nn_dns dns;
@@ -130,11 +119,8 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     size_t addrlen;
     const char *semicolon;
     const char *hostname;
-    size_t hostlen;
     const char *colon;
-    const char *slash;
-    const char *resource;
-    size_t resourcelen;
+    const char *end;
     struct sockaddr_storage ss;
     size_t sslen;
     int ipv4only;
@@ -163,30 +149,23 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     semicolon = strchr (addr, ';');
     hostname = semicolon ? semicolon + 1 : addr;
     colon = strrchr (addr, ':');
-    slash = colon ? strchr (colon, '/') : strchr (addr, '/');
-    resource = slash ? slash : addr + addrlen;
-    self->remote_hostname_len = colon ? colon - hostname : resource - hostname;
-    
-    /*  Host contains both hostname and port. */
-    hostlen = resource - hostname;
+    end = addr + addrlen;
 
-    /*  Parse the port; assume port 80 if not explicitly declared. */
-    if (nn_slow (colon != NULL)) {
-        rc = nn_port_resolve (colon + 1, resource - colon - 1);
-        if (nn_slow (rc < 0)) {
-            nn_epbase_term (&self->epbase);
-            return -EINVAL;
-        }
-        self->remote_port = rc;
+    /*  Parse the port. */
+    if (nn_slow (!colon)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
     }
-    else {
-        self->remote_port = 80;
+    rc = nn_port_resolve (colon + 1, end - colon - 1);
+    if (nn_slow (rc < 0)) {
+        nn_epbase_term (&self->epbase);
+        return -EINVAL;
     }
 
     /*  Check whether the host portion of the address is either a literal
         or a valid hostname. */
-    if (nn_dns_check_hostname (hostname, self->remote_hostname_len) < 0 &&
-          nn_literal_resolve (hostname, self->remote_hostname_len, ipv4only,
+    if (nn_dns_check_hostname (hostname, colon - hostname) < 0 &&
+          nn_literal_resolve (hostname, colon - hostname, ipv4only,
           &ss, &sslen) < 0) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
@@ -199,34 +178,6 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
             nn_epbase_term (&self->epbase);
             return -ENODEV;
         }
-    }
-
-    /*  At this point, the address is valid, so begin allocating resources. */
-    nn_chunkref_init (&self->remote_host, hostlen + 1);
-    memcpy (nn_chunkref_data (&self->remote_host), hostname, hostlen);
-    ((uint8_t *) nn_chunkref_data (&self->remote_host)) [hostlen] = '\0';
-
-    if (semicolon) {
-        nn_chunkref_init (&self->nic, semicolon - addr);
-        memcpy (nn_chunkref_data (&self->nic),
-            addr, semicolon - addr);
-    }
-    else {
-        nn_chunkref_init (&self->nic, 1);
-        memcpy (nn_chunkref_data (&self->nic), "*", 1);
-    }
-
-    /*  The requested resource is used in opening handshake. */
-    resourcelen = strlen (resource);
-    if (resourcelen) {
-        nn_chunkref_init (&self->resource, resourcelen + 1);
-        strncpy (nn_chunkref_data (&self->resource),
-            resource, resourcelen + 1);
-    }
-    else {
-        /*  No resource specified, so allocate base path. */
-        nn_chunkref_init (&self->resource, 2);
-        strncpy (nn_chunkref_data (&self->resource), "/", 2);
     }
 
     /*  Initialise the structure. */
@@ -273,9 +224,6 @@ static void nn_cws_destroy (struct nn_epbase *self)
 
     cws = nn_cont (self, struct nn_cws, epbase);
 
-    nn_chunkref_term (&cws->resource);
-    nn_chunkref_term (&cws->remote_host);
-    nn_chunkref_term (&cws->nic);
     nn_dns_term (&cws->dns);
     nn_sws_term (&cws->sws);
     nn_backoff_term (&cws->retry);
@@ -409,11 +357,8 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
-                nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
-                    nn_chunkref_data (&cws->resource),
-                    nn_chunkref_data (&cws->remote_host));
+                nn_sws_start (&cws->sws, &cws->usock);
                 cws->state = NN_CWS_STATE_ACTIVE;
-                cws->peer_gone = 0;
                 nn_epbase_stat_increment (&cws->epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
                 nn_epbase_stat_increment (&cws->epbase,
@@ -440,21 +385,14 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
-/*  Connection is established and handled by the sws state machine.           */
+/*  Connection is established and handled by the sws state machine.          */
 /******************************************************************************/
     case NN_CWS_STATE_ACTIVE:
         switch (src) {
 
         case NN_CWS_SRC_SWS:
             switch (type) {
-            case NN_SWS_RETURN_CLOSE_HANDSHAKE:
-                /*  Peer closed connection without intention to reconnect, or
-                    local endpoint failed remote because of invalid data. */
-                nn_sws_stop (&cws->sws);
-                cws->state = NN_CWS_STATE_STOPPING_SWS;
-                cws->peer_gone = 1;
-                return;
-            case NN_SWS_RETURN_ERROR:
+            case NN_SWS_ERROR:
                 nn_sws_stop (&cws->sws);
                 cws->state = NN_CWS_STATE_STOPPING_SWS;
                 nn_epbase_stat_increment (&cws->epbase,
@@ -469,8 +407,8 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  STOPPING_SWS state.                                                       */
-/*  sws object was asked to stop but it haven't stopped yet.                  */
+/*  STOPPING_SWS state.                                                      */
+/*  sws object was asked to stop but it haven't stopped yet.                 */
 /******************************************************************************/
     case NN_CWS_STATE_STOPPING_SWS:
         switch (src) {
@@ -479,7 +417,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_SHUTDOWN:
                 return;
-            case NN_SWS_RETURN_STOPPED:
+            case NN_SWS_STOPPED:
                 nn_usock_stop (&cws->usock);
                 cws->state = NN_CWS_STATE_STOPPING_USOCK;
                 return;
@@ -503,17 +441,8 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SHUTDOWN:
                 return;
             case NN_USOCK_STOPPED:
-                /*  If the peer has confirmed itself gone with a Closing
-                    Handshake, or if the local endpoint failed the remote,
-                    don't try to reconnect. */
-                if (cws->peer_gone) {
-                    /*  It is expected that the application detects this and
-                        prunes the connection with nn_shutdown. */
-                }
-                else {
-                    nn_backoff_start (&cws->retry);
-                    cws->state = NN_CWS_STATE_WAITING;
-                }
+                nn_backoff_start (&cws->retry);
+                cws->state = NN_CWS_STATE_WAITING;
                 return;
             default:
                 nn_fsm_bad_action (cws->state, src, type);
@@ -579,9 +508,21 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
 
 static void nn_cws_start_resolving (struct nn_cws *self)
 {
+    const char *addr;
+    const char *begin;
+    const char *end;
     int ipv4only;
     size_t ipv4onlylen;
-    char *host;
+
+    /*  Extract the hostname part from address string. */
+    addr = nn_epbase_getaddr (&self->epbase);
+    begin = strchr (addr, ';');
+    if (!begin)
+        begin = addr;
+    else
+        ++begin;
+    end = strrchr (addr, ':');
+    nn_assert (end);
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
@@ -589,11 +530,8 @@ static void nn_cws_start_resolving (struct nn_cws *self)
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
-    host = nn_chunkref_data (&self->remote_host);
-    nn_assert (strlen (host) > 0);
-
-    nn_dns_start (&self->dns, host, self->remote_hostname_len, ipv4only,
-        &self->dns_result);
+    /*  TODO: Get the actual value of IPV4ONLY option. */
+    nn_dns_start (&self->dns, begin, end - begin, ipv4only, &self->dns_result);
 
     self->state = NN_CWS_STATE_RESOLVING;
 }
@@ -606,13 +544,26 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     size_t remotelen;
     struct sockaddr_storage local;
     size_t locallen;
+    const char *addr;
+    const char *end;
+    const char *colon;
+    const char *semicolon;
+    uint16_t port;
     int ipv4only;
     size_t ipv4onlylen;
     int val;
     size_t sz;
 
+    /*  Create IP address from the address string. */
+    addr = nn_epbase_getaddr (&self->epbase);
     memset (&remote, 0, sizeof (remote));
-    memset (&local, 0, sizeof (local));
+
+    /*  Parse the port. */
+    end = addr + strlen (addr);
+    colon = strrchr (addr, ':');
+    rc = nn_port_resolve (colon + 1, end - colon - 1);
+    errnum_assert (rc > 0, -rc);
+    port = rc;
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
@@ -620,9 +571,14 @@ static void nn_cws_start_connecting (struct nn_cws *self,
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
-    rc = nn_iface_resolve (nn_chunkref_data (&self->nic),
-    nn_chunkref_size (&self->nic), ipv4only, &local, &locallen);
-
+    /*  Parse the local address, if any. */
+    semicolon = strchr (addr, ';');
+    memset (&local, 0, sizeof (local));
+    if (semicolon)
+        rc = nn_iface_resolve (addr, semicolon - addr, ipv4only,
+            &local, &locallen);
+    else
+        rc = nn_iface_resolve ("*", 1, ipv4only, &local, &locallen);
     if (nn_slow (rc < 0)) {
         nn_backoff_start (&self->retry);
         self->state = NN_CWS_STATE_WAITING;
@@ -633,9 +589,9 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     remote = *ss;
     remotelen = sslen;
     if (remote.ss_family == AF_INET)
-        ((struct sockaddr_in*) &remote)->sin_port = htons (self->remote_port);
+        ((struct sockaddr_in*) &remote)->sin_port = htons (port);
     else if (remote.ss_family == AF_INET6)
-        ((struct sockaddr_in6*) &remote)->sin6_port = htons (self->remote_port);
+        ((struct sockaddr_in6*) &remote)->sin6_port = htons (port);
     else
         nn_assert (0);
 
@@ -661,7 +617,11 @@ static void nn_cws_start_connecting (struct nn_cws *self,
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc != 0)) {
+        nn_backoff_start (&self->retry);
+        self->state = NN_CWS_STATE_WAITING;
+        return;
+    }
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
@@ -669,3 +629,4 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
+

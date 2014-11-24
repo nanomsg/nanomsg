@@ -1,6 +1,6 @@
 /*
-    Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -135,7 +135,7 @@ static void nn_aws_shutdown (struct nn_fsm *self, int src, int type,
         return;
     }
 
-    nn_fsm_bad_action (aws->state, src, type);
+    nn_fsm_bad_action(aws->state, src, type);
 }
 
 static void nn_aws_handler (struct nn_fsm *self, int src, int type,
@@ -196,14 +196,6 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 nn_usock_setsockopt (&aws->usock, SOL_SOCKET, SO_RCVBUF,
                     &val, sizeof (val));
 
-                /*   Since the WebSocket handshake must poll, the receive
-                     timeout is set to zero. Later, it will be set again
-                     to the value specified by the socket option. */
-                val = 0;
-                sz = sizeof (val);
-                nn_usock_setsockopt (&aws->usock, SOL_SOCKET, SO_RCVTIMEO,
-                    &val, sizeof (val));
-
                 /*  Return ownership of the listening socket to the parent. */
                 nn_usock_swap_owner (aws->listener, &aws->listener_owner);
                 aws->listener = NULL;
@@ -213,8 +205,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
 
                 /*  Start the sws state machine. */
                 nn_usock_activate (&aws->usock);
-                nn_sws_start (&aws->sws, &aws->usock, NN_WS_SERVER,
-                    NULL, NULL);
+                nn_sws_start (&aws->sws, &aws->usock);
                 aws->state = NN_AWS_STATE_ACTIVE;
 
                 nn_epbase_stat_increment (aws->epbase,
@@ -231,7 +222,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
 
             case NN_USOCK_ACCEPT_ERROR:
                 nn_epbase_set_error (aws->epbase,
-                    nn_usock_geterrno (aws->listener));
+                    nn_usock_geterrno(aws->listener));
                 nn_epbase_stat_increment (aws->epbase,
                     NN_STAT_ACCEPT_ERRORS, 1);
                 nn_usock_accept (&aws->usock, aws->listener);
@@ -253,13 +244,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
 
         case NN_AWS_SRC_SWS:
             switch (type) {
-            case NN_SWS_RETURN_CLOSE_HANDSHAKE:
-                /*  Peer closed connection without intention to reconnect, or
-                    local endpoint failed remote because of invalid data. */
-                nn_sws_stop (&aws->sws);
-                aws->state = NN_AWS_STATE_STOPPING_SWS;
-                return;
-            case NN_SWS_RETURN_ERROR:
+            case NN_SWS_ERROR:
                 nn_sws_stop (&aws->sws);
                 aws->state = NN_AWS_STATE_STOPPING_SWS;
                 nn_epbase_stat_increment (aws->epbase,
@@ -274,7 +259,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  STOPPING_SWS state.                                                       */
+/*  STOPPING_SWS state.                                                      */
 /******************************************************************************/
     case NN_AWS_STATE_STOPPING_SWS:
         switch (src) {
@@ -283,7 +268,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
             case NN_USOCK_SHUTDOWN:
                 return;
-            case NN_SWS_RETURN_STOPPED:
+            case NN_SWS_STOPPED:
                 nn_usock_stop (&aws->usock);
                 aws->state = NN_AWS_STATE_STOPPING_USOCK;
                 return;
@@ -296,7 +281,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  STOPPING_USOCK state.                                                     */
+/*  STOPPING_USOCK state.                                                      */
 /******************************************************************************/
     case NN_AWS_STATE_STOPPING_USOCK:
         switch (src) {
@@ -306,7 +291,8 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SHUTDOWN:
                 return;
             case NN_USOCK_STOPPED:
-                nn_aws_stop (aws);
+                nn_fsm_raise (&aws->fsm, &aws->done, NN_AWS_ERROR);
+                aws->state = NN_AWS_STATE_DONE;
                 return;
             default:
                 nn_fsm_bad_action (aws->state, src, type);

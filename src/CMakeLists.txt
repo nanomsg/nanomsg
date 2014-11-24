@@ -277,8 +277,6 @@ set (NN_SOURCES
     transports/ws/sws.c
     transports/ws/ws.h
     transports/ws/ws.c
-    transports/ws/ws_handshake.h
-    transports/ws/ws_handshake.c
     transports/ws/sha1.h
     transports/ws/sha1.c
 )

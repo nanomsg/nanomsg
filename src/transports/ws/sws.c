@@ -33,12 +33,9 @@
 
 /*  States of the object as a whole. */
 #define NN_SWS_STATE_IDLE 1
-#define NN_SWS_STATE_PROTOHDR 2
-#define NN_SWS_STATE_STOPPING_STREAMHDR 3
-#define NN_SWS_STATE_ACTIVE 4
-#define NN_SWS_STATE_SHUTTING_DOWN 5
-#define NN_SWS_STATE_DONE 6
-#define NN_SWS_STATE_STOPPING 7
+#define NN_SWS_STATE_ACTIVE 2
+#define NN_SWS_STATE_SHUTTING_DOWN 3
+#define NN_SWS_STATE_DONE 4
 
 /*  Possible states of the inbound part of the object. */
 #define NN_SWS_INSTATE_HDR 1
@@ -52,7 +49,6 @@
 
 /*  Subordinate srcptr objects. */
 #define NN_SWS_SRC_USOCK 1
-#define NN_SWS_SRC_STREAMHDR 2
 
 /*  Constants to compose first byte of WebSocket message header from. */
 #define NN_SWS_FIN 0x80
@@ -88,7 +84,6 @@ void nn_sws_init (struct nn_sws *self, int src,
     nn_fsm_init (&self->fsm, nn_sws_handler, nn_sws_shutdown,
         src, self, owner);
     self->state = NN_SWS_STATE_IDLE;
-    nn_streamhdr_init (&self->streamhdr, NN_SWS_SRC_STREAMHDR, &self->fsm);
     self->usock = NULL;
     self->usock_owner.src = -1;
     self->usock_owner.fsm = NULL;
@@ -108,7 +103,6 @@ void nn_sws_term (struct nn_sws *self)
     nn_msg_term (&self->outmsg);
     nn_msg_term (&self->inmsg);
     nn_pipebase_term (&self->pipebase);
-    nn_streamhdr_term (&self->streamhdr);
     nn_fsm_term (&self->fsm);
 }
 
@@ -240,19 +234,12 @@ static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&sws->pipebase);
-        nn_streamhdr_stop (&sws->streamhdr);
-        sws->state = NN_SWS_STATE_STOPPING;
-    }
-    if (nn_slow (sws->state == NN_SWS_STATE_STOPPING)) {
-        if (nn_streamhdr_isidle (&sws->streamhdr)) {
-            nn_usock_swap_owner (sws->usock, &sws->usock_owner);
-            sws->usock = NULL;
-            sws->usock_owner.src = -1;
-            sws->usock_owner.fsm = NULL;
-            sws->state = NN_SWS_STATE_IDLE;
-            nn_fsm_stopped (&sws->fsm, NN_SWS_STOPPED);
-            return;
-        }
+        nn_usock_swap_owner (sws->usock, &sws->usock_owner);
+        sws->usock = NULL;
+        sws->usock_owner.src = -1;
+        sws->usock_owner.fsm = NULL;
+        sws->state = NN_SWS_STATE_IDLE;
+        nn_fsm_stopped (&sws->fsm, NN_SWS_STOPPED);
         return;
     }
 
@@ -279,77 +266,24 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
         case NN_FSM_ACTION:
             switch (type) {
             case NN_FSM_START:
-                nn_streamhdr_start (&sws->streamhdr, sws->usock,
-                    &sws->pipebase);
-                sws->state = NN_SWS_STATE_PROTOHDR;
+
+                /*  Start the pipe. */
+                rc = nn_pipebase_start (&sws->pipebase);
+                if (nn_slow (rc < 0)) {
+                   sws->state = NN_SWS_STATE_DONE;
+                   nn_fsm_raise (&sws->fsm, &sws->done, NN_SWS_ERROR);
+                   return;
+                }
+
+                /*  Start receiving a message in asynchronous manner. */
+                sws->instate = NN_SWS_INSTATE_HDR;
+                nn_usock_recv (sws->usock, &sws->inhdr, 2, NULL);
+
+                /*  Mark the pipe as available for sending. */
+                sws->outstate = NN_SWS_OUTSTATE_IDLE;
+
+                sws->state = NN_SWS_STATE_ACTIVE;
                 return;
-            default:
-                nn_fsm_bad_action (sws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (sws->state, src, type);
-        }
-
-/******************************************************************************/
-/*  PROTOHDR state.                                                           */
-/******************************************************************************/
-    case NN_SWS_STATE_PROTOHDR:
-        switch (src) {
-
-        case NN_SWS_SRC_STREAMHDR:
-            switch (type) {
-            case NN_STREAMHDR_OK:
-
-                /*  Before moving to the active state stop the streamhdr
-                    state machine. */
-                nn_streamhdr_stop (&sws->streamhdr);
-                sws->state = NN_SWS_STATE_STOPPING_STREAMHDR;
-                return;
-
-            case NN_STREAMHDR_ERROR:
-
-                /* Raise the error and move directly to the DONE state.
-                   streamhdr object will be stopped later on. */
-                sws->state = NN_SWS_STATE_DONE;
-                nn_fsm_raise (&sws->fsm, &sws->done, NN_SWS_ERROR);
-                return;
-
-            default:
-                nn_fsm_bad_action (sws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (sws->state, src, type);
-        }
-
-/******************************************************************************/
-/*  STOPPING_STREAMHDR state.                                                 */
-/******************************************************************************/
-    case NN_SWS_STATE_STOPPING_STREAMHDR:
-        switch (src) {
-
-        case NN_SWS_SRC_STREAMHDR:
-            switch (type) {
-            case NN_STREAMHDR_STOPPED:
-
-                 /*  Start the pipe. */
-                 rc = nn_pipebase_start (&sws->pipebase);
-                 if (nn_slow (rc < 0)) {
-                    sws->state = NN_SWS_STATE_DONE;
-                    nn_fsm_raise (&sws->fsm, &sws->done, NN_SWS_ERROR);
-                    return;
-                 }
-
-                 /*  Start receiving a message in asynchronous manner. */
-                 sws->instate = NN_SWS_INSTATE_HDR;
-                 nn_usock_recv (sws->usock, &sws->inhdr, 2, NULL);
-
-                 /*  Mark the pipe as available for sending. */
-                 sws->outstate = NN_SWS_OUTSTATE_IDLE;
-
-                 sws->state = NN_SWS_STATE_ACTIVE;
-                 return;
 
             default:
                 nn_fsm_bad_action (sws->state, src, type);

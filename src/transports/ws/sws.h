@@ -29,8 +29,6 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
-#include "../utils/streamhdr.h"
-
 #include "../../utils/msg.h"
 
 #include "masker.h"
@@ -55,9 +53,6 @@ struct nn_sws {
 
     /*  The underlying socket. */
     struct nn_usock *usock;
-
-    /*  Child state machine to do protocol header exchange. */
-    struct nn_streamhdr streamhdr;
 
     /*  The original owner of the underlying socket. */
     struct nn_fsm_owner usock_owner;

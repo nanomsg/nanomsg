@@ -29,6 +29,7 @@
 #include "../../utils/wire.h"
 #include "../../utils/int.h"
 #include "../../utils/attr.h"
+#include "../../utils/random.h"
 
 /*  States of the object as a whole. */
 #define NN_SWS_STATE_IDLE 1
@@ -55,9 +56,7 @@
 
 /*  Constants to compose first byte of WebSocket message header from. */
 #define NN_SWS_FIN 0x80
-#define NN_SWS_RSV1 0x40
-#define NN_SWS_RSV2 0x20
-#define NN_SWS_RSV3 0x10
+#define NN_SWS_RSVS 0x70
 #define NN_SWS_OPCODE 0x0f
 #define NN_SWS_OPCODE_CONTINUATION 0x00
 #define NN_SWS_OPCODE_BINARY 0x02
@@ -118,8 +117,12 @@ int nn_sws_isidle (struct nn_sws *self)
     return nn_fsm_isidle (&self->fsm);
 }
 
-void nn_sws_start (struct nn_sws *self, struct nn_usock *usock)
+void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode)
 {
+    /*  There are only two valid modes. */
+    nn_assert (mode == NN_SWS_MODE_SERVER || mode == NN_SWS_MODE_CLIENT);
+    self->mode = mode;
+
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
     self->usock_owner.src = NN_SWS_SRC_USOCK;
@@ -174,7 +177,23 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
         hdrsz += 9;
     }
 
-    /*  TODO: Add masking here. */
+    /*  When sending from client to server, mask the message. */
+    /*  TODO: Consider that nn_random doesn't produce cryptographically strong
+               random data. But then: Can we produce enough random data at high
+               message rates without running out of available entropy? */
+    if (sws->mode == NN_SWS_MODE_CLIENT) {
+        sws->outhdr [1] |= NN_SWS_MASK;
+        nn_random_generate (&sws->outhdr [hdrsz], 4);
+        nn_masker_init (&sws->masker, &sws->outhdr [hdrsz]);
+        hdrsz += 4;
+
+        /* TODO: If the message is shared, this is going to break
+                  everything... */
+        nn_masker_mask (&sws->masker, nn_chunkref_data (&sws->outmsg.sphdr),
+            nn_chunkref_size (&sws->outmsg.sphdr));
+        nn_masker_mask (&sws->masker, nn_chunkref_data (&sws->outmsg.body),
+            nn_chunkref_size (&sws->outmsg.body));
+    }
 
     /*  Start async sending. */
     iov [0].iov_base = sws->outhdr;
@@ -363,6 +382,23 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                 switch (sws->instate) {
                 case NN_SWS_INSTATE_HDR:
 
+                    /* TODO */
+                    nn_assert ((sws->inhdr [0] & NN_SWS_FIN) != 0);
+
+                    /*  Reserved bits should not be set. */
+                    nn_assert ((sws->inhdr [0] & NN_SWS_RSVS) == 0);
+
+                    /*  WS mapping for SP accepts only binary messages. */
+                    nn_assert ((sws->inhdr [0] & NN_SWS_OPCODE) ==
+                        NN_SWS_OPCODE_BINARY);
+
+                    /*  Server accepts only masked messages,
+                        client accepts only unmasked messages. */
+                    if (sws->mode == NN_SWS_MODE_SERVER)
+                        nn_assert ((sws->inhdr [1] & NN_SWS_MASK) != 0);
+                    else
+                        nn_assert ((sws->inhdr [1] & NN_SWS_MASK) == 0);
+
                     /*  Find out how many additional bytes we have to read
                         to get the entire message header. */
                     size = 0;
@@ -388,12 +424,21 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                     /*  Message header was fully received.
                         Now determine the payload size. */
-                    if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_16)
+                    if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_16) {
                         size = nn_gets (&sws->inhdr [2]);
-                    else if ((sws->inhdr [1] & NN_SWS_SIZE) == NN_SWS_SIZE_64)
+                        if (sws->inhdr [1] & NN_SWS_MASK)
+                            nn_masker_init (&sws->masker, &sws->inhdr [4]);
+                    }
+                    else if ((sws->inhdr[1] & NN_SWS_SIZE) == NN_SWS_SIZE_64) {
                         size = nn_getll (&sws->inhdr [2]);
-                    else
+                        if (sws->inhdr [1] & NN_SWS_MASK)
+                            nn_masker_init (&sws->masker, &sws->inhdr [10]);
+                    }
+                    else {
                         size = sws->inhdr [1] & NN_SWS_SIZE;
+                        if (sws->inhdr [1] & NN_SWS_MASK)
+                            nn_masker_init (&sws->masker, &sws->inhdr [2]);
+                    }
  
                     /* Allocate memory for the message. */
                     nn_msg_term (&sws->inmsg);
@@ -416,8 +461,15 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 
                 case NN_SWS_INSTATE_BODY:
 
-                    /*  Message body was received. Notify the owner that it
-                        can receive it. */
+                    /*  Unmask the message body, if needed. */
+                    if (sws->inhdr [1] & NN_SWS_MASK) {
+                        nn_masker_mask (&sws->masker,
+                            nn_chunkref_data (&sws->inmsg.body),
+                            nn_chunkref_size (&sws->inmsg.body));
+                    }
+
+                    /*  Message body is now fully received.
+                        Notify the owner that it can receive it. */
                     sws->instate = NN_SWS_INSTATE_HASMSG;
                     nn_pipebase_received (&sws->pipebase);
 

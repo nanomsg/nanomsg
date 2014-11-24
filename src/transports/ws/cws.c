@@ -357,7 +357,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
-                nn_sws_start (&cws->sws, &cws->usock);
+                nn_sws_start (&cws->sws, &cws->usock, NN_SWS_MODE_CLIENT);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 nn_epbase_stat_increment (&cws->epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);

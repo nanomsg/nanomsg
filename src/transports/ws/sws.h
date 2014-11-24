@@ -33,8 +33,13 @@
 
 #include "../../utils/msg.h"
 
+#include "masker.h"
+
 /*  This state machine handles WS connection from the point where it is
     established to the point when it is broken. */
+
+#define NN_SWS_MODE_SERVER 1
+#define NN_SWS_MODE_CLIENT 2
 
 #define NN_SWS_ERROR 1
 #define NN_SWS_STOPPED 2
@@ -44,6 +49,9 @@ struct nn_sws {
     /*  The state machine. */
     struct nn_fsm fsm;
     int state;
+
+    /*  Either NN_SWS_MODE_SERVER or NN_SWS_MODE_CLIENT. */
+    int mode;
 
     /*  The underlying socket. */
     struct nn_usock *usock;
@@ -77,6 +85,10 @@ struct nn_sws {
     /*  Message being sent at the moment. */
     struct nn_msg outmsg;
 
+    /*  We need only one instance of masker as it is used either for encoding
+        (on client) or decoding (on server), never both. */
+    struct nn_masker masker;
+
     /*  Event raised when the state machine ends. */
     struct nn_fsm_event done;
 };
@@ -86,7 +98,7 @@ void nn_sws_init (struct nn_sws *self, int src,
 void nn_sws_term (struct nn_sws *self);
 
 int nn_sws_isidle (struct nn_sws *self);
-void nn_sws_start (struct nn_sws *self, struct nn_usock *usock);
+void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode);
 void nn_sws_stop (struct nn_sws *self);
 
 #endif

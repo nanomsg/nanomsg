@@ -301,7 +301,9 @@ TRANSPORTS_WS = \
     src/transports/ws/ws.h \
     src/transports/ws/ws.c \
     src/transports/ws/sha1.h \
-    src/transports/ws/sha1.c
+    src/transports/ws/sha1.c \
+    src/transports/ws/masker.h \
+    src/transports/ws/masker.c
 
 TRANSPORTS_TCPMUX = \
     src/transports/tcpmux/atcpmux.h \

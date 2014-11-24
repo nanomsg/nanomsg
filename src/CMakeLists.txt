@@ -279,6 +279,8 @@ set (NN_SOURCES
     transports/ws/ws.c
     transports/ws/sha1.h
     transports/ws/sha1.c
+    transports/ws/masker.h
+    transports/ws/masker.c
 )
 
 if (WIN32)

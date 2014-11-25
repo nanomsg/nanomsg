@@ -23,6 +23,7 @@
 
 #include "cws.h"
 #include "sws.h"
+#include "masker.h"
 
 #include "../../ws.h"
 
@@ -41,6 +42,8 @@
 #include "../../utils/fast.h"
 #include "../../utils/int.h"
 #include "../../utils/attr.h"
+#include "../../utils/random.h"
+#include "../../utils/wire.h"
 
 #include <string.h>
 
@@ -56,18 +59,23 @@
 #define NN_CWS_STATE_RESOLVING 2
 #define NN_CWS_STATE_STOPPING_DNS 3
 #define NN_CWS_STATE_CONNECTING 4
-#define NN_CWS_STATE_ACTIVE 5
-#define NN_CWS_STATE_STOPPING_SWS 6
-#define NN_CWS_STATE_STOPPING_USOCK 7
-#define NN_CWS_STATE_WAITING 8
-#define NN_CWS_STATE_STOPPING_BACKOFF 9
-#define NN_CWS_STATE_STOPPING_SWS_FINAL 10
-#define NN_CWS_STATE_STOPPING 11
+#define NN_CWS_STATE_SENDING_HDR 5
+#define NN_CWS_STATE_RECEIVING_WSHDR 6
+#define NN_CWS_STATE_RECEIVING_SPHDR 7
+#define NN_CWS_STATE_ACTIVE 8
+#define NN_CWS_STATE_STOPPING_SWS 9
+#define NN_CWS_STATE_STOPPING_USOCK 10
+#define NN_CWS_STATE_WAITING 11
+#define NN_CWS_STATE_STOPPING_BACKOFF 12
+#define NN_CWS_STATE_STOPPING_SWS_FINAL 13
+#define NN_CWS_STATE_STOPPING 14
 
 #define NN_CWS_SRC_USOCK 1
 #define NN_CWS_SRC_RECONNECT_TIMER 2
 #define NN_CWS_SRC_DNS 3
 #define NN_CWS_SRC_SWS 4
+
+#define NN_CWS_BUF_SIZE 2048
 
 struct nn_cws {
 
@@ -84,6 +92,15 @@ struct nn_cws {
 
     /*  Used to wait before retrying to connect. */
     struct nn_backoff retry;
+
+    /*  This buffer is used to store both outgoing WebSocket connection request
+        and incoming reply. It's a pointer rather than static buffer so that
+        it can be deallocated after the handshake. */
+    uint8_t *buf;
+
+    /*  When reading to buf, this number indicates how many bytes are already
+        read. */
+    size_t bufsz;
 
     /*  State machine that handles the active part of the connection
         lifetime. */
@@ -197,6 +214,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CWS_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
+    self->buf = NULL;
     nn_sws_init (&self->sws, NN_CWS_SRC_SWS, &self->epbase, &self->fsm);
     nn_dns_init (&self->dns, NN_CWS_SRC_DNS, &self->fsm);
 
@@ -230,7 +248,8 @@ static void nn_cws_destroy (struct nn_epbase *self)
     nn_usock_term (&cws->usock);
     nn_fsm_term (&cws->fsm);
     nn_epbase_term (&cws->epbase);
-
+    if (cws->buf)
+        nn_free (cws->buf);
     nn_free (cws);
 }
 
@@ -275,6 +294,10 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_cws *cws;
+    struct nn_iovec iov;
+    size_t sz;
+    int protocol;
+    struct nn_masker masker;
 
     cws = nn_cont (self, struct nn_cws, fsm);
 
@@ -357,6 +380,169 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
+
+                /*  Allocate the buffer to be used during the handshake. */
+                nn_assert (cws->buf == NULL);
+                cws->buf = nn_alloc (NN_CWS_BUF_SIZE, "cws handshake buffer");
+                alloc_assert (cws->buf);
+
+                /*  Create WebSocket connection request. */
+                iov.iov_base = cws->buf;
+                iov.iov_len = snprintf (cws->buf, NN_CWS_BUF_SIZE,
+                        "GET / HTTP/1.1\r\n"
+                        "Host: %s\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: Upgrade\r\n"
+                        "Sec-WebSocket-Key: %s\r\n"
+                        "Sec-WebSocket-Version: 13\r\n"
+                        "Sec-WebSocket-Protocol: sp\r\n\r\n",
+                    "TODO", /*  TODO: The host part of the connection string. */
+                    "encoded_key" /*  TODO */);
+                nn_assert (iov.iov_len + 14 <= NN_CWS_BUF_SIZE);
+
+                /*  Bundle SP header with the request. */
+                sz = sizeof (protocol);
+                nn_epbase_getopt (&cws->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+                    &protocol, &sz);
+                nn_assert (sz == sizeof (protocol));
+                cws->buf [iov.iov_len] = 0x82;
+                cws->buf [iov.iov_len + 1] = 0x88;
+                nn_random_generate (&cws->buf [iov.iov_len + 2], 4);
+                cws->buf [iov.iov_len + 6] = 0x00;
+                cws->buf [iov.iov_len + 7] = 'S';
+                cws->buf [iov.iov_len + 8] = 'P';
+                cws->buf [iov.iov_len + 9] = 0x00;
+                nn_puts (&cws->buf [iov.iov_len + 10], protocol);
+                cws->buf [iov.iov_len + 12] = 0x00;
+                cws->buf [iov.iov_len + 13] = 0x00;
+                nn_masker_init (&masker, &cws->buf [iov.iov_len + 2]);
+                nn_masker_mask (&masker, &cws->buf [iov.iov_len + 6], 8);
+                iov.iov_len += 14;
+
+                /*  Send it to the peer. */
+                nn_usock_send (&cws->usock, &iov, 1);
+                cws->state = NN_CWS_STATE_SENDING_HDR;
+                return;
+
+            case NN_USOCK_ERROR:
+                nn_epbase_set_error (&cws->epbase,
+                    nn_usock_geterrno (&cws->usock));
+                nn_usock_stop (&cws->usock);
+                cws->state = NN_CWS_STATE_STOPPING_USOCK;
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_CONNECT_ERRORS, 1);
+                return;
+            default:
+                nn_fsm_bad_action (cws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (cws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  SENDING_HDR state.                                                        */
+/*  WebSocket request (with bundled SP header) is being sent.                 */
+/******************************************************************************/
+    case NN_CWS_STATE_SENDING_HDR:
+        switch (src) {
+
+        case NN_CWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_SENT:
+
+                /*  Start reading the reply. It is at least 15 bytes long. */
+                nn_assert (NN_CWS_BUF_SIZE >= 15);
+                nn_usock_recv (&cws->usock, cws->buf, 15, NULL);
+                cws->bufsz = 15;
+                cws->state = NN_CWS_STATE_RECEIVING_WSHDR;
+                return;
+
+            case NN_USOCK_ERROR:
+                nn_epbase_set_error (&cws->epbase,
+                    nn_usock_geterrno (&cws->usock));
+                nn_usock_stop (&cws->usock);
+                cws->state = NN_CWS_STATE_STOPPING_USOCK;
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_CONNECT_ERRORS, 1);
+                return;
+            default:
+                nn_fsm_bad_action (cws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (cws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  RECEIVING_WSHDR state.                                                    */
+/*  WebSocket reply is being received.                                        */
+/******************************************************************************/
+    case NN_CWS_STATE_RECEIVING_WSHDR:
+        switch (src) {
+
+        case NN_CWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+
+                /*  Check whether WebSocket connection request was fully read.
+                    If not so, read one more byte and repeat. */
+                nn_assert (cws->bufsz >= 4);
+                if (memcmp (&cws->buf [cws->bufsz - 4], "\r\n\r\n", 4) != 0) {
+                    nn_assert (NN_CWS_BUF_SIZE >= cws->bufsz + 1);
+                    nn_usock_recv (&cws->usock,
+                        &cws->buf [cws->bufsz], 1, NULL);
+                    ++cws->bufsz;
+                    return;
+                }
+
+                /*  TODO: Do reply validation here. */
+
+                /*  When WebSocket response was received, read SP header. */
+                nn_assert (NN_CWS_BUF_SIZE >= 10);
+                nn_usock_recv (&cws->usock, cws->buf, 10, NULL);
+                cws->bufsz = 10;
+                cws->state = NN_CWS_STATE_RECEIVING_SPHDR;
+                return;
+
+            case NN_USOCK_ERROR:
+                nn_epbase_set_error (&cws->epbase,
+                    nn_usock_geterrno (&cws->usock));
+                nn_usock_stop (&cws->usock);
+                cws->state = NN_CWS_STATE_STOPPING_USOCK;
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_INPROGRESS_CONNECTIONS, -1);
+                nn_epbase_stat_increment (&cws->epbase,
+                    NN_STAT_CONNECT_ERRORS, 1);
+                return;
+            default:
+                nn_fsm_bad_action (cws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (cws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  RECEIVING_SPHDR state.                                                    */
+/*  SP protocol header is being received.                                     */
+/******************************************************************************/
+    case NN_CWS_STATE_RECEIVING_SPHDR:
+        switch (src) {
+
+        case NN_CWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+
+                /* TODO: Do SP header validation here. */
+
+                /*  Start normal communication. */
+                nn_free (cws->buf);
+                cws->buf = NULL;
                 nn_sws_start (&cws->sws, &cws->usock, NN_SWS_MODE_CLIENT);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 nn_epbase_stat_increment (&cws->epbase,
@@ -365,6 +551,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 nn_epbase_clear_error (&cws->epbase);
                 return;
+
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&cws->epbase,
                     nn_usock_geterrno (&cws->usock));

@@ -26,19 +26,26 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/attr.h"
+#include "../../utils/alloc.h"
+#include "../../utils/wire.h"
 
 #define NN_AWS_STATE_IDLE 1
 #define NN_AWS_STATE_ACCEPTING 2
-#define NN_AWS_STATE_ACTIVE 3
-#define NN_AWS_STATE_STOPPING_SWS 4
-#define NN_AWS_STATE_STOPPING_USOCK 5
-#define NN_AWS_STATE_DONE 6
-#define NN_AWS_STATE_STOPPING_SWS_FINAL 7
-#define NN_AWS_STATE_STOPPING 8
+#define NN_AWS_STATE_RECEIVING_WSHDR 3
+#define NN_AWS_STATE_SENDING_HDR 4
+#define NN_AWS_STATE_RECEIVING_SPHDR 5
+#define NN_AWS_STATE_ACTIVE 6
+#define NN_AWS_STATE_STOPPING_SWS 7
+#define NN_AWS_STATE_STOPPING_USOCK 8
+#define NN_AWS_STATE_DONE 9
+#define NN_AWS_STATE_STOPPING_SWS_FINAL 10
+#define NN_AWS_STATE_STOPPING 11
 
 #define NN_AWS_SRC_USOCK 1
 #define NN_AWS_SRC_SWS 2
 #define NN_AWS_SRC_LISTENER 3
+
+#define NN_AWS_BUF_SIZE 2048
 
 /*  Private functions. */
 static void nn_aws_handler (struct nn_fsm *self, int src, int type,
@@ -58,6 +65,7 @@ void nn_aws_init (struct nn_aws *self, int src,
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;
     nn_sws_init (&self->sws, NN_AWS_SRC_SWS, epbase, &self->fsm);
+    self->buf = NULL;
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);
@@ -71,6 +79,8 @@ void nn_aws_term (struct nn_aws *self)
     nn_fsm_event_term (&self->done);
     nn_fsm_event_term (&self->accepted);
     nn_sws_term (&self->sws);
+    if (self->buf)
+        nn_free (self->buf);
     nn_usock_term (&self->usock);
     nn_fsm_term (&self->fsm);
 }
@@ -142,6 +152,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_aws *aws;
+    struct nn_iovec iov;
     int val;
     size_t sz;
 
@@ -203,13 +214,17 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 aws->listener_owner.fsm = NULL;
                 nn_fsm_raise (&aws->fsm, &aws->accepted, NN_AWS_ACCEPTED);
 
-                /*  Start the sws state machine. */
-                nn_usock_activate (&aws->usock);
-                nn_sws_start (&aws->sws, &aws->usock, NN_SWS_MODE_SERVER);
-                aws->state = NN_AWS_STATE_ACTIVE;
+                /*  Allocate the buffer to be used during the handshake. */
+                nn_assert (aws->buf == NULL);
+                aws->buf = nn_alloc (NN_AWS_BUF_SIZE, "aws handshake buffer");
+                alloc_assert (aws->buf);
 
-                nn_epbase_stat_increment (aws->epbase,
-                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+                /*  Start reading the request. It is at least 150 bytes long. */
+                nn_usock_activate (&aws->usock);
+                nn_assert (NN_AWS_BUF_SIZE >= 150);
+                nn_usock_recv (&aws->usock, aws->buf, 150, NULL);
+                aws->bufsz = 150;
+                aws->state = NN_AWS_STATE_RECEIVING_WSHDR;
 
                 return;
 
@@ -228,6 +243,138 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 nn_usock_accept (&aws->usock, aws->listener);
                 return;
 
+            default:
+                nn_fsm_bad_action (aws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (aws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  RECEIVING_WSHDR state.                                                    */
+/*  WebSocket connection request from the client is being read.               */
+/******************************************************************************/
+    case NN_AWS_STATE_RECEIVING_WSHDR:
+        switch (src) {
+
+        case NN_AWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+
+                /*  Check whether WebSocket connection reply was fully read.
+                    If not so, read one more byte and repeat. */
+                nn_assert (aws->bufsz >= 4);
+                if (memcmp (&aws->buf [aws->bufsz - 4], "\r\n\r\n", 4) != 0) {
+                    nn_assert (NN_AWS_BUF_SIZE >= aws->bufsz + 1);
+                    nn_usock_recv (&aws->usock,
+                        &aws->buf [aws->bufsz], 1, NULL);
+                    ++aws->bufsz;
+                    return;
+                }
+
+                /*  TODO: Validate the request. */
+
+                /*  Send the WebSocket connection reply. */
+                iov.iov_base = aws->buf;
+                iov.iov_len = snprintf (aws->buf, NN_AWS_BUF_SIZE,
+                        "HTTP/1.1 101 Switching Protocols\r\n"
+                        "Upgrade: websocket\r\n"
+                        "Connection: Upgrade\r\n"
+                        "Sec-WebSocket-Accept: %s\r\n"
+                        "Sec-WebSocket-Protocol: sp\r\n\r\n",
+                    "accept_key" /* TODO */);
+                nn_assert (iov.iov_len + 10 <= NN_AWS_BUF_SIZE);
+
+                /*  Bundle SP header with the request. */
+                sz = sizeof (val);
+                nn_epbase_getopt (aws->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
+                    &val, &sz);
+                nn_assert (sz == sizeof (val));
+                aws->buf [iov.iov_len] = 0x82;
+                aws->buf [iov.iov_len + 1] = 0x08;
+                aws->buf [iov.iov_len + 2] = 0x00;
+                aws->buf [iov.iov_len + 3] = 'S';
+                aws->buf [iov.iov_len + 4] = 'P';
+                aws->buf [iov.iov_len + 5] = 0x00;
+                nn_puts (&aws->buf [iov.iov_len + 6], val);
+                aws->buf [iov.iov_len + 8] = 0x00;
+                aws->buf [iov.iov_len + 9] = 0x00;
+                iov.iov_len += 10;
+
+                /*  Send it to the peer. */
+                nn_usock_send (&aws->usock, &iov, 1);
+                aws->state = NN_AWS_STATE_SENDING_HDR;
+
+                return;
+
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&aws->usock);
+                aws->state = NN_AWS_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (aws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (aws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  SENDING_HDR state.                                                        */
+/*  WebSocket connection reply is being sent along with SP protocol header.   */
+/******************************************************************************/
+    case NN_AWS_STATE_SENDING_HDR:
+        switch (src) {
+
+        case NN_AWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_SENT:
+
+                /*  Reply is sent. Now read the SP protocol header. */
+                nn_assert (NN_AWS_BUF_SIZE >= 14);
+                nn_usock_recv (&aws->usock, aws->buf, 14, NULL);
+                aws->bufsz = 14;
+                aws->state = NN_AWS_STATE_RECEIVING_SPHDR;
+                return;
+
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&aws->usock);
+                aws->state = NN_AWS_STATE_STOPPING_USOCK;
+                return;
+            default:
+                nn_fsm_bad_action (aws->state, src, type);
+            }
+
+        default:
+            nn_fsm_bad_source (aws->state, src, type);
+        }
+
+/******************************************************************************/
+/*  RECEIVING_SPHDR state.                                                    */
+/*  SP protocol header is being read.                                         */
+/******************************************************************************/
+    case NN_AWS_STATE_RECEIVING_SPHDR:
+        switch (src) {
+
+        case NN_AWS_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_RECEIVED:
+
+                /*  TODO: Validate the SP header. */
+                
+                /*  Start the sws state machine. */
+                nn_free (aws->buf);
+                aws->buf = NULL;
+                nn_sws_start (&aws->sws, &aws->usock, NN_SWS_MODE_SERVER);
+                aws->state = NN_AWS_STATE_ACTIVE;                
+                nn_epbase_stat_increment (aws->epbase,
+                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+                return;
+            case NN_USOCK_ERROR:
+                nn_usock_stop (&aws->usock);
+                aws->state = NN_AWS_STATE_STOPPING_USOCK;
+                return;
             default:
                 nn_fsm_bad_action (aws->state, src, type);
             }

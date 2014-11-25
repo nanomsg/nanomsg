@@ -76,3 +76,4 @@ void nn_epbase_clear_error (struct nn_epbase *self)
 void nn_epbase_stat_increment(struct nn_epbase *self, int name, int increment) {
     nn_ep_stat_increment(self->ep, name, increment);
 }
+

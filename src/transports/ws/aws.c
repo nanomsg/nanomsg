@@ -317,9 +317,11 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             case NN_USOCK_ERROR:
+            case NN_USOCK_SHUTDOWN:
                 nn_usock_stop (&aws->usock);
                 aws->state = NN_AWS_STATE_STOPPING_USOCK;
                 return;
+
             default:
                 nn_fsm_bad_action (aws->state, src, type);
             }
@@ -347,6 +349,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 return;
 
             case NN_USOCK_ERROR:
+            case NN_USOCK_SHUTDOWN:
                 nn_usock_stop (&aws->usock);
                 aws->state = NN_AWS_STATE_STOPPING_USOCK;
                 return;
@@ -380,6 +383,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                     NN_STAT_ACCEPTED_CONNECTIONS, 1);
                 return;
             case NN_USOCK_ERROR:
+            case NN_USOCK_SHUTDOWN:
                 nn_usock_stop (&aws->usock);
                 aws->state = NN_AWS_STATE_STOPPING_USOCK;
                 return;

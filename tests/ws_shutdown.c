@@ -24,20 +24,20 @@
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/pipeline.h"
-#include "../src/tcp.h"
+#include "../src/ws.h"
 
 #include "testutil.h"
 #include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 #include "../src/utils/atomic.c"
 
-/*  Stress test the TCP transport. */
+/*  Stress test the WS transport. */
 
 #define THREAD_COUNT 100
 #define TEST2_THREAD_COUNT 10
 #define MESSAGES_PER_THREAD 10
 #define TEST_LOOPS 10
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
+#define SOCKET_ADDRESS "ws://127.0.0.1:5557"
 
 struct nn_atomic active;
 

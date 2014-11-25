@@ -465,6 +465,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 cws->state = NN_CWS_STATE_RECEIVING_WSHDR;
                 return;
 
+            case NN_USOCK_SHUTDOWN:
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&cws->epbase,
                     nn_usock_geterrno (&cws->usock));
@@ -514,6 +515,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 cws->state = NN_CWS_STATE_RECEIVING_SPHDR;
                 return;
 
+            case NN_USOCK_SHUTDOWN:
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&cws->epbase,
                     nn_usock_geterrno (&cws->usock));
@@ -557,6 +559,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_clear_error (&cws->epbase);
                 return;
 
+            case NN_USOCK_SHUTDOWN:
             case NN_USOCK_ERROR:
                 nn_epbase_set_error (&cws->epbase,
                     nn_usock_geterrno (&cws->usock));

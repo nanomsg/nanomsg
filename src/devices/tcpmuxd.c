@@ -261,6 +261,7 @@ static void nn_tcpmuxd_routine (void *arg)
             }
             ctx->pfd [ctx->pfd_size - 1].fd = conn;
             ctx->pfd [ctx->pfd_size - 1].events = 0;
+            ctx->pfd [ctx->pfd_size - 1].revents = 0;
 
             /*  Read the connection header. */
             ssz = recv (conn, buf, 2, 0);
@@ -273,7 +274,7 @@ static void nn_tcpmuxd_routine (void *arg)
             errno_assert (ssz >= 0);
             nn_assert (ssz == sz);
             for (i = 0; i != sz; ++i)
-                tc->service [sz] = tolower (tc->service [sz]);
+                tc->service [i] = tolower (tc->service [i]);
             tc->service [sz] = 0;
             
             /*  Add the entry to the IPC connections list. */

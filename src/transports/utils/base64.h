@@ -36,7 +36,8 @@
 int nn_base64_encode (const uint8_t *in, size_t in_len,
     char *out, size_t out_len);
 
-/*  This function decodes a base64 string into supplied buffer. */
+/*  This function decodes a base64 string into supplied buffer. Returns
+    number of bytes in the result or negative number in case of error. */
 int nn_base64_decode (const char *in, size_t in_len,
     uint8_t *out, size_t out_len);
 

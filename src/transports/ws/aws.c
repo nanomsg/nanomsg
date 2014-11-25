@@ -22,12 +22,15 @@
 */
 
 #include "aws.h"
+#include "sha1.h"
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/attr.h"
 #include "../../utils/alloc.h"
 #include "../../utils/wire.h"
+
+#include "../utils/base64.h"
 
 #define NN_AWS_STATE_IDLE 1
 #define NN_AWS_STATE_ACCEPTING 2
@@ -52,6 +55,8 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_aws_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
+static void nn_aws_convert_key (const char *buf, size_t len,
+    char *result, size_t result_len);
 
 void nn_aws_init (struct nn_aws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
@@ -155,6 +160,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
     struct nn_iovec iov;
     int val;
     size_t sz;
+    char key [29];
 
     aws = nn_cont (self, struct nn_aws, fsm);
 
@@ -276,6 +282,8 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 /*  TODO: Validate the request. */
 
                 /*  Send the WebSocket connection reply. */
+                nn_aws_convert_key ("0123456789012345678901234567", 28,
+                    key, sizeof (key)); // TODO
                 iov.iov_base = aws->buf;
                 iov.iov_len = snprintf (aws->buf, NN_AWS_BUF_SIZE,
                         "HTTP/1.1 101 Switching Protocols\r\n"
@@ -283,7 +291,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                         "Connection: Upgrade\r\n"
                         "Sec-WebSocket-Accept: %s\r\n"
                         "Sec-WebSocket-Protocol: sp\r\n\r\n",
-                    "accept_key" /* TODO */);
+                    key);
                 nn_assert (iov.iov_len + 10 <= NN_AWS_BUF_SIZE);
 
                 /*  Bundle SP header with the request. */
@@ -455,5 +463,23 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
     default:
         nn_fsm_bad_state (aws->state, src, type);
     }
+}
+
+static void nn_aws_convert_key (const char *buf, size_t len,
+    char *result, size_t result_len)
+{
+    int rc;
+    struct nn_sha1 sha1;
+    const char *magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    nn_assert (len >= 28);
+
+    nn_sha1_init (&sha1);
+    nn_sha1_hash (&sha1, buf, 28);
+    nn_sha1_hash (&sha1, magic, 36);
+    rc = nn_base64_encode (nn_sha1_result (&sha1),
+        NN_SHA1_RESULT_LEN, result, result_len);
+    errnum_assert (rc >= 0, -rc);
+    nn_assert (rc == 28);
 }
 

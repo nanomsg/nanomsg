@@ -56,7 +56,7 @@ static void nn_sha1_add (struct nn_sha1 *self, uint8_t data)
         buf [self->buffer_offset] = data;
 
     self->buffer_offset++;
-    if (self->buffer_offset == SHA1_BLOCK_LEN) {
+    if (self->buffer_offset == NN_SHA1_BLOCK_LEN) {
         a = self->state [0];
         b = self->state [1];
         c = self->state [2];
@@ -98,10 +98,14 @@ static void nn_sha1_add (struct nn_sha1 *self, uint8_t data)
     }
 }
 
-void nn_sha1_hashbyte (struct nn_sha1 *self, uint8_t data)
+void nn_sha1_hash (struct nn_sha1 *self, const uint8_t *data, size_t len)
 {
-    ++self->bytes_hashed;
-    nn_sha1_add (self, data);
+    size_t i;
+
+    for (i = 0; i != len; ++i) {
+        ++self->bytes_hashed;
+        nn_sha1_add (self, data [i]);
+    }
 }
 
 uint8_t* nn_sha1_result (struct nn_sha1 *self)

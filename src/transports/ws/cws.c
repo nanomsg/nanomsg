@@ -24,6 +24,7 @@
 #include "cws.h"
 #include "sws.h"
 #include "masker.h"
+#include "sha1.h"
 
 #include "../../ws.h"
 
@@ -32,6 +33,7 @@
 #include "../utils/iface.h"
 #include "../utils/backoff.h"
 #include "../utils/literal.h"
+#include "../utils/base64.h"
 
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
@@ -128,6 +130,7 @@ static void nn_cws_shutdown (struct nn_fsm *self, int src, int type,
 static void nn_cws_start_resolving (struct nn_cws *self);
 static void nn_cws_start_connecting (struct nn_cws *self,
     struct sockaddr_storage *ss, size_t sslen);
+static void nn_cws_generate_key (char *buf, size_t len);
 
 int nn_cws_create (void *hint, struct nn_epbase **epbase)
 {
@@ -298,6 +301,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     size_t sz;
     int protocol;
     struct nn_masker masker;
+    char key [29];
 
     cws = nn_cont (self, struct nn_cws, fsm);
 
@@ -387,6 +391,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 alloc_assert (cws->buf);
 
                 /*  Create WebSocket connection request. */
+                nn_cws_generate_key (key, sizeof (key));
                 iov.iov_base = cws->buf;
                 iov.iov_len = snprintf (cws->buf, NN_CWS_BUF_SIZE,
                         "GET / HTTP/1.1\r\n"
@@ -396,8 +401,8 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                         "Sec-WebSocket-Key: %s\r\n"
                         "Sec-WebSocket-Version: 13\r\n"
                         "Sec-WebSocket-Protocol: sp\r\n\r\n",
-                    "TODO", /*  TODO: The host part of the connection string. */
-                    "encoded_key" /*  TODO */);
+                    "TODO", /* TODO: The host part of the connection string. */
+                   key);
                 nn_assert (iov.iov_len + 14 <= NN_CWS_BUF_SIZE);
 
                 /*  Bundle SP header with the request. */
@@ -816,4 +821,35 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
+
+static void nn_cws_generate_key (char *buf, size_t len)
+{
+    int rc;
+    uint8_t rand_key [16];
+    char encoded_key [25];
+    struct nn_sha1 sha1;
+    const char *magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+    /*  Check whether the key would fit into the buffer. */
+    nn_assert (len >= 29);
+
+    /*  Generate random 16-byte key as per RFC 6455 4.1 */
+    nn_random_generate (rand_key, sizeof (rand_key));
+
+    /*  Convert the key into Base64. */
+    rc = nn_base64_encode (rand_key, sizeof (rand_key),
+        encoded_key, sizeof (encoded_key));
+    nn_assert (strlen (encoded_key) + 1 == sizeof (encoded_key));
+
+    /*  Pre-calculated expected Accept Key value as per
+        RFC 6455 section 4.2.2.5.4 (version December 2011). */
+    nn_sha1_init (&sha1);
+    nn_sha1_hash (&sha1, encoded_key, 24);
+    nn_sha1_hash (&sha1, magic, 36);
+    rc = nn_base64_encode (nn_sha1_result (&sha1),
+        NN_SHA1_RESULT_LEN, buf, len);
+    errnum_assert (rc >= 0, -rc);
+    nn_assert (rc == 28);
+}
+
 

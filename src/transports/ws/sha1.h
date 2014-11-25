@@ -25,6 +25,8 @@
 
 #include "../../utils/int.h"
 
+#include <stddef.h>
+
 /*****************************************************************************/
 /*  SHA-1 SECURITY NOTICE:                                                   */
 /*  The algorithm as designed below is not intended for general purpose use. */
@@ -38,19 +40,19 @@
 /*  the SHA1 hash of arbitrary byte locations byte-by-byte.                  */
 /*****************************************************************************/
 
-#define SHA1_HASH_LEN 20
-#define SHA1_BLOCK_LEN 64
+#define NN_SHA1_RESULT_LEN 20
+#define NN_SHA1_BLOCK_LEN 64
 
 struct nn_sha1 {
-    uint32_t buffer [SHA1_BLOCK_LEN / sizeof (uint32_t)];
-    uint32_t state [SHA1_HASH_LEN / sizeof (uint32_t)];
+    uint32_t buffer [NN_SHA1_BLOCK_LEN / sizeof (uint32_t)];
+    uint32_t state [NN_SHA1_RESULT_LEN / sizeof (uint32_t)];
     uint32_t bytes_hashed;
     uint8_t buffer_offset;
     uint8_t is_little_endian;
 };
 
 void nn_sha1_init (struct nn_sha1 *self);
-void nn_sha1_hashbyte (struct nn_sha1 *self, uint8_t data);
+void nn_sha1_hash (struct nn_sha1 *self, const uint8_t *data, size_t len);
 uint8_t* nn_sha1_result (struct nn_sha1 *self);
 
 #endif

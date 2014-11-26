@@ -30,6 +30,7 @@
 #include "../../aio/usock.h"
 
 #include "../../utils/msg.h"
+#include "../../utils/list.h"
 
 #include "masker.h"
 
@@ -67,8 +68,11 @@ struct nn_sws {
         possible header is 14 bytes long, see RFC 6455, section 5.2. */
     uint8_t inhdr [14];
 
-    /*  Message being received at the moment. */
-    struct nn_msg inmsg;
+    /*  Message being received at the moment, if form of list of fragments. */
+    struct nn_list inmsg;
+
+    /*  Total size of all the fragments inside inmsg list. */
+    size_t inmsglen;
 
     /*  State of the outbound state machine. */
     int outstate;

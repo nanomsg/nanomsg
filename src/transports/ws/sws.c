@@ -165,9 +165,25 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert_state (sws, NN_SWS_STATE_ACTIVE);
     nn_assert (sws->outstate == NN_SWS_OUTSTATE_IDLE);
 
-    /*  Move the message to the local storage. */
     nn_msg_term (&sws->outmsg);
-    nn_msg_mv (&sws->outmsg, msg);
+
+    /*  Move the message to the local storage. */
+    if (sws->mode == NN_SWS_MODE_SERVER) {
+        
+        nn_msg_mv (&sws->outmsg, msg);
+    }
+    else {
+
+        /*  On the client we have to do hard copy of the message as we are
+            going to mask it. Masking the data in-place would cause other
+            co-owners of the message to access garbled data. */
+        /*  TODO: Can be optimised for exclusively owned messages.
+                   Also we may want to mask the message in manageable chunks
+                   (such as 4kB) so that there's no need to allocate 2x amount
+                   of memory. */
+        nn_msg_cp (&sws->outmsg, msg, 1);
+        nn_msg_term (msg);
+    }
 
     /*  Serialise the message header. */
     sws->outhdr [0] = NN_SWS_FIN | NN_SWS_OPCODE_BINARY;

@@ -625,7 +625,7 @@ void nn_req_action_send (struct nn_req *self, int allow_delay)
     struct nn_pipe *to;
 
     /*  Send the request. */
-    nn_msg_cp (&msg, &self->task.request);
+    nn_msg_cp (&msg, &self->task.request, 0);
     rc = nn_xreq_send_to (&self->xreq.sockbase, &msg, &to);
 
     /*  If the request cannot be sent at the moment wait till

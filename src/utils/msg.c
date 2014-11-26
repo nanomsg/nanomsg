@@ -52,11 +52,29 @@ void nn_msg_mv (struct nn_msg *dst, struct nn_msg *src)
     nn_chunkref_mv (&dst->body, &src->body);
 }
 
-void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src)
+void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src, int hard)
 {
-    nn_chunkref_cp (&dst->sphdr, &src->sphdr);
-    nn_chunkref_cp (&dst->hdrs, &src->hdrs);
-    nn_chunkref_cp (&dst->body, &src->body);
+    size_t sz;
+
+    /*  In the case of soft-copy only chunk references are increased.
+        No actual copying happens. */
+    if (!hard) {
+        nn_chunkref_cp (&dst->sphdr, &src->sphdr);
+        nn_chunkref_cp (&dst->hdrs, &src->hdrs);
+        nn_chunkref_cp (&dst->body, &src->body);
+        return;
+    }
+
+    /*  Hard copy. Data are actually copied. */
+    sz = nn_chunkref_size (&src->sphdr);
+    nn_chunkref_init (&dst->sphdr, sz);
+    memcpy (nn_chunkref_data (&dst->sphdr), nn_chunkref_data (&src->sphdr), sz);
+    sz = nn_chunkref_size (&src->hdrs);
+    nn_chunkref_init (&dst->hdrs, sz);
+    memcpy (nn_chunkref_data (&dst->hdrs), nn_chunkref_data (&src->hdrs), sz);
+    sz = nn_chunkref_size (&src->body);
+    nn_chunkref_init (&dst->body, sz);
+    memcpy (nn_chunkref_data (&dst->body), nn_chunkref_data (&src->body), sz);
 }
 
 void nn_msg_bulkcopy_start (struct nn_msg *self, uint32_t copies)

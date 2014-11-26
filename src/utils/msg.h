@@ -58,7 +58,7 @@ void nn_msg_mv (struct nn_msg *dst, struct nn_msg *src);
 
 /*  Copies a message from src to dst. dst should not be
     initialised prior to the operation. */
-void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src);
+void nn_msg_cp (struct nn_msg *dst, struct nn_msg *src, int hard);
 
 /*  Bulk copying is done by first invoking nn_msg_bulkcopy_start on the source
     message and specifying how many copies of the message will be made. Then,

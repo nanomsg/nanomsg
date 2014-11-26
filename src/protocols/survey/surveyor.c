@@ -482,7 +482,7 @@ static void nn_surveyor_resend (struct nn_surveyor *self)
     int rc;
     struct nn_msg msg;
 
-    nn_msg_cp (&msg, &self->tosend);
+    nn_msg_cp (&msg, &self->tosend, 0);
     rc = nn_xsurveyor_send (&self->xsurveyor.sockbase, &msg);
     errnum_assert (rc == 0, -rc);
 }

@@ -23,6 +23,7 @@
 
 #include "sws.h"
 #include "../../ws.h"
+#include "../../nn.h"
 
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
@@ -366,6 +367,8 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     int mask_pos;
     size_t nn_msg_size;
     size_t hdr_len;
+    struct nn_cmsghdr *cmsg;
+    struct nn_msghdr msghdr;
     uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
 
     sws = nn_cont (self, struct nn_sws, pipebase);
@@ -381,16 +384,31 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     hdr_len = NN_SWS_FRAME_SIZE_INITIAL;
 
+    cmsg = NULL;
+    msghdr.msg_iov = NULL;
+    msghdr.msg_iovlen = 0;
+    msghdr.msg_controllen = nn_chunkref_size (&sws->outmsg.hdrs);
+
     /*  If the outgoing message has specified an opcode and control framing in
         its header, properly frame it as per RFC 6455 5.2. */
-    if (nn_chunkref_size (&sws->outmsg.body) >= 1) {
-        memcpy (sws->outhdr, nn_chunkref_data (&sws->outmsg.body), 1);
-        nn_chunkref_trim (&sws->outmsg.body, 1);
+    if (msghdr.msg_controllen > 0) {
+        msghdr.msg_control = nn_chunkref_data (&sws->outmsg.hdrs);
+        cmsg = NN_CMSG_FIRSTHDR (&msghdr);
+        while (cmsg) {
+            if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_HDR_OPCODE)
+                break;
+            cmsg = NN_CMSG_NXTHDR (&msghdr, cmsg);
+        }
     }
-    else {
-        /*  If the header does not specify an opcode, assume this default. */
-        sws->outhdr [0] = NN_WS_OPCODE_BINARY | NN_SWS_FRAME_BITMASK_FIN;
-    }
+
+    /*  If the header does not specify an opcode, assume default. */
+    if (cmsg)
+        sws->outhdr [0] = *(uint8_t *) NN_CMSG_DATA (cmsg);
+    else
+        sws->outhdr [0] = NN_WS_OPCODE_BINARY;
+
+    /*  For now, enforce that outgoing messages are the final frame. */
+    sws->outhdr [0] |= NN_SWS_FRAME_BITMASK_FIN;
 
     nn_msg_size = nn_chunkref_size (&sws->outmsg.sphdr) +
         nn_chunkref_size (&sws->outmsg.body);
@@ -467,8 +485,10 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_iovec iov [1];
     struct nn_list_item *it;
     struct msg_chunk *ch;
+    struct nn_cmsghdr *cmsg;
+    uint8_t opcode_hdr;
+    size_t cmsgsz;
     int pos;
-    size_t len;
 
     sws = nn_cont (self, struct nn_sws, pipebase);
 
@@ -482,9 +502,9 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
         sws->instate = NN_SWS_INSTATE_CLOSED;
 
         /*  Inform user this connection has been failed. */
-        nn_msg_init (msg, 1);
-        *(uint8_t *) nn_chunkref_data (&msg->body) = NN_WS_MSG_TYPE_GONE |
-            NN_SWS_FRAME_BITMASK_FIN;
+        nn_msg_init (msg, 0);
+
+        opcode_hdr = NN_WS_MSG_TYPE_GONE | NN_SWS_FRAME_BITMASK_FIN;
 
         iov [0].iov_base = sws->fail_msg;
         iov [0].iov_len = sws->fail_msg_len;
@@ -507,7 +527,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
             nn_fsm_raise (&sws->fsm, &sws->done,
                 NN_SWS_RETURN_CLOSE_HANDSHAKE);
         }
-        return 0;
+        break;
     
     case NN_SWS_INSTATE_RECVD_CHUNKED:
 
@@ -515,15 +535,12 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
             so it's expected that this is the final frame. */
         nn_assert (sws->is_final_frame);
 
-        len = sws->inmsg_total_size + sizeof (sws->inmsg_hdr);
+        nn_msg_init (msg, sws->inmsg_total_size);
 
-        nn_msg_init (msg, len);
-            
-        /*  Relay opcode, RSV and FIN bits to the user in order to
-            interpret payload. */
-        memcpy (nn_chunkref_data (&msg->body),
-            &sws->inmsg_hdr, sizeof (sws->inmsg_hdr));
-        pos = sizeof (sws->inmsg_hdr);
+        /*  Relay opcode to the user in order to interpret payload. */
+        opcode_hdr = sws->inmsg_hdr;
+
+        pos = 0;
 
         /*  Reassemble incoming message scatter array. */
         while (!nn_list_empty (&sws->inmsg_array)) {
@@ -536,7 +553,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
             nn_msg_chunk_term (ch, &sws->inmsg_array);
         }
 
-        nn_assert (pos == len);
+        nn_assert (pos == sws->inmsg_total_size);
         nn_assert (nn_list_empty (&sws->inmsg_array));
 
         /*  No longer collecting scatter array of incoming msg chunks. */
@@ -544,7 +561,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
         nn_sws_recv_hdr (sws);
 
-        return 0;
+        break;
 
     case NN_SWS_INSTATE_RECVD_CONTROL:
 
@@ -552,17 +569,12 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
         it's expected that this is the final frame. */
         nn_assert (sws->is_final_frame);
 
-        len = sws->inmsg_current_chunk_len + sizeof (sws->inmsg_hdr);
+        nn_msg_init (msg, sws->inmsg_current_chunk_len);
 
-        nn_msg_init (msg, len);
+        /*  Relay opcode to the user in order to interpret payload. */
+        opcode_hdr = sws->inhdr [0];
 
-        /*  Relay opcode, RSV and FIN bits to the user in order to
-            interpret payload. */
-        memcpy (nn_chunkref_data (&msg->body),
-            &sws->inhdr, sizeof (sws->inmsg_hdr));
-        pos = sizeof (sws->inmsg_hdr);
-
-        memcpy (((uint8_t*) nn_chunkref_data (&msg->body)) + pos,
+        memcpy (((uint8_t*) nn_chunkref_data (&msg->body)),
             sws->inmsg_control, sws->inmsg_current_chunk_len);
 
         /*  If a closing handshake was just transferred to the application,
@@ -574,13 +586,24 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
             nn_sws_recv_hdr (sws);
         }
 
-        return 0;
+        break;
 
     default:
         /*  Unexpected state. */
         nn_assert (0);
-        return 0;
+        break;
     }
+
+    /*  Allocate and populate WebSocket-specific control headers. */
+    cmsgsz = NN_CMSG_SPACE (sizeof (opcode_hdr));
+    nn_chunkref_init (&msg->hdrs, cmsgsz);
+    cmsg = nn_chunkref_data (&msg->hdrs);
+    cmsg->cmsg_level = NN_WS;
+    cmsg->cmsg_type = NN_WS_HDR_OPCODE;
+    cmsg->cmsg_len = cmsgsz;
+    memcpy (NN_CMSG_DATA (cmsg), &opcode_hdr, sizeof (opcode_hdr));
+
+    return 0;
 }
 
 static void nn_sws_validate_utf8_chunk (struct nn_sws *self)

@@ -824,7 +824,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
         nn_assert (0);
     }
 
-    payload_pos = &self->fail_msg [self->fail_msg_len];
+    payload_pos = (uint8_t*) (&self->fail_msg [self->fail_msg_len]);
     
     /*  Copy Status Code in network order (big-endian). */
     nn_puts (payload_pos, (uint16_t) code);

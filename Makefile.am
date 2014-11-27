@@ -473,6 +473,7 @@ TRANSPORT_TESTS = \
     tests/tcp \
     tests/tcp_shutdown \
     tests/ws \
+    tests/ws_shutdown \
     tests/tcpmux
 
 PROTOCOL_TESTS = \

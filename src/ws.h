@@ -36,6 +36,9 @@ extern "C" {
 /*  Socket options  */
 #define NN_WS_OPTION_PLACEHOLDER 1
 
+/*  CMSG types at option level NN_WS. */
+#define NN_WS_HDR_OPCODE 1
+
 /*  WebSocket opcode constants as per RFC 6455 5.2  */
 #define NN_WS_MSG_TYPE_TEXT 0x01
 #define NN_WS_MSG_TYPE_BINARY 0x02
@@ -49,23 +52,12 @@ extern "C" {
 #define NN_WS_MSG_TYPE_GONE 0x7F
 
 /*  Convenience wrappers for send/recv that automatically
-    append/trim the WebSocket header from the message body. Return values
+    append/trim the WebSocket header as a CMSG. Return values
     have same semantics as the send/recv methods they wrap. */
-NN_EXPORT int nn_ws_send (int s, const void *buf, size_t len,
-    uint8_t ws_msg_type, int flags);
-NN_EXPORT int nn_ws_sendmsg (int s, const struct nn_msghdr *msghdr,
-    uint8_t ws_msg_type, int flags);
-NN_EXPORT int nn_ws_recv (int s, void *buf, size_t len,
-    uint8_t *ws_msg_type, int flags);
-NN_EXPORT int nn_ws_recvmsg (int s, struct nn_msghdr *msghdr,
-    uint8_t *ws_msg_type, int flags);
-
-/*  Convenience wrapper for synchronously pinging the remote peer. Return
-    value is round-trip time in milliseconds. */
-//  TODO: Ping/Pong is not currently exposed on the W3C editor's draft, so
-//  perhaps we should not expose it either. See:
-//  http://dev.w3.org/html5/websockets/#ping-and-pong-frames
-//NN_EXPORT int nn_ws_ping (int s, void *body, int flags);
+NN_EXPORT int nn_ws_send (int s, const void *msg, size_t len,
+    uint8_t msg_type, int flags);
+NN_EXPORT int nn_ws_recv (int s, void *msg, size_t len,
+    uint8_t *msg_type, int flags);
 
 #ifdef __cplusplus
 }

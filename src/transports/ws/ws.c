@@ -149,146 +149,80 @@ static int nn_ws_optset_getopt (struct nn_optset *self, int option,
     }
 }
 
-/*  Trims the WebSocket header from the message body. */
-static int nn_ws_trim_header (struct nn_msghdr *msghdr, uint8_t *ws_hdr)
+int nn_ws_send (int s, const void *msg, size_t len, uint8_t msg_type, int flags)
 {
-    /*  TODO: Rework to more appropriately use msg headers
-        rather than prepending to the message body. */
-    size_t len;
-    void *chunk;
+    int rc;
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
+    struct nn_cmsghdr *cmsg;
+    size_t cmsgsz;
 
-    if (msghdr->msg_iovlen <= 0) {
-        errno = EINVAL;
+    iov.iov_base = (void*) msg;
+    iov.iov_len = len;
+    
+    cmsgsz = NN_CMSG_SPACE (sizeof (msg_type));
+    cmsg = nn_allocmsg (cmsgsz, 0);
+    if (cmsg == NULL)
         return -1;
-    }
 
-    if (msghdr->msg_iov [0].iov_len <= 0) {
-        errno = EINVAL;
-        return -1;
-    }
+    cmsg->cmsg_level = NN_WS;
+    cmsg->cmsg_type = NN_WS_HDR_OPCODE;
+    cmsg->cmsg_len = NN_CMSG_LEN (sizeof (msg_type));
+    memcpy (NN_CMSG_DATA (cmsg), &msg_type, sizeof (msg_type));
 
-    if (msghdr->msg_iov [0].iov_len == NN_MSG) {
-        chunk = *(void**) msghdr->msg_iov [0].iov_base;
-        len = nn_chunk_size (chunk);
-        if (len >= sizeof (*ws_hdr)) {
-            *ws_hdr = ((uint8_t *) chunk) [0];
-            chunk = nn_chunk_trim (chunk, sizeof (*ws_hdr));
-            *(void**) (msghdr->msg_iov[0].iov_base) = chunk;
-            return sizeof (*ws_hdr);
-        } 
-        else {
-            errno = EINVAL;
-            return -1;
-        }
-    }
-    else {
-        /*  TODO: copy message into user-supplied buffer. */
-        nn_assert (0);
-    }
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = &cmsg;
+    hdr.msg_controllen = NN_MSG;
+
+    rc = nn_sendmsg (s, &hdr, flags);
+
+    return rc;
 }
 
-int nn_ws_send (int s, const void *buf, size_t len, uint8_t ws_hdr, int flags)
+int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flags)
 {
     struct nn_iovec iov;
     struct nn_msghdr hdr;
+    struct nn_cmsghdr *cmsg;
+    void *cmsg_buf;
+    int rc;
 
-    iov.iov_base = (void*) buf;
+    iov.iov_base = msg;
     iov.iov_len = len;
 
     hdr.msg_iov = &iov;
     hdr.msg_iovlen = 1;
-    hdr.msg_control = NULL;
-    hdr.msg_controllen = 0;
+    hdr.msg_control = &cmsg_buf;
+    hdr.msg_controllen = NN_MSG;
 
-    return nn_ws_sendmsg (s, &hdr, ws_hdr, flags);
-}
-
-int nn_ws_recv (int s, void *buf, size_t len, uint8_t *ws_hdr, int flags)
-{
-    struct nn_iovec iov;
-    struct nn_msghdr hdr;
-
-    iov.iov_base = buf;
-    iov.iov_len = len;
-
-    hdr.msg_iov = &iov;
-    hdr.msg_iovlen = 1;
-    hdr.msg_control = NULL;
-    hdr.msg_controllen = 0;
-
-    return nn_ws_recvmsg (s, &hdr, ws_hdr, flags);
-}
-
-int nn_ws_sendmsg (int s, const struct nn_msghdr *msghdr, uint8_t ws_hdr,
-    int flags)
-{
-    int rc;
-    void *orig_buf;
-    size_t orig_len;
-    size_t added_len;
-    uint8_t *new_chunk_buf;
-
-    if (msghdr->msg_iovlen <= 0) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    added_len = sizeof (ws_hdr);
-
-    orig_buf = *((void**) msghdr->msg_iov[0].iov_base);
-    orig_len = nn_chunk_size (orig_buf);
-    rc = nn_chunk_alloc (orig_len + added_len, 0, (void**) &new_chunk_buf);
-    if (rc != 0)
-        return rc;
-
-    /*  Assume this is not a continuation frame; if, in the future the library
-        expands to support continuation frames, perhaps NN_SNDMORE is passed
-        into "flags" which would not set the FIN bit. */
-    new_chunk_buf [0] = ws_hdr | NN_SWS_FRAME_BITMASK_FIN;
-
-    memcpy (&new_chunk_buf [1], orig_buf, orig_len);
-
-    *(void**) (msghdr->msg_iov [0].iov_base) = new_chunk_buf;
-
-    nn_chunk_free (orig_buf);
-
-    rc = nn_sendmsg (s, msghdr, flags);
-
-    if (rc < 0) {
-        return rc;
-    }
-    else if (rc == 0) {
-        /*  Impossible, since we just added data to the message. */
-        nn_assert (0);
-    }
-    else {
-        return (rc - added_len);
-    }
-}
-
-int nn_ws_recvmsg (int s, struct nn_msghdr *msghdr, uint8_t *ws_hdr, int flags)
-{
-    int rc;
-    int rc_trim;
-
-    rc = nn_recvmsg (s, msghdr, flags);
+    rc = nn_recvmsg (s, &hdr, flags);
     if (rc < 0)
         return rc;
 
-    rc_trim = nn_ws_trim_header (msghdr, ws_hdr);
+    /* Find WebSocket opcode ancillary property. */
+    cmsg = NN_CMSG_FIRSTHDR (&hdr);
+    while (cmsg) {
+        if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_HDR_OPCODE) {
+            *msg_type = *(uint8_t *) NN_CMSG_DATA (cmsg);
+            break;
+        }
+        cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
+    }
 
-    /*  The library should always reassemble fragmented messages from
-        remote endpoint. */
-    nn_assert (*ws_hdr & NN_SWS_FRAME_BITMASK_FIN);
+    /*  WebSocket transport should always report this header. */
+    nn_assert (cmsg);
 
-    /*  Return only the message type. */
-    if (*ws_hdr == (NN_WS_MSG_TYPE_GONE | NN_SWS_FRAME_BITMASK_FIN))
-        *ws_hdr = NN_WS_MSG_TYPE_GONE;
+    /*  WebSocket transport should always reassemble fragmented messages. */
+    nn_assert (*msg_type & NN_SWS_FRAME_BITMASK_FIN);
+
+    /*  Return only the message type (opcode). */
+    if (*msg_type == (NN_WS_MSG_TYPE_GONE | NN_SWS_FRAME_BITMASK_FIN))
+        *msg_type = NN_WS_MSG_TYPE_GONE;
     else
-        *ws_hdr &= NN_SWS_FRAME_BITMASK_OPCODE;
+        *msg_type &= NN_SWS_FRAME_BITMASK_OPCODE;
 
-    if (rc_trim < 0)
-        return rc_trim;
-    else
-        return rc - rc_trim;
+    nn_freemsg (cmsg_buf);
+
+    return rc;
 }

@@ -135,7 +135,7 @@ for (i = 0; ; ++i) {
     if(rc == 0)
         break;
     assert (rc == sizeof (sym));
-    printf ("'%s' = %d\n", sym->name, sym->value);
+    printf ("'%s' = %d\n", sym.name, sym.value);
 }
 ----
 

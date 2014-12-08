@@ -141,9 +141,9 @@ struct nn_sock
     void*	sec_attr;
     size_t	sec_attr_size;
 
-	/* Out Buffer and In Buffer size */
-	int outbuffersz;
-	int inbuffersz;
+    /* Out Buffer and In Buffer size */
+    int outbuffersz;
+    int inbuffersz;
 
 };
 

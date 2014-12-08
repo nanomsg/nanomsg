@@ -100,6 +100,7 @@ add_libnanomsg_test (separation)
 add_libnanomsg_test (zerocopy)
 add_libnanomsg_test (shutdown)
 add_libnanomsg_test (cmsg)
+add_libnanomsg_test (win_sec_attr)
 
 #  Build the performance tests.
 

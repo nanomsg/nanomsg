@@ -509,8 +509,6 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
     /*  First, create a fully qualified name for the named pipe. */
     _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
 
-    /* TODO: Expose custom nOutBufferSize, nInBufferSize, nDefaultTimeOut,
-             lpSecurityAttributes */
     self->p = CreateNamedPipeA (
         (char*) fullname,
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
@@ -522,7 +520,6 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
         0,
         &self->sec_attr);
 
-    /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
     win_assert (self->p != INVALID_HANDLE_VALUE);
 
     self->isaccepted = 1;
@@ -539,15 +536,14 @@ DWORD nn_usock_open_pipe (struct nn_usock *self, const char *name)
     /*  First, create a fully qualified name for the named pipe. */
     _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
 
-    /* TODO: Expose a way to pass lpSecurityAttributes */
     self->p = CreateFileA (
         fullname,
         GENERIC_READ | GENERIC_WRITE,
         0,
-        NULL,
+        &self->sec_attr,
         OPEN_ALWAYS,
         FILE_FLAG_OVERLAPPED,
-        &self->sec_attr);
+        0);
 
     if (self->p == INVALID_HANDLE_VALUE)
         return GetLastError ();

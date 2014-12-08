@@ -244,6 +244,8 @@ struct nn_symbol_properties {
 NN_EXPORT int nn_symbol_info (int i,
     struct nn_symbol_properties *buf, int buflen);
 
+NN_EXPORT void nn_set_force_xp (int test_force_xp);
+
 /******************************************************************************/
 /*  Helper function for shutting down multi-threaded applications.            */
 /******************************************************************************/

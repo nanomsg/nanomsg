@@ -41,6 +41,10 @@ BOOL nn_getqueuedcompletionstatusex(HANDLE CompletionPort, LPOVERLAPPED_ENTRY lp
 
 int nn_test_force_xp = 0;
 
+void nn_set_force_xp (int test_force_xp) {
+    nn_test_force_xp = test_force_xp;
+}
+
 BOOL nn_isvistaplus()
 {
 	OSVERSIONINFO osvi;

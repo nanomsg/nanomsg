@@ -39,7 +39,7 @@
 
 volatile int active;
 
-extern int nn_test_force_xp;
+int nn_test_force_xp = 0;
 
 static void routine (NN_UNUSED void *arg)
 {
@@ -96,6 +96,7 @@ int main ()
 
     /*  Force XP mode since not everyone has an array of test VMs. */
     nn_test_force_xp = 1;
+    nn_set_force_xp( 1 );
 
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);

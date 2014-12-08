@@ -155,6 +155,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     /* Security attribute*/
     self->sec_attr = NULL;
     self->sec_attr_size = 0;
+    self->inbuffersz = 4096;
+    self->outbuffersz = 4096;
 
     /*  The transport-specific options are not initialised immediately,
         rather, they are allocated later on when needed. */

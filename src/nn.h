@@ -244,6 +244,10 @@ struct nn_symbol_properties {
 NN_EXPORT int nn_symbol_info (int i,
     struct nn_symbol_properties *buf, int buflen);
 
+/*  Register a callback to receive error messages before asserts and aborts.  */
+typedef void (*nn_err_log_callback_t) (const char *fmt, va_list args);
+NN_EXPORT void nn_err_log_callback (nn_err_log_callback_t callback);
+
 /******************************************************************************/
 /*  Helper function for shutting down multi-threaded applications.            */
 /******************************************************************************/

@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 /*  Include nn.h header to define nanomsg-specific error codes. */
 #include "../nn.h"
@@ -40,14 +41,16 @@
 #define NN_NORETURN
 #endif
 
+void nn_err_log ( const char * fmt, ... );
+
 /*  Same as system assert(). However, under Win32 assert has some deficiencies.
     Thus this macro. */
 #define nn_assert(x) \
     do {\
         if (nn_slow (!(x))) {\
-            fprintf (stderr, "Assertion failed: %s (%s:%d)\n", #x, \
-                __FILE__, __LINE__);\
-            fflush (stderr);\
+			nn_err_log ( \
+				"Assertion failed: %s (%s:%d)\n", #x, \
+				__FILE__, __LINE__);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -55,11 +58,10 @@
 #define nn_assert_state(obj, state_name) \
     do {\
         if (nn_slow ((obj)->state != state_name)) {\
-            fprintf (stderr, \
+			nn_err_log ( \
                 "Assertion failed: %d == %s (%s:%d)\n", \
                 (obj)->state, #state_name, \
                 __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -68,9 +70,8 @@
 #define alloc_assert(x) \
     do {\
         if (nn_slow (!x)) {\
-            fprintf (stderr, "Out of memory (%s:%d)\n",\
+            nn_err_log ( "Out of memory (%s:%d)\n",\
                 __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -79,9 +80,8 @@
 #define errno_assert(x) \
     do {\
         if (nn_slow (!(x))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
+            nn_err_log ( "%s [%d] (%s:%d)\n", nn_err_strerror (errno),\
                 (int) errno, __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -90,9 +90,8 @@
 #define errnum_assert(cond, err) \
     do {\
         if (nn_slow (!(cond))) {\
-            fprintf (stderr, "%s [%d] (%s:%d)\n", nn_err_strerror (err),\
+            nn_err_log ( "%s [%d] (%s:%d)\n", nn_err_strerror (err),\
                 (int) (err), __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -103,9 +102,8 @@
         if (nn_slow (!(x))) {\
             char errstr [256];\
             nn_win_error ((int) GetLastError (), errstr, 256);\
-            fprintf (stderr, "%s [%d] (%s:%d)\n",\
+            nn_err_log ( "%s [%d] (%s:%d)\n",\
                 errstr, (int) GetLastError (), __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -116,9 +114,8 @@
         if (nn_slow (!(x))) {\
             char errstr [256];\
             nn_win_error (WSAGetLastError (), errstr, 256);\
-            fprintf (stderr, "%s [%d] (%s:%d)\n",\
+            nn_err_log ( "%s [%d] (%s:%d)\n",\
                 errstr, (int) WSAGetLastError (), __FILE__, __LINE__);\
-            fflush (stderr);\
             nn_err_abort ();\
         }\
     } while (0)
@@ -126,9 +123,8 @@
 /*  Assertion-like macros for easier fsm debugging. */
 #define nn_fsm_error(message, state, src, type) \
     do {\
-        fprintf (stderr, "%s: state=%d source=%d action=%d (%s:%d)\n", \
+        nn_err_log ( "%s: state=%d source=%d action=%d (%s:%d)\n", \
             message, state, src, type, __FILE__, __LINE__);\
-        fflush (stderr);\
         nn_err_abort ();\
     } while (0)
 

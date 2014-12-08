@@ -186,3 +186,22 @@ void nn_win_error (int err, char *buf, size_t bufsize)
 
 #endif
 
+static nn_err_log_callback_t err_log_callback = NULL;
+
+void nn_err_log ( const char * fmt, ... ) {
+    va_list argp;
+    if ( err_log_callback != NULL ) {
+        va_start (argp, fmt);
+        err_log_callback (fmt, argp);
+        va_end (argp);
+        return;
+    }
+	va_start (argp, fmt);
+	vfprintf (stderr, fmt, argp);
+	va_end (argp);
+	fflush (stderr);
+}
+
+void nn_err_log_callback (nn_err_log_callback_t callback) {
+    err_log_callback = callback;
+}

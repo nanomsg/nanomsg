@@ -22,6 +22,7 @@
 */
 
 #include "worker.h"
+#include "iocp.h"
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
@@ -511,7 +512,7 @@ static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
         (char*) fullname,
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |
-            PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
+            PIPE_WAIT | (nn_isvistaplus() ? PIPE_REJECT_REMOTE_CLIENTS : 0),
         PIPE_UNLIMITED_INSTANCES,
         4096,
         4096,
@@ -1035,18 +1036,34 @@ static int nn_usock_cancel_io (struct nn_usock *self)
 {
     int rc;
     BOOL brc;
+    struct nn_worker *worker;
+
+    /*  Associate the socket with a worker thread/completion port. */
+    worker = nn_fsm_choose_worker (&self->fsm);
 
     /*  For some reason simple CancelIo doesn't seem to work here.
         We have to use CancelIoEx instead. */
     rc = 0;
     if (!nn_worker_op_isidle (&self->in)) {
-        brc = CancelIoEx (self->p, &self->in.olpd);
-        win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
+       if(nn_isvistaplus()) {
+            brc = nn_cancelioex (self->p, &self->in.olpd);
+            win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
+        }
+        else {
+            CancelIo(self->p);
+            nn_worker_cancelio(worker, self->p);
+        }
         rc = 1;
     }
     if (!nn_worker_op_isidle (&self->out)) {
-        brc = CancelIoEx (self->p, &self->out.olpd);
-        win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
+        if(nn_isvistaplus()) {
+            brc = nn_cancelioex (self->p, &self->out.olpd);
+            win_assert (brc || GetLastError () == ERROR_NOT_FOUND);
+        }
+        else {
+            CancelIo(self->p);
+            nn_worker_cancelio(worker, self->p);
+        }
         rc = 1;
     }
 

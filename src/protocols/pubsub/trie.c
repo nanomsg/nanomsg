@@ -112,7 +112,7 @@ void nn_node_dump (struct nn_trie_node *self, int indent)
     }
 
     for (i = 0; i != children; ++i)
-        nn_node_dump (((struct nn_trie_node**) (self + 1)) [i], indent + 1);
+        nn_node_dump ( ((struct nn_trie_node **)(void *)(self + 1))[i], indent + 1);
 
     nn_node_indent (indent);
     printf ("===================\n");
@@ -173,7 +173,7 @@ struct nn_trie_node **nn_node_child (struct nn_trie_node *self, int index)
 {
     /*  Finds pointer to the n-th child of the node. */
 
-    return ((struct nn_trie_node**) (self + 1)) + index;
+    return ((struct nn_trie_node **)(void *)(self + 1)) + index;
 }
 
 struct nn_trie_node **nn_node_next (struct nn_trie_node *self, uint8_t c)

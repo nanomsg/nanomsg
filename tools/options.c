@@ -67,6 +67,7 @@ static int nn_has_arg (struct nn_option *opt)
             return 1;
     }
     nn_assert (0);
+    return -1;
 }
 
 static void nn_print_usage (struct nn_parse_context *ctx, FILE *stream)

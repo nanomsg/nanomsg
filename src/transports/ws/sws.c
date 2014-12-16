@@ -154,10 +154,10 @@ void nn_sws_init (struct nn_sws *self, int src,
         NN_SWS_UTF8_MAX_CODEPOINT_LEN);
     self->utf8_code_pt_fragment_len = 0;
 
-    self->pings_sent;
+    /*self->pings_sent;
     self->pongs_sent;
     self->pings_received;
-    self->pongs_received;
+    self->pongs_received;*/
 
     nn_fsm_event_init (&self->done);
 }
@@ -317,6 +317,7 @@ static int nn_utf8_code_point (const uint8_t *buffer, size_t len)
 
     /*  Algorithm error; a case above should have been satisfied. */
     nn_assert (0);
+    return NN_SWS_UTF8_INVALID;
 }
 
 static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,

@@ -1216,7 +1216,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
     /*  Pre-calculated expected Accept Key value as per
         RFC 6455 section 4.2.2.5.4 (version December 2011). */
     rc = nn_ws_handshake_hash_key ((const uint8_t *)encoded_key, encoded_key_len,
-			(uint8_t *)self->expected_accept_key, sizeof (self->expected_accept_key));
+            (uint8_t *)self->expected_accept_key, sizeof (self->expected_accept_key));
 
     nn_assert (rc == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
@@ -1265,7 +1265,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         /*  Upgrade connection as per RFC 6455 section 4.2.2. */
         
         rc = nn_ws_handshake_hash_key (self->key, self->key_len,
-				(uint8_t *)accept_key, sizeof (accept_key));
+                (uint8_t *)accept_key, sizeof (accept_key));
 
         nn_assert (strlen (accept_key) == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
@@ -1349,7 +1349,7 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
         nn_sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
 
     rc = nn_base64_encode (nn_sha1_result (&hash),
-			sizeof (hash.state), (char *)hashed, hashed_len);
+            sizeof (hash.state), (char *)hashed, hashed_len);
 
     return rc;
 }

@@ -340,7 +340,7 @@ static int nn_ws_match_value (const char* termseq, const char **subj,
     }
 
     if (addr)
-        *addr = start;
+        *addr = (const uint8_t *)start;
 
     /*  In this special case, the value was "found", but is just empty or
         ignored space. */
@@ -390,7 +390,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_ws_handshake *handshaker;
 
-    unsigned i;
+    int i;
 
     handshaker = nn_cont (self, struct nn_ws_handshake, fsm);
 
@@ -854,9 +854,9 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
 
     /*  Having found the NULL terminator, from this point forward string
         functions may be used. */
-    nn_assert (strlen (self->opening_hs) < sizeof (self->opening_hs));
+    nn_assert (strlen ((const char *)self->opening_hs) < sizeof (self->opening_hs));
 
-    pos = self->opening_hs;
+    pos = (const char *)self->opening_hs;
 
     /*  Is the opening handshake from the client fully received? */
     if (!strstr (pos, NN_WS_HANDSHAKE_TERMSEQ))
@@ -1056,9 +1056,9 @@ static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self)
 
     /*  Having found the NULL terminator, from this point forward string
         functions may be used. */
-    nn_assert (strlen (self->response) < sizeof (self->response));
+    nn_assert (strlen ((const char *)self->response) < sizeof (self->response));
 
-    pos = self->response;
+    pos = (const char *)self->response;
 
     /*  Is the response from the server fully received? */
     if (!strstr (pos, NN_WS_HANDSHAKE_TERMSEQ))
@@ -1215,8 +1215,8 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     /*  Pre-calculated expected Accept Key value as per
         RFC 6455 section 4.2.2.5.4 (version December 2011). */
-    rc = nn_ws_handshake_hash_key (encoded_key, encoded_key_len,
-        self->expected_accept_key, sizeof (self->expected_accept_key));
+    rc = nn_ws_handshake_hash_key ((const uint8_t *)encoded_key, encoded_key_len,
+			(uint8_t *)self->expected_accept_key, sizeof (self->expected_accept_key));
 
     nn_assert (rc == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
@@ -1231,7 +1231,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
     /*  Guarantee that the socket type was found in the map. */
     nn_assert (i < NN_WS_HANDSHAKE_SP_MAP_LEN);
 
-    sprintf (self->opening_hs,
+    sprintf ((char *)self->opening_hs,
         "GET %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "Upgrade: websocket\r\n"
@@ -1242,7 +1242,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
         self->resource, self->remote_host, encoded_key,
         NN_WS_HANDSHAKE_SP_MAP[i].ws_sp);
 
-    open_request.iov_len = strlen (self->opening_hs);
+    open_request.iov_len = strlen ((const char *)self->opening_hs);
     open_request.iov_base = self->opening_hs;
 
     nn_usock_send (self->usock, &open_request, 1);
@@ -1265,16 +1265,16 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         /*  Upgrade connection as per RFC 6455 section 4.2.2. */
         
         rc = nn_ws_handshake_hash_key (self->key, self->key_len,
-            accept_key, sizeof (accept_key));
+				(uint8_t *)accept_key, sizeof (accept_key));
 
         nn_assert (strlen (accept_key) == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
         protocol = nn_alloc (self->protocol_len + 1, "WebSocket protocol");
         alloc_assert (protocol);
-        strncpy (protocol, self->protocol, self->protocol_len);
+        strncpy (protocol, (const char *)self->protocol, self->protocol_len);
         protocol [self->protocol_len] = '\0';
 
-        sprintf (self->response,
+        sprintf ((char *)self->response,
             "HTTP/1.1 101 Switching Protocols\r\n"
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"
@@ -1313,11 +1313,11 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
 
         version = nn_alloc (self->version_len + 1, "WebSocket version");
         alloc_assert (version);
-        strncpy (version, self->version, self->version_len);
+        strncpy (version, (const char *)self->version, self->version_len);
         version [self->version_len] = '\0';
 
         /*  Fail connection as per RFC 6455 4.4. */
-        sprintf (self->response,
+        sprintf ((char *)self->response,
             "HTTP/1.1 %s\r\n"
             "Sec-WebSocket-Version: %s\r\n",
             code, version);
@@ -1325,7 +1325,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         nn_free (version);
     }
 
-    response.iov_len = strlen (self->response);
+    response.iov_len = strlen ((const char *)self->response);
     response.iov_base = &self->response;
 
     nn_usock_send (self->usock, &response, 1);
@@ -1349,7 +1349,7 @@ static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
         nn_sha1_hashbyte (&hash, NN_WS_HANDSHAKE_MAGIC_GUID [i]);
 
     rc = nn_base64_encode (nn_sha1_result (&hash),
-        sizeof (hash.state), hashed, hashed_len);
+			sizeof (hash.state), (char *)hashed, hashed_len);
 
     return rc;
 }

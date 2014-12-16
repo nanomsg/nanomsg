@@ -575,7 +575,9 @@ void nn_rw_loop (nn_options_t *options, int sock)
         }
     }
 
+    /* unreachable
     nn_clock_term(&clock);
+    */
 }
 
 void nn_resp_loop (nn_options_t *options, int sock)

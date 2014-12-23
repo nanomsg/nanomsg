@@ -1,4 +1,4 @@
-libnanomsg (0.5-beta) internal; urgency=low
+libnanomsg (0.5-0ubuntu1) trusty; urgency=low
 
   * Initial debian package.
     This is initial version of the debian package for Nanomsg library.

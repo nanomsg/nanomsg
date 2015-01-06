@@ -296,7 +296,6 @@ static void nn_global_init (void)
 
     nn_ctx_init (&self.ctx, nn_global_getpool (), NULL);
     nn_timer_init (&self.stat_timer, NN_GLOBAL_SRC_STAT_TIMER, &self.fsm);
-    nn_fsm_start (&self.fsm);
 
     /*   Initializing special sockets.  */
     addr = getenv ("NN_STATISTICS_SOCKET");
@@ -338,6 +337,8 @@ static void nn_global_init (void)
         errno_assert (rc == 0);
         self.hostname[63] = '\0';
     }
+
+    nn_fsm_start(&self.fsm);
 }
 
 static void nn_global_term (void)

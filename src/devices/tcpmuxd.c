@@ -90,6 +90,7 @@ int nn_tcpmuxd (int port)
     struct nn_tcpmuxd_ctx *ctx;
 
     /*  Start listening on the specified TCP port. */
+    errno = 0;
     tcp_listener = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (tcp_listener < 0) { return -1; }
     opt = 1;
@@ -105,14 +106,16 @@ int nn_tcpmuxd (int port)
     rc = listen (tcp_listener, 100);
     if (rc != 0) { return -1; }
 
-
     /*  Start listening for incoming IPC connections. */
     ipc_addr.sun_family = AF_UNIX;
     snprintf (ipc_addr.sun_path, sizeof (ipc_addr.sun_path),
         "/tmp/tcpmux-%d.ipc", (int) port);
     unlink (ipc_addr.sun_path);
+    errno = 0;
     ipc_listener = socket (AF_UNIX, SOCK_STREAM, 0);
-    errno_assert (ipc_listener >= 0);
+    if (ipc_listener < 0) {
+      return -1;
+    }
     rc = bind (ipc_listener, (struct sockaddr*) &ipc_addr, sizeof (ipc_addr));
     if (rc != 0) { return -1; }
     rc = listen (ipc_listener, 100);

@@ -285,7 +285,7 @@
          immediately after it is started. Given that some nodes in the topology
          may be extremely short-lived this is a crucial requirement. Imagine
          a database client that sends a query, reads the result and terminates.
-         It makes no sense to delay the whole process till the routing tables
+         It makes no sense to delay the whole process until the routing tables
          are synchronised between the client and the server.</t>
 
       <t>The algorithm thus works as follows: When request is routed from the
@@ -486,7 +486,7 @@
 
         <t>As for incoming messages, i.e. replies, REQ endpoint MUST fair-queues
            them. In other words, if there are replies available on several
-           channels, it MUST receive them in a round-robin fashion. It mast also
+           channels, it MUST receive them in a round-robin fashion. It must also
            take care not to compromise the fairness when new channels are
            added or old ones removed.</t>
 
@@ -564,14 +564,12 @@
            resent, however, it doesn't really matter because there's no one to
            deliver the reply to any more anyway.</t>
 
-        <t>Also note that unlike with the requests there's no pushback applied
-           to the replies. The replies are simply dropped in the case of
-           pushback. The reason for this behaviour is that if the endpoint
-           blocked and waited for the channel be become available, all the
-           subsequent replies, possibly destined for different, unblocked
-           channels would be blocked in the meantime anyway. That would allow
-           for a DoS attack by simply firing a lot of requests and not receiving
-           the replies.</t>
+        <t>Unlike requests, there's no pushback applied to the replies; they are
+           simply dropped. If the endpoint blocked and waited for the channel to
+           become available, all the subsequent replies, possibly destined for
+           different unblocked channels, would be blocked in the meantime. That
+           allows for a DoS attack simply by firing a lot of requests and not
+           receiving the replies.</t>
 
       </section>
    
@@ -669,8 +667,8 @@
            without finding the bottom of the stack, the request is malformed and
            MUST be ignored.</t>
 
-        <t>Note that the payload payload produced by this procedure is the same
-           as the request payload sent by the original client.</t>
+        <t>Note that the payload produced by this procedure is the same as the
+           request payload sent by the original client.</t>
 
         <t>Once the user processes the request and sends the reply, the endpoint
            prepends the reply with the stored traceback stack and sends it on

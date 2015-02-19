@@ -4,8 +4,9 @@
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
 Internet-Draft
-Intended status: Informational                         November 15, 2014
-Expires: May 19, 2015
+Intended status: Informational                                G. D'Amore
+Expires: August 7, 2015
+                                                        February 3, 2015
 
 
               WebSocket Mapping for Scalability Protocols
@@ -31,11 +32,11 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on May 19, 2015.
+   This Internet-Draft will expire on August 7, 2015.
 
 Copyright Notice
 
-   Copyright (c) 2014 IETF Trust and the persons identified as the
+   Copyright (c) 2015 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -52,10 +53,9 @@ Copyright Notice
 
 
 
-
-Sustrik                   Expires May 19, 2015                  [Page 1]
+Sustrik & D'Amore        Expires August 7, 2015                 [Page 1]
 
-Internet-Draft          WebSocket mapping for SPs          November 2014
+Internet-Draft          WebSocket mapping for SPs          February 2015
 
 
 1.  Underlying protocol
@@ -65,33 +65,63 @@ Internet-Draft          WebSocket mapping for SPs          November 2014
 
 2.  Connection initiation
 
-   Standard WebSocket handshake is done.  Sec-WebSocket-Protocol field
-   MUST be set according to the following table:
+   Standard WebSocket handshake is done following RFC 6455.
 
-   x-nanomsg-pair for NN_PAIR sockets
+   The Sec-WebSocket-Protocol field MUST be set in the client's HTTP
+   request to match the protocol used by the WebSocket server.
+   Accordingly, the following values should be used.
 
-   x-nanomsg-req for NN_REQ sockets
+   pair.sp.nanomsg.org (NN_PAIR client and server)
 
-   x-nanomsg-rep for NN_REP sockets
+   req.sp.nanomsg.org (NN_REQ server, NN_REP client)
 
-   x-nanomsg-pub for NN_PUB sockets
+   rep.sp.nanomsg.org (NN_REP server, NN_REQ client)
 
-   x-nanomsg-sub for NN_SUB sockets
+   pub.sp.nanomsg.org (NN_PUB server, NN_SUB client)
 
-   x-nanomsg-surveyor for NN_SURVEYOR sockets
+   sub.sp.nanomsg.org (NN_SUB server, NN_PUB client)
 
-   x-nanomsg-respondent for NN_RESPONDENT sockets
+   surveyor.sp.nanomsg.org (NN_SURVEYOR server, NN_RESPONDENT client)
 
-   x-nanomsg-push for NN_PUSH sockets
+   respondent.sp.nanomsg.org (NN_RESPONDENT server, NN_SURVEYOR client)
 
-   x-nanomsg-pull for NN_PULL sockets
+   push.sp.nanomsg.org (NN_PUSH server, NN_PULL client)
 
-   x-nanomsg-bus for NN_BUS sockets
+   pull.sp.nanomsg.org (NN_PULL server, NN_PUSH client)
+
+   bus.sp.nanomsg.org (NN_BUS client and server)
+
+   If the server supports the requested SP protocol as indicated by the
+   Sec-WebSocket-Protocol header, then it MUST respond with the same
+   Sec-WebSocket-Protocol value sent by the client.
+
+   If the server does support the requested SP protocol, then it MUST
+   fail the WebSocket connection using the Close code of 1002, as
+   specified in RFC 6455.
+
+   For example, an NN_REQ client socket, connecting to an NN_REP server,
+   will send the value rep.sp.nanomsg.org in the Sec-WebSocket-Protocol
+   field.  The NN_REP socket on the server would then include the same
+   rep.sp.nanomsg.org in its response.
+
+
+
+
+
+
+Sustrik & D'Amore        Expires August 7, 2015                 [Page 2]
+
+Internet-Draft          WebSocket mapping for SPs          February 2015
+
 
 3.  Message
 
    SP message maps directly to WebSocket message.  The message can be
    fragmented as needed.  Frame boundaries are ignored by the SP layer.
+
+   When possible, binary frames SHOULD be used in preference to text
+   frames.  If text frames are in use, then SP message payloads MUST be
+   comprised of legal UTF-8 text only.
 
 4.  IANA Considerations
 
@@ -103,24 +133,16 @@ Internet-Draft          WebSocket mapping for SPs          November 2014
    addition to what WebSocket does.  DoS concerns are addressed within
    the specification.
 
-
-
-
-
-
-
-Sustrik                   Expires May 19, 2015                  [Page 2]
-
-Internet-Draft          WebSocket mapping for SPs          November 2014
-
-
-Author's Address
+Authors' Addresses
 
    Martin Sustrik (editor)
 
    Email: sustrik@250bpm.com
 
 
+   Garrett D'Amore
+
+   Email: garrett@damore.org
 
 
 
@@ -143,27 +165,4 @@ Author's Address
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Sustrik                   Expires May 19, 2015                  [Page 3]
-
+Sustrik & D'Amore        Expires August 7, 2015                 [Page 3]

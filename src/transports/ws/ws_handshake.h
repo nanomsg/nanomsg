@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -154,8 +155,11 @@ struct nn_ws_handshake {
     WebSocket header values. */
 struct nn_ws_sp_map {
 
-    /*  Scalability Protocol ID... */
-    int sp;
+    /*  Scalability Protocol ID for server... */
+    int server;
+
+    /*  ... and corresponding client Protocol ID */
+    int client;
 
     /*  ... and corresponding WebSocket header field value. */
     const char* ws_sp;

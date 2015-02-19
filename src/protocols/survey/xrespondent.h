@@ -1,5 +1,6 @@
 /*
     Copyright (c) 201-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,13 +26,32 @@
 
 #include "../../protocol.h"
 
-#include "../utils/excl.h"
+#include "../../utils/hash.h"
+#include "../../utils/int.h"
+#include "../utils/fq.h"
 
 extern struct nn_socktype *nn_xrespondent_socktype;
 
+#define NN_XRESPONDENT_OUT 1
+
+struct nn_xrespondent_data {
+    struct nn_pipe *pipe;
+    struct nn_hash_item outitem;
+    struct nn_fq_data initem;
+    uint32_t flags;
+};
+
 struct nn_xrespondent {
     struct nn_sockbase sockbase;
-    struct nn_excl excl;
+
+    /*  Key to be assigned to the next added pipe. */
+    uint32_t next_key;
+
+    /*  Map of all registered pipes indexed by the peer ID. */
+    struct nn_hash outpipes;
+
+    /*  Fair-queuer to get surveys from. */
+    struct nn_fq inpipes;
 };
 
 void nn_xrespondent_init (struct nn_xrespondent *self,

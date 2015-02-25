@@ -90,32 +90,36 @@ int nn_tcpmuxd (int port)
     struct nn_tcpmuxd_ctx *ctx;
 
     /*  Start listening on the specified TCP port. */
+    errno = 0;
     tcp_listener = socket (AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    errno_assert (tcp_listener >= 0);
+    if (tcp_listener < 0) { return -1; }
     opt = 1;
     rc = setsockopt (tcp_listener, SOL_SOCKET, SO_REUSEADDR, &opt,
         sizeof (opt));
-    errno_assert (rc == 0);
+    if (rc != 0) { return -1; }
     memset (&tcp_addr, 0, sizeof (tcp_addr));
     tcp_addr.sin_family = AF_INET;
     tcp_addr.sin_port = htons (port);
     tcp_addr.sin_addr.s_addr = INADDR_ANY;
     rc = bind (tcp_listener, (struct sockaddr*) &tcp_addr, sizeof (tcp_addr));
-    errno_assert (rc == 0);
+    if (rc != 0) { return -1; }
     rc = listen (tcp_listener, 100);
-    errno_assert (rc == 0);
+    if (rc != 0) { return -1; }
 
     /*  Start listening for incoming IPC connections. */
     ipc_addr.sun_family = AF_UNIX;
     snprintf (ipc_addr.sun_path, sizeof (ipc_addr.sun_path),
         "/tmp/tcpmux-%d.ipc", (int) port);
     unlink (ipc_addr.sun_path);
+    errno = 0;
     ipc_listener = socket (AF_UNIX, SOCK_STREAM, 0);
-    errno_assert (ipc_listener >= 0);
+    if (ipc_listener < 0) {
+      return -1;
+    }
     rc = bind (ipc_listener, (struct sockaddr*) &ipc_addr, sizeof (ipc_addr));
-    errno_assert (rc == 0);
+    if (rc != 0) { return -1; }
     rc = listen (ipc_listener, 100);
-    errno_assert (rc == 0);
+    if (rc != 0) { return -1; }
 
     /*  Allocate a context for the daemon. */
     ctx = nn_alloc (sizeof (struct nn_tcpmuxd_ctx), "tcpmuxd context");

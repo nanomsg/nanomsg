@@ -23,9 +23,13 @@
 #include "../utils/err.h"
 #include "../utils/wire.h"
 
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#endif
 
 #include "tcpmux.h"
 
@@ -142,4 +146,3 @@ int tcpmux_connect (int s, const struct sockaddr *addr,
 
     return 0;
 }
-

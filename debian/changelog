@@ -1,0 +1,6 @@
+libnanomsg (0.5-0ubuntu1) trusty; urgency=low
+
+  * Initial debian package.
+    This is initial version of the debian package for Nanomsg library.
+
+ -- Ivo Vachkov <ivachkov@xi-group.com>  Tue, 23 Dec 2014 11:32:18 +0000

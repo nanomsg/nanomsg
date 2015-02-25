@@ -310,10 +310,20 @@ AC_CHECK_FUNCS([accept4], [
     AC_DEFINE([NN_HAVE_ACCEPT4])
     CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 ])
+
 AC_SEARCH_LIBS([getaddrinfo_a], [anl], [
     AC_DEFINE([NN_HAVE_GETADDRINFO_A])
     CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 ])
+# Allow the use of getaddrinfo_a to be disabled.
+AC_ARG_ENABLE([getaddrinfo_a],
+    AS_HELP_STRING([--enable-getaddrinfo_a], [Use getaddrinfo_a if available [default=yes]])
+)
+AS_IF([test x"$enable_getaddrinfo_a" == "xno"], [
+    AC_DEFINE([NN_DISABLE_GETADDRINFO_A])
+])
+
+
 AC_SEARCH_LIBS([socketpair], [], [
     AC_DEFINE([NN_HAVE_SOCKETPAIR])
 ])

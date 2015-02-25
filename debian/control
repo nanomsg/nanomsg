@@ -1,0 +1,12 @@
+Source: libnanomsg
+Maintainer: Ivo Vachkov <ivachkov@xi-group.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.5
+Build-Depends: debhelper (>= 9)
+
+Package: libnanomsg0
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+Description: This is package for libnanomsg
+ The following package contains libnanomsg

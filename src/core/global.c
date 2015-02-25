@@ -101,8 +101,13 @@
 CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
 /*  This check is performed at the beginning of each socket operation to make
-    sure that the library was initialised and the socket actually exists. */
+    sure that the library was initialised, the socket actually exists, and is
+    a valid socket index. */
 #define NN_BASIC_CHECKS \
+    if (nn_slow (s < 0 || s > NN_MAX_SOCKETS)) {\
+        errno = EBADF;\
+        return -1;\
+        }\
     if (nn_slow (!self.socks || !self.socks [s])) {\
         errno = EBADF;\
         return -1;\

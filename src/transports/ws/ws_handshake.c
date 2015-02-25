@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -57,16 +58,16 @@
 #include "../../bus.h"
 
 static const struct nn_ws_sp_map NN_WS_HANDSHAKE_SP_MAP[] = {
-        { NN_PAIR, "x-nanomsg-pair" },
-        { NN_REQ, "x-nanomsg-req" },
-        { NN_REP, "x-nanomsg-rep" },
-        { NN_PUB, "x-nanomsg-pub" },
-        { NN_SUB, "x-nanomsg-sub" },
-        { NN_SURVEYOR, "x-nanomsg-surveyor" },
-        { NN_RESPONDENT, "x-nanomsg-respondent" },
-        { NN_PUSH, "x-nanomsg-push" },
-        { NN_PULL, "x-nanomsg-pull" },
-        { NN_BUS, "x-nanomsg-bus" }
+    { NN_PAIR,       NN_PAIR,       "pair.sp.nanomsg.org" },
+    { NN_REQ,        NN_REP,        "req.sp.nanomsg.org" },
+    { NN_REP,        NN_REQ,        "rep.sp.nanomsg.org" },
+    { NN_PUB,        NN_SUB,        "pub.sp.nanomsg.org" },
+    { NN_SUB,        NN_PUB,        "sub.sp.nanomsg.org" },
+    { NN_SURVEYOR,   NN_RESPONDENT, "surveyor.sp.nanomsg.org" },
+    { NN_RESPONDENT, NN_SURVEYOR,   "respondent.sp.nanomsg.org" },
+    { NN_PUSH,       NN_PULL,       "push.sp.nanomsg.org" },
+    { NN_PULL,       NN_PUSH,       "pull.sp.nanomsg.org" },
+    { NN_BUS,        NN_BUS,        "bus.sp.nanomsg.org" }
 };
 
 const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /
@@ -1003,8 +1004,9 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
             if (nn_ws_validate_value (NN_WS_HANDSHAKE_SP_MAP [i].ws_sp,
                 self->protocol, self->protocol_len, 1)) {
-                if (nn_pipebase_ispeer (self->pipebase,
-                    NN_WS_HANDSHAKE_SP_MAP [i].sp)) {
+
+                if (self->pipebase->sock->socktype->protocol ==
+                    NN_WS_HANDSHAKE_SP_MAP [i].server) {
                     self->response_code = NN_WS_HANDSHAKE_RESPONSE_OK;
                     return NN_WS_HANDSHAKE_VALID;
                 }
@@ -1222,7 +1224,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     /*  Lookup SP header value. */
     for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
-        if (NN_WS_HANDSHAKE_SP_MAP [i].sp ==
+        if (NN_WS_HANDSHAKE_SP_MAP [i].client ==
             self->pipebase->sock->socktype->protocol) {
             break;
         }

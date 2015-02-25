@@ -40,7 +40,8 @@ nninclude_HEADERS = \
     src/reqrep.h \
     src/pipeline.h \
     src/survey.h \
-    src/bus.h
+    src/bus.h \
+    src/tcpmux.h
 
 lib_LTLIBRARIES = libnanomsg.la
 
@@ -433,7 +434,7 @@ dist_man7_MANS = $(MAN7:%.txt=%.7)
 
 #  Cause HTML docs to be generated.
 
-doc_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
+html_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 

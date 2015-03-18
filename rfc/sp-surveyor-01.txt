@@ -3,13 +3,13 @@
 
 
 Internet Engineering Task Force                          G. D'Amore, Ed.
-Internet-Draft
-Intended status: Informational                         February 19, 2015
-Expires: August 23, 2015
+Internet-Draft                                            March 18, 2015
+Intended status: Informational
+Expires: September 19, 2015
 
 
                 Surveyor/Respondent Scalability Protocol
-                          sp-request-reply-01
+                             sp-surveyor-01
 
 Abstract
 
@@ -34,7 +34,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on August 23, 2015.
+   This Internet-Draft will expire on September 19, 2015.
 
 Copyright Notice
 
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 1]
+D'Amore                Expires September 19, 2015               [Page 1]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 1.  Introduction
@@ -109,9 +109,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 2]
+D'Amore                Expires September 19, 2015               [Page 2]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    succession, one if you like the color red, the other if you like the
@@ -165,9 +165,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 3]
+D'Amore                Expires September 19, 2015               [Page 3]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    +---+  WebSocket  +---+    TCP    +---+
@@ -221,9 +221,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 4]
+D'Amore                Expires September 19, 2015               [Page 4]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    As for delivering replies back to the clients, it should be
@@ -277,9 +277,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 5]
+D'Amore                Expires September 19, 2015               [Page 5]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    the topology.  At that point every RESPONDENT endpoint can check the
@@ -333,9 +333,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 6]
+D'Amore                Expires September 19, 2015               [Page 6]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
                                client
@@ -389,9 +389,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 7]
+D'Amore                Expires September 19, 2015               [Page 7]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 5.1.  SURVEYOR endpoint
@@ -445,9 +445,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 8]
+D'Amore                Expires September 19, 2015               [Page 8]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 5.2.  RESPONDENT endpoint
@@ -501,9 +501,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015                [Page 9]
+D'Amore                Expires September 19, 2015               [Page 9]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    Otherwise, the endpoint checks whether its table of associated
@@ -557,9 +557,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015               [Page 10]
+D'Amore                Expires September 19, 2015              [Page 10]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    followed by a 31-bit survey ID and passes it on in a standard hop-by-
@@ -613,9 +613,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015               [Page 11]
+D'Amore                Expires September 19, 2015              [Page 11]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 6.2.  RESPONDENT endpoint
@@ -669,9 +669,9 @@ Internet-Draft            Surveor/Respondent SP            February 2015
 
 
 
-D'Amore                  Expires August 23, 2015               [Page 12]
+D'Amore                Expires September 19, 2015              [Page 12]
 
-Internet-Draft            Surveor/Respondent SP            February 2015
+Internet-Draft            Surveor/Respondent SP               March 2015
 
 
    message gradually growing in size as new prefixes are added to it by
@@ -725,4 +725,4 @@ Author's Address
 
 
 
-D'Amore                  Expires August 23, 2015               [Page 13]
+D'Amore                Expires September 19, 2015              [Page 13]

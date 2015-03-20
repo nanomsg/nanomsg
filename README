@@ -13,6 +13,7 @@ Build it
 1.  Download the package.
 2.  Unpack it.
 3.  Go to the root directory of the package.
+4.  sh autogen.sh
 5.  ./configure
 6.  make
 7.  make check

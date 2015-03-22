@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -193,6 +194,7 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Generate new survey ID. */
     ++surveyor->surveyid;
+    surveyor->surveyid |= 0x80000000;
 
     /*  Tag the survey body with survey ID. */
     nn_assert (nn_chunkref_size (&msg->sphdr) == 0);

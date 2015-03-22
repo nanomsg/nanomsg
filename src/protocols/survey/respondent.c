@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -40,8 +41,8 @@
 
 struct nn_respondent {
     struct nn_xrespondent xrespondent;
-    uint32_t surveyid;
     uint32_t flags;
+    struct nn_chunkref backtrace;
 };
 
 /*  Private functions. */
@@ -77,6 +78,8 @@ static void nn_respondent_init (struct nn_respondent *self,
 
 static void nn_respondent_term (struct nn_respondent *self)
 {
+    if (self->flags & NN_RESPONDENT_INPROGRESS)
+        nn_chunkref_term (&self->backtrace);
     nn_xrespondent_term (&self->xrespondent);
 }
 
@@ -117,20 +120,15 @@ static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg)
     /*  Tag the message with survey ID. */
     nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
     nn_chunkref_term (&msg->sphdr);
-    nn_chunkref_init (&msg->sphdr, 4);
-    nn_putl (nn_chunkref_data (&msg->sphdr), respondent->surveyid);
+    nn_chunkref_mv (&msg->sphdr, &respondent->backtrace);
+
+    /*  Remember that no survey is being processed. */
+    respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
 
     /*  Try to send the message. If it cannot be sent due to pushback, drop it
         silently. */
     rc = nn_xrespondent_send (&respondent->xrespondent.sockbase, msg);
-    if (nn_slow (rc == -EAGAIN)) {
-        nn_msg_term (msg);
-        return -EAGAIN;
-    }
-    errnum_assert (rc == 0, -rc);
-
-    /*  Remember that no survey is being processed. */
-    respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
+    errnum_assert (rc == 0 || rc == -EAGAIN, -rc);
 
     return 0;
 }
@@ -142,8 +140,11 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
 
-    /*  Cancel current survey, if it exists. */
-    respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
+    /*  Cancel current survey and clean up backtrace, if it exists. */
+    if (nn_slow (respondent->flags & NN_RESPONDENT_INPROGRESS)) {
+        nn_chunkref_term (&respondent->backtrace);
+        respondent->flags &= ~NN_RESPONDENT_INPROGRESS;
+    }
 
     /*  Get next survey. */
     rc = nn_xrespondent_recv (&respondent->xrespondent.sockbase, msg);
@@ -151,10 +152,8 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
         return -EAGAIN;
     errnum_assert (rc == 0, -rc);
 
-    /*  Remember the survey ID. */
-    nn_assert (nn_chunkref_size (&msg->sphdr) == sizeof (uint32_t));
-    respondent->surveyid = nn_getl (nn_chunkref_data (&msg->sphdr));
-    nn_chunkref_term (&msg->sphdr);
+    /*  Store the backtrace. */
+    nn_chunkref_mv (&respondent->backtrace, &msg->sphdr);
     nn_chunkref_init (&msg->sphdr, 0);
 
     /*  Remember that survey is being processed. */

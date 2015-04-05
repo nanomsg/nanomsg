@@ -81,6 +81,10 @@ int main ()
 
     /*  Stress the shutdown algorithm. */
 
+#if defined(SIGPIPE) && defined(SIG_IGN)
+    signal (SIGPIPE, SIG_IGN);
+#endif
+
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, SOCKET_ADDRESS);
 

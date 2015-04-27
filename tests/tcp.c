@@ -39,7 +39,6 @@ int main ()
     int sb;
     int i;
     int opt;
-    int eid;
     size_t sz;
     int s1, s2;
 
@@ -122,13 +121,20 @@ int main ()
     errno_assert (nn_errno () == EINVAL);
 
     /*  Connect correctly. Do so before binding the peer socket. */
-    test_connect (sc, SOCKET_ADDRESS);
+    rc = test_connect (sc, SOCKET_ADDRESS);
 
     /*  Leave enough time for at least on re-connect attempt. */
     nn_sleep (200);
 
+    // Endpoint errno must be not 0
+    nn_assert(nn_geterror (sc, rc) != 0);
+
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
+
+    // Endpoint errno must be 0
+    nn_sleep(200);
+    nn_assert(nn_geterror (sc, rc) == 0);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
@@ -166,8 +172,14 @@ int main ()
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
+    nn_sleep(200);
+    nn_assert(nn_geterror (sb, rc) == 0);
+
     s1 = test_socket (AF_SP, NN_PAIR);
     test_bind (s1, SOCKET_ADDRESS);
+    nn_sleep(200);
+    nn_assert(nn_geterror (s1, rc) != 0);
+
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
     nn_sleep (100);

@@ -535,7 +535,7 @@ int nn_sock_rm_ep (struct nn_sock *self, int eid)
     return 0;
 }
 
-int nn_sock_geterrno_ep (struct nn_sock *self, int eid)
+int nn_sock_geterror_ep (struct nn_sock *self, int eid)
 {
     struct nn_list_item *it;
     struct nn_ep *ep;

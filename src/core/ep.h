@@ -62,6 +62,7 @@ void nn_ep_getopt (struct nn_ep *self, int level, int option,
 int nn_ep_ispeer (struct nn_ep *self, int socktype);
 void nn_ep_set_error(struct nn_ep *self, int errnum);
 void nn_ep_clear_error(struct nn_ep *self);
+int nn_ep_get_error(struct nn_ep *self);
 void nn_ep_stat_increment(struct nn_ep *self, int name, int increment);
 
 #endif

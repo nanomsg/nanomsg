@@ -1,0 +1,51 @@
+nn_geterror(3)
+===========
+
+NAME
+----
+nn_geterror - retrieve the current error for an endpoint
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*int nn_geterror (int s, int ep);*
+
+
+DESCRIPTION
+-----------
+It allows at any time request for an endpoint the last error set due to a condition 
+that prevented the endpoint operating normally.
+
+RETURN VALUE
+------------
+Returns value of 'last_errno' for the given socket and endpoint.
+
+
+ERRORS
+------
+No errors are defined.
+
+
+EXAMPLE
+-------
+
+----
+int ep = nn_connect(s, "tcp://127.0.0.1:5555"))
+rc = nn_send (s, "ABC", 3, 0);
+if (rc < 0)
+    printf ("nn_send failed with error code %d\n", nn_geterror (s, ep));
+----
+
+
+SEE ALSO
+--------
+linknanomsg:nn_strerror[3]
+linknanomsg:nanomsg[7]
+
+AUTHORS
+-------
+Vlad Seryakov <vseryakov@gmail.com>
+Martin Sustrik <sustrik@250bpm.com>
+

@@ -205,7 +205,7 @@ static void nn_ep_handler (struct nn_fsm *self, int src, int type,
 
 void nn_ep_set_error(struct nn_ep *self, int errnum)
 {
-    if (self->last_errno == errnum)
+    if (self->last_errno == errnum || !errnum)
         /*  Error is still there, no need to report it again  */
         return;
     if (self->last_errno == 0)

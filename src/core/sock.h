@@ -165,6 +165,9 @@ int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
 /*  Remove the endpoint with the specified ID from the socket. */
 int nn_sock_rm_ep (struct nn_sock *self, int eid);
 
+/* Return last_errno for the endpoint with the specified ID */
+int nn_sock_geterror_ep (struct nn_sock *self, int eid);
+
 /*  Send a message to the socket. */
 int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags);
 

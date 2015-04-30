@@ -274,9 +274,9 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_ctcp *ctcp;
+    int err;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
-
     switch (ctcp->state) {
 
 /******************************************************************************/
@@ -335,6 +335,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                         ctcp->dns_result.addrlen);
                     return;
                 }
+                nn_epbase_set_error( &ctcp->epbase, ctcp->dns_result.error);
                 nn_backoff_start (&ctcp->retry);
                 ctcp->state = NN_CTCP_STATE_WAITING;
                 return;
@@ -365,8 +366,12 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_clear_error (&ctcp->epbase);
                 return;
             case NN_USOCK_ERROR:
-                nn_epbase_set_error (&ctcp->epbase,
-                    nn_usock_geterrno (&ctcp->usock));
+                err = nn_usock_geterrno (&ctcp->usock);
+                /* Set EP error even if usock did not report the error code, 
+                   from this point the EP is in error condition
+                 */
+                if (!err) err = -EAGAIN;
+                nn_epbase_set_error (&ctcp->epbase, err);
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
                 nn_epbase_stat_increment (&ctcp->epbase,
@@ -417,6 +422,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SHUTDOWN:
                 return;
             case NN_STCP_STOPPED:
+                nn_epbase_set_error (&ctcp->epbase, -ECONNRESET);
                 nn_usock_stop (&ctcp->usock);
                 ctcp->state = NN_CTCP_STATE_STOPPING_USOCK;
                 return;
@@ -579,6 +585,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     else
         rc = nn_iface_resolve ("*", 1, ipv4only, &local, &locallen);
     if (nn_slow (rc < 0)) {
+        nn_epbase_set_error (&self->epbase, rc);
         nn_backoff_start (&self->retry);
         self->state = NN_CTCP_STATE_WAITING;
         return;
@@ -597,6 +604,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     /*  Try to start the underlying socket. */
     rc = nn_usock_start (&self->usock, remote.ss_family, SOCK_STREAM, 0);
     if (nn_slow (rc < 0)) {
+        nn_epbase_set_error (&self->epbase, rc);
         nn_backoff_start (&self->retry);
         self->state = NN_CTCP_STATE_WAITING;
         return;
@@ -617,6 +625,7 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
     if (nn_slow (rc != 0)) {
+        nn_epbase_set_error (&self->epbase, rc);
         nn_backoff_start (&self->retry);
         self->state = NN_CTCP_STATE_WAITING;
         return;

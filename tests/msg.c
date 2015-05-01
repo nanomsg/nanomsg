@@ -120,6 +120,54 @@ int main ()
     test_close (sc);
     test_close (sb);
 
+    /* Check whether a multiple null-terminated buffer message */
+    /* is received in the same number of buffers */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS_TCP);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS_TCP);
+    
+    for (i = 0; i < (int) sizeof (longdata); ++i)
+        longdata[i] = '0' + (i % 10);
+    longdata [sizeof (longdata) - 1] = 0;
+
+    buf1 = nn_allocmsg(sizeof (longdata), 0);
+    strcpy (buf1, longdata);
+    struct nn_msghdr send_msg;
+    struct nn_iovec send_iovecs[2];
+    send_iovecs [0].iov_base = &buf1;
+    send_iovecs [0].iov_len = NN_MSG;
+    send_iovecs [1].iov_base = &buf1;
+    send_iovecs [1].iov_len = NN_MSG;
+    memset (&send_msg, 9, sizeof (send_msg));
+    send_msg.msg_iov = send_iovecs;
+    send_msg.msg_iovlen = 2;
+    send_msg.msg_control = NULL;
+    rc = nn_sendmsg(sc, &send_msg, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 2 * sizeof (longdata));
+    
+    struct nn_msghdr recv_msg;
+    struct nn_iovec recv_iovecs[2];
+    recv_iovecs [0].iov_base = NULL;
+    recv_iovecs [0].iov_len = NN_MSG;
+    recv_iovecs [1].iov_base = NULL;
+    recv_iovecs [1].iov_len = NN_MSG;
+    memset (&recv_msg, 9, sizeof (recv_msg));
+    recv_msg.msg_iov = recv_iovecs;
+    recv_msg.msg_iovlen = 2;
+    recv_msg.msg_control = NULL;
+    rc = nn_recvmsg(sb, &recv_msg, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 2 * sizeof (longdata));
+    nn_assert (recv_iovecs [0].iov_len = sizeof (longdata));
+    nn_assert (recv_iovecs [1].iov_len = sizeof (longdata));
+    nn_assert (strcmp ((const char*)recv_iovecs [0].iov_base, buf1) == 0);
+    nn_assert (strcmp ((const char*)recv_iovecs [1].iov_base, buf1) == 0);
+    
+    test_close(sb);
+    test_close(sc);
+    
     return 0;
 }
 

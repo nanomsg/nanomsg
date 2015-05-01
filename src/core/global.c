@@ -880,7 +880,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     int rc;
     struct nn_msg msg;
     uint8_t *data;
-    size_t sz;
+    size_t sz, chunk_sz;
     int i;
     struct nn_iovec *iov;
     void *chunk;
@@ -918,21 +918,17 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     else if (msghdr->msg_iovlen > 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
         chunk = nn_chunkref_getchunk (&msg.body);
         
+        sz = 0;
         for (i = 0; i != msghdr->msg_iovlen; ++i) {
             iov = &msghdr->msg_iov [i];
             
             iov->iov_base = chunk;
             
-            sz = strlen ((const char*) chunk) + sizeof (uint8_t);
-            chunk += sz;
+            chunk_sz = strlen ((const char*) chunk) + sizeof (uint8_t);
+            chunk += chunk_sz;
             
-            iov->iov_len = sz;
-        }
-        
-        sz = 0;
-        for (i = 0; i != msghdr->msg_iovlen; ++i) {
-            iov = &msghdr->msg_iov [i];
-            sz += iov->iov_len;
+            iov->iov_len = chunk_sz;
+            sz += chunk_sz;
         }
     }
     else {

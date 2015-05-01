@@ -168,7 +168,8 @@ int main ()
     test_close (sc);
     test_close (sb);
 
-    /* Check whether SP message header is transferred correctly. */
+    /* Check whether a multiple null-terminated buffer message */
+    /* is received in the same number of buffers */
     sb = test_socket (AF_SP_RAW, NN_REP);
     test_bind (sb, SOCKET_ADDRESS);
     sc = test_socket (AF_SP, NN_REQ);

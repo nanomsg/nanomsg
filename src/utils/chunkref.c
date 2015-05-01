@@ -45,6 +45,7 @@ void nn_chunkref_init (struct nn_chunkref *self, size_t size)
     struct nn_chunkref_chunk *ch;
 
     if (size < NN_CHUNKREF_MAX) {
+        memset (self, 0, sizeof (*self));
         self->u.ref [0] = (uint8_t) size;
         return;
     }

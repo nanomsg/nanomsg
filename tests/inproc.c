@@ -167,6 +167,51 @@ int main ()
 
     test_close (sc);
     test_close (sb);
+
+    /* Check whether SP message header is transferred correctly. */
+    sb = test_socket (AF_SP_RAW, NN_REP);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_REQ);
+    test_connect (sc, SOCKET_ADDRESS);
+
+    void *send_buffer_1 = nn_allocmsg (5, 0),
+        * send_buffer_2 = nn_allocmsg (4, 0);
+    strcpy (send_buffer_1, "ABCD");
+    strcpy (send_buffer_2, "XYZ");
+    struct nn_msghdr send_msg;
+    struct nn_iovec send_iovecs[2];
+    send_iovecs [0].iov_base = &send_buffer_1;
+    send_iovecs [0].iov_len = NN_MSG;
+    send_iovecs [1].iov_base = &send_buffer_2;
+    send_iovecs [1].iov_len = NN_MSG;
+    memset (&send_msg, 9, sizeof (send_msg));
+    send_msg.msg_iov = send_iovecs;
+    send_msg.msg_iovlen = 2;
+    send_msg.msg_control = NULL;
+    rc = nn_sendmsg(sc, &send_msg, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 9);
+    
+    struct nn_msghdr recv_msg;
+    struct nn_iovec recv_iovecs[2];
+    recv_iovecs [0].iov_base = NULL;
+    recv_iovecs [0].iov_len = NN_MSG;
+    recv_iovecs [1].iov_base = NULL;
+    recv_iovecs [1].iov_len = NN_MSG;
+    memset (&recv_msg, 9, sizeof (recv_msg));
+    recv_msg.msg_iov = recv_iovecs;
+    recv_msg.msg_iovlen = 2;
+    recv_msg.msg_control = NULL;
+    rc = nn_recvmsg(sb, &recv_msg, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == 9);
+    nn_assert (recv_iovecs [0].iov_len = 5);
+    nn_assert (recv_iovecs [1].iov_len = 4);
+    nn_assert (strcmp ((const char*)recv_iovecs [0].iov_base, send_buffer_1) == 0);
+    nn_assert (strcmp ((const char*)recv_iovecs [1].iov_base, send_buffer_2) == 0);
+    
+    test_close(sb);
+    test_close(sc);
     
     return 0;
 }

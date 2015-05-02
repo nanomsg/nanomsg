@@ -692,6 +692,15 @@ int nn_shutdown (int s, int how)
     return 0;
 }
 
+int nn_geterror (int s, int how)
+{
+    int rc;
+
+    NN_BASIC_CHECKS;
+
+    return nn_sock_geterror_ep (self.socks [s], how);
+}
+
 int nn_send (int s, const void *buf, size_t len, int flags)
 {
     struct nn_iovec iov;

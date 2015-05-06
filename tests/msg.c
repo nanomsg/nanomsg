@@ -120,7 +120,7 @@ int main ()
     test_close (sc);
     test_close (sb);
 
-    /* Check whether a multiple null-terminated buffer message */
+    /* Check whether a multiple buffer message */
     /* is received in the same number of buffers */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS_TCP);
@@ -131,15 +131,19 @@ int main ()
         longdata[i] = '0' + (i % 10);
     longdata [sizeof (longdata) - 1] = 0;
 
-    buf1 = nn_allocmsg(sizeof (longdata), 0);
-    strcpy (buf1, longdata);
+    size_t sz = sizeof (longdata);
+
+    buf1 = nn_allocmsg(sz, 0);
+    memcpy (buf1, longdata, sz);
     struct nn_msghdr send_msg;
     struct nn_iovec send_iovecs[2];
     send_iovecs [0].iov_base = &buf1;
     send_iovecs [0].iov_len = NN_MSG;
+    send_iovecs [0].iov_base_len = &sz;
     send_iovecs [1].iov_base = &buf1;
     send_iovecs [1].iov_len = NN_MSG;
-    memset (&send_msg, 9, sizeof (send_msg));
+    send_iovecs [1].iov_base_len = &sz;
+    memset (&send_msg, 0, sizeof (send_msg));
     send_msg.msg_iov = send_iovecs;
     send_msg.msg_iovlen = 2;
     send_msg.msg_control = NULL;
@@ -153,7 +157,7 @@ int main ()
     recv_iovecs [0].iov_len = NN_MSG;
     recv_iovecs [1].iov_base = NULL;
     recv_iovecs [1].iov_len = NN_MSG;
-    memset (&recv_msg, 9, sizeof (recv_msg));
+    memset (&recv_msg, 0, sizeof (recv_msg));
     recv_msg.msg_iov = recv_iovecs;
     recv_msg.msg_iovlen = 2;
     recv_msg.msg_control = NULL;
@@ -162,8 +166,10 @@ int main ()
     nn_assert (rc == 2 * sizeof (longdata));
     nn_assert (recv_iovecs [0].iov_len = sizeof (longdata));
     nn_assert (recv_iovecs [1].iov_len = sizeof (longdata));
-    nn_assert (strcmp ((const char*)recv_iovecs [0].iov_base, buf1) == 0);
-    nn_assert (strcmp ((const char*)recv_iovecs [1].iov_base, buf1) == 0);
+    for (i = 0; i < (int) sizeof (longdata) - 1; ++i) {
+        nn_assert (((char*) recv_iovecs [0].iov_base) [i] == longdata [i]);
+        nn_assert (((char*) recv_iovecs [1].iov_base) [i] == longdata [i]);
+    }
     
     test_close(sb);
     test_close(sc);

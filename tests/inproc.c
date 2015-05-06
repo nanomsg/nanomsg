@@ -176,15 +176,18 @@ int main ()
     test_connect (sc, SOCKET_ADDRESS);
 
     void *send_buffer_1 = nn_allocmsg (5, 0),
-        * send_buffer_2 = nn_allocmsg (4, 0);
+         *send_buffer_2 = nn_allocmsg (4, 0);
     strcpy (send_buffer_1, "ABCD");
+    size_t sz1 = 5, sz2 = 4;
     strcpy (send_buffer_2, "XYZ");
     struct nn_msghdr send_msg;
     struct nn_iovec send_iovecs[2];
     send_iovecs [0].iov_base = &send_buffer_1;
     send_iovecs [0].iov_len = NN_MSG;
+    send_iovecs [0].iov_base_len = &sz1;
     send_iovecs [1].iov_base = &send_buffer_2;
     send_iovecs [1].iov_len = NN_MSG;
+    send_iovecs [1].iov_base_len = &sz2;
     memset (&send_msg, 9, sizeof (send_msg));
     send_msg.msg_iov = send_iovecs;
     send_msg.msg_iovlen = 2;

@@ -266,6 +266,7 @@ NN_EXPORT int nn_freemsg (void *msg);
 
 struct nn_iovec {
     void *iov_base;
+    void *iov_base_len;
     size_t iov_len;
 };
 

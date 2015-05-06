@@ -758,6 +758,42 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         nn_msg_init_chunk (&msg, chunk);
         nnmsg = 1;
     }
+    else if (msghdr->msg_iovlen > 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
+        /*  Compute the total size of the message. */
+        sz = 0;
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            if (nn_slow (!iov->iov_base_len)) {
+                errno = EINVAL;
+                return -1;
+            }
+            if (nn_slow (iov->iov_len != NN_MSG)) {
+                errno = EINVAL;
+                return -1;
+            }
+            if (nn_slow (!iov->iov_base)) {
+                errno = EFAULT;
+                return -1;
+            }
+            iov->iov_len = *(size_t*) iov->iov_base_len;
+            sz += iov->iov_len + sizeof (size_t);
+        }
+        
+        /*  Create a message object from the supplied scatter array. */
+        nn_msg_init (&msg, sz);
+        sz = 0;
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            memcpy (((uint8_t*) nn_chunkref_data (&msg.body)) + sz,
+                    iov->iov_base_len, sizeof (size_t));
+            sz += sizeof (size_t);
+            memcpy (((uint8_t*) nn_chunkref_data (&msg.body)) + sz,
+                    *(uint8_t**) iov->iov_base, iov->iov_len);
+            sz += iov->iov_len;
+        }
+        sz -= msghdr->msg_iovlen * sizeof (size_t);
+        nnmsg = 1;
+    }
     else {
 
         /*  Compute the total size of the message. */
@@ -885,6 +921,22 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
         chunk = nn_chunkref_getchunk (&msg.body);
         *(void**) (msghdr->msg_iov [0].iov_base) = chunk;
         sz = nn_chunk_size (chunk);
+    }
+    else if (msghdr->msg_iovlen > 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
+        chunk = nn_chunkref_getchunk (&msg.body);
+        
+        sz = 0;
+        for (i = 0; i != msghdr->msg_iovlen; ++i) {
+            iov = &msghdr->msg_iov [i];
+            
+            iov->iov_len = *(size_t*) ((uint8_t*) (chunk + sz));
+            sz += sizeof (size_t);
+            
+            iov->iov_base = chunk + sz;
+
+            sz += iov->iov_len;
+        }
+        sz -= msghdr->msg_iovlen * sizeof (size_t);
     }
     else {
 

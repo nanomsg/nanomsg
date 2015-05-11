@@ -179,6 +179,7 @@ int main ()
     test_bind (s1, SOCKET_ADDRESS);
     nn_sleep(200);
     nn_assert(nn_geterror (s1, rc) != 0);
+    test_close(s1);
 
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
@@ -186,10 +187,7 @@ int main ()
     test_send (sb, "ABC");
     test_recv (sc, "ABC");
     test_close (sb);
-    test_send (s1, "ABC");
-    test_recv (sc, "ABC");
     test_close (sc);
-    test_close (s1);
 
     return 0;
 }

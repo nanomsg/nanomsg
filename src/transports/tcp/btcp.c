@@ -238,7 +238,8 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
         btcp->state = NN_BTCP_STATE_STOPPING_USOCK;
     }
     if (nn_slow (btcp->state == NN_BTCP_STATE_STOPPING_USOCK)) {
-       if (!nn_usock_isidle (&btcp->usock))
+       if (!nn_usock_isidle (&btcp->usock) ||
+             !nn_backoff_isidle (&btcp->retry))
             return;
         for (it = nn_list_begin (&btcp->atcps);
               it != nn_list_end (&btcp->atcps);

@@ -194,7 +194,8 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
         bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_USOCK)) {
-       if (!nn_usock_isidle (&bipc->usock))
+        if (!nn_usock_isidle (&bipc->usock) ||
+            !nn_backoff_isidle (&bipc->retry))
             return;
         for (it = nn_list_begin (&bipc->aipcs);
               it != nn_list_end (&bipc->aipcs);

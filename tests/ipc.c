@@ -114,6 +114,17 @@ int main ()
     test_close (sc);
     test_close (s1);
 
+    /*  Test closing a socket that is trying to bind in the background. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_bind (s1, SOCKET_ADDRESS);
+    
+    /*  Close the socket that doesn't have the bind first. */
+    test_close (s1);
+    /*  Close the bound socket. */
+    test_close (sb);
+    
     return 0;
 }
 

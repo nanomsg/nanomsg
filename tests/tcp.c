@@ -172,12 +172,12 @@ int main ()
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
-    nn_sleep(200);
+    nn_sleep(1500);
     nn_assert(nn_geterror (sb, rc) == 0);
 
     s1 = test_socket (AF_SP, NN_PAIR);
     test_bind (s1, SOCKET_ADDRESS);
-    nn_sleep(200);
+    nn_sleep(1500);
     nn_assert(nn_geterror (s1, rc) != 0);
     test_close(s1);
 

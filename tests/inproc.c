@@ -1,4 +1,4 @@
-/*
+ /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +20,7 @@
 */
 
 #include "../src/nn.h"
+#include "../src/bus.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/reqrep.h"
@@ -36,6 +37,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int s1;
     int i;
     char buf [256];
     int val;
@@ -167,6 +169,23 @@ int main ()
 
     test_close (sc);
     test_close (sb);
+    
+    /* Test binding a new socket after originally bound socket shuts down. */
+    sb = test_socket (AF_SP, NN_BUS);
+    test_bind (sb, SOCKET_ADDRESS);
+    
+    sc = test_socket (AF_SP, NN_BUS);
+    test_connect (sc, SOCKET_ADDRESS);
+    
+    test_close (sb);
+
+    nn_sleep (100);
+    
+    s1 = test_socket (AF_SP, NN_BUS);
+    test_bind (s1, SOCKET_ADDRESS);
+    
+    test_close (s1);
+    test_close (sc);
     
     return 0;
 }

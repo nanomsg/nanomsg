@@ -1,4 +1,4 @@
-/*
+ /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +20,7 @@
 */
 
 #include "../src/nn.h"
+#include "../src/bus.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/reqrep.h"
@@ -36,6 +37,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int s1, s2;
     int i;
     char buf [256];
     int val;
@@ -167,7 +169,56 @@ int main ()
 
     test_close (sc);
     test_close (sb);
-    
+
+    /* Test binding a new socket after originally bound socket shuts down. */
+    sb = test_socket (AF_SP, NN_BUS);
+    test_bind (sb, SOCKET_ADDRESS);
+
+    sc = test_socket (AF_SP, NN_BUS);
+    test_connect (sc, SOCKET_ADDRESS);
+
+    s1 = test_socket (AF_SP, NN_BUS);
+    test_connect (s1, SOCKET_ADDRESS);
+
+    /* Close bound socket, leaving connected sockets connect. */
+    test_close (sb);
+
+    nn_sleep (100);
+
+    /* Rebind a new socket to the address to which our connected sockets are listening. */
+    s2 = test_socket (AF_SP, NN_BUS);
+    test_bind (s2, SOCKET_ADDRESS);
+
+    /*  Ping-pong test. */
+    for (i = 0; i != 100; ++i) {
+
+        test_send (sc, "ABC");
+        test_send (s1, "QRS");
+        test_recv (s2, "ABC");
+        test_recv (s2, "QRS");
+        test_send (s2, "DEFG");
+        test_recv (sc, "DEFG");
+        test_recv (s1, "DEFG");
+    }
+
+    /*  Batch transfer test. */
+    for (i = 0; i != 100; ++i) {
+        test_send (sc, "XYZ");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_recv (s2, "XYZ");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_send (s1, "MNO");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_recv (s2, "MNO");
+    }
+
+    test_close (s1);
+    test_close (sc);
+    test_close (s2);
+
     return 0;
 }
 

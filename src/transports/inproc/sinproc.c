@@ -430,6 +430,9 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                     &sinproc->peer->event_disconnect, NN_SINPROC_SRC_PEER,
                     NN_SINPROC_DISCONNECT, sinproc);
                 sinproc->state = NN_SINPROC_STATE_DISCONNECTED;
+                sinproc->peer = NULL;
+                nn_fsm_raise (&sinproc->fsm, &sinproc->event_disconnect,
+                    NN_SINPROC_DISCONNECT);
                 return;
 
             default:

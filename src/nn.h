@@ -206,6 +206,7 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_NS_FLAG 10
 #define NN_NS_ERROR 11
 #define NN_NS_LIMIT 12
+#define NN_NS_EVENT 13
 
 /*  Constants that are returned in `type` member of nn_symbol_properties      */
 #define NN_TYPE_NONE 0

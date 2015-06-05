@@ -236,6 +236,7 @@ int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len,
     int flags)
 {
     nn_assert (0);
+    return -1;
 }
 
 int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
@@ -267,6 +268,7 @@ int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len,
     int flags)
 {
     nn_assert (0);
+    return -1;
 }
 
 

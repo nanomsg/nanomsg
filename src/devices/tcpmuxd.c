@@ -330,8 +330,8 @@ static int nn_tcpmuxd_send_fd (int s, int fd)
     struct iovec iov;
     char c = 0;
     struct msghdr msg;
-    char control [sizeof (struct cmsghdr) + 10];
 #if defined NN_HAVE_MSG_CONTROL
+    char control [sizeof (struct cmsghdr) + 10];
     struct cmsghdr *cmsg;
 #endif
 

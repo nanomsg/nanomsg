@@ -353,6 +353,7 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     }
 
     nn_assert (0);
+    return -ENOPROTOOPT;
 }
 
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
@@ -463,6 +464,7 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
     }
 
     nn_assert (0);
+    return -ENOPROTOOPT;
 }
 
 int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
@@ -550,7 +552,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     /*  Compute the deadline for SNDTIMEO timer. */
     if (self->sndtimeo < 0) {
-        deadline = -1;
+        deadline = (uint64_t)-1;
         timeout = -1;
     }
     else {
@@ -628,7 +630,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     /*  Compute the deadline for RCVTIMEO timer. */
     if (self->rcvtimeo < 0) {
-        deadline = -1;
+        deadline = (uint64_t)-1;
         timeout = -1;
     }
     else {

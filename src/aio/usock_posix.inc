@@ -1100,7 +1100,7 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     hdr.msg_controllen = sizeof (ctrl);
 #else
     *((int*) ctrl) = -1;
-    hdr.msg_accrights = ctrl;
+    hdr.msg_accrights = (caddr_t)ctrl;
     hdr.msg_accrightslen = sizeof (int);
 #endif
     nbytes = recvmsg (self->s, &hdr, 0);

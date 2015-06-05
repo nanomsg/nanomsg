@@ -185,6 +185,7 @@ int nn_device_entry (struct nn_device_recipe *device, int s1, int s2,
 
     /*  This should never happen. */
     nn_assert (0);
+    return -1;
 }
 
 int nn_device_loopback (struct nn_device_recipe *device, int s)

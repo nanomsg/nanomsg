@@ -20,6 +20,7 @@
     IN THE SOFTWARE.
 */
 
+#include "../nn.h"
 #include "sleep.h"
 #include "err.h"
 

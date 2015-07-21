@@ -19,7 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-if [ -d .git ]; then
+if [ -n "${TRAVIS_TAG}" ];
+then
+    VER="${TRAVIS_TAG}"
+elif [ -d .git ]; then
     #  Retrieve the version from the last git tag.
     VER=`git describe --always | sed -e "s:v::"`
     if [ x"`git diff-index --name-only HEAD`" != x ]; then

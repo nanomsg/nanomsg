@@ -18,4 +18,3 @@ deploy:
   on:
     tags: true
     repo: nanomsg/nanomsg
-    branch: master

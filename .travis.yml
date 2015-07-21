@@ -1,0 +1,12 @@
+language: c
+
+sudo: false
+
+compiler:
+  - clang
+  - gcc
+
+script:
+  - ./autogen.sh
+  - ./configure
+  - make distcheck

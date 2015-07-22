@@ -21,7 +21,6 @@
 */
 
 #include "../nn.h"
-#include "sleep.h"
 #include "err.h"
 
 #ifdef NN_HAVE_WINDOWS

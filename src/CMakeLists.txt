@@ -126,7 +126,6 @@ set (NN_SOURCES
     utils/random.c
     utils/sem.h
     utils/sem.c
-    utils/sleep.h
     utils/sleep.c
     utils/thread.h
     utils/thread.c

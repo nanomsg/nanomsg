@@ -26,7 +26,6 @@
 
 #include "../utils/win.h"
 #include "../utils/fast.h"
-#include "../utils/sleep.h"
 #include "../utils/err.h"
 
 int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)

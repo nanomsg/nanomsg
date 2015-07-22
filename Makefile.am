@@ -141,7 +141,6 @@ NANOMSG_UTILS = \
     src/utils/random.c \
     src/utils/sem.h \
     src/utils/sem.c \
-    src/utils/sleep.h \
     src/utils/sleep.c \
     src/utils/stopwatch.h \
     src/utils/stopwatch.c \

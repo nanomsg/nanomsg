@@ -23,6 +23,7 @@
 #include "../src/nn.h"
 
 #include "../src/utils/err.h"
+#include "../src/utils/sleep.h"
 
 #include <stdlib.h>
 #include <stdio.h>

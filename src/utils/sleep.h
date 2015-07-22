@@ -20,31 +20,11 @@
     IN THE SOFTWARE.
 */
 
-#include "sleep.h"
-#include "err.h"
+#ifndef NN_SLEEP_INCLUDED
+#define NN_SLEEP_INCLUDED
 
-#ifdef NN_HAVE_WINDOWS
+/*  Platform independent implementation of sleeping. */
 
-#include "win.h"
-
-void nn_sleep (int milliseconds)
-{
-    Sleep (milliseconds);
-}
-
-#else
-
-#include <time.h>
-
-void nn_sleep (int milliseconds)
-{
-    int rc;
-    struct timespec ts;
-
-    ts.tv_sec = milliseconds / 1000;
-    ts.tv_nsec = milliseconds % 1000 * 1000000;
-    rc = nanosleep (&ts, NULL);
-    errno_assert (rc == 0);    
-}
+void nn_sleep (int milliseconds);
 
 #endif

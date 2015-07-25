@@ -1,12 +1,11 @@
 Welcome to nanomsg
 ------------------
 
-[![GitHub Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)
-[![GitHub License](https://img.shields.io/github/license/nanomsg/nanomsg.svg)
-[![Linux Status](https://img.shields.io/travis/joyent/node.svg)]
-(https:// travis-ci.org/nanomsg/nanomsg.svg?branch=master)](https://travis-ci.org/nanomsg/nanomsg?label=linux)
+[![GitHub Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)]
+[![GitHub License](https://img.shields.io/github/license/nanomsg/nanomsg.svg)]
+[![Linux Status](https://img.shields.io/travis/nanomsg/nanomsg.svg?label=linux)]
 [![Windows Status](https://img.shields.io/appveyor/ci/gdamore/nanomsg.svg?label=windows)]
-[![Issues](https://img.shields.io/github/issues/nanomsg/nanomsg.svg)
+[![Issues](https://img.shields.io/github/issues/nanomsg/nanomsg.svg)]
 
 nanomsg library is a simple high-performance implementation of several 
 "scalability protocols". Scalability protocol's job is to define how multiple 
@@ -16,7 +15,7 @@ For more info check the web site: http://nanomsg.org
 
 Build Status
 ------------
-Linux (clang and gcc): [![Linux Status](https://travis-ci.org/nanomsg/nanomsg.svg?branch=master)](https://travis-ci.org/nanomsg/nanomsg)
+Linux (clang and gcc): [![Linux Status](https://travis-ci.org/nanomsg/nanomsg)]
 Windows (Visual Studio 11 and 12): [![Windows Status](https://img.shields.io/appveyor/ci/gdamore/nanomsg.svg?)]
 
 Build it

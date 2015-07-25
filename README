@@ -7,6 +7,10 @@ applications communicate to form a single distributed application.
 
 For more info check the web site: http://nanomsg.org
 
+Build Status
+------------
+Linux (clang and gcc): [![Linux Status](https://travis-ci.org/nanomsg/nanomsg.svg?branch=master)](https://travis-ci.org/nanomsg/nanomsg)
+
 Build it
 --------
 

@@ -1453,7 +1453,8 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         nn_assert (sws->inmsg_current_chunk_len >=
                             NN_SWS_CLOSE_CODE_LEN);
                         
-                        nn_sws_validate_close_handshake (sws);
+                        nn_pipebase_stop (&sws->pipebase);
+                        sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
                         return;
 
                     default:

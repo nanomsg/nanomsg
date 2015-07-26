@@ -1361,16 +1361,22 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     if (sws->inmsg_current_chunk_len == 0)
                     {
                         if (sws->is_final_frame) {
-                            sws->instate = (sws->is_control_frame ?
-                                NN_SWS_INSTATE_RECVD_CONTROL :
-                                NN_SWS_INSTATE_RECVD_CHUNKED);
-                            nn_pipebase_received (&sws->pipebase);
-                            return;
+                           if (sws->opcode ==  NN_WS_OPCODE_CLOSE) {
+                             nn_pipebase_stop (&sws->pipebase);
+                             sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
+                            }
+                            else
+                            { 
+                              sws->instate = (sws->is_control_frame ?
+                                  NN_SWS_INSTATE_RECVD_CONTROL :
+                                  NN_SWS_INSTATE_RECVD_CHUNKED);
+                              nn_pipebase_received (&sws->pipebase);
+                            }
                         }
                         else {
                             nn_sws_recv_hdr (sws);
-                            return;
                         }
+			return;
                     }
 
                     nn_assert (sws->inmsg_current_chunk_len > 0);

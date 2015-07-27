@@ -204,15 +204,22 @@ static void nn_tcpmuxd_routine (void *arg)
             }
             service [pos - 1] = 0;
             
+            
+            
+            it = nn_list_begin (&ctx->conns);
+            tc = nn_cont (it, struct nn_tcpmuxd_conn, item);
+            nn_assert (tc);
+            
             /*  Check whether specified service is listening. */
-            for (it = nn_list_begin (&ctx->conns);
+            for (it;
                   it != nn_list_end (&ctx->conns);
                   it = nn_list_next (&ctx->conns, it)) {
                 tc = nn_cont (it, struct nn_tcpmuxd_conn, item);
+                nn_assert (tc);
                 if (strcmp (service, tc->service) == 0)
                     break;
             }
-
+ 
             /* If no one is listening, tear down the connection. */
             if (it == nn_list_end (&ctx->conns)) {
                 ssz = send (conn, "-\x0d\x0a", 3, 0);
@@ -314,6 +321,7 @@ static void nn_tcpmuxd_disconnect (struct nn_tcpmuxd_ctx *ctx, int i)
           it != nn_list_end (&ctx->conns);
           it = nn_list_next (&ctx->conns, it)) {
         conn = nn_cont (it, struct nn_tcpmuxd_conn, item);
+        nn_assert (conn);
         if (conn->fd == fd) {
             nn_list_erase (&ctx->conns, it);
             nn_free (conn->service);

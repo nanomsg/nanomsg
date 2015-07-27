@@ -78,6 +78,7 @@ static void nn_respondent_init (struct nn_respondent *self,
 
 static void nn_respondent_term (struct nn_respondent *self)
 {
+    nn_assert (self);
     if (self->flags & NN_RESPONDENT_INPROGRESS)
         nn_chunkref_term (&self->backtrace);
     nn_xrespondent_term (&self->xrespondent);
@@ -99,7 +100,7 @@ static int nn_respondent_events (struct nn_sockbase *self)
     struct nn_respondent *respondent;
 
     respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
-
+    nn_assert (respondent);
     events = nn_xrespondent_events (&respondent->xrespondent.sockbase);
     if (!(respondent->flags & NN_RESPONDENT_INPROGRESS))
         events &= ~NN_SOCKBASE_EVENT_OUT;
@@ -112,7 +113,7 @@ static int nn_respondent_send (struct nn_sockbase *self, struct nn_msg *msg)
     struct nn_respondent *respondent;
 
     respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
-
+    nn_assert (respondent);
     /*  If there's no survey going on, report EFSM error. */
     if (nn_slow (!(respondent->flags & NN_RESPONDENT_INPROGRESS)))
         return -EFSM;
@@ -139,7 +140,7 @@ static int nn_respondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     struct nn_respondent *respondent;
 
     respondent = nn_cont (self, struct nn_respondent, xrespondent.sockbase);
-
+    nn_assert (respondent);
     /*  Cancel current survey and clean up backtrace, if it exists. */
     if (nn_slow (respondent->flags & NN_RESPONDENT_INPROGRESS)) {
         nn_chunkref_term (&respondent->backtrace);

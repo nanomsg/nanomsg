@@ -119,6 +119,7 @@ static int nn_tcp_optset_setopt (struct nn_optset *self, int option,
     int val;
 
     optset = nn_cont (self, struct nn_tcp_optset, base);
+    nn_assert (optset);
 
     /*  At this point we assume that all options are of type int. */
     if (optvallen != sizeof (int))
@@ -143,6 +144,7 @@ static int nn_tcp_optset_getopt (struct nn_optset *self, int option,
     int intval;
 
     optset = nn_cont (self, struct nn_tcp_optset, base);
+    nn_assert (optset);
 
     switch (option) {
     case NN_TCP_NODELAY:

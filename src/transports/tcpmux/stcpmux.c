@@ -124,7 +124,8 @@ static int nn_stcpmux_send (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_iovec iov [3];
 
     stcpmux = nn_cont (self, struct nn_stcpmux, pipebase);
-
+    nn_assert (stcpmux);
+    
     nn_assert_state (stcpmux, NN_STCPMUX_STATE_ACTIVE);
     nn_assert (stcpmux->outstate == NN_STCPMUX_OUTSTATE_IDLE);
 
@@ -155,7 +156,8 @@ static int nn_stcpmux_recv (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_stcpmux *stcpmux;
 
     stcpmux = nn_cont (self, struct nn_stcpmux, pipebase);
-
+    nn_assert (stcpmux);
+    
     nn_assert_state (stcpmux, NN_STCPMUX_STATE_ACTIVE);
     nn_assert (stcpmux->instate == NN_STCPMUX_INSTATE_HASMSG);
 
@@ -177,7 +179,8 @@ static void nn_stcpmux_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_stcpmux *stcpmux;
 
     stcpmux = nn_cont (self, struct nn_stcpmux, fsm);
-
+    nn_assert (stcpmux);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcpmux->pipebase);
         nn_streamhdr_stop (&stcpmux->streamhdr);
@@ -207,7 +210,8 @@ static void nn_stcpmux_handler (struct nn_fsm *self, int src, int type,
     uint64_t size;
 
     stcpmux = nn_cont (self, struct nn_stcpmux, fsm);
-
+    nn_assert (stcpmux);
+    
     switch (stcpmux->state) {
 
 /******************************************************************************/

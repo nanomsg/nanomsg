@@ -247,7 +247,8 @@ static void nn_ws_handshake_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_ws_handshake *handshaker;
 
     handshaker = nn_cont (self, struct nn_ws_handshake, fsm);
-
+    nn_assert (handshaker);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&handshaker->timer);
         handshaker->state = NN_WS_HANDSHAKE_STATE_STOPPING;
@@ -394,7 +395,8 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
     unsigned i;
 
     handshaker = nn_cont (self, struct nn_ws_handshake, fsm);
-
+    nn_assert (handshaker);
+    
     switch (handshaker->state) {
 
 /******************************************************************************/
@@ -1213,7 +1215,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     nn_random_generate (rand_key, sizeof (rand_key));
 
-    rc = nn_base64_encode (rand_key, sizeof (rand_key),
+    nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
 
     encoded_key_len = strlen (encoded_key);
@@ -1271,7 +1273,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
     if (self->response_code == NN_WS_HANDSHAKE_RESPONSE_OK) {
         /*  Upgrade connection as per RFC 6455 section 4.2.2. */
         
-        rc = nn_ws_handshake_hash_key (self->key, self->key_len,
+        nn_ws_handshake_hash_key (self->key, self->key_len,
             accept_key, sizeof (accept_key));
 
         nn_assert (strlen (accept_key) == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);

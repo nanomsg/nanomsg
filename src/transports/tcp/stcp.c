@@ -124,6 +124,7 @@ static int nn_stcp_send (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_iovec iov [3];
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
+    nn_assert (stcp);
 
     nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->outstate == NN_STCP_OUTSTATE_IDLE);
@@ -155,6 +156,7 @@ static int nn_stcp_recv (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_stcp *stcp;
 
     stcp = nn_cont (self, struct nn_stcp, pipebase);
+    nn_assert (stcp);
 
     nn_assert_state (stcp, NN_STCP_STATE_ACTIVE);
     nn_assert (stcp->instate == NN_STCP_INSTATE_HASMSG);
@@ -176,6 +178,7 @@ static void nn_stcp_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_stcp *stcp;
 
     stcp = nn_cont (self, struct nn_stcp, fsm);
+    nn_assert (stcp);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_pipebase_stop (&stcp->pipebase);
@@ -208,6 +211,7 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
     size_t opt_sz = sizeof (opt);
 
     stcp = nn_cont (self, struct nn_stcp, fsm);
+    nn_assert (stcp);
 
     switch (stcp->state) {
 

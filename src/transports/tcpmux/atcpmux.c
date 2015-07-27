@@ -99,7 +99,8 @@ static void nn_atcpmux_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_atcpmux *atcpmux;
 
     atcpmux = nn_cont (self, struct nn_atcpmux, fsm);
-
+    nn_assert (atcpmux);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_stcpmux_isidle (&atcpmux->stcpmux)) {
             nn_epbase_stat_increment (atcpmux->epbase,
@@ -131,7 +132,8 @@ static void nn_atcpmux_handler (struct nn_fsm *self, int src, int type,
     struct nn_atcpmux *atcpmux;
 
     atcpmux = nn_cont (self, struct nn_atcpmux, fsm);
-
+    nn_assert (self);
+    
     switch (atcpmux->state) {
 
 /******************************************************************************/

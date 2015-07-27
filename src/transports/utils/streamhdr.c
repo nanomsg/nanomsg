@@ -117,7 +117,8 @@ static void nn_streamhdr_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_streamhdr *streamhdr;
 
     streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
-
+    nn_assert (streamhdr);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&streamhdr->timer);
         streamhdr->state = NN_STREAMHDR_STATE_STOPPING;
@@ -141,7 +142,7 @@ static void nn_streamhdr_handler (struct nn_fsm *self, int src, int type,
     int protocol;
 
     streamhdr = nn_cont (self, struct nn_streamhdr, fsm);
-
+    nn_assert (streamhdr);
 
     switch (streamhdr->state) {
 

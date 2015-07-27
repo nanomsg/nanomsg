@@ -37,6 +37,7 @@ set (NN_SOURCES
     pipeline.h
     survey.h
     bus.h
+    sockevt.h
 
     core/ep.h
     core/ep.c

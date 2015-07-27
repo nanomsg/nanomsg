@@ -23,6 +23,7 @@
 
 #include "../protocol.h"
 #include "../transport.h"
+#include "../sockevt.h"
 
 #include "sock.h"
 #include "global.h"
@@ -130,7 +131,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->ep_template.sndprio = 8;
     self->ep_template.rcvprio = 8;
     self->ep_template.ipv4only = 1;
-
+    self->sock_evt_cb = NULL;
+    
     /* Initialize statistic entries */
     self->statistics.established_connections = 0;
     self->statistics.accepted_connections = 0;
@@ -269,13 +271,12 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 {
     struct nn_optset *optset;
     int val;
-    int *dst;
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
         return self->sockbase->vfptr->setopt (self->sockbase, level, option,
             optval, optvallen);
-
+    
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
         optset = nn_sock_optset (self, level);
@@ -294,25 +295,34 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     }
 
     /*  At this point we assume that all options are of type int. */
-    if (optvallen != sizeof (int))
-        return -EINVAL;
-    val = *(int*) optval;
+    
+    switch (option) {
+        case NN_SOCKET_EVT:
+            if (optvallen != sizeof (void*))
+                return -EINVAL;
+            break;
+        default:
+            if (optvallen != sizeof (int))
+                return -EINVAL;
+            val = *(int*) optval;
+    }
+    
 
     /*  Generic socket-level options. */
     if (level == NN_SOL_SOCKET) {
         switch (option) {
         case NN_LINGER:
-            dst = &self->linger;
+            self->linger = val;
             break;
         case NN_SNDBUF:
             if (nn_slow (val <= 0))
                 return -EINVAL;
-            dst = &self->sndbuf;
+            self->sndbuf = val;
             break;
         case NN_RCVBUF:
             if (nn_slow (val <= 0))
                 return -EINVAL;
-            dst = &self->rcvbuf;
+            self->rcvbuf = val;
             break;
         case NN_RCVMAXSIZE:
             if (nn_slow (val < -1))
@@ -320,40 +330,44 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
             dst = &self->rcvmaxsize;
             break;
         case NN_SNDTIMEO:
-            dst = &self->sndtimeo;
+            self->sndtimeo = val;
             break;
         case NN_RCVTIMEO:
-            dst = &self->rcvtimeo;
+            self->rcvtimeo = val;
             break;
         case NN_RECONNECT_IVL:
             if (nn_slow (val < 0))
                 return -EINVAL;
-            dst = &self->reconnect_ivl;
+            self->reconnect_ivl = val;
             break;
         case NN_RECONNECT_IVL_MAX:
             if (nn_slow (val < 0))
                 return -EINVAL;
-            dst = &self->reconnect_ivl_max;
+            self->reconnect_ivl_max = val;
             break;
         case NN_SNDPRIO:
             if (nn_slow (val < 1 || val > 16))
                 return -EINVAL;
-            dst = &self->ep_template.sndprio;
+            self->ep_template.sndprio = val;
             break;
         case NN_RCVPRIO:
             if (nn_slow (val < 1 || val > 16))
                 return -EINVAL;
-            dst = &self->ep_template.rcvprio;
+            self->ep_template.rcvprio = val;
             break;
         case NN_IPV4ONLY:
             if (nn_slow (val != 0 && val != 1))
                 return -EINVAL;
-            dst = &self->ep_template.ipv4only;
+            self->ep_template.ipv4only = val;
             break;
+            
+        case NN_SOCKET_EVT:
+            self->sockbase->sock->sock_evt_cb = optval;
+            break;
+            
         default:
             return -ENOPROTOOPT;
         }
-        *dst = val;
 
         return 0;
     }
@@ -708,6 +722,13 @@ int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)
     if (nn_slow (rc >= 0)) {
         nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, 1);
     }
+    
+    if (self->sock_evt_cb != NULL)
+    {
+        struct nn_sock_evt evt = {NN_SOCKET_ADDED, (unsigned long)pipe};
+        self->sock_evt_cb(&evt);
+    }
+    
     return rc;
 }
 
@@ -715,6 +736,12 @@ void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe)
 {
     self->sockbase->vfptr->rm (self->sockbase, pipe);
     nn_sock_stat_increment (self, NN_STAT_CURRENT_CONNECTIONS, -1);
+
+    if (self->sock_evt_cb != NULL)
+    {
+        struct nn_sock_evt evt = {NN_SOCKET_REMOVED, (unsigned long)pipe};
+        self->sock_evt_cb(&evt);
+    }
 }
 
 static void nn_sock_onleave (struct nn_ctx *self)
@@ -723,7 +750,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
     int events;
 
     sock = nn_cont (self, struct nn_sock, ctx);
-
+    nn_assert (sock);
     /*  If nn_close() was already called there's no point in adjusting the
         snd/rcv file descriptors. */
     if (nn_slow (sock->state != NN_SOCK_STATE_ACTIVE))
@@ -801,7 +828,7 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_ep *ep;
 
     sock = nn_cont (self, struct nn_sock, fsm);
-
+    nn_assert (sock);
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
             sock->state == NN_SOCK_STATE_ZOMBIE);
@@ -885,7 +912,7 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     struct nn_ep *ep;
 
     sock = nn_cont (self, struct nn_sock, fsm);
-
+    nn_assert (sock);
     switch (sock->state) {
 
 /******************************************************************************/

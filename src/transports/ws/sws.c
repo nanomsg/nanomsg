@@ -372,6 +372,7 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
     uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
 
     sws = nn_cont (self, struct nn_sws, pipebase);
+    nn_assert (sws);
 
     nn_assert_state (sws, NN_SWS_STATE_ACTIVE);
     nn_assert (sws->outstate == NN_SWS_OUTSTATE_IDLE);
@@ -491,6 +492,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     int pos;
 
     sws = nn_cont (self, struct nn_sws, pipebase);
+    nn_assert (sws);
 
     nn_assert_state (sws, NN_SWS_STATE_ACTIVE);
 
@@ -859,7 +861,8 @@ static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_sws *sws;
 
     sws = nn_cont (self, struct nn_sws, fsm);
-
+    nn_assert (sws);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         /*  TODO: Consider sending a close code here? */
         nn_pipebase_stop (&sws->pipebase);
@@ -889,6 +892,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
     int rc;
 
     sws = nn_cont (self, struct nn_sws, fsm);
+    nn_assert (sws);
 
     switch (sws->state) {
 
@@ -1361,6 +1365,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     if (sws->inmsg_current_chunk_len == 0)
                     {
                         if (sws->is_final_frame) {
+                           printf("DEBUG: sws.c line 1364, NN_WS_OPCODE_CLOSE\n"); 
                            if (sws->opcode ==  NN_WS_OPCODE_CLOSE) {
                              nn_pipebase_stop (&sws->pipebase);
                              sws->state = NN_SWS_STATE_CLOSING_CONNECTION;

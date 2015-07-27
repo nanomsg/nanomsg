@@ -35,6 +35,7 @@
 #include "../utils/list.h"
 
 struct nn_pipe;
+struct nn_sock_evt;
 
 /*  The maximum implemented transport ID. */
 #define NN_MAX_TRANSPORT 4
@@ -44,7 +45,6 @@ struct nn_pipe;
 #define NN_STAT_MESSAGES_RECEIVED      302
 #define NN_STAT_BYTES_SENT             303
 #define NN_STAT_BYTES_RECEIVED         304
-
 
 struct nn_sock
 {
@@ -93,7 +93,10 @@ struct nn_sock
 
     /*  Transport-specific socket options. */
     struct nn_optset *optsets [NN_MAX_TRANSPORT];
-
+    
+    /*  Port event callback */
+    void (*sock_evt_cb)(const struct nn_sock_evt *evt);
+    
     struct {
 
         /*****  The ever-incrementing counters  *****/

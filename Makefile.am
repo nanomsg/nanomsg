@@ -41,7 +41,8 @@ nninclude_HEADERS = \
     src/pipeline.h \
     src/survey.h \
     src/bus.h \
-    src/tcpmux.h
+    src/tcpmux.h \
+    src/sockevt.h
 
 lib_LTLIBRARIES = libnanomsg.la
 

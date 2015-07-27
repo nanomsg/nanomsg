@@ -292,6 +292,7 @@ static void nn_cws_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_cws *cws;
 
     cws = nn_cont (self, struct nn_cws, fsm);
+    nn_assert (cws);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sws_isidle (&cws->sws)) {
@@ -329,6 +330,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     struct nn_cws *cws;
 
     cws = nn_cont (self, struct nn_cws, fsm);
+    nn_assert (cws);
 
     switch (cws->state) {
 

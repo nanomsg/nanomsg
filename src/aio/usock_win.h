@@ -75,6 +75,13 @@ struct nn_usock {
     /*  For now we allocate a new buffer for each write to a named pipe. */
     void *pipesendbuf;
 
+    /* Pointer to security attribute*/
+    SECURITY_ATTRIBUTES sec_attr;
+
+    /* Out Buffer and In Buffer size */
+    int outbuffersz;
+    int inbuffersz;
+
     /*  Errno remembered in NN_USOCK_ERROR state  */
     int errnum;
 };

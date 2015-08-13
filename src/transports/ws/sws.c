@@ -801,7 +801,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     self->fail_msg [0] = NN_SWS_FRAME_BITMASK_FIN | NN_WS_OPCODE_CLOSE;
 
     /*  Size of the payload, which is the status code plus the reason. */
-    self->fail_msg [1] = payload_len;
+    self->fail_msg [1] = (char)payload_len;
 
     self->fail_msg_len = NN_SWS_FRAME_SIZE_INITIAL;
 

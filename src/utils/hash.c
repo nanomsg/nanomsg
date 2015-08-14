@@ -117,6 +117,7 @@ void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item)
 
     slot = nn_hash_key (item->key) % self->slots;
     nn_list_erase (&self->array [slot], &item->list);
+	--self->items;
 }
 
 struct nn_hash_item *nn_hash_get (struct nn_hash *self, uint32_t key)

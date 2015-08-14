@@ -824,11 +824,13 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING_EPS)) {
 
+        /* We are no longer interested in pipe events */
+        if (src == 0)
+            return;
+
         /*  Endpoint is stopped. Now we can safely deallocate it. */
-        if (!(src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED)) {
-            fprintf (stderr, "src=%d type=%d\n", (int) src, (int) type);
-            nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
-        }
+        nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
+
         ep = (struct nn_ep*) srcptr;
         nn_list_erase (&sock->sdeps, &ep->item);
         nn_ep_term (ep);
@@ -935,6 +937,8 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
         default:
 
             /*  The assumption is that all the other events come from pipes. */
+            nn_assert (src == 0);
+
             switch (type) {
             case NN_PIPE_IN:
                 sock->sockbase->vfptr->in (sock->sockbase,

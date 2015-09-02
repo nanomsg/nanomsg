@@ -41,6 +41,7 @@ int main ()
     int opt;
     size_t sz;
     int s1, s2;
+    void * dummy_buf;
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
@@ -177,6 +178,35 @@ int main ()
     test_recv (sc, "ABC");
     test_close (sc);
     test_close (s1);
+
+    /*  Test NN_RCVMAXSIZE limit */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s1, SOCKET_ADDRESS);
+    opt = 4;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+    nn_sleep (100);
+    test_send (s1, "ABC");
+    test_recv (sb, "ABC");
+    test_send (s1, "0123456789012345678901234567890123456789");
+    rc = nn_recv (sb, dummy_buf, NN_MSG, NN_DONTWAIT);
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EAGAIN);
+    test_close (sb);
+    test_close (s1);
+
+    /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
+    sb = test_socket (AF_SP, NN_PAIR);
+    opt = -1;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc >= 0);
+    opt = -2;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    test_close (sb);
 
     return 0;
 }

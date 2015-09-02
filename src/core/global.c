@@ -955,6 +955,10 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
 
     nn_msg_term (&msg);
 
+    /*  Adjust the statistics. */
+    nn_sock_stat_increment (self.socks [s], NN_STAT_MESSAGES_RECEIVED, 1);
+    nn_sock_stat_increment (self.socks [s], NN_STAT_BYTES_RECEIVED, sz);
+
     return (int) sz;
 }
 

@@ -1,4 +1,5 @@
 This directory contains the documentation for nanomsg library. To build the
-documentation (both man pages and web pages) do "make doc" in the build
-directory. The prerequisite for building the documentation are asciidoc and
-xmlto utilities.
+documentation (both man pages and web pages) do "./configure --enable-doc" and
+"make" in the build directory; man pages will be installed with "make install".
+The prerequisites for building the documentation are asciidoc and xmlto
+utilities.

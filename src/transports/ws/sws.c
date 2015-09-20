@@ -1365,7 +1365,6 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     if (sws->inmsg_current_chunk_len == 0)
                     {
                         if (sws->is_final_frame) {
-                           printf("DEBUG: sws.c line 1364, NN_WS_OPCODE_CLOSE\n"); 
                            if (sws->opcode ==  NN_WS_OPCODE_CLOSE) {
                              nn_pipebase_stop (&sws->pipebase);
                              sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
@@ -1380,8 +1379,8 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         }
                         else {
                             nn_sws_recv_hdr (sws);
+                            return;
                         }
-			return;
                     }
 
                     nn_assert (sws->inmsg_current_chunk_len > 0);

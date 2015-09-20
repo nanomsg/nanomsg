@@ -337,6 +337,7 @@ NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nxthdr_ (
 #define NN_IPV4ONLY 14
 #define NN_SOCKET_NAME 15
 #define NN_RCVMAXSIZE 16
+#define NN_SOCKET_EVT 255
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

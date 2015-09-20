@@ -248,7 +248,8 @@ static void nn_ctcpmux_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_ctcpmux *ctcpmux;
 
     ctcpmux = nn_cont (self, struct nn_ctcpmux, fsm);
-
+    nn_assert (ctcpmux);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_stcpmux_isidle (&ctcpmux->stcpmux)) {
             nn_epbase_stat_increment (&ctcpmux->epbase,
@@ -286,7 +287,8 @@ static void nn_ctcpmux_handler (struct nn_fsm *self, int src, int type,
     struct nn_iovec iovec;
 
     ctcpmux = nn_cont (self, struct nn_ctcpmux, fsm);
-
+    nn_assert (ctcpmux);
+    
     switch (ctcpmux->state) {
 
 /******************************************************************************/

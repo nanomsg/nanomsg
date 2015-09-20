@@ -168,6 +168,7 @@ void nn_surveyor_destroy (struct nn_sockbase *self)
 
 static int nn_surveyor_inprogress (struct nn_surveyor *self)
 {
+    nn_assert (self);
     /*  Return 1 if there's a survey going on. 0 otherwise. */
     return self->state == NN_SURVEYOR_STATE_IDLE ||
         self->state == NN_SURVEYOR_STATE_PASSIVE ||
@@ -197,7 +198,7 @@ static int nn_surveyor_send (struct nn_sockbase *self, struct nn_msg *msg)
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
-
+    nn_assert (surveyor);
     /*  Generate new survey ID. */
     ++surveyor->surveyid;
     surveyor->surveyid |= 0x80000000;
@@ -281,7 +282,8 @@ static int nn_surveyor_setopt (struct nn_sockbase *self, int level, int option,
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
-
+    nn_assert (surveyor);
+    
     if (level != NN_SURVEYOR)
         return -ENOPROTOOPT;
 
@@ -301,6 +303,7 @@ static int nn_surveyor_getopt (struct nn_sockbase *self, int level, int option,
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
+    nn_assert (surveyor);
 
     if (level != NN_SURVEYOR)
         return -ENOPROTOOPT;
@@ -322,6 +325,7 @@ static void nn_surveyor_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, fsm);
+    nn_assert (surveyor);
 
     if (nn_slow (src== NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_timer_stop (&surveyor->timer);
@@ -345,6 +349,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
     struct nn_surveyor *surveyor;
 
     surveyor = nn_cont (self, struct nn_surveyor, fsm);
+    nn_assert (surveyor);
 
     switch (surveyor->state) {
 

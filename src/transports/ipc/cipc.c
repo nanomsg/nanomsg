@@ -162,6 +162,7 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_cipc *cipc;
 
     cipc = nn_cont (self, struct nn_cipc, fsm);
+    nn_assert(cipc);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sipc_isidle (&cipc->sipc)) {
@@ -197,6 +198,7 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
     struct nn_cipc *cipc;
 
     cipc = nn_cont (self, struct nn_cipc, fsm);
+    nn_assert(cipc);
 
     switch (cipc->state) {
 

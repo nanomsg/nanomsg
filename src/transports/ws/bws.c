@@ -173,6 +173,7 @@ static void nn_bws_destroy (struct nn_epbase *self)
     struct nn_bws *bws;
 
     bws = nn_cont (self, struct nn_bws, epbase);
+    nn_assert (bws);
 
     nn_assert_state (bws, NN_BWS_STATE_IDLE);
     nn_list_term (&bws->awss);
@@ -192,6 +193,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_aws *aws;
 
     bws = nn_cont (self, struct nn_bws, fsm);
+    nn_assert (bws);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_aws_stop (bws->aws);
@@ -248,6 +250,7 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
     struct nn_aws *aws;
 
     bws = nn_cont (self, struct nn_bws, fsm);
+    nn_assert (bws);
 
     switch (bws->state) {
 

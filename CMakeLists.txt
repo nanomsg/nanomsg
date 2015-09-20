@@ -128,6 +128,7 @@ install (FILES src/reqrep.h DESTINATION include/nanomsg)
 install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
+install (FILES src/sockevt.h DESTINATION include/nanomsg)
 
 install (TARGETS nanocat RUNTIME DESTINATION bin)
 

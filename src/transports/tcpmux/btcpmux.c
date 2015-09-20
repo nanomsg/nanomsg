@@ -201,7 +201,8 @@ static void nn_btcpmux_destroy (struct nn_epbase *self)
     struct nn_btcpmux *btcpmux;
 
     btcpmux = nn_cont (self, struct nn_btcpmux, epbase);
-
+    nn_assert (btcpmux);
+    
     nn_assert_state (btcpmux, NN_BTCPMUX_STATE_IDLE);
     nn_list_term (&btcpmux->atcpmuxes);
     nn_usock_term (&btcpmux->usock);
@@ -220,7 +221,8 @@ static void nn_btcpmux_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_atcpmux *atcpmux;
 
     btcpmux = nn_cont (self, struct nn_btcpmux, fsm);
-
+    nn_assert (btcpmux);
+    
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_backoff_stop (&btcpmux->retry);
         nn_usock_stop (&btcpmux->usock);
@@ -269,7 +271,8 @@ static void nn_btcpmux_handler (struct nn_fsm *self, int src, int type,
     struct nn_iovec iovecs [2];
 
     btcpmux = nn_cont (self, struct nn_btcpmux, fsm);
-
+    nn_assert (btcpmux);
+    
     switch (btcpmux->state) {
 
 /******************************************************************************/

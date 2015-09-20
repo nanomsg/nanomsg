@@ -239,6 +239,7 @@ static void nn_ctcp_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_ctcp *ctcp;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
+    nn_assert (ctcp);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_stcp_isidle (&ctcp->stcp)) {
@@ -276,6 +277,7 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
     struct nn_ctcp *ctcp;
 
     ctcp = nn_cont (self, struct nn_ctcp, fsm);
+    nn_assert (ctcp);
 
     switch (ctcp->state) {
 

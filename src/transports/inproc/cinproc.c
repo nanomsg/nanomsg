@@ -110,7 +110,9 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
     struct nn_binproc *binproc;
 
     cinproc = nn_cont (self, struct nn_cinproc, item);
+    nn_assert (cinproc);
     binproc = nn_cont (peer, struct nn_binproc, item);
+    nn_assert (binproc);
 
     nn_assert_state (cinproc, NN_CINPROC_STATE_DISCONNECTED);
     nn_sinproc_connect (&cinproc->sinproc, &binproc->fsm);
@@ -123,6 +125,7 @@ static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_cinproc *cinproc;
 
     cinproc = nn_cont (self, struct nn_cinproc, fsm);
+    nn_assert (cinproc);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
@@ -153,7 +156,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
     struct nn_sinproc *sinproc;
 
     cinproc = nn_cont (self, struct nn_cinproc, fsm);
-
+    nn_assert (cinproc);
 
     switch (cinproc->state) {
 

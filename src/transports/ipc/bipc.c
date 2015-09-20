@@ -153,6 +153,7 @@ static void nn_bipc_destroy (struct nn_epbase *self)
     struct nn_bipc *bipc;
 
     bipc = nn_cont (self, struct nn_bipc, epbase);
+    nn_assert(bipc);
 
     nn_assert_state (bipc, NN_BIPC_STATE_IDLE);
     nn_list_term (&bipc->aipcs);
@@ -173,6 +174,7 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_aipc *aipc;
 
     bipc = nn_cont (self, struct nn_bipc, fsm);
+    nn_assert(bipc);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         nn_backoff_stop (&bipc->retry);
@@ -235,6 +237,7 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
     struct nn_aipc *aipc;
 
     bipc = nn_cont (self, struct nn_bipc, fsm);
+    nn_assert(bipc);
 
     switch (bipc->state) {
 

@@ -93,7 +93,7 @@ static void nn_timer_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_timer *timer;
 
     timer = nn_cont (self, struct nn_timer, fsm);
-
+    nn_assert (timer);
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         timer->state = NN_TIMER_STATE_STOPPING;
         nn_worker_execute (timer->worker, &timer->stop_task);
@@ -118,7 +118,7 @@ static void nn_timer_handler (struct nn_fsm *self, int src, int type,
     struct nn_timer *timer;
 
     timer = nn_cont (self, struct nn_timer, fsm);
-
+    nn_assert (timer);
     switch (timer->state) {
 
 /******************************************************************************/

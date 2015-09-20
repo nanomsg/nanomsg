@@ -104,6 +104,7 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_aipc *aipc;
 
     aipc = nn_cont (self, struct nn_aipc, fsm);
+    nn_assert (aipc);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sipc_isidle (&aipc->sipc)) {
@@ -145,7 +146,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
     size_t sz;
 
     aipc = nn_cont (self, struct nn_aipc, fsm);
-
+    nn_assert (aipc);
+    
     switch (aipc->state) {
 
 /******************************************************************************/

@@ -368,6 +368,7 @@ static void nn_global_term (void)
     while (!nn_list_empty (&self.transports)) {
         it = nn_list_begin (&self.transports);
         tp = nn_cont (it, struct nn_transport, item);
+        nn_assert(tp);
         if (tp->term)
             tp->term ();
         nn_list_erase (&self.transports, it);
@@ -516,6 +517,7 @@ int nn_global_create_socket (int domain, int protocol)
           it != nn_list_end (&self.socktypes);
           it = nn_list_next (&self.socktypes, it)) {
         socktype = nn_cont (it, struct nn_socktype, item);
+        nn_assert(socktype);
         if (socktype->domain == domain && socktype->protocol == protocol) {
 
             /*  Instantiate the socket. */
@@ -1095,7 +1097,7 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
               it != nn_list_end (&s->eps);
               it = nn_list_next (&s->eps, it)) {
             ep = nn_cont (it, struct nn_ep, item);
-
+            nn_assert(ep);
             if (ep->last_errno) {
 #ifdef NN_HAVE_WINDOWS
                 len = _snprintf_s (curbuf, buf_left, _TRUNCATE,
@@ -1205,6 +1207,7 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
           it != nn_list_end (&self.transports);
           it = nn_list_next (&self.transports, it)) {
         tp = nn_cont (it, struct nn_transport, item);
+        nn_assert(tp);
         if (strlen (tp->name) == protosz &&
               memcmp (tp->name, proto, protosz) == 0)
             break;
@@ -1254,7 +1257,7 @@ static void nn_global_handler (struct nn_fsm *self,
     struct nn_global *global;
 
     global = nn_cont (self, struct nn_global, fsm);
-
+    nn_assert(global);
     switch (global->state) {
 
 /******************************************************************************/
@@ -1322,7 +1325,7 @@ static void nn_global_shutdown (struct nn_fsm *self,
     struct nn_global *global;
 
     global = nn_cont (self, struct nn_global, fsm);
-
+    nn_assert (global);
     nn_assert (global->state == NN_GLOBAL_STATE_ACTIVE
         || global->state == NN_GLOBAL_STATE_IDLE);
     if (global->state == NN_GLOBAL_STATE_ACTIVE) {

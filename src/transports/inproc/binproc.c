@@ -120,8 +120,9 @@ static void nn_binproc_connect (struct nn_ins_item *self,
     struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, item);
+    nn_assert (binproc);
     cinproc = nn_cont (peer, struct nn_cinproc, item);
-
+    nn_assert (cinproc);
     nn_assert_state (binproc, NN_BINPROC_STATE_ACTIVE);
 
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
@@ -144,6 +145,7 @@ static void nn_binproc_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
+    nn_assert (binproc);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
 
@@ -188,6 +190,7 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
     struct nn_sinproc *sinproc;
 
     binproc = nn_cont (self, struct nn_binproc, fsm);
+    nn_assert (binproc);
 
     switch (binproc->state) {
 

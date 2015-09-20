@@ -73,7 +73,9 @@ static void nn_hash_rehash (struct nn_hash *self) {
     while (!nn_list_empty (&oldarray [i])) {
         hitm = nn_cont (nn_list_begin (&oldarray [i]),
                 struct nn_hash_item, list);
+        nn_assert (hitm);
         nn_list_erase (&oldarray [i], &hitm->list);
+        nn_assert (self->slots);
         newslot = nn_hash_key (hitm->key) % self->slots;
         nn_list_insert (&self->array [newslot], &hitm->list,
                 nn_list_end (&self->array [newslot]));

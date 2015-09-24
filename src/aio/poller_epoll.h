@@ -20,8 +20,9 @@
     IN THE SOFTWARE.
 */
 
-#include <sys/epoll.h>
 #include <stdint.h>
+#include <sys/types.h>
+#include <sys/epoll.h>
 
 #define NN_POLLER_HAVE_ASYNC_ADD 1
 

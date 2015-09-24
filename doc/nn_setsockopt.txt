@@ -41,6 +41,10 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     larger than the buffer, exactly one message may be buffered in addition
     to the data in the receive buffer. The type of this option is int. Default
     value is 128kB.
+*NN_RCVMAXSIZE*::
+    Maximum message size that can be received, in bytes. Negative value means
+    that the received size is limited only by available addressable memory. The
+    type of this option is int. Default is 1024kB.
 *NN_SNDTIMEO*::
     The timeout for send operation on the socket, in milliseconds. If message
     cannot be sent within the specified timeout, EAGAIN error is returned.

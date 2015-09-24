@@ -59,7 +59,6 @@ void nn_ins_item_init (struct nn_ins_item *self,
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
         &self->protocol, &sz);
     nn_assert (sz == sizeof (self->protocol));
-    self->connects = 0;
 }
 
 void nn_ins_item_term (struct nn_ins_item *self)
@@ -117,8 +116,6 @@ int nn_ins_bind (struct nn_ins_item *item, nn_ins_fn fn)
             if (!nn_epbase_ispeer (&item->epbase, citem->protocol))
                 continue;
 
-            nn_assert (citem->connects == 0);
-            citem->connects = 1;
             fn (item, citem);
         }
     }
@@ -152,7 +149,6 @@ void nn_ins_connect (struct nn_ins_item *item, nn_ins_fn fn)
                 break;
 
             /*  Call back to cinproc to create actual connection. */
-            ++bitem->connects;
             fn (item, bitem);
 
             break;

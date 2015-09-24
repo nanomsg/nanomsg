@@ -85,6 +85,8 @@ The nn_send/nn_recv flags (only NN_DONTWAIT for now)
 The errno values
 *NN_NS_LIMIT*::
 Various nanomsg limits (only NN_SOCKADDR_MAX for now)
+*NN_NS_EVENT*::
+Event flags (bit mask) for use with nn_poll (NN_POLLIN, NN_POLLOUT)
 
 AVAILABLE OPTION TYPES
 ----------------------
@@ -150,3 +152,4 @@ linknanomsg:nanomsg[7]
 AUTHORS
 -------
 Paul Colomiets <paul@colomiets.name>
+Garrett D'Amore <garrett@damore.org>

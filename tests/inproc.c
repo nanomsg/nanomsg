@@ -200,7 +200,6 @@ int main ()
         test_recv (sc, "DEFG");
         test_recv (s1, "DEFG");
     }
-    
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
         test_send (sc, "XYZ");
@@ -218,7 +217,6 @@ int main ()
     test_close (s1);
     test_close (sc);
     test_close (s2);
-    
     return 0;
 }
 

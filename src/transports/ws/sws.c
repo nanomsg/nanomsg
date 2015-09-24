@@ -154,10 +154,10 @@ void nn_sws_init (struct nn_sws *self, int src,
         NN_SWS_UTF8_MAX_CODEPOINT_LEN);
     self->utf8_code_pt_fragment_len = 0;
 
-    self->pings_sent;
-    self->pongs_sent;
-    self->pings_received;
-    self->pongs_received;
+    self->pings_sent = 0;
+    self->pongs_sent = 0;
+    self->pings_received = 0;
+    self->pongs_received = 0;
 
     nn_fsm_event_init (&self->done);
 }

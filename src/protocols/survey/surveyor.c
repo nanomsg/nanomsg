@@ -56,6 +56,8 @@
 
 #define NN_SURVEYOR_SRC_DEADLINE_TIMER 1
 
+#define NN_SURVEYOR_TIMEDOUT 1
+
 struct nn_surveyor {
 
     /*  The underlying raw SP socket. */
@@ -76,6 +78,9 @@ struct nn_surveyor {
 
     /*  Protocol-specific socket options. */
     int deadline;
+
+    /*  Flag if surveyor has timed out */
+    int timedout;
 };
 
 /*  Private functions. */
@@ -128,6 +133,7 @@ static void nn_surveyor_init (struct nn_surveyor *self,
     nn_timer_init (&self->timer, NN_SURVEYOR_SRC_DEADLINE_TIMER, &self->fsm);
     nn_msg_init (&self->tosend, 0);
     self->deadline = NN_SURVEYOR_DEFAULT_DEADLINE;
+    self->timedout = 0;
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -236,8 +242,13 @@ static int nn_surveyor_recv (struct nn_sockbase *self, struct nn_msg *msg)
     surveyor = nn_cont (self, struct nn_surveyor, xsurveyor.sockbase);
 
     /*  If no survey is going on return EFSM error. */
-    if (nn_slow (!nn_surveyor_inprogress (surveyor)))
-       return -EFSM;
+    if (nn_slow (!nn_surveyor_inprogress (surveyor))) {
+        if (surveyor->timedout == NN_SURVEYOR_TIMEDOUT) {
+            surveyor->timedout = 0;
+            return -ETIMEDOUT;
+        } else
+            return -EFSM;
+    }
 
     while (1) {
 
@@ -402,6 +413,7 @@ static void nn_surveyor_handler (struct nn_fsm *self, int src, int type,
             case NN_TIMER_TIMEOUT:
                 nn_timer_stop (&surveyor->timer);
                 surveyor->state = NN_SURVEYOR_STATE_STOPPING_TIMER;
+                surveyor->timedout = NN_SURVEYOR_TIMEDOUT;
                 return;
             default:
                 nn_fsm_bad_action (surveyor->state, src, type);

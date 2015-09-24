@@ -127,8 +127,8 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self);
 static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self);
 static void nn_ws_handshake_client_request (struct nn_ws_handshake *self);
 static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self);
-static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
-    uint8_t *hashed, size_t hashed_len);
+static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
+    char *hashed, size_t hashed_len);
 
 /*  String parsing support functions. */
 
@@ -146,12 +146,12 @@ static int nn_ws_match_token (const char* token, const char **subj,
     strings must be NULL terminated to avoid undefined behavior. If the
     match succeeds, values are stored into *addr and *len. */
 static int nn_ws_match_value (const char* termseq, const char **subj,
-    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
+    int ignore_leading_sp, int ignore_trailing_sp, const char **addr,
     size_t* const len);
 
 /*  Compares subject octet stream to expected value, optionally ignoring
     case sensitivity. Returns non-zero on success, zero on failure. */
-static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
+static int nn_ws_validate_value (const char* expected, const char *subj,
     size_t subj_len, int case_insensitive);
 
 void nn_ws_handshake_init (struct nn_ws_handshake *self, int src,
@@ -309,7 +309,7 @@ static int nn_ws_match_token (const char* token, const char **subj,
 }
 
 static int nn_ws_match_value (const char* termseq, const char **subj,
-    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
+    int ignore_leading_sp, int ignore_trailing_sp, const char **addr,
     size_t* const len)
 {
     const char *start;
@@ -360,7 +360,7 @@ static int nn_ws_match_value (const char* termseq, const char **subj,
     return NN_WS_HANDSHAKE_MATCH;
 }
 
-static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
+static int nn_ws_validate_value (const char* expected, const char *subj,
     size_t subj_len, int case_insensitive)
 {
     if (strlen (expected) != subj_len)
@@ -482,7 +482,11 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                     nn_assert (handshaker->recv_pos >=
                         (int) NN_WS_HANDSHAKE_TERMSEQ_LEN);
 
-                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i >= 0; i--) {
+                    /*  We only compare if we have at least one byte to
+                        compare against.  When i drops to zero, it means
+                        we don't have any bytes to match against, and it is
+                        automatically true. */
+                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i > 0; i--) {
                         if (memcmp (NN_WS_HANDSHAKE_TERMSEQ,
                             handshaker->opening_hs + handshaker->recv_pos - i,
                             i) == 0) {
@@ -660,7 +664,8 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                     nn_assert (handshaker->recv_pos >=
                         (int) NN_WS_HANDSHAKE_TERMSEQ_LEN);
 
-                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i >= 0; i--) {
+                    /*  If i goes to 0, it no need to compare. */
+                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i > 0; i--) {
                         if (memcmp (NN_WS_HANDSHAKE_TERMSEQ,
                             handshaker->response + handshaker->recv_pos - i,
                             i) == 0) {
@@ -1335,8 +1340,8 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
     return;
 }
 
-static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
-    uint8_t *hashed, size_t hashed_len)
+static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
+    char *hashed, size_t hashed_len)
 {
     int rc;
     unsigned i;

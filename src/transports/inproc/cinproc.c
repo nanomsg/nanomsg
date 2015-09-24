@@ -227,15 +227,14 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 cinproc->state = NN_CINPROC_STATE_DISCONNECTED;
                 nn_epbase_stat_increment (&cinproc->item.epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, 1);
-                    
                 nn_sinproc_init (&cinproc->sinproc, NN_CINPROC_SRC_SINPROC,
                     &cinproc->item.epbase, &cinproc->fsm);
                 return;
-                
+
             default:
                 nn_fsm_bad_action (cinproc->state, src, type);
             }
-                
+
         default:
             nn_fsm_bad_source (cinproc->state, src, type);
         }

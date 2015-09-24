@@ -66,7 +66,7 @@ extern "C" {
 #define NN_VERSION_CURRENT 2
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 1
+#define NN_VERSION_REVISION 2
 
 /*  How many past interface versions are still supported. */
 #define NN_VERSION_AGE 2
@@ -206,6 +206,7 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_NS_FLAG 10
 #define NN_NS_ERROR 11
 #define NN_NS_LIMIT 12
+#define NN_NS_EVENT 13
 
 /*  Constants that are returned in `type` member of nn_symbol_properties      */
 #define NN_TYPE_NONE 0
@@ -335,6 +336,7 @@ NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nxthdr_ (
 #define NN_PROTOCOL 13
 #define NN_IPV4ONLY 14
 #define NN_SOCKET_NAME 15
+#define NN_RCVMAXSIZE 16
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1

@@ -41,6 +41,27 @@ static void nn_iface_any (int ipv4only, struct sockaddr_storage *result,
 
 #include <ifaddrs.h>
 
+static int nn_is_v4_unicast (const struct sockaddr *sa)
+{
+    const struct sockaddr_in *sin = (const void *)sa;
+    if (sa->sa_family != AF_INET)
+        return 0;
+    if ((ntohl(sin->sin_addr.s_addr) & 0xF0000000U) == 0xE0000000U) {
+        return 1;
+    }
+    return 0;
+}
+
+static int nn_is_v6_unicast (const struct sockaddr *sa)
+{
+    const struct sockaddr_in6 *sin6 = (const void *)sa;
+    if (sa->sa_family != AF_INET6)
+        return 0;
+    if (sin6->sin6_addr.s6_addr[0] == 0xff)
+        return 0;
+    return 1;
+}
+
 int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
     struct sockaddr_storage *result, size_t *resultlen)
 {
@@ -79,13 +100,19 @@ int nn_iface_resolve (const char *addr, size_t addrlen, int ipv4only,
         if (ifalen != addrlen || memcmp (it->ifa_name, addr, addrlen) != 0)
             continue;
 
+        /*  We choose the first unicast address found on the interface.  This
+         *  may well not be what you'd prefer.  If you care about this, bind
+         *  to a specific IP address instead of an interface.
+         */
         switch (it->ifa_addr->sa_family) {
         case AF_INET:
-            nn_assert (!ipv4);
+            if (!nn_is_v4_unicast(it->ifa_addr))
+                continue;
             ipv4 = it;
             break;
         case AF_INET6:
-            nn_assert (!ipv6);
+            if (!nn_is_v6_unicast(it->ifa_addr))
+                continue;
             ipv6 = it;
             break;
         }

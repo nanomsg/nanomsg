@@ -82,6 +82,7 @@ struct nn_sock
     int linger;
     int sndbuf;
     int rcvbuf;
+    int rcvmaxsize;
     int sndtimeo;
     int rcvtimeo;
     int reconnect_ivl;

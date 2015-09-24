@@ -122,6 +122,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->linger = 1000;
     self->sndbuf = 128 * 1024;
     self->rcvbuf = 128 * 1024;
+    self->rcvmaxsize = 1024 * 1024;
     self->sndtimeo = -1;
     self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
@@ -313,6 +314,11 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
                 return -EINVAL;
             dst = &self->rcvbuf;
             break;
+        case NN_RCVMAXSIZE:
+            if (nn_slow (val < -1))
+                return -EINVAL;
+            dst = &self->rcvmaxsize;
+            break;
         case NN_SNDTIMEO:
             dst = &self->sndtimeo;
             break;
@@ -396,6 +402,9 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
             break;
         case NN_RCVBUF:
             intval = self->rcvbuf;
+            break;
+        case NN_RCVMAXSIZE:
+            intval = self->rcvmaxsize;
             break;
         case NN_SNDTIMEO:
             intval = self->sndtimeo;

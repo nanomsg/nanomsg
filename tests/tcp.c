@@ -208,6 +208,22 @@ int main ()
     errno_assert (nn_errno () == EINVAL);
     test_close (sb);
 
+    /*  Test closing a socket that is waiting to bind. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    nn_sleep (100);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_bind (s1, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    nn_sleep (100);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (s1);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb);
+    test_close (sc);
+
     return 0;
 }
-

@@ -114,6 +114,9 @@ void nn_epbase_set_error(struct nn_epbase *self, int errnum);
 /*  Notifies a monitoring system that error is gone  */
 void nn_epbase_clear_error(struct nn_epbase *self);
 
+/*  Returns last error of this endpoint  */
+int nn_epbase_get_error(struct nn_epbase *self);
+
 /*  Increments statistics counters in the socket structure  */
 void nn_epbase_stat_increment(struct nn_epbase *self, int name, int increment);
 

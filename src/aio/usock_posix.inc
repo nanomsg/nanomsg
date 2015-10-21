@@ -1018,8 +1018,6 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
         else {
 
             /*  If the connection fails, return ECONNRESET. */
-            errno_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
-                errno == EPIPE ||  errno == ECONNREFUSED || errno == ENOTCONN);
             return -ECONNRESET;
         }
     }
@@ -1117,9 +1115,6 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         else {
 
             /*  If the peer closes the connection, return ECONNRESET. */
-            errno_assert (errno == ECONNRESET || errno == ENOTCONN ||
-                errno == ECONNREFUSED || errno == ETIMEDOUT ||
-                errno == EHOSTUNREACH);
             return -ECONNRESET;
         }
     }

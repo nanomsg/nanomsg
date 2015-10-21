@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -1018,8 +1019,6 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
         else {
 
             /*  If the connection fails, return ECONNRESET. */
-            errno_assert (errno == ECONNRESET || errno == ETIMEDOUT ||
-                errno == EPIPE ||  errno == ECONNREFUSED || errno == ENOTCONN);
             return -ECONNRESET;
         }
     }
@@ -1117,9 +1116,6 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
         else {
 
             /*  If the peer closes the connection, return ECONNRESET. */
-            errno_assert (errno == ECONNRESET || errno == ENOTCONN ||
-                errno == ECONNREFUSED || errno == ETIMEDOUT ||
-                errno == EHOSTUNREACH);
             return -ECONNRESET;
         }
     }

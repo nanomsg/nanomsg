@@ -98,3 +98,6 @@ CMakeFiles
 .pydevproject
 *.sdf
 *.opensdf
+CMakeCache.txt
+*.cmake
+nanomsg.sln

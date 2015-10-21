@@ -152,7 +152,7 @@ struct nn_sws {
     uint8_t inmsg_control [NN_SWS_PAYLOAD_MAX_LENGTH];
 
     /*  Reason this connection is closing to send as closing handshake. */
-    char fail_msg [NN_SWS_PAYLOAD_MAX_LENGTH];
+    uint8_t fail_msg [NN_SWS_PAYLOAD_MAX_LENGTH];
     size_t fail_msg_len;
 
     /*  State of the outbound state machine. */

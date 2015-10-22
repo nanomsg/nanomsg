@@ -21,6 +21,7 @@
 */
 
 #include "task.h"
+#include "../../utils/attr.h"
 
 void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl)
 {
@@ -28,7 +29,7 @@ void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl)
     self->hndl = hndl;
 }
 
-void nn_task_term (struct nn_task *self)
+void nn_task_term (NN_UNUSED struct nn_task *self)
 {
 }
 

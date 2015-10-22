@@ -165,7 +165,7 @@ struct nn_global {
 };
 
 /*  Singleton object containing the global state of the library. */
-static struct nn_global self = {0};
+static struct nn_global self;
 
 /*  Context creation- and termination-related private functions. */
 static void nn_global_init (void);

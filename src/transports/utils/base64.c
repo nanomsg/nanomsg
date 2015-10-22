@@ -76,7 +76,7 @@ int nn_base64_decode (const char *in, size_t in_len,
         if (in [ii] == '=')
             break;
         
-        ch = DECODEMAP [in [ii]];
+        ch = DECODEMAP [(int)(in [ii])];
         
         /*  Discard invalid characters as per RFC 2045. */
         if (ch == 0xFF)

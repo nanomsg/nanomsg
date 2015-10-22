@@ -384,7 +384,6 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
     const char *addr;
 #if !defined NN_HAVE_WINDOWS
     int fd;
-    int opt;
 #endif
 
     /*  First, create the AF_UNIX address. */

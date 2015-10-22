@@ -185,12 +185,6 @@ void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array);
 /*  Deallocate an entire message array. */
 void nn_msg_array_term (struct nn_list *msg_array);
 
-/*  Returns the length in octets of a single UTF-8 codepoint,
-    NN_SWS_UTF8_FRAGMENT if a codepoint began correctly but the length
-    of the buffer ran out before validating a full code point, or
-    NN_SWS_UTF8_INVALID if an invalid code point is detected. */
-static int nn_utf8_code_point (const uint8_t *buffer, size_t len);
-
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_sws_term (struct nn_sws *self);

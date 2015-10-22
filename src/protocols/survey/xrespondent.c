@@ -136,7 +136,8 @@ void nn_xrespondent_in (struct nn_sockbase *self, struct nn_pipe *pipe)
     nn_fq_in (&xrespondent->inpipes, &data->initem);
 }
 
-void nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe)
+void nn_xrespondent_out (NN_UNUSED struct nn_sockbase *self, 
+    struct nn_pipe *pipe)
 {
     struct nn_xrespondent_data *data;
 

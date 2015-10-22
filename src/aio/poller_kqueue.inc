@@ -20,6 +20,7 @@
     IN THE SOFTWARE.
 */
 
+#include "../utils/attr.h"
 #include "../utils/fast.h"
 #include "../utils/err.h"
 #include "../utils/closefd.h"
@@ -52,7 +53,7 @@ void nn_poller_term (struct nn_poller *self)
     nn_closefd (self->kq);
 }
 
-void nn_poller_add (struct nn_poller *self, int fd,
+void nn_poller_add (NN_UNUSED struct nn_poller *self, int fd,
     struct nn_poller_hndl *hndl)
 {
     /*  Initialise the handle. */

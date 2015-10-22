@@ -127,10 +127,6 @@ static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,
 /*  Validates incoming text chunks for UTF-8 compliance as per RFC 3629. */
 static void nn_sws_validate_utf8_chunk (struct nn_sws *self);
 
-/*  Ensures that Close frames received from peer conform to
-    RFC 6455 section 7. */
-static void nn_sws_validate_close_handshake (struct nn_sws *self);
-
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
 {
@@ -488,7 +484,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     struct nn_cmsghdr *cmsg;
     uint8_t opcode_hdr;
     size_t cmsgsz;
-    int pos;
+    size_t pos;
 
     sws = nn_cont (self, struct nn_sws, pipebase);
 
@@ -709,70 +705,6 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
     }
     else {
         nn_sws_recv_hdr (self);
-    }
-
-    return;
-}
-
-static void nn_sws_validate_close_handshake (struct nn_sws *self)
-{
-    uint8_t *pos;
-    uint16_t close_code;
-    int code_point_len;
-    int len;
-    
-    len = self->inmsg_current_chunk_len - NN_SWS_CLOSE_CODE_LEN;
-    pos = self->inmsg_current_chunk_buf + NN_SWS_CLOSE_CODE_LEN;
-
-    /*  As per RFC 6455 7.1.6, the Close Reason following the Close Code
-        must be well-formed UTF-8. */
-    while (len > 0) {
-        code_point_len = nn_utf8_code_point (pos, len);
-
-        if (code_point_len > 0) {
-            len -= code_point_len;
-            pos += code_point_len;
-            continue;
-        }
-        else {
-            /*  RFC 6455 7.1.6 */
-            nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,
-                "Invalid UTF-8 sent as Close Reason.");
-            return;
-        }
-    }
-
-    /*  Entire Close Reason is well-formed UTF-8 (or empty) */
-    nn_assert (len == 0);
-
-    close_code = nn_gets (self->inmsg_current_chunk_buf);
-
-    if (close_code == NN_SWS_CLOSE_NORMAL ||
-        close_code == NN_SWS_CLOSE_GOING_AWAY ||
-        close_code == NN_SWS_CLOSE_ERR_PROTO ||
-        close_code == NN_SWS_CLOSE_ERR_WUT ||
-        close_code == NN_SWS_CLOSE_ERR_INVALID_FRAME ||
-        close_code == NN_SWS_CLOSE_ERR_POLICY ||
-        close_code == NN_SWS_CLOSE_ERR_TOOBIG ||
-        close_code == NN_SWS_CLOSE_ERR_EXTENSION ||
-        close_code == NN_SWS_CLOSE_ERR_SERVER) {
-        /*  RFC 6455 7.4.1 */
-        self->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-        nn_pipebase_received (&self->pipebase);
-    }
-    else if (close_code >= 3000 && close_code <= 3999) {
-        /*  RFC 6455 7.4.2 */
-        self->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-        nn_pipebase_received (&self->pipebase);
-    }
-    else if (close_code >= 4000 && close_code <= 4999) {
-        /*  RFC 6455 7.4.2 */
-        self->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-        nn_pipebase_received (&self->pipebase);
-    }
-    else {
-        nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,
-            "Unrecognized close code.");
     }
 
     return;

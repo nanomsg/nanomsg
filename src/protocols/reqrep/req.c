@@ -232,8 +232,8 @@ int nn_req_events (struct nn_sockbase *self)
     return rc;
 }
 
-int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len,
-    int flags)
+int nn_req_send (NN_UNUSED int s, NN_UNUSED nn_req_handle hndl,
+    NN_UNUSED const void *buf, NN_UNUSED size_t len, NN_UNUSED int flags)
 {
     nn_assert (0);
 }
@@ -263,8 +263,8 @@ int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
     return 0;
 }
 
-int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len,
-    int flags)
+int nn_req_recv (NN_UNUSED int s, NN_UNUSED nn_req_handle *hndl,
+    NN_UNUSED void *buf, NN_UNUSED size_t len, NN_UNUSED int flags)
 {
     nn_assert (0);
 }

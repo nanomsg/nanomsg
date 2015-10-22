@@ -39,9 +39,10 @@
 
 struct nn_atomic active;
 
+#if 0
 static void server(NN_UNUSED void *arg)
 {
-	int bytes;
+    int bytes;
     int sock = nn_socket(AF_SP, NN_PULL);
     nn_assert(sock >= 0);
     nn_assert(nn_bind(sock, SOCKET_ADDRESS) >= 0);
@@ -58,7 +59,7 @@ static void server(NN_UNUSED void *arg)
 
 static void client(NN_UNUSED void *arg)
 {
-	int bytes;
+    int bytes;
     char msg[] = "0";
     int sz_msg = strlen (msg) + 1; // '\0' too
     int i;
@@ -73,13 +74,14 @@ static void client(NN_UNUSED void *arg)
     }
     nn_atomic_dec(&active, 1);
 }
+#endif
 
 int main()
 {
 #if 0
     int i;
-	int cli_sock;
-	int bytes;
+    int cli_sock;
+    int bytes;
     struct nn_thread srv_thread;
     struct nn_thread cli_threads[THREAD_COUNT];
     nn_atomic_init (&active, THREAD_COUNT);
@@ -99,7 +101,7 @@ int main()
     nn_assert(bytes == sizeof(i));
     nn_close(cli_sock);
     nn_thread_term(&srv_thread);
-#endif 
+#endif
 
     return 0;
 }

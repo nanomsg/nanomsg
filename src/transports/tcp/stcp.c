@@ -332,7 +332,7 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                     nn_pipebase_getopt (&stcp->pipebase, NN_SOL_SOCKET,
                         NN_RCVMAXSIZE, &opt, &opt_sz);
 
-                    if (opt != -1 && size > opt) {
+                    if (opt >= 0 && size > (unsigned)opt) {
                         stcp->state = NN_STCP_STATE_DONE;
                         nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
                         return;

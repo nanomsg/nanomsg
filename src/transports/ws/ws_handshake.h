@@ -93,7 +93,7 @@ struct nn_ws_handshake {
 
     /*  Monitor/control the opening recv poll. */
     int retries;
-    int recv_pos;
+    size_t recv_pos;
     size_t recv_len;
 
     /*  Expected handshake fields from client as per RFC 6455 4.1,

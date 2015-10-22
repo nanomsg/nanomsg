@@ -152,13 +152,17 @@ int nn_ctcpmux_create (void *hint, struct nn_epbase **epbase)
     addr = nn_epbase_getaddr (&self->epbase);
     addrlen = strlen (addr);
     semicolon = strchr (addr, ';');
-    hostname = semicolon ? semicolon + 1 : addr;
+    hostname = semicolon != NULL ? semicolon + 1 : addr;
     colon = strrchr (addr, ':');
-    slash = strchr (colon + 1, '/');
+    if (colon != NULL) {
+        slash = strchr (colon + 1, '/');
+    } else {
+        slash = NULL;
+    }
     end = addr + addrlen;
 
     if (nn_slow (!colon || !slash ||
-          end - (slash + 1) > sizeof (self->buffer) - 3)) {
+          (size_t)(end - (slash + 1)) > sizeof (self->buffer) - 3)) {
         nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
@@ -703,4 +707,3 @@ static void nn_ctcpmux_start_connecting (struct nn_ctcpmux *self,
     nn_epbase_stat_increment (&self->epbase,
         NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
-

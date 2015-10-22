@@ -39,10 +39,8 @@ int main (int argc, const char *argv [])
         return 1;
     }
 
-    if (argc == 2) {
-        /* TODO: Use strtol here to detect malformed port numbers. */
-        port = atoi (argv [1]);
-    }
+    /* TODO: Use strtol here to detect malformed port numbers. */
+    port = atoi (argv [1]);
 
     /*  Start the daemon. */
     rc = nn_tcpmuxd (port);

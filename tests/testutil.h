@@ -41,7 +41,8 @@ static void test_recv_impl (char *file, int line, int sock, char *data);
 #define test_recv(s, d) test_recv_impl (__FILE__, __LINE__, (s), (d))
 #define test_close(s) test_close_impl (__FILE__, __LINE__, (s))
 
-static int test_socket_impl (char *file, int line, int family, int protocol)
+static int NN_UNUSED test_socket_impl (char *file, int line, int family,
+    int protocol)
 {
     int sock;
 
@@ -88,7 +89,7 @@ static int NN_UNUSED test_bind_impl (char *file, int line,
     return rc;
 }
 
-static void test_close_impl (char *file, int line, int sock)
+static void NN_UNUSED test_close_impl (char *file, int line, int sock)
 {
     int rc;
 

@@ -50,7 +50,7 @@ int nn_device (int s1, int s2)
 }
 
 int nn_device_entry (struct nn_device_recipe *device, int s1, int s2,
-    int flags) 
+    NN_UNUSED int flags) 
 {
     int rc;
     int op1;
@@ -388,8 +388,9 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
     return 0;
 }
 
-int nn_device_rewritemsg (struct nn_device_recipe *device,
-    int from, int to, int flags, struct nn_msghdr *msghdr, int bytes) 
+int nn_device_rewritemsg (NN_UNUSED struct nn_device_recipe *device,
+    NN_UNUSED int from, NN_UNUSED int to, NN_UNUSED int flags,
+    NN_UNUSED struct nn_msghdr *msghdr, NN_UNUSED int bytes) 
 {
     return 1; /* always forward */
 }

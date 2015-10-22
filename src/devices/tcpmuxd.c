@@ -148,7 +148,7 @@ static void nn_tcpmuxd_routine (void *arg)
     int rc;
     struct nn_tcpmuxd_ctx *ctx;
     int conn;
-    int pos;
+    size_t pos;
     char service [256];
     struct nn_tcpmuxd_conn *tc;
     size_t sz;
@@ -276,8 +276,8 @@ static void nn_tcpmuxd_routine (void *arg)
             nn_assert (tc->service);
             ssz = recv (conn, tc->service, sz, 0);
             errno_assert (ssz >= 0);
-            nn_assert (ssz == sz);
-            for (i = 0; i != sz; ++i)
+            nn_assert ((size_t)ssz == sz);
+            for (i = 0; (size_t)i != sz; ++i)
                 tc->service [i] = tolower (tc->service [i]);
             tc->service [sz] = 0;
             
@@ -285,7 +285,7 @@ static void nn_tcpmuxd_routine (void *arg)
             nn_list_insert (&ctx->conns, &tc->item, nn_list_end (&ctx->conns));
         }
 
-        for (i = 2; i < ctx->pfd_size; ++i) {
+        for (i = 2; (size_t)i < ctx->pfd_size; ++i) {
             if (ctx->pfd [i].revents & POLLERR ||
                   ctx->pfd [i].revents & POLLHUP) {
                 nn_tcpmuxd_disconnect (ctx, i);

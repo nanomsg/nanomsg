@@ -41,7 +41,7 @@
 #define NN_CLOCK_PRECISION 1000000
 
 #if defined NN_HAVE_OSX
-static mach_timebase_info_data_t nn_clock_timebase_info = {0};
+static mach_timebase_info_data_t nn_clock_timebase_info;
 #endif
 
 static uint64_t nn_clock_rdtsc ()

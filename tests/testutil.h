@@ -33,6 +33,8 @@ static int test_bind_impl (char *file, int line, int sock, char *address);
 static void test_close_impl (char *file, int line, int sock);
 static void test_send_impl (char *file, int line, int sock, char *data);
 static void test_recv_impl (char *file, int line, int sock, char *data);
+static int  test_setsockopt_impl (char *file, int line, int sock, int level,
+    int option, const void *optval, size_t optlen);
 
 #define test_socket(f, p) test_socket_impl (__FILE__, __LINE__, (f), (p))
 #define test_connect(s, a) test_connect_impl (__FILE__, __LINE__, (s), (a))
@@ -40,6 +42,8 @@ static void test_recv_impl (char *file, int line, int sock, char *data);
 #define test_send(s, d) test_send_impl (__FILE__, __LINE__, (s), (d))
 #define test_recv(s, d) test_recv_impl (__FILE__, __LINE__, (s), (d))
 #define test_close(s) test_close_impl (__FILE__, __LINE__, (s))
+#define test_setsockopt(s, l, o, v, z) test_setsockopt_impl (__FILE__, \
+    __LINE__, (s), (l), (o), (v), (z))
 
 static int NN_UNUSED test_socket_impl (char *file, int line, int family,
     int protocol)
@@ -82,6 +86,22 @@ static int NN_UNUSED test_bind_impl (char *file, int line,
     if(rc < 0) {
         fprintf (stderr, "Failed bind to \"%s\": %s [%d] (%s:%d)\n",
             address,
+            nn_err_strerror (errno),
+            (int) errno, file, line);
+        nn_err_abort ();
+    }
+    return rc;
+}
+
+static int NN_UNUSED test_setsockopt_impl (char *file, int line,
+    int sock, int level, int option, const void *optval, size_t optlen)
+{
+    int rc;
+
+    rc = nn_setsockopt (sock, level, option, optval, optlen);
+    if(rc < 0) {
+        fprintf (stderr, "Failed set option \"%d\": %s [%d] (%s:%d)\n",
+            option,
             nn_err_strerror (errno),
             (int) errno, file, line);
         nn_err_abort ();

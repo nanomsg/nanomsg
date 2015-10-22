@@ -56,15 +56,24 @@ int nn_efd_init (struct nn_efd *self)
 
     /*  This function has to be enclosed in a system-wide critical section
         so that two instances of the library don't accidentally create an efd
-        crossing the process boundary. 
-        CAUTION: This critical section has machine-wide scope. Thus, it must
-        be properly exited even before crashing the process by an assertion. */
-    sync = CreateEvent (&sa, FALSE, TRUE, "Global\\nanomsg-port-sync");
+        crossing the process boundary. */
+    sync = CreateMutex (&sa, FALSE, "Global\\nanomsg-port-mutex");
     win_assert (sync != NULL);
 
-    /*  Enter the critical section. */
-    dwrc = WaitForSingleObject (sync, INFINITE);
-    nn_assert (dwrc == WAIT_OBJECT_0);
+    /*  Enter the critical section.   If we cannot get the object in 10 seconds
+        then something is seriously wrong.  Just bail. */
+    dwrc = WaitForSingleObject (sync, 10000);
+    switch (dwrc) {
+    case WAIT_ABANDONED:
+    case WAIT_OBJECT_0:
+        break;
+    case WAIT_TIMEOUT:
+        rc = ETIMEDOUT;
+        goto wsafail3;
+    default:
+        rc = nn_err_wsa_to_posix (WSAGetLastError ());
+        goto wsafail3;
+    }
 
     /*  Unfortunately, on Windows the only way to send signal to a file
         descriptor (SOCKET) is to create a full-blown TCP connecting on top of
@@ -141,7 +150,7 @@ int nn_efd_init (struct nn_efd *self)
     if (i == NN_EFD_RETRIES)
         goto wsafail2;
 
-    while (1) {
+    for (;;) {
 
         /*  Accept new incoming connection. */
         addrlen = sizeof (addr);
@@ -166,7 +175,7 @@ int nn_efd_init (struct nn_efd *self)
         goto wsafail;
 
     /*  Leave the critical section. */
-    brc = SetEvent (sync);
+    brc = ReleaseMutex (sync);
     win_assert (brc != 0);
     brc = CloseHandle (sync);
     win_assert (brc != 0);
@@ -184,11 +193,11 @@ int nn_efd_init (struct nn_efd *self)
 wsafail:
     rc = nn_err_wsa_to_posix (WSAGetLastError ());
 wsafail2:
-    brc = SetEvent (sync);
+    brc = ReleaseMutex (sync);
     win_assert (brc != 0);
+wsafail3:
     brc = CloseHandle (sync);
     win_assert (brc != 0);
-    errnum_assert (0, rc);
     return -rc;
 }
 

@@ -60,6 +60,7 @@ macro (add_libnanomsg_test NAME)
     add_executable (${NAME} tests/${NAME}.c)
     target_link_libraries (${NAME} nanomsg)
     add_test (NAME ${NAME} COMMAND ${NAME})
+    set_tests_properties (${NAME} PROPERTIES  TIMEOUT 30)
 endmacro (add_libnanomsg_test)
 
 #  Transport tests.

@@ -169,29 +169,29 @@ int main ()
 
     test_close (sc);
     test_close (sb);
-
+    
     /* Test binding a new socket after originally bound socket shuts down. */
     sb = test_socket (AF_SP, NN_BUS);
     test_bind (sb, SOCKET_ADDRESS);
-
+    
     sc = test_socket (AF_SP, NN_BUS);
     test_connect (sc, SOCKET_ADDRESS);
-
+    
     s1 = test_socket (AF_SP, NN_BUS);
     test_connect (s1, SOCKET_ADDRESS);
-
+    
     /* Close bound socket, leaving connected sockets connect. */
     test_close (sb);
 
     nn_sleep (100);
-
+    
     /* Rebind a new socket to the address to which our connected sockets are listening. */
     s2 = test_socket (AF_SP, NN_BUS);
     test_bind (s2, SOCKET_ADDRESS);
-
+    
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
-
+        
         test_send (sc, "ABC");
         test_send (s1, "QRS");
         test_recv (s2, "ABC");
@@ -200,7 +200,6 @@ int main ()
         test_recv (sc, "DEFG");
         test_recv (s1, "DEFG");
     }
-
     /*  Batch transfer test. */
     for (i = 0; i != 100; ++i) {
         test_send (sc, "XYZ");
@@ -218,7 +217,6 @@ int main ()
     test_close (s1);
     test_close (sc);
     test_close (s2);
-
     return 0;
 }
 

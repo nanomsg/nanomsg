@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -191,7 +192,7 @@ int main ()
     test_send (s1, "ABC");
     test_recv (sb, "ABC");
     test_send (s1, "0123456789012345678901234567890123456789");
-    rc = nn_recv (sb, dummy_buf, NN_MSG, NN_DONTWAIT);
+    rc = nn_recv (sb, &dummy_buf, NN_MSG, NN_DONTWAIT);
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EAGAIN);
     test_close (sb);

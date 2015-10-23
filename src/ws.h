@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,7 +26,6 @@
 #define WS_H_INCLUDED
 
 #include "nn.h"
-#include "utils/int.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,35 +33,17 @@ extern "C" {
 
 #define NN_WS -4
 
-/*  Socket options  */
-#define NN_WS_OPTION_PLACEHOLDER 1
-
-/*  CMSG types at option level NN_WS. */
-#define NN_WS_HDR_OPCODE 1
+/*  NN_WS level socket/cmsg options.  Note that only NN_WSMG_TYPE_TEXT and
+    NN_WS_MSG_TYPE_BINARY messages are supported fully by this implementation.
+    Attempting to set other message types is undefined.  */
+#define NN_WS_MSG_TYPE 1
 
 /*  WebSocket opcode constants as per RFC 6455 5.2  */
 #define NN_WS_MSG_TYPE_TEXT 0x01
 #define NN_WS_MSG_TYPE_BINARY 0x02
-#define NN_WS_MSG_TYPE_CLOSE 0x08
-#define NN_WS_MSG_TYPE_PING 0x09
-#define NN_WS_MSG_TYPE_PONG 0x0A
-
-/*  This opcode is defined exclusively by nanomsg to indicate that
-    the library is closing the connection based on invalid data received
-    from the peer. */
-#define NN_WS_MSG_TYPE_GONE 0x7F
-
-/*  Convenience wrappers for send/recv that automatically
-    append/trim the WebSocket header as a CMSG. Return values
-    have same semantics as the send/recv methods they wrap. */
-NN_EXPORT int nn_ws_send (int s, const void *msg, size_t len,
-    uint8_t msg_type, int flags);
-NN_EXPORT int nn_ws_recv (int s, void *msg, size_t len,
-    uint8_t *msg_type, int flags);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

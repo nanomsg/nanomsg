@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -70,14 +71,17 @@
 #define NN_WS_OPCODE_UNUSED5 0x05
 #define NN_WS_OPCODE_UNUSED6 0x06
 #define NN_WS_OPCODE_UNUSED7 0x07
-#define NN_WS_OPCODE_CLOSE NN_WS_MSG_TYPE_CLOSE
-#define NN_WS_OPCODE_PING NN_WS_MSG_TYPE_PING
-#define NN_WS_OPCODE_PONG NN_WS_MSG_TYPE_PONG
+#define NN_WS_OPCODE_CLOSE 0x08
+#define NN_WS_OPCODE_PING 0x09
+#define NN_WS_OPCODE_PONG 0x0A
 #define NN_WS_OPCODE_UNUSEDB 0x0B
 #define NN_WS_OPCODE_UNUSEDC 0x0C
 #define NN_WS_OPCODE_UNUSEDD 0x0D
 #define NN_WS_OPCODE_UNUSEDE 0x0E
 #define NN_WS_OPCODE_UNUSEDF 0x0F
+/*  Private use for nanomsg - indicates failed connect. */
+#define NN_WS_OPCODE_GONE 0x7F
+
 
 /*  WebSocket protocol header bit masks as per RFC 6455. */
 #define NN_SWS_FRAME_BITMASK_MASKED 0x80
@@ -133,6 +137,7 @@ void nn_sws_init (struct nn_sws *self, int src,
     nn_fsm_init (&self->fsm, nn_sws_handler, nn_sws_shutdown,
         src, self, owner);
     self->state = NN_SWS_STATE_IDLE;
+    self->epbase = epbase;
     nn_ws_handshake_init (&self->handshaker,
         NN_SWS_SRC_HANDSHAKE, &self->fsm);
     self->usock = NULL;
@@ -176,7 +181,7 @@ int nn_sws_isidle (struct nn_sws *self)
 }
 
 void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
-    const char *resource, const char *host)
+    const char *resource, const char *host, uint8_t msg_type)
 {
     /*  Take ownership of the underlying socket. */
     nn_assert (self->usock == NULL && self->usock_owner.fsm == NULL);
@@ -187,6 +192,8 @@ void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
     self->mode = mode;
     self->resource = resource;
     self->remote_host = host;
+
+    self->msg_type = msg_type;
 
     /*  Launch the state machine. */
     nn_fsm_start (&self->fsm);
@@ -391,17 +398,17 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
         msghdr.msg_control = nn_chunkref_data (&sws->outmsg.hdrs);
         cmsg = NN_CMSG_FIRSTHDR (&msghdr);
         while (cmsg) {
-            if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_HDR_OPCODE)
+            if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_MSG_TYPE)
                 break;
             cmsg = NN_CMSG_NXTHDR (&msghdr, cmsg);
         }
     }
 
-    /*  If the header does not specify an opcode, assume default. */
+    /*  If the header does not specify an opcode, take default from option. */
     if (cmsg)
         sws->outhdr [0] = *(uint8_t *) NN_CMSG_DATA (cmsg);
     else
-        sws->outhdr [0] = NN_WS_OPCODE_BINARY;
+        sws->outhdr [0] = sws->msg_type;
 
     /*  For now, enforce that outgoing messages are the final frame. */
     sws->outhdr [0] |= NN_SWS_FRAME_BITMASK_FIN;
@@ -500,11 +507,14 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
         /*  Inform user this connection has been failed. */
         nn_msg_init (msg, 0);
 
-        opcode_hdr = NN_WS_MSG_TYPE_GONE | NN_SWS_FRAME_BITMASK_FIN;
+        opcode_hdr = NN_WS_OPCODE_GONE | NN_SWS_FRAME_BITMASK_FIN;
 
         iov [0].iov_base = sws->fail_msg;
         iov [0].iov_len = sws->fail_msg_len;
 
+        /*  TODO: Pretty sure we should not send anything at all on this
+            connection -- these failures are due to a protocol violations
+            by the peer, and we should just cut them off at the knees. */
         /*  TODO: Consider queueing and unconditionally sending close
             handshake rather than skipping it. */
         /*  RFC 6455 7.1.7 - try to send helpful Closing Handshake only if
@@ -595,7 +605,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     nn_chunkref_init (&msg->hdrs, cmsgsz);
     cmsg = nn_chunkref_data (&msg->hdrs);
     cmsg->cmsg_level = NN_WS;
-    cmsg->cmsg_type = NN_WS_HDR_OPCODE;
+    cmsg->cmsg_type = NN_WS_MSG_TYPE;
     cmsg->cmsg_len = cmsgsz;
     memcpy (NN_CMSG_DATA (cmsg), &opcode_hdr, sizeof (opcode_hdr));
 

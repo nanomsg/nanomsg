@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -234,6 +235,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CWS_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CWS_SRC_USOCK, &self->fsm);
+
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);
@@ -246,6 +248,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CWS_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
+
     nn_sws_init (&self->sws, NN_CWS_SRC_SWS, &self->epbase, &self->fsm);
     nn_dns_init (&self->dns, NN_CWS_SRC_DNS, &self->fsm);
 
@@ -327,6 +330,8 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_cws *cws;
+    int msg_type;
+    size_t sz;
 
     cws = nn_cont (self, struct nn_cws, fsm);
 
@@ -409,9 +414,13 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
+                sz = sizeof (msg_type);
+                nn_epbase_getopt (&cws->epbase, NN_WS, NN_WS_MSG_TYPE,
+                    &msg_type, &sz);
+                nn_assert(sz == sizeof (msg_type));
                 nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
                     nn_chunkref_data (&cws->resource),
-                    nn_chunkref_data (&cws->remote_host));
+                    nn_chunkref_data (&cws->remote_host), (uint8_t)msg_type);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 cws->peer_gone = 0;
                 nn_epbase_stat_increment (&cws->epbase,

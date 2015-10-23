@@ -2,6 +2,7 @@
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -49,7 +50,7 @@
 /*  WebSocket-specific socket options. */
 struct nn_ws_optset {
     struct nn_optset base;
-    int placeholder;
+    int msg_type;
 };
 
 static void nn_ws_optset_destroy (struct nn_optset *self);
@@ -100,7 +101,7 @@ static struct nn_optset *nn_ws_optset ()
     optset->base.vfptr = &nn_ws_optset_vfptr;
 
     /*  Default values for WebSocket options. */
-    optset->placeholder = 1000;
+    optset->msg_type = NN_WS_MSG_TYPE_BINARY;
 
     return &optset->base;   
 }
@@ -117,15 +118,24 @@ static int nn_ws_optset_setopt (struct nn_optset *self, int option,
     const void *optval, size_t optvallen)
 {
     struct nn_ws_optset *optset;
+    int val;
 
     optset = nn_cont (self, struct nn_ws_optset, base);
+    if (optvallen != sizeof (int)) {
+        return -EINVAL;
+    }
+    val = *(int *)optval;
 
     switch (option) {
-    case NN_WS_OPTION_PLACEHOLDER:
-        if (optvallen != sizeof (int))
+    case NN_WS_MSG_TYPE:
+        switch (val) {
+        case NN_WS_MSG_TYPE_TEXT:
+        case NN_WS_MSG_TYPE_BINARY:
+	    optset->msg_type = val;
+            return 0;
+        default:
             return -EINVAL;
-        optset->placeholder = *(int*) optval;
-        return 0;
+        }
     default:
         return -ENOPROTOOPT;
     }
@@ -139,90 +149,12 @@ static int nn_ws_optset_getopt (struct nn_optset *self, int option,
     optset = nn_cont (self, struct nn_ws_optset, base);
 
     switch (option) {
-    case NN_WS_OPTION_PLACEHOLDER:
-        memcpy (optval, &optset->placeholder,
+    case NN_WS_MSG_TYPE:
+        memcpy (optval, &optset->msg_type,
             *optvallen < sizeof (int) ? *optvallen : sizeof (int));
         *optvallen = sizeof (int);
         return 0;
     default:
         return -ENOPROTOOPT;
     }
-}
-
-int nn_ws_send (int s, const void *msg, size_t len, uint8_t msg_type, int flags)
-{
-    int rc;
-    struct nn_iovec iov;
-    struct nn_msghdr hdr;
-    struct nn_cmsghdr *cmsg;
-    size_t cmsgsz;
-
-    iov.iov_base = (void*) msg;
-    iov.iov_len = len;
-    
-    cmsgsz = NN_CMSG_SPACE (sizeof (msg_type));
-    cmsg = nn_allocmsg (cmsgsz, 0);
-    if (cmsg == NULL)
-        return -1;
-
-    cmsg->cmsg_level = NN_WS;
-    cmsg->cmsg_type = NN_WS_HDR_OPCODE;
-    cmsg->cmsg_len = NN_CMSG_LEN (sizeof (msg_type));
-    memcpy (NN_CMSG_DATA (cmsg), &msg_type, sizeof (msg_type));
-
-    hdr.msg_iov = &iov;
-    hdr.msg_iovlen = 1;
-    hdr.msg_control = &cmsg;
-    hdr.msg_controllen = NN_MSG;
-
-    rc = nn_sendmsg (s, &hdr, flags);
-
-    return rc;
-}
-
-int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flags)
-{
-    struct nn_iovec iov;
-    struct nn_msghdr hdr;
-    struct nn_cmsghdr *cmsg;
-    void *cmsg_buf;
-    int rc;
-
-    iov.iov_base = msg;
-    iov.iov_len = len;
-
-    hdr.msg_iov = &iov;
-    hdr.msg_iovlen = 1;
-    hdr.msg_control = &cmsg_buf;
-    hdr.msg_controllen = NN_MSG;
-
-    rc = nn_recvmsg (s, &hdr, flags);
-    if (rc < 0)
-        return rc;
-
-    /* Find WebSocket opcode ancillary property. */
-    cmsg = NN_CMSG_FIRSTHDR (&hdr);
-    while (cmsg) {
-        if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_HDR_OPCODE) {
-            *msg_type = *(uint8_t *) NN_CMSG_DATA (cmsg);
-            break;
-        }
-        cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
-    }
-
-    /*  WebSocket transport should always report this header. */
-    nn_assert (cmsg);
-
-    /*  WebSocket transport should always reassemble fragmented messages. */
-    nn_assert (*msg_type & NN_SWS_FRAME_BITMASK_FIN);
-
-    /*  Return only the message type (opcode). */
-    if (*msg_type == (NN_WS_MSG_TYPE_GONE | NN_SWS_FRAME_BITMASK_FIN))
-        *msg_type = NN_WS_MSG_TYPE_GONE;
-    else
-        *msg_type &= NN_SWS_FRAME_BITMASK_OPCODE;
-
-    nn_freemsg (cmsg_buf);
-
-    return rc;
 }

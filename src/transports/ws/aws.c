@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,6 +27,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/attr.h"
+#include "../../ws.h"
 
 #define NN_AWS_STATE_IDLE 1
 #define NN_AWS_STATE_ACCEPTING 2
@@ -144,6 +146,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
     struct nn_aws *aws;
     int val;
     size_t sz;
+    uint8_t msg_type;
 
     aws = nn_cont (self, struct nn_aws, fsm);
 
@@ -195,6 +198,10 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&aws->usock, SOL_SOCKET, SO_RCVBUF,
                     &val, sizeof (val));
+                sz = sizeof (val);
+                nn_epbase_getopt (aws->epbase, NN_WS, NN_WS_MSG_TYPE,
+                    &val, &sz);
+                msg_type = (uint8_t)val;
 
                 /*   Since the WebSocket handshake must poll, the receive
                      timeout is set to zero. Later, it will be set again
@@ -214,7 +221,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                 /*  Start the sws state machine. */
                 nn_usock_activate (&aws->usock);
                 nn_sws_start (&aws->sws, &aws->usock, NN_WS_SERVER,
-                    NULL, NULL);
+                    NULL, NULL, msg_type);
                 aws->state = NN_AWS_STATE_ACTIVE;
 
                 nn_epbase_stat_increment (aws->epbase,

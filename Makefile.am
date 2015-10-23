@@ -468,6 +468,7 @@ LDADD = libnanomsg.la
 TRANSPORT_TESTS = \
     tests/inproc \
     tests/inproc_shutdown \
+    tests/ipc_flood \
     tests/ipc \
     tests/ipc_shutdown \
     tests/ipc_stress \

@@ -34,28 +34,28 @@
 
 /*  Basic tests for WebSocket transport. */
 
+/*  test_text() verifies that we drop messages properly when sending invalid
+    UTF-8, but not when we send valid data. */
 void test_text() {
-
-#if 0
-/* XXX: Enable this test once we fix websocket transport.  Right now the
-   transport returns a zero length message instead of properly just returning
-   EAGAIN or waiting forever.
 
     int sb;
     int sc;
     int opt;
-    size_t sz;
-    int i;
     uint8_t bad[20];
 
     /*  Negative testing... bad UTF-8 data for text. */
     sb = test_socket (AF_SP, NN_PAIR);
     sc = test_socket (AF_SP, NN_PAIR);
 
+    /*  Wait for connects to establish. */
+    nn_sleep (200);
+
     opt = NN_WS_MSG_TYPE_TEXT;
     test_setsockopt(sb, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
     opt = NN_WS_MSG_TYPE_TEXT;
     test_setsockopt(sc, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
+    opt = 500;
+    test_setsockopt(sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
 
     test_bind (sb, SOCKET_ADDRESS);
     test_connect (sc, SOCKET_ADDRESS);
@@ -67,8 +67,11 @@ void test_text() {
     strcpy((char *)bad, "BAD.");
     bad[2] = (char)0xDD;
     test_send (sc, (char *)bad);
-    test_recv (sb, (char *)bad);
-#endif
+
+    /*  Make sure we dropped the frame.  Apparently it comes back as EAGAIN
+        rather than ETIMEDOUT.  I think this possibly a doc bug. */
+
+    test_drop (sb, EAGAIN);
 }
 
 int main ()
@@ -101,12 +104,14 @@ int main ()
     nn_assert (sz == sizeof (opt));
     nn_assert (opt == NN_WS_MSG_TYPE_BINARY);
 
+#if 0
     //opt = 100;
     //sz = sizeof (opt);
     //rc = nn_getsockopt (sc, NN_WS, NN_WS_HANDSHAKE_TIMEOUT, &opt, &sz);
     //errno_assert (rc == 0);
     //nn_assert (sz == sizeof (opt));
     //nn_assert (opt == 100);
+#endif
 
     /*  Default port 80 should be assumed if not explicitly declared. */
     rc = nn_connect (sc, "ws://127.0.0.1");
@@ -159,15 +164,15 @@ int main ()
 
     test_close (sc);
 
-    /*  Connect correctly. Do so before binding the peer socket. */
-    sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
-
-    /*  Leave enough time for at least on re-connect attempt. */
     nn_sleep (200);
 
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+
+    /*  Leave enough time for connection establishment. */
+    nn_sleep (200);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {

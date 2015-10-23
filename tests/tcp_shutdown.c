@@ -58,12 +58,11 @@ static void routine2 (NN_UNUSED void *arg)
     int s;
     int i;
     int ms;
+    int nconnect;
 
     s = test_socket (AF_SP, NN_PULL);
 
-    /*  On AppVeyor/Windows, if this is 10, we get timeouts trying to
-        establish the connection.  This value (5) seems to work though. */
-    for (i = 0; i < 5; ++i) {
+    for (i = 0; i < 10; ++i) {
         test_connect (s, SOCKET_ADDRESS);
     }
 

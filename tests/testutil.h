@@ -34,6 +34,7 @@ static int test_bind_impl (char *file, int line, int sock, char *address);
 static void test_close_impl (char *file, int line, int sock);
 static void test_send_impl (char *file, int line, int sock, char *data);
 static void test_recv_impl (char *file, int line, int sock, char *data);
+static void test_drop_impl (char *file, int line, int sock, int err);
 static int  test_setsockopt_impl (char *file, int line, int sock, int level,
     int option, const void *optval, size_t optlen);
 
@@ -42,6 +43,7 @@ static int  test_setsockopt_impl (char *file, int line, int sock, int level,
 #define test_bind(s, a) test_bind_impl (__FILE__, __LINE__, (s), (a))
 #define test_send(s, d) test_send_impl (__FILE__, __LINE__, (s), (d))
 #define test_recv(s, d) test_recv_impl (__FILE__, __LINE__, (s), (d))
+#define test_drop(s, e) test_drop_impl (__FILE__, __LINE__, (s), (e))
 #define test_close(s) test_close_impl (__FILE__, __LINE__, (s))
 #define test_setsockopt(s, l, o, v, z) test_setsockopt_impl (__FILE__, \
     __LINE__, (s), (l), (o), (v), (z))
@@ -154,7 +156,7 @@ static void NN_UNUSED test_recv_impl (char *file, int line, int sock, char *data
 
     data_len = strlen (data);
     /*  We allocate plus one byte so that we are sure that message received
-        has corrent length and not truncated  */
+        has correct length and not truncated  */
     buf = malloc (data_len+1);
     alloc_assert (buf);
 
@@ -178,6 +180,24 @@ static void NN_UNUSED test_recv_impl (char *file, int line, int sock, char *data
     }
 
     free (buf);
+}
+
+static void NN_UNUSED test_drop_impl (char *file, int line, int sock, int err)
+{
+    int rc;
+    char buf[1024];
+
+    rc = nn_recv (sock, buf, sizeof (buf), 0);
+    if (rc < 0 && err != errno) {
+        fprintf (stderr, "Got wrong err to recv: %s [%d != %d] (%s:%d)\n",
+            nn_err_strerror (errno),
+            (int) errno, err, file, line);
+        nn_err_abort ();
+    } else if (rc >= 0) {
+        fprintf (stderr, "Did not drop message: [%d bytes] (%s:%d)\n",
+            rc, file, line);
+        nn_err_abort ();
+    }
 }
 
 #endif

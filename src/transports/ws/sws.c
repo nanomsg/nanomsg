@@ -79,9 +79,6 @@
 #define NN_WS_OPCODE_UNUSEDD 0x0D
 #define NN_WS_OPCODE_UNUSEDE 0x0E
 #define NN_WS_OPCODE_UNUSEDF 0x0F
-/*  Private use for nanomsg - indicates failed connect. */
-#define NN_WS_OPCODE_GONE 0x7F
-
 
 /*  WebSocket protocol header bit masks as per RFC 6455. */
 #define NN_SWS_FRAME_BITMASK_MASKED 0x80
@@ -485,7 +482,6 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
 {
     struct nn_sws *sws;
-    struct nn_iovec iov [1];
     struct nn_list_item *it;
     struct msg_chunk *ch;
     struct nn_cmsghdr *cmsg;
@@ -498,43 +494,6 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert_state (sws, NN_SWS_STATE_ACTIVE);
 
     switch (sws->instate) {
-    case NN_SWS_INSTATE_FAILING:
-
-        /*  Prevent further send/recv operations on this connection. */
-        nn_pipebase_stop (self);
-        sws->instate = NN_SWS_INSTATE_CLOSED;
-
-        /*  Inform user this connection has been failed. */
-        nn_msg_init (msg, 0);
-
-        opcode_hdr = NN_WS_OPCODE_GONE | NN_SWS_FRAME_BITMASK_FIN;
-
-        iov [0].iov_base = sws->fail_msg;
-        iov [0].iov_len = sws->fail_msg_len;
-
-        /*  TODO: Pretty sure we should not send anything at all on this
-            connection -- these failures are due to a protocol violations
-            by the peer, and we should just cut them off at the knees. */
-        /*  TODO: Consider queueing and unconditionally sending close
-            handshake rather than skipping it. */
-        /*  RFC 6455 7.1.7 - try to send helpful Closing Handshake only if
-            the socket is not currently sending. If it's still busy sending,
-            forcibly close this connection, since it's not readily deterministic
-            how much time that action could take to complete, or if the peer is
-            even healthy enough to receive. Rationale: try to be nice, but be
-            mindful of self-preservation! */
-        if (sws->outstate == NN_SWS_OUTSTATE_IDLE) {
-            nn_usock_send (sws->usock, iov, 1);
-            sws->outstate = NN_SWS_OUTSTATE_SENDING;
-            sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
-        }
-        else {
-            sws->state = NN_SWS_STATE_DONE;
-            nn_fsm_raise (&sws->fsm, &sws->done,
-                NN_SWS_RETURN_CLOSE_HANDSHAKE);
-        }
-        break;
-    
     case NN_SWS_INSTATE_RECVD_CHUNKED:
 
         /*  This library should not deliver fragmented messages to the application,
@@ -726,6 +685,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     size_t payload_len;
     uint8_t rand_mask [NN_SWS_FRAME_SIZE_MASK];
     uint8_t *payload_pos;
+    struct nn_iovec iov;
 
     nn_assert_state (self, NN_SWS_STATE_ACTIVE);
 
@@ -747,21 +707,22 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 
     self->fail_msg_len = NN_SWS_FRAME_SIZE_INITIAL;
 
-    if (self->mode == NN_WS_SERVER) {
+    switch (self->mode) {
+    case NN_WS_SERVER:
         self->fail_msg [1] |= NN_SWS_FRAME_BITMASK_NOT_MASKED;
-    }
-    else if (self->mode == NN_WS_CLIENT) {
+        break;
+    case NN_WS_CLIENT:
         self->fail_msg [1] |= NN_SWS_FRAME_BITMASK_MASKED;
 
         /*  Generate 32-bit mask as per RFC 6455 5.3. */
         nn_random_generate (rand_mask, NN_SWS_FRAME_SIZE_MASK);
-        
+
         memcpy (&self->fail_msg [NN_SWS_FRAME_SIZE_INITIAL],
             rand_mask, NN_SWS_FRAME_SIZE_MASK);
 
         self->fail_msg_len += NN_SWS_FRAME_SIZE_MASK;
-    }
-    else {
+        break;
+    default:
         /*  Developer error. */
         nn_assert (0);
     }
@@ -783,14 +744,21 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 
     self->fail_msg_len += payload_len;
 
-    self->instate = NN_SWS_INSTATE_FAILING;
+    self->instate = NN_SWS_INSTATE_CLOSED;
 
-    /*  On the next recv, the connection will be failed. Why defer
-        until the next recv? Semantically, until then, this incoming
-        message has not been interpreted, so it's not until then that
-        it could be failed. This type of pre-processing is necessary
-        to early fail chunked transfers. */
-    nn_pipebase_received (&self->pipebase);
+    /*  Stop user send/recv actions. */
+    nn_pipebase_stop (&self->pipebase);
+
+    if (self->outstate == NN_SWS_OUTSTATE_IDLE) {
+        iov.iov_base = self->fail_msg;
+        iov.iov_len = self->fail_msg_len;
+        nn_usock_send (self->usock, &iov, 1);
+        self->outstate = NN_SWS_OUTSTATE_SENDING;
+        self->state = NN_SWS_STATE_CLOSING_CONNECTION;
+    } else {
+        self->state = NN_SWS_STATE_DONE;
+        nn_fsm_raise (&self->fsm, &self->done, NN_SWS_RETURN_CLOSE_HANDSHAKE);
+    }
 
     return 0;
 }

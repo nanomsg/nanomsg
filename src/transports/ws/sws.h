@@ -86,7 +86,7 @@ struct nn_sws {
     /*  Endpoint base. */
     struct nn_epbase *epbase;
 
-    /*  Default message type set on outobund frames. */
+    /*  Default message type set on outbound frames. */
     uint8_t msg_type;
 
     /*  Controls Tx/Rx framing based on whether this peer is acting as

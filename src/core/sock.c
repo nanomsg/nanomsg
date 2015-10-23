@@ -833,11 +833,14 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     }
     if (nn_slow (sock->state == NN_SOCK_STATE_STOPPING_EPS)) {
 
-        /*  Endpoint is stopped. Now we can safely deallocate it. */
         if (!(src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED)) {
-            fprintf (stderr, "src=%d type=%d\n", (int) src, (int) type);
-            nn_assert (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED);
+            /*  If we got here waiting for EPs to teardown, but src is
+                not an EP, then it isn't safe for us to do anything,
+                because we just need to wait for the EPs to finish
+                up their thing.  Just bail. */
+            return;
         }
+        /*  Endpoint is stopped. Now we can safely deallocate it. */
         ep = (struct nn_ep*) srcptr;
         nn_list_erase (&sock->sdeps, &ep->item);
         nn_ep_term (ep);

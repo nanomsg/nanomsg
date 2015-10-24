@@ -667,6 +667,12 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return rc;
         }
 
+		/* Have to check if one broken connection needs a reconnection at all cases */
+		if(nn_fast (rc == -EAGAIN) && nn_fast(self->statistics.broken_connections > 0)) {
+			nn_ctx_leave (&self->ctx);
+			return -ECONNRESET;
+		}
+
         /*  If the message cannot be received at the moment and the recv call
             is non-blocking, return immediately. */
         if (nn_fast (flags & NN_DONTWAIT)) {

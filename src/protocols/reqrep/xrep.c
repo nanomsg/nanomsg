@@ -174,8 +174,10 @@ int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)
         or if it's not ready for sending, silently drop the message. */
     data = nn_cont (nn_hash_get (&xrep->outpipes, key), struct nn_xrep_data,
         outitem);
-    if (!data || !(data->flags & NN_XREP_OUT))
+    if (!data || !(data->flags & NN_XREP_OUT)) {
+        nn_msg_term (msg);
         return 0;
+    }
 
     /*  Send the message. */
     rc = nn_pipe_send (data->pipe, msg);

@@ -58,7 +58,6 @@ static void routine2 (NN_UNUSED void *arg)
     int s;
     int i;
     int ms;
-    int nconnect;
 
     s = test_socket (AF_SP, NN_PULL);
 

@@ -68,10 +68,8 @@ void test_text() {
     bad[2] = (char)0xDD;
     test_send (sc, (char *)bad);
 
-    /*  Make sure we dropped the frame.  Apparently it comes back as EAGAIN
-        rather than ETIMEDOUT.  I think this possibly a doc bug. */
-
-    test_drop (sb, EAGAIN);
+    /*  Make sure we dropped the frame. */
+    test_drop (sb, ETIMEDOUT);
 }
 
 int main ()

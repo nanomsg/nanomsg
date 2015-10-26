@@ -49,10 +49,10 @@ int main ()
     pull = test_socket (AF_SP, NN_PULL);
     test_connect (pull, SOCKET_ADDRESS_INPROC);
     timeo = 100;
-    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    test_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    errno_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     test_close (pull);
     test_close (pair);
 
@@ -62,10 +62,10 @@ int main ()
     pair = test_socket (AF_SP, NN_PAIR);
     test_bind (pair, SOCKET_ADDRESS_INPROC);
     timeo = 100;
-    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    test_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    errno_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     test_close (pull);
     test_close (pair);
 
@@ -77,10 +77,10 @@ int main ()
     pull = test_socket (AF_SP, NN_PULL);
     test_connect (pull, SOCKET_ADDRESS_IPC);
     timeo = 100;
-    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    test_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    errno_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     test_close (pull);
     test_close (pair);
 
@@ -92,10 +92,10 @@ int main ()
     pull = test_socket (AF_SP, NN_PULL);
     test_connect (pull, SOCKET_ADDRESS_TCP);
     timeo = 100;
-    rc = nn_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
+    test_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));
     rc = nn_send (pair, "ABC", 3, 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    errno_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     test_close (pull);
     test_close (pair);
 

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -63,13 +64,13 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 2
+#define NN_VERSION_CURRENT 3
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 2
+#define NN_VERSION_REVISION 0
 
 /*  How many past interface versions are still supported. */
-#define NN_VERSION_AGE 2
+#define NN_VERSION_AGE 0
 
 /******************************************************************************/
 /*  Errors.                                                                   */

@@ -36,7 +36,9 @@
 #define THREAD_COUNT 100
 #define TEST2_THREAD_COUNT 10
 #define MESSAGES_PER_THREAD 10
-#define TEST_LOOPS 10
+#define TEST1_LOOPS 10
+#define TEST2_LOOPS 10
+#define TEST3_LOOPS 1
 #define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
 
 struct nn_atomic active;
@@ -76,6 +78,23 @@ static void routine2 (NN_UNUSED void *arg)
     nn_atomic_dec(&active, 1);
 }
 
+static void routine3 (NN_UNUSED void *arg)
+{
+    int s;
+    int rc;
+    int msg;
+
+    nn_assert (arg != NULL);
+
+    s = *((int *) arg);
+
+    /*  We don't expect to actually receive a message here;
+        therefore, the datatype of 'msg' is irrelevant. */
+    rc = nn_recv (s, &msg, sizeof(msg), 0);
+
+    errno_assert (nn_errno () == EINTR);
+}
+
 int main ()
 {
     int sb;
@@ -92,12 +111,13 @@ int main ()
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, SOCKET_ADDRESS);
 
-    for (j = 0; j != TEST_LOOPS; ++j) {
-        for (i = 0; i != THREAD_COUNT; ++i)
+    for (j = 0; j != TEST1_LOOPS; ++j) {
+        for (i = 0; i != THREAD_COUNT; ++i) {
             nn_thread_init (&threads [i], routine, NULL);
+        }
         for (i = 0; i != THREAD_COUNT; ++i) {
             nn_thread_term (&threads [i]);
-	}
+        }
     }
 
     test_close (sb);
@@ -107,24 +127,35 @@ int main ()
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
 
-    for (j = 0; j != TEST_LOOPS; ++j) {
-	int ms;
+    for (j = 0; j != TEST2_LOOPS; ++j) {
+        int ms;
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine2, &threads[i]);
-        nn_atomic_init(&active, TEST2_THREAD_COUNT);
+        nn_atomic_init (&active, TEST2_THREAD_COUNT);
 
-	ms = 2000;
-	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
+        ms = 2000;
+        test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
             (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_term (&threads [i]);
-        nn_atomic_term(&active);
+        nn_atomic_term (&active);
     }
 
     test_close (sb);
+
+    /*  Test condition of closing sockets that are blocking in another thread. */
+
+    for (j = 0; j != TEST3_LOOPS; ++j) {
+        sb = test_socket (AF_SP, NN_PULL);
+        test_bind (sb, SOCKET_ADDRESS);
+        nn_thread_init (&threads [i], routine3, &sb);
+        nn_sleep (20);
+        test_close (sb);
+        nn_thread_term (&threads [i]);
+    }
 
     return 0;
 }

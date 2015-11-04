@@ -20,8 +20,8 @@
     IN THE SOFTWARE.
 */
 
-#include "../utils/err.h"
-#include "../utils/wire.h"
+#include "../../utils/err.h"
+#include "../../utils/wire.h"
 
 #if defined NN_HAVE_WINDOWS
 #include "../../utils/win.h"

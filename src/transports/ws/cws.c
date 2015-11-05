@@ -86,6 +86,9 @@ struct nn_cws {
     /*  Used to wait before retrying to connect. */
     struct nn_backoff retry;
 
+    /*  Defines message validation and framing. */
+    uint8_t msg_type;
+
     /*  State machine that handles the active part of the connection
         lifetime. */
     struct nn_sws sws;
@@ -143,6 +146,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     struct nn_cws *self;
     int reconnect_ivl;
     int reconnect_ivl_max;
+    int msg_type;
     size_t sz;
 
     /*  Allocate the new endpoint object. */
@@ -235,6 +239,12 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CWS_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CWS_SRC_USOCK, &self->fsm);
+    
+    sz = sizeof (msg_type);
+    nn_epbase_getopt (&self->epbase, NN_WS, NN_WS_MSG_TYPE,
+        &msg_type, &sz);
+    nn_assert (sz == sizeof (msg_type));
+    self->msg_type = (uint8_t) msg_type;
 
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
@@ -330,8 +340,6 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
     NN_UNUSED void *srcptr)
 {
     struct nn_cws *cws;
-    int msg_type;
-    size_t sz;
 
     cws = nn_cont (self, struct nn_cws, fsm);
 
@@ -414,13 +422,9 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
         case NN_CWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_CONNECTED:
-                sz = sizeof (msg_type);
-                nn_epbase_getopt (&cws->epbase, NN_WS, NN_WS_MSG_TYPE,
-                    &msg_type, &sz);
-                nn_assert(sz == sizeof (msg_type));
                 nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
                     nn_chunkref_data (&cws->resource),
-                    nn_chunkref_data (&cws->remote_host), (uint8_t)msg_type);
+                    nn_chunkref_data (&cws->remote_host), cws->msg_type);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 cws->peer_gone = 0;
                 nn_epbase_stat_increment (&cws->epbase,

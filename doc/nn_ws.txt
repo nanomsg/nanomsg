@@ -24,33 +24,45 @@ to the RFC 6455 default port 80 for HTTP. Example:
 
 ws://127.0.0.1 is equivalent to ws://127.0.0.1:80
 
-Connecting to an Arbitrary WebSocket Service
---------------------------------------------
+URI limitations
+~~~~~~~~~~~~~~~
 When calling `nn_connect()`, the URI may also optionally include the path to a
 resource and/or query parameters.
 
-  _Example_
-  s1 = nn_socket (AF_SP, NN_PAIR);
-  nn_connect (s1, "ws://example.com/path?query=value");
+.Path and query parameters
+==========================
+    s1 = nn_socket (AF_SP, NN_PAIR);
+    nn_connect (s1, "ws://example.com/path?query=value");
+==========================
 
-This extended URI may help in situations with service protocol requirements, or
-routing through existing HTTP infrastructure such as reverse proxies. The URI
-is effectively only useful for routing and establishing the connection with
-non-nanomsg services. Once established, this additional information is not
-available via the nanomsg API.
+This implementation includes the full path and any query parameters in the
+HTTP handshake when establishing connections with `nn_connect()`. This
+information is not available via the nanomsg API afterwards, however.
 
-The spirit of these extended URIs is to enable interoperability with existing
-services and infrastructure, and not necessarily to give nanomsg connections a
-new means of controlling the opening handshake.
+Likewise, this implementation does not examine or use either any path or
+query parameters that may be supplied to `nn_bind()`, as it only binds to
+the TCP port.  This implementation acts as a limited HTTP server that offers
+SP over WebSocket at all URIs for the given TCP address.
 
-A nanomsg socket accepting connections after calling `nn_bind()` does not use
-this additional path or query parameters, except for incidentally satisfying any
-intermediate HTTP infrastructure used to route the connection to the nanomsg
-socket accepting connections.
-
+Applications should not however depends on this behavior; intervening
+infrastructure may proxy, filter or route based on URI, and other
+implementations of the SP over WebSocket protocol may offer other
+HTTP services at the same TCP port, utilizing the path, query parameters,
+or both to determine the service to be used.
 
 Socket Options
 ~~~~~~~~~~~~~~
+
+NN_WS_MSG_TYPE::
+    This option may be set to NN_WS_MSG_TYPE_TEXT or NN_WS_MSG_TYPE_BINARY.
+    The value of this determines whether data messages are sent as WebSocket
+    text frames, or binary frames, per RFC 6455.  Text frames should contain
+    only valid UTF-8 text in their payload, or they will be rejected.  Binary
+    frames may contain any data.  Not all WebSocket implementations support
+    binary frames.  The default is to send binary frames.
++
+This option may also be specified as control data when when sending
+a message with `nn_sendmsg()`.
 
 TODO: NN_TCP_NODELAY::
     This option, when set to 1, disables Nagle's algorithm. It also disables
@@ -80,3 +92,4 @@ AUTHORS
 -------
 Martin Sustrik <sustrik@250bpm.com>
 Jack R. Dunaway <jack@wirebirdlabs.com>
+Garrett D'Amore <garrett@damore.org>

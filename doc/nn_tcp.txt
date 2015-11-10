@@ -27,7 +27,6 @@ used. Port is the TCP port number to use. Interface is one of the following
 *  Asterisk character (*) meaning all local network interfaces.
 *  IPv4 address of a local network interface in numeric form (192.168.0.111).
 *  IPv6 address of a local network interface in numeric form (::1).
-*  Interface name, as defined by operating system.
 
 When connecting a TCP socket address of the form tcp://interface;address:port
 should be used. Port is the TCP port number to use. Interface is optional and
@@ -37,7 +36,6 @@ an appropriate interface itself. If specified it can be one of the following
 
 *  IPv4 address of a local network interface in numeric form (192.168.0.111).
 *  IPv6 address of a local network interface in numeric form (::1).
-*  Interface name, as defined by operating system (eth0).
 
 Finally, address specifies the remote address to connect to. It can be one of
 the following (optionally placed within square brackets):

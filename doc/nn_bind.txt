@@ -70,7 +70,7 @@ EXAMPLE
 ----
 s = nn_socket (AF_SP, NN_PUB);
 eid1 = nn_bind (s, "inproc://test");
-eid2 = nn_bind (s, "tcp://eth0:5560");
+eid2 = nn_bind (s, "tcp://127.0.0.1:5560");
 ----
 
 

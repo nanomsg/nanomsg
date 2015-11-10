@@ -1,5 +1,6 @@
 # Copyright (c) 2013 Luca Barbato
 # Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+# Copyright 2015 Garrett D'Amore <garrett@damore.org>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -295,14 +296,6 @@ AC_CHECK_FUNCS([poll], [AC_DEFINE([NN_HAVE_POLL])])
 AC_CHECK_FUNCS([epoll_create], [AC_DEFINE([NN_USE_EPOLL])], [
     AC_CHECK_FUNCS([kqueue], [AC_DEFINE([NN_USE_KQUEUE])], [
         AC_DEFINE([NN_USE_POLL])
-    ])
-])
-
-AC_CHECK_FUNCS([getifaddrs], [AC_DEFINE([NN_USE_IFADDRS])], [
-    AC_EGREP_HEADER([SIOCGIFADDR], [sys/ioctl.h], [
-        AC_DEFINE([NN_USE_SIOCGIFADDR])
-    ], [
-        AC_DEFINE([NN_USE_LITERAL_IFADDR])
     ])
 ])
 

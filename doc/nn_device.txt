@@ -47,9 +47,9 @@ EXAMPLE
 
 ----
 int s1 = nn_socket (AF_SP_RAW, NN_REQ);
-nn_bind (s1, "tcp://eth0:5555");
+nn_bind (s1, "tcp://127.0.0.1:5555");
 int s2 = nn_socket (AF_SP_RAW, NN_REP);
-nn_bind (s2, "tcp://eth0:5556");
+nn_bind (s2, "tcp://127.0.0.1:5556");
 nn_device (s1, s2);
 ----
 

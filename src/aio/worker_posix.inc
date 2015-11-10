@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -220,6 +221,12 @@ static void nn_worker_routine (void *arg)
 
                     /*  If the worker thread is asked to stop, do so. */
                     if (nn_slow (item == &self->stop)) {
+			/*  Make sure we remove all the other workers from
+			    the queue, because we're not doing anything with
+			    them. */
+			while (nn_queue_pop (&tasks) != NULL) {
+				continue;
+			}
                         nn_queue_term (&tasks);
                         return;
                     }

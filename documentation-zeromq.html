@@ -107,10 +107,6 @@
 <li>For more discussion see <a href="http://250bpm.com/blog:14">here</a>.</li>
 </ul>
 
-<h3>TCP Transport Enhancements</h3>
-
-<p>There's a minor enhancement to TCP transport. When connecting, you can optionally specify the local interface to use for the connection, like this: nn_connect (s, "tcp://eth0;192.168.0.111:5555").</p>
-
 <h3>Asynchronous DNS</h3>
 
 <p>DNS queries (e.g. converting hostnames to IP addresses) are done in asynchronous manner. In ZeroMQ such queries were done synchronously, which meant that when DNS was unavailable, the whole library, including the sockets that haven't used DNS, just hung.</p>

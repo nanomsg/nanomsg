@@ -31,6 +31,7 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/attr.h"
+#include "../../utils/wire.h"
 
 struct nn_xreq_data {
     struct nn_lb_data lb;
@@ -178,6 +179,9 @@ int nn_xreq_send_to (struct nn_sockbase *self, struct nn_msg *msg,
 int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
 {
     int rc;
+    void *data;
+    int i;
+    size_t sz;
 
     rc = nn_fq_recv (&nn_cont (self, struct nn_xreq, sockbase)->fq, msg, NULL);
     if (rc == -EAGAIN)
@@ -186,21 +190,28 @@ int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     if (!(rc & NN_PIPE_PARSED)) {
 
-        /*  Ignore malformed replies. */
-        if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
-            nn_msg_term (msg);
-            return -EAGAIN;
-        }
+	data = nn_chunkref_data (&msg->body);
+	sz = nn_chunkref_size (&msg->body);
+        i = 0;
 
-        /*  Split the message into the header and the body. */
+        for (;;) {
+	    if (nn_slow ((i + 1) * sizeof (uint32_t)) > sz) {
+                nn_msg_term (msg);
+                return -EAGAIN;
+	    }
+	    if (nn_getl ((uint8_t*)(((uint32_t *) data) + i)) & 0x80000000)
+		break;
+
+	    ++i;
+	}
+	++i;
+        /*  Split the header and the body. */
         nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
         nn_chunkref_term (&msg->sphdr);
-        nn_chunkref_init (&msg->sphdr, sizeof (uint32_t));
-        memcpy (nn_chunkref_data (&msg->sphdr), nn_chunkref_data (&msg->body),
-            sizeof (uint32_t));
-        nn_chunkref_trim (&msg->body, sizeof (uint32_t));
+        nn_chunkref_init (&msg->sphdr, i * sizeof (uint32_t));
+        memcpy (nn_chunkref_data (&msg->sphdr), data, i * sizeof (uint32_t));
+        nn_chunkref_trim (&msg->body, i * sizeof (uint32_t));
     }
-
     return 0;
 }
 

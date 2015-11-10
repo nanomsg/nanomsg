@@ -493,6 +493,7 @@ FEATURE_TESTS = \
     tests/prio \
     tests/poll \
     tests/device \
+    tests/device4 \
     tests/emfile \
     tests/domain \
     tests/trie \

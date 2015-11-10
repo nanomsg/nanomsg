@@ -318,7 +318,7 @@ int nn_device_twoway (struct nn_device_recipe *device,
 
         /*  If possible, pass the message from s1 to s2. */
         if (pfd [0].events == 0 && pfd [3].events == 0) {
-            rc = nn_device_mvmsg (device,s1, s2, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device, s1, s2, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             pfd [0].events = POLLIN;
@@ -327,7 +327,7 @@ int nn_device_twoway (struct nn_device_recipe *device,
 
         /*  If possible, pass the message from s2 to s1. */
         if (pfd [2].events == 0 && pfd [1].events == 0) {
-            rc = nn_device_mvmsg (device,s2, s1, NN_DONTWAIT);
+            rc = nn_device_mvmsg (device, s2, s1, NN_DONTWAIT);
             if (nn_slow (rc < 0))
                 return -1;
             pfd [2].events = POLLIN;

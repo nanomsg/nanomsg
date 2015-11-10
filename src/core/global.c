@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -611,7 +612,9 @@ int nn_setsockopt (int s, int level, int option, const void *optval,
         return -1;
     }
 
+    nn_glock_lock ();
     rc = nn_sock_setopt (self.socks [s], level, option, optval, optvallen);
+    nn_glock_unlock ();
     if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
@@ -633,7 +636,9 @@ int nn_getsockopt (int s, int level, int option, void *optval,
         return -1;
     }
 
+    nn_glock_lock ();
     rc = nn_sock_getopt (self.socks [s], level, option, optval, optvallen);
+    nn_glock_unlock ();
     if (nn_slow (rc < 0)) {
         errno = -rc;
         return -1;
@@ -1228,12 +1233,12 @@ static int nn_global_create_ep (int s, const char *addr, int bind)
 
 struct nn_transport *nn_global_transport (int id)
 {
+    /*  This function must be called with the nn_glock_lock held. */
     struct nn_transport *tp;
     struct nn_list_item *it;
 
     /*  Find the specified protocol. */
     tp = NULL;
-    nn_glock_lock ();
     for (it = nn_list_begin (&self.transports);
           it != nn_list_end (&self.transports);
           it = nn_list_next (&self.transports, it)) {
@@ -1242,7 +1247,6 @@ struct nn_transport *nn_global_transport (int id)
             break;
         tp = NULL;
     }
-    nn_glock_unlock ();
 
     return tp;
 }

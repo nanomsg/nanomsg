@@ -67,7 +67,20 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
         tv.tv_usec = timeout % 1000 * 1000;
     }
     rc = select (0, &self->fds, NULL, NULL, timeout >= 0 ? &tv : NULL);
-    wsa_assert (rc != SOCKET_ERROR);
+
+    if (nn_slow (rc == SOCKET_ERROR)) {
+        rc = nn_err_wsa_to_posix (WSAGetLastError ());
+        errno = rc;
+        
+        /*  Treat these as a non-fatal errors, typically occuring when the
+            socket is being closed from a separate thread during a blocking
+            I/O operation. */
+        if (nn_fast (rc == EINTR || rc == ENOTSOCK))
+            return -EINTR;
+    }
+
+    wsa_assert (rc >= 0);
+
     if (nn_slow (rc == 0))
         return -ETIMEDOUT;
     return 0;

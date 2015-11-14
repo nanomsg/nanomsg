@@ -48,16 +48,16 @@ int nn_efd_init (struct nn_efd *self)
     return 0;
 }
 
-void nn_efd_stop (struct nn_efd *self)
+void nn_efd_term (struct nn_efd *self)
 {
     int fd = self->efd;
     self->efd = -1;
     nn_closefd (fd);
 }
 
-void nn_efd_term (struct nn_efd *self)
+void nn_efd_stop (struct nn_efd *self)
 {
-    nn_efd_stop (self);
+    nn_efd_signal (self);
 }
 
 nn_fd nn_efd_getfd (struct nn_efd *self)

@@ -53,7 +53,7 @@ static void routine (NN_UNUSED void *arg)
         therefore, the datatype of 'msg' is irrelevant. */
     rc = nn_recv (s, &msg, sizeof(msg), 0);
 
-    errno_assert (nn_errno () == EINTR);
+    errno_assert (nn_errno () == EBADF);
 }
 
 int main ()

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -45,6 +46,8 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 
     pfd.fd = nn_efd_getfd (self);
     pfd.events = POLLIN;
+    if (nn_slow (pfd.fd < 0))
+        return -EBADF;
     rc = poll (&pfd, 1, timeout);
     if (nn_slow (rc < 0 && errno == EINTR))
         return -EINTR;
@@ -60,8 +63,12 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 {
     int rc;
     struct timeval tv;
+    int fd = self->r;
 
-    FD_SET (self->r, &self->fds);
+    if (nn_slow (fd < 0)) {
+        return -EBADF;
+    }
+    FD_SET (fd, &self->fds);
     if (timeout >= 0) {
         tv.tv_sec = timeout / 1000;
         tv.tv_usec = timeout % 1000 * 1000;
@@ -89,4 +96,3 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 #else
 #error
 #endif
-

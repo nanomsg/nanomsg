@@ -864,12 +864,18 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
         cmsg = NN_CMSG_FIRSTHDR (msghdr);
         while (cmsg) {
             if (cmsg->cmsg_level == PROTO_SP && cmsg->cmsg_type == SP_HDR) {
-                /*  Copy body of SP_HDR property into 'sphdr'. */
-                nn_chunkref_term (&msg.sphdr);
-                spsz = cmsg->cmsg_len - NN_CMSG_SPACE (0);
-                nn_chunkref_init (&msg.sphdr, spsz);
-                memcpy (nn_chunkref_data (&msg.sphdr),
-                    NN_CMSG_DATA (cmsg), spsz);
+                unsigned char *ptr = NN_CMSG_DATA (cmsg);
+                size_t clen = cmsg->cmsg_len - NN_CMSG_SPACE (0);
+                if (clen > sizeof (size_t)) {
+                    spsz = *(size_t *)(void *)ptr;
+                    if (spsz <= (clen - sizeof (size_t))) {
+                        /*  Copy body of SP_HDR property into 'sphdr'. */
+                        nn_chunkref_term (&msg.sphdr);
+                        nn_chunkref_init (&msg.sphdr, spsz);
+                         memcpy (nn_chunkref_data (&msg.sphdr),
+                             ptr + sizeof (size_t), spsz);
+                    }
+                }
                 break;
             }
             cmsg = NN_CMSG_NXTHDR (msghdr, cmsg);
@@ -975,7 +981,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     if (msghdr->msg_control) {
 
         spsz = nn_chunkref_size (&msg.sphdr);
-        sptotalsz = NN_CMSG_SPACE (spsz);
+        sptotalsz = NN_CMSG_SPACE (spsz+sizeof (size_t));
         ctrlsz = sptotalsz + nn_chunkref_size (&msg.hdrs);
 
         if (msghdr->msg_controllen == NN_MSG) {
@@ -997,13 +1003,18 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
         /* If SP header alone won't fit into the buffer, return no ancillary
            properties. */
         if (ctrlsz >= sptotalsz) {
+            char *ptr;
 
             /*  Fill in SP_HDR ancillary property. */
             chdr = (struct nn_cmsghdr*) ctrl;
             chdr->cmsg_len = sptotalsz;
             chdr->cmsg_level = PROTO_SP;
             chdr->cmsg_type = SP_HDR;
-            memcpy (chdr + 1, nn_chunkref_data (&msg.sphdr), spsz);
+            ptr = (void *)chdr;
+            ptr += sizeof (*chdr);
+            *(size_t *)(void *)ptr = spsz;
+            ptr += sizeof (size_t);
+            memcpy (ptr, nn_chunkref_data (&msg.sphdr), spsz);
 
             /*  Fill in as many remaining properties as possible.
                 Truncate the trailing properties if necessary. */

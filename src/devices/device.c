@@ -370,7 +370,7 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
     hdr.msg_control = &control;
     hdr.msg_controllen = NN_MSG;
     rc = nn_recvmsg (from, &hdr, flags);
-    if (nn_slow (rc < 0 && nn_errno () == ETERM))
+    if (nn_slow (rc < 0 && (nn_errno () == ETERM || nn_errno () == EBADF)))
         return -1;
     errno_assert (rc >= 0);
     

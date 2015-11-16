@@ -160,6 +160,8 @@ int nn_err_wsa_to_posix (int wsaerr)
         return ECONNABORTED;
     case WSAECONNRESET:
         return ECONNRESET;
+    case WSAENOTSOCK:
+        return ENOTSOCK;
     case ERROR_BROKEN_PIPE:
         return ECONNRESET;
     case WSAESOCKTNOSUPPORT:

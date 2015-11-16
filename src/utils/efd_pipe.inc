@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -67,8 +68,22 @@ int nn_efd_init (struct nn_efd *self)
 
 void nn_efd_term (struct nn_efd *self)
 {
-    nn_closefd (self->r);
-    nn_closefd (self->w);
+    /*  Close the read side first. */
+    int fd = self->r;
+    self->r = -1;
+    nn_closefd (fd);
+
+    fd = self->w;
+    self->w = -1;
+    nn_closefd (fd);
+}
+
+void nn_efd_stop (struct nn_efd *self)
+{
+    /*  Close the write side, which wakes up pollers with POLLHUP. */
+    int fd = self->w;
+    self->w = -1;
+    nn_closefd (fd);
 }
 
 nn_fd nn_efd_getfd (struct nn_efd *self)
@@ -80,7 +95,10 @@ void nn_efd_signal (struct nn_efd *self)
 {
     ssize_t nbytes;
     char c = 101;
+    int fd = self->w;
 
+    if (nn_slow (fd < 0))
+        return;
     nbytes = write (self->w, &c, 1);
     errno_assert (nbytes != -1);
     nn_assert (nbytes == 1);
@@ -92,7 +110,10 @@ void nn_efd_unsignal (struct nn_efd *self)
     uint8_t buf [16];
 
     while (1) {
-        nbytes = read (self->r, buf, sizeof (buf));
+        int fd = self->r;
+        if (nn_slow (fd < 0))
+            return;
+        nbytes = read (fd, buf, sizeof (buf));
         if (nbytes < 0 && errno == EAGAIN)
             nbytes = 0;
         errno_assert (nbytes >= 0);

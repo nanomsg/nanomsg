@@ -117,7 +117,7 @@ static void NN_UNUSED test_close_impl (char *file, int line, int sock)
     int rc;
 
     rc = nn_close (sock);
-    if (rc != 0) {
+    if ((rc != 0) && (errno != EBADF && errno != ETERM)) {
         fprintf (stderr, "Failed to close socket: %s [%d] (%s:%d)\n",
             nn_err_strerror (errno),
             (int) errno, file, line);

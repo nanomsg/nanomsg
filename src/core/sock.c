@@ -69,6 +69,8 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
+/*  Initialize a socket.  A hold is placed on the initialized socket for
+    the caller as well. */
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
 {
     int rc;
@@ -106,6 +108,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
         }
     }
     nn_sem_init (&self->termsem);
+    nn_sem_init (&self->relesem);
     if (nn_slow (rc < 0)) {
         if (!(socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
             nn_efd_term (&self->rcvfd);
@@ -114,6 +117,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
         return rc;
     }
 
+    self->holds = 1;   /*  Callers hold. */
     self->flags = 0;
     nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
@@ -190,31 +194,54 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_ctx_leave (&self->ctx);
 }
 
+/*  Stop the socket.  This will prevent new calls from aquiring a
+    hold on the socket, cause endpoints to shut down, and wake any
+    threads waiting to recv or send data. */
+void nn_sock_stop (struct nn_sock *self)
+{
+    nn_ctx_enter (&self->ctx);
+    nn_fsm_stop (&self->fsm);
+    nn_ctx_leave (&self->ctx);
+}
+
 int nn_sock_term (struct nn_sock *self)
 {
     int rc;
     int i;
 
-    /*  Ask the state machine to start closing the socket. */
-    nn_ctx_enter (&self->ctx);
-    nn_fsm_stop (&self->fsm);
-    nn_ctx_leave (&self->ctx);
+    /*  NOTE: nn_sock_stop must have already been called. */
 
-    /*  Shutdown process was already started but some endpoints may still
-        alive. Here we are going to wait till they are all closed. */
-    rc = nn_sem_wait (&self->termsem);
-    if (nn_slow (rc == -EINTR))
-        return -EINTR;
-    errnum_assert (rc == 0, -rc);
+    /*  Some endpoints may still be alive.  Here we are going to wait
+        till they are all closed.  This loop is not interruptible, because
+        making it so would leave a partially cleaned up socket, and we don't
+        have a way to defer resource deallocation. */
+    for (;;) {
+        rc = nn_sem_wait (&self->termsem);
+        if (nn_slow (rc == -EINTR))
+            continue;
+        errnum_assert (rc == 0, -rc);
+        break;
+    }
 
-    /*  The thread that posted the semaphore can still have the ctx locked
+    /*  Also, wait for all holds on the socket to be released.  */
+    for (;;) {
+        rc = nn_sem_wait (&self->relesem);
+        if (nn_slow (rc == -EINTR))
+            continue;
+        errnum_assert (rc == 0, -rc);
+        break;
+    }
+
+    /*  Threads that posted the semaphore(s) can still have the ctx locked
         for a short while. By simply entering the context and exiting it
-        immediately we can be sure that the thread in question have already
+        immediately we can be sure that any such threads have already
         exited the context. */
     nn_ctx_enter (&self->ctx);
     nn_ctx_leave (&self->ctx);
 
-    /*  Deallocate the resources. */
+    /*  At this point, we can be reasonably certain that no other thread
+        has any references to the socket. */
+
     nn_fsm_stopped_noevent (&self->fsm);
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
@@ -1132,5 +1159,26 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int64_t increment)
             nn_assert(increment < INT_MAX && increment > -INT_MAX);
             self->statistics.current_ep_errors += (int) increment;
             break;
+    }
+}
+
+int nn_sock_hold (struct nn_sock *self)
+{
+    switch (self->state) {
+    case NN_SOCK_STATE_ACTIVE:
+    case NN_SOCK_STATE_INIT:
+        self->holds++;
+        return 0;
+    case NN_SOCK_STATE_ZOMBIE:
+        return -ETERM;
+    }
+    return -EBADF;
+}
+
+void nn_sock_rele (struct nn_sock *self)
+{
+    self->holds--;
+    if (self->holds == 0) {
+        nn_sem_post (&self->relesem);
     }
 }

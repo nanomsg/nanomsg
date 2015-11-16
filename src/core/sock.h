@@ -64,6 +64,7 @@ struct nn_sock
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
     struct nn_sem termsem;
+    struct nn_sem relesem;
 
     /*  TODO: This clock can be accessed from different threads. If RDTSC
         is out-of-sync among different CPU cores, this can be a problem. */
@@ -77,6 +78,9 @@ struct nn_sock
 
     /*  Next endpoint ID to assign to a new endpoint. */
     int eid;
+
+    /*  Count of active holds against the socket. */
+    int holds;
 
     /*  Socket-level socket options. */
     int linger;
@@ -142,6 +146,9 @@ struct nn_sock
 /*  Initialise the socket. */
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd);
 
+/*  Called by nn_close() to stop activity on the socket.  It doesn't block. */
+void nn_sock_stop (struct nn_sock *self);
+
 /*  Called by nn_close() to deallocate the socket. It's a blocking function
     and can return -EINTR. */
 int nn_sock_term (struct nn_sock *self);
@@ -192,6 +199,10 @@ void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 /*  Monitoring callbacks  */
 void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
 void nn_sock_stat_increment(struct nn_sock *self, int name, int64_t increment);
+
+/*  Holds and releases. */
+int nn_sock_hold (struct nn_sock *self);
+void nn_sock_rele (struct nn_sock *self);
 
 #endif
 

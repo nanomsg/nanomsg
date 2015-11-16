@@ -42,8 +42,8 @@ static void worker (NN_UNUSED void *arg)
 
     /*  Check that all subsequent operations fail in synchronous manner. */
     rc = nn_recv (s, buf, sizeof (buf), 0);
+fprintf(stderr, "rc is %d , %d, %s\n", rc, nn_errno(), nn_strerror(nn_errno()));
     nn_assert (rc == -1 && nn_errno () == ETERM);
-
     test_close (s);
 }
 

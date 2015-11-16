@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -50,6 +51,9 @@ void nn_efd_term (struct nn_efd *self);
 /*  Get the OS file descriptor that is readable when the efd object
     is signaled. */
 nn_fd nn_efd_getfd (struct nn_efd *self);
+
+/*  Stop the efd object. */
+void nn_efd_stop (struct nn_efd *self);
 
 /*  Switch the object into signaled state. */
 void nn_efd_signal (struct nn_efd *self);

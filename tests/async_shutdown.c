@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2015 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,54 +23,54 @@
 
 #include "../src/nn.h"
 #include "../src/pair.h"
+#include "../src/pubsub.h"
+#include "../src/pipeline.h"
+#include "../src/tcp.h"
 
-#include "../src/utils/thread.c"
 #include "testutil.h"
+#include "../src/utils/attr.h"
+#include "../src/utils/thread.c"
+#include "../src/utils/atomic.c"
 
-static void worker (NN_UNUSED void *arg)
+/*  Test condition of closing sockets that are blocking in another thread. */
+
+#define TEST_LOOPS 10
+#define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
+
+struct nn_atomic active;
+
+static void routine (NN_UNUSED void *arg)
 {
-    int rc;
     int s;
-    char buf [3];
+    int rc;
+    int msg;
 
-    /*  Test socket. */
-    s = test_socket (AF_SP, NN_PAIR);
+    nn_assert (arg);
 
-    /*  Launch blocking function to check that it will be unblocked once
-        nn_term() is called from the main thread. */
-    rc = nn_recv (s, buf, sizeof (buf), 0);
-    nn_assert (rc == -1 && nn_errno () == ETERM);
+    s = *((int *) arg);
 
-    /*  Check that all subsequent operations fail in synchronous manner. */
-    rc = nn_recv (s, buf, sizeof (buf), 0);
-fprintf(stderr, "rc is %d , %d, %s\n", rc, nn_errno(), nn_strerror(nn_errno()));
-    nn_assert (rc == -1 && nn_errno () == ETERM);
-    test_close (s);
+    /*  We don't expect to actually receive a message here;
+        therefore, the datatype of 'msg' is irrelevant. */
+    rc = nn_recv (s, &msg, sizeof(msg), 0);
+
+    errno_assert (nn_errno () == EBADF);
 }
 
 int main ()
 {
-    int rc;
-    int s;
+    int sb;
+    int i;
     struct nn_thread thread;
 
-    /*  Close the socket with no associated endpoints. */
-    s = test_socket (AF_SP, NN_PAIR);
-    test_close (s);
-
-    /*  Test nn_term() before nn_close(). */
-    nn_thread_init (&thread, worker, NULL);
-    nn_sleep (100);
-    nn_term ();
-
-    /*  Check that it's not possible to create new sockets after nn_term(). */
-    rc = nn_socket (AF_SP, NN_PAIR);
-    nn_assert (rc == -1);
-    errno_assert (nn_errno () == ETERM);
-
-    /*  Wait till worker thread terminates. */
-    nn_thread_term (&thread);
+    for (i = 0; i != TEST_LOOPS; ++i) {
+        sb = test_socket (AF_SP, NN_PULL);
+        test_bind (sb, SOCKET_ADDRESS);
+        nn_sleep (100);
+        nn_thread_init (&thread, routine, &sb);
+        nn_sleep (100);
+        test_close (sb);
+        nn_thread_term (&thread);
+    }
 
     return 0;
 }
-

@@ -47,7 +47,7 @@ void device4 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (devf, devg);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && (nn_errno () == ETERM || nn_errno () == EBADF));
 
     /*  Clean up. */
     test_close (devg);

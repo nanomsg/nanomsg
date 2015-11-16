@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -48,6 +49,7 @@
 #define NN_SOCK_STATE_ZOMBIE 3
 #define NN_SOCK_STATE_STOPPING_EPS 4
 #define NN_SOCK_STATE_STOPPING 5
+#define NN_SOCK_STATE_FINI 6
 
 /*  Events sent to the state machine. */
 #define NN_SOCK_ACTION_ZOMBIFY 1
@@ -67,6 +69,8 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_action_zombify (struct nn_sock *self);
 
+/*  Initialize a socket.  A hold is placed on the initialized socket for
+    the caller as well. */
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
 {
     int rc;
@@ -104,6 +108,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
         }
     }
     nn_sem_init (&self->termsem);
+    nn_sem_init (&self->relesem);
     if (nn_slow (rc < 0)) {
         if (!(socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
             nn_efd_term (&self->rcvfd);
@@ -112,6 +117,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
         return rc;
     }
 
+    self->holds = 1;   /*  Callers hold. */
     self->flags = 0;
     nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
@@ -188,31 +194,54 @@ void nn_sock_zombify (struct nn_sock *self)
     nn_ctx_leave (&self->ctx);
 }
 
+/*  Stop the socket.  This will prevent new calls from aquiring a
+    hold on the socket, cause endpoints to shut down, and wake any
+    threads waiting to recv or send data. */
+void nn_sock_stop (struct nn_sock *self)
+{
+    nn_ctx_enter (&self->ctx);
+    nn_fsm_stop (&self->fsm);
+    nn_ctx_leave (&self->ctx);
+}
+
 int nn_sock_term (struct nn_sock *self)
 {
     int rc;
     int i;
 
-    /*  Ask the state machine to start closing the socket. */
-    nn_ctx_enter (&self->ctx);
-    nn_fsm_stop (&self->fsm);
-    nn_ctx_leave (&self->ctx);
+    /*  NOTE: nn_sock_stop must have already been called. */
 
-    /*  Shutdown process was already started but some endpoints may still
-        alive. Here we are going to wait till they are all closed. */
-    rc = nn_sem_wait (&self->termsem);
-    if (nn_slow (rc == -EINTR))
-        return -EINTR;
-    errnum_assert (rc == 0, -rc);
+    /*  Some endpoints may still be alive.  Here we are going to wait
+        till they are all closed.  This loop is not interruptible, because
+        making it so would leave a partially cleaned up socket, and we don't
+        have a way to defer resource deallocation. */
+    for (;;) {
+        rc = nn_sem_wait (&self->termsem);
+        if (nn_slow (rc == -EINTR))
+            continue;
+        errnum_assert (rc == 0, -rc);
+        break;
+    }
 
-    /*  The thread that posted the semaphore can still have the ctx locked
+    /*  Also, wait for all holds on the socket to be released.  */
+    for (;;) {
+        rc = nn_sem_wait (&self->relesem);
+        if (nn_slow (rc == -EINTR))
+            continue;
+        errnum_assert (rc == 0, -rc);
+        break;
+    }
+
+    /*  Threads that posted the semaphore(s) can still have the ctx locked
         for a short while. By simply entering the context and exiting it
-        immediately we can be sure that the thread in question have already
+        immediately we can be sure that any such threads have already
         exited the context. */
     nn_ctx_enter (&self->ctx);
     nn_ctx_leave (&self->ctx);
 
-    /*  Deallocate the resources. */
+    /*  At this point, we can be reasonably certain that no other thread
+        has any references to the socket. */
+
     nn_fsm_stopped_noevent (&self->fsm);
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
@@ -569,10 +598,27 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     while (1) {
 
-        /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
+        switch (self->state) {
+        case NN_SOCK_STATE_ACTIVE:
+        case NN_SOCK_STATE_INIT:
+             break;
+
+        case NN_SOCK_STATE_ZOMBIE:
+            /*  If nn_term() was already called, return ETERM. */
             nn_ctx_leave (&self->ctx);
             return -ETERM;
+
+        case NN_SOCK_STATE_STOPPING_EPS:
+        case NN_SOCK_STATE_STOPPING:
+        case NN_SOCK_STATE_FINI:
+            /*  Socket closed or closing.  Should we return something
+                else here; recvmsg(2) for example returns no data in
+                this case, like read(2).  The use of indexed file
+                descriptors is further problematic, as an FD can be reused
+                leading to situations where technically the outstanding
+                operation should refer to some other socket entirely.  */
+            nn_ctx_leave (&self->ctx);
+            return -EBADF;
         }
 
         /*  Try to send the message in a non-blocking way. */
@@ -604,6 +650,8 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -ETIMEDOUT;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
+        if (nn_slow (rc == -EBADF))
+            return -EBADF;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
         /*
@@ -647,10 +695,27 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
 
     while (1) {
 
-        /*  If nn_term() was already called, return ETERM. */
-        if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
+        switch (self->state) {
+        case NN_SOCK_STATE_ACTIVE:
+        case NN_SOCK_STATE_INIT:
+             break;
+
+        case NN_SOCK_STATE_ZOMBIE:
+            /*  If nn_term() was already called, return ETERM. */
             nn_ctx_leave (&self->ctx);
             return -ETERM;
+
+        case NN_SOCK_STATE_STOPPING_EPS:
+        case NN_SOCK_STATE_STOPPING:
+        case NN_SOCK_STATE_FINI:
+            /*  Socket closed or closing.  Should we return something
+                else here; recvmsg(2) for example returns no data in
+                this case, like read(2).  The use of indexed file
+                descriptors is further problematic, as an FD can be reused
+                leading to situations where technically the outstanding
+                operation should refer to some other socket entirely.  */
+            nn_ctx_leave (&self->ctx);
+            return -EBADF;
         }
 
         /*  Try to receive the message in a non-blocking way. */
@@ -682,6 +747,8 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -ETIMEDOUT;
         if (nn_slow (rc == -EINTR))
             return -EINTR;
+        if (nn_slow (rc == -EBADF))
+            return -EBADF;
         errnum_assert (rc == 0, rc);
         nn_ctx_enter (&self->ctx);
         /*
@@ -809,12 +876,10 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
         /*  Close sndfd and rcvfd. This should make any current
             select/poll using SNDFD and/or RCVFD exit. */
         if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
-            nn_efd_term (&sock->rcvfd);
-            memset (&sock->rcvfd, 0xcd, sizeof (sock->rcvfd));
+            nn_efd_stop (&sock->rcvfd);
         }
         if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
-            nn_efd_term (&sock->sndfd);
-            memset (&sock->sndfd, 0xcd, sizeof (sock->sndfd));
+            nn_efd_stop (&sock->sndfd);
         }
 
         /*  Ask all the associated endpoints to stop. */
@@ -869,7 +934,15 @@ finish1:
         /*  Protocol-specific part of the socket is stopped.
             We can safely deallocate it. */
         sock->sockbase->vfptr->destroy (sock->sockbase);
-        sock->state = NN_SOCK_STATE_INIT;
+        sock->state = NN_SOCK_STATE_FINI;
+
+        /*  Close the event FDs entirely. */
+        if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
+            nn_efd_term (&sock->rcvfd);
+        }
+        if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
+            nn_efd_term (&sock->sndfd);
+        }
 
         /*  Now we can unblock the application thread blocked in
             the nn_close() call. */
@@ -1006,7 +1079,7 @@ void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
     if (errnum == 0)
         return;
 
-    if(ep) {
+    if (ep) {
         fprintf(stderr, "nanomsg: socket.%s[%s]: Error: %s\n",
             self->socket_name, nn_ep_getaddr(ep), nn_strerror(errnum));
     } else {
@@ -1086,5 +1159,30 @@ void nn_sock_stat_increment (struct nn_sock *self, int name, int64_t increment)
             nn_assert(increment < INT_MAX && increment > -INT_MAX);
             self->statistics.current_ep_errors += (int) increment;
             break;
+    }
+}
+
+int nn_sock_hold (struct nn_sock *self)
+{
+    switch (self->state) {
+    case NN_SOCK_STATE_ACTIVE:
+    case NN_SOCK_STATE_INIT:
+        self->holds++;
+        return 0;
+    case NN_SOCK_STATE_ZOMBIE:
+        return -ETERM;
+    case NN_SOCK_STATE_STOPPING:
+    case NN_SOCK_STATE_STOPPING_EPS:
+    case NN_SOCK_STATE_FINI:
+    default:
+        return -EBADF;
+    }
+}
+
+void nn_sock_rele (struct nn_sock *self)
+{
+    self->holds--;
+    if (self->holds == 0) {
+        nn_sem_post (&self->relesem);
     }
 }

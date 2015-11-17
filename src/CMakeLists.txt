@@ -294,8 +294,8 @@ add_library (nanomsg SHARED ${NN_SOURCES})
 add_definitions (-DNN_EXPORTS)
 
 target_link_libraries (nanomsg ws2_32)
-target_link_libraries (nanomsg Mswsock.lib)
-target_link_libraries (nanomsg Advapi32.lib)
+target_link_libraries (nanomsg mswsock)
+target_link_libraries (nanomsg advapi32)
 
 install(TARGETS nanomsg
     ARCHIVE DESTINATION lib

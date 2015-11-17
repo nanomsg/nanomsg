@@ -504,7 +504,8 @@ FEATURE_TESTS = \
     tests/separation \
     tests/zerocopy \
     tests/shutdown \
-    tests/cmsg
+    tests/cmsg \
+    tests/bug328
 
 EXTRA_DIST += tests/testutil.h
 

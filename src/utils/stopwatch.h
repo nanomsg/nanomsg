@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,9 +29,13 @@
 
 /*  Check whether measured time is the expected time (in microseconds).
     The upper tolerance is 50ms so that the test doesn't fail even on
-    very slow or very loaded systems. */
+    very slow or very loaded systems.  Likewise on some systems we can
+    wind up firing up to a single tick early (Windows), so the lower bound
+    is pretty low.  The consequence of this is that programs which  specify
+    a timeout should be a little more pessimistic (at least 10ms) then they
+    might otherwise think they need to be. */
 #define time_assert(actual,expected) \
-    nn_assert (actual > ((expected) - 5000) && actual < ((expected) + 50000)); 
+    nn_assert (actual > ((expected) - 10000) && actual < ((expected) + 50000)); 
 
 /*  Measures time interval in microseconds. */
 

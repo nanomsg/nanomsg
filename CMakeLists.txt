@@ -36,7 +36,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
 
     if (MINGW)
-        add_definitions (-DNN_HAVE_MINGW -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
+        add_definitions (-DNN_HAVE_MINGW -D_POSIX_C_SOURCE -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
     endif ()
 else ()
     message (FATAL_ERROR "ERROR: CMake build system is intended only to generate MSVC solution files.\nUse autotools build system for any other purpose." )

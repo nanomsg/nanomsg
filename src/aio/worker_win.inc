@@ -173,7 +173,7 @@ static void nn_worker_routine (void *arg)
         for (i = 0; i != count; ++i) {
 
             /*  Process I/O completion events. */
-            if (nn_fast (entries [i].lpOverlapped)) {
+            if (nn_fast (entries [i].lpOverlapped != NULL)) {
                 op = nn_cont (entries [i].lpOverlapped,
                     struct nn_worker_op, olpd);
 

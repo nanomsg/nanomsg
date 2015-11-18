@@ -76,12 +76,11 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#if defined NN_HAVE_MINGW
-#include <pthread.h>
-#elif defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_WINDOWS
 #define gmtime_r(ptr_numtime, ptr_strtime) gmtime_s(ptr_strtime, ptr_numtime)
 #endif
 #define NN_HAVE_GMTIME_R
@@ -1170,7 +1169,15 @@ static void nn_global_submit_errors (int i, struct nn_sock *s,
             ep = nn_cont (it, struct nn_ep, item);
 
             if (ep->last_errno) {
-#ifdef NN_HAVE_WINDOWS
+#ifdef _MSC_VER
+                /*
+                 * On Windows, when using Microsoft C, we need to use their
+                 * non-standard replacement for snprintf.  However, when we
+                 * use mingw, we get a non-broken standard conforming
+                 * snprintf instead, so we *only* override for MS C.  (Note
+                 * that mingw apparently *lacks* the Microsoft specific
+                 * version, for reasons that elude me.)
+                 */
                 len = _snprintf_s (curbuf, buf_left, _TRUNCATE,
                     " nanomsg: Endpoint %d [%s] error: %s\n",
                     ep->eid, nn_ep_getaddr (ep), nn_strerror (ep->last_errno));

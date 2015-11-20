@@ -68,6 +68,8 @@ static void client(NN_UNUSED void *arg)
         int cli_sock = nn_socket(AF_SP, NN_PUSH);
         nn_assert(cli_sock >= 0);
         nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
+        /*  Give time to allow for connect to establish. */
+        nn_sleep(50);
         bytes = nn_send(cli_sock, msg, sz_msg, 0);
         /*  This would better be handled via semaphore or condvar. */
         nn_sleep(100);

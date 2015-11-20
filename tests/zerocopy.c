@@ -40,7 +40,7 @@ void test_allocmsg_reqrep ()
     /*  Try to create an oversized message. */
     p = nn_allocmsg (-1, 0);
     nn_assert (!p && nn_errno () == ENOMEM);
-    p = nn_allocmsg (-1000, 0);
+    p = nn_allocmsg (-3, 0);
     nn_assert (!p && nn_errno () == ENOMEM);
 
     /*  Try to create a message of unknown type. */
@@ -98,7 +98,7 @@ void test_reallocmsg_reqrep ()
     /*  Create message, make sure we handle overflow. */
     p = nn_allocmsg (100, 0);
     nn_assert (p);
-    p2 = nn_reallocmsg (p, -1000);
+    p2 = nn_reallocmsg (p, (size_t)-3);
     errno_assert (nn_errno () == ENOMEM);
     nn_assert (p2 == NULL);
 

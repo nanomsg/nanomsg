@@ -59,7 +59,6 @@ int main ()
     int endf;
     int endg;
     struct nn_thread thread4;
-    int timeo;
 
     /*  Test the bi-directional device with REQ/REP (headers). */
 

@@ -82,8 +82,6 @@ int main ()
     struct nn_thread thread5;
     struct nn_thread thread6;
 
-    int timeo;
-
     /*  Test the bi-directional device with REQ/REP (headers). */
 
     /*  Start the devices. */

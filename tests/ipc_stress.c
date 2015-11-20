@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -39,7 +40,6 @@
 
 struct nn_atomic active;
 
-#if 0
 static void server(NN_UNUSED void *arg)
 {
     int bytes;
@@ -69,16 +69,16 @@ static void client(NN_UNUSED void *arg)
         nn_assert(cli_sock >= 0);
         nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
         bytes = nn_send(cli_sock, msg, sz_msg, 0);
+        /*  This would better be handled via semaphore or condvar. */
+        nn_sleep(100);
         nn_assert(bytes == sz_msg);
         nn_close(cli_sock);
     }
     nn_atomic_dec(&active, 1);
 }
-#endif
 
 int main()
 {
-#if 0
     int i;
     int cli_sock;
     int bytes;
@@ -101,7 +101,6 @@ int main()
     nn_assert(bytes == sizeof(i));
     nn_close(cli_sock);
     nn_thread_term(&srv_thread);
-#endif
 
     return 0;
 }

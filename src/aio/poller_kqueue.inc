@@ -69,14 +69,12 @@ void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
     if (hndl->events & NN_POLLER_EVENT_IN) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_DELETE, 0, 0, 0);
-        rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
+        kevent (self->kq, &ev, 1, NULL, 0, NULL);
     }
 
     if (hndl->events & NN_POLLER_EVENT_OUT) {
         EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
-        rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
+        kevent (self->kq, &ev, 1, NULL, 0, NULL);
     }
 
     /*  Invalidate any subsequent events on this file descriptor. */
@@ -89,13 +87,14 @@ void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
+    int fd = hndl->fd;
 
     if (!(hndl->events & NN_POLLER_EVENT_IN)) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_ADD, 0, 0,
             (nn_poller_udata) hndl);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
-        hndl->events |= NN_POLLER_EVENT_IN;
+        if (rc != -1)
+            hndl->events |= NN_POLLER_EVENT_IN;
     }
 }
 
@@ -108,7 +107,6 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
     if (hndl->events & NN_POLLER_EVENT_IN) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
         hndl->events &= ~NN_POLLER_EVENT_IN;
     }
 
@@ -123,13 +121,13 @@ void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
+    int fd = hndl->fd;
 
     if (!(hndl->events & NN_POLLER_EVENT_OUT)) {
-        EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_ADD, 0, 0,
-            (nn_poller_udata) hndl);
+        EV_SET (&ev, fd, EVFILT_WRITE, EV_ADD, 0, 0, (nn_poller_udata) hndl);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
-        hndl->events |= NN_POLLER_EVENT_OUT;
+        if (rc != -1)
+            hndl->events |= NN_POLLER_EVENT_OUT;
     }
 }
 
@@ -138,12 +136,14 @@ void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
     int rc;
     struct kevent ev;
     int i;
+    int fd = hndl->fd;
 
     if (hndl->events & NN_POLLER_EVENT_OUT) {
-        EV_SET (&ev, hndl->fd, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
+        EV_SET (&ev, fd, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
         rc = kevent (self->kq, &ev, 1, NULL, 0, NULL);
-        errno_assert (rc != -1);
-        hndl->events &= ~NN_POLLER_EVENT_OUT;
+        if (rc != -1) {
+            hndl->events &= ~NN_POLLER_EVENT_OUT;
+        }
     }
 
     /*  Invalidate any subsequent OUT events on this file descriptor. */

@@ -70,18 +70,15 @@ void nn_poller_add (struct nn_poller *self, int fd,
     memset (&ev, 0, sizeof (ev));
     ev.events = 0;
     ev.data.ptr = (void*) hndl;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_ADD, fd, &ev);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_ADD, fd, &ev);
 }
 
 void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     int i;
 
     /*  Remove the file descriptor from the pollset. */
-    rc = epoll_ctl (self->ep, EPOLL_CTL_DEL, hndl->fd, NULL);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_DEL, hndl->fd, NULL);
 
     /*  Invalidate any subsequent events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
@@ -91,7 +88,6 @@ void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
 void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     struct epoll_event ev;
 
     /*  If already polling for IN, do nothing. */
@@ -103,13 +99,11 @@ void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
     memset (&ev, 0, sizeof (ev));
     ev.events = hndl->events;
     ev.data.ptr = (void*) hndl;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
 }
 
 void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     int i;
     struct epoll_event ev;
 
@@ -122,8 +116,7 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
     memset (&ev, 0, sizeof (ev));
     ev.events = hndl->events;
     ev.data.ptr = (void*) hndl;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
 
     /*  Invalidate any subsequent IN events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)
@@ -133,8 +126,8 @@ void nn_poller_reset_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 
 void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     struct epoll_event ev;
+    int fd = hndl->fd;
 
     /*  If already polling for OUT, do nothing. */
     if (nn_slow (hndl->events & EPOLLOUT))
@@ -145,13 +138,11 @@ void nn_poller_set_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
     memset (&ev, 0, sizeof (ev));
     ev.events = hndl->events;
     ev.data.ptr = (void*) hndl;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_MOD, fd, &ev);
 }
 
 void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     int i;
     struct epoll_event ev;
 
@@ -164,8 +155,7 @@ void nn_poller_reset_out (struct nn_poller *self, struct nn_poller_hndl *hndl)
     memset (&ev, 0, sizeof (ev));
     ev.events = hndl->events;
     ev.data.ptr = (void*) hndl;
-    rc = epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
-    errno_assert (rc == 0);
+    epoll_ctl (self->ep, EPOLL_CTL_MOD, hndl->fd, &ev);
 
     /*  Invalidate any subsequent OUT events on this file descriptor. */
     for (i = self->index; i != self->nevents; ++i)

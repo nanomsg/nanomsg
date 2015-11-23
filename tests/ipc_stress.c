@@ -100,8 +100,6 @@ static void client(void *arg)
 int main()
 {
     int i;
-    int cli_sock;
-    int bytes;
     struct nn_thread srv_thread;
     struct nn_thread cli_threads[THREAD_COUNT];
     /*  Stress the shutdown algorithm. */

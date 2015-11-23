@@ -94,8 +94,8 @@ int main ()
     end1 = test_socket (AF_SP, NN_RESPONDENT);
     test_connect (end1, SOCKET_ADDRESS_J);
 
-    /*  Wait for TCP to establish. */
-    nn_sleep (200);
+    /*  Wait up to a second for TCP to establish. */
+    nn_sleep (1000);
 
     /*  Pass a message between endpoints. */
     test_send (end0, "XYZ");

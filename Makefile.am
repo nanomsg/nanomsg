@@ -496,6 +496,7 @@ FEATURE_TESTS = \
     tests/device \
     tests/device4 \
     tests/device5 \
+    tests/device6 \
     tests/emfile \
     tests/domain \
     tests/trie \

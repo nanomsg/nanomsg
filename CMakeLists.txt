@@ -106,6 +106,7 @@ add_libnanomsg_test (zerocopy)
 add_libnanomsg_test (shutdown)
 add_libnanomsg_test (cmsg)
 add_libnanomsg_test (bug328)
+add_libnanomsg_test (ws_async_shutdown)
 
 #  Build the performance tests.
 

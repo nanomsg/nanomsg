@@ -38,33 +38,52 @@
 #define TEST_LOOPS 10
 #define SOCKET_ADDRESS "ipc://test-stress.ipc"
 
-struct nn_atomic active;
-
 static void server(NN_UNUSED void *arg)
 {
     int bytes;
+    int count;
     int sock = nn_socket(AF_SP, NN_PULL);
+    int res[TEST_LOOPS];
     nn_assert(sock >= 0);
     nn_assert(nn_bind(sock, SOCKET_ADDRESS) >= 0);
-    while (1)
+    count = THREAD_COUNT * TEST_LOOPS;
+    memset(res, 0, sizeof (res));
+    while (count > 0)
     {
         char *buf = NULL;
-        if (!active.n) break;
+        int tid;
+        int num;
         bytes = nn_recv(sock, &buf, NN_MSG, 0);
         nn_assert(bytes >= 0);
+        nn_assert(bytes >= 2);
+        nn_assert(buf[0] >= 'A' && buf[0] <= 'Z');
+        nn_assert(buf[1] >= 'a' && buf[0] <= 'z');
+        tid = buf[0]-'A';
+        num = buf[1]-'a';
+        nn_assert(tid < THREAD_COUNT);
+        nn_assert(res[tid] == num);
+        res[tid]=num+1;
         nn_freemsg(buf);
+        count--;
     }
     nn_close(sock);
 }
 
-static void client(NN_UNUSED void *arg)
+static void client(void *arg)
 {
+    intptr_t id = (intptr_t)arg;
     int bytes;
-    char msg[] = "0";
-    int sz_msg = strlen (msg) + 1; // '\0' too
+    char msg[3];
+    int sz_msg;
     int i;
 
+    msg[0] = 'A' + id%26;
+    msg[1] = 'a';
+    msg[2] = '\0';
+    sz_msg = strlen (msg) + 1; // '\0' too
+
     for (i = 0; i < TEST_LOOPS; i++) {
+        msg[1] = 'a' + i%26;
         int cli_sock = nn_socket(AF_SP, NN_PUSH);
         nn_assert(cli_sock >= 0);
         nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
@@ -76,7 +95,6 @@ static void client(NN_UNUSED void *arg)
         nn_assert(bytes == sz_msg);
         nn_close(cli_sock);
     }
-    nn_atomic_dec(&active, 1);
 }
 
 int main()
@@ -86,24 +104,13 @@ int main()
     int bytes;
     struct nn_thread srv_thread;
     struct nn_thread cli_threads[THREAD_COUNT];
-    nn_atomic_init (&active, THREAD_COUNT);
     /*  Stress the shutdown algorithm. */
     nn_thread_init(&srv_thread, server, NULL);
 
     for (i = 0; i != THREAD_COUNT; ++i)
-        nn_thread_init(&cli_threads[i], client, NULL);
+        nn_thread_init(&cli_threads[i], client, (void *)(intptr_t)i);
     for (i = 0; i != THREAD_COUNT; ++i)
         nn_thread_term(&cli_threads[i]);
 
-    active.n = 0;
-    cli_sock = nn_socket(AF_SP, NN_PUSH);
-    nn_assert(cli_sock >= 0);
-    nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
-    bytes = nn_send(cli_sock, &i, sizeof(i), 0);
-    nn_assert(bytes == sizeof(i));
-    nn_close(cli_sock);
-    nn_thread_term(&srv_thread);
-
     return 0;
 }
-

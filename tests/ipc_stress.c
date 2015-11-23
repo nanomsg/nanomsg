@@ -83,8 +83,8 @@ static void client(void *arg)
     sz_msg = strlen (msg) + 1; // '\0' too
 
     for (i = 0; i < TEST_LOOPS; i++) {
-        msg[1] = 'a' + i%26;
         int cli_sock = nn_socket(AF_SP, NN_PUSH);
+        msg[1] = 'a' + i%26;
         nn_assert(cli_sock >= 0);
         nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
         /*  Give time to allow for connect to establish. */

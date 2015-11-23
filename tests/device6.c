@@ -30,9 +30,9 @@
 #include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
-#define SOCKET_ADDRESS_H "tcp://127.0.0.1:5567"
-#define SOCKET_ADDRESS_I "tcp://127.0.0.1:5568"
-#define SOCKET_ADDRESS_J "tcp://127.0.0.1:5569"
+#define SOCKET_ADDRESS_H "tcp://127.0.0.1:5570"
+#define SOCKET_ADDRESS_I "tcp://127.0.0.1:5571"
+#define SOCKET_ADDRESS_J "tcp://127.0.0.1:5572"
 
 void device5 (NN_UNUSED void *arg)
 {

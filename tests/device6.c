@@ -95,7 +95,7 @@ int main ()
     test_connect (end1, SOCKET_ADDRESS_J);
 
     /*  Wait for TCP to establish. */
-    nn_sleep (100);
+    nn_sleep (200);
 
     /*  Pass a message between endpoints. */
     test_send (end0, "XYZ");

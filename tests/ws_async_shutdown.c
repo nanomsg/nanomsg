@@ -63,6 +63,8 @@ static void routine (NN_UNUSED void *arg)
 
 int main ()
 {
+    int i;
+    int j;
     int s;
     int sb;
     int rcvtimeo = 10;
@@ -70,14 +72,14 @@ int main ()
     int sockets [TEST_THREADS];
     struct nn_thread threads [TEST_THREADS];
 
-    for (int i = 0; i != TEST_LOOPS; ++i) {
+    for (i = 0; i != TEST_LOOPS; ++i) {
         
         sb = test_socket (AF_SP, NN_PUB);
         test_bind (sb, SOCKET_ADDRESS);
         test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO,
             &sndtimeo, sizeof (sndtimeo));
 
-        for (int j = 0; j < TEST_THREADS; j++){
+        for (j = 0; j < TEST_THREADS; j++){
             s = test_socket (AF_SP, NN_SUB);
             test_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO,
                 &rcvtimeo, sizeof (rcvtimeo));
@@ -92,7 +94,7 @@ int main ()
 
         test_send (sb, "");
         
-        for (int j = 0; j < TEST_THREADS; j++) {
+        for (j = 0; j < TEST_THREADS; j++) {
             test_close (sockets [j]);
             nn_thread_term (&threads [j]);
         }

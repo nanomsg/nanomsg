@@ -155,7 +155,8 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     memcpy (nn_chunkref_data (&nmsg.body),
         nn_chunkref_data (&msg->sphdr),
         nn_chunkref_size (&msg->sphdr));
-    memcpy (nn_chunkref_data (&nmsg.body) + nn_chunkref_size (&msg->sphdr),
+    memcpy ((char *)nn_chunkref_data (&nmsg.body) +
+        nn_chunkref_size (&msg->sphdr),
         nn_chunkref_data (&msg->body),
         nn_chunkref_size (&msg->body));
     nn_msg_term (msg);

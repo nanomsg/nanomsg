@@ -27,6 +27,17 @@
 
 #include "testutil.h"
 
+/*
+ * Nanomsg never zero copies anymore - it used to be an attribute of
+ * the inproc transport, but frankly its a mistake for anyone to depend
+ * on that.  The implementation must be free to copy, move data, etc.
+ * The only thing that should be guaranteed is that the "ownership" of the
+ * message on send is passed to libnanomsg.  libnanomsg may give that message
+ * to an inproc receiver, or it can do something else (like copy the data)
+ * with it.
+ */
+#if 0
+
 #include <string.h>
 
 void test_allocmsg_reqrep ()
@@ -191,12 +202,15 @@ void test_reallocmsg_pubsub ()
     nn_close (sub1);
     nn_close (pub);
 }
+#endif
 
 int main ()
 {
+#if 0
     test_allocmsg_reqrep ();
     test_reallocmsg_reqrep ();
     test_reallocmsg_pubsub ();
+#endif
     return 0;
 }
 

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -136,6 +137,7 @@ void nn_sinproc_stop (struct nn_sinproc *self)
 static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
 {
     struct nn_sinproc *sinproc;
+    struct nn_msg nmsg;
 
     sinproc = nn_cont (self, struct nn_sinproc, pipebase);
 
@@ -148,9 +150,21 @@ static int nn_sinproc_send (struct nn_pipebase *self, struct nn_msg *msg)
     nn_assert_state (sinproc, NN_SINPROC_STATE_ACTIVE);
     nn_assert (!(sinproc->flags & NN_SINPROC_FLAG_SENDING));
 
+    nn_msg_init (&nmsg,
+        nn_chunkref_size (&msg->sphdr) +
+        nn_chunkref_size (&msg->body));
+    memcpy (nn_chunkref_data (&nmsg.body),
+        nn_chunkref_data (&msg->sphdr),
+        nn_chunkref_size (&msg->sphdr));
+    memcpy ((char *)nn_chunkref_data (&nmsg.body) +
+        nn_chunkref_size (&msg->sphdr),
+        nn_chunkref_data (&msg->body),
+        nn_chunkref_size (&msg->body));
+    nn_msg_term (msg);
+
     /*  Expose the message to the peer. */
     nn_msg_term (&sinproc->msg);
-    nn_msg_mv (&sinproc->msg, msg);
+    nn_msg_mv (&sinproc->msg, &nmsg);
 
     /*  Notify the peer that there's a message to get. */
     sinproc->flags |= NN_SINPROC_FLAG_SENDING;
@@ -196,8 +210,9 @@ static int nn_sinproc_recv (struct nn_pipebase *self, struct nn_msg *msg)
     if (!nn_msgqueue_empty (&sinproc->msgqueue))
        nn_pipebase_received (&sinproc->pipebase);
 
-    return NN_PIPEBASE_PARSED;
+    return 0;
 }
+
 static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
     int type, NN_UNUSED void *srcptr)
 {

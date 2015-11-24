@@ -33,9 +33,11 @@
 #endif
 
 /*  On Windows XS there's no inet_pton() function. */
-#if defined NN_HAVE_WINDOWS && ((_WIN32_WINNT <= 0x0501) || (WINVER <= 0x0501))
+#if defined NN_HAVE_WINDOWS
+typedef int (WSAAPI *api_inet_pton)(int family, const char *src, void *dst);
+api_inet_pton ptr_api_inet_pton = NULL;
 
-static int nn_inet_pton(int family, const char *src, void *dst)
+static int WSAAPI nn_inet_pton_impl(int family, const char *src, void *dst)
 {
     int rc;
     struct sockaddr_storage addr;
@@ -61,6 +63,18 @@ static int nn_inet_pton(int family, const char *src, void *dst)
     }
 
     return 1;
+}
+
+static int nn_inet_pton(int family, const char *src, void *dst)
+{
+	/* Check if the DLL has the normal API if not set our own implementation*/
+	if(ptr_api_inet_pton == NULL) {
+		ptr_api_inet_pton = (api_inet_pton)GetProcAddress(GetModuleHandleA("WS2_32.dll"), "inet_pton");
+		if(ptr_api_inet_pton == NULL) {
+			ptr_api_inet_pton = nn_inet_pton_impl;
+		}
+	}
+	return ptr_api_inet_pton (family, src, dst);
 }
 
 #else

@@ -23,6 +23,7 @@
 
 #include "ctx.h"
 #include "usock.h"
+#include "iocp.h"
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
@@ -37,6 +38,9 @@
 /*  The value of this variable is irrelevant. It's used only as a placeholder
     for the address that is used as the 'stop' event ID. */
 const int nn_worker_stop = 0;
+const int nn_worker_cancel_io = 1;
+
+HANDLE p_handletocancel = NULL;
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
@@ -104,6 +108,16 @@ void nn_worker_term (struct nn_worker *self)
     win_assert (brc);
 }
 
+/* Only used on Windows XP. */
+void nn_worker_cancelio(struct nn_worker *self, HANDLE p)
+{
+    BOOL brc;
+	p_handletocancel = p;
+    brc = PostQueuedCompletionStatus (self->cp, 0,
+        (ULONG_PTR) &nn_worker_cancel_io, NULL);
+    win_assert (brc);
+}
+
 void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
 {
     BOOL brc;
@@ -129,20 +143,167 @@ HANDLE nn_worker_getcp (struct nn_worker *self)
     return self->cp;
 }
 
-static void nn_worker_routine (void *arg)
+/* Refactored implementation from original routine. Returns TRUE if it's the thread exit and FALSE if not*/
+BOOL nn_worker_routine_vista(struct nn_worker *self, int timeout)
 {
-    int rc;
+	OVERLAPPED_ENTRY entries [NN_WORKER_MAX_EVENTS];
+	DWORD dwErr;
+	int rc;
     BOOL brc;
-    struct nn_worker *self;
-    int timeout;
-    ULONG count;
-    ULONG i;
-    struct nn_timerset_hndl *thndl;
-    struct nn_worker_timer *timer;
+    ULONG count, i;
     struct nn_worker_task *task;
     struct nn_worker_op *op;
-    OVERLAPPED_ENTRY entries [NN_WORKER_MAX_EVENTS];
 
+    /*  Wait for new events and/or timeouts. */
+	brc = nn_getqueuedcompletionstatusex (self->cp, entries,
+		NN_WORKER_MAX_EVENTS, &count, timeout < 0 ? INFINITE : timeout,
+		FALSE);
+		
+	dwErr = GetLastError();
+	if (nn_slow (!brc && dwErr == WAIT_TIMEOUT)) {
+		return FALSE;
+	}
+
+	win_assert (brc);
+
+	for (i = 0; i != count; ++i) {
+
+		/*  Process I/O completion events. */
+		if (nn_fast (entries [i].lpOverlapped)) {
+			op = nn_cont (entries [i].lpOverlapped,
+				struct nn_worker_op, olpd);
+
+			/*  The 'Internal' field is actually an NTSTATUS. Report
+				success and error. Ignore warnings and informational
+				messages.*/
+			rc = entries [i].Internal & 0xc0000000;
+			switch (rc) {
+			case 0x00000000:
+				rc = NN_WORKER_OP_DONE;
+				break;
+			case 0xc0000000:
+				rc = NN_WORKER_OP_ERROR;
+				break;
+			default:
+				continue;
+			}
+
+			/*  Raise the completion event. */
+			nn_ctx_enter (op->owner->ctx);
+			nn_assert (op->state != NN_WORKER_OP_STATE_IDLE);
+			if (rc != NN_WORKER_OP_ERROR &&
+					op->state == NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR &&
+					entries [i].dwNumberOfBytesTransferred == 0)
+				rc = NN_WORKER_OP_ERROR;
+			op->state = NN_WORKER_OP_STATE_IDLE;
+			nn_fsm_feed (op->owner, op->src, rc, op);
+			nn_ctx_leave (op->owner->ctx);
+
+			continue;
+		}
+
+		/*  Worker thread shutdown is requested. */
+		if (nn_slow (entries [i].lpCompletionKey ==
+			(ULONG_PTR) &nn_worker_stop))
+			return TRUE;
+
+		/*  Process tasks. */
+		task = (struct nn_worker_task*) entries [i].lpCompletionKey;
+		nn_ctx_enter (task->owner->ctx);
+		nn_fsm_feed (task->owner, task->src,
+			NN_WORKER_TASK_EXECUTE, task);
+		nn_ctx_leave (task->owner->ctx);
+	}
+
+	return FALSE;
+}
+
+/* Refactored implementation from original routine. Returns TRUE if it's the thread exit and FALSE if not*/
+BOOL nn_worker_routine_xp(struct nn_worker *self, int timeout)
+{
+	DWORD dwNumberOfBytesTransferred, dwErr;
+    ULONG_PTR    lpCompletionKey;
+    LPOVERLAPPED pov;
+	int rc;
+    BOOL brc;
+    struct nn_worker_task *task;
+    struct nn_worker_op *op;
+
+	pov = NULL; dwErr = 0;
+
+	brc = GetQueuedCompletionStatus(self->cp, &dwNumberOfBytesTransferred, &lpCompletionKey, &pov, timeout < 0 ? INFINITE : timeout);
+
+	dwErr = GetLastError();
+	if (nn_slow (!brc && dwErr == WAIT_TIMEOUT)) {
+		return FALSE;
+	}
+
+	win_assert (brc || (!brc && dwErr == ERROR_OPERATION_ABORTED) || (!brc && dwErr == ERROR_PIPE_NOT_CONNECTED) || (!brc && dwErr == ERROR_BROKEN_PIPE));
+
+	/*  Process I/O completion events. */
+	if (nn_fast (pov)) {
+		op = nn_cont (pov,
+			struct nn_worker_op, olpd);
+
+		/*  The 'Internal' field is actually an NTSTATUS. Report
+			success and error. Ignore warnings and informational
+			messages.*/
+		rc = pov->Internal & 0xc0000000;
+		switch (rc) {
+		case 0x00000000:
+			rc = NN_WORKER_OP_DONE;
+			break;
+		case 0xc0000000:
+			rc = NN_WORKER_OP_ERROR;
+			break;
+		default:
+			return FALSE;
+		}
+
+		/*  Raise the completion event. */
+		nn_ctx_enter (op->owner->ctx);
+		nn_assert (op->state != NN_WORKER_OP_STATE_IDLE);
+		if (rc != NN_WORKER_OP_ERROR &&
+				op->state == NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR &&
+				dwNumberOfBytesTransferred == 0)
+			rc = NN_WORKER_OP_ERROR;
+		op->state = NN_WORKER_OP_STATE_IDLE;
+		nn_fsm_feed (op->owner, op->src, rc, op);
+		nn_ctx_leave (op->owner->ctx);
+
+		return FALSE;
+	}
+
+	/*  Worker thread shutdown is requested. */
+	if (nn_slow (lpCompletionKey ==
+			(ULONG_PTR) &nn_worker_stop))
+		return TRUE;
+	
+	if (nn_slow (lpCompletionKey ==
+			(ULONG_PTR) &nn_worker_cancel_io)) {
+		CancelIo(p_handletocancel);
+		p_handletocancel = NULL;
+		return FALSE;
+	}
+
+	/*  Process tasks. */
+	task = (struct nn_worker_task*) lpCompletionKey;
+	nn_ctx_enter (task->owner->ctx);
+	nn_fsm_feed (task->owner, task->src,
+		NN_WORKER_TASK_EXECUTE, task);
+	nn_ctx_leave (task->owner->ctx);
+
+	return FALSE;
+}
+
+static void nn_worker_routine (void *arg)
+{
+	int timeout;
+    struct nn_worker *self;
+    int rc;
+	struct nn_timerset_hndl *thndl;
+    struct nn_worker_timer *timer;
+    
     self = (struct nn_worker*) arg;
 
     while (1) {
@@ -162,61 +323,10 @@ static void nn_worker_routine (void *arg)
         /*  Compute the time interval till next timer expiration. */
         timeout = nn_timerset_timeout (&self->timerset);
 
-        /*  Wait for new events and/or timeouts. */
-        brc = GetQueuedCompletionStatusEx (self->cp, entries,
-            NN_WORKER_MAX_EVENTS, &count, timeout < 0 ? INFINITE : timeout,
-            FALSE);
-        if (nn_slow (!brc && GetLastError () == WAIT_TIMEOUT))
-            continue;
-        win_assert (brc);
-
-        for (i = 0; i != count; ++i) {
-
-            /*  Process I/O completion events. */
-            if (nn_fast (entries [i].lpOverlapped)) {
-                op = nn_cont (entries [i].lpOverlapped,
-                    struct nn_worker_op, olpd);
-
-                /*  The 'Internal' field is actually an NTSTATUS. Report
-                    success and error. Ignore warnings and informational
-                    messages.*/
-                rc = entries [i].Internal & 0xc0000000;
-                switch (rc) {
-                case 0x00000000:
-                     rc = NN_WORKER_OP_DONE;
-                     break;
-                case 0xc0000000:
-                     rc = NN_WORKER_OP_ERROR;
-                     break;
-                default:
-                     continue;
-                }
-
-                /*  Raise the completion event. */
-                nn_ctx_enter (op->owner->ctx);
-                nn_assert (op->state != NN_WORKER_OP_STATE_IDLE);
-                if (rc != NN_WORKER_OP_ERROR &&
-                      op->state == NN_WORKER_OP_STATE_ACTIVE_ZEROISERROR &&
-                      entries [i].dwNumberOfBytesTransferred == 0)
-                    rc = NN_WORKER_OP_ERROR;
-                op->state = NN_WORKER_OP_STATE_IDLE;
-                nn_fsm_feed (op->owner, op->src, rc, op);
-                nn_ctx_leave (op->owner->ctx);
-
-                continue;
-            }
-
-            /*  Worker thread shutdown is requested. */
-            if (nn_slow (entries [i].lpCompletionKey ==
-                  (ULONG_PTR) &nn_worker_stop))
-                return;
-
-            /*  Process tasks. */
-            task = (struct nn_worker_task*) entries [i].lpCompletionKey;
-            nn_ctx_enter (task->owner->ctx);
-            nn_fsm_feed (task->owner, task->src,
-                NN_WORKER_TASK_EXECUTE, task);
-            nn_ctx_leave (task->owner->ctx);
-        }
+        if (nn_isvistaplus()) {
+            if (nn_worker_routine_vista (self, timeout)) return;
+		} else {
+			if (nn_worker_routine_xp (self, timeout)) return;
+		}	
     }
 }

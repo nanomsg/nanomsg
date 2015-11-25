@@ -35,6 +35,7 @@ static void test_close_impl (char *file, int line, int sock);
 static void test_send_impl (char *file, int line, int sock, char *data);
 static void test_recv_impl (char *file, int line, int sock, char *data);
 static void test_drop_impl (char *file, int line, int sock, int err);
+static void test_shutdown_impl (char *file, int line, int sock, int ep);
 static int  test_setsockopt_impl (char *file, int line, int sock, int level,
     int option, const void *optval, size_t optlen);
 
@@ -44,6 +45,7 @@ static int  test_setsockopt_impl (char *file, int line, int sock, int level,
 #define test_send(s, d) test_send_impl (__FILE__, __LINE__, (s), (d))
 #define test_recv(s, d) test_recv_impl (__FILE__, __LINE__, (s), (d))
 #define test_drop(s, e) test_drop_impl (__FILE__, __LINE__, (s), (e))
+#define test_shutdown(s, e) test_shutdown_impl (__FILE__, __LINE__, (s), (e))
 #define test_close(s) test_close_impl (__FILE__, __LINE__, (s))
 #define test_setsockopt(s, l, o, v, z) test_setsockopt_impl (__FILE__, \
     __LINE__, (s), (l), (o), (v), (z))
@@ -110,6 +112,19 @@ static int NN_UNUSED test_setsockopt_impl (char *file, int line,
         nn_err_abort ();
     }
     return rc;
+}
+
+static void NN_UNUSED test_shutdown_impl (char *file, int line, int sock, int ep)
+{
+    int rc;
+
+    rc = nn_shutdown (sock, ep);
+    if ((rc != 0) && (errno != EBADF && errno != ETERM)) {
+        fprintf (stderr, "Failed to shutdown endpoint: %s [%d] (%s:%d)\n",
+            nn_err_strerror (errno),
+            (int) errno, file, line);
+        nn_err_abort ();
+    }
 }
 
 static void NN_UNUSED test_close_impl (char *file, int line, int sock)

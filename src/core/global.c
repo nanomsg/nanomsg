@@ -578,12 +578,12 @@ int nn_close (int s)
         This is done with the glock held to ensure that two instances
         of nn_close can't access the same socket. */
     nn_sock_stop (sock);
-    nn_glock_unlock ();
 
     /*  We have to drop both the hold we just acquired, as well as
         the original hold, in order for nn_sock_term to complete. */
     nn_sock_rele (sock);
     nn_sock_rele (sock);
+    nn_glock_unlock ();
 
     /*  Now clean up.  The termination routine below will block until
         all other consumers of the socket have dropped their holds, and

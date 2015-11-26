@@ -26,8 +26,11 @@
 #include "../src/ws.h"
 
 #include "../src/utils/int.h"
+#include "../src/utils/thread.c"
 
 #include "testutil.h"
+
+#include <string.h>
 
 /*****************************************************************************/
 /*  Stress tests the WebSocket transport using Autobahn Testsuite.           */
@@ -36,24 +39,116 @@
 /*****************************************************************************/
 
 /*  Skips this WebSocket stress test entirely. */
-#define NN_WS_STRESS_SKIP 1
+#define NN_WS_ENABLE_AUTOBAHN_TEST 1
 
 /*  Control whether performances tests are run, which may add an additional
     minute or longer to the test. */
 #define NN_WS_STRESS_SKIP_PERF 1
 
+#define NN_WS_DEBUG_AUTOBAHN 0
+
 #define FUZZING_SERVER_ADDRESS "ws://127.0.0.1:9002"
+
+/*  The longest intentional delay in a test as of Autobahn Testsuite v0.7.2
+    is nominally 2sec, so a 5000msec timeout gives a bit of headroom. With
+    performance tests enabled, some of those tests take 30sec or longer,
+    depending on platform. */
+#if NN_WS_STRESS_SKIP_PERF
+    #define NN_WS_EXCLUDE_CASES "[\"9.*\", \"12.*\", \"13.*\"]"
+    #define NN_WS_TEST_CASE_TIMEO 5000
+#else
+    #define NN_WS_EXCLUDE_CASES "[\"12.*\", \"13.*\"]"
+    #define NN_WS_TEST_CASE_TIMEO 60000
+#endif
+
+#if NN_WS_DEBUG_AUTOBAHN
+    #define NN_WS_DEBUG_AUTOBAHN_FLAG " --debug"
+#else
+    #define NN_WS_DEBUG_AUTOBAHN_FLAG ""
+#endif
+
+#define NN_WS_OPCODE_CLOSE 0x08
+#define NN_WS_OPCODE_PING 0x09
+#define NN_WS_OPCODE_PONG 0x0A
+
+static int nn_ws_send (int s, const void *msg, size_t len, uint8_t msg_type, int flags)
+{
+    int rc;
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
+    struct nn_cmsghdr *cmsg;
+    size_t cmsgsz;
+
+    iov.iov_base = (void*) msg;
+    iov.iov_len = len;
+    
+    cmsgsz = NN_CMSG_SPACE (sizeof (msg_type));
+    cmsg = nn_allocmsg (cmsgsz, 0);
+    if (cmsg == NULL)
+        return -1;
+
+    cmsg->cmsg_level = NN_WS;
+    cmsg->cmsg_type = NN_WS_MSG_TYPE;
+    cmsg->cmsg_len = NN_CMSG_LEN (sizeof (msg_type));
+    memcpy (NN_CMSG_DATA (cmsg), &msg_type, sizeof (msg_type));
+
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = &cmsg;
+    hdr.msg_controllen = NN_MSG;
+
+    rc = nn_sendmsg (s, &hdr, flags);
+
+    return rc;
+}
+
+static int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flags)
+{
+    struct nn_iovec iov;
+    struct nn_msghdr hdr;
+    struct nn_cmsghdr *cmsg;
+    void *cmsg_buf;
+    int rc;
+
+    iov.iov_base = msg;
+    iov.iov_len = len;
+
+    hdr.msg_iov = &iov;
+    hdr.msg_iovlen = 1;
+    hdr.msg_control = &cmsg_buf;
+    hdr.msg_controllen = NN_MSG;
+
+    rc = nn_recvmsg (s, &hdr, flags);
+    if (rc < 0)
+        return rc;
+
+    /* Find WebSocket opcode ancillary property. */
+    cmsg = NN_CMSG_FIRSTHDR (&hdr);
+    while (cmsg) {
+        if (cmsg->cmsg_level == NN_WS && cmsg->cmsg_type == NN_WS_MSG_TYPE) {
+            *msg_type = *(uint8_t *) NN_CMSG_DATA (cmsg);
+            break;
+        }
+        cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
+    }
+
+    /*  WebSocket transport should always report this header. */
+    nn_assert (cmsg);
+
+    /*  WebSocket transport should always reassemble fragmented messages. */
+    nn_assert (*msg_type & 0x80);
+
+   *msg_type &= 0x0F;
+
+    nn_freemsg (cmsg_buf);
+
+    return rc;
+}
 
 static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
 {
     FILE *fd;
-    char *perf_tests;
     int rc;
-
-    if (NN_WS_STRESS_SKIP_PERF)
-        perf_tests = ", \"9.*\"";
-    else
-        perf_tests = "";
 
     /*  Create an Autobahn json config file in the same working directory
         as where the call to wstest will be. */
@@ -65,15 +160,15 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
         "                  {\n"
         "                    \"agent\": \"nanomsg\",\n"
         "                    \"url\" : \"%s\",\n"
-        "                    \"protocols\" : [\"x-nanomsg-pair\"]\n"
+        "                    \"protocols\" : [\"pair.sp.nanomsg.org\"]\n"
         "                  }\n"
         "               ],\n"
         "    \"outdir\" : \"./reports/client\",\n"
         "    \"cases\" : [\"*\"],\n"
-        "    \"exclude-cases\" : [\"6.4.3\", \"6.4.4\"%s],\n"
+        "    \"exclude-cases\" : %s,\n"
         "    \"exclude-agent-cases\" : {}\n"
         "}\n",
-        FUZZING_SERVER_ADDRESS, perf_tests);
+        FUZZING_SERVER_ADDRESS, NN_WS_EXCLUDE_CASES);
 
     errno_assert (rc > 0);
     rc = fclose (fd);
@@ -81,29 +176,26 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
 
 #if defined NN_HAVE_WINDOWS
     rc = system (
-        "start wstest "
-        "--mode=fuzzingclient "
-        "--spec=fuzzingclient.json");
+        "start wstest"
+        NN_WS_DEBUG_AUTOBAHN_FLAG
+        " --mode=fuzzingclient "
+        " --spec=fuzzingclient.json");
 #else
     rc = system (
-        "wstest "
-        "--mode=fuzzingclient "
-        "--spec=fuzzingclient.json &");
+        "wstest"
+        NN_WS_DEBUG_AUTOBAHN_FLAG
+        " --mode=fuzzingclient"
+        " --spec=fuzzingclient.json &");
 #endif
     errno_assert (rc == 0);
 
+    return;
 }
 
 static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
 {
     FILE *fd;
-    char *perf_tests;
     int rc;
-
-    if (NN_WS_STRESS_SKIP_PERF)
-        perf_tests = ", \"9.*\"";
-    else
-        perf_tests = "";
 
     /*  Create an Autobahn json config file in the same working directory
         as where the call to wstest will be. */
@@ -112,42 +204,44 @@ static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
     rc = fprintf (fd,
         "{\n"
         "    \"url\": \"%s\",\n"
-        "    \"protocols\" : [\"x-nanomsg-pair\"],\n"
+        "    \"protocols\" : [\"pair.sp.nanomsg.org\"],\n"
         "    \"outdir\" : \"./reports/server\",\n"
         "    \"cases\" : [\"*\"],\n"
-        "    \"exclude-cases\" : [\"6.4.3\", \"6.4.4\"%s],\n"
+        "    \"exclude-cases\" : %s,\n"
         "    \"exclude-agent-cases\" : {}\n"
         "}\n",
-        FUZZING_SERVER_ADDRESS, perf_tests);
+        FUZZING_SERVER_ADDRESS, NN_WS_EXCLUDE_CASES);
 
     errno_assert (rc > 0);
     rc = fclose (fd);
     errno_assert (rc == 0);
 
     /*  The following call launches a fuzzing server in an async
-        process and assumes you have Autobahn Testsuite installed
+        process, assuming Autobahn Testsuite is fully installed
         as per http://autobahn.ws/testsuite/installation.html */
 
 #if defined NN_HAVE_WINDOWS
     rc = system (
-        "start wstest "
-        "--mode=fuzzingserver "
-        "--spec=fuzzingserver.json "
-        "--webport=0");
+        "start wstest"
+        NN_WS_DEBUG_AUTOBAHN_FLAG
+        " --mode=fuzzingserver"
+        " --spec=fuzzingserver.json"
+        " --webport=0");
 #else
     rc = system (
-        "wstest "
-        "--mode=fuzzingserver "
-        "--spec=fuzzingserver.json "
-        "--webport=0 &");
+        "wstest"
+        NN_WS_DEBUG_AUTOBAHN_FLAG
+        " --mode=fuzzingserver"
+        " --spec=fuzzingserver.json"
+        " --webport=0 &");
 #endif
     errno_assert (rc == 0);
 
-    /*  TODO: Failure to wait an arbitrarily-long-enough time for the
-        test server to load results in STATUS_CONNECTION_REFUSED on the
-        first query to interrogate number of cases. Why? Is this a
-        nanomsg problem, Autobahn problem...? */
+    /*  Allow the server some time to initialize; else, the initial
+        connections to it will fail. */
     nn_sleep (5000);
+
+    return;
 }
 
 static void nn_ws_kill_autobahn (NN_UNUSED void)
@@ -162,111 +256,172 @@ static void nn_ws_kill_autobahn (NN_UNUSED void)
     nn_assert (rc == 0);
 }
 
-static void nn_ws_autobahn_test (int socket, int test_id)
+static int nn_autobahn_conn (int s, const char *method, int case_number)
 {
+    char addr [128];
+    int ep;
+
+    memset (addr, 0, sizeof (addr));
+
+    if (case_number > 0) {
+        sprintf (addr, "%s/%s?agent=nanomsg&case=%d", FUZZING_SERVER_ADDRESS,
+            method, case_number);
+    }
+    else {
+        sprintf (addr, "%s/%s?agent=nanomsg", FUZZING_SERVER_ADDRESS,
+            method);
+    }
+
+    ep = test_connect (s, addr);
+
+    return ep;
+}
+
+static void nn_ws_test_agent (void *arg)
+{
+    int s;
     int rc;
     uint8_t ws_msg_type;
     void *recv_buf;
 
-    /*  Perform test until remote endpoint either initiates a Close
+    nn_assert (arg);
+
+    s = *((int *) arg);
+
+    /*  Remain active until remote endpoint either initiates a Close
         Handshake, or if this endpoint fails the connection based on
         invalid input from the remote peer. */
     while (1) {
 
-        rc = nn_ws_recv (socket, &recv_buf, NN_MSG, &ws_msg_type, 0);
+        rc = nn_ws_recv (s, &recv_buf, NN_MSG, &ws_msg_type, 0);
+        if (rc < 0) {
+            errno_assert (errno == EBADF || errno == EINTR);
+            return;
+        }
+        
         errno_assert (rc >= 0);
-
-        printf ("Test %03d: Rx: 0x%02x (%d bytes)\n", test_id, ws_msg_type, rc);
 
         switch (ws_msg_type) {
         case NN_WS_MSG_TYPE_TEXT:
             /*  Echo text message verbatim. */
-            rc = nn_ws_send (socket, &recv_buf, NN_MSG, ws_msg_type, 0);
+            rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
             break;
         case NN_WS_MSG_TYPE_BINARY:
             /*  Echo binary message verbatim. */
-            rc = nn_ws_send (socket, &recv_buf, NN_MSG, ws_msg_type, 0);
+            rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
             break;
-        case NN_WS_MSG_TYPE_PING:
+        case NN_WS_OPCODE_PING:
             /*  As per RFC 6455 5.5.3, echo PING data payload as a PONG. */
-            rc = nn_ws_send (socket, &recv_buf, NN_MSG,
-                NN_WS_MSG_TYPE_PONG, 0);
+            rc = nn_ws_send (s, &recv_buf, NN_MSG,
+                NN_WS_OPCODE_PONG, 0);
             break;
-        case NN_WS_MSG_TYPE_PONG:
+        case NN_WS_OPCODE_PONG:
             /*  Silently ignore PONGs in this echo server. */
             break;
-        case NN_WS_MSG_TYPE_CLOSE:
-            /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
-            rc = nn_ws_send (socket, &recv_buf, NN_MSG, ws_msg_type, 0);
-            return;
-        case NN_WS_MSG_TYPE_GONE:
-            /*  This indicates the remote peer has sent invalid data forcing
-                the local endpoint to fail the connection as per RFC 6455. */
-            printf ("Test %03d: correctly prevented remote endpoint fuzz\n",
-                test_id);
-            return;
+        //case NN_WS_OPCODE_CLOSE:
+        //    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
+        //    rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
+        //    return;
         default:
             /*  The library delivered an unexpected message type. */
             nn_assert (0);
             break;
         }
-
-        errno_assert (rc >= 0);
     }
+}
+
+int nn_ws_check_result (int case_num, const char *result, size_t len)
+{
+    /*  This is currently the exhaustive dictonary of responses potentially
+        returned by Autobahn Testsuite v0.7.2. It is intentionally hard-coded,
+        such that if the Autobahn dependency ever changes in any way, this
+        test will likewise require re-evaluation. */
+    const char *OK = "{\"behavior\": \"OK\"}";
+    const char *NON = "{\"behavior\": \"NON-STRICT\"}";
+    const char *INFO = "{\"behavior\": \"INFORMATIONAL\"}";
+    const char *UNIMP = "{\"behavior\": \"UNIMPLEMENTED\"}";
+    const char *FAILED = "{\"behavior\": \"FAILED\"}";
+    int rc;
+
+    if (strncmp (result, OK, len))
+        rc = 0;
+    else if (strncmp (result, NON, len))
+        rc = 0;
+    else if (strncmp (result, INFO, len))
+        rc = 0;
+    else if (strncmp (result, UNIMP, len))
+        rc = -1;
+    else if (strncmp (result, FAILED, len))
+        rc = -1;
+    else
+        nn_assert (0);
+
+    return rc;
+}
+
+void nn_autobahn_disconnect (int s, int ep)
+{
+    uint8_t *recv_buf = NULL;
+    uint8_t ws_msg_type;
+    int rc;
+
+    /*  Autobahn sends a close code after all API calls. */
+    rc = nn_ws_recv (s, &recv_buf, NN_MSG, &ws_msg_type, 0);
+    errno_assert (rc >= 0);
+    nn_assert (ws_msg_type == NN_WS_OPCODE_CLOSE);
+
+    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
+    rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
+    errno_assert (rc == 0);
+
+    test_shutdown (s, ep);
+
+    return;
 }
 
 int main ()
 {
-
-#if !NN_WS_STRESS_SKIP
+    int client_under_test;
+    int client_under_test_ep;
+    int test_executive;
+    int test_executive_ep;
+    int msg_type;
     int rc;
-    int autobahn_server;
-    int autobahn_client;
     int i;
     int cases;
-    int local_connected_ep;
-    int local_bound_ep;
-    int recv_timeout;
-    char autobahn_addr[64];
+    int timeo;
+    int passes;
+    int failures;
     uint8_t ws_msg_type;
     uint8_t *recv_buf = NULL;
-    void *hdr_buf = NULL;
+    struct nn_thread echo_agent;
 
-    autobahn_client = test_socket (AF_SP, NN_PAIR);
+    if (!NN_WS_ENABLE_AUTOBAHN_TEST)
+        return 0;
 
-    /*  The longest intentional delay in a test as of Autobahn Testsuite v0.7.1
-        is nominally 2sec, so a 5000msec timeout gives a bit of headroom. With
-        performance tests enabled, some of those tests take 30sec or longer,
-        depending on platform. */
-    if (NN_WS_STRESS_SKIP_PERF)
-        recv_timeout = 5000;
-    else
-        recv_timeout = 60000;
+    test_executive = test_socket (AF_SP, NN_PAIR);
 
+    /*  Autobahn TestSuite always sends UTF-8. */
+    msg_type = NN_WS_MSG_TYPE_TEXT;
+    test_setsockopt (test_executive, NN_WS, NN_WS_MSG_TYPE, &msg_type,
+        sizeof (msg_type));
+
+    /*  The first receive could take a few seconds while Autobahn loads. */
     nn_ws_launch_fuzzing_server ();
-
-    nn_setsockopt (autobahn_client, NN_SOL_SOCKET, NN_RCVTIMEO, &recv_timeout,
-        sizeof (recv_timeout));
-
-    memset (autobahn_addr, 0, sizeof (autobahn_addr));
-    sprintf (autobahn_addr, "%s/getCaseCount", FUZZING_SERVER_ADDRESS);
-
-    printf ("Connecting to %s\n\n", autobahn_addr);
-    local_connected_ep = test_connect (autobahn_client, autobahn_addr);
-    errno_assert (local_connected_ep >= 0);
-
-    printf ("Fetching cases...\n");
-    rc = nn_ws_recv (autobahn_client, &recv_buf, NN_MSG, &ws_msg_type, 0);
+    timeo = 10000;
+    test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
+        sizeof (timeo));
 
     /*  We expect nominally three ASCII digits [0-9] representing total
-        number of cases to run; as of Autobahn TestSuite v0.7.1,
-        521+ test cases. 1 digit is allowed, to allow development of
-        specific cases, and up to 4 digits, for potential future expansion
-        of the test suite. */
+        number of cases to run as of Autobahn TestSuite v0.7.2, but anything
+        between 1-4 digits is accepted. */
+    printf ("Fetching cases...\n");
+    test_executive_ep = nn_autobahn_conn (test_executive, "getCaseCount", -1);
+    rc = nn_ws_recv (test_executive, &recv_buf, NN_MSG, &ws_msg_type, 0);
     errno_assert (1 <= rc && rc <= 4);
-
     nn_assert (ws_msg_type == NN_WS_MSG_TYPE_TEXT);
 
+    /*  Parse ASCII response. */
     cases = 0;
     for (i = 0; i < rc; ++i) {
         nn_assert ('0' <= recv_buf [i] && recv_buf [i] <= '9');
@@ -277,92 +432,73 @@ int main ()
     rc = nn_freemsg (recv_buf);
     errno_assert (rc == 0);
 
-    rc = nn_ws_recv (autobahn_client, &recv_buf, NN_MSG, &ws_msg_type, 0);
+    /*  Acknowledge close handshake that follows number of test cases. */
+    //nn_autobahn_disconnect (test_executive, test_executive_ep);
 
-    /*  Autobahn Testsuite server sends a close handshake immediately
-        following the number of test cases. */
-    nn_assert (ws_msg_type == NN_WS_MSG_TYPE_CLOSE);
+    timeo = NN_WS_TEST_CASE_TIMEO;
+    test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
+        sizeof (timeo));
 
-    /*  Currently the Autobahn Testsuite sends a zero-length payload on the
-        close message, but we're allowing values greater than zero in case
-        this changes in the future. */
-    errno_assert (rc >= 0);
+    passes = 0;
+    failures = 0;
 
-    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
-    rc = nn_ws_send (autobahn_client, &recv_buf, NN_MSG, ws_msg_type, 0);
-    errno_assert (rc == 0);
-
-    rc = nn_shutdown (autobahn_client, local_connected_ep);
-    errno_assert (rc == 0);
-
-    printf ("Preparing to run %d cases...\n", cases);
-
-    /*  Notice, index starts with 1, not zero! */
+    /*  Autobahn test cases are 1-indexed, not 0-indexed. */
     for (i = 1; i <= cases; i++) {
-        sprintf (autobahn_addr, "%s/runCase?case=%d&agent=nanomsg",
-            FUZZING_SERVER_ADDRESS, i);
+        /*  Register the Test Executive to listen for result from Autobahn. */
+        test_executive_ep = nn_autobahn_conn (test_executive, "getCaseStatus", i);
 
-        local_connected_ep = test_connect (autobahn_client, autobahn_addr);
-        errno_assert (local_connected_ep >= 0);
+        /*  Prepare the echo client for Autobahn Fuzzing Server test case. */
+        client_under_test = test_socket (AF_SP, NN_PAIR);
+        nn_thread_init (&echo_agent, nn_ws_test_agent, &client_under_test);
 
-        nn_ws_autobahn_test (autobahn_client, i);
+        /*  Launch test case on Autobahn Fuzzing Server. */
+        client_under_test_ep = nn_autobahn_conn (client_under_test, "runCase", i);
 
-        rc = nn_shutdown (autobahn_client, local_connected_ep);
+        /*  Wait for Autobahn Server to notify test case is complete. */
+        rc = nn_ws_recv (test_executive, &recv_buf, NN_MSG, &ws_msg_type, 0);
+        errno_assert (rc > 0);
+        nn_assert (ws_msg_type == NN_WS_MSG_TYPE_TEXT);
+
+        switch (nn_ws_check_result (i, recv_buf, rc)) {
+        case 0:
+            passes++;
+            break;
+        case -1:
+            failures++;
+            break;
+        default:
+            nn_assert (0);
+            break;
+        }
+
+        rc = nn_freemsg (recv_buf);
         errno_assert (rc == 0);
+
+        /*  Shut down echo client. */
+        nn_autobahn_disconnect (test_executive, test_executive_ep);
+        test_close (client_under_test);
+        nn_thread_term (&echo_agent);
     }
+    
+    printf ("Server test complete:\n"
+            "Passes: %d\n"
+            "Failures: %d\n",
+            passes, failures);
 
-    sprintf (autobahn_addr, "%s/updateReports?agent=nanomsg",
-        FUZZING_SERVER_ADDRESS);
-
-    printf ("Generating reports with %s ....\n", autobahn_addr);
-
-    local_connected_ep = test_connect (autobahn_client, autobahn_addr);
-    errno_assert (local_connected_ep >= 0);
-
-    /*  Server sends close code as soon as the report is created. */
-    rc = nn_ws_recv (autobahn_client, &recv_buf, NN_MSG, &ws_msg_type, 0);
-
-    /*  Currently the Autobahn Testsuite sends a zero-length payload on the
-        close message, but we're allowing values greater than zero in case
-        this changes in the future. */
-    errno_assert (rc >= 0);
-    nn_assert (ws_msg_type == NN_WS_MSG_TYPE_CLOSE);
-
-    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
-    rc = nn_ws_send (autobahn_client, &recv_buf, NN_MSG, ws_msg_type, 0);
-    errno_assert (rc == 0);
-
-    rc = nn_shutdown (autobahn_client, local_connected_ep);
-    errno_assert (rc == 0);
-
-    test_close (autobahn_client);
+    /*  Notify Autobahn Fuzzer it's time to create reports. */
+    timeo = 10000;
+    test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
+        sizeof (timeo));
+    test_executive_ep = nn_autobahn_conn (test_executive, "updateReports", -1);
+    nn_autobahn_disconnect (test_executive, test_executive_ep);
+    test_close (test_executive);
     
     nn_ws_kill_autobahn ();
 
-    printf ("WebSocket client tests complete! Now, testing server...\n\n");
-    
-    /*  Create echo server for Autobahn Testsuite client fuzzer. */
-    autobahn_server = test_socket (AF_SP, NN_PAIR);
-    local_bound_ep = test_bind (autobahn_server, FUZZING_SERVER_ADDRESS);
-    errno_assert (local_bound_ep >= 0);
-
-    printf ("\n\nServer started on %s\n"
-            "Waiting for Autobahn fuzzing client...\n\n",
-            FUZZING_SERVER_ADDRESS);
-
-    nn_ws_launch_fuzzing_client ();
-
-    nn_setsockopt (autobahn_server, NN_SOL_SOCKET, NN_RCVTIMEO, &recv_timeout,
-        sizeof (recv_timeout));
-
-    /*  The same number of cases are tested for servers as for clients. */
-    for (i = 1; i <= cases; i++) {
-        nn_ws_autobahn_test (autobahn_server, i);
-    }
-
-    /*  TODO: This hangs; why? It must be fixed. */
-    //test_close (sb);
-#endif
+    /*  libnanomsg WebSocket Server testing by the Autobahn Client Fuzzer is
+        disabled for now until a strategy is devised for communicating with it
+        programmatically. */
+    /*  nn_ws_launch_fuzzing_client (); */
 
     return 0;
 }

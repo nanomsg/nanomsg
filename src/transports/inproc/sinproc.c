@@ -223,9 +223,9 @@ static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
     case NN_FSM_ACTION:
         switch (type) {
         case NN_FSM_STOP:
+            nn_pipebase_stop (&self->pipebase);
             if (self->state != NN_SINPROC_STATE_IDLE &&
                   self->state != NN_SINPROC_STATE_DISCONNECTED) {
-                nn_pipebase_stop (&self->pipebase);
                 nn_assert (self->fsm.state == 2 || self->fsm.state == 3);
                 nn_fsm_raiseto (&self->fsm, &self->peer->fsm,
                     &self->peer->event_disconnect, NN_SINPROC_SRC_PEER,

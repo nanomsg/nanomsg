@@ -228,11 +228,7 @@ AC_ARG_ENABLE([autobahntest],
 		[WS Autobahn test [default=no]])
 )
 
-AS_IF([test x"$enable_autobahntest" = "xyes"], [
-    AC_PROG_LN_S
-])
-
-AM_CONDITIONAL([WS_AUTOBAHN_TEST], [test x"$enable_autobahntest" = "xyes"])
+AM_CONDITIONAL([WS_AUTOBAHN_TEST], [test x"$autobahntest" = "xyes"])
 
 ################################################################################
 #  Check which OS we are building for.                                         #

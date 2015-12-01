@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2015 Wirebird Labs LLC. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy

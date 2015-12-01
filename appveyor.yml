@@ -10,14 +10,12 @@ install:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   - cmd: pip install autobahntestsuite
+  - cmd: wstest --autobahnversion
+  - cmd: cmake --version
 before_build:
   - cmd: mkdir %NANOMSG_BUILD_DIR%
   - cmd: cd %NANOMSG_BUILD_DIR%
-  - cmd: cmake --version
   - cmd: cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
-  - cmd: cd
-  - cmd: dir
-  - cmd: set
 platform:
   - x86
 #  - x64

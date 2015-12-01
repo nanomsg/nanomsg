@@ -5,6 +5,7 @@ compiler:
 - gcc
 install:
 - sudo pip install autobahntestsuite
+- sudo pip install unittest2
 script:
 - ./autogen.sh
 - ./configure --enable-autobahntest=yes

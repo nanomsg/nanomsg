@@ -5,7 +5,7 @@ branches:
 skip_tags: true
 os: Windows Server 2012
 environment:
-  NANOMSG_BUILD_DIR: %%APPVEYOR_BUILD_FOLDER%%\build
+  NANOMSG_BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\build"
 install:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%

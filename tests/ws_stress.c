@@ -449,7 +449,7 @@ int main ()
         errno_assert (rc > 0);
         nn_assert (ws_msg_type == NN_WS_MSG_TYPE_TEXT);
 
-        switch (nn_ws_check_result (i, recv_buf, rc)) {
+        switch (nn_ws_check_result (i, (const char *)recv_buf, rc)) {
         case 0:
             passes++;
             break;

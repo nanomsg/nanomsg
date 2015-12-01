@@ -511,25 +511,24 @@ FEATURE_TESTS = \
     tests/bug328 \
     tests/ws_async_shutdown
 
+    OPTIONAL_TESTS =
+
 EXTRA_DIST += tests/testutil.h
 
 # Optionally included by configure enable flag. When this test is included,
 # ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
-    TRANSPORT_TESTS += tests/ws_stress
-    @echo "Autobahn WebSocket test enabled"
-else
-    @echo "Autobahn WebSocket test disabled"
+OPTIONAL_TESTS += tests/ws_stress
 endif
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \
     $(PROTOCOL_TESTS) \
-    $(FEATURE_TESTS)
+    $(FEATURE_TESTS) \
+    $(OPTIONAL_TESTS)
 
 TESTS = $(check_PROGRAMS)
-
 
 ################################################################################
 #  tools                                                                       #

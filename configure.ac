@@ -226,7 +226,8 @@ AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 AC_ARG_ENABLE([autobahntest],
     AS_HELP_STRING([--enable-autobahntest], [WS Autobahn test [default=no]])
 )
-AM_CONDITIONAL(WS_AUTOBAHN_TEST, test x$enable_autobahntest == xyes)
+# Inverted logic, since test returns 0 on true
+AM_CONDITIONAL(WS_AUTOBAHN_TEST, [test "x$enable_autobahntest" != "xyes"])
 
 ################################################################################
 #  Check which OS we are building for.                                         #

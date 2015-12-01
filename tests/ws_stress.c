@@ -353,15 +353,15 @@ int nn_ws_check_result (int case_num, const char *result, size_t len)
     const char *FAILED = "{\"behavior\": \"FAILED\"}";
     int rc;
 
-    if (strncmp (result, OK, len))
+    if (strncmp (result, OK, len) == 0)
         rc = 0;
-    else if (strncmp (result, NON, len))
+    else if (strncmp (result, NON, len) == 0)
         rc = 0;
-    else if (strncmp (result, INFO, len))
+    else if (strncmp (result, INFO, len) == 0)
         rc = 0;
-    else if (strncmp (result, UNIMP, len))
+    else if (strncmp (result, UNIMP, len) == 0)
         rc = -1;
-    else if (strncmp (result, FAILED, len))
+    else if (strncmp (result, FAILED, len) == 0)
         rc = -1;
     else
         nn_assert (0);
@@ -478,9 +478,6 @@ int main ()
         to synchronously determine if the reports are finished, so begin client
         test and shut down the Autobahn fuzzing server afterward. */
     test_executive_ep = nn_autobahn_conn (test_executive, "updateReports", -1);
-    
-    test_shutdown (test_executive, test_executive_ep);
-    test_close (test_executive);
 
     nn_assert (failures == 0);
 
@@ -500,6 +497,8 @@ int main ()
     
     /*  The client testing is expected to have output all reports by now. */
     nn_ws_kill_autobahn ();
+    test_shutdown (test_executive, test_executive_ep);
+    test_close (test_executive);
 
     return 0;
 }

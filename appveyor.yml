@@ -27,4 +27,4 @@ configuration:
 build_script:
   - cmd: cmake --build .
 test_script:
-  - cmake --build . --target RUN_TESTS --config release
+  - cmd: ctest --output-on-failure -C Debug

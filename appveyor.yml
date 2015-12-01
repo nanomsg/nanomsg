@@ -4,13 +4,15 @@ branches:
     - gh-pages
 skip_tags: true
 os: Windows Server 2012
+environment:
+  - NANOMSG_BUILD_DIR: %APPVEYOR_BUILD_FOLDER%\build
 install:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   - cmd: pip install autobahntestsuite
 before_build:
-  - mkdir "%APPVEYOR_BUILD_FOLDER%\build"
-  - cd build
+  - mkdir %NANOMSG_BUILD_DIR%
+  - cd %NANOMSG_BUILD_DIR%
   - cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
 platform:
   - x86
@@ -20,7 +22,7 @@ configuration:
   - Release
 build:
   parallel: false
-  project: nanomsg.sln
+  project: %NANOMSG_BUILD_DIR%\ALL_BUILD.vcxproj
   verbosity: normal
 test_script:
   - cmake --build . --target RUN_TESTS --config release

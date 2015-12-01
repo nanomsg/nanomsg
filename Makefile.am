@@ -513,17 +513,20 @@ FEATURE_TESTS = \
 
 EXTRA_DIST += tests/testutil.h
 
-check_PROGRAMS = \
-    $(TRANSPORT_TESTS) \
-    $(PROTOCOL_TESTS) \
-    $(FEATURE_TESTS)
-
 # Optionally included by configure enable flag. When this test is included,
 # ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
-check_PROGRAMS += tests/ws_stress
+    TRANSPORT_TESTS += tests/ws_stress
+    @echo "Autobahn WebSocket test enabled"
+else
+    @echo "Autobahn WebSocket test disabled"
 endif
+
+check_PROGRAMS = \
+    $(TRANSPORT_TESTS) \
+    $(PROTOCOL_TESTS) \
+    $(FEATURE_TESTS)
 
 TESTS = $(check_PROGRAMS)
 
@@ -624,4 +627,3 @@ diagrams:
 
 clean-local:
 	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
-

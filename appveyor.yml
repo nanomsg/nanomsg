@@ -10,7 +10,7 @@ install:
   - cmd: pip install autobahntestsuite
 before_build:
   - mkdir "%APPVEYOR_BUILD_FOLDER%\build"
-  - cd "build"
+  - cd build
   - cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
 platform:
   - x86
@@ -20,7 +20,7 @@ configuration:
   - Release
 build:
   parallel: false
-  project: build\nanomsg.sln
+  project: nanomsg.sln
   verbosity: normal
 test_script:
-  - cmake.exe --build . --target RUN_TESTS --config release
+  - cmake --build . --target RUN_TESTS --config release

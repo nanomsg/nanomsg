@@ -47,9 +47,6 @@ void test_text() {
     sb = test_socket (AF_SP, NN_PAIR);
     sc = test_socket (AF_SP, NN_PAIR);
 
-    /*  Wait for connects to establish. */
-    nn_sleep (200);
-
     opt = NN_WS_MSG_TYPE_TEXT;
     test_setsockopt(sb, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
     opt = NN_WS_MSG_TYPE_TEXT;
@@ -70,6 +67,11 @@ void test_text() {
 
     /*  Make sure we dropped the frame. */
     test_drop (sb, ETIMEDOUT);
+
+    test_close (sb);
+    test_close (sc);
+
+    return;
 }
 
 int main ()
@@ -101,16 +103,7 @@ int main ()
     errno_assert (rc == 0);
     nn_assert (sz == sizeof (opt));
     nn_assert (opt == NN_WS_MSG_TYPE_BINARY);
-
-#if 0
-    //opt = 100;
-    //sz = sizeof (opt);
-    //rc = nn_getsockopt (sc, NN_WS, NN_WS_HANDSHAKE_TIMEOUT, &opt, &sz);
-    //errno_assert (rc == 0);
-    //nn_assert (sz == sizeof (opt));
-    //nn_assert (opt == 100);
-#endif
-
+    
     /*  Default port 80 should be assumed if not explicitly declared. */
     rc = nn_connect (sc, "ws://127.0.0.1");
     errno_assert (rc >= 0);
@@ -162,15 +155,10 @@ int main ()
 
     test_close (sc);
 
-    nn_sleep (200);
-
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
-
-    /*  Leave enough time for connection establishment. */
-    nn_sleep (200);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {

@@ -14,6 +14,9 @@ before_build:
   - cmd: mkdir %NANOMSG_BUILD_DIR%
   - cmd: cd %NANOMSG_BUILD_DIR%
   - cmd: cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
+  - cmd: cd
+  - cmd: dir
+  - cmd: echo "%NANOMSG_BUILD_DIR%\\ALL_BUILD.vcxproj"
 platform:
   - x86
   - x64

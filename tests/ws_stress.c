@@ -62,9 +62,11 @@
 #if NN_WS_ENABLE_AUTOBAHN_PERF
     #define NN_WS_EXCLUDE_CASES "[\"12.*\", \"13.*\"]"
     #define NN_WS_TEST_CASE_TIMEO 60000
+    #define NN_WS_TEST_CASE_RCVMAX 16777216
 #else
     #define NN_WS_EXCLUDE_CASES "[\"9.*\", \"12.*\", \"13.*\"]"
     #define NN_WS_TEST_CASE_TIMEO 5000
+    #define NN_WS_TEST_CASE_RCVMAX 65536
 #endif
 
 #if NN_WS_AUTOBAHN_DEBUG
@@ -382,6 +384,8 @@ int main ()
     int i;
     int cases;
     int timeo;
+    int opt;
+    size_t sz;
     int passes;
     int failures;
     uint8_t ws_msg_type;
@@ -440,6 +444,9 @@ int main ()
 
         /*  Prepare the echo client for Autobahn Fuzzing Server test case. */
         client_under_test = test_socket (AF_SP, NN_PAIR);
+        opt = NN_WS_TEST_CASE_RCVMAX;
+        sz = sizeof (opt);
+        test_setsockopt (client_under_test, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sz);
         nn_thread_init (&echo_agent, nn_ws_test_agent, &client_under_test);
 
         /*  Launch test case on Autobahn Fuzzing Server. */
@@ -487,6 +494,9 @@ int main ()
         checking RFC 6455 compliance as reported from Autobahn, it is fully
         flexing its own assertions. */
     server_under_test = test_socket (AF_SP, NN_PAIR);
+    opt = NN_WS_TEST_CASE_RCVMAX;
+    sz = sizeof (opt);
+    test_setsockopt (server_under_test, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sz);
     server_under_test_ep = test_bind (server_under_test, FUZZING_CLIENT_ADDRESS);
     nn_thread_init (&autobahn_client, nn_ws_launch_fuzzing_client, NULL);
     nn_thread_init (&echo_agent, nn_ws_test_agent, &server_under_test);

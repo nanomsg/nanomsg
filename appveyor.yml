@@ -24,7 +24,7 @@ platform:
 configuration:
 #  - Debug
 #  - Release
-build-script:
+build_script:
   - cmd: cmake --build .
 test_script:
   - cmake --build . --target RUN_TESTS --config release

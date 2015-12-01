@@ -79,6 +79,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int sb2;
     int opt;
     size_t sz;
     int i;
@@ -232,6 +233,23 @@ int main ()
     test_close (sc);
 
     test_text ();
+
+    /*  Test closing a socket that is waiting to bind. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    nn_sleep (100);
+    sb2 = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb2, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    nn_sleep (100);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb2);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb);
+    test_close (sc);
 
     return 0;
 }

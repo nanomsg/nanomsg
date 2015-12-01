@@ -103,6 +103,9 @@ int main ()
     errno_assert (rc == 0);
     nn_assert (sz == sizeof (opt));
     nn_assert (opt == NN_WS_MSG_TYPE_BINARY);
+    opt = NN_WS_MSG_TYPE_TEXT;
+    sz = sizeof (opt);
+    test_setsockopt (sc, NN_WS, NN_WS_MSG_TYPE, &opt, sz);
     
     /*  Default port 80 should be assumed if not explicitly declared. */
     rc = nn_connect (sc, "ws://127.0.0.1");
@@ -180,6 +183,53 @@ int main ()
 
     test_close (sc);
     test_close (sb);
+
+    /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
+    sb = test_socket (AF_SP, NN_PAIR);
+    opt = -1;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc >= 0);
+    opt = -2;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    test_close (sb);
+
+    /*  Test NN_RCVMAXSIZE limit */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    opt = 100;
+    test_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &opt, sizeof (opt));
+    opt = 100;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
+    nn_sleep (100);
+    opt = 4;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_send (sc, "ABCD");
+    test_recv (sb, "ABCD");
+    test_send (sc, "ABCDE");
+    test_drop (sb, ETIMEDOUT);
+
+    /*  Increase the size limit, then try sending again. Though, this first
+        send after violating the protocol is expected to fail, since the peer
+        failed the connection. In this scenario, the failed socket does not
+        begin reconnection attempts. */
+    opt = 5;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    rc = nn_send (sc, "ABCDE", 5, 0);
+    nn_assert (rc < 0);
+    errno_assert (nn_err_errno () == ETIMEDOUT);
+
+    /*  Reconnect and expect success this time. */
+    test_connect (sc, SOCKET_ADDRESS);
+    test_send (sc, "ABCDE");
+    test_recv (sb, "ABCDE");
+    test_close (sb);
+    test_close (sc);
 
     test_text ();
 

@@ -740,8 +740,8 @@ static void nn_sws_acknowledge_close_handshake (struct nn_sws *self)
         close_code == NN_SWS_CLOSE_ERR_TOOBIG ||
         close_code == NN_SWS_CLOSE_ERR_EXTENSION ||
         close_code == NN_SWS_CLOSE_ERR_SERVER ||
-        close_code >= 3000 && close_code <= 3999 ||
-        close_code >= 4000 && close_code <= 4999) {
+        (close_code >= 3000 && close_code <= 3999) ||
+        (close_code >= 4000 && close_code <= 4999)) {
         /*  Repeat close code, per RFC 6455 7.4.1 and 7.4.2 */
         nn_sws_fail_conn (self, (int) close_code,
             "Farewell. <3 nanomsg");

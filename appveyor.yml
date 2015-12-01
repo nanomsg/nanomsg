@@ -20,13 +20,13 @@ before_build:
   - cmd: set
 platform:
   - x86
-  - x64
+#  - x64
 configuration:
-  - Debug
-  - Release
-build:
+#  - Debug
+#  - Release
+build-script:
   parallel: false
-  project: build\ALL_BUILD.vcxproj
+  project: ALL_BUILD.vcxproj
   verbosity: normal
 test_script:
   - cmake --build . --target RUN_TESTS --config release

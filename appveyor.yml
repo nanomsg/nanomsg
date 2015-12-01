@@ -10,6 +10,7 @@ install:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   - cmd: pip install autobahntestsuite
+  - cmd: pip install unittest2
   - cmd: wstest --autobahnversion
   - cmd: cmake --version
 before_build:

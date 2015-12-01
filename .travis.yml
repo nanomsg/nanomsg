@@ -1,12 +1,12 @@
 language: c
-sudo: false
+sudo: required
 compiler:
 - clang
 - gcc
 env:
 - NN_WS_ENABLE_AUTOBAHN_TEST=1
 install:
-- pip install autobahntestsuite
+- sudo pip install autobahntestsuite
 script:
 - ./autogen.sh
 - ./configure

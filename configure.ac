@@ -224,7 +224,9 @@ AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 ################################################################################
 
 AC_ARG_ENABLE([autobahntest],
-    AS_HELP_STRING([--enable-autobahntest], [WS Autobahn test [default=no]])
+    AS_HELP_STRING([--enable-autobahntest], [WS Autobahn test [default=no]],
+    [WS_AUTOBAHN_TEST=$enableval],
+    [WS_AUTOBAHN_TEST=no])
 )
 
 AM_CONDITIONAL([WS_AUTOBAHN_TEST], [test "x$enable_autobahntest" = "xyes"])
@@ -390,4 +392,3 @@ AC_OUTPUT([
 Makefile
 libnanomsg.pc
 ])
-

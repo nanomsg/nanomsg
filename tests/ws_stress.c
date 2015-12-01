@@ -39,37 +39,39 @@
 /*****************************************************************************/
 
 /*  Skips this WebSocket stress test entirely. */
-#define NN_WS_ENABLE_AUTOBAHN_TEST 1
+#ifndef NN_WS_ENABLE_AUTOBAHN_TEST
+    #define NN_WS_ENABLE_AUTOBAHN_TEST 1
+#endif
 
 /*  Control whether performances tests are run, which may add an additional
     minute or longer to the test. */
-#define NN_WS_STRESS_SKIP_PERF 1
+#ifndef NN_WS_ENABLE_AUTOBAHN_PERF
+    #define NN_WS_ENABLE_AUTOBAHN_PERF 0
+#endif
 
-#define NN_WS_DEBUG_AUTOBAHN 0
+/*  Used for test developer troubleshooting. */
+#define NN_WS_AUTOBAHN_DEBUG 0
 
-#define FUZZING_SERVER_ADDRESS "ws://127.0.0.1:9002"
+#define FUZZING_CLIENT_ADDRESS "ws://127.0.0.1:9002"
+#define FUZZING_SERVER_ADDRESS "ws://127.0.0.1:9003"
 
 /*  The longest intentional delay in a test as of Autobahn Testsuite v0.7.2
     is nominally 2sec, so a 5000msec timeout gives a bit of headroom. With
     performance tests enabled, some of those tests take 30sec or longer,
     depending on platform. */
-#if NN_WS_STRESS_SKIP_PERF
-    #define NN_WS_EXCLUDE_CASES "[\"9.*\", \"12.*\", \"13.*\"]"
-    #define NN_WS_TEST_CASE_TIMEO 5000
-#else
+#if NN_WS_ENABLE_AUTOBAHN_PERF
     #define NN_WS_EXCLUDE_CASES "[\"12.*\", \"13.*\"]"
     #define NN_WS_TEST_CASE_TIMEO 60000
+#else
+    #define NN_WS_EXCLUDE_CASES "[\"9.*\", \"12.*\", \"13.*\"]"
+    #define NN_WS_TEST_CASE_TIMEO 5000
 #endif
 
-#if NN_WS_DEBUG_AUTOBAHN
+#if NN_WS_AUTOBAHN_DEBUG
     #define NN_WS_DEBUG_AUTOBAHN_FLAG " --debug"
 #else
     #define NN_WS_DEBUG_AUTOBAHN_FLAG ""
 #endif
-
-#define NN_WS_OPCODE_CLOSE 0x08
-#define NN_WS_OPCODE_PING 0x09
-#define NN_WS_OPCODE_PONG 0x0A
 
 static int nn_ws_send (int s, const void *msg, size_t len, uint8_t msg_type, int flags)
 {
@@ -109,6 +111,7 @@ static int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flag
     struct nn_cmsghdr *cmsg;
     void *cmsg_buf;
     int rc;
+    int frc;
 
     iov.iov_base = msg;
     iov.iov_len = len;
@@ -135,17 +138,13 @@ static int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flag
     /*  WebSocket transport should always report this header. */
     nn_assert (cmsg);
 
-    /*  WebSocket transport should always reassemble fragmented messages. */
-    nn_assert (*msg_type & 0x80);
-
-   *msg_type &= 0x0F;
-
-    nn_freemsg (cmsg_buf);
+    frc = nn_freemsg (cmsg_buf);
+    errno_assert (frc == 0);
 
     return rc;
 }
 
-static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
+static void nn_ws_launch_fuzzing_client (NN_UNUSED void *args)
 {
     FILE *fd;
     int rc;
@@ -168,7 +167,7 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
         "    \"exclude-cases\" : %s,\n"
         "    \"exclude-agent-cases\" : {}\n"
         "}\n",
-        FUZZING_SERVER_ADDRESS, NN_WS_EXCLUDE_CASES);
+        FUZZING_CLIENT_ADDRESS, NN_WS_EXCLUDE_CASES);
 
     errno_assert (rc > 0);
     rc = fclose (fd);
@@ -176,7 +175,7 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
 
 #if defined NN_HAVE_WINDOWS
     rc = system (
-        "start wstest"
+        "wstest"
         NN_WS_DEBUG_AUTOBAHN_FLAG
         " --mode=fuzzingclient "
         " --spec=fuzzingclient.json");
@@ -185,7 +184,7 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void)
         "wstest"
         NN_WS_DEBUG_AUTOBAHN_FLAG
         " --mode=fuzzingclient"
-        " --spec=fuzzingclient.json &");
+        " --spec=fuzzingclient.json");
 #endif
     errno_assert (rc == 0);
 
@@ -239,7 +238,7 @@ static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
 
     /*  Allow the server some time to initialize; else, the initial
         connections to it will fail. */
-    nn_sleep (5000);
+    nn_sleep (3000);
 
     return;
 }
@@ -288,46 +287,57 @@ static void nn_ws_test_agent (void *arg)
 
     s = *((int *) arg);
 
-    /*  Remain active until remote endpoint either initiates a Close
-        Handshake, or if this endpoint fails the connection based on
-        invalid input from the remote peer. */
+    /*  Remain active until socket is closed. */
     while (1) {
+
+        ws_msg_type = 0;
+        recv_buf = NULL;
 
         rc = nn_ws_recv (s, &recv_buf, NN_MSG, &ws_msg_type, 0);
         if (rc < 0) {
             errno_assert (errno == EBADF || errno == EINTR);
             return;
         }
-        
         errno_assert (rc >= 0);
 
         switch (ws_msg_type) {
+            
+        /*  Echo text message verbatim. */
         case NN_WS_MSG_TYPE_TEXT:
-            /*  Echo text message verbatim. */
             rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
             break;
+
+        /*  Echo binary message verbatim. */
         case NN_WS_MSG_TYPE_BINARY:
-            /*  Echo binary message verbatim. */
             rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
             break;
-        case NN_WS_OPCODE_PING:
-            /*  As per RFC 6455 5.5.3, echo PING data payload as a PONG. */
-            rc = nn_ws_send (s, &recv_buf, NN_MSG,
-                NN_WS_OPCODE_PONG, 0);
+            
+        /*  As per RFC 6455 5.5.3, echo PING data payload as a PONG. Note
+            that even though this ability is tested to satisfy as complete
+            Autobahn test coverage as possible, it is neither recommended
+            nor officially supported by nanomsg to use these opcodes, hence
+            the use of "magic" numbers here. */
+        case 0x09:
+            rc = nn_ws_send (s, &recv_buf, NN_MSG, 0x0A, 0);
             break;
-        case NN_WS_OPCODE_PONG:
-            /*  Silently ignore PONGs in this echo server. */
+        
+        /*  Silently ignore PONGs in this echo server. */
+        case 0x0A:
             break;
-        //case NN_WS_OPCODE_CLOSE:
-        //    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
-        //    rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
-        //    return;
+
         default:
             /*  The library delivered an unexpected message type. */
             nn_assert (0);
             break;
         }
+
+        if (rc < 0) {
+            errno_assert (errno == EBADF);
+            return;
+        }
+        errno_assert (rc >= 0);
     }
+    return;
 }
 
 int nn_ws_check_result (int case_num, const char *result, size_t len)
@@ -359,30 +369,12 @@ int nn_ws_check_result (int case_num, const char *result, size_t len)
     return rc;
 }
 
-void nn_autobahn_disconnect (int s, int ep)
-{
-    uint8_t *recv_buf = NULL;
-    uint8_t ws_msg_type;
-    int rc;
-
-    /*  Autobahn sends a close code after all API calls. */
-    rc = nn_ws_recv (s, &recv_buf, NN_MSG, &ws_msg_type, 0);
-    errno_assert (rc >= 0);
-    nn_assert (ws_msg_type == NN_WS_OPCODE_CLOSE);
-
-    /*  As per RFC 6455 5.5.1, repeat Close Code in message body. */
-    rc = nn_ws_send (s, &recv_buf, NN_MSG, ws_msg_type, 0);
-    errno_assert (rc == 0);
-
-    test_shutdown (s, ep);
-
-    return;
-}
-
 int main ()
 {
     int client_under_test;
     int client_under_test_ep;
+    int server_under_test;
+    int server_under_test_ep;
     int test_executive;
     int test_executive_ep;
     int msg_type;
@@ -395,6 +387,7 @@ int main ()
     uint8_t ws_msg_type;
     uint8_t *recv_buf = NULL;
     struct nn_thread echo_agent;
+    struct nn_thread autobahn_client;
 
     if (!NN_WS_ENABLE_AUTOBAHN_TEST)
         return 0;
@@ -420,6 +413,7 @@ int main ()
     rc = nn_ws_recv (test_executive, &recv_buf, NN_MSG, &ws_msg_type, 0);
     errno_assert (1 <= rc && rc <= 4);
     nn_assert (ws_msg_type == NN_WS_MSG_TYPE_TEXT);
+    test_shutdown (test_executive, test_executive_ep);
 
     /*  Parse ASCII response. */
     cases = 0;
@@ -431,9 +425,6 @@ int main ()
 
     rc = nn_freemsg (recv_buf);
     errno_assert (rc == 0);
-
-    /*  Acknowledge close handshake that follows number of test cases. */
-    //nn_autobahn_disconnect (test_executive, test_executive_ep);
 
     timeo = NN_WS_TEST_CASE_TIMEO;
     test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
@@ -473,10 +464,8 @@ int main ()
 
         rc = nn_freemsg (recv_buf);
         errno_assert (rc == 0);
-
-        /*  Shut down echo client. */
-        nn_autobahn_disconnect (test_executive, test_executive_ep);
         test_close (client_under_test);
+        test_shutdown (test_executive, test_executive_ep);
         nn_thread_term (&echo_agent);
     }
     
@@ -485,20 +474,32 @@ int main ()
             "Failures: %d\n",
             passes, failures);
 
-    /*  Notify Autobahn Fuzzer it's time to create reports. */
-    timeo = 10000;
-    test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
-        sizeof (timeo));
+    /*  Notify Autobahn it's time to create reports. There's not a good way
+        to synchronously determine if the reports are finished, so begin client
+        test and shut down the Autobahn fuzzing server afterward. */
     test_executive_ep = nn_autobahn_conn (test_executive, "updateReports", -1);
-    nn_autobahn_disconnect (test_executive, test_executive_ep);
-    test_close (test_executive);
     
-    nn_ws_kill_autobahn ();
+    test_shutdown (test_executive, test_executive_ep);
+    test_close (test_executive);
 
-    /*  libnanomsg WebSocket Server testing by the Autobahn Client Fuzzer is
-        disabled for now until a strategy is devised for communicating with it
-        programmatically. */
-    /*  nn_ws_launch_fuzzing_client (); */
+    nn_assert (failures == 0);
+
+    /*  libnanomsg WebSocket Server testing by the Autobahn Client Fuzzer
+        currently does not programmatically determine pass/failure of tests.
+        The value of running this test remains, since even though it is not
+        checking RFC 6455 compliance as reported from Autobahn, it is fully
+        flexing its own assertions. */
+    server_under_test = test_socket (AF_SP, NN_PAIR);
+    server_under_test_ep = test_bind (server_under_test, FUZZING_CLIENT_ADDRESS);
+    nn_thread_init (&autobahn_client, nn_ws_launch_fuzzing_client, NULL);
+    nn_thread_init (&echo_agent, nn_ws_test_agent, &server_under_test);
+    nn_thread_term (&autobahn_client);
+    test_shutdown (server_under_test, server_under_test_ep);
+    test_close (server_under_test);
+    nn_thread_term (&echo_agent);
+    
+    /*  The client testing is expected to have output all reports by now. */
+    nn_ws_kill_autobahn ();
 
     return 0;
 }

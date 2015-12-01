@@ -1,0 +1,24 @@
+version: 0.8.{build}
+branches:
+  except:
+    - gh-pages
+skip_tags: true
+os: Windows Server 2012
+install:
+  - pip install autobahntestsuite
+before_build:
+  - mkdir "%APPVEYOR_BUILD_FOLDER%\build"
+  - cd "build"
+  - cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
+platform:
+  - x86
+  - x64
+configuration:
+  - Debug
+  - Release
+build:
+  parallel: false
+  project: build\nanomsg.sln
+  verbosity: normal
+test_script:
+  - cmake.exe --build . --target RUN_TESTS --config release

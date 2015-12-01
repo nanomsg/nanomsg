@@ -6,8 +6,9 @@ skip_tags: true
 os: Windows Server 2012
 install:
   # enable calling pip directly
-  - "set PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - pip install autobahntestsuite
+  - cmd: set
+  - cmd: set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+  - cmd: pip install autobahntestsuite
 before_build:
   - mkdir "%APPVEYOR_BUILD_FOLDER%\build"
   - cd "build"

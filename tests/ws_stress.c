@@ -40,7 +40,7 @@
 
 /*  Skips this WebSocket stress test entirely. */
 #ifndef NN_WS_ENABLE_AUTOBAHN_TEST
-    #define NN_WS_ENABLE_AUTOBAHN_TEST 1
+    #define NN_WS_ENABLE_AUTOBAHN_TEST 0
 #endif
 
 /*  Control whether performances tests are run, which may add an additional

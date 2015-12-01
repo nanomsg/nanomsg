@@ -513,17 +513,17 @@ FEATURE_TESTS = \
 
 EXTRA_DIST += tests/testutil.h
 
-# Optionally included by configure enable flag. When this test is included,
-# ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
-# as per these instructions: http://autobahn.ws/testsuite/installation.html
-if WS_AUTOBAHN_TEST
-TRANSPORT_TESTS += tests/ws_stress
-endif
-
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \
     $(PROTOCOL_TESTS) \
     $(FEATURE_TESTS)
+
+# Optionally included by configure enable flag. When this test is included,
+# ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
+# as per these instructions: http://autobahn.ws/testsuite/installation.html
+if WS_AUTOBAHN_TEST
+check_PROGRAMS += tests/ws_stress
+endif
 
 TESTS = $(check_PROGRAMS)
 

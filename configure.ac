@@ -226,14 +226,7 @@ AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 AC_ARG_ENABLE([autobahntest],
     AS_HELP_STRING([--enable-autobahntest], [WS Autobahn test [default=no]])
 )
-
-if test "x$enable_autobahntest" = "xyes"; then
-    AM_CONDITIONAL(WS_AUTOBAHN_TEST, true)
-    AC_MSG_NOTICE([Autobahn WebSocket test enabled])
-else
-    AM_CONDITIONAL(WS_AUTOBAHN_TEST, false)
-    AC_MSG_NOTICE([Autobahn WebSocket test disabled])
-fi
+AM_CONDITIONAL(WS_AUTOBAHN_TEST, test x$enable_autobahntest == xyes)
 
 ################################################################################
 #  Check which OS we are building for.                                         #

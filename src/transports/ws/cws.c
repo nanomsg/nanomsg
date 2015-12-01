@@ -519,11 +519,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 /*  If the peer has confirmed itself gone with a Closing
                     Handshake, or if the local endpoint failed the remote,
                     don't try to reconnect. */
-                if (cws->peer_gone) {
-                    /*  It is expected that the application detects this and
-                        prunes the connection with nn_shutdown. */
-                }
-                else {
+                if (!cws->peer_gone) {
                     nn_backoff_start (&cws->retry);
                     cws->state = NN_CWS_STATE_WAITING;
                 }

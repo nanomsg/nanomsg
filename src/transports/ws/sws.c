@@ -116,7 +116,7 @@ static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
 
 /*  Ceases further I/O on the underlying socket and prepares to send a
     close handshake on the next receive. */
-static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason);
+static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason);
 
 /*  Start receiving new message chunk. */
 static int nn_sws_recv_hdr (struct nn_sws *self);
@@ -754,7 +754,7 @@ static void nn_sws_acknowledge_close_handshake (struct nn_sws *self)
     return;
 }
 
-static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
+static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 {
     size_t reason_len;
     size_t payload_len;
@@ -834,7 +834,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
         nn_fsm_raise (&self->fsm, &self->done, NN_SWS_RETURN_CLOSE_HANDSHAKE);
     }
 
-    return 0;
+    return;
 }
 
 static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
@@ -871,6 +871,8 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_sws *sws;
     int rc;
+    int opt;
+    size_t opt_sz = sizeof (opt);
 
     sws = nn_cont (self, struct nn_sws, fsm);
 
@@ -1255,16 +1257,11 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         nn_assert (sws->mode == NN_WS_CLIENT);
 
                         /*  In the case of no additional header, the payload
-                            is known to not exceed this threshold. */
-                        nn_assert (sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH);
+                            is known to be within these bounds. */
+                        nn_assert (0 < sws->payload_ctl &&
+                            sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH);
 
-                        /*  In the case of no additional header, the payload
-                            is known to not exceed this threshold. */
-                        nn_assert (sws->payload_ctl > 0);
-
-                        sws->instate = NN_SWS_INSTATE_RECV_PAYLOAD;
                         sws->inmsg_current_chunk_len = sws->payload_ctl;
-
 
                         /*  Use scatter/gather array for application messages,
                             and a fixed-width buffer for control messages. This
@@ -1274,13 +1271,25 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             sws->inmsg_current_chunk_buf = sws->inmsg_control;
                         }
                         else {
-                            sws->inmsg_chunks++;
                             sws->inmsg_total_size += sws->inmsg_current_chunk_len;
+                            /*  Protect non-control messages against the
+                                NN_RCVMAXSIZE threshold; control messages already
+                                have a small pre-allocated buffer, and therefore
+                                are not subject to this limit. */
+                            nn_pipebase_getopt (&sws->pipebase, NN_SOL_SOCKET,
+                                NN_RCVMAXSIZE, &opt, &opt_sz);
+                            if (opt >= 0 && sws->inmsg_total_size > (size_t) opt) {
+                                nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_TOOBIG,
+                                    "Message larger than application allows.");
+                                return;
+                            }
+                            sws->inmsg_chunks++;
                             sws->inmsg_current_chunk_buf =
                                 nn_msg_chunk_new (sws->inmsg_current_chunk_len,
                                 &sws->inmsg_array);
                         }
-
+                        
+                        sws->instate = NN_SWS_INSTATE_RECV_PAYLOAD;
                         nn_usock_recv (sws->usock, sws->inmsg_current_chunk_buf,
                             sws->inmsg_current_chunk_len, NULL);
                         return;
@@ -1369,8 +1378,19 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         sws->inmsg_current_chunk_buf = sws->inmsg_control;
                     }
                     else {
-                        sws->inmsg_chunks++;
                         sws->inmsg_total_size += sws->inmsg_current_chunk_len;
+                        /*  Protect non-control messages against the
+                            NN_RCVMAXSIZE threshold; control messages already
+                            have a small pre-allocated buffer, and therefore
+                            are not subject to this limit. */
+                        nn_pipebase_getopt (&sws->pipebase, NN_SOL_SOCKET,
+                            NN_RCVMAXSIZE, &opt, &opt_sz);
+                        if (opt >= 0 && sws->inmsg_total_size > (size_t) opt) {
+                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_TOOBIG,
+                                "Message larger than application allows.");
+                            return;
+                        }
+                        sws->inmsg_chunks++;
                         sws->inmsg_current_chunk_buf =
                             nn_msg_chunk_new (sws->inmsg_current_chunk_len,
                             &sws->inmsg_array);

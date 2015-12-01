@@ -24,7 +24,7 @@ platform:
 configuration:
 #  - Debug
 #  - Release
-build-script:
+build:
   parallel: false
   project: ALL_BUILD.vcxproj
   verbosity: normal

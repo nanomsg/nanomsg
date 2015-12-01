@@ -3,13 +3,11 @@ sudo: required
 compiler:
 - clang
 - gcc
-env:
-- NN_WS_ENABLE_AUTOBAHN_TEST=1
 install:
 - sudo pip install autobahntestsuite
 script:
 - ./autogen.sh
-- ./configure
+- ./configure --enable-autobahntest=yes
 - make distcheck
 deploy:
   provider: releases

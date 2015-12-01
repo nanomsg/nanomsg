@@ -38,11 +38,6 @@
 /*  http://autobahn.ws/testsuite/installation.html                           */
 /*****************************************************************************/
 
-/*  Skips this WebSocket stress test entirely. */
-#ifndef NN_WS_ENABLE_AUTOBAHN_TEST
-    #define NN_WS_ENABLE_AUTOBAHN_TEST 0
-#endif
-
 /*  Control whether performances tests are run, which may add an additional
     minute or longer to the test. */
 #ifndef NN_WS_ENABLE_AUTOBAHN_PERF
@@ -392,9 +387,6 @@ int main ()
     uint8_t *recv_buf = NULL;
     struct nn_thread echo_agent;
     struct nn_thread autobahn_client;
-
-    if (!NN_WS_ENABLE_AUTOBAHN_TEST)
-        return 0;
 
     test_executive = test_socket (AF_SP, NN_PAIR);
 

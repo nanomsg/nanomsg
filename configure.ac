@@ -220,6 +220,21 @@ AS_IF([test x"$enable_tcpmuxd" != "xno"], [
 AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 
 ################################################################################
+#  Conditionally build optional tests                                          #
+################################################################################
+
+AC_ARG_ENABLE([autobahntest],
+    AS_HELP_STRING([--enable-autobahntest],
+		[WS Autobahn test [default=no]])
+)
+
+AS_IF([test x"$enable_autobahntest" = "xyes"], [
+    AC_PROG_LN_S
+])
+
+AM_CONDITIONAL([WS_AUTOBAHN_TEST], [test x"$enable_autobahntest" = "xyes"])
+
+################################################################################
 #  Check which OS we are building for.                                         #
 ################################################################################
 

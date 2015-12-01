@@ -11,9 +11,9 @@ install:
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   - cmd: pip install autobahntestsuite
 before_build:
-  - mkdir %NANOMSG_BUILD_DIR%
-  - cd %NANOMSG_BUILD_DIR%
-  - cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
+  - cmd: mkdir %NANOMSG_BUILD_DIR%
+  - cmd: cd %NANOMSG_BUILD_DIR%
+  - cmd: cmake -G "Visual Studio 12" %APPVEYOR_BUILD_FOLDER%
 platform:
   - x86
   - x64
@@ -22,7 +22,7 @@ configuration:
   - Release
 build:
   parallel: false
-  project: %NANOMSG_BUILD_DIR%\ALL_BUILD.vcxproj
+  project: "%NANOMSG_BUILD_DIR%\ALL_BUILD.vcxproj"
   verbosity: normal
 test_script:
   - cmake --build . --target RUN_TESTS --config release

@@ -627,7 +627,5 @@ diagrams:
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
 
 clean-local:
-    -rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
-
-distclean-local:
+    -rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc && \
     -rm -rf autobahnreports

@@ -12,8 +12,11 @@ environment:
       CFG: Debug
     - GENERATOR: Visual Studio 12 2013
       CFG: Debug
+    - GENERATOR: Visual Studio 12 2013
+      CFG: Release
 cache:
   - "%LocalAppData%\\pip"
+  - "C:\\Python27\\Lib\\site-packages"
 install:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%

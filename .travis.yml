@@ -3,6 +3,9 @@ sudo: required
 compiler:
 - clang
 - gcc
+cache:
+  directories:
+    - $HOME/.cache/pip
 install:
 # Until https://github.com/crossbario/autobahn-testsuite/pull/54 is merged...
 - git clone https://github.com/wirebirdlabs/autobahn-testsuite pip-tmp

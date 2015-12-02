@@ -111,7 +111,7 @@ add_libnanomsg_test (ws_async_shutdown 5)
 
 # Optional tests.
 if ($ENV{ENABLE_WS_AUTOBAHN_TEST})
-    add_libnanomsg_test (ws_stress 45)
+    add_libnanomsg_test (ws_stress 60)
 else ()
     message (STATUS "Autobahn TestSuite for WebSocket is disabled." )
 endif ()

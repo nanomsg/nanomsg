@@ -628,4 +628,4 @@ diagrams:
 
 clean-local:
 	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc && \
-	-rm -rf autobahnreports
+        rm -rf autobahnreports

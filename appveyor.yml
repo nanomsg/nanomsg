@@ -3,9 +3,7 @@ branches:
   except:
     - gh-pages
 skip_tags: true
-os: Windows Server 2012
 environment:
-  NANOMSG_BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\\build"
   ENABLE_WS_AUTOBAHN_TEST: true
   matrix:
     - GENERATOR: Visual Studio 14 2015
@@ -13,6 +11,8 @@ environment:
     - GENERATOR: Visual Studio 12 2013
       CFG: Debug
     - GENERATOR: Visual Studio 14 2015 Win64
+      CFG: Debug
+    - GENERATOR: Visual Studio 12 2013 Win64
       CFG: Debug
 cache:
   - "%LocalAppData%\\pip"
@@ -24,17 +24,10 @@ install:
   - cmd: pip install unittest2
   - cmd: wstest --autobahnversion
   - cmd: cmake --version
-before_build:
-  - cmd: mkdir %NANOMSG_BUILD_DIR%
-  - cmd: cd %NANOMSG_BUILD_DIR%
-  - cmd: cmake -G "%GENERATOR%" "%APPVEYOR_BUILD_FOLDER%"
-#platform:
-#  - x86
-#  - x64
-#configuration:
-#  - Debug
-#  - Release
 build_script:
+  - cmd: md builds
+  - cmd: cd builds
+  - cmd: cmake -G "%GENERATOR%" ..
   - cmd: cmake --build .
 test_script:
   - cmd: ctest --output-on-failure -C "%CFG%"

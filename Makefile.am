@@ -521,7 +521,7 @@ EXTRA_DIST += tests/testutil.h
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
     OPTIONAL_TESTS += tests/ws_stress
-    CLEANFILES += fuzzingclient.json fuzzingserver.json
+    CLEANFILES += fuzzingclient.json fuzzingserver.json autobahnreports/
 endif
 
 check_PROGRAMS = \

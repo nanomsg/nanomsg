@@ -4,8 +4,11 @@ compiler:
 - clang
 - gcc
 install:
-- sudo pip install autobahntestsuite
-- sudo pip install unittest2
+# Until https://github.com/crossbario/autobahn-testsuite/pull/54 is merged...
+- git clone https://github.com/wirebirdlabs/autobahn-testsuite pip-tmp
+- sudo pip install --force-reinstall pip-tmp/autobahntestsuite
+# ... but after that PR is merged upstream, the following line is all that should be required.
+#- sudo pip install autobahntestsuite
 script:
 - ./autogen.sh
 - ./configure --enable-autobahntest=yes

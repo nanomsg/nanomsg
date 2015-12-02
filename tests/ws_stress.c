@@ -240,42 +240,27 @@ static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
     return;
 }
 
-static void nn_ws_kill_autobahn (NN_UNUSED void)
-{
-    int rc;
-
-#if defined NN_HAVE_WINDOWS
-    rc = system ("taskkill /IM wstest.exe");
-#else
-    /*  Disabling for now, since Travis CI environment fails here with a
-        permissions error. By not shutting down here, the server is left
-        running until the CI environment is finished and ceases to be. This
-        is inelegant, but works. For those of you building from source, it
-        should be safe to kill the process manually once tests are complete. */
-    #ifdef THANKS_FOR_FINDING_A_BETTER_SOLUTION_HERE
-        rc = system ("pkill Python"); */
-    #else
-        rc = 0;
-    #endif
-#endif
-    nn_assert (rc == 0);
-}
-
-static int nn_autobahn_conn (int s, const char *method, int case_number)
+static int nn_autobahn_test_case (int s, const char *method, int case_number)
 {
     char addr [128];
     int ep;
 
     memset (addr, 0, sizeof (addr));
+    sprintf (addr, "%s/%s?agent=nanomsg&case=%d", FUZZING_SERVER_ADDRESS,
+        method, case_number);
 
-    if (case_number > 0) {
-        sprintf (addr, "%s/%s?agent=nanomsg&case=%d", FUZZING_SERVER_ADDRESS,
-            method, case_number);
-    }
-    else {
-        sprintf (addr, "%s/%s?agent=nanomsg", FUZZING_SERVER_ADDRESS,
-            method);
-    }
+    ep = test_connect (s, addr);
+
+    return ep;
+}
+
+static int nn_autobahn_request (int s, const char *uri_path)
+{
+    char addr [128];
+    int ep;
+
+    memset (addr, 0, sizeof (addr));
+    sprintf (addr, "%s/%s", FUZZING_SERVER_ADDRESS, uri_path);
 
     ep = test_connect (s, addr);
 
@@ -413,8 +398,7 @@ int main ()
     /*  We expect nominally three ASCII digits [0-9] representing total
         number of cases to run as of Autobahn TestSuite v0.7.2, but anything
         between 1-4 digits is accepted. */
-    printf ("Fetching cases...\n");
-    test_executive_ep = nn_autobahn_conn (test_executive, "getCaseCount", -1);
+    test_executive_ep = nn_autobahn_request (test_executive, "getCaseCount");
     rc = nn_ws_recv (test_executive, &recv_buf, NN_MSG, &ws_msg_type, 0);
     errno_assert (1 <= rc && rc <= 4);
     nn_assert (ws_msg_type == NN_WS_MSG_TYPE_TEXT);
@@ -441,7 +425,7 @@ int main ()
     /*  Autobahn test cases are 1-indexed, not 0-indexed. */
     for (i = 1; i <= cases; i++) {
         /*  Register the Test Executive to listen for result from Autobahn. */
-        test_executive_ep = nn_autobahn_conn (test_executive, "getCaseStatus", i);
+        test_executive_ep = nn_autobahn_test_case (test_executive, "getCaseStatus", i);
 
         /*  Prepare the echo client for Autobahn Fuzzing Server test case. */
         client_under_test = test_socket (AF_SP, NN_PAIR);
@@ -451,7 +435,7 @@ int main ()
         nn_thread_init (&echo_agent, nn_ws_test_agent, &client_under_test);
 
         /*  Launch test case on Autobahn Fuzzing Server. */
-        client_under_test_ep = nn_autobahn_conn (client_under_test, "runCase", i);
+        client_under_test_ep = nn_autobahn_test_case (client_under_test, "runCase", i);
 
         /*  Wait for Autobahn Server to notify test case is complete. */
         rc = nn_ws_recv (test_executive, &recv_buf, NN_MSG, &ws_msg_type, 0);
@@ -482,10 +466,9 @@ int main ()
             "Failures: %d\n",
             passes, failures);
 
-    /*  Notify Autobahn it's time to create reports. There's not a good way
-        to synchronously determine if the reports are finished, so begin client
-        test and shut down the Autobahn fuzzing server afterward. */
-    test_executive_ep = nn_autobahn_conn (test_executive, "updateReports", -1);
+    /*  Notify Autobahn it's time to create reports and shut down. */
+    test_executive_ep = nn_autobahn_request (test_executive,
+        "updateReports?agent=nanomsg&shutdownOnComplete=yes");
 
     nn_assert (failures == 0);
 
@@ -507,7 +490,6 @@ int main ()
     nn_thread_term (&echo_agent);
     
     /*  The client testing is expected to have output all reports by now. */
-    nn_ws_kill_autobahn ();
     test_shutdown (test_executive, test_executive_ep);
     test_close (test_executive);
 

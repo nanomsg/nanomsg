@@ -21,6 +21,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DISTCLEANFILES = @DOLT_CLEANFILES@
+CLEANFILES =
 
 EXTRA_DIST =
 
@@ -438,7 +439,7 @@ html_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 
-CLEANFILES = $(MAN1:%.txt=%.1) $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
+CLEANFILES += $(MAN1:%.txt=%.1) $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
     $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 endif
@@ -519,8 +520,8 @@ EXTRA_DIST += tests/testutil.h
 # ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
-OPTIONAL_TESTS += tests/ws_stress
-CLEANFILES += fuzzingclient.json fuzzingserver.json
+    OPTIONAL_TESTS += tests/ws_stress
+    CLEANFILES += fuzzingclient.json fuzzingserver.json
 endif
 
 check_PROGRAMS = \

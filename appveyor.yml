@@ -1,11 +1,7 @@
 version: 0.8.{build}
-branches:
-  except:
-    - gh-pages
-skip_tags: true
 environment:
-  ENABLE_WS_AUTOBAHN_TEST: true
   matrix:
+    # array of all environments used to test builds
     - GENERATOR: Visual Studio 14 2015
       CFG: Debug
     - GENERATOR: Visual Studio 12 2013
@@ -17,17 +13,18 @@ environment:
 cache:
   - "%LocalAppData%\\pip"
   - "C:\\Python27\\Lib\\site-packages"
-install:
+build:
+  parallel: true
+build_script:
   # enable calling pip directly
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   - cmd: pip install autobahntestsuite
   - cmd: pip install unittest2
   - cmd: wstest --autobahnversion
   - cmd: cmake --version
-build_script:
   - cmd: md builds
   - cmd: cd builds
-  - cmd: cmake -G "%GENERATOR%" ..
+  - cmd: cmake -G "%GENERATOR%" -DWS_AUTOBAHN_TESTS=ON ..
   - cmd: cmake --build .
 test_script:
   - cmd: ctest --output-on-failure -C "%CFG%"

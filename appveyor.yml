@@ -20,7 +20,7 @@ build_script:
   - cmd: set PATH=%SystemDrive%\Python27\Scripts;%PATH%
   # Until https://github.com/crossbario/autobahn-testsuite/pull/54 is merged...
   - cmd: git clone https://github.com/wirebirdlabs/autobahn-testsuite pip-tmp
-  - cmd: pip install --force-reinstall pip-tmp/autobahntestsuite
+  - cmd: pip install --force-reinstall ./pip-tmp/autobahntestsuite
   # ... but after that PR is merged upstream, the following line is all that should be required.
   #- cmd: pip install autobahntestsuite
   - cmd: wstest --autobahnversion

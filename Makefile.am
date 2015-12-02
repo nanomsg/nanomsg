@@ -519,8 +519,8 @@ EXTRA_DIST += tests/testutil.h
 # ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
-    OPTIONAL_TESTS += tests/ws_stress
-    CLEANFILES += fuzzingclient.json fuzzingserver.json
+OPTIONAL_TESTS += tests/ws_stress
+CLEANFILES += fuzzingclient.json fuzzingserver.json
 endif
 
 check_PROGRAMS = \

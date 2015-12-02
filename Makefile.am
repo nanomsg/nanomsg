@@ -521,7 +521,7 @@ EXTRA_DIST += tests/testutil.h
 # as per these instructions: http://autobahn.ws/testsuite/installation.html
 if WS_AUTOBAHN_TEST
     OPTIONAL_TESTS += tests/ws_stress
-    CLEANFILES += fuzzingclient.json fuzzingserver.json autobahnreports/* autobahnreports.dir
+    CLEANFILES += fuzzingclient.json fuzzingserver.json
 endif
 
 check_PROGRAMS = \
@@ -627,4 +627,7 @@ diagrams:
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
 
 clean-local:
-	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
+    -rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
+
+distclean-local:
+    -rm -rf autobahnreports

@@ -220,6 +220,16 @@ AS_IF([test x"$enable_tcpmuxd" != "xno"], [
 AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
 
 ################################################################################
+#  Conditionally build optional tests                                          #
+################################################################################
+
+AC_ARG_ENABLE([autobahntest],
+    AS_HELP_STRING([--enable-autobahntest], [WS Autobahn test [default=no]])
+)
+# Inverted logic, since test returns 0 on true
+AM_CONDITIONAL(WS_AUTOBAHN_TEST, [test "x$enable_autobahntest" != "xyes"])
+
+################################################################################
 #  Check which OS we are building for.                                         #
 ################################################################################
 
@@ -380,4 +390,3 @@ AC_OUTPUT([
 Makefile
 libnanomsg.pc
 ])
-

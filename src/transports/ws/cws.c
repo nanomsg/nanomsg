@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2015 Wirebird Labs LLC. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -519,11 +519,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 /*  If the peer has confirmed itself gone with a Closing
                     Handshake, or if the local endpoint failed the remote,
                     don't try to reconnect. */
-                if (cws->peer_gone) {
-                    /*  It is expected that the application detects this and
-                        prunes the connection with nn_shutdown. */
-                }
-                else {
+                if (!cws->peer_gone) {
                     nn_backoff_start (&cws->retry);
                     cws->state = NN_CWS_STATE_WAITING;
                 }
@@ -674,7 +670,11 @@ static void nn_cws_start_connecting (struct nn_cws *self,
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc != 0)) {
+        nn_backoff_start (&self->retry);
+        self->state = NN_CWS_STATE_WAITING;
+        return;
+    }
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);

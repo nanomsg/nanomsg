@@ -1,5 +1,4 @@
 language: c
-sudo: required
 compiler:
 - clang
 - gcc
@@ -9,7 +8,7 @@ cache:
 install:
 # Until https://github.com/crossbario/autobahn-testsuite/pull/54 is merged...
 - git clone https://github.com/wirebirdlabs/autobahn-testsuite pip-tmp
-- pip install --force-reinstall pip-tmp/autobahntestsuite
+- pip install --user --force-reinstall pip-tmp/autobahntestsuite
 # ... but after that PR is merged upstream, the following line is all that should be required.
 #- sudo pip install autobahntestsuite
 script:

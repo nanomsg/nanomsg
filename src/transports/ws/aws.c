@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2015 Wirebird Labs LLC. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -313,7 +313,8 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_SHUTDOWN:
                 return;
             case NN_USOCK_STOPPED:
-                nn_aws_stop (aws);
+                nn_fsm_raise (&aws->fsm, &aws->done, NN_AWS_ERROR);
+                aws->state = NN_AWS_STATE_DONE;
                 return;
             default:
                 nn_fsm_bad_action (aws->state, src, type);

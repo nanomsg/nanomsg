@@ -259,7 +259,9 @@ invalidhdr:
         switch (src) {
 
         case NN_STREAMHDR_SRC_USOCK:
-            /*  It's safe to ignore usock event when we are stopping  */
+            /*  It's safe to ignore usock event when we are stopping, but there
+                is only a subset of events that are plausible. */
+            nn_assert (type == NN_USOCK_ERROR);
             return;
 
         case NN_STREAMHDR_SRC_TIMER:
@@ -286,6 +288,12 @@ invalidhdr:
 /******************************************************************************/
     case NN_STREAMHDR_STATE_STOPPING_TIMER_DONE:
         switch (src) {
+
+        case NN_STREAMHDR_SRC_USOCK:
+            /*  It's safe to ignore usock event when we are stopping, but there
+                is only a subset of events that are plausible. */
+            nn_assert (type == NN_USOCK_ERROR);
+            return;
 
         case NN_STREAMHDR_SRC_TIMER:
             switch (type) {

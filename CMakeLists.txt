@@ -29,6 +29,10 @@ include (CheckCSourceCompiles)
 project (nanomsg C)
 enable_testing ()
 
+# User-defined options.
+
+option (WS_AUTOBAHN_TESTS "Enable Autobahn TestSuite test for WebSocket transport. Required: http://autobahn.ws/testsuite/installation.html" OFF)
+
 #  Platform checks.
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -108,6 +112,14 @@ add_libnanomsg_test (shutdown 5)
 add_libnanomsg_test (cmsg 5)
 add_libnanomsg_test (bug328 5)
 add_libnanomsg_test (ws_async_shutdown 5)
+
+# Optional tests.
+if (WS_AUTOBAHN_TESTS)
+    add_libnanomsg_test (ws_stress 60)
+    message (STATUS "Autobahn TestSuite for WebSocket is enabled." )
+else ()
+    message (STATUS "Autobahn TestSuite for WebSocket is disabled." )
+endif ()
 
 #  Build the performance tests.
 

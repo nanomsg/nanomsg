@@ -21,8 +21,8 @@ build_script:
   - cmd: pip install autobahntestsuite
   - cmd: wstest --autobahnversion
   - cmd: cmake --version
-  - cmd: md builds
-  - cmd: cd builds
+  - cmd: md build
+  - cmd: cd build
   - cmd: cmake -G "%GENERATOR%" -DWS_AUTOBAHN_TESTS=ON ..
   - cmd: cmake --build .
 test_script:

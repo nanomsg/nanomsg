@@ -21,6 +21,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 DISTCLEANFILES = @DOLT_CLEANFILES@
+CLEANFILES =
 
 EXTRA_DIST =
 
@@ -438,7 +439,7 @@ html_DATA = $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 #  Extra files to be cleaned.
 
-CLEANFILES = $(MAN1:%.txt=%.1) $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
+CLEANFILES += $(MAN1:%.txt=%.1) $(MAN3:%.txt=%.3) $(MAN7:%.txt=%.7) \
     $(MAN1:%.txt=%.1.html) $(MAN3:%.txt=%.3.html) $(MAN7:%.txt=%.7.html)
 
 endif
@@ -508,17 +509,28 @@ FEATURE_TESTS = \
     tests/zerocopy \
     tests/shutdown \
     tests/cmsg \
-    tests/bug328
+    tests/bug328 \
+    tests/ws_async_shutdown
+
+    OPTIONAL_TESTS =
 
 EXTRA_DIST += tests/testutil.h
+
+# Optionally included by configure enable flag. When this test is included,
+# ensure the build system has installed Autobahn TestSuite v0.7.2 or higher
+# as per these instructions: http://autobahn.ws/testsuite/installation.html
+if WS_AUTOBAHN_TEST
+    OPTIONAL_TESTS += tests/ws_stress
+    CLEANFILES += fuzzingclient.json fuzzingserver.json
+endif
 
 check_PROGRAMS = \
     $(TRANSPORT_TESTS) \
     $(PROTOCOL_TESTS) \
-    $(FEATURE_TESTS)
+    $(FEATURE_TESTS) \
+    $(OPTIONAL_TESTS)
 
 TESTS = $(check_PROGRAMS)
-
 
 ################################################################################
 #  tools                                                                       #
@@ -615,5 +627,5 @@ diagrams:
 			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
 
 clean-local:
-	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
-
+	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc && \
+        rm -rf autobahnreports

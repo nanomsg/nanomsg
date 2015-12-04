@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2015 Wirebird Labs LLC. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -47,9 +47,6 @@ void test_text() {
     sb = test_socket (AF_SP, NN_PAIR);
     sc = test_socket (AF_SP, NN_PAIR);
 
-    /*  Wait for connects to establish. */
-    nn_sleep (200);
-
     opt = NN_WS_MSG_TYPE_TEXT;
     test_setsockopt(sb, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
     opt = NN_WS_MSG_TYPE_TEXT;
@@ -70,6 +67,11 @@ void test_text() {
 
     /*  Make sure we dropped the frame. */
     test_drop (sb, ETIMEDOUT);
+
+    test_close (sb);
+    test_close (sc);
+
+    return;
 }
 
 int main ()
@@ -77,6 +79,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int sb2;
     int opt;
     size_t sz;
     int i;
@@ -101,16 +104,10 @@ int main ()
     errno_assert (rc == 0);
     nn_assert (sz == sizeof (opt));
     nn_assert (opt == NN_WS_MSG_TYPE_BINARY);
-
-#if 0
-    //opt = 100;
-    //sz = sizeof (opt);
-    //rc = nn_getsockopt (sc, NN_WS, NN_WS_HANDSHAKE_TIMEOUT, &opt, &sz);
-    //errno_assert (rc == 0);
-    //nn_assert (sz == sizeof (opt));
-    //nn_assert (opt == 100);
-#endif
-
+    opt = NN_WS_MSG_TYPE_TEXT;
+    sz = sizeof (opt);
+    test_setsockopt (sc, NN_WS, NN_WS_MSG_TYPE, &opt, sz);
+    
     /*  Default port 80 should be assumed if not explicitly declared. */
     rc = nn_connect (sc, "ws://127.0.0.1");
     errno_assert (rc >= 0);
@@ -162,15 +159,10 @@ int main ()
 
     test_close (sc);
 
-    nn_sleep (200);
-
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
-
-    /*  Leave enough time for connection establishment. */
-    nn_sleep (200);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
@@ -193,7 +185,71 @@ int main ()
     test_close (sc);
     test_close (sb);
 
+    /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
+    sb = test_socket (AF_SP, NN_PAIR);
+    opt = -1;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc >= 0);
+    opt = -2;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    test_close (sb);
+
+    /*  Test NN_RCVMAXSIZE limit */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    opt = 100;
+    test_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &opt, sizeof (opt));
+    opt = 100;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
+    nn_sleep (100);
+    opt = 4;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_send (sc, "ABCD");
+    test_recv (sb, "ABCD");
+    test_send (sc, "ABCDE");
+    test_drop (sb, ETIMEDOUT);
+
+    /*  Increase the size limit, then try sending again. Though, this first
+        send after violating the protocol is expected to fail, since the peer
+        failed the connection. In this scenario, the failed socket does not
+        begin reconnection attempts. */
+    opt = 5;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    rc = nn_send (sc, "ABCDE", 5, 0);
+    nn_assert (rc < 0);
+    errno_assert (nn_err_errno () == ETIMEDOUT);
+
+    /*  Reconnect and expect success this time. */
+    test_connect (sc, SOCKET_ADDRESS);
+    test_send (sc, "ABCDE");
+    test_recv (sb, "ABCDE");
+    test_close (sb);
+    test_close (sc);
+
     test_text ();
+
+    /*  Test closing a socket that is waiting to bind. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    nn_sleep (100);
+    sb2 = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb2, SOCKET_ADDRESS);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    nn_sleep (100);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb2);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb);
+    test_close (sc);
 
     return 0;
 }

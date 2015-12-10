@@ -16,17 +16,17 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Starts a device to forward messages between two sockets. If both sockets are
-valid, _nn_device_ function loops and sends and messages received from 's1' to
+valid, _nn_device_ function loops and sends any messages received from 's1' to
 's2' and vice versa. If only one socket is valid and the other is negative,
 _nn_device_ works in a "loopback" mode -- it loops and sends any messages
 received from the socket back to itself.
 
-To break the loop and make _nn_device_ function exit use
+To break the loop and make _nn_device_ function exit use the
 linknanomsg:nn_term[3] function.
 
 RETURN VALUE
 ------------
-The function loops until it hits an error. In such case it returns -1
+The function loops until it hits an error. In such a case it returns -1
 and sets 'errno' to one of the values defined below.
 
 ERRORS

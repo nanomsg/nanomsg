@@ -41,8 +41,8 @@ struct nn_symbol_properties {
 };
 ----
 
-More structure members may be added in future, but input pointer will be
-written only up to 'buflen' so ABI is forward-compatible.
+More structure members may be added in future, but the input pointer will be
+written only up to 'buflen' so the ABI is forward-compatible.
 
 Typically a client will iterate through the symbols until nn_symbol_info
 returns NULL in order to collect all the symbols.
@@ -50,7 +50,7 @@ returns NULL in order to collect all the symbols.
 All symbols exposed by 'nn_symbol_info' are available directly in the C API,
 generally as preprocessor macros.  Thus, this function is useful mostly for
 language bindings that can't parse the header file and rely on retrieving the
-symbols in the runtime.
+symbols at runtime.
 
 Note that the NN_MSG symbol is not exported by the 'nn_symbol_info' function.
 First, it is a pointer rather than an integer; second, the symbol is not
@@ -97,8 +97,8 @@ The integer type
 *NN_TYPE_STR*::
 String (char *) type
 
-More types may be added in future nanomsg. You may enumerate all of them using
-the 'nn_symbol_info' itself by checking 'NN_NS_OPTION_TYPE' namespace.
+More types may be added in the future to nanomsg. You may enumerate all of them
+using the 'nn_symbol_info' itself by checking 'NN_NS_OPTION_TYPE' namespace.
 
 AVAILABLE OPTION UNITS
 ----------------------
@@ -114,8 +114,8 @@ The option value is a priority, an integer from 1 to 16
 *NN_UNIT_BOOLEAN*::
 The option value is boolean, an integer 0 or 1
 
-More types may be added in future nanomsg. You may enumerate all of them using
-the 'nn_symbol_info' itself by checking 'NN_NS_OPTION_TYPE' namespace.
+More types may be added in the future to nanomsg. You may enumerate all of them
+using the 'nn_symbol_info' itself by checking 'NN_NS_OPTION_TYPE' namespace.
 
 
 RETURN VALUE

@@ -44,7 +44,7 @@ query parameters that may be supplied to `nn_bind()`, as it only binds to
 the TCP port.  This implementation acts as a limited HTTP server that offers
 SP over WebSocket at all URIs for the given TCP address.
 
-Applications should not however depends on this behavior; intervening
+Applications, however, should not depend on this behavior; intervening
 infrastructure may proxy, filter or route based on URI, and other
 implementations of the SP over WebSocket protocol may offer other
 HTTP services at the same TCP port, utilizing the path, query parameters,

@@ -22,7 +22,7 @@ sockets that have subscribed to the matching 'topic'. Topic is an arbitrary
 sequence of bytes at the beginning of the message body. The NN_SUB socket will
 determine whether a message should be delivered to the user by comparing the
 subscribed topics (using NN_SUB_SUBSCRIBE on a full SUB socket) to the bytes
-initial bytes in the incomming message, up to the size of the topic.
+initial bytes in the incoming message, up to the size of the topic.
 
 ----
 nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "Hello", 5);

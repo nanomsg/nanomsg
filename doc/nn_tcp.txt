@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-TCP transport allows for passing message over the network using simple reliable
+TCP transport allows for passing messages over the network using simple reliable
 one-to-one connections. TCP is the most widely used transport protocol, it is
 virtually ubiquitous and thus the transport of choice for communication over
 the network.

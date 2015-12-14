@@ -698,7 +698,7 @@ static void nn_sws_acknowledge_close_handshake (struct nn_sws *self)
 
     /*  Peer did not provide a Close Code, so choose our own here. */
     if (len == 0) {
-        nn_sws_fail_conn (self, NN_SWS_CLOSE_NORMAL, "Farewell. <3 nanomsg");
+        nn_sws_fail_conn (self, NN_SWS_CLOSE_NORMAL, "");
         return;
     }
 
@@ -743,8 +743,7 @@ static void nn_sws_acknowledge_close_handshake (struct nn_sws *self)
         (close_code >= 3000 && close_code <= 3999) ||
         (close_code >= 4000 && close_code <= 4999)) {
         /*  Repeat close code, per RFC 6455 7.4.1 and 7.4.2 */
-        nn_sws_fail_conn (self, (int) close_code,
-            "Farewell. <3 nanomsg");
+        nn_sws_fail_conn (self, (int) close_code, "");
     }
     else {
         nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,

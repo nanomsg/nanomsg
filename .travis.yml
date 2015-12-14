@@ -3,9 +3,14 @@ sudo: false
 compiler:
 - clang
 - gcc
+cache:
+  directories:
+    - $HOME/.cache/pip
+install:
+- pip install --user autobahntestsuite
 script:
 - ./autogen.sh
-- ./configure
+- ./configure --enable-autobahntest=yes
 - make distcheck
 deploy:
   provider: releases

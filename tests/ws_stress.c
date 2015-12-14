@@ -141,7 +141,7 @@ static int nn_ws_recv (int s, void *msg, size_t len, uint8_t *msg_type, int flag
     return rc;
 }
 
-static void nn_ws_launch_fuzzing_client (NN_UNUSED void *args)
+static void nn_ws_fuzzing_client (NN_UNUSED void *args)
 {
     FILE *fd;
     int rc;
@@ -170,25 +170,17 @@ static void nn_ws_launch_fuzzing_client (NN_UNUSED void *args)
     rc = fclose (fd);
     errno_assert (rc == 0);
 
-#if defined NN_HAVE_WINDOWS
     rc = system (
         "wstest"
         NN_WS_DEBUG_AUTOBAHN_FLAG
         " --mode=fuzzingclient "
         " --spec=fuzzingclient.json");
-#else
-    rc = system (
-        "wstest"
-        NN_WS_DEBUG_AUTOBAHN_FLAG
-        " --mode=fuzzingclient"
-        " --spec=fuzzingclient.json");
-#endif
     errno_assert (rc == 0);
 
     return;
 }
 
-static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
+static void nn_ws_fuzzing_server (NN_UNUSED void)
 {
     FILE *fd;
     int rc;
@@ -212,30 +204,13 @@ static void nn_ws_launch_fuzzing_server (NN_UNUSED void)
     rc = fclose (fd);
     errno_assert (rc == 0);
 
-    /*  The following call launches a fuzzing server in an async
-        process, assuming Autobahn Testsuite is fully installed
-        as per http://autobahn.ws/testsuite/installation.html */
-
-#if defined NN_HAVE_WINDOWS
-    rc = system (
-        "start wstest"
-        NN_WS_DEBUG_AUTOBAHN_FLAG
-        " --mode=fuzzingserver"
-        " --spec=fuzzingserver.json"
-        " --webport=0");
-#else
     rc = system (
         "wstest"
         NN_WS_DEBUG_AUTOBAHN_FLAG
         " --mode=fuzzingserver"
         " --spec=fuzzingserver.json"
-        " --webport=0 &");
-#endif
+        " --webport=0");
     errno_assert (rc == 0);
-
-    /*  Allow the server some time to initialize; else, the initial
-        connections to it will fail. */
-    nn_sleep (3000);
 
     return;
 }
@@ -379,8 +354,9 @@ int main ()
     int failures;
     uint8_t ws_msg_type;
     uint8_t *recv_buf = NULL;
-    struct nn_thread echo_agent;
+    struct nn_thread autobahn_server;
     struct nn_thread autobahn_client;
+    struct nn_thread echo_agent;
 
     test_executive = test_socket (AF_SP, NN_PAIR);
 
@@ -390,10 +366,14 @@ int main ()
         sizeof (msg_type));
 
     /*  The first receive could take a few seconds while Autobahn loads. */
-    nn_ws_launch_fuzzing_server ();
+    nn_thread_init (&autobahn_server, nn_ws_fuzzing_server, NULL);
     timeo = 10000;
     test_setsockopt (test_executive, NN_SOL_SOCKET, NN_RCVTIMEO, &timeo,
         sizeof (timeo));
+
+    /*  Allow the server some time to initialize; else, the initial
+        connections to it will fail. */
+    nn_sleep (3000);
 
     /*  We expect nominally three ASCII digits [0-9] representing total
         number of cases to run as of Autobahn TestSuite v0.7.2, but anything
@@ -482,7 +462,7 @@ int main ()
     sz = sizeof (opt);
     test_setsockopt (server_under_test, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sz);
     server_under_test_ep = test_bind (server_under_test, FUZZING_CLIENT_ADDRESS);
-    nn_thread_init (&autobahn_client, nn_ws_launch_fuzzing_client, NULL);
+    nn_thread_init (&autobahn_client, nn_ws_fuzzing_client, NULL);
     nn_thread_init (&echo_agent, nn_ws_test_agent, &server_under_test);
     nn_thread_term (&autobahn_client);
     test_shutdown (server_under_test, server_under_test_ep);
@@ -492,6 +472,7 @@ int main ()
     /*  The client testing is expected to have output all reports by now. */
     test_shutdown (test_executive, test_executive_ep);
     test_close (test_executive);
+    nn_thread_term (&autobahn_server);
 
     return 0;
 }

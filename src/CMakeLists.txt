@@ -82,6 +82,8 @@ set (NN_SOURCES
     utils/err.c
     utils/fast.h
     utils/fd.h
+    utils/fork.c
+    utils/fork.h
     utils/glock.h
     utils/glock.c
     utils/hash.h

@@ -270,6 +270,8 @@ if (NN_TESTS)
     # Platform-specific tests
     if (WIN32)
         add_libnanomsg_test (win_sec_attr 5)
+    else ()
+        add_libnanomsg_test (fork 5)
     endif()
 
     #  Build the performance tests.

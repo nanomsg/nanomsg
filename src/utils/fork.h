@@ -1,5 +1,4 @@
 /*
-    Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,17 +20,20 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_GLOBAL_INCLUDED
-#define NN_GLOBAL_INCLUDED
+#ifndef NN_FORK_INCLUDED
+#define NN_FORK_INCLUDED
 
-/*  Provides access to the list of available transports. */
-struct nn_transport *nn_global_transport (int id);
+#include "../nn.h"
 
-/*  Returns the global worker thread pool. */
-struct nn_pool *nn_global_getpool ();
-int nn_global_print_errors();
+struct nn_fork_strategy {
+    void (*prefork_fn)(void);
+    void (*postfork_parent_fn)(void);
+    void (*postfork_child_fn)(void);
+};
 
-/* Force clean up nanomsg after a fork, when everything is broken. */
-int nn_global_postfork_cleanup ();
+extern struct nn_fork_strategy nn_fork_strategies[NN_FORK_MAX_];
+extern struct nn_fork_strategy *nn_fork_strategy;
 
-#endif
+int nn_setup_atfork_handlers(void);
+
+#endif /* !NN_FORK_INCLUDED */

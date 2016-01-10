@@ -34,6 +34,8 @@ The provided socket is invalid.
 *EINTR*::
 Operation was interrupted by a signal. The socket is not fully closed yet.
 Operation can be re-started by calling _nn_close()_ again.
+*ETERM*::
+The library is not initialized or is terminating.
 
 
 EXAMPLE

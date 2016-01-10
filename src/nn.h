@@ -359,6 +359,7 @@ NN_EXPORT int nn_setsockopt (int s, int level, int option, const void *optval,
     size_t optvallen);
 NN_EXPORT int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen);
+NN_EXPORT int nn_setopt (int option, const void *optval, size_t optvallen);
 NN_EXPORT int nn_bind (int s, const char *addr);
 NN_EXPORT int nn_connect (int s, const char *addr);
 NN_EXPORT int nn_shutdown (int s, int how);

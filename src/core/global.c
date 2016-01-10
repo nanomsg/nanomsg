@@ -1156,3 +1156,13 @@ void nn_global_rele_socket(struct nn_sock *sock)
     nn_sock_rele(sock);
     nn_glock_unlock();
 }
+
+int nn_setopt (int option, const void *optval, size_t optvallen)
+{
+    switch (option) {
+    default:
+        errno = ENOPROTOOPT;
+        break;
+    }
+    return -1;
+}

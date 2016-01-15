@@ -93,7 +93,7 @@ int main ()
     sec.nLength = sizeof(sec);
     sec.bInheritHandle = TRUE;
 
-    ret3 = nn_setsockopt (sb, NN_IPC, NN_IPC_SEC_ATTR, (void*)&sec, sizeof(&sec));
+    ret3 = nn_setsockopt (sb, NN_IPC, NN_IPC_SEC_ATTR, (void*)&sec, sizeof(sec));
     nn_assert (ret3 == 0);
     test_bind (sb, SOCKET_ADDRESS);
 

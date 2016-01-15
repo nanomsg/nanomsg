@@ -93,7 +93,7 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
     /* NamedPipe-related stuff. */
     memset (&self->pipename, 0, sizeof (self->pipename));
     self->pipesendbuf = NULL;
-    memset (&self->sec_attr, 0, sizeof (SECURITY_ATTRIBUTES));
+    memset (self->sec_attr, 0, sizeof (*self->sec_attr));
 
     /* default size for both in and out buffers is 4096 */
     self->outbuffersz = 4096;

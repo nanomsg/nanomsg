@@ -3,9 +3,9 @@
 
 
 Internet Engineering Task Force                          G. D'Amore, Ed.
-Internet-Draft                                            March 18, 2015
+Internet-Draft                                                March 2015
 Intended status: Informational
-Expires: September 19, 2015
+Expires: September 2, 2015
 
 
                 Surveyor/Respondent Scalability Protocol
@@ -34,7 +34,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on September 19, 2015.
+   This Internet-Draft will expire on September 2, 2015.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-D'Amore                Expires September 19, 2015               [Page 1]
+D'Amore                 Expires September 2, 2015               [Page 1]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -89,12 +89,12 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    members to raise their hands if they like the color red.  The act of
    raising one's hand can be thought of as responding.
 
-   As a consequence, taken generally, the surveyor should not infer any
-   thing about parties it doesn't get a response from.  Perhaps the
+   As a consequence, taken generally, the surveyor should not infer
+   anything about parties it doesn't get a response from.  Perhaps the
    respondent simply didn't hear the question, or perhaps she declines
    to self-identify.
 
-   This measn that surveying should be thought of as a best-effort
+   This means that surveying should be thought of as a best-effort
    service.  Applications which need more resilience may repeat their
    inquiries.  It is common in other networking protocols to do so
    periodically, and only "expire" the response from a peer that is non-
@@ -109,7 +109,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 2]
+D'Amore                 Expires September 2, 2015               [Page 2]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -123,7 +123,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    conveying this kind of information in network protocols.)
 
    In all cases the act of surveying and replying can be thought of as
-   state-less.  In otherwords, a given response should not depend upon
+   stateless.  In other words, a given response should not depend upon
    the content of any prior surveys.  Ideally, because of the best-
    effort nature of this, it is also beneficial if surveying is itself
    idempotent, i.e. the act of responding to a survey should not itself
@@ -156,16 +156,16 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    The surveyor/respondent protocol can be run on top of any SP mapping,
    such as, for example, SP TCPmapping [SPoverTCP].
 
-   Also, given that SP protocols describe the behaviour of entire
-   arbitrarily complex topology rather than of a single node-to-node
+   Also, given that SP protocols describe the behaviour of entire,
+   arbitrarily complex topologies rather than of a single node-to-node
    communication, several underlying protocols can be used in parallel.
-   For example, a client may send a request via WebSocket, then, on the
-   edge of the company network an intermediary node may retransmit it
-   using TCP etc.
+   For example, a client may send a request via WebSocket.  Then, on the
+   edge of the company network, an intermediary node may retransmit it
+   using TCP, etc.
 
 
 
-D'Amore                Expires September 19, 2015               [Page 3]
+D'Amore                 Expires September 2, 2015               [Page 3]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -180,8 +180,8 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 3.  Overview of the algorithm
 
-   Surveyor/respondent protocol defines two different endpoint types:
-   The SURVEYOR and the replier or RESPONDENT.
+   The Surveyor/respondent protocol defines two different endpoint
+   types: The SURVEYOR and the replier or RESPONDENT.
 
    A SURVEYOR endpoint can be connected only to a RESPONDENT endpoint,
    and vice versa.  If the underlying protocol indicates that there's an
@@ -221,7 +221,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 4]
+D'Amore                 Expires September 2, 2015               [Page 4]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -277,7 +277,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 5]
+D'Amore                 Expires September 2, 2015               [Page 5]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -311,16 +311,16 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    last tag.  That allows the algorithm to find out where the tags end
    and where the message payload begins.
 
-   As for the remaining 31 bits, they are either survey ID (in the last
-   tag) or a channel ID (in all the remaining tags).  The first channel
-   ID is added and processed by the RESPONDENT endpoint closest to the
-   processing node.  The last channel ID is added and processed by the
-   RESPONDENT endpoint closest to the client.
+   As for the remaining 31 bits, they are either a survey ID (in the
+   last tag) or a channel ID (in all the remaining tags).  The first
+   channel ID is added and processed by the RESPONDENT endpoint closest
+   to the processing node.  The last channel ID is added and processed
+   by the RESPONDENT endpoint closest to the client.
 
-   Following picture shows an example of request saying "Hello" being
-   routed from the client through two intermediate nodes to the
-   processing node and the reply "World" being routed back.  It shows
-   what messages are passed over the network at each step of the
+   The following picture shows an example of a request saying "Hello"
+   and being routed from the client through two intermediate nodes to
+   the processing node and the reply "World" being routed back.  It
+   shows what messages are passed over the network at each step of the
    process:
 
 
@@ -333,7 +333,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 6]
+D'Amore                 Expires September 2, 2015               [Page 6]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -389,7 +389,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 7]
+D'Amore                 Expires September 2, 2015               [Page 7]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -445,7 +445,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 8]
+D'Amore                 Expires September 2, 2015               [Page 8]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -471,7 +471,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    unrelated channel, even in the face of intermediate node failures.
 
    When receiving a message, RESPONDENT endpoints MUST fair-queue among
-   the channels available for receiving.  In other words they should
+   the channels available for receiving.  In other words, they should
    round-robin among such channels and receive one request from a
    channel at a time.  They MUST also implement the round-robin
    algorithm is such a way that adding or removing channels doesn't
@@ -501,7 +501,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015               [Page 9]
+D'Amore                 Expires September 2, 2015               [Page 9]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -542,42 +542,42 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    outdated responses.
 
    To be able to do this, the endpoint must tag the survey with unique
-   31-bit survey IDs.  First survey ID is picked at random.  All
+   31-bit survey IDs.  The first survey ID is picked at random.  All
    subsequent survey IDs are generated by adding 1 to the last survey ID
    and possibly overflowing to 0.
 
    To improve robustness of the system, the implementation MUST ensure
    that the random number is different each time the endpoint, the
-   process or the machine is restarted.  Pseudo-random generator with
+   process, or the machine is restarted.  Pseudo-random generator with
    fixed seed won't do.
 
-   When user asks the endpoint to send a message, the endpoint prepends
-   a 32-bit value to the message, consisting of a single bit set to 1
+   When the user asks the endpoint to send a message, the endpoint
+   prepends a 32-bit value to the message, consisting of a single bit
 
 
 
 
-D'Amore                Expires September 19, 2015              [Page 10]
+D'Amore                 Expires September 2, 2015              [Page 10]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
 
-   followed by a 31-bit survey ID and passes it on in a standard hop-by-
-   hop way.
+   set to 1 followed by a 31-bit survey ID and passes it on in a
+   standard hop-by-hop way.
 
-   If the hop-by-hop layer reports pushback condition, the end-to-end
-   layer considers the survey unsent and MAY report pushback condition
-   to the user.
+   If the hop-by-hop layer reports the pushback condition, the end-to-
+   end layer considers the survey unsent and MAY report the pushback
+   condition to the user.
 
    If the survey is successfully sent, the endpoint stores the survey
    including its survey ID, so that it can be resent later on if needed.
    At the same time it sets up a timer to receive all of the responses.
    The user MUST be allowed to specify the timeout interval.  The
-   default timeout interval must be 60 seconds.
+   default timeout interval SHOULD be 60 seconds.
 
    When a response is received from the underlying hop-by-hop
-   implementation, the endpoint should strip off first 32 bits from the
-   response to check whether it is a valid reply.
+   implementation, the endpoint should strip off the first 32 bits from
+   the response to check whether it is a valid reply.
 
    If the response is shorter than 32 bits, it is malformed and the
    endpoint MUST ignore it.  If the most significant bit of the 32-bit
@@ -597,12 +597,12 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    off).
 
    A SURVEYOR endpoint MUST make it possible for the user to cancel a
-   particular survey in progress.  What it means technically is deleting
-   the stored copy of the survey and cancelling the associated timer.
-   Thus, once the response arrives, it will be discarded by the
+   particular survey in progress.  What this means technically is
+   deleting the stored copy of the survey and cancelling the associated
+   timer.  Thus, once the response arrives, it will be discarded by the
    algorithm above.
 
-   Finally, when the timeout for a survey expires, then the survey must
+   Finally, when the timeout for a survey expires, then the survey MUST
    be canceled in a manner similar to user-initiated cancelation.  That
    is, the stored copy of the survey must be deleted, the timer removed,
    and any further responses received with the same survey ID are
@@ -613,7 +613,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015              [Page 11]
+D'Amore                 Expires September 2, 2015              [Page 11]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -669,7 +669,7 @@ Internet-Draft            Surveor/Respondent SP               March 2015
 
 
 
-D'Amore                Expires September 19, 2015              [Page 12]
+D'Amore                 Expires September 2, 2015              [Page 12]
 
 Internet-Draft            Surveor/Respondent SP               March 2015
 
@@ -678,10 +678,10 @@ Internet-Draft            Surveor/Respondent SP               March 2015
    each RESPONDENT endpoint on the way.  Eventually, a loop can cause
    congestion and bring the whole system to a halt.
 
-   To deal with the problem SURVEYOR endpoints MUST check the depth of
+   To deal with the problem, SURVEYOR endpoints MUST check the depth of
    the traceback stack for every outgoing request and discard any
-   requests where it exceeds certain threshold.  The threshold SHOULD be
-   defined by the user.  The default value is suggested to be 8.
+   requests where it exceeds a certain threshold.  The threshold SHOULD
+   be defined by the user.  The default value is suggested to be 8.
 
 8.  IANA Considerations
 
@@ -725,4 +725,4 @@ Author's Address
 
 
 
-D'Amore                Expires September 19, 2015              [Page 13]
+D'Amore                 Expires September 2, 2015              [Page 13]

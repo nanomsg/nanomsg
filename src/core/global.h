@@ -34,4 +34,8 @@ int nn_global_print_errors();
 /* Force clean up nanomsg after a fork, when everything is broken. */
 int nn_global_postfork_cleanup ();
 
+/* Enter & leave the context of each socket. */
+void nn_global_lock_all_sockets (void);
+void nn_global_unlock_all_sockets (void);
+
 #endif

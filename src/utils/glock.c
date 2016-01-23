@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,6 +23,8 @@
 
 #include "glock.h"
 
+static int nn_glock_held = 0;
+
 #if defined NN_HAVE_WINDOWS
 
 #include "win.h"
@@ -40,11 +43,13 @@ void nn_glock_lock (void)
 {
     nn_glock_init ();
     EnterCriticalSection (&nn_glock_cs);
+    nn_glock_held = 1;
 }
 
 void nn_glock_unlock (void)
 {
     nn_glock_init ();
+    nn_glock_held = 0;
     LeaveCriticalSection (&nn_glock_cs);
 }
 
@@ -62,15 +67,21 @@ void nn_glock_lock (void)
 
     rc = pthread_mutex_lock (&nn_glock_mutex);
     errnum_assert (rc == 0, rc);
+    nn_glock_held = 1;
 }
 
 void nn_glock_unlock (void)
 {
     int rc;
 
+    nn_glock_held = 0;
     rc = pthread_mutex_unlock (&nn_glock_mutex);
     errnum_assert (rc == 0, rc);
 }
 
 #endif
 
+int nn_is_glock_held (void)
+{
+    return nn_glock_held;
+}

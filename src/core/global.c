@@ -1190,21 +1190,49 @@ int nn_setopt (int option, const void *optval, size_t optvallen)
     return -1;
 }
 
+void nn_global_lock_all_sockets (void)
+{
+    int i;
+    nn_assert(nn_is_glock_held());
+
+    nn_ctx_enter (&self.ctx);
+    if (self.socks && self.nsocks) {
+        for (i = 0; i != NN_MAX_SOCKETS; ++i)
+            if (self.socks [i])
+                nn_ctx_enter (nn_sock_getctx (self.socks [i]));
+    }
+}
+
+void nn_global_unlock_all_sockets (void)
+{
+    int i;
+    nn_assert(nn_is_glock_held());
+
+    if (self.socks && self.nsocks) {
+        for (i = 0; i != NN_MAX_SOCKETS; ++i)
+            if (self.socks [i])
+                nn_ctx_leave (nn_sock_getctx (self.socks [i]));
+    }
+    nn_ctx_leave (&self.ctx);
+}
+
 int nn_global_postfork_cleanup ()
 {
     int i;
+    nn_assert(nn_is_glock_held());
 
-    nn_glock_lock();
     self.forked = 1;
 
     if (self.socks && self.nsocks) {
         for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i]) {
+                nn_sock_stop (self.socks [i]);
+                nn_sock_rele (self.socks [i]);
+                nn_sock_term (self.socks [i]);
+                nn_free (self.socks [i]);
                 self.socks [i] = NULL;
                 self.nsocks--;
             }
     }
     nn_global_term();
-
-    nn_glock_unlock();
 }

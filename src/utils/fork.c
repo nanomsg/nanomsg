@@ -37,31 +37,35 @@ static void nn_prefork_reset (void)
     nn_mutex_lock (&w->sync);
 
     nn_glock_lock ();
+    nn_global_lock_all_sockets ();
 }
 
 static void nn_postfork_parent_reset (void)
 {
-    nn_glock_unlock ();
-
     /* Unlock the worker */
     struct nn_pool *pool = nn_global_getpool();
     struct nn_worker *w = &pool->worker;
 
+    nn_global_unlock_all_sockets ();
+
     nn_mutex_unlock (&w->sync);
+
+    nn_glock_unlock ();
 }
 
 static void nn_postfork_child_reset (void)
 {
-    nn_glock_unlock ();
-
     /* Unlock the worker and reset */
     struct nn_pool *pool = nn_global_getpool();
     struct nn_worker *w = &pool->worker;
+
+    nn_global_unlock_all_sockets ();
 
     nn_mutex_unlock (&w->sync);
     nn_worker_force_cleanup (w);
 
     nn_global_postfork_cleanup ();
+    nn_glock_unlock ();
 }
 
 /* Set up all strategies */

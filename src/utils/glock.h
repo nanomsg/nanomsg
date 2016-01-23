@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,6 +29,7 @@
 
 void nn_glock_lock (void);
 void nn_glock_unlock (void);
+int nn_is_glock_held (void);
 
 #endif
 

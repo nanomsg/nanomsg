@@ -26,6 +26,7 @@
 #include "../utils/mutex.h"
 #include "../utils/thread.h"
 #include "../utils/efd.h"
+#include "../utils/cond.h"
 
 #include "poller.h"
 
@@ -53,11 +54,19 @@ struct nn_worker {
     struct nn_mutex sync;
     struct nn_queue tasks;
     struct nn_queue_item stop;
+    struct nn_queue_item pause;
     struct nn_efd efd;
     struct nn_poller poller;
     struct nn_poller_hndl efd_hndl;
     struct nn_timerset timerset;
     struct nn_thread thread;
+
+    struct nn_cond resume_cond;
+    struct nn_mutex resume_mutex;
+    struct nn_cond pause_cond;
+    struct nn_mutex pause_mutex;
+    volatile int paused;
+    volatile int resumed;
 };
 
 void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd);
@@ -69,3 +78,6 @@ void nn_worker_reset_out (struct nn_worker *self, struct nn_worker_fd *fd);
 
 /* Force clean up without terminating the underlying thread                   */
 void nn_worker_force_cleanup (struct nn_worker *self);
+
+void nn_worker_pause (struct nn_worker *self);
+void nn_worker_resume (struct nn_worker *self);

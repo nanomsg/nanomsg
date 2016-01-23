@@ -110,20 +110,32 @@ int nn_worker_init (struct nn_worker *self)
     nn_mutex_init (&self->sync);
     nn_queue_init (&self->tasks);
     nn_queue_item_init (&self->stop);
+    nn_queue_item_init (&self->pause);
     nn_poller_init (&self->poller);
     nn_poller_add (&self->poller, nn_efd_getfd (&self->efd), &self->efd_hndl);
     nn_poller_set_in (&self->poller, &self->efd_hndl);
     nn_timerset_init (&self->timerset);
     nn_thread_init (&self->thread, nn_worker_routine, self);
 
+    self->paused = 0;
+    self->resumed = 0;
+    nn_cond_init (&self->resume_cond);
+    nn_mutex_init (&self->resume_mutex);
+    nn_cond_init (&self->pause_cond);
+    nn_mutex_init (&self->pause_mutex);
+
     return 0;
 }
 
 void nn_worker_force_cleanup (struct nn_worker *self) {
+    /*  Wait till worker thread terminates. */
+    nn_thread_term (&self->thread);
+
     nn_timerset_term (&self->timerset);
     nn_poller_term (&self->poller);
     nn_efd_term (&self->efd);
     nn_queue_item_term (&self->stop);
+    nn_queue_item_term (&self->pause);
     nn_queue_term (&self->tasks);
     nn_mutex_term (&self->sync);
 }
@@ -136,11 +148,56 @@ void nn_worker_term (struct nn_worker *self)
     nn_efd_signal (&self->efd);
     nn_mutex_unlock (&self->sync);
 
-    /*  Wait till worker thread terminates. */
-    nn_thread_term (&self->thread);
-
     /*  Clean up. */
     nn_worker_force_cleanup (self);
+
+    nn_cond_term (&self->resume_cond);
+    nn_cond_term (&self->pause_cond);
+    nn_mutex_term (&self->resume_mutex);
+    nn_mutex_term (&self->pause_mutex);
+}
+
+void nn_worker_pause (struct nn_worker *self)
+{
+    nn_assert (!self->paused);
+
+    nn_mutex_lock (&self->pause_mutex);
+
+    /*  Ask worker thread to pause. */
+    nn_mutex_lock (&self->sync);
+    nn_queue_push (&self->tasks, &self->pause);
+    nn_efd_signal (&self->efd);
+    nn_mutex_unlock (&self->sync);
+
+    /*  Wait until the thread is paused  */
+    while (!self->paused) {
+        nn_cond_wait (&self->pause_cond, &self->pause_mutex);
+    }
+
+    nn_mutex_lock (&self->resume_mutex);
+    nn_mutex_unlock (&self->pause_mutex);
+}
+
+void nn_worker_resume (struct nn_worker *self)
+{
+    nn_assert (self->paused);
+
+    nn_mutex_lock (&self->pause_mutex);
+
+    /*  Let the worker resume  */
+    self->paused = 0;
+    nn_cond_signal (&self->resume_cond);
+    nn_mutex_unlock (&self->resume_mutex);
+
+    /*  Wait until the thread is resumed  */
+    while (!self->resumed) {
+        nn_cond_wait (&self->pause_cond, &self->pause_mutex);
+    }
+    self->resumed = 0;
+
+    nn_mutex_lock (&self->resume_mutex);
+    nn_mutex_unlock (&self->pause_mutex);
+    nn_mutex_unlock (&self->resume_mutex);
 }
 
 void nn_worker_execute (struct nn_worker *self, struct nn_worker_task *task)
@@ -222,6 +279,33 @@ static void nn_worker_routine (void *arg)
                     item = nn_queue_pop (&tasks);
                     if (nn_slow (!item))
                         break;
+
+                    /*  If the worker thread is asked to pause, do so. */
+                    if (nn_slow (item == &self->pause)) {
+
+                        nn_mutex_lock (&self->resume_mutex);
+
+                        /*  Notify the calling thread that the worker paused  */
+                        nn_mutex_lock (&self->pause_mutex);
+                        self->paused = 1;
+                        nn_cond_signal (&self->pause_cond);
+                        nn_mutex_unlock (&self->pause_mutex);
+
+                        /*  Pause until the thread is resumed  */
+                        while (self->paused) {
+                            nn_cond_wait (&self->resume_cond,
+                                          &self->resume_mutex);
+                        }
+
+                        /*  Notify the calling thread that the worker resumed */
+                        nn_mutex_lock (&self->pause_mutex);
+                        self->resumed = 1;
+                        nn_cond_signal (&self->pause_cond);
+                        nn_mutex_unlock (&self->pause_mutex);
+
+                        nn_mutex_unlock (&self->resume_mutex);
+                        continue;
+                    }
 
                     /*  If the worker thread is asked to stop, do so. */
                     if (nn_slow (item == &self->stop)) {

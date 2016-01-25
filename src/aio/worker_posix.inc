@@ -31,6 +31,10 @@
 #include "../utils/attr.h"
 #include "../utils/queue.h"
 
+#define NN_STATUS_IDLE 0
+#define NN_STATUS_STOP 1
+#define NN_STATUS_PAUSE 2
+
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
 
@@ -250,6 +254,52 @@ void nn_worker_cancel (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_unlock (&self->sync);
 }
 
+static int nn_worker_process_tasks (struct nn_worker *self, struct nn_queue *tasks)
+{
+    struct nn_queue_item *item;
+    struct nn_worker_task *task;
+    int status;
+
+    status = NN_STATUS_IDLE;
+
+    while (1) {
+
+        /*  Next worker task. */
+        item = nn_queue_pop (tasks);
+        if (nn_slow (!item))
+            break;
+
+        /*  If the worker thread is asked to pause, schedule a
+        pause after everything else is processed. */
+        if (nn_slow (item == &self->pause)) {
+            status = NN_STATUS_PAUSE;
+            continue;
+        }
+
+        /*  If the worker thread is asked to stop, do so. */
+        if (nn_slow (item == &self->stop)) {
+            /*  Make sure we remove all the other workers from
+            the queue, because we're not doing anything with
+            them. */
+            while (nn_queue_pop (tasks) != NULL) {
+                continue;
+            }
+            nn_queue_term (tasks);
+            status = NN_STATUS_STOP;
+            break;
+        }
+
+        /*  It's a user-defined task. Notify the user that it has
+        arrived in the worker thread. */
+        task = nn_cont (item, struct nn_worker_task, item);
+        nn_ctx_enter (task->owner->ctx);
+        nn_fsm_feed (task->owner, task->src, NN_WORKER_TASK_EXECUTE, task);
+        nn_ctx_leave (task->owner->ctx);
+    }
+    nn_queue_term (tasks);
+    return status;
+}
+
 static void nn_worker_routine (void *arg)
 {
     int rc;
@@ -258,14 +308,13 @@ static void nn_worker_routine (void *arg)
     struct nn_poller_hndl *phndl;
     struct nn_timerset_hndl *thndl;
     struct nn_queue tasks;
-    struct nn_queue_item *item;
-    struct nn_worker_task *task;
     struct nn_worker_fd *fd;
     struct nn_worker_timer *timer;
-    int paused;
+    int paused = 0;
+    int stop = 0;
+    int status = NN_STATUS_IDLE;
 
     self = (struct nn_worker*) arg;
-    paused = 0;
 
     /*  Infinite loop. It will be interrupted only when the object is
         shut down. */
@@ -273,6 +322,19 @@ static void nn_worker_routine (void *arg)
 
         /*  If the worker thread is marked as paused, do so. */
         if (nn_slow (paused)) {
+
+            /*  Process all non-io worker tasks until none are left */
+            while (!nn_queue_empty(&self->tasks))
+            {
+                nn_mutex_lock (&self->sync);
+                nn_efd_unsignal (&self->efd);
+                memcpy (&tasks, &self->tasks, sizeof (tasks));
+                nn_queue_init (&self->tasks);
+                nn_mutex_unlock (&self->sync);
+
+                status = nn_worker_process_tasks (self, &tasks);
+                stop = stop || status == NN_STATUS_STOP;
+            }
 
             nn_mutex_lock (&self->resume_mutex);
 
@@ -297,6 +359,9 @@ static void nn_worker_routine (void *arg)
             nn_mutex_unlock (&self->resume_mutex);
 
             paused = 0;
+
+            if (nn_slow (stop))
+                return;
         }
 
         /*  Wait for new events and/or timeouts. */
@@ -338,42 +403,16 @@ static void nn_worker_routine (void *arg)
                 nn_queue_init (&self->tasks);
                 nn_mutex_unlock (&self->sync);
 
-                while (1) {
-
-                    /*  Next worker task. */
-                    item = nn_queue_pop (&tasks);
-                    if (nn_slow (!item))
-                        break;
-
-                    /*  If the worker thread is asked to pause, schedule a
-                        pause after everything else is processed. */
-                    if (nn_slow (item == &self->pause)) {
-                        paused = 1;
-                        continue;
-                    }
-
-                    /*  If the worker thread is asked to stop, do so. */
-                    if (nn_slow (item == &self->stop)) {
-			/*  Make sure we remove all the other workers from
-			    the queue, because we're not doing anything with
-			    them. */
-			while (nn_queue_pop (&tasks) != NULL) {
-				continue;
-			}
-                        nn_queue_term (&tasks);
-                        return;
-                    }
-
-                    /*  It's a user-defined task. Notify the user that it has
-                        arrived in the worker thread. */
-                    task = nn_cont (item, struct nn_worker_task, item);
-                    nn_ctx_enter (task->owner->ctx);
-                    nn_fsm_feed (task->owner, task->src,
-                        NN_WORKER_TASK_EXECUTE, task);
-                    nn_ctx_leave (task->owner->ctx);
+                status = nn_worker_process_tasks (self, &tasks);
+                switch (status) {
+                case NN_STATUS_STOP:
+                    return;
+                case NN_STATUS_PAUSE:
+                    paused = 1;
+                case NN_STATUS_IDLE:
+                default:
+                    continue;
                 }
-                nn_queue_term (&tasks);
-                continue;
             }
 
             /*  It's a true I/O event. Invoke the handler. */

@@ -81,3 +81,5 @@ void nn_worker_force_cleanup (struct nn_worker *self);
 
 void nn_worker_pause (struct nn_worker *self);
 void nn_worker_resume (struct nn_worker *self);
+
+void nn_worker_revive (struct nn_worker *self);

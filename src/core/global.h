@@ -38,4 +38,7 @@ int nn_global_postfork_cleanup ();
 void nn_global_lock_all_sockets (void);
 void nn_global_unlock_all_sockets (void);
 
+void nn_global_fork_lock (void);
+void nn_global_fork_unlock (void);
+
 #endif

@@ -76,6 +76,8 @@ set (NN_SOURCES
     utils/closefd.h
     utils/closefd.c
     utils/cont.h
+    utils/cond.c
+    utils/cond.h
     utils/efd.h
     utils/efd.c
     utils/err.h

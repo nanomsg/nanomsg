@@ -1186,25 +1186,6 @@ void nn_global_rele_socket(struct nn_sock *sock)
     nn_glock_unlock();
 }
 
-int nn_setopt (int option, const void *optval, size_t optvallen)
-{
-    switch (option) {
-    case NN_FORK_STRATEGY:
-        nn_assert(optvallen == sizeof (int));
-        int idx = *(const int *) optval;
-        if (idx < 0 || idx >= NN_FORK_MAX_) {
-            errno = EINVAL;
-            break;
-        }
-        nn_fork_strategy = &nn_fork_strategies[idx];
-        return 0;
-    default:
-        errno = ENOPROTOOPT;
-        break;
-    }
-    return -1;
-}
-
 void nn_global_lock_all_sockets (void)
 {
     int i;

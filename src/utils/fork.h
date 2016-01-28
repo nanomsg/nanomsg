@@ -23,17 +23,6 @@
 #ifndef NN_FORK_INCLUDED
 #define NN_FORK_INCLUDED
 
-#include "../nn.h"
-
-struct nn_fork_strategy {
-    void (*prefork_fn)(void);
-    void (*postfork_parent_fn)(void);
-    void (*postfork_child_fn)(void);
-};
-
-extern struct nn_fork_strategy nn_fork_strategies[NN_FORK_MAX_];
-extern struct nn_fork_strategy *nn_fork_strategy;
-
 int nn_setup_atfork_handlers(void);
 
 #endif /* !NN_FORK_INCLUDED */

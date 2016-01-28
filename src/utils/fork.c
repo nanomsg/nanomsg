@@ -21,14 +21,16 @@
 */
 
 #include <pthread.h>
+#include <errno.h>
 #include "fork.h"
 #include "glock.h"
 #include "../core/global.h"
 #include "../aio/pool.h"
 
+#ifdef NN_RESET_AFTER_FORK
 /* Reset strategy: We close all sockets in the child on fork */
 
-static void nn_prefork_reset (void)
+static void nn_prefork (void)
 {
     /* Retrieve the worker and lock it */
     struct nn_pool *pool = nn_global_getpool();
@@ -41,7 +43,7 @@ static void nn_prefork_reset (void)
     nn_mutex_lock (&w->sync);
 }
 
-static void nn_postfork_parent_reset (void)
+static void nn_postfork_parent (void)
 {
     /* Unlock the worker */
     struct nn_pool *pool = nn_global_getpool();
@@ -54,7 +56,7 @@ static void nn_postfork_parent_reset (void)
     nn_worker_resume (w);
 }
 
-static void nn_postfork_child_reset (void)
+static void nn_postfork_child (void)
 {
     /* Unlock the worker and reset */
     struct nn_pool *pool = nn_global_getpool();
@@ -72,25 +74,23 @@ static void nn_postfork_child_reset (void)
     nn_global_postfork_cleanup ();
     nn_glock_unlock ();
 }
-
-/* Set up all strategies */
-
-struct nn_fork_strategy *nn_fork_strategy = &nn_fork_strategies[NN_FORK_NONE];
+#else
+/*  No strategy: do nothing. */
 
 static void nn_prefork (void)
 {
-    nn_fork_strategy->prefork_fn ();
-}
-
-static void nn_postfork_parent (void)
-{
-    nn_fork_strategy->postfork_parent_fn ();
 }
 
 static void nn_postfork_child (void)
 {
-    nn_fork_strategy->postfork_child_fn ();
 }
+
+static void nn_postfork_parent (void)
+{
+}
+#endif
+
+/* Set up atfork handlers */
 
 int nn_setup_atfork_handlers (void)
 {
@@ -101,16 +101,3 @@ int nn_setup_atfork_handlers (void)
     }
     return 0;
 }
-
-static void nothing (void) {}
-
-struct nn_fork_strategy nn_fork_strategies[] =
-{
-    [NN_FORK_NONE]  = {nothing, nothing, nothing},
-    [NN_FORK_RESET] = {
-        nn_prefork_reset,
-        nn_postfork_parent_reset,
-        nn_postfork_child_reset
-    },
-};
-

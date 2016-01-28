@@ -349,18 +349,6 @@ NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nxthdr_ (
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1
 
-/*  Global options.                                                           */
-#define NN_FORK_STRATEGY 1
-
-/*  Fork strategies.                                                          */
-/*  ABI warning: do not reorder, add new entries before NN_FORK_MAX_.         */
-enum nn_fork_strategy_kind {
-    NN_FORK_NONE = 1,
-    NN_FORK_RESET,
-
-    NN_FORK_MAX_
-};
-
 /*  Ancillary data.                                                           */
 #define PROTO_SP 1
 #define SP_HDR 1
@@ -371,7 +359,6 @@ NN_EXPORT int nn_setsockopt (int s, int level, int option, const void *optval,
     size_t optvallen);
 NN_EXPORT int nn_getsockopt (int s, int level, int option, void *optval,
     size_t *optvallen);
-NN_EXPORT int nn_setopt (int option, const void *optval, size_t optvallen);
 NN_EXPORT int nn_bind (int s, const char *addr);
 NN_EXPORT int nn_connect (int s, const char *addr);
 NN_EXPORT int nn_shutdown (int s, int how);

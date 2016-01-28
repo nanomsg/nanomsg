@@ -38,9 +38,6 @@ int main ()
 {
     int sb, sc, sb_alt, sc_alt;
 
-    int fstrat = NN_FORK_RESET;
-    nn_setopt(NN_FORK_STRATEGY, &fstrat, sizeof (fstrat));
-
     /* Do some background work */
 
     sb_alt = test_socket (AF_SP, NN_PAIR);

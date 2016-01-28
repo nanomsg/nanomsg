@@ -37,6 +37,7 @@
 
 /*  Private functions. */
 static void nn_worker_routine (void *arg);
+static void nn_worker_postfork_routine (void *arg);
 
 void nn_worker_fd_init (struct nn_worker_fd *self, int src,
     struct nn_fsm *owner)
@@ -163,7 +164,7 @@ void nn_worker_revive (struct nn_worker *self)
     nn_mutex_init (&self->pause_mutex);
 
     /*  Revive the worker thread */
-    nn_thread_init (&self->thread, nn_worker_routine, self);
+    nn_thread_init (&self->thread, nn_worker_postfork_routine, self);
 }
 
 void nn_worker_force_cleanup (struct nn_worker *self) {
@@ -254,6 +255,20 @@ void nn_worker_cancel (struct nn_worker *self, struct nn_worker_task *task)
     nn_mutex_unlock (&self->sync);
 }
 
+static inline void nn_worker_copy_task_queue (struct nn_worker *self, 
+    struct nn_queue *dst)
+{
+    /*  Make a local copy of the task queue. This way
+        the application threads are not blocked and can post new
+        tasks while the existing tasks are being processed. Also,
+        new tasks can be posted from within task handlers. */
+    nn_mutex_lock (&self->sync);
+    nn_efd_unsignal (&self->efd);
+    memcpy (dst, &self->tasks, sizeof (*dst));
+    nn_queue_init (&self->tasks);
+    nn_mutex_unlock (&self->sync);
+}
+
 static int nn_worker_process_tasks (struct nn_worker *self, struct nn_queue *tasks)
 {
     struct nn_queue_item *item;
@@ -300,6 +315,54 @@ static int nn_worker_process_tasks (struct nn_worker *self, struct nn_queue *tas
     return status;
 }
 
+static void nn_worker_postfork_routine (void *arg)
+{
+    int rc;
+    struct nn_worker *self;
+    int pevent;
+    struct nn_poller_hndl *phndl;
+    struct nn_queue tasks;
+    int status = NN_STATUS_IDLE;
+
+    self = (struct nn_worker*) arg;
+
+    /*  Infinite loop. It will be interrupted only when the object is
+        shut down. */
+    while (1) {
+
+        /*  Wait for new events and/or timeouts. */
+        rc = nn_poller_wait (&self->poller,
+            nn_timerset_timeout (&self->timerset));
+        errnum_assert (rc == 0, -rc);
+
+        /*  Process all events from the poller. */
+        while (1) {
+
+            /*  Get next poller event, such as IN or OUT. */
+            rc = nn_poller_event (&self->poller, &pevent, &phndl);
+            if (nn_slow (rc == -EAGAIN))
+                break;
+
+            /*  Only process worker tasks. */
+            if (phndl != &self->efd_hndl)
+                continue;
+
+            nn_assert (pevent == NN_POLLER_IN);
+
+            nn_worker_copy_task_queue (self, &tasks);
+            status = nn_worker_process_tasks (self, &tasks);
+            switch (status) {
+            case NN_STATUS_STOP:
+                return;
+            case NN_STATUS_IDLE:
+            default:
+                continue;
+            }
+        }
+    }
+
+}
+
 static void nn_worker_routine (void *arg)
 {
     int rc;
@@ -326,12 +389,7 @@ static void nn_worker_routine (void *arg)
             /*  Process all non-io worker tasks until none are left */
             while (!nn_queue_empty(&self->tasks))
             {
-                nn_mutex_lock (&self->sync);
-                nn_efd_unsignal (&self->efd);
-                memcpy (&tasks, &self->tasks, sizeof (tasks));
-                nn_queue_init (&self->tasks);
-                nn_mutex_unlock (&self->sync);
-
+                nn_worker_copy_task_queue (self, &tasks);
                 status = nn_worker_process_tasks (self, &tasks);
                 stop = stop || status == NN_STATUS_STOP;
             }
@@ -393,16 +451,7 @@ static void nn_worker_routine (void *arg)
             if (phndl == &self->efd_hndl) {
                 nn_assert (pevent == NN_POLLER_IN);
 
-                /*  Make a local copy of the task queue. This way
-                    the application threads are not blocked and can post new
-                    tasks while the existing tasks are being processed. Also,
-                    new tasks can be posted from within task handlers. */
-                nn_mutex_lock (&self->sync);
-                nn_efd_unsignal (&self->efd);
-                memcpy (&tasks, &self->tasks, sizeof (tasks));
-                nn_queue_init (&self->tasks);
-                nn_mutex_unlock (&self->sync);
-
+                nn_worker_copy_task_queue (self, &tasks);
                 status = nn_worker_process_tasks (self, &tasks);
                 switch (status) {
                 case NN_STATUS_STOP:

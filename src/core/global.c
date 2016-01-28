@@ -1258,7 +1258,8 @@ int nn_global_postfork_cleanup ()
         for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i]) {
                 nn_sock_stop (self.socks [i]);
-                nn_sock_rele (self.socks [i]);
+                while (self.socks [i]->holds > 0)
+                    nn_sock_rele (self.socks [i]);
                 nn_sock_term (self.socks [i]);
                 nn_free (self.socks [i]);
                 self.socks [i] = NULL;

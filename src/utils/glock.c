@@ -53,6 +53,10 @@ void nn_glock_unlock (void)
     LeaveCriticalSection (&nn_glock_cs);
 }
 
+void nn_glock_reset (void)
+{
+}
+
 #else
 
 #include "err.h"
@@ -76,6 +80,20 @@ void nn_glock_unlock (void)
 
     nn_glock_held = 0;
     rc = pthread_mutex_unlock (&nn_glock_mutex);
+    errnum_assert (rc == 0, rc);
+}
+
+void nn_glock_reset (void)
+{
+    int rc;
+
+    rc = pthread_mutex_unlock (&nn_glock_mutex);
+    errnum_assert (rc == 0, rc);
+    pthread_mutex_destroy (&nn_glock_mutex);
+
+    rc = pthread_mutex_init (&nn_glock_mutex, NULL);
+    errnum_assert (rc == 0, rc);
+    rc = pthread_mutex_lock (&nn_glock_mutex);
     errnum_assert (rc == 0, rc);
 }
 

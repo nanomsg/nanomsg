@@ -45,32 +45,39 @@ static void nn_prefork (void)
 
 static void nn_postfork_parent (void)
 {
-    /* Unlock the worker */
     struct nn_pool *pool = nn_global_getpool();
     struct nn_worker *w = &pool->worker;
 
+    /* Unlock the worker */
     nn_mutex_unlock (&w->sync);
+
+    /* Tidy up */
     nn_global_unlock_all_sockets ();
     nn_glock_unlock ();
 
+    /* Resume all operations */
     nn_worker_resume (w);
 }
 
 static void nn_postfork_child (void)
 {
-    /* Unlock the worker and reset */
     struct nn_pool *pool = nn_global_getpool();
     struct nn_worker *w = &pool->worker;
 
+    /* Reset locks */
+    nn_glock_reset ();
+    nn_global_reset_all_socket_locks ();
+
     /* Don't try to resume the dead thread, but simply release the lock */
     nn_mutex_unlock (&w->resume_mutex);
+    nn_mutex_reset (&w->sync);
+    nn_mutex_unlock (&w->sync);
 
     /* Revive the dead worker */
     nn_worker_revive (w);
 
-    nn_mutex_unlock (&w->sync);
+    /* Tidy up */
     nn_global_unlock_all_sockets ();
-
     nn_global_postfork_cleanup ();
     nn_glock_unlock ();
 }

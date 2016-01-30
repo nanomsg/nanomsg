@@ -30,6 +30,7 @@
 void nn_glock_lock (void);
 void nn_glock_unlock (void);
 int nn_is_glock_held (void);
+void nn_glock_reset (void);
 
 #endif
 

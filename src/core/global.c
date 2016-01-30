@@ -1198,6 +1198,22 @@ void nn_global_lock_all_sockets (void)
     }
 }
 
+void nn_global_reset_all_socket_locks (void)
+{
+    int i;
+    struct nn_ctx *ctx;
+    nn_assert(nn_is_glock_held());
+
+    nn_mutex_reset (&self.ctx.sync);
+    if (self.socks && self.nsocks) {
+        for (i = 0; i != NN_MAX_SOCKETS; ++i)
+            if (self.socks [i]) {
+                ctx = nn_sock_getctx (self.socks [i]);
+                nn_mutex_reset (&ctx->sync);
+            }
+    }
+}
+
 void nn_global_unlock_all_sockets (void)
 {
     int i;

@@ -41,4 +41,6 @@ void nn_global_unlock_all_sockets (void);
 void nn_global_fork_lock (void);
 void nn_global_fork_unlock (void);
 
+void nn_global_reset_all_socket_locks (void);
+
 #endif

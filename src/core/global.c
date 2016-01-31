@@ -135,15 +135,6 @@ struct nn_global {
     int state;
 
     int print_errors;
-
-#ifndef NN_HAVE_WINDOWS
-    volatile int fork_lock;
-    struct nn_mutex fork_sync;
-    struct nn_cond fork_cond;
-    volatile uint32_t io_operations;
-    struct nn_mutex ioop_sync;
-    struct nn_cond ioop_cond;
-#endif
 };
 
 /*  Singleton object containing the global state of the library. */
@@ -263,12 +254,6 @@ static void nn_global_init (void)
 #ifndef NN_HAVE_WINDOWS
     /* Register atfork handlers */
     errno_assert(nn_setup_atfork_handlers () == 0);
-    nn_mutex_init (&self.fork_sync);
-    nn_mutex_init (&self.ioop_sync);
-    nn_cond_init (&self.fork_cond);
-    nn_cond_init (&self.ioop_cond);
-    self.io_operations = 0;
-    self.fork_lock = 0;
 #endif
 
     /*  Start the worker threads. */
@@ -1204,7 +1189,6 @@ void nn_global_reset_all_socket_locks (void)
     struct nn_ctx *ctx;
     nn_assert(nn_is_glock_held());
 
-    nn_mutex_reset (&self.ctx.sync);
     if (self.socks && self.nsocks) {
         for (i = 0; i != NN_MAX_SOCKETS; ++i)
             if (self.socks [i]) {

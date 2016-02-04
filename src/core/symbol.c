@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Evan Wies <evan@neomantra.net>
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright (c) 2016 Bent Cardan. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -33,6 +34,7 @@
 #include "../pipeline.h"
 #include "../survey.h"
 #include "../bus.h"
+#include "../ws.h"
 
 #include <string.h>
 
@@ -101,6 +103,8 @@ static const struct nn_symbol_properties sym_value_names [] = {
     {NN_IPC, "NN_IPC", NN_NS_TRANSPORT,
         NN_TYPE_NONE, NN_UNIT_NONE},
     {NN_TCP, "NN_TCP", NN_NS_TRANSPORT,
+        NN_TYPE_NONE, NN_UNIT_NONE},
+    {NN_WS, "NN_WS", NN_NS_TRANSPORT,
         NN_TYPE_NONE, NN_UNIT_NONE},
 
     {NN_PAIR, "NN_PAIR", NN_NS_PROTOCOL,
@@ -173,8 +177,14 @@ static const struct nn_symbol_properties sym_value_names [] = {
         NN_TYPE_INT, NN_UNIT_MILLISECONDS},
     {NN_TCP_NODELAY, "NN_TCP_NODELAY", NN_NS_TRANSPORT_OPTION,
         NN_TYPE_INT, NN_UNIT_BOOLEAN},
+    {NN_WS_MSG_TYPE, "NN_WS_MSG_TYPE", NN_NS_TRANSPORT_OPTION,
+        NN_TYPE_INT, NN_UNIT_NONE},
 
     {NN_DONTWAIT, "NN_DONTWAIT", NN_NS_FLAG,
+        NN_TYPE_NONE, NN_UNIT_NONE},
+    {NN_WS_MSG_TYPE_TEXT, "NN_WS_MSG_TYPE_TEXT", NN_NS_FLAG,
+        NN_TYPE_NONE, NN_UNIT_NONE},
+    {NN_WS_MSG_TYPE_BINARY, "NN_WS_MSG_TYPE_BINARY", NN_NS_FLAG,
         NN_TYPE_NONE, NN_UNIT_NONE},
 
     {NN_POLLIN, "NN_POLLIN", NN_NS_EVENT, NN_TYPE_NONE, NN_UNIT_NONE},

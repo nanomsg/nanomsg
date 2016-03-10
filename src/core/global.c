@@ -422,6 +422,18 @@ void *nn_allocmsg (size_t size, int type)
     return NULL;
 }
 
+void *nn_allocmsg_ptr (void *ptr, size_t size, nn_free_fn destructor)
+{
+    int rc;
+    void *result;
+
+    rc = nn_chunk_alloc_ptr( ptr, size, destructor, &result );
+    if (rc == 0)
+        return result;
+    errno = -rc;
+    return NULL;
+}
+
 void *nn_reallocmsg (void *msg, size_t size)
 {
     int rc;

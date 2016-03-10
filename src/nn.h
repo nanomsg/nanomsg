@@ -258,7 +258,11 @@ NN_EXPORT void nn_term (void);
 
 #define NN_MSG ((size_t) -1)
 
+/* Signature of the chunk deallocator function */
+typedef void (*nn_free_fn) (void *p);
+
 NN_EXPORT void *nn_allocmsg (size_t size, int type);
+NN_EXPORT void *nn_allocmsg_ptr (void *ptr, size_t size, nn_free_fn destructor);
 NN_EXPORT void *nn_reallocmsg (void *msg, size_t size);
 NN_EXPORT int nn_freemsg (void *msg);
 

@@ -962,7 +962,7 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     }
 
     if (msghdr->msg_iovlen == 1 && msghdr->msg_iov [0].iov_len == NN_MSG) {
-        chunk = nn_chunkref_getchunk (&msg.body);
+        chunk = nn_chunkref_popchunk (&msg.body);
         *(void**) (msghdr->msg_iov [0].iov_base) = chunk;
         sz = nn_chunk_size (chunk);
     }

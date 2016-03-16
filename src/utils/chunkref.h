@@ -60,6 +60,10 @@ void nn_chunkref_term (struct nn_chunkref *self);
     one. Chunkref points to empty chunk after the call. */
 void *nn_chunkref_getchunk (struct nn_chunkref *self);
 
+/*  The same like nn_chunkref_getchunk, but it also resets the pointer to
+    the referred chunk. */
+void *nn_chunkref_popchunk (struct nn_chunkref *self);
+
 /*  Moves chunk content from src to dst. dst should not be initialised before
     calling this function. After the call, dst becomes initialised and src
     becomes uninitialised. */

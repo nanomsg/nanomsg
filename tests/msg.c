@@ -31,6 +31,12 @@
 #define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5557"
 
 char longdata[1 << 20];
+unsigned char free_called;
+
+void test_free_fn(void *p)
+{
+    free_called = 1;
+}
 
 int main ()
 {
@@ -93,9 +99,6 @@ int main ()
     rc = nn_freemsg (buf2);
     errno_assert (rc == 0);
 
-    test_close (sc);
-    test_close (sb);
-
     /*  Test receiving of large message  */
 
     sb = test_socket (AF_SP, NN_PAIR);
@@ -108,6 +111,7 @@ int main ()
     longdata [sizeof (longdata) - 1] = 0;
     test_send (sb, longdata);
 
+    buf2 = NULL;
     rc = nn_recv (sc, &buf2, NN_MSG, 0);
     errno_assert (rc >= 0);
     nn_assert (rc == sizeof (longdata) - 1);
@@ -116,6 +120,27 @@ int main ()
         nn_assert (buf2 [i] == longdata [i]);
     rc = nn_freemsg (buf2);
     errno_assert (rc == 0);
+
+    /*  Test sending messages allocated with nn_allocmsg_ptr */
+
+    free_called = 0;
+    buf1 = nn_allocmsg_ptr( longdata, sizeof(longdata) - 1, test_free_fn );
+
+    rc = nn_send (sb, &buf1, NN_MSG, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == sizeof(longdata) - 1);
+
+    buf2 = NULL;
+    rc = nn_recv (sc, &buf2, NN_MSG, 0);
+    errno_assert (rc >= 0);
+    nn_assert (rc == sizeof (longdata) - 1);
+    nn_assert (buf2);
+    for (i = 0; i < (int) sizeof (longdata) - 1; ++i)
+        nn_assert (buf2 [i] == longdata [i]);
+    rc = nn_freemsg (buf2);
+    errno_assert (rc == 0);
+
+    nn_assert ( free_called );
 
     test_close (sc);
     test_close (sb);

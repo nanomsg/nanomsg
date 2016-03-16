@@ -107,6 +107,7 @@ SEE ALSO
 linknanomsg:nn_recv[3]
 linknanomsg:nn_sendmsg[3]
 linknanomsg:nn_allocmsg[3]
+linknanomsg:nn_allocmsg_ptr[3]
 linknanomsg:nn_freemsg[3]
 linknanomsg:nn_cmsg[3]
 linknanomsg:nanomsg[7]

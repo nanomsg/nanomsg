@@ -422,12 +422,12 @@ void *nn_allocmsg (size_t size, int type)
     return NULL;
 }
 
-void *nn_allocmsg_ptr (void *ptr, size_t size, nn_free_fn destructor)
+void *nn_allocmsg_ptr (void *ptr, size_t size, nn_free_fn destructor, void * u)
 {
     int rc;
     void *result;
 
-    rc = nn_chunk_alloc_ptr( ptr, size, destructor, &result );
+    rc = nn_chunk_alloc_ptr( ptr, size, destructor, u, &result );
     if (rc == 0)
         return result;
     errno = -rc;

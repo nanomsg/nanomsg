@@ -31,11 +31,11 @@
 #define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5557"
 
 char longdata[1 << 20];
-unsigned char free_called;
 
-void test_free_fn(void *p)
+void test_free_fn(void *p, void *user)
 {
-    free_called = 1;
+    int * free_called = (int*) user;
+    *free_called = 1;
 }
 
 int main ()
@@ -123,8 +123,9 @@ int main ()
 
     /*  Test sending messages allocated with nn_allocmsg_ptr */
 
-    free_called = 0;
-    buf1 = nn_allocmsg_ptr( longdata, sizeof(longdata) - 1, test_free_fn );
+    int free_called = 0;
+    buf1 = nn_allocmsg_ptr( longdata, sizeof(longdata) - 1, test_free_fn, 
+        &free_called);
 
     rc = nn_send (sb, &buf1, NN_MSG, 0);
     errno_assert (rc >= 0);

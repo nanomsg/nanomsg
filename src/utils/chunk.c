@@ -39,9 +39,6 @@
 #define NN_CHUNK_TAG_OFFSET(p) (uint8_t*) p - sizeof (uint32_t)
 #define NN_CHUNK_SIZE_OFFSET(p) (uint8_t*) p - 2 * sizeof (uint32_t)
 
-/* Last assigned chunk id */
-uint32_t nn_last_chunk_id = 0;
-
 struct nn_chunk {
 
     /*  Number of places the chunk is referenced from. */
@@ -50,11 +47,11 @@ struct nn_chunk {
     /*  Size of the message in bytes. */
     size_t size;
 
-    /* Unique ID of the chunk, used by memory */
-    uint32_t id;
-
     /*  Deallocation function. */
     nn_chunk_free_fn ffn;
+
+    /*  Additional user pointer, to the deallocator function */
+    void * ffnptr;
 
     /*  The structure if followed by optional empty space, a 32 bit unsigned
         integer specifying the size of said empty space, a 32 bit tag and
@@ -71,12 +68,15 @@ struct nn_chunk_ptr {
     /* The user-provided destructor function */
     nn_chunk_free_fn destructor;
 
+    /* User-pointer to the destructor function */
+    void * userptr;
+
 };
 
 /*  Private functions. */
 static struct nn_chunk *nn_chunk_getptr (void *p);
 static void *nn_chunk_getdata (struct nn_chunk *c);
-static void nn_chunk_default_free (void *p);
+static void nn_chunk_default_free (void *p, void*user);
 static size_t nn_chunk_hdrsize ();
 
 static int nn_chunk_new (size_t size, int type, uint32_t tag, 
@@ -105,8 +105,8 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
     /*  Fill in the chunk header. */
     nn_atomic_init (&self->refcount, 1);
     self->size = size;
-    self->id = nn_last_chunk_id++;
     self->ffn = nn_chunk_default_free;
+    self->ffnptr = NULL;
 
     /*  Fill in the size of the empty space between the chunk header
         and the message. */
@@ -136,7 +136,7 @@ int nn_chunk_alloc (size_t size, int type, void **result)
 }
 
 int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor, 
-    void **result)
+    void *userptr, void **result)
 {
     int ret;
     struct nn_chunk_ptr *ptr_chunk;
@@ -155,6 +155,7 @@ int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor,
     ptr_chunk = (struct nn_chunk_ptr *) nn_chunk_getdata (self);
     ptr_chunk->ptr = data;
     ptr_chunk->destructor = destructor;
+    ptr_chunk->userptr = userptr;
 
     /* Update result */
     *result = ptr_chunk;
@@ -240,7 +241,8 @@ void nn_chunk_free (void *p)
             /* Get base address of user pointer without offset */
             off = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
             ((struct nn_chunk_ptr *) p)->destructor(
-                    (uint8_t*)((struct nn_chunk_ptr *) p)->ptr - off
+                    (uint8_t*)((struct nn_chunk_ptr *) p)->ptr - off,
+                    ((struct nn_chunk_ptr *) p)->userptr
                 );
         }
 
@@ -252,7 +254,7 @@ void nn_chunk_free (void *p)
 
         /*  Deallocate the memory block according to the allocation
             mechanism specified. */
-        self->ffn (self);
+        self->ffn (self, self->ffnptr);
     }
 }
 
@@ -282,7 +284,7 @@ void *nn_chunk_trim (void *p, size_t n)
     nn_assert (n <= self->size);
 
     /* In case of user pointer just move the user pointer forward */
-    if ( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR ) {
+    if (nn_fast( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR )) {
 
         /* Increase empty space defined in the header */
         empty_space = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
@@ -327,11 +329,8 @@ int nn_chunk_describe(void *p, struct nn_chunk_desc *d)
     chunk = (struct  nn_chunk*) ((uint8_t*) p - 2 *sizeof (uint32_t) - off -
         sizeof (struct nn_chunk));
 
-    /* Get ID */
-    d->id = chunk->id;
-
     /* Get base address to the data no matter what's the white space */
-    if ( tag == NN_CHUNK_TAG_PTR ) {
+    if (nn_fast( tag == NN_CHUNK_TAG_PTR )) {
         d->base = ((uint8_t*) ((struct nn_chunk_ptr *) p)->ptr) - off;
         d->len = chunk->size + off;
     } else {
@@ -343,6 +342,68 @@ int nn_chunk_describe(void *p, struct nn_chunk_desc *d)
     return 0;
 }
 
+void nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
+    nn_chunk_free_fn * old_fn, void **old_ffnptr)
+{
+    struct nn_chunk *self;
+    nn_chunk_free_fn prev;
+
+    /* Get chunk pointer */
+    self = nn_chunk_getptr (p);
+
+    /* Keep old values */
+    *old_fn = self->ffn;
+    *old_ffnptr = self->ffnptr;
+
+    /* Replace */
+    self->ffn = new_fn;
+    self->ffnptr = new_ffnptr;
+
+}
+
+void* nn_chunk_reset(void *p, size_t size)
+{
+    struct nn_chunk *self;
+    const size_t hdrsz = sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+    size_t empty_space;
+
+    /* Get chunk pointer and 'empty space' field */
+    self = nn_chunk_getptr (p);
+    empty_space = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
+
+    /* Remove any empty space */
+    if (nn_slow( empty_space )) {
+        if (nn_fast( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR )) {
+
+            /* Rewind user pointer */
+            ((struct nn_chunk_ptr *) p)->ptr =
+                ((uint8_t*) ((struct nn_chunk_ptr *) p)->ptr) - empty_space;
+
+        } else {
+
+            /*  Adjust the chunk header. */
+            p = ((uint8_t*) p) - empty_space;
+            nn_putl ((uint8_t*) (((uint32_t*) p) - 1), NN_CHUNK_TAG);
+
+        }
+
+        /* Reset empty space field */
+        nn_putl( NN_CHUNK_SIZE_OFFSET(p), 0 );
+
+    }
+
+    /* If size=0, then just undo trimming, but keep original size */
+    if (size == 0) {
+        self->size += empty_space;
+    } else {
+        /* Otherwise update chunk size to the new size specified (DANGEROUS!) */
+        self->size = size;
+    }
+
+    /* Return new pointer */
+    return p;
+}
+
 static struct nn_chunk *nn_chunk_getptr (void *p)
 {
     uint32_t tag;
@@ -352,7 +413,7 @@ static struct nn_chunk *nn_chunk_getptr (void *p)
     nn_assert ( (tag == NN_CHUNK_TAG) || (tag == NN_CHUNK_TAG_PTR) );
 
     /* On user-pointer chunks the offset is virtual */
-    if (tag == NN_CHUNK_TAG_PTR) {
+    if (nn_fast( tag == NN_CHUNK_TAG_PTR )) {
         off = 0;
     } else {
         off = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
@@ -367,7 +428,7 @@ static void *nn_chunk_getdata (struct nn_chunk *self)
     return ((uint8_t*) (self + 1)) + 2 * sizeof (uint32_t);
 }
 
-static void nn_chunk_default_free (void *p)
+static void nn_chunk_default_free (void *p, void *user)
 {
     nn_free (p);
 }

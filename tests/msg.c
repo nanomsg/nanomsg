@@ -45,6 +45,7 @@ int main ()
     int sc;
     unsigned char *buf1, *buf2;
     int i;
+    int free_called;
     struct nn_iovec iov;
     struct nn_msghdr hdr;
 
@@ -123,7 +124,7 @@ int main ()
 
     /*  Test sending messages allocated with nn_allocmsg_ptr */
 
-    int free_called = 0;
+    free_called = 0;
     buf1 = nn_allocmsg_ptr( longdata, sizeof(longdata) - 1, test_free_fn, 
         &free_called);
 

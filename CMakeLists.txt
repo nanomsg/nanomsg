@@ -149,6 +149,9 @@ install (FILES src/bus.h DESTINATION include/nanomsg)
 
 install (TARGETS nanocat RUNTIME DESTINATION bin)
 
-#set (CPACK_GENERATOR "NSIS")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set (CPACK_GENERATOR "NSIS")
+endif()
+
 set (CPACK_PACKAGE_NAME "nanomsg")
 include (CPack)

@@ -293,9 +293,16 @@ add_library (nanomsg SHARED ${NN_SOURCES})
 
 add_definitions (-DNN_EXPORTS)
 
-target_link_libraries (nanomsg ws2_32)
-target_link_libraries (nanomsg mswsock)
-target_link_libraries (nanomsg advapi32)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    target_link_libraries (nanomsg ws2_32)
+    target_link_libraries (nanomsg mswsock)
+    target_link_libraries (nanomsg advapi32)
+else()
+    find_package(Threads REQUIRED)
+    if(CMAKE_THREAD_LIBS_INIT)
+       target_link_libraries (nanomsg "${CMAKE_THREAD_LIBS_INIT}")
+    endif()
+endif()
 
 install(TARGETS nanomsg
     ARCHIVE DESTINATION lib

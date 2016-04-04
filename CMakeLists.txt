@@ -38,8 +38,15 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (MINGW)
         add_definitions (-DNN_HAVE_MINGW -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
     endif ()
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions(-DNN_HAVE_LINUX)
+    add_definitions(-DNN_HAVE_SEMAPHORE)
+    add_definitions(-DNN_HAVE_EVENTFD)
+    add_definitions(-DNN_HAVE_POLL)
+    add_definitions(-DNN_USE_EPOLL)
+    add_definitions(-DNN_HAVE_MSG_CONTROL) # TODO this is not nice...
 else ()
-    message (FATAL_ERROR "ERROR: CMake build system is intended only to generate MSVC solution files.\nUse autotools build system for any other purpose." )
+    message (FATAL_ERROR "ERROR: CMake build system only works for windows and linux.\nUse autotools build system for any other supported platform." )
 endif ()
 
 #  Build the library itself.
@@ -107,7 +114,10 @@ add_libnanomsg_test (zerocopy 5)
 add_libnanomsg_test (shutdown 5)
 add_libnanomsg_test (cmsg 5)
 add_libnanomsg_test (bug328 5)
-add_libnanomsg_test (win_sec_attr 5)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    add_libnanomsg_test (win_sec_attr 5)
+endif()
 
 #  Build the performance tests.
 
@@ -139,6 +149,6 @@ install (FILES src/bus.h DESTINATION include/nanomsg)
 
 install (TARGETS nanocat RUNTIME DESTINATION bin)
 
-set (CPACK_GENERATOR "NSIS")
+#set (CPACK_GENERATOR "NSIS")
 set (CPACK_PACKAGE_NAME "nanomsg")
 include (CPack)

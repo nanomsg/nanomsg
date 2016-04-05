@@ -23,6 +23,7 @@
 #
 
 cmake_minimum_required (VERSION 2.8)
+include (CheckIncludeFile)
 include (CheckIncludeFiles)
 include (CheckSymbolExists)
 include (CheckCSourceCompiles)
@@ -64,6 +65,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     CHECK_FUNCTION_EXISTS(epoll_create HAVE_EPOLL)
     CHECK_FUNCTION_EXISTS(pipe         HAVE_PIPE)
     CHECK_FUNCTION_EXISTS(pipe2        HAVE_PIPE2)
+    CHECK_FUNCTION_EXISTS(socketpair   HAVE_SOCKETPAIR)
 
     CHECK_LIBRARY_EXISTS(pthread sem_init                "" HAVE_SEMAPHORE_INIT)
     CHECK_LIBRARY_EXISTS(pthread sem_wait                "" HAVE_SEMAPHORE_WAIT)
@@ -97,8 +99,17 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     else ()
         message (FATAL_ERROR "ERROR: Platform doesn't support pipe or pipe2")
     endif ()
+
+    if (${HAVE_SOCKETPAIR})
+       add_definitions (-DNN_HAVE_SOCKETPAIR)
+    endif ()
 else ()
     message (FATAL_ERROR "ERROR: CMake build system only works for windows and linux.\nUse autotools build system for any other supported platform.")
+endif ()
+
+check_include_file (stdint.h NN_HAVE_STDINT)
+if (NN_HAVE_STDINT)
+    add_definitions (-DNN_HAVE_STDINT)
 endif ()
 
 #  Build the library itself.

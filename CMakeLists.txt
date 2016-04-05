@@ -32,6 +32,20 @@ include (CheckLibraryExists)
 project (nanomsg C)
 enable_testing ()
 
+# Determine library versions.
+
+file (READ src/nn.h NN_HDR_STR)
+string (REGEX REPLACE ".*#define +NN_VERSION_CURRENT +([0-9]+).*" "\\1" NN_VERSION_CURRENT "${NN_HDR_STR}")
+string (REGEX REPLACE ".*#define +NN_VERSION_REVISION +([0-9]+).*" "\\1" NN_VERSION_REVISION "${NN_HDR_STR}")
+string (REGEX REPLACE ".*#define +NN_VERSION_AGE +([0-9]+).*" "\\1" NN_VERSION_AGE "${NN_HDR_STR}")
+
+if ((NN_VERSION_CURRENT STREQUAL "") OR (NN_VERSION_REVISION STREQUAL "") OR (NN_VERSION_AGE STREQUAL ""))
+    message (FATAL_ERROR "Could not read ABI version from nn.h")
+else ()
+    set (NN_ABI_VERSION "${NN_VERSION_CURRENT}.${NN_VERSION_REVISION}.${NN_VERSION_AGE}")
+    message (STATUS "Detected nanomsg ABI v${NN_ABI_VERSION}")
+endif ()
+
 #  Platform checks.
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")

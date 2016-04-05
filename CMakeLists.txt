@@ -1,4 +1,5 @@
 #
+#   Copyright (c) 2016 Jerry Jacobs  All rights reserved.
 #   Copyright (c) 2012 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
@@ -25,6 +26,8 @@ cmake_minimum_required (VERSION 2.8)
 include (CheckIncludeFiles)
 include (CheckSymbolExists)
 include (CheckCSourceCompiles)
+include (CheckFunctionExists)
+include (CheckLibraryExists)
 
 project (nanomsg C)
 enable_testing ()
@@ -39,14 +42,49 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         add_definitions (-DNN_HAVE_MINGW -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
     endif ()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    add_definitions(-DNN_HAVE_LINUX)
-    add_definitions(-DNN_HAVE_SEMAPHORE)
-    add_definitions(-DNN_HAVE_EVENTFD)
-    add_definitions(-DNN_HAVE_POLL)
-    add_definitions(-DNN_USE_EPOLL)
-    add_definitions(-DNN_HAVE_MSG_CONTROL) # TODO this is not nice...
+    add_definitions (-DNN_HAVE_LINUX)
+    add_definitions (-DNN_HAVE_MSG_CONTROL) # TODO for some reason it else doesn't compile
+
+    CHECK_FUNCTION_EXISTS(eventfd      HAVE_EVENTFD)
+    CHECK_FUNCTION_EXISTS(poll         HAVE_POLL)
+    CHECK_FUNCTION_EXISTS(epoll_create HAVE_EPOLL)
+    CHECK_FUNCTION_EXISTS(pipe         HAVE_PIPE)
+    CHECK_FUNCTION_EXISTS(pipe2        HAVE_PIPE2)
+
+    CHECK_LIBRARY_EXISTS(pthread sem_init                "" HAVE_SEMAPHORE_INIT)
+    CHECK_LIBRARY_EXISTS(pthread sem_wait                "" HAVE_SEMAPHORE_WAIT)
+
+    if (${HAVE_EVENTFD})
+        add_definitions (-DNN_HAVE_EVENTFD)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support eventfd")
+    endif ()
+
+    if (${HAVE_SEMAPHORE_INIT} AND ${HAVE_SEMAPHORE_WAIT})
+        add_definitions (-DNN_HAVE_SEMAPHORE)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support semaphore")
+    endif ()
+
+    if (${HAVE_POLL})
+        add_definitions (-DNN_HAVE_POLL)
+
+        if (${HAVE_EPOLL})
+           add_definitions (-DNN_USE_EPOLL)
+        endif ()
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support poll")
+    endif ()
+
+    if (${HAVE_PIPE2})
+       add_definitions (-DNN_HAVE_PIPE2)
+    elseif (${HAVE_PIPE})
+       add_definitions (-DNN_HAVE_PIPE)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support pipe or pipe2")
+    endif ()
 else ()
-    message (FATAL_ERROR "ERROR: CMake build system only works for windows and linux.\nUse autotools build system for any other supported platform." )
+    message (FATAL_ERROR "ERROR: CMake build system only works for windows and linux.\nUse autotools build system for any other supported platform.")
 endif ()
 
 #  Build the library itself.
@@ -117,7 +155,7 @@ add_libnanomsg_test (bug328 5)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     add_libnanomsg_test (win_sec_attr 5)
-endif()
+endif ()
 
 #  Build the performance tests.
 

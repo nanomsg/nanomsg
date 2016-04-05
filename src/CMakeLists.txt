@@ -1,5 +1,6 @@
 #
 #   Copyright (c) 2016 Jerry Jacobs  All rights reserved.
+#   Copyright (c) 2015 Jack R. Dunaway. All rights reserved.
 #   Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
@@ -290,22 +291,25 @@ if (WIN32)
     )
 endif ()
 
-add_library (nanomsg SHARED ${NN_SOURCES})
+add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
 
 add_definitions (-DNN_EXPORTS)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_link_libraries (nanomsg ws2_32)
-    target_link_libraries (nanomsg mswsock)
-    target_link_libraries (nanomsg advapi32)
+    target_link_libraries (${PROJECT_NAME} ws2_32)
+    target_link_libraries (${PROJECT_NAME} mswsock)
+    target_link_libraries (${PROJECT_NAME} advapi32)
 else ()
     find_package (Threads REQUIRED)
+    if(THREADS_HAVE_PTHREAD_ARG)
+        target_compile_options (${PROJECT_NAME} PUBLIC -pthread)
+    endif()
     if (CMAKE_THREAD_LIBS_INIT)
-       target_link_libraries (nanomsg "${CMAKE_THREAD_LIBS_INIT}")
+       target_link_libraries (${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
     endif ()
 endif ()
 
-install (TARGETS nanomsg
+install (TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin

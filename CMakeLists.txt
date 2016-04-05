@@ -1,5 +1,6 @@
 #
 #   Copyright (c) 2016 Jerry Jacobs  All rights reserved.
+#   Copyright (c) 2015 Jack R. Dunaway. All rights reserved.
 #   Copyright (c) 2012 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #
@@ -119,7 +120,7 @@ add_subdirectory (src)
 #  Build the tools
 
 add_executable (nanocat tools/nanocat.c tools/options.c)
-target_link_libraries (nanocat nanomsg)
+target_link_libraries (nanocat ${PROJECT_NAME})
 
 #  Build unit tests.
 
@@ -128,7 +129,7 @@ set (all_tests "")
 macro (add_libnanomsg_test NAME TIMEOUT)
     list (APPEND all_tests ${NAME})
     add_executable (${NAME} tests/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
+    target_link_libraries (${NAME} ${PROJECT_NAME})
     add_test (NAME ${NAME} COMMAND ${NAME})
     set_tests_properties (${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
 endmacro (add_libnanomsg_test)
@@ -186,7 +187,7 @@ endif ()
 
 macro (add_libnanomsg_perf NAME)
     add_executable (${NAME} perf/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
+    target_link_libraries (${NAME} ${PROJECT_NAME})
 endmacro (add_libnanomsg_perf)
 
 add_libnanomsg_perf (inproc_lat)
@@ -216,5 +217,5 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set (CPACK_GENERATOR "NSIS")
 endif()
 
-set (CPACK_PACKAGE_NAME "nanomsg")
+set (CPACK_PACKAGE_NAME ${PROJECT_NAME})
 include (CPack)

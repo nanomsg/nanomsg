@@ -485,6 +485,7 @@ PROTOCOL_TESTS = \
     tests/bus
 
 FEATURE_TESTS = \
+    tests/chunks \
     tests/async_shutdown \
     tests/block \
     tests/term \

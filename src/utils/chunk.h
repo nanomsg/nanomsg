@@ -27,18 +27,6 @@
 #include <stddef.h>
 #include "int.h"
 
-/* Chunk description used by memory management utilities.
-   This is intented to be used by the OFI transport for memory registration. */
-struct nn_chunk_desc {
-
-    /* Base pointer to the data buffer */
-    void * base;
-
-    /* Length of the buffer */
-    size_t len;
-
-};
-
 /*  Signature of the chunk deallocator function */
 typedef void (*nn_chunk_free_fn) (void *p, void *user);
 
@@ -51,9 +39,6 @@ int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor,
 
 /*  Dereference the chunk if this is a pointer chunk, otherwise return p */
 void *nn_chunk_deref (void *p);
-
-/*  Get a description of the specified chunk */
-int nn_chunk_describe(void *p, struct nn_chunk_desc *d);
 
 /*  Resizes a chunk previously allocated with nn_chunk_alloc. */
 int nn_chunk_realloc (size_t size, void **chunk);
@@ -79,8 +64,11 @@ void *nn_chunk_trim (void *p, size_t n);
     the previous free function.
 
     This is useful by some transports, such as OFI, in order to keep track
-    of the de-allocated chunks, and release the related resources. */
-void nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
+    of the de-allocated chunks, and release the related resources. 
+
+    This function returns 0 if the function was successfuly replaced,
+    or -EINVAL if the given function pointer is already defined. */
+int nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
     nn_chunk_free_fn * old_fn, void **old_ffnptr);
 
 /*  Reset chunk properties (ex. previous trims) and set the 'size' property of 

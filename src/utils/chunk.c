@@ -284,7 +284,7 @@ void *nn_chunk_trim (void *p, size_t n)
     nn_assert (n <= self->size);
 
     /* In case of user pointer just move the user pointer forward */
-    if (nn_fast( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR )) {
+    if ( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR ) {
 
         /* Increase empty space defined in the header */
         empty_space = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
@@ -314,35 +314,7 @@ void *nn_chunk_trim (void *p, size_t n)
     return p;
 }
 
-int nn_chunk_describe(void *p, struct nn_chunk_desc *d)
-{
-    uint32_t tag;
-    uint32_t off;
-    struct nn_chunk * chunk;
-
-    /* Validate tag */
-    tag = nn_getl(NN_CHUNK_TAG_OFFSET(p));
-    nn_assert ( (tag == NN_CHUNK_TAG) || (tag == NN_CHUNK_TAG_PTR) );
-
-    /* Get offset */
-    off = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );
-    chunk = (struct  nn_chunk*) ((uint8_t*) p - 2 *sizeof (uint32_t) - off -
-        sizeof (struct nn_chunk));
-
-    /* Get base address to the data no matter what's the white space */
-    if (nn_fast( tag == NN_CHUNK_TAG_PTR )) {
-        d->base = ((uint8_t*) ((struct nn_chunk_ptr *) p)->ptr) - off;
-        d->len = chunk->size + off;
-    } else {
-        d->base = ((uint8_t*) p) - off;
-        d->len = chunk->size + off;
-    }
-
-    /* Success */
-    return 0;
-}
-
-void nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
+int nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
     nn_chunk_free_fn * old_fn, void **old_ffnptr)
 {
     struct nn_chunk *self;
@@ -351,6 +323,10 @@ void nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
     /* Get chunk pointer */
     self = nn_chunk_getptr (p);
 
+    /* Don't continue if free functions match */
+    if (new_fn == self->ffn)
+        return -EINVAL;
+
     /* Keep old values */
     *old_fn = self->ffn;
     *old_ffnptr = self->ffnptr;
@@ -358,6 +334,9 @@ void nn_chunk_replace_free_fn(void *p, nn_chunk_free_fn new_fn,void *new_ffnptr,
     /* Replace */
     self->ffn = new_fn;
     self->ffnptr = new_ffnptr;
+
+    /* Success */
+    return 0;
 
 }
 
@@ -373,7 +352,7 @@ void* nn_chunk_reset(void *p, size_t size)
 
     /* Remove any empty space */
     if (nn_slow( empty_space )) {
-        if (nn_fast( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR )) {
+        if ( nn_getl( NN_CHUNK_TAG_OFFSET(p) ) == NN_CHUNK_TAG_PTR ) {
 
             /* Rewind user pointer */
             ((struct nn_chunk_ptr *) p)->ptr =
@@ -413,7 +392,7 @@ static struct nn_chunk *nn_chunk_getptr (void *p)
     nn_assert ( (tag == NN_CHUNK_TAG) || (tag == NN_CHUNK_TAG_PTR) );
 
     /* On user-pointer chunks the offset is virtual */
-    if (nn_fast( tag == NN_CHUNK_TAG_PTR )) {
+    if ( tag == NN_CHUNK_TAG_PTR ) {
         off = 0;
     } else {
         off = nn_getl( NN_CHUNK_SIZE_OFFSET(p) );

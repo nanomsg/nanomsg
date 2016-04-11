@@ -108,6 +108,7 @@ int nn_chunk_alloc (size_t size, int type, void **result)
 #else
         return -ENOSYS;
 #endif
+        break;
 
     default:
         return -EINVAL;

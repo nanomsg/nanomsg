@@ -85,13 +85,12 @@ static void nn_chunk_default_free (void *p, void*user);
 static size_t nn_chunk_hdrsize ();
 
 static int nn_chunk_new (size_t size, int type, uint32_t tag, 
-    struct nn_chunk ** result)
+    struct nn_chunk ** result, size_t * pad)
 {
     int ret;
-    size_t sz, szempty;
+    size_t sz;
     struct nn_chunk *self;
     const size_t hdrsz = nn_chunk_hdrsize ();
-    szempty = 0;
 
     /*  Compute total size to be allocated. Check for overflow. */
     sz = hdrsz + size;
@@ -102,6 +101,7 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
     switch (type) {
     case 0:
         self = nn_alloc (sz, "message chunk");
+        *pad = 0;
         break;
 
     case NN_ALLOC_PAGEALIGN:
@@ -120,11 +120,11 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
                  requires exposing the nn_chunk_getptr function to the 
                  user.
         */
-        szempty = sysconf(_SC_PAGESIZE) -
-                  sizeof(struct nn_chunk) + sizeof(uint32_t) + sizeof(uint32_t);
+        *pad = sysconf(_SC_PAGESIZE) -
+               sizeof(struct nn_chunk) - sizeof(uint32_t) - sizeof(uint32_t);
 
         /* Allocate memory */
-        ret = posix_memalign( &self, sysconf(_SC_PAGESIZE), sz + szempty );
+        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE), sz + *pad );
         if (nn_slow( ret != 0 )) return -ret;
 #else
         return -ENOSYS;
@@ -139,13 +139,13 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
 
     /*  Fill in the chunk header. */
     nn_atomic_init (&self->refcount, 1);
-    self->size = size;
+    self->size = size + *pad;
     self->ffn = nn_chunk_default_free;
     self->ffnptr = NULL;
 
     /*  Fill in the size of the empty space between the chunk header
         and the message. */
-    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), szempty);
+    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
 
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), tag);
@@ -158,15 +158,21 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
 int nn_chunk_alloc (size_t size, int type, void **result)
 {
     int ret;
+    size_t pad;
     struct nn_chunk *self;
 
     /* Create new chunk */
-    ret = nn_chunk_new( size, type, NN_CHUNK_TAG, &self );
+    ret = nn_chunk_new( size, type, NN_CHUNK_TAG, &self, &pad );
     if (ret)
         return ret;
 
     /* Update result */
     *result = nn_chunk_getdata (self);
+
+    /* If we have padding (ex. for proper alignment of the user pointer), 
+       trim data accordingly */
+    if (pad) *result = nn_chunk_trim( *result, pad );
+
     return 0;
 }
 
@@ -174,11 +180,13 @@ int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor,
     void *userptr, void **result)
 {
     int ret;
+    size_t pad;
     struct nn_chunk_ptr *ptr_chunk;
     struct nn_chunk *self;
 
     /* Create new user-pointer chunk */
-    ret = nn_chunk_new(sizeof(struct nn_chunk_ptr), 0, NN_CHUNK_TAG_PTR, &self);
+    ret = nn_chunk_new(sizeof(struct nn_chunk_ptr), 0, NN_CHUNK_TAG_PTR, 
+        &self, &pad);
     if (ret)
         return ret;
 

@@ -29,6 +29,11 @@
 #include "wire.h"
 #include "err.h"
 
+#if !defined NN_HAVE_WINDOWS
+#include <stdlib.h>
+#include <unistd.h>
+#endif
+
 #include <string.h>
 
 #define NN_CHUNK_TAG 0xdeadcafe
@@ -82,9 +87,11 @@ static size_t nn_chunk_hdrsize ();
 static int nn_chunk_new (size_t size, int type, uint32_t tag, 
     struct nn_chunk ** result)
 {
-    size_t sz;
+    int ret;
+    size_t sz, szempty;
     struct nn_chunk *self;
     const size_t hdrsz = nn_chunk_hdrsize ();
+    szempty = 0;
 
     /*  Compute total size to be allocated. Check for overflow. */
     sz = hdrsz + size;
@@ -96,6 +103,34 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
     case 0:
         self = nn_alloc (sz, "message chunk");
         break;
+
+    case NN_ALLOC_PAGEALIGN:
+        /* User requested a page-aligned chunk */
+#if defined NN_HAVE_WINDOWS
+        return -ENOSYS;
+#elif _POSIX_C_SOURCE >= 200112L
+        /* Make sure that the user will eventually receive a 
+           pagesize-aligned pointer. This means that there must
+           be enough empty space in order for the user to receive
+           a properly-aligned pointer.
+           NOTE: This is a waste of memory. Alternatively, the user
+                 must know the base address of the chunk in order to
+                 tell the transport send the whole chunk pointer,
+                 but starting from a specific offset. However this
+                 requires exposing the nn_chunk_getptr function to the 
+                 user.
+        */
+        szempty = sysconf(_SC_PAGESIZE) -
+                  sizeof(struct nn_chunk) + sizeof(uint32_t) + sizeof(uint32_t);
+
+        /* Allocate memory */
+        ret = posix_memalign( &self, sysconf(_SC_PAGESIZE), sz + szempty );
+        if (nn_slow( ret != 0 )) return -ret;
+#else
+        return -ENOSYS;
+#endif
+        break;
+
     default:
         return -EINVAL;
     }
@@ -110,7 +145,7 @@ static int nn_chunk_new (size_t size, int type, uint32_t tag,
 
     /*  Fill in the size of the empty space between the chunk header
         and the message. */
-    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
+    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), szempty);
 
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), tag);

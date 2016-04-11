@@ -258,6 +258,9 @@ NN_EXPORT void nn_term (void);
 
 #define NN_MSG ((size_t) -1)
 
+/* Allocate memory aligned to page-size */
+#define NN_ALLOC_PAGEALIGN 1
+
 /* Signature of the chunk deallocator function */
 typedef void (*nn_free_fn) (void *p, void *user);
 

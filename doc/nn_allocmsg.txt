@@ -26,7 +26,13 @@ default one, however, individual transport mechanisms may define their
 own allocation mechanisms, such as allocating in shared memory or allocating
 a memory block pinned down to a physical memory address. Such allocation,
 when used with the transport that defines them, should be more efficient
-than the default allocation mechanism.
+than the default allocation mechanism. Refer to the next section for more details.
+
+ALLOCATION TYPES
+----------------
+
+*NN_ALLOC_PAGEALIGN*::
+Allocate a chunk in a page-aligned memory address. This may improve performance on transports that benefit from memory alignment. If your system does not support aligned allocation this function will return 'ENOSYS'.
 
 
 RETURN VALUE
@@ -40,6 +46,8 @@ ERRORS
 ------
 *EINVAL*::
 Supplied allocation 'type' is invalid.
+*ENOSYS*::
+The specified allocation 'type' is not supported by your system.
 *ENOMEM*::
 Not enough memory to allocate the message.
 
@@ -56,6 +64,7 @@ nn_send (s, &buf, NN_MSG, 0);
 
 SEE ALSO
 --------
+linknanomsg:nn_allocmsg_ptr[3]
 linknanomsg:nn_freemsg[3]
 linknanomsg:nn_reallocmsg[3]
 linknanomsg:nn_send[3]
@@ -65,4 +74,4 @@ linknanomsg:nanomsg[7]
 AUTHORS
 -------
 Martin Sustrik <sustrik@250bpm.com>
-
+Ioannis Charalampidis <icharala@cern.ch>

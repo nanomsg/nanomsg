@@ -100,10 +100,10 @@ int nn_chunk_alloc (size_t size, int type, void **result)
                  user.
         */
         szempty = sysconf(_SC_PAGESIZE) -
-                  sizeof(struct nn_chunk) + sizeof(uint32_t) + sizeof(uint32_t);
+                  sizeof(struct nn_chunk) - sizeof(uint32_t) - sizeof(uint32_t);
 
         /* Allocate memory */
-        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE), sz + szempty );
+        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE),sz+szempty );
         if (nn_slow( ret != 0 )) return -ret;
 #else
         return -ENOSYS;
@@ -123,12 +123,18 @@ int nn_chunk_alloc (size_t size, int type, void **result)
 
     /*  Fill in the size of the empty space between the chunk header
         and the message. */
-    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), szempty);
+    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
 
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), NN_CHUNK_TAG);
 
-    *result = nn_chunk_getdata (self);
+    /*  Apply padding if needed */
+    if (szempty) {
+        *result = nn_chunk_trim( nn_chunk_getdata(self), szempty );
+    } else {
+        *result = nn_chunk_getdata (self);
+    }
+
     return 0;
 }
 

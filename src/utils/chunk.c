@@ -28,6 +28,11 @@
 #include "wire.h"
 #include "err.h"
 
+#if !defined NN_HAVE_WINDOWS
+#include <stdlib.h>
+#include <unistd.h>
+#endif
+
 #include <string.h>
 
 #define NN_CHUNK_TAG 0xdeadcafe
@@ -73,6 +78,18 @@ int nn_chunk_alloc (size_t size, int type, void **result)
     case 0:
         self = nn_alloc (sz, "message chunk");
         break;
+
+    case NN_ALLOC_PAGEALIGN:
+        /* User requested a page-aligned chunk */
+#if defined NN_HAVE_WINDOWS
+        return -ENOSYS;
+#elif _POSIX_C_SOURCE >= 200112L
+        ret = posix_memalign( &self, sysconf(_SC_PAGESIZE), sz );
+        if (nn_slow( ret != 0 )) return -ret;
+#else
+        return -ENOSYS;
+#endif
+
     default:
         return -EINVAL;
     }

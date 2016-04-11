@@ -258,6 +258,9 @@ NN_EXPORT void nn_term (void);
 
 #define NN_MSG ((size_t) -1)
 
+/* Allocate memory aligned to page-size */
+#define NN_ALLOC_PAGEALIGN
+
 NN_EXPORT void *nn_allocmsg (size_t size, int type);
 NN_EXPORT void *nn_reallocmsg (void *msg, size_t size);
 NN_EXPORT int nn_freemsg (void *msg);

@@ -33,7 +33,10 @@ typedef void (*nn_chunk_free_fn) (void *p, void *user);
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
 int nn_chunk_alloc (size_t size, int type, void **result);
 
-/*  Allocates the chunk with existing data destructor callback */
+/*  Allocates the chunk with existing data destructor callback
+    WARNING: This should *NOT* be used by transports or protocols to allocate 
+             messages for the recv() end of the transport! The user will not
+             be able to free your message otherwise! */
 int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor, 
     void *userptr, void **result);
 

@@ -65,6 +65,7 @@ static size_t nn_chunk_hdrsize ();
 
 int nn_chunk_alloc (size_t size, int type, void **result)
 {
+    int ret;
     size_t sz, szempty;
     struct nn_chunk *self;
     const size_t hdrsz = nn_chunk_hdrsize ();
@@ -102,7 +103,7 @@ int nn_chunk_alloc (size_t size, int type, void **result)
                   sizeof(struct nn_chunk) + sizeof(uint32_t) + sizeof(uint32_t);
 
         /* Allocate memory */
-        ret = posix_memalign( &self, sysconf(_SC_PAGESIZE), sz + szempty );
+        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE), sz + szempty );
         if (nn_slow( ret != 0 )) return -ret;
 #else
         return -ENOSYS;

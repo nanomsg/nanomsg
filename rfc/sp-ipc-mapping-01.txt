@@ -2,10 +2,11 @@
 
 
 
-Internet Engineering Task Force                          M. Sustrik, Ed.
+Internet Engineering Task Force                          G. D'Amore, Ed.
 Internet-Draft
-Intended status: Informational                          November 6, 2014
-Expires: May 10, 2015
+Intended status: Informational                                M. Sustrik
+Expires: October 14, 2016
+                                                          April 12, 2016
 
 
                  IPC Mapping for Scalability Protocols
@@ -32,11 +33,11 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on May 10, 2015.
+   This Internet-Draft will expire on October 14, 2016.
 
 Copyright Notice
 
-   Copyright (c) 2014 IETF Trust and the persons identified as the
+   Copyright (c) 2016 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -52,10 +53,9 @@ Copyright Notice
 
 
 
-
-Sustrik                   Expires May 10, 2015                  [Page 1]
+D'Amore & Sustrik       Expires October 14, 2016                [Page 1]
 
-Internet-Draft             IPC mapping for SPs             November 2014
+Internet-Draft             IPC mapping for SPs                April 2016
 
 
 1.  Underlying protocol
@@ -109,9 +109,9 @@ Internet-Draft             IPC mapping for SPs             November 2014
 
 
 
-Sustrik                   Expires May 10, 2015                  [Page 2]
+D'Amore & Sustrik       Expires October 14, 2016                [Page 2]
 
-Internet-Draft             IPC mapping for SPs             November 2014
+Internet-Draft             IPC mapping for SPs                April 2016
 
 
    indicate that the connection is supposed to use one of the
@@ -139,14 +139,14 @@ Internet-Draft             IPC mapping for SPs             November 2014
    messages.  Every message starts with a message header consisting of
    of a single byte called 'message type'.
 
-   The only value of this field that is currently allowed is zero, which
+   The only value of this field that is currently allowed is 0x1, which
    means "in-band" message, i.e. message whose body is passed as a
    stream of bytes via the AF_UNIX socket.
 
    The intent of this field is to eventually allow out-of-band transfer
    of the message bodies, e.g. via shared memory.
 
-   In-band message type MUST be implemented.
+   The in-band message type MUST be implemented.
 
 4.  In-band messages
 
@@ -165,9 +165,9 @@ Internet-Draft             IPC mapping for SPs             November 2014
 
 
 
-Sustrik                   Expires May 10, 2015                  [Page 3]
+D'Amore & Sustrik       Expires October 14, 2016                [Page 3]
 
-Internet-Draft             IPC mapping for SPs             November 2014
+Internet-Draft             IPC mapping for SPs                April 2016
 
 
 5.  IANA Considerations
@@ -179,9 +179,14 @@ Internet-Draft             IPC mapping for SPs             November 2014
    The mapping isn't intended to provide any additional security in
    addition to what AF_UNIX does.
 
-Author's Address
+Authors' Addresses
 
-   Martin Sustrik (editor)
+   Garrett D'Amore (editor)
+
+   Email: garrett@damore.org
+
+
+   Martin Sustrik
 
    Email: sustrik@250bpm.com
 
@@ -216,10 +221,4 @@ Author's Address
 
 
 
-
-
-
-
-
-Sustrik                   Expires May 10, 2015                  [Page 4]
-
+D'Amore & Sustrik       Expires October 14, 2016                [Page 4]

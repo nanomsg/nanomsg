@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2014 Achille Roussel All rights reserved.
+    Copyright (c) 2016 Ioannis Charalampidis <ioannis.charalampidis@cern.ch>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -27,6 +28,11 @@
 #include "fast.h"
 #include "wire.h"
 #include "err.h"
+
+#if !defined NN_HAVE_WINDOWS
+#include <stdlib.h>
+#include <unistd.h>
+#endif
 
 #include <string.h>
 
@@ -59,9 +65,11 @@ static size_t nn_chunk_hdrsize ();
 
 int nn_chunk_alloc (size_t size, int type, void **result)
 {
-    size_t sz;
+    int ret;
+    size_t sz, szempty;
     struct nn_chunk *self;
     const size_t hdrsz = nn_chunk_hdrsize ();
+    szempty = 0;
 
     /*  Compute total size to be allocated. Check for overflow. */
     sz = hdrsz + size;
@@ -73,6 +81,35 @@ int nn_chunk_alloc (size_t size, int type, void **result)
     case 0:
         self = nn_alloc (sz, "message chunk");
         break;
+
+    case NN_ALLOC_PAGEALIGN:
+        /* User requested a page-aligned chunk */
+#if defined NN_HAVE_WINDOWS
+        return -ENOSYS;
+#elif _POSIX_C_SOURCE >= 200112L
+        /* Make sure that the user will eventually receive a 
+           pagesize-aligned pointer. This means that there must
+           be enough empty space in order for the user to receive
+           a properly-aligned pointer.
+
+           NOTE: This is a waste of memory. Alternatively, the user
+                 must know the base address of the chunk in order to
+                 tell the transport send the whole chunk pointer,
+                 but starting from a specific offset. However this
+                 requires exposing the nn_chunk_getptr function to the 
+                 user.
+        */
+        szempty = sysconf(_SC_PAGESIZE) -
+                  sizeof(struct nn_chunk) - sizeof(uint32_t) - sizeof(uint32_t);
+
+        /* Allocate memory */
+        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE),sz+szempty );
+        if (nn_slow( ret != 0 )) return -ret;
+#else
+        return -ENOSYS;
+#endif
+        break;
+
     default:
         return -EINVAL;
     }
@@ -91,7 +128,13 @@ int nn_chunk_alloc (size_t size, int type, void **result)
     /*  Fill in the tag. */
     nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), NN_CHUNK_TAG);
 
-    *result = nn_chunk_getdata (self);
+    /*  Apply padding if needed */
+    if (szempty) {
+        *result = nn_chunk_trim( nn_chunk_getdata(self), szempty );
+    } else {
+        *result = nn_chunk_getdata (self);
+    }
+
     return 0;
 }
 

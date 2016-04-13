@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Insollo Entertainment, LLC.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -362,7 +363,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set send timeout");
     }
     if (options->recv_timeout >= 0) {
-        nn_set_recv_timeout (sock, (int) options->recv_timeout);
+        nn_set_recv_timeout (sock, (int) options->recv_timeout * 1000);
     }
     if (options->socket_name) {
         rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SOCKET_NAME,

@@ -1,6 +1,7 @@
 #
 #   Copyright (c) 2012 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+#   Copyright 2016 Garrett D'Amore <garrett@damore.org>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -101,6 +102,7 @@ add_libnanomsg_test (domain 5)
 add_libnanomsg_test (trie 5)
 add_libnanomsg_test (list 5)
 add_libnanomsg_test (hash 5)
+add_libnanomsg_test (stats 5)
 add_libnanomsg_test (symbol 5)
 add_libnanomsg_test (separation 5)
 add_libnanomsg_test (zerocopy 5)

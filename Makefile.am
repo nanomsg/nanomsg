@@ -1,4 +1,5 @@
 # Copyright (c) 2013 Luca Barbato
+# Copyright 2016 Garrett D'Amore <garrett@damore.org>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -374,6 +375,7 @@ MAN3 = \
     doc/nn_freemsg.txt \
     doc/nn_socket.txt \
     doc/nn_close.txt \
+    doc/nn_get_statistic.txt \
     doc/nn_getsockopt.txt \
     doc/nn_setsockopt.txt \
     doc/nn_bind.txt \
@@ -507,6 +509,7 @@ FEATURE_TESTS = \
     tests/separation \
     tests/zerocopy \
     tests/shutdown \
+    tests/stats \
     tests/cmsg \
     tests/bug328
 

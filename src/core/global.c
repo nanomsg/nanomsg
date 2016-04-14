@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -1041,6 +1041,74 @@ fail:
 
     errno = -rc;
     return -1;
+}
+
+uint64_t nn_get_statistic (int s, int statistic)
+{
+    int rc;
+    struct nn_sock *sock;
+    uint64_t val;
+
+    rc = nn_global_hold_socket (&sock, s);
+    if (nn_slow (rc < 0)) {
+        errno = -rc;
+        return (uint64_t)-1;
+    }
+
+    switch (statistic) {
+    case NN_STAT_ESTABLISHED_CONNECTIONS:
+        val = sock->statistics.established_connections;
+        break;
+    case NN_STAT_ACCEPTED_CONNECTIONS:
+        val = sock->statistics.accepted_connections;
+        break;
+    case NN_STAT_DROPPED_CONNECTIONS:
+        val = sock->statistics.dropped_connections;
+        break;
+    case NN_STAT_BROKEN_CONNECTIONS:
+        val = sock->statistics.broken_connections;
+        break;
+    case NN_STAT_CONNECT_ERRORS:
+        val = sock->statistics.connect_errors;
+        break;
+    case NN_STAT_BIND_ERRORS:
+        val = sock->statistics.bind_errors;
+        break;
+    case NN_STAT_ACCEPT_ERRORS:
+        val = sock->statistics.bind_errors;
+        break;
+    case NN_STAT_MESSAGES_SENT:
+        val = sock->statistics.messages_sent;
+        break;
+    case NN_STAT_MESSAGES_RECEIVED:
+        val = sock->statistics.messages_received;
+        break;
+    case NN_STAT_BYTES_SENT:
+        val = sock->statistics.bytes_sent;
+        break;
+    case NN_STAT_BYTES_RECEIVED:
+        val = sock->statistics.bytes_received;
+        break;
+    case NN_STAT_CURRENT_CONNECTIONS:
+        val = sock->statistics.current_connections;
+        break;
+    case NN_STAT_INPROGRESS_CONNECTIONS:
+        val = sock->statistics.inprogress_connections;
+        break;
+    case NN_STAT_CURRENT_SND_PRIORITY:
+        val = sock->statistics.current_snd_priority;
+        break;
+    case NN_STAT_CURRENT_EP_ERRORS:
+        val = sock->statistics.current_ep_errors;
+        break;
+    default:
+        val = (uint64_t)-1;
+        errno = EINVAL;
+        break;
+    }
+
+    nn_global_rele_socket (sock);
+    return val;
 }
 
 static void nn_global_add_transport (struct nn_transport *transport)

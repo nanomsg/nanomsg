@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -153,8 +154,6 @@ int nn_sockbase_getopt (struct nn_sockbase *self, int option,
 /*  Add some statistics for socket  */
 void nn_sockbase_stat_increment (struct nn_sockbase *self, int name,
     int increment);
-
-#define NN_STAT_CURRENT_SND_PRIORITY 401
 
 /******************************************************************************/
 /*  The socktype class.                                                       */

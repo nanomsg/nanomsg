@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,6 +31,17 @@ extern "C" {
 
 #include <errno.h>
 #include <stddef.h>
+
+/*  64-bit integer type for statistics.  */
+#if defined(_WIN32)
+typedef unsigned __int64 NN_UINT64;
+#elif defined(__VMS)
+#include <inttypes.h>
+#define NN_UINT64 uint64_t
+#else
+#include <stdint.h>
+#define NN_UINT64 uint64_t
+#endif
 
 /*  Handle DSO symbol visibility                                             */
 #if defined NN_NO_EXPORTS
@@ -208,6 +219,7 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_NS_ERROR 11
 #define NN_NS_LIMIT 12
 #define NN_NS_EVENT 13
+#define NN_NS_STATISTIC 14
 
 /*  Constants that are returned in `type` member of nn_symbol_properties      */
 #define NN_TYPE_NONE 0
@@ -220,6 +232,8 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_UNIT_MILLISECONDS 2
 #define NN_UNIT_PRIORITY 3
 #define NN_UNIT_BOOLEAN 4
+#define NN_UNIT_MESSAGES 5
+#define NN_UNIT_COUNTER 6
 
 /*  Structure that is returned from nn_symbol  */
 struct nn_symbol_properties {
@@ -387,9 +401,35 @@ NN_EXPORT int nn_device (int s1, int s2);
 
 NN_EXPORT int nn_tcpmuxd (int port);
 
+/******************************************************************************/
+/*  Statistics.                                                               */
+/******************************************************************************/
+
+/*  Transport statistics  */
+#define NN_STAT_ESTABLISHED_CONNECTIONS 101
+#define NN_STAT_ACCEPTED_CONNECTIONS    102
+#define NN_STAT_DROPPED_CONNECTIONS     103
+#define NN_STAT_BROKEN_CONNECTIONS      104
+#define NN_STAT_CONNECT_ERRORS          105
+#define NN_STAT_BIND_ERRORS             106
+#define NN_STAT_ACCEPT_ERRORS           107
+
+#define NN_STAT_CURRENT_CONNECTIONS     201
+#define NN_STAT_INPROGRESS_CONNECTIONS  202
+#define NN_STAT_CURRENT_EP_ERRORS       203
+
+/*  The socket-internal statistics  */
+#define NN_STAT_MESSAGES_SENT           301
+#define NN_STAT_MESSAGES_RECEIVED       302
+#define NN_STAT_BYTES_SENT              303
+#define NN_STAT_BYTES_RECEIVED          304
+/*  Protocol statistics  */
+#define	NN_STAT_CURRENT_SND_PRIORITY    401
+
+NN_EXPORT NN_UINT64 nn_get_statistic (int s, int stat);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

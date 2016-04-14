@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -38,13 +39,6 @@ struct nn_pipe;
 
 /*  The maximum implemented transport ID. */
 #define NN_MAX_TRANSPORT 4
-
-/*  The socket-internal statistics  */
-#define NN_STAT_MESSAGES_SENT          301
-#define NN_STAT_MESSAGES_RECEIVED      302
-#define NN_STAT_BYTES_SENT             303
-#define NN_STAT_BYTES_RECEIVED         304
-
 
 struct nn_sock
 {

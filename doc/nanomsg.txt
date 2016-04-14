@@ -73,6 +73,9 @@ Query the names and values of nanomsg symbols::
 Query properties of nanomsg symbols::
     linknanomsg:nn_symbol_info[3]
 
+Query statistics on a socket::
+    linknanomsg:nn_get_statistic[3]
+
 Start a device::
     linknanomsg:nn_device[3]
 

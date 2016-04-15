@@ -20,7 +20,7 @@ THIS IS AN EXPERIMENTAL FEATURE. DO NOT USE.
 THE FUNCTIONALITY IS SUBJECT TO CHANGE WITHOUT PRIOR NOTICE.
 
 TCPMUX transport is basically the same as TCP transport
-(see linknanomsg:nn_tcp[7]) except that it allows to specify service names
+(see <<nn_tcp.7.txt#,nn_tcp(7)>>) except that it allows to specify service names
 along with IP addresses and TCP ports. What it means in practice is that many
 applications on the same box can share the same TCP port.
 
@@ -33,7 +33,7 @@ with a slash and a service name:
 nn_connect (s, "tcpmux://192.168.0.1:5555/foo");
 ----
 
-When binding to a TCPMUX endpoint, linknanomsg:nn_tcpmuxd[1] daemon must be
+When binding to a TCPMUX endpoint, <<nn_tcpmuxd.1.txt#,nn_tcpmuxd(1)>> daemon must be
 running on the box and specified port. There is no such requirement when
 connecting to a TCPMUX endpoint.
 
@@ -57,16 +57,16 @@ nn_connect (s2, "tcpmux://server1.example.org:5555/foo");
 
 SEE ALSO
 --------
-linknanomsg:nn_tcpmuxd[1]
-linknanomsg:nn_tcp[7]
-linknanomsg:nn_inproc[7]
-linknanomsg:nn_ipc[7]
-linknanomsg:nn_bind[3]
-linknanomsg:nn_connect[3]
-linknanomsg:nanomsg[7]
+<<nn_tcpmuxd.1.txt#,nn_tcpmuxd(1)>>
+<<nn_tcp.7.txt#,nn_tcp(7)>>
+<<nn_inproc.7.txt#,nn_inproc(7)>>
+<<nn_ipc.7.txt#,nn_ipc(7)>>
+<<nn_bind.3.txt#,nn_bind(3)>>
+<<nn_connect.3.txt#,nn_connect(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

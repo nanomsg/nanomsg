@@ -32,7 +32,7 @@ Structure 'nn_cmsghdr' represents a single ancillary property and contains follo
     int cmsg_type;
 
 'cmsg_len' is the size of the property data, including the preceding nn_cmsghdr structure.
-'cmsg_level' is the level of the property; same values can be used as with linknanomsg:nn_getsockopt[3] and linknanomsg:nn_setsockopt[3].
+'cmsg_level' is the level of the property; same values can be used as with <<nn_getsockopt.3.txt#,nn_getsockopt(3)>> and <<nn_setsockopt.3.txt#,nn_setsockopt(3)>>.
 'cmsg_type' is the name of the property. These names are specific for each level.
 
 _NN_CMSG_FIRSTHDR_ returns a pointer to the first nn_cmsghdr in the control buffer in the supplied nn_msghdr structure.
@@ -71,14 +71,14 @@ while (hdr != NULL) {
 
 SEE ALSO
 --------
-linknanomsg:nn_sendmsg[3]
-linknanomsg:nn_recvmsg[3]
-linknanomsg:nn_getsockopt[3]
-linknanomsg:nn_setsockopt[3]
-linknanomsg:nanomsg[7]
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nn_recvmsg.3.txt#,nn_recvmsg(3)>>
+<<nn_getsockopt.3.txt#,nn_getsockopt(3)>>
+<<nn_setsockopt.3.txt#,nn_setsockopt(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

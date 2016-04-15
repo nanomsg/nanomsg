@@ -65,7 +65,7 @@ you can't do something, consider asking on the mailing list first.
 
 SEE ALSO
 --------
-linknanomsg:nanomsg[7]
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 http://github.com/estp
 
@@ -74,5 +74,5 @@ http://github.com/estp/estp/blob/master/specification.rst
 
 AUTHORS
 -------
-Paul Colomiets <paul@colomiets.name>
+link:mailto:paul@colomiets.name[Paul Colomiets]
 

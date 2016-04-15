@@ -397,36 +397,34 @@ if DOC
 
 #  Build instructions.
 
-.txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
-
 SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
-.xml.1:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.3:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.7:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
+.txt.1:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
+.txt.3:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
+.txt.7:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
 
 .txt.1.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 .txt.3.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 .txt.7.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 #  Cause man pages to be generated and installed.
 
@@ -447,7 +445,7 @@ endif
 
 #  Extra files to be included into the source package.
 
-EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN1) $(MAN3) $(MAN7)
+EXTRA_DIST += doc/stylesheet.css $(MAN1) $(MAN3) $(MAN7)
 
 ################################################################################
 #  performance tests                                                           #

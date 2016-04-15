@@ -173,20 +173,16 @@ AC_ARG_ENABLE([doc],
 )
 
 AS_IF([test x"$enable_doc" = "xyes"], [
-    AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
-    AS_IF([test x"$ASCIIDOC" = "x"],[
-        AC_MSG_ERROR([Please install asciidoc to build the documentation])
-    ])
-    AC_CHECK_PROGS([XMLTO], [xmlto])
-    AS_IF([test x"$XMLTO" = "x"], [
-        AC_MSG_ERROR([Please install xmlto to build the documentation])
+    AC_CHECK_PROGS([ASCIIDOCTOR], [asciidoctor])
+    AS_IF([test x"$ASCIIDOCTOR" = "x"],[
+        AC_MSG_ERROR([Please install asciidoctor to build the documentation])
     ])
     AS_IF([test ! -d "doc"], [
         AC_PROG_MKDIR_P
         AS_MKDIR_P("doc")
     ])
 ])
-AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
+AM_CONDITIONAL([DOC], [test x"$ASCIIDOCTOR" != "x"])
 
 ################################################################################
 #  Build nanocat                                                               #

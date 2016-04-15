@@ -15,19 +15,20 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Retrieves the value of the statistic from the socket.
+Retrieves the value of a statistic from the socket.
 
-While this API is stable, these statistics are intended for human consumption,
-to facilitate observability and debugging.  The actual statistics themselves
-as well as their meanings are unstable, and subject to change without notice.
+CAUTION: While this API is stable, these statistics are intended for
+human consumption, to facilitate observability and debugging.
+The actual statistics themselves as well as their meanings are unstable,
+and subject to change without notice.
 Programs should not depend on the presence or values of any particular
 statistic.
 
-While the following statistics are maintained by the nanomsg core framework,
+The following statistics are maintained by the nanomsg core framework;
 others may be present. As those are undocumented, no interpretration should
 be made from them. Not all statistics are relevant to all transports.
-For example, the inproc transport does not maintain any
-of the connection related statistics.
+For example, the <<nn_inproc.7.txt#,nn_inproc(7)>> transport does not
+maintain any of the connection related statistics.
 
 
 *NN_STAT_ESTABLISHED_CONNECTIONS*::
@@ -82,19 +83,19 @@ EXAMPLE
 -------
 
 ----
-val = nn_get_staistic (s, NN_STAT_SENT_MESSAGES);
+val = nn_get_statistic (s, NN_STAT_SENT_MESSAGES);
 if (val == 0)
     printf ("No messages have been sent yet.\n");
 ----
 
 SEE ALSO
 --------
-linknanomsg:nn_errno[3]
-linknanomsg:nn_symbol[3]
-linknanomsg:nanomsg[7]
+<<nn_errno.3.txt#,nn_errno(3)>>
+<<nn_symbol.3.txt#,nn_symbol(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Garrett D'Amore <garrett@damore.org>
+link:mailto:garrett@damore.org[Garrett D'Amore]
 

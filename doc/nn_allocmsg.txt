@@ -17,7 +17,7 @@ DESCRIPTION
 -----------
 Allocate a message of the specified 'size' to be sent in zero-copy fashion.
 The content of the message is undefined after allocation and it should be filled
-in by the user. While linknanomsg:nn_send[3] and linknanomsg:nn_sendmsg[3] allow
+in by the user. While <<nn_send.3.txt#,nn_send(3)>> and <<nn_sendmsg.3.txt#,nn_sendmsg(3)>> allow
 to send arbitrary buffers, buffers allocated using _nn_allocmsg()_ can be more
 efficient for large messages as they allow for using zero-copy techniques.
 
@@ -56,13 +56,13 @@ nn_send (s, &buf, NN_MSG, 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_freemsg[3]
-linknanomsg:nn_reallocmsg[3]
-linknanomsg:nn_send[3]
-linknanomsg:nn_sendmsg[3]
-linknanomsg:nanomsg[7]
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nn_reallocmsg.3.txt#,nn_reallocmsg(3)>>
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

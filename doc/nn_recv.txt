@@ -23,7 +23,7 @@ Alternatively, _nanomsg_ can allocate the buffer for you. To do so,
 let the 'buf' parameter be a pointer to a void* variable (pointer to pointer)
 to the receive buffer and set the 'len' parameter to _NN_MSG_. If the call is
 successful the user is responsible for deallocating the message using
-the linknanomsg:nn_freemsg[3] function.
+the <<nn_freemsg.3.txt#,nn_freemsg(3)>> function.
 
 The 'flags' argument is a combination of the flags defined below:
 
@@ -79,7 +79,7 @@ Receiving a message into a buffer allocated by _nanomsg_::
 The following will get a message from the pipe with a buffer allocated by
 the system. It is large enough to accommodate the entire message. This is a good
 way to get the entire message without truncating if the size of the message is
-unknown. It is the user's responsibility to call linknanomsg:nn_freemsg[3] after
+unknown. It is the user's responsibility to call <<nn_freemsg.3.txt#,nn_freemsg(3)>> after
 processing the message.
 
 ----
@@ -102,12 +102,12 @@ it is a zero-copy operation.
 
 SEE ALSO
 --------
-linknanomsg:nn_send[3]
-linknanomsg:nn_recvmsg[3]
-linknanomsg:nn_socket[3]
-linknanomsg:nanomsg[7]
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_recvmsg.3.txt#,nn_recvmsg(3)>>
+<<nn_socket.3.txt#,nn_socket(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

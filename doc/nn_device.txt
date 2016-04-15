@@ -22,7 +22,7 @@ _nn_device_ works in a "loopback" mode -- it loops and sends any messages
 received from the socket back to itself.
 
 To break the loop and make _nn_device_ function exit use the
-linknanomsg:nn_term[3] function.
+<<nn_term.3.txt#,nn_term(3)>> function.
 
 RETURN VALUE
 ------------
@@ -56,12 +56,12 @@ nn_device (s1, s2);
 
 SEE ALSO
 --------
-linknanomsg:nn_socket[3]
-linknanomsg:nn_term[3]
-linknanomsg:nanomsg[7]
+<<nn_socket.3.txt#,nn_socket(3)>>
+<<nn_term.3.txt#,nn_term(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

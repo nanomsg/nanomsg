@@ -100,11 +100,11 @@ if (pfd [0].revents & NN_POLLIN) {
 
 SEE ALSO
 --------
-linknanomsg:nn_socket[3]
-linknanomsg:nn_getsockopt[3]
-linknanomsg:nanomsg[7]
+<<nn_socket.3.txt#,nn_socket(3)>>
+<<nn_getsockopt.3.txt#,nn_getsockopt(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

@@ -48,10 +48,10 @@ if (rc < 0)
 
 SEE ALSO
 --------
-linknanomsg:nn_strerror[3]
-linknanomsg:nanomsg[7]
+<<nn_strerror.3.txt#,nn_strerror(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

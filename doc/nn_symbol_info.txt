@@ -143,13 +143,13 @@ for (i = 0; ; ++i) {
 
 SEE ALSO
 --------
-linknanomsg:nn_symbol[3]
-linknanomsg:nn_errno[3]
-linknanomsg:nn_strerror[3]
-linknanomsg:nanomsg[7]
+<<nn_symbol.3.txt#,nn_symbol(3)>>
+<<nn_errno.3.txt#,nn_errno(3)>>
+<<nn_strerror.3.txt#,nn_strerror(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Paul Colomiets <paul@colomiets.name>
-Garrett D'Amore <garrett@damore.org>
+link:mailto:paul@colomiets.name[Paul Colomiets]
+link:mailto:garrett@damore.org[Garrett D'Amore]

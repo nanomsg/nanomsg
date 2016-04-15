@@ -20,7 +20,7 @@ THE FUNCTIONALITY IS SUBJECT TO CHANGE WITHOUT PRIOR NOTICE.
 TCP multiplexer daemon listens on all network interfaces on TCP port specified
 by argument PORT. On each incoming connection it performs TCPMUX handshake as
 defined in RFC 1078. Then it hands the connection to the application bound to
-the service name specified by the client (see linknanomsg:tcpmux[7] for more
+the service name specified by the client (see <<tcpmux.7.txt#,tcpmux(7)>> for more
 details).
 
 
@@ -31,11 +31,11 @@ There are no options defined.
 
 SEE ALSO
 --------
-linknanomsg:tcpmux[7]
-linknanomsg:nanomsg[7]
+<<tcpmux.7.txt#,tcpmux(7)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
 
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

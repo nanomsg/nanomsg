@@ -18,119 +18,119 @@ DESCRIPTION
 Following functions are exported by nanomsg library:
 
 Create an SP socket::
-    linknanomsg:nn_socket[3]
+    <<nn_socket.3.txt#,nn_socket(3)>>
 
 Close an SP socket::
-    linknanomsg:nn_close[3]
+    <<nn_close.3.txt#,nn_close(3)>>
 
 Set a socket option::
-    linknanomsg:nn_setsockopt[3]
+    <<nn_setsockopt.3.txt#,nn_setsockopt(3)>>
 
 Retrieve a socket option::
-    linknanomsg:nn_getsockopt[3]
+    <<nn_getsockopt.3.txt#,nn_getsockopt(3)>>
 
 Add a local endpoint to the socket::
-    linknanomsg:nn_bind[3]
+    <<nn_bind.3.txt#,nn_bind(3)>>
 
 Add a remote endpoint to the socket::
-    linknanomsg:nn_connect[3]
+    <<nn_connect.3.txt#,nn_connect(3)>>
 
 Remove an endpoint from the socket::
-    linknanomsg:nn_shutdown[3]
+    <<nn_shutdown.3.txt#,nn_shutdown(3)>>
 
 Send a message::
-    linknanomsg:nn_send[3]
+    <<nn_send.3.txt#,nn_send(3)>>
 
 Receive a message::
-    linknanomsg:nn_recv[3]
+    <<nn_recv.3.txt#,nn_recv(3)>>
 
 Fine-grained alternative to nn_send::
-    linknanomsg:nn_sendmsg[3]
+    <<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
 
 Fine-grained alternative to nn_recv::
-    linknanomsg:nn_recvmsg[3]
+    <<nn_recvmsg.3.txt#,nn_recvmsg(3)>>
 
 Allocation of messages::
-    linknanomsg:nn_allocmsg[3]
-    linknanomsg:nn_reallocmsg[3]
-    linknanomsg:nn_freemsg[3]
+    <<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+    <<nn_reallocmsg.3.txt#,nn_reallocmsg(3)>>
+    <<nn_freemsg.3.txt#,nn_freemsg(3)>>
 
 Manipulation of message control data::
-    linknanomsg:nn_cmsg[3]
+    <<nn_cmsg.3.txt#,nn_cmsg(3)>>
 
 Multiplexing::
-    linknanomsg:nn_poll[3]
+    <<nn_poll.3.txt#,nn_poll(3)>>
 
 Retrieve the current errno::
-    linknanomsg:nn_errno[3]
+    <<nn_errno.3.txt#,nn_errno(3)>>
 
 Convert an error number into human-readable string::
-    linknanomsg:nn_strerror[3]
+    <<nn_strerror.3.txt#,nn_strerror(3)>>
 
 Query the names and values of nanomsg symbols::
-    linknanomsg:nn_symbol[3]
+    <<nn_symbol.3.txt#,nn_symbol(3)>>
 
 Query properties of nanomsg symbols::
-    linknanomsg:nn_symbol_info[3]
+    <<nn_symbol_info.3.txt#,nn_symbol_info(3)>>
 
 Query statistics on a socket::
-    linknanomsg:nn_get_statistic[3]
+    <<nn_get_statistic.3.txt#,nn_get_statistic(3)>>
 
 Start a device::
-    linknanomsg:nn_device[3]
+    <<nn_device.3.txt#,nn_device(3)>>
 
 Notify all sockets about process termination::
-    linknanomsg:nn_term[3]
+    <<nn_term.3.txt#,nn_term(3)>>
 
 Environment variables that influence nanomsg work::
-    linknanomsg:nn_env[7]
+    <<nn_env.7.txt#,nn_env(7)>>
 
 Following scalability protocols are provided by nanomsg:
 
 One-to-one protocol::
-    linknanomsg:nn_pair[7]
+    <<nn_pair.7.txt#,nn_pair(7)>>
 
 Request/reply protocol::
-    linknanomsg:nn_reqrep[7]
+    <<nn_reqrep.7.txt#,nn_reqrep(7)>>
 
 Publish/subscribe protocol::
-    linknanomsg:nn_pubsub[7]
+    <<nn_pubsub.7.txt#,nn_pubsub(7)>>
 
 Survey protocol::
-    linknanomsg:nn_survey[7]
+    <<nn_survey.7.txt#,nn_survey(7)>>
 
 Pipeline protocol::
-    linknanomsg:nn_pipeline[7]
+    <<nn_pipeline.7.txt#,nn_pipeline(7)>>
 
 Message bus protocol::
-    linknanomsg:nn_bus[7]
+    <<nn_bus.7.txt#,nn_bus(7)>>
 
 Following transport mechanisms are provided by nanomsg:
 
 In-process transport::
-    linknanomsg:nn_inproc[7]
+    <<nn_inproc.7.txt#,nn_inproc(7)>>
 
 Inter-process transport::
-    linknanomsg:nn_ipc[7]
+    <<nn_ipc.7.txt#,nn_ipc(7)>>
 
 TCP transport::
-    linknanomsg:nn_tcp[7]
+    <<nn_tcp.7.txt#,nn_tcp(7)>>
 
 TCPMUX transport::
-    linknanomsg:nn_tcpmux[7]
+    <<nn_tcpmux.7.txt#,nn_tcpmux(7)>>
 
 WebSocket transport::
-    linknanomsg:nn_ws[7]
+    <<nn_ws.7.txt#,nn_ws(7)>>
 
 Following tools are installed with the library:
 
 nanocat::
-    linknanomsg:nanocat[1]
+    <<nanocat.1.txt#,nanocat(1)>>
 
 tcpmuxd::
-    linknanomsg:tcpmuxd[1]
+    <<tcpmuxd.1.txt#,tcpmuxd(1)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

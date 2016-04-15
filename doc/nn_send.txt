@@ -17,7 +17,7 @@ DESCRIPTION
 The function will send a message containing the data from buffer pointed to
 by 'buf' parameter to the socket 's'. The message will be 'len' bytes long.
 
-Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
+Alternatively, to send a buffer allocated by <<nn_allocmsg.3.txt#,nn_allocmsg(3)>> function
 set the buf parameter to point to the pointer to the buffer and 'len' parameter
 to _NN_MSG_ constant. In this case a successful call to _nn_send_ will
 deallocate the buffer. Trying to deallocate it afterwards will result in
@@ -87,12 +87,12 @@ assert (nbytes == 3);
 
 SEE ALSO
 --------
-linknanomsg:nn_recv[3]
-linknanomsg:nn_sendmsg[3]
-linknanomsg:nn_socket[3]
-linknanomsg:nanomsg[7]
+<<nn_recv.3.txt#,nn_recv(3)>>
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nn_socket.3.txt#,nn_socket(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

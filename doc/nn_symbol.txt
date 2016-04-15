@@ -63,12 +63,12 @@ for (i = 0; ; ++i) {
 
 SEE ALSO
 --------
-linknanomsg:nn_symbol_info[3]
-linknanomsg:nn_errno[3]
-linknanomsg:nn_strerror[3]
-linknanomsg:nanomsg[7]
+<<nn_symbol_info.3.txt#,nn_symbol_info(3)>>
+<<nn_errno.3.txt#,nn_errno(3)>>
+<<nn_strerror.3.txt#,nn_strerror(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Evan Wies <evan@neomantra.net>
+link:mailto:evan@neomantra.net[Evan Wies]

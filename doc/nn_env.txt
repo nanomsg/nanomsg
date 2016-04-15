@@ -41,10 +41,10 @@ after 1.0 release).
 
 SEE ALSO
 --------
-linknanomsg:nanomsg[7]
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Paul Colomiets <paul@colomiets.name>
+link:mailto:paul@colomiets.name[Paul Colomiets]
 

@@ -445,7 +445,7 @@ endif
 
 #  Extra files to be included into the source package.
 
-EXTRA_DIST += doc/colony.css $(MAN1) $(MAN3) $(MAN7)
+EXTRA_DIST += doc/stylesheet.css $(MAN1) $(MAN3) $(MAN7)
 
 ################################################################################
 #  performance tests                                                           #

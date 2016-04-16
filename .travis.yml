@@ -1,12 +1,28 @@
 language: c
 sudo: false
-compiler:
-- clang
-- gcc
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: clang
+#    - os: osx
+#      compiler: gcc
+    - os: osx
+      compiler: clang
 script:
-- ./autogen.sh
-- ./configure
-- make distcheck
+  # Print all environment variables to aid in CI development
+  - printenv
+  # Print version and available CMake generators to aid in CI development
+  - cmake --version
+  - cmake --help
+  # Perform out-of-source build
+  - mkdir build
+  - cd build
+  # Perform CMake backend generation, build, and test
+  - cmake ..
+  - cmake --build .
+  - ctest --output-on-failure -C Debug
 deploy:
   provider: releases
   api_key:

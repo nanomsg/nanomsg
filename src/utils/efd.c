@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,16 +24,16 @@
 
 #include "efd.h"
 
-#if defined NN_HAVE_WINDOWS
-#include "efd_win.inc"
-#elif defined NN_HAVE_EVENTFD
-#include "efd_eventfd.inc"
-#elif defined NN_HAVE_PIPE
-#include "efd_pipe.inc"
-#elif defined NN_HAVE_SOCKETPAIR
-#include "efd_socketpair.inc"
+#if defined NN_USE_EVENTFD
+    #include "efd_eventfd.inc"
+#elif defined NN_USE_PIPE
+    #include "efd_pipe.inc"
+#elif defined NN_USE_SOCKETPAIR
+    #include "efd_socketpair.inc"
+#elif defined NN_USE_WINSOCK
+    #include "efd_win.inc"
 #else
-#error
+    #error
 #endif
 
 #if defined NN_HAVE_POLL
@@ -78,7 +79,7 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
     if (nn_slow (rc == SOCKET_ERROR)) {
         rc = nn_err_wsa_to_posix (WSAGetLastError ());
         errno = rc;
-        
+
         /*  Treat these as a non-fatal errors, typically occuring when the
             socket is being closed from a separate thread during a blocking
             I/O operation. */
@@ -94,5 +95,5 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 }
 
 #else
-#error
+    #error
 #endif

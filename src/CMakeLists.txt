@@ -1,6 +1,7 @@
 #
 #   Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+#   Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -20,10 +21,6 @@
 #   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 #   IN THE SOFTWARE.
 #
-
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set (NN_SOURCES
     nn.h
@@ -54,14 +51,6 @@ set (NN_SOURCES
     aio/ctx.c
     aio/fsm.h
     aio/fsm.c
-    aio/poller.h
-    aio/poller.c
-    aio/poller_epoll.h
-    aio/poller_epoll.inc
-    aio/poller_kqueue.h
-    aio/poller_kqueue.inc
-    aio/poller_poll.h
-    aio/poller_poll.inc
     aio/pool.h
     aio/pool.c
     aio/timer.h
@@ -70,16 +59,8 @@ set (NN_SOURCES
     aio/timerset.c
     aio/usock.h
     aio/usock.c
-    aio/usock_posix.h
-    aio/usock_posix.inc
-    aio/usock_win.h
-    aio/usock_win.inc
     aio/worker.h
     aio/worker.c
-    aio/worker_posix.h
-    aio/worker_posix.inc
-    aio/worker_win.h
-    aio/worker_win.inc
 
     utils/alloc.h
     utils/alloc.c
@@ -97,14 +78,6 @@ set (NN_SOURCES
     utils/cont.h
     utils/efd.h
     utils/efd.c
-    utils/efd_eventfd.h
-    utils/efd_eventfd.inc
-    utils/efd_pipe.h
-    utils/efd_pipe.inc
-    utils/efd_socketpair.h
-    utils/efd_socketpair.inc
-    utils/efd_win.h
-    utils/efd_win.inc
     utils/err.h
     utils/err.c
     utils/fast.h
@@ -129,10 +102,6 @@ set (NN_SOURCES
     utils/sleep.c
     utils/thread.h
     utils/thread.c
-    utils/thread_posix.h
-    utils/thread_posix.inc
-    utils/thread_win.h
-    utils/thread_win.inc
     utils/wire.h
     utils/wire.c
 
@@ -271,20 +240,133 @@ set (NN_SOURCES
 )
 
 if (WIN32)
-    LIST (APPEND NN_SOURCES
+    list (APPEND NN_SOURCES
+        aio/usock_win.h
+        aio/usock_win.inc
+        aio/worker_win.h
+        aio/worker_win.inc
+        utils/thread_win.h
+        utils/thread_win.inc
         utils/win.h
     )
+elseif (UNIX)
+    list (APPEND NN_SOURCES
+        aio/usock_posix.h
+        aio/usock_posix.inc
+        aio/worker_posix.h
+        aio/worker_posix.inc
+        utils/thread_posix.h
+        utils/thread_posix.inc
+    )
+else ()
+    message (FATAL_ERROR "Assertion failed; this path is unreachable.")
 endif ()
 
-add_library (nanomsg SHARED ${NN_SOURCES})
+if (NN_HAVE_EPOLL)
+    add_definitions (-DNN_USE_EPOLL)
+    list (APPEND NN_SOURCES
+        aio/poller.h
+        aio/poller.c
+        aio/poller_epoll.h
+        aio/poller_epoll.inc
+    )
+elseif (NN_HAVE_KQUEUE)
+    add_definitions (-DNN_USE_KQUEUE)
+    list (APPEND NN_SOURCES
+        aio/poller.h
+        aio/poller.c
+        aio/poller_kqueue.h
+        aio/poller_kqueue.inc
+    )
+elseif (NN_HAVE_POLL)
+    add_definitions (-DNN_USE_POLL)
+    list (APPEND NN_SOURCES
+        aio/poller.h
+        aio/poller.c
+        aio/poller_poll.h
+        aio/poller_poll.inc
+    )
+elseif (NN_HAVE_WINSOCK)
+    # No operation
+else ()
+    message (AUTHOR_WARNING "ERROR: could not determine socket polling mechanism.")
+    message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}" )
+endif ()
 
-add_definitions (-DNN_EXPORTS)
+if (NN_HAVE_EVENTFD)
+    add_definitions (-DNN_USE_EVENTFD)
+    list (APPEND NN_SOURCES
+        utils/efd_eventfd.h
+        utils/efd_eventfd.inc
+    )
+elseif (NN_HAVE_PIPE)
+    add_definitions (-DNN_USE_PIPE)
+    list (APPEND NN_SOURCES
+        utils/efd_pipe.h
+        utils/efd_pipe.inc
+    )
+elseif (NN_HAVE_SOCKETPAIR)
+    add_definitions (-DNN_USE_SOCKETPAIR)
+    list (APPEND NN_SOURCES
+        utils/efd_socketpair.h
+        utils/efd_socketpair.inc
+    )
+elseif (NN_HAVE_WINSOCK)
+    add_definitions (-DNN_USE_WINSOCK)
+    list (APPEND NN_SOURCES
+        utils/efd_win.h
+        utils/efd_win.inc
+    )
+else ()
+    message (AUTHOR_WARNING "ERROR: could not determine socket signalling mechanism.")
+    message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}" )
+endif ()
 
-target_link_libraries (nanomsg ws2_32)
-target_link_libraries (nanomsg mswsock)
-target_link_libraries (nanomsg advapi32)
+# Provide same folder structure in IDE as on disk
+foreach (f ${NN_SOURCES})
+    # Get the path of the file relative to source directory
+    if (IS_ABSOLUTE "${f}")
+        file (RELATIVE_PATH f ${CMAKE_CURRENT_SOURCE_DIR} ${f})
+    endif ()
+    set (SRC_GROUP "${f}")
+    set (f "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
 
-install(TARGETS nanomsg
+    # Remove the filename part
+    string (REGEX REPLACE "(.*)(/[^/]*)$" "\\1" SRC_GROUP ${SRC_GROUP})
+
+    # CMake source_group expects \\, not /
+    string (REPLACE / \\ SRC_GROUP ${SRC_GROUP})
+    source_group ("${SRC_GROUP}" FILES ${f})
+endforeach ()
+
+if (NN_STATIC_LIB)
+    add_library (${PROJECT_NAME} STATIC ${NN_SOURCES})
+    add_definitions (-DNN_STATIC_LIB)
+else ()
+    add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
+    add_definitions (-DNN_SHARED_LIB)
+    set_target_properties (${PROJECT_NAME} PROPERTIES
+        VERSION "${NN_PACKAGE_VERSION}"
+        SOVERSION "${NN_ABI_VERSION}")
+endif ()
+
+if (WIN32)
+    target_link_libraries (${PROJECT_NAME} ws2_32)
+    target_link_libraries (${PROJECT_NAME} mswsock)
+    target_link_libraries (${PROJECT_NAME} advapi32)
+elseif (UNIX)
+    if(THREADS_HAVE_PTHREAD_ARG)
+        add_definitions (-pthread)
+    endif()
+    if(CMAKE_THREAD_LIBS_INIT)
+        target_link_libraries (${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
+    endif()
+else ()
+    message (FATAL_ERROR "Assertion failed; this path is unreachable.")
+endif ()
+
+install (TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin)
+    RUNTIME DESTINATION bin
+)

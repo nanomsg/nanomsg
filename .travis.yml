@@ -15,6 +15,8 @@ addons:
     sources:
     # contains CMake 2.8.12
     - kubuntu-backports
+    packages:
+    - cmake
 script:
   - mkdir build
   - cd build

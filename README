@@ -24,8 +24,18 @@ Build it
 6.  make
 7.  make check
 8.  sudo make install
-9.  On Linux or other platforms which use ld.so for dynamic linking, run 
+9.  On Linux or other platforms which use ld.so for dynamic linking, run
     ldconfig or equivalent as root to update your system’s shared library cache.
+
+Build it using CMake
+--------------------
+
+1.  Download the package.
+2.  Unpack it.
+3.  `mkdir build && cd build`
+4.  `cmake ..`
+5.  `make`
+6.  `make test`
 
 Build it on Windows
 -------------------

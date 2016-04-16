@@ -1,4 +1,6 @@
 #
+#   Copyright (c) 2016 Jerry Jacobs  All rights reserved.
+#   Copyright (c) 2015 Jack R. Dunaway. All rights reserved.
 #   Copyright (c) 2012 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #   Copyright 2016 Garrett D'Amore <garrett@damore.org>
@@ -23,12 +25,29 @@
 #
 
 cmake_minimum_required (VERSION 2.8)
+include (CheckIncludeFile)
 include (CheckIncludeFiles)
 include (CheckSymbolExists)
 include (CheckCSourceCompiles)
+include (CheckFunctionExists)
+include (CheckLibraryExists)
 
 project (nanomsg C)
 enable_testing ()
+
+# Determine library versions.
+
+file (READ src/nn.h NN_HDR_STR)
+string (REGEX REPLACE ".*#define +NN_VERSION_CURRENT +([0-9]+).*" "\\1" NN_VERSION_CURRENT "${NN_HDR_STR}")
+string (REGEX REPLACE ".*#define +NN_VERSION_REVISION +([0-9]+).*" "\\1" NN_VERSION_REVISION "${NN_HDR_STR}")
+string (REGEX REPLACE ".*#define +NN_VERSION_AGE +([0-9]+).*" "\\1" NN_VERSION_AGE "${NN_HDR_STR}")
+
+if ((NN_VERSION_CURRENT STREQUAL "") OR (NN_VERSION_REVISION STREQUAL "") OR (NN_VERSION_AGE STREQUAL ""))
+    message (FATAL_ERROR "Could not read ABI version from nn.h")
+else ()
+    set (NN_ABI_VERSION "${NN_VERSION_CURRENT}.${NN_VERSION_REVISION}.${NN_VERSION_AGE}")
+    message (STATUS "Detected nanomsg ABI v${NN_ABI_VERSION}")
+endif ()
 
 #  Platform checks.
 
@@ -39,8 +58,60 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     if (MINGW)
         add_definitions (-DNN_HAVE_MINGW -DNN_HAVE_STDINT -D_WIN32_WINNT=0x0600)
     endif ()
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_definitions (-DNN_HAVE_LINUX)
+    add_definitions (-DNN_HAVE_MSG_CONTROL) # TODO for some reason it else doesn't compile
+
+    CHECK_FUNCTION_EXISTS(eventfd      HAVE_EVENTFD)
+    CHECK_FUNCTION_EXISTS(poll         HAVE_POLL)
+    CHECK_FUNCTION_EXISTS(epoll_create HAVE_EPOLL)
+    CHECK_FUNCTION_EXISTS(pipe         HAVE_PIPE)
+    CHECK_FUNCTION_EXISTS(pipe2        HAVE_PIPE2)
+    CHECK_FUNCTION_EXISTS(socketpair   HAVE_SOCKETPAIR)
+
+    CHECK_LIBRARY_EXISTS(pthread sem_init                "" HAVE_SEMAPHORE_INIT)
+    CHECK_LIBRARY_EXISTS(pthread sem_wait                "" HAVE_SEMAPHORE_WAIT)
+
+    if (${HAVE_EVENTFD})
+        add_definitions (-DNN_HAVE_EVENTFD)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support eventfd")
+    endif ()
+
+    if (${HAVE_SEMAPHORE_INIT} AND ${HAVE_SEMAPHORE_WAIT})
+        add_definitions (-DNN_HAVE_SEMAPHORE)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support semaphore")
+    endif ()
+
+    if (${HAVE_POLL})
+        add_definitions (-DNN_HAVE_POLL)
+
+        if (${HAVE_EPOLL})
+           add_definitions (-DNN_USE_EPOLL)
+        endif ()
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support poll")
+    endif ()
+
+    if (${HAVE_PIPE2})
+       add_definitions (-DNN_HAVE_PIPE2)
+    elseif (${HAVE_PIPE})
+       add_definitions (-DNN_HAVE_PIPE)
+    else ()
+        message (FATAL_ERROR "ERROR: Platform doesn't support pipe or pipe2")
+    endif ()
+
+    if (${HAVE_SOCKETPAIR})
+       add_definitions (-DNN_HAVE_SOCKETPAIR)
+    endif ()
 else ()
-    message (FATAL_ERROR "ERROR: CMake build system is intended only to generate MSVC solution files.\nUse autotools build system for any other purpose." )
+    message (FATAL_ERROR "ERROR: CMake build system only works for windows and linux.\nUse autotools build system for any other supported platform.")
+endif ()
+
+check_include_file (stdint.h NN_HAVE_STDINT)
+if (NN_HAVE_STDINT)
+    add_definitions (-DNN_HAVE_STDINT)
 endif ()
 
 #  Build the library itself.
@@ -50,7 +121,7 @@ add_subdirectory (src)
 #  Build the tools
 
 add_executable (nanocat tools/nanocat.c tools/options.c)
-target_link_libraries (nanocat nanomsg)
+target_link_libraries (nanocat ${PROJECT_NAME})
 
 #  Build unit tests.
 
@@ -59,7 +130,7 @@ set (all_tests "")
 macro (add_libnanomsg_test NAME TIMEOUT)
     list (APPEND all_tests ${NAME})
     add_executable (${NAME} tests/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
+    target_link_libraries (${NAME} ${PROJECT_NAME})
     add_test (NAME ${NAME} COMMAND ${NAME})
     set_tests_properties (${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
 endmacro (add_libnanomsg_test)
@@ -109,13 +180,16 @@ add_libnanomsg_test (zerocopy 5)
 add_libnanomsg_test (shutdown 5)
 add_libnanomsg_test (cmsg 5)
 add_libnanomsg_test (bug328 5)
-add_libnanomsg_test (win_sec_attr 5)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    add_libnanomsg_test (win_sec_attr 5)
+endif ()
 
 #  Build the performance tests.
 
 macro (add_libnanomsg_perf NAME)
     add_executable (${NAME} perf/${NAME}.c)
-    target_link_libraries (${NAME} nanomsg)
+    target_link_libraries (${NAME} ${PROJECT_NAME})
 endmacro (add_libnanomsg_perf)
 
 add_libnanomsg_perf (inproc_lat)
@@ -141,6 +215,9 @@ install (FILES src/bus.h DESTINATION include/nanomsg)
 
 install (TARGETS nanocat RUNTIME DESTINATION bin)
 
-set (CPACK_GENERATOR "NSIS")
-set (CPACK_PACKAGE_NAME "nanomsg")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set (CPACK_GENERATOR "NSIS")
+endif()
+
+set (CPACK_PACKAGE_NAME ${PROJECT_NAME})
 include (CPack)

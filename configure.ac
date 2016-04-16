@@ -203,19 +203,6 @@ AM_CONDITIONAL([NANOCAT], [test x"$enable_nanocat" != "xno" ])
 AM_CONDITIONAL([SYMLINKS], [test x"$enable_symlinks" != "xno" ])
 
 ################################################################################
-#  Build tcpmuxd                                                               #
-################################################################################
-
-AC_ARG_ENABLE([tcpmuxd],
-    AS_HELP_STRING([--enable-tcpmuxd], [Build tcpmuxd executable [default=yes]])
-)
-
-AS_IF([test x"$enable_tcpmuxd" != "xno"], [
-    AC_PROG_LN_S
-])
-AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
-
-################################################################################
 #  Check which OS we are building for.                                         #
 ################################################################################
 
@@ -225,7 +212,7 @@ AS_CASE([${host_os}],
         AC_DEFINE([NN_HAVE_WINDOWS])
         AC_DEFINE([NN_HAVE_MINGW])
         AC_DEFINE([_WIN32_WINNT],0x0600)
-        LIBS="$LIBS -lws2_32 -lMswsock"
+        LIBS="$LIBS -lws2_32 -lmswsock"
     ],
     [*darwin*],  [AC_DEFINE([NN_HAVE_OSX])],
     [*freebsd*], [AC_DEFINE([NN_HAVE_FREEBSD])],

@@ -139,7 +139,6 @@ set (NN_SOURCES
 
     devices/device.h
     devices/device.c
-    devices/tcpmuxd.c
 
     protocols/utils/dist.h
     protocols/utils/dist.c
@@ -255,17 +254,6 @@ set (NN_SOURCES
     transports/tcp/stcp.c
     transports/tcp/tcp.h
     transports/tcp/tcp.c
-
-    transports/tcpmux/atcpmux.h
-    transports/tcpmux/atcpmux.c
-    transports/tcpmux/btcpmux.h
-    transports/tcpmux/btcpmux.c
-    transports/tcpmux/ctcpmux.h
-    transports/tcpmux/ctcpmux.c
-    transports/tcpmux/stcpmux.h
-    transports/tcpmux/stcpmux.c
-    transports/tcpmux/tcpmux.h
-    transports/tcpmux/tcpmux.c
 
     transports/ws/aws.h
     transports/ws/aws.c

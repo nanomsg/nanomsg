@@ -73,7 +73,6 @@ add_libnanomsg_test (ipc_stress 5)
 add_libnanomsg_test (tcp 5)
 add_libnanomsg_test (tcp_shutdown 120)
 add_libnanomsg_test (ws 5)
-add_libnanomsg_test (tcpmux 5)
 
 #  Protocol tests.
 add_libnanomsg_test (pair 5)

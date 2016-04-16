@@ -116,21 +116,16 @@ Inter-process transport::
 TCP transport::
     <<nn_tcp.7.txt#,nn_tcp(7)>>
 
-TCPMUX transport::
-    <<nn_tcpmux.7.txt#,nn_tcpmux(7)>>
-
 WebSocket transport::
     <<nn_ws.7.txt#,nn_ws(7)>>
 
-Following tools are installed with the library:
+The following tool is installed with the library:
 
 nanocat::
     <<nanocat.1.txt#,nanocat(1)>>
 
-tcpmuxd::
-    <<tcpmuxd.1.txt#,tcpmuxd(1)>>
-
 AUTHORS
 -------
+link:mailto:garrett@damore.org[Garrett D'Amore]
 link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

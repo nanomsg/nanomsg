@@ -41,8 +41,7 @@ nninclude_HEADERS = \
     src/reqrep.h \
     src/pipeline.h \
     src/survey.h \
-    src/bus.h \
-    src/tcpmux.h
+    src/bus.h
 
 lib_LTLIBRARIES = libnanomsg.la
 
@@ -61,8 +60,7 @@ NANOMSG_CORE = \
 
 NANOMSG_DEVICES =\
     src/devices/device.c \
-    src/devices/device.h \
-    src/devices/tcpmuxd.c
+    src/devices/device.h
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -307,25 +305,12 @@ TRANSPORTS_WS = \
     src/transports/ws/sha1.h \
     src/transports/ws/sha1.c
 
-TRANSPORTS_TCPMUX = \
-    src/transports/tcpmux/atcpmux.h \
-    src/transports/tcpmux/atcpmux.c \
-    src/transports/tcpmux/btcpmux.h \
-    src/transports/tcpmux/btcpmux.c \
-    src/transports/tcpmux/ctcpmux.h \
-    src/transports/tcpmux/ctcpmux.c \
-    src/transports/tcpmux/stcpmux.h \
-    src/transports/tcpmux/stcpmux.c \
-    src/transports/tcpmux/tcpmux.h \
-    src/transports/tcpmux/tcpmux.c
-
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
     $(TRANSPORTS_TCP) \
-    $(TRANSPORTS_WS) \
-    $(TRANSPORTS_TCPMUX)
+    $(TRANSPORTS_WS)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \
@@ -360,7 +345,6 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
-    doc/nn_tcpmux.txt \
     doc/nn_ws.txt \
     doc/nn_env.txt
 
@@ -390,8 +374,7 @@ MAN3 = \
     doc/nn_poll.txt
 
 MAN1 = \
-    doc/nanocat.txt \
-    doc/tcpmuxd.txt
+    doc/nanocat.txt
 
 if DOC
 
@@ -473,8 +456,7 @@ TRANSPORT_TESTS = \
     tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown \
-    tests/ws \
-    tests/tcpmux
+    tests/ws
 
 PROTOCOL_TESTS = \
     tests/pair \
@@ -535,13 +517,6 @@ nanocat_SOURCES = \
 if NANOCAT
 bin_PROGRAMS += nanocat
 endif #NANOCAT
-
-tcpmuxd_SOURCES = \
-	tools/tcpmuxd.c
-
-if TCPMUXD
-bin_PROGRAMS += tcpmuxd
-endif #TCPMUXD
 
 ################################################################################
 #  RFCs                                                                        #

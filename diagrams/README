@@ -1,0 +1,4 @@
+The diag.py script was used to generate these state machine diagrams.
+It may or may not be useful to regenerate new ones. The project is no longer
+maintaining these diagrams, so YMMV; but this is left here to facilitate
+anyone who wants to resurrect this effort in the future.

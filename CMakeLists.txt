@@ -297,7 +297,11 @@ add_libnanomsg_test (zerocopy 5)
 add_libnanomsg_test (shutdown 5)
 add_libnanomsg_test (cmsg 5)
 add_libnanomsg_test (bug328 5)
-add_libnanomsg_test (win_sec_attr 5)
+
+# Platform-specific tests
+if (WIN32)
+    add_libnanomsg_test (win_sec_attr 5)
+endif()
 
 #  Build the performance tests.
 

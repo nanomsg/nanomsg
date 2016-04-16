@@ -609,12 +609,6 @@ EXTRA_DIST += \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
 
-diagrams:
-	-mkdir -p doc/diagrams
-	$(abs_srcdir)/doc/diag.py $(DEFS) $(CPPFLAGS) \
-		$(shell clang -E - -v < /dev/null 2>&1 | \
-			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
-
 clean-local:
 	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc
 

@@ -1,12 +1,27 @@
 language: c
 sudo: false
-compiler:
-- clang
-- gcc
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: clang
+#    - os: osx
+#      compiler: gcc
+#    - os: osx
+#      compiler: clang
+addons:
+  apt:
+    sources:
+    # contains CMake 2.8.12
+    - kubuntu-backports
 script:
-- ./autogen.sh
-- ./configure
-- make distcheck
+  - mkdir build
+  - cd build
+  - cmake --version
+  - cmake -DCMAKE_C_COMPILER=$CC ..
+  - cmake --build .
+  - ctest --output-on-failure -C Debug
 deploy:
   provider: releases
   api_key:

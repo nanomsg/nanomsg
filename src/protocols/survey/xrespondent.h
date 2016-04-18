@@ -27,7 +27,6 @@
 #include "../../protocol.h"
 
 #include "../../utils/hash.h"
-#include "../../utils/int.h"
 #include "../utils/fq.h"
 
 extern struct nn_socktype *nn_xrespondent_socktype;

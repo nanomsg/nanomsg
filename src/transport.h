@@ -30,7 +30,6 @@
 
 #include "utils/list.h"
 #include "utils/msg.h"
-#include "utils/int.h"
 
 #include <stddef.h>
 

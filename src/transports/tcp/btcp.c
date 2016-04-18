@@ -36,7 +36,6 @@
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
 #include "../../utils/fast.h"
-#include "../../utils/int.h"
 
 #include <string.h>
 

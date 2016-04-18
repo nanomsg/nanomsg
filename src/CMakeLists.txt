@@ -113,7 +113,6 @@ set (NN_SOURCES
     utils/glock.c
     utils/hash.h
     utils/hash.c
-    utils/int.h
     utils/list.h
     utils/list.c
     utils/msg.h

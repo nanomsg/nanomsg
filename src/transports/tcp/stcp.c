@@ -26,7 +26,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 /*  States of the object as a whole. */

@@ -31,8 +31,6 @@
 #include "../../aio/usock.h"
 #include "../../aio/timer.h"
 
-#include "../../utils/int.h"
-
 /*  This state machine exchanges a handshake with a WebSocket client. */
 
 /*  Return codes of this state machine. */

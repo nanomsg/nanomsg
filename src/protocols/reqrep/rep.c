@@ -32,7 +32,6 @@
 #include "../../utils/chunkref.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
-#include "../../utils/int.h"
 
 #include <stddef.h>
 #include <string.h>

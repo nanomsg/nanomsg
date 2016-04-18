@@ -31,17 +31,7 @@ extern "C" {
 
 #include <errno.h>
 #include <stddef.h>
-
-/*  64-bit integer type for statistics.  */
-#if defined(_WIN32)
-typedef unsigned __int64 NN_UINT64;
-#elif defined(__VMS)
-#include <inttypes.h>
-#define NN_UINT64 uint64_t
-#else
 #include <stdint.h>
-#define NN_UINT64 uint64_t
-#endif
 
 /*  Handle DSO symbol visibility                                             */
 #if defined NN_NO_EXPORTS
@@ -420,7 +410,7 @@ NN_EXPORT int nn_device (int s1, int s2);
 /*  Protocol statistics  */
 #define	NN_STAT_CURRENT_SND_PRIORITY    401
 
-NN_EXPORT NN_UINT64 nn_get_statistic (int s, int stat);
+NN_EXPORT uint64_t nn_get_statistic (int s, int stat);
 
 #ifdef __cplusplus
 }

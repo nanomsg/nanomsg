@@ -173,19 +173,6 @@ if (NN_HAVE_PIPE2 OR NN_HAVE_ACCEPT4 OR NN_HAVE_GETADDRINFO_A)
 endif ()
 
 check_c_source_compiles ("
-    #include <stdint.h>
-    int main()
-    {
-        int64_t i;
-        i = 0;
-        return 0;
-    }
-" NN_HAVE_STDINT)
-if (NN_HAVE_STDINT)
-    add_definitions (-DNN_HAVE_STDINT)
-endif ()
-
-check_c_source_compiles ("
     #include <time.h>
     int main()
     {

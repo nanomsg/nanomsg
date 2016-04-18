@@ -48,7 +48,7 @@ void nn_random_seed ()
     /*  The initial state for pseudo-random number generator is computed from
         the exact timestamp and process ID. */
     memcpy (&nn_random_state, "\xfa\x9b\x23\xe3\x07\xcc\x61\x1f", 8);
-    nn_random_state ^= pid + nn_clock_timestamp ();
+    nn_random_state ^= pid + nn_clock_ms();
 }
 
 void nn_random_generate (void *buf, size_t len)

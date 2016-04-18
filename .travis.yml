@@ -6,21 +6,29 @@ matrix:
       compiler: gcc
     - os: linux
       compiler: clang
-    - os: osx
-      compiler: gcc
+#    - os: osx
+#      compiler: gcc
     - os: osx
       compiler: clang
-addons:
-  apt:
-    sources:
-    # contains CMake 2.8.12
-    - kubuntu-backports
-    packages:
-    - cmake
+# This section is required because the default Travis environment as of
+# April 2016 has CMake 2.8.7 installed.
+#addons:
+#  apt:
+#    sources:
+#    # contains CMake 2.8.12
+#    - kubuntu-backports
+#    packages:
+#    - cmake
 script:
+  # Print all environment variables to aid in CI development
+  - printenv
+  # Print version and available CMake generators to aid in CI development
+  - cmake --version
+  - cmake --help
+  # Perform out-of-source build
   - mkdir build
   - cd build
-  - cmake --version
+  # Perform CMake backend generation, build, and test
   - cmake -DCMAKE_C_COMPILER=$CC ..
   - cmake --build .
   - ctest --output-on-failure -C Debug

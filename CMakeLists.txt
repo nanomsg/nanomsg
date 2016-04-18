@@ -23,8 +23,8 @@
 #   IN THE SOFTWARE.
 #
 
-cmake_minimum_required (VERSION 2.8.12)
-include (CheckIncludeFiles)
+cmake_minimum_required (VERSION 2.8.7)
+include (CheckIncludeFile)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
 include (CheckLibraryExists)

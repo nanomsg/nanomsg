@@ -32,7 +32,6 @@
 
 #include "../utils/efd.h"
 #include "../utils/sem.h"
-#include "../utils/clock.h"
 #include "../utils/list.h"
 
 struct nn_pipe;
@@ -59,10 +58,6 @@ struct nn_sock
     struct nn_efd rcvfd;
     struct nn_sem termsem;
     struct nn_sem relesem;
-
-    /*  TODO: This clock can be accessed from different threads. If RDTSC
-        is out-of-sync among different CPU cores, this can be a problem. */
-    struct nn_clock clock;
 
     /*  List of all endpoints associated with the socket. */
     struct nn_list eps;

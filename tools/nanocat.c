@@ -474,13 +474,11 @@ void nn_send_loop (nn_options_t *options, int sock)
     int rc;
     uint64_t start_time;
     int64_t time_to_sleep, interval;
-    struct nn_clock clock;
 
     interval = (int)(options->send_interval*1000);
-    nn_clock_init (&clock);
 
     for (;;) {
-        start_time = nn_clock_now (&clock);
+        start_time = nn_clock_ms();
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
@@ -490,7 +488,7 @@ void nn_send_loop (nn_options_t *options, int sock)
             nn_assert_errno (rc >= 0, "Can't send");
         }
         if (interval >= 0) {
-            time_to_sleep = (start_time + interval) - nn_clock_now (&clock);
+            time_to_sleep = (start_time + interval) - nn_clock_ms();
             if (time_to_sleep > 0) {
                 nn_sleep ((int) time_to_sleep);
             }
@@ -498,8 +496,6 @@ void nn_send_loop (nn_options_t *options, int sock)
             break;
         }
     }
-
-    nn_clock_term(&clock);
 }
 
 void nn_recv_loop (nn_options_t *options, int sock)
@@ -527,14 +523,12 @@ void nn_rw_loop (nn_options_t *options, int sock)
     void *buf;
     uint64_t start_time;
     int64_t time_to_sleep, interval, recv_timeout;
-    struct nn_clock clock;
 
     interval = (int)(options->send_interval*1000);
     recv_timeout = (int)(options->recv_timeout*1000);
-    nn_clock_init (&clock);
 
     for (;;) {
-        start_time = nn_clock_now (&clock);
+        start_time = nn_clock_ms();
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
@@ -549,7 +543,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
         }
 
         for (;;) {
-            time_to_sleep = (start_time + interval) - nn_clock_now (&clock);
+            time_to_sleep = (start_time + interval) - nn_clock_ms();
             if (time_to_sleep <= 0) {
                 break;
             }
@@ -563,8 +557,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
                 if (errno == EAGAIN) {
                     continue;
                 } else if (errno == ETIMEDOUT || errno == EFSM) {
-                    time_to_sleep = (start_time + interval)
-                        - nn_clock_now (&clock);
+                    time_to_sleep = (start_time + interval) - nn_clock_ms();
                     if (time_to_sleep > 0)
                         nn_sleep ((int) time_to_sleep);
                     continue;
@@ -575,8 +568,6 @@ void nn_rw_loop (nn_options_t *options, int sock)
             nn_freemsg (buf);
         }
     }
-
-    nn_clock_term(&clock);
 }
 
 void nn_resp_loop (nn_options_t *options, int sock)

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,16 +31,16 @@
 
 #include "fd.h"
 
-#if defined NN_HAVE_WINDOWS
-#include "efd_win.h"
-#elif defined NN_HAVE_EVENTFD
-#include "efd_eventfd.h"
-#elif defined NN_HAVE_PIPE
-#include "efd_pipe.h"
-#elif defined NN_HAVE_SOCKETPAIR
-#include "efd_socketpair.h"
+#if defined NN_USE_EVENTFD
+    #include "efd_eventfd.h"
+#elif defined NN_USE_PIPE
+    #include "efd_pipe.h"
+#elif defined NN_USE_SOCKETPAIR
+    #include "efd_socketpair.h"
+#elif defined NN_USE_WINSOCK
+    #include "efd_win.h"
 #else
-#error
+    #error
 #endif
 
 /*  Initialise the efd object. */
@@ -67,4 +68,3 @@ void nn_efd_unsignal (struct nn_efd *self);
 int nn_efd_wait (struct nn_efd *self, int timeout);
 
 #endif
-

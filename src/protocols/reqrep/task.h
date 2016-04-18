@@ -29,7 +29,6 @@
 #include "../../aio/fsm.h"
 #include "../../aio/timer.h"
 #include "../../utils/msg.h"
-#include "../../utils/int.h"
 
 struct nn_task {
 

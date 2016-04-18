@@ -22,12 +22,12 @@
 */
 
 #include "err.h"
-#include "int.h"
 #include "closefd.h"
 
 #include <sys/eventfd.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 int nn_efd_init (struct nn_efd *self)
 {

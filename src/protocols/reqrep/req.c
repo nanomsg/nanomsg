@@ -36,7 +36,6 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <stddef.h>

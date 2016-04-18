@@ -38,7 +38,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <string.h>

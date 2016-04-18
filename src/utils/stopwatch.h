@@ -24,8 +24,9 @@
 #ifndef NN_STOPWATCH_INCLUDED
 #define NN_STOPWATCH_INCLUDED
 
+#include <stdint.h>
+
 #include "err.h"
-#include "int.h"
 
 /*  Check whether measured time is the expected time (in microseconds).
     The upper tolerance is 50ms so that the test doesn't fail even on

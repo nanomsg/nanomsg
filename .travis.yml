@@ -6,10 +6,10 @@ matrix:
       compiler: gcc
     - os: linux
       compiler: clang
-#    - os: osx
-#      compiler: gcc
-#    - os: osx
-#      compiler: clang
+    - os: osx
+      compiler: gcc
+    - os: osx
+      compiler: clang
 addons:
   apt:
     sources:

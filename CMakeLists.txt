@@ -24,7 +24,6 @@
 #
 
 cmake_minimum_required (VERSION 2.8.7)
-include (CheckIncludeFile)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
 include (CheckLibraryExists)
@@ -142,11 +141,6 @@ else ()
     message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
 endif ()
 
-check_include_files (stdint.h NN_HAVE_STDINT)
-if (NN_HAVE_STDINT)
-    add_definitions (-DNN_HAVE_STDINT)
-endif ()
-
 check_function_exists (gethrtime NN_HAVE_GETHRTIME)
 check_function_exists (socketpair NN_HAVE_SOCKETPAIR)
 check_function_exists (eventfd NN_HAVE_EVENTFD)
@@ -176,6 +170,19 @@ endif ()
 
 if (NN_HAVE_PIPE2 OR NN_HAVE_ACCEPT4 OR NN_HAVE_GETADDRINFO_A)
     add_definitions (-D_GNU_SOURCE)
+endif ()
+
+check_c_source_compiles ("
+    #include <stdint.h>
+    int main()
+    {
+        int64_t i;
+        i = 0;
+        return 0;
+    }
+" NN_HAVE_STDINT)
+if (NN_HAVE_STDINT)
+    add_definitions (-DNN_HAVE_STDINT)
 endif ()
 
 check_c_source_compiles ("

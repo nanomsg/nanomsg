@@ -350,6 +350,11 @@ else ()
         SOVERSION "${NN_ABI_VERSION}")
 endif ()
 
+# Set library outputs same as top-level project binary outputs
+set_target_properties (${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties (${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+
 if (WIN32)
     target_link_libraries (${PROJECT_NAME} ws2_32)
     target_link_libraries (${PROJECT_NAME} mswsock)

@@ -97,7 +97,7 @@ struct nn_cws {
     struct nn_chunkref remote_host;
     struct nn_chunkref nic;
     int remote_port;
-    int remote_hostname_len;
+    size_t remote_hostname_len;
 
     /*  If a close handshake is performed, this flag signals to not
         begin automatic reconnect retries. */

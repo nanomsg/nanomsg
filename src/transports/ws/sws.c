@@ -574,7 +574,7 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
 {
     uint8_t *pos;
     int code_point_len;
-    int len;
+    size_t len;
 
     len = self->inmsg_current_chunk_len;
     pos = self->inmsg_current_chunk_buf;
@@ -631,9 +631,9 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
 
         if (code_point_len > 0) {
             /*  Valid code point found; continue validating. */
-            pos += code_point_len;
+            nn_assert (len >= code_point_len);
             len -= code_point_len;
-            nn_assert (len >= 0);
+            pos += code_point_len;
             continue;
         }
         else if (code_point_len == NN_SWS_UTF8_INVALID) {

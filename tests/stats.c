@@ -29,7 +29,6 @@
 
 int main (int argc, char **argv)
 {
-    int rc;
     int rep1;
     int req1;
 

@@ -173,7 +173,6 @@ static void nn_global_init (void)
     int i;
     char *envvar;
     int rc;
-    char *addr;
 
 #if defined NN_HAVE_WINDOWS
     WSADATA data;

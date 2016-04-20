@@ -289,8 +289,8 @@ elseif (NN_HAVE_POLL)
 elseif (NN_HAVE_WINSOCK)
     # No operation
 else ()
-    message (AUTHOR_WARNING "ERROR: could not determine socket polling mechanism.")
-    message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}" )
+    message (SEND_ERROR "ERROR: could not determine socket polling method.")
+    message (SEND_ERROR "${ISSUE_REPORT_MSG}" )
 endif ()
 
 if (NN_HAVE_EVENTFD)
@@ -318,8 +318,8 @@ elseif (NN_HAVE_WINSOCK)
         utils/efd_win.inc
     )
 else ()
-    message (AUTHOR_WARNING "ERROR: could not determine socket signalling mechanism.")
-    message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}" )
+    message (SEND_ERROR "ERROR: could not determine socket signaling method.")
+    message (SEND_ERROR "${ISSUE_REPORT_MSG}" )
 endif ()
 
 # Provide same folder structure in IDE as on disk

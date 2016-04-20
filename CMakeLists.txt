@@ -26,6 +26,7 @@
 cmake_minimum_required (VERSION 2.8.7)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
+include (CheckStructHasMember)
 include (CheckLibraryExists)
 include (CheckCSourceCompiles)
 
@@ -81,87 +82,103 @@ endif()
 
 # User-defined options.
 
-option (ENABLE_NANOCAT "Enable building nanocat utility." OFF)
+option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ON)
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
-option (ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
+option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 
 #  Platform checks.
 
+find_package (Threads REQUIRED)
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_definitions (-DNN_HAVE_LINUX)
-    find_package (Threads REQUIRED)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     add_definitions (-DNN_HAVE_OSX)
-    find_package (Threads REQUIRED)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
     SET (NN_HAVE_WINSOCK 1)
     add_definitions (-DNN_HAVE_WINDOWS)
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
 elseif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-DNN_HAVE_FREEBSD)
-    find_package (Threads REQUIRED)
 elseif (CMAKE_SYSTEM_NAME MATCHES "NetBSD")
     add_definitions (-DNN_HAVE_NETBSD)
-    find_package (Threads REQUIRED)
 elseif (CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     add_definitions (-DNN_HAVE_OPENBSD)
-    find_package (Threads REQUIRED)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Solaris|SunOS")
     add_definitions (-DNN_HAVE_SOLARIS)
-    find_package (Threads REQUIRED)
-    check_library_exists (socket socket "" NN_HAVE_SOLARIS_SOCKET)
-    check_library_exists (nsl gethostbyname "" NN_HAVE_SOLARIS_GETHOSTBYNAME)
 elseif (CMAKE_SYSTEM_NAME MATCHES "QNX")
     add_definitions (-DNN_HAVE_QNX)
-    find_package (Threads REQUIRED)
-    check_library_exists (socket socket "" NN_HAVE_QNX_SOCKET)
 else ()
     message (AUTHOR_WARNING "WARNING: This platform may or may not be supported: ${CMAKE_SYSTEM_NAME}")
     message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
 endif ()
 
-check_function_exists (gethrtime NN_HAVE_GETHRTIME)
-check_function_exists (socketpair NN_HAVE_SOCKETPAIR)
-check_function_exists (eventfd NN_HAVE_EVENTFD)
-check_function_exists (pipe NN_HAVE_PIPE)
-check_function_exists (pipe2 NN_HAVE_PIPE2)
-check_function_exists (accept4 NN_HAVE_ACCEPT4)
-check_function_exists (epoll_create NN_HAVE_EPOLL)
-check_function_exists (kqueue NN_HAVE_KQUEUE)
-check_function_exists (poll NN_HAVE_POLL)
+macro (nn_check_func SYM DEF)
+    check_function_exists (${SYM} ${DEF})
+     if (${DEF})
+         add_definitions (-D${DEF}=1)
+     endif ()
+endmacro (nn_check_func)
 
-check_library_exists (anl getaddrinfo_a "" NN_HAVE_GETADDRINFO_A)
-check_library_exists (rt clock_gettime "" NN_HAVE_CLOCK_GETTIME)
-check_library_exists (rt sem_wait "" NN_HAVE_SEMAPHORE_RT)
-check_library_exists (pthread sem_wait  "" NN_HAVE_SEMAPHORE_PTHREAD)
+macro (nn_check_sym SYM HDR DEF)
+    check_symbol_exists (${SYM} ${HDR} ${DEF})
+     if (${DEF})
+         add_definitions (-D${DEF}=1)
+     endif ()
+endmacro (nn_check_sym)
 
-if (NN_HAVE_POLL)
-    add_definitions (-DNN_HAVE_POLL)
-endif ()
+macro (nn_check_lib LIB SYM DEF)
+    check_library_exists (${LIB} ${SYM} "" ${DEF})
+    if (${DEF})
+        add_definitions (-D${DEF}=1)
+        list(APPEND CMAKE_REQUIRED_LIBRARIES ${LIB})
+        list(REMOVE_DUPLICATES CMAKE_REQUIRED_LIBRARIES)
+    endif ()
+endmacro (nn_check_lib)
+
+macro (nn_check_struct_member STR MEM HDR DEF)
+    check_struct_has_member ("struct ${STR}" ${MEM} ${HDR} ${DEF})
+    if (${DEF})
+        add_definitions (-D${DEF}=1)
+    endif ()
+endmacro (nn_check_struct_member)
+
+# Unconditionally declare the following feature test macros.  These are
+# needed for some platforms (glibc and SunOS/illumos) and should be harmless
+# on the others.
+add_definitions (-D_GNU_SOURCE)
+add_definitions (-D_REENTRANT)
+add_definitions (-D_THREAD_SAFE)
+add_definitions (-D_POSIX_PTHREAD_SEMANTICS)
+
+nn_check_func (gethrtime NN_HAVE_GETHRTIME)
+nn_check_func (socketpair NN_HAVE_SOCKETPAIR)
+nn_check_func (eventfd NN_HAVE_EVENTFD)
+nn_check_func (pipe NN_HAVE_PIPE)
+nn_check_func (pipe2 NN_HAVE_PIPE2)
+nn_check_func (accept4 NN_HAVE_ACCEPT4)
+nn_check_func (epoll_create NN_HAVE_EPOLL)
+nn_check_func (kqueue NN_HAVE_KQUEUE)
+nn_check_func (poll NN_HAVE_POLL)
+
+nn_check_lib (anl getaddrinfo_a NN_HAVE_GETADDRINFO_A)
+nn_check_lib (rt clock_gettime  NN_HAVE_CLOCK_GETTIME)
+nn_check_lib (rt sem_wait NN_HAVE_SEMAPHORE_RT)
+nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
+
+nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
+nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
+nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
+nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
+
+nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
 
 if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
     add_definitions (-DNN_HAVE_SEMAPHORE)
 endif ()
 
-if (NOT ENABLE_GETADDRINFO_A)
+if (NOT NN_ENABLE_GETADDRINFO_A)
     add_definitions (-DNN_DISABLE_GETADDRINFO_A)
-endif ()
-
-if (NN_HAVE_PIPE2 OR NN_HAVE_ACCEPT4 OR NN_HAVE_GETADDRINFO_A)
-    add_definitions (-D_GNU_SOURCE)
-endif ()
-
-check_c_source_compiles ("
-    #include <time.h>
-    int main()
-    {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        return 0;
-    }
-" NN_HAVE_CLOCK_MONOTONIC)
-if (NN_HAVE_CLOCK_MONOTONIC)
-    add_definitions (-DNN_HAVE_CLOCK_MONOTONIC)
 endif ()
 
 check_c_source_compiles ("
@@ -178,37 +195,11 @@ if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
 
-check_c_source_compiles ("
-    #include <atomic.h>
-    int main()
-    {
-        uint32_t value;
-        atomic_cas_32 (&value, 0, 0);
-        return 0;
-    }
-" NN_HAVE_ATOMIC_SOLARIS)
-if (NN_HAVE_ATOMIC_SOLARIS)
-    add_definitions (-DNN_HAVE_ATOMIC_SOLARIS)
-endif ()
-
-check_c_source_compiles ("
-    #include <sys/socket.h>
-    int main()
-    {
-        struct msghdr hdr;
-        hdr.msg_control = 0;
-        return 0;
-    }
-" NN_HAVE_MSG_CONTROL)
-if (NN_HAVE_MSG_CONTROL)
-    add_definitions (-DNN_HAVE_MSG_CONTROL)
-endif ()
-
 add_subdirectory (src)
 
 #  Build the tools
 
-if (ENABLE_NANOCAT)
+if (NN_ENABLE_NANOCAT)
     add_executable (nanocat tools/nanocat.c tools/options.c)
     target_link_libraries (nanocat ${PROJECT_NAME})
 endif ()

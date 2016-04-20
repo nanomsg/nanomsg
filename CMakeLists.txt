@@ -31,7 +31,6 @@ include (CheckLibraryExists)
 include (CheckCSourceCompiles)
 
 project (nanomsg C)
-enable_testing ()
 
 set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg with your findings")
 
@@ -82,9 +81,11 @@ endif()
 
 # User-defined options.
 
-option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ON)
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
+option (NN_TESTS "Build and run nanomsg tests" ON)
+option (NN_TOOLS "Build nanomsg tools" ON)
+option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
 
 #  Platform checks.
 
@@ -205,79 +206,84 @@ endif ()
 
 #  Build unit tests.
 
-set (all_tests "")
+if (NN_TESTS)
 
-macro (add_libnanomsg_test NAME TIMEOUT)
-    list (APPEND all_tests ${NAME})
-    add_executable (${NAME} tests/${NAME}.c)
-    target_link_libraries (${NAME} ${PROJECT_NAME})
-    add_test (NAME ${NAME} COMMAND ${NAME})
-    set_tests_properties (${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
-endmacro (add_libnanomsg_test)
+    enable_testing ()
+    set (all_tests "")
 
-#  Transport tests.
-add_libnanomsg_test (inproc 5)
-add_libnanomsg_test (inproc_shutdown 5)
-add_libnanomsg_test (ipc 5)
-add_libnanomsg_test (ipc_shutdown 30)
-add_libnanomsg_test (ipc_stress 5)
-add_libnanomsg_test (tcp 5)
-add_libnanomsg_test (tcp_shutdown 30)
-add_libnanomsg_test (ws 5)
+    macro (add_libnanomsg_test NAME TIMEOUT)
+        list (APPEND all_tests ${NAME})
+        add_executable (${NAME} tests/${NAME}.c)
+        target_link_libraries (${NAME} ${PROJECT_NAME})
+        add_test (NAME ${NAME} COMMAND ${NAME})
+        set_tests_properties (${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
+    endmacro (add_libnanomsg_test)
 
-#  Protocol tests.
-add_libnanomsg_test (pair 5)
-add_libnanomsg_test (pubsub 5)
-add_libnanomsg_test (reqrep 5)
-add_libnanomsg_test (pipeline 5)
-add_libnanomsg_test (survey 5)
-add_libnanomsg_test (bus 5)
+    #  Transport tests.
+    add_libnanomsg_test (inproc 5)
+    add_libnanomsg_test (inproc_shutdown 5)
+    add_libnanomsg_test (ipc 5)
+    add_libnanomsg_test (ipc_shutdown 30)
+    add_libnanomsg_test (ipc_stress 5)
+    add_libnanomsg_test (tcp 5)
+    add_libnanomsg_test (tcp_shutdown 30)
+    add_libnanomsg_test (ws 5)
 
-#  Feature tests.
-add_libnanomsg_test (async_shutdown 30)
-add_libnanomsg_test (block 5)
-add_libnanomsg_test (term 5)
-add_libnanomsg_test (timeo 5)
-add_libnanomsg_test (iovec 5)
-add_libnanomsg_test (msg 5)
-add_libnanomsg_test (prio 5)
-add_libnanomsg_test (poll 5)
-add_libnanomsg_test (device 5)
-add_libnanomsg_test (device4 5)
-add_libnanomsg_test (device5 5)
-add_libnanomsg_test (device6 5)
-add_libnanomsg_test (device7 30)
-add_libnanomsg_test (emfile 5)
-add_libnanomsg_test (domain 5)
-add_libnanomsg_test (trie 5)
-add_libnanomsg_test (list 5)
-add_libnanomsg_test (hash 5)
-add_libnanomsg_test (stats 5)
-add_libnanomsg_test (symbol 5)
-add_libnanomsg_test (separation 5)
-add_libnanomsg_test (zerocopy 5)
-add_libnanomsg_test (shutdown 5)
-add_libnanomsg_test (cmsg 5)
-add_libnanomsg_test (bug328 5)
+    #  Protocol tests.
+    add_libnanomsg_test (pair 5)
+    add_libnanomsg_test (pubsub 5)
+    add_libnanomsg_test (reqrep 5)
+    add_libnanomsg_test (pipeline 5)
+    add_libnanomsg_test (survey 5)
+    add_libnanomsg_test (bus 5)
 
-# Platform-specific tests
-if (WIN32)
-    add_libnanomsg_test (win_sec_attr 5)
-endif()
+    #  Feature tests.
+    add_libnanomsg_test (async_shutdown 30)
+    add_libnanomsg_test (block 5)
+    add_libnanomsg_test (term 5)
+    add_libnanomsg_test (timeo 5)
+    add_libnanomsg_test (iovec 5)
+    add_libnanomsg_test (msg 5)
+    add_libnanomsg_test (prio 5)
+    add_libnanomsg_test (poll 5)
+    add_libnanomsg_test (device 5)
+    add_libnanomsg_test (device4 5)
+    add_libnanomsg_test (device5 5)
+    add_libnanomsg_test (device6 5)
+    add_libnanomsg_test (device7 30)
+    add_libnanomsg_test (emfile 5)
+    add_libnanomsg_test (domain 5)
+    add_libnanomsg_test (trie 5)
+    add_libnanomsg_test (list 5)
+    add_libnanomsg_test (hash 5)
+    add_libnanomsg_test (stats 5)
+    add_libnanomsg_test (symbol 5)
+    add_libnanomsg_test (separation 5)
+    add_libnanomsg_test (zerocopy 5)
+    add_libnanomsg_test (shutdown 5)
+    add_libnanomsg_test (cmsg 5)
+    add_libnanomsg_test (bug328 5)
 
-#  Build the performance tests.
+    # Platform-specific tests
+    if (WIN32)
+        add_libnanomsg_test (win_sec_attr 5)
+    endif()
 
-macro (add_libnanomsg_perf NAME)
-    add_executable (${NAME} perf/${NAME}.c)
-    target_link_libraries (${NAME} ${PROJECT_NAME})
-endmacro (add_libnanomsg_perf)
+    #  Build the performance tests.
 
-add_libnanomsg_perf (inproc_lat)
-add_libnanomsg_perf (inproc_thr)
-add_libnanomsg_perf (local_lat)
-add_libnanomsg_perf (remote_lat)
-add_libnanomsg_perf (local_thr)
-add_libnanomsg_perf (remote_thr)
+    macro (add_libnanomsg_perf NAME)
+        add_executable (${NAME} perf/${NAME}.c)
+        target_link_libraries (${NAME} ${PROJECT_NAME})
+    endmacro (add_libnanomsg_perf)
+
+    add_libnanomsg_perf (inproc_lat)
+    add_libnanomsg_perf (inproc_thr)
+    add_libnanomsg_perf (local_lat)
+    add_libnanomsg_perf (remote_lat)
+    add_libnanomsg_perf (local_thr)
+    add_libnanomsg_perf (remote_thr)
+
+endif ()
 
 #  NSIS package
 
@@ -293,7 +299,7 @@ install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
-if (BUILD_NANOCAT)
+if (NN_ENABLE_NANOCAT)
     install (TARGETS nanocat RUNTIME DESTINATION bin)
 endif()
 

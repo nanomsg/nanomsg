@@ -340,6 +340,10 @@ foreach (f ${NN_SOURCES})
 endforeach ()
 
 if (NN_STATIC_LIB)
+    if (NN_HAVE_FPIC AND NN_ENABLE_PIC)
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    endif ()
+
     add_library (${PROJECT_NAME} STATIC ${NN_SOURCES})
     add_definitions (-DNN_STATIC_LIB)
 else ()

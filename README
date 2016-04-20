@@ -6,15 +6,32 @@ Welcome to nanomsg
 [![Windows Status](https://img.shields.io/appveyor/ci/gdamore/nanomsg.svg?label=windows)](https://ci.appveyor.com/project/gdamore/nanomsg)
 [![Gitter](https://img.shields.io/badge/gitter-join-brightgreen.svg)](https://gitter.im/nanomsg/nanomsg)
 
-nanomsg library is a simple high-performance implementation of several 
-"scalability protocols". Scalability protocol's job is to define how multiple 
+nanomsg library is a simple high-performance implementation of several
+"scalability protocols". Scalability protocol's job is to define how multiple
 applications communicate to form a single distributed application.
 
 For more info check the web site: http://nanomsg.org
 
 
-Build it
---------
+Build it with CMake
+-------------------
+
+**Prerequisites:** CMake >=2.8.7 installed and available in $PATH as `cmake`
+
+1.  Go to the root directory of the local source repository.
+2.  To perform an out-of-source build, run:
+3.  `mkdir build`
+4.  `cd build`
+5.  `cmake ..`
+6.  `cmake --build .`
+7.  `ctest .`
+8.  *Note: this CMake build process is evolving. Please [report an issue](https://github.com/nanomsg/nanomsg/issues/new)
+    if you run into problems.*
+
+Build it with Autotools (deprecated)
+------------------------------------
+
+**Warning: this build method is being deprecated; see [issue #648](https://github.com/nanomsg/nanomsg/issues/648)**
 
 1.  Download the package.
 2.  Unpack it.
@@ -24,19 +41,8 @@ Build it
 6.  make
 7.  make check
 8.  sudo make install
-9.  On Linux or other platforms which use ld.so for dynamic linking, run 
+9.  On Linux or other platforms which use ld.so for dynamic linking, run
     ldconfig or equivalent as root to update your system’s shared library cache.
-
-Build it on Windows
--------------------
-
-1.  Download the package.
-2.  Unpack it.
-3.  Go to the root directory of the package.
-4.  run "cmake ."
-5.  Open the nanomsg.sln file using MSVC IDE.
-6.  Build the entire solution.
-7.  Optionally, build RUN_TESTS project to run the test suite.
 
 Resources
 ---------
@@ -56,4 +62,3 @@ Subscribe to the list here: http://www.freelists.org/list/nanomsg
 IRC chatroom: channel #nanomsg at irc.freenode.net/8001
 
 Gitter: [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/nanomsg/nanomsg?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-

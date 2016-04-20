@@ -3,7 +3,7 @@ Release process
 
 1. Check CI (http://build.nanomsg.org/waterfall).
 
-2. Check AppVeyor https://ci.appveyor.com/project/gdamore/nanomsg
+2. Check AppVeyor https://ci.appveyor.com/project/nanomsg/nanomsg
 
 3. Check Travis CI https://travis-ci.org/nanomsg/nanomsg
 

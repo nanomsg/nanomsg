@@ -355,6 +355,7 @@ set_target_properties (${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PRO
 set_target_properties (${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
+target_link_libraries (${PROJECT_NAME} ${NN_REQUIRED_LIBRARIES})
 if (WIN32)
     target_link_libraries (${PROJECT_NAME} ws2_32)
     target_link_libraries (${PROJECT_NAME} mswsock)

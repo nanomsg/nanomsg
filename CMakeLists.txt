@@ -29,6 +29,7 @@ include (CheckSymbolExists)
 include (CheckStructHasMember)
 include (CheckLibraryExists)
 include (CheckCSourceCompiles)
+include (CheckCCompilerFlags)
 
 project (nanomsg C)
 enable_testing ()
@@ -85,6 +86,7 @@ endif()
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ON)
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
+option (NN_ENABLE_PIC "Enable position-independent code when building static library" ON)
 
 #  Platform checks.
 
@@ -171,6 +173,8 @@ nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
 nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
 
 nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
+
+check_c_compiler_flag ("-fPIC -Werror" NN_HAVE_FPIC)
 
 if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
     add_definitions (-DNN_HAVE_SEMAPHORE)

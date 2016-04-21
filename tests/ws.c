@@ -108,15 +108,6 @@ int main (int argc, const char *argv[])
     nn_assert (sz == sizeof (opt));
     nn_assert (opt == NN_WS_MSG_TYPE_BINARY);
 
-#if 0
-    //opt = 100;
-    //sz = sizeof (opt);
-    //rc = nn_getsockopt (sc, NN_WS, NN_WS_HANDSHAKE_TIMEOUT, &opt, &sz);
-    //errno_assert (rc == 0);
-    //nn_assert (sz == sizeof (opt));
-    //nn_assert (opt == 100);
-#endif
-
     /*  Default port 80 should be assumed if not explicitly declared. */
     rc = nn_connect (sc, "ws://127.0.0.1");
     errno_assert (rc >= 0);

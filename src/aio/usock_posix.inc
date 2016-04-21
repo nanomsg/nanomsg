@@ -855,7 +855,7 @@ error:
 /*  stopping the usock.                                                       */
 /******************************************************************************/
     case NN_USOCK_STATE_DONE:
-        nn_fsm_bad_source (usock->state, src, type);
+        return;
 
 /******************************************************************************/
 /*  LISTENING state.                                                          */

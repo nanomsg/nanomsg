@@ -1,15 +1,43 @@
 language: c
 sudo: false
+
+_environments:
+  - &gcc-warnings
+    - CFLAGS="-std=c89 -Wall -Wextra -pedantic"
+
 matrix:
   include:
+  # Linux
+    # GCC
     - os: linux
       compiler: gcc
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: linux
+      compiler: gcc
+      env: [CONFIGURATION=Release, DEPLOY=true, *gcc-warnings]
+    # Clang
     - os: linux
       compiler: clang
-#    - os: osx
-#      compiler: gcc
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: linux
+      compiler: clang
+      env: [CONFIGURATION=Release, *gcc-warnings]
+  # OS X
+    # GCC 4.9
+    - os: osx
+      compiler: gcc-4.9
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: osx
+      compiler: gcc-4.9
+      env: [CONFIGURATION=Release, *gcc-warnings]
+    # AppleClang
     - os: osx
       compiler: clang
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: osx
+      compiler: clang
+      env: [CONFIGURATION=Release, *gcc-warnings]
+
 before_script:
   - gem install asciidoctor
 script:
@@ -22,7 +50,7 @@ script:
   - mkdir build
   - cd build
   # Perform CMake backend generation, build, and test
-  - cmake ..
+  - cmake -DCMAKE_BUILD_TYPE=${CONFIGURATION} ${CMAKE_OPTS} ..
   - cmake --build . -- -j4
   - ctest --output-on-failure -C Debug -j4
 #deploy:
@@ -35,5 +63,6 @@ script:
 #    - nanomsg-${TRAVIS_TAG}.tar.bz2
 #  skip_cleanup: true
 #  on:
+#    condition: $DEPLOY = true
 #    tags: true
 #    repo: nanomsg/nanomsg

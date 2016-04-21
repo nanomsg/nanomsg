@@ -139,7 +139,7 @@ static char *nn_print_line (FILE *out, char *str, size_t width)
         fprintf (out, "%s", str);
         return "";
     }
-    for (i = width; i > 1; --i) {
+    for (i = (int)width; i > 1; --i) {
         if (isspace (str[i])) {
             fprintf (out, "%.*s", i, str);
             return str + i + 1;
@@ -152,7 +152,7 @@ static char *nn_print_line (FILE *out, char *str, size_t width)
 static void nn_print_help (struct nn_parse_context *ctx, FILE *stream)
 {
     int i;
-    int optlen;
+    size_t optlen;
     struct nn_option *opt;
     char *last_group;
     char *cursor;
@@ -603,8 +603,8 @@ static void nn_parse_long_option (struct nn_parse_context *ctx)
 {
     struct nn_option *opt;
     char *a, *b;
-    int longest_prefix;
-    int cur_prefix;
+    size_t longest_prefix;
+    size_t cur_prefix;
     int best_match;
     char *arg;
     int i;

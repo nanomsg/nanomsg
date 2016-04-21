@@ -1,5 +1,6 @@
 /*
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,18 +26,20 @@
 
 #include "testutil.h"
 
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
-
-int main (int argc, char **argv)
+int main (int argc, const char *argv[])
 {
     int rep1;
     int req1;
+    char socket_address[128];
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     /*  Test req/rep with full socket types. */
     rep1 = test_socket (AF_SP, NN_REP);
-    test_bind (rep1, SOCKET_ADDRESS);
+    test_bind (rep1, socket_address);
     req1 = test_socket (AF_SP, NN_REQ);
-    test_connect (req1, SOCKET_ADDRESS);
+    test_connect (req1, socket_address);
     nn_sleep (200);
 
     nn_assert (nn_get_statistic(rep1, NN_STAT_ACCEPTED_CONNECTIONS) == 1);

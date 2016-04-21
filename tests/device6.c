@@ -2,6 +2,7 @@
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,9 +31,7 @@
 #include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
-#define SOCKET_ADDRESS_H "tcp://127.0.0.1:5570"
-#define SOCKET_ADDRESS_I "tcp://127.0.0.1:5571"
-#define SOCKET_ADDRESS_J "tcp://127.0.0.1:5572"
+static char socket_address_h[128], socket_address_i[128], socket_address_j[128];
 
 void device5 (NN_UNUSED void *arg)
 {
@@ -42,9 +41,9 @@ void device5 (NN_UNUSED void *arg)
 
     /*  Intialise the device sockets. */
     dev0 = test_socket (AF_SP_RAW, NN_RESPONDENT);
-    test_bind (dev0, SOCKET_ADDRESS_H);
+    test_bind (dev0, socket_address_h);
     dev1 = test_socket (AF_SP_RAW, NN_SURVEYOR);
-    test_bind (dev1, SOCKET_ADDRESS_I);
+    test_bind (dev1, socket_address_i);
 
     /*  Run the device. */
     rc = nn_device (dev0, dev1);
@@ -62,9 +61,9 @@ void device6 (NN_UNUSED void *arg)
     int dev3;
 
     dev2 = test_socket (AF_SP_RAW, NN_RESPONDENT);
-    test_connect (dev2, SOCKET_ADDRESS_I);
+    test_connect (dev2, socket_address_i);
     dev3 = test_socket (AF_SP_RAW, NN_SURVEYOR);
-    test_bind (dev3, SOCKET_ADDRESS_J);
+    test_bind (dev3, socket_address_j);
 
     /*  Run the device. */
     rc = nn_device (dev2, dev3);
@@ -75,12 +74,18 @@ void device6 (NN_UNUSED void *arg)
     test_close (dev3);
 }
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int end0;
     int end1;
     struct nn_thread thread5;
     struct nn_thread thread6;
+
+    int port = get_test_port(argc, argv);
+
+    test_addr_from(socket_address_h, "tcp", "127.0.0.1", port);
+    test_addr_from(socket_address_i, "tcp", "127.0.0.1", port + 1);
+    test_addr_from(socket_address_j, "tcp", "127.0.0.1", port + 2);
 
     /*  Test the bi-directional device with SURVEYOR(headers). */
 
@@ -90,9 +95,9 @@ int main ()
 
     /*  Create two sockets to connect to the device. */
     end0 = test_socket (AF_SP, NN_SURVEYOR);
-    test_connect (end0, SOCKET_ADDRESS_H);
+    test_connect (end0, socket_address_h);
     end1 = test_socket (AF_SP, NN_RESPONDENT);
-    test_connect (end1, SOCKET_ADDRESS_J);
+    test_connect (end1, socket_address_j);
 
     /*  Wait up to a second for TCP to establish. */
     nn_sleep (1000);

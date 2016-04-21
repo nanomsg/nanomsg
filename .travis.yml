@@ -21,8 +21,8 @@ script:
   - cd build
   # Perform CMake backend generation, build, and test
   - cmake ..
-  - cmake --build .
-  - ctest --output-on-failure -C Debug
+  - cmake --build . -- -j4
+  - ctest --output-on-failure -C Debug -j4
 deploy:
   provider: releases
   api_key:

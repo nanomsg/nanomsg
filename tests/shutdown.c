@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,15 +27,19 @@
 
 #include "testutil.h"
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int s;
     int rc;
     int eid;
+    char socket_address[128];
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     /*  Run endpoint shutdown and socket shutdown in parallel. */
     s = test_socket (AF_SP, NN_REQ);
-    eid = test_connect (s, "tcp://127.0.0.1:5590");
+    eid = test_connect (s, socket_address);
     rc = nn_shutdown (s, eid);
     errno_assert (rc == 0);
     test_close (s);

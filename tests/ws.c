@@ -2,6 +2,7 @@
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,7 +29,7 @@
 
 #include "testutil.h"
 
-#define SOCKET_ADDRESS  "ws://127.0.0.1:5555"
+static char socket_address[128];
 
 /*  Basic tests for WebSocket transport. */
 
@@ -55,8 +56,8 @@ void test_text() {
     opt = 500;
     test_setsockopt(sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
 
-    test_bind (sb, SOCKET_ADDRESS);
-    test_connect (sc, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
+    test_connect (sc, socket_address);
 
     test_send (sc, "GOOD");
     test_recv (sb, "GOOD");
@@ -70,7 +71,7 @@ void test_text() {
     test_drop (sb, ETIMEDOUT);
 }
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int rc;
     int sb;
@@ -78,16 +79,23 @@ int main ()
     int opt;
     size_t sz;
     int i;
+    char any_address[128];
+
+    test_addr_from(socket_address, "ws", "127.0.0.1",
+            get_test_port(argc, argv));
+
+    test_addr_from(any_address, "ws", "*",
+            get_test_port(argc, argv));
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, "ws://*:5555");
+    test_bind (sb, any_address);
     test_close (sb);
 
     /*  Try closing a TCP socket while it not connected. At the same time
         test specifying the local address for the connection. */
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, "ws://127.0.0.1:5555");
+    test_connect (sc, socket_address);
     test_close (sc);
 
     /*  Open the socket anew. */
@@ -163,9 +171,9 @@ int main ()
     nn_sleep (200);
 
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
+    test_connect (sc, socket_address);
 
     /*  Leave enough time for connection establishment. */
     nn_sleep (200);

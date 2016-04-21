@@ -3,6 +3,7 @@
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #   Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
 #   Copyright 2016 Garrett D'Amore <garrett@damore.org>
+#   Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -211,12 +212,14 @@ if (NN_TESTS)
     enable_testing ()
     set (all_tests "")
 
+    set (TEST_PORT 5500)
     macro (add_libnanomsg_test NAME TIMEOUT)
         list (APPEND all_tests ${NAME})
         add_executable (${NAME} tests/${NAME}.c)
         target_link_libraries (${NAME} ${PROJECT_NAME})
-        add_test (NAME ${NAME} COMMAND ${NAME})
+        add_test (NAME ${NAME} COMMAND ${NAME} ${TEST_PORT})
         set_tests_properties (${NAME} PROPERTIES TIMEOUT ${TIMEOUT})
+        math (EXPR TEST_PORT "${TEST_PORT}+10")
     endmacro (add_libnanomsg_test)
 
     #  Transport tests.

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,17 +32,20 @@
 
 #define SOCKET_ADDRESS_INPROC "inproc://a"
 #define SOCKET_ADDRESS_IPC "ipc://test-separation.ipc"
-#define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5556"
 
 /*  This test checks whether the library prevents interconnecting sockets
     between different non-compatible protocols. */
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int rc;
     int pair;
     int pull;
     int timeo;
+    char socket_address_tcp[128];
+
+    test_addr_from(socket_address_tcp, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     /*  Inproc: Bind first, connect second. */
     pair = test_socket (AF_SP, NN_PAIR);
@@ -88,9 +92,9 @@ int main ()
 
     /*  TCP */
     pair = test_socket (AF_SP, NN_PAIR);
-    test_bind (pair, SOCKET_ADDRESS_TCP);
+    test_bind (pair, socket_address_tcp);
     pull = test_socket (AF_SP, NN_PULL);
-    test_connect (pull, SOCKET_ADDRESS_TCP);
+    test_connect (pull, socket_address_tcp);
     timeo = 100;
     test_setsockopt (pair, NN_SOL_SOCKET, NN_SNDTIMEO,
         &timeo, sizeof (timeo));

@@ -10,6 +10,8 @@ environment:
       CFG: Debug
     - GENERATOR: Visual Studio 12 2013 Win64
       CFG: Debug
+install:
+  - gem install asciidoctor
 build:
   parallel: true
 build_script:

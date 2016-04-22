@@ -5,7 +5,21 @@ _environments:
   - &gcc-warnings
     - CFLAGS="-std=c89 -Wall -Wextra -pedantic"
 
+_scripts:
+  - &install_cmake35
+    - |
+        if [ ! -f $HOME/bin/cmake ]; then
+          wget --no-check-certificate http://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz &&
+          tar xfC $(basename $_) $HOME --strip-components=1
+        fi
+
+_caches:
+  - &cache_homedir
+    directories: [$HOME/bin, $HOME/share]
+
 matrix:
+  fast_finish: true
+
   include:
   # Linux
     # GCC
@@ -37,6 +51,20 @@ matrix:
     - os: osx
       compiler: clang
       env: [CONFIGURATION=Release, *gcc-warnings]
+
+  # Sporadic failure builds
+    - compiler: gcc
+      env: &env_sporadic_dbg CONFIGURATION=Debug    CTEST_OPTS="--repeat-until-fail 25 --schedule-random"
+      install: *install_cmake35
+      cache: *cache_homedir
+    - compiler: gcc
+      env: &env_sporadic_rel CONFIGURATION=Release  CTEST_OPTS="--repeat-until-fail 25 --schedule-random"
+      install: *install_cmake35
+      cache: *cache_homedir
+
+  allow_failures:
+    - env: *env_sporadic_dbg
+    - env: *env_sporadic_rel
 
 before_script:
   - gem install asciidoctor

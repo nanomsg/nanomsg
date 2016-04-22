@@ -10,6 +10,8 @@ matrix:
 #      compiler: gcc
     - os: osx
       compiler: clang
+before_script:
+  - gem install asciidoctor
 script:
   # Print all environment variables to aid in CI development
   - printenv

@@ -84,11 +84,11 @@ endif()
 # User-defined options.
 
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
+option (NN_ENABLE_DOC "Enable building documentation." ON)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
-option (NN_ENABLE_DOC "Enable building documentation." ON)
 
 #  Platform checks.
 
@@ -207,12 +207,18 @@ if (NN_ENABLE_NANOCAT)
     target_link_libraries (nanocat ${PROJECT_NAME})
 endif ()
 
+find_program (ASCIIDOCTOR_EXE asciidoctor)
+if (NOT ASCIIDOCTOR_EXE)
+    message (WARNING "asciidoctor not found, skipping docs")
+    set (NN_ENABLE_DOC OFF)
+else ()
+    if (NN_ENABLE_DOC)
+        message (STATUS "Using asciidoctor at ${ASCIIDOCTOR_EXE}")
+    endif ()
+endif ()
+
 # Build the documenation
 if (NN_ENABLE_DOC)
-    find_program (ASCIIDOCTOR_EXE asciidoctor)
-    if (NOT ASCIIDOCTOR_EXE)
-        message (WARNING "asciidoctor not found, skipping docs")
-    endif ()
 
     set (NN_DOCDIR ${CMAKE_CURRENT_SOURCE_DIR}/doc)
     set (NN_STYLESHEET ${NN_DOCDIR}/stylesheet.css)

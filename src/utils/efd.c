@@ -64,9 +64,9 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 {
     int rc;
     struct timeval tv;
-    int fd = self->r;
+    SOCKET fd = self->r;
 
-    if (nn_slow (fd < 0)) {
+    if (nn_slow (fd == INVALID_SOCKET)) {
         return -EBADF;
     }
     FD_SET (fd, &self->fds);

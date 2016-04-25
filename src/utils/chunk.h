@@ -30,6 +30,9 @@
 /*  Signature of the chunk deallocator function */
 typedef void (*nn_chunk_free_fn) (void *p, void *user);
 
+/* Return the size of the chunk header */
+size_t nn_chunk_hdrsize ();
+
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
 int nn_chunk_alloc (size_t size, int type, void **result);
 
@@ -39,6 +42,17 @@ int nn_chunk_alloc (size_t size, int type, void **result);
              be able to free your message otherwise! */
 int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor, 
     void *userptr, void **result);
+
+/* Initialize a chunk from existing data. 
+   Constrast to the previous function, this will initialize the given data
+   pointer as a chunk (destructively) and return a pointer to the data region,
+   like a regular chunk.
+
+   NOTE: The size argument includes the chunk header size (use nn_chunk_hdrsize
+         to obtain it). 
+*/
+int nn_chunk_init( void * ptr, size_t ptr_size, nn_chunk_free_fn destructor, 
+    void * userptr, void ** result );
 
 /*  Dereference the chunk if this is a pointer chunk, otherwise return p */
 void *nn_chunk_deref (void *p);

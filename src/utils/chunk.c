@@ -82,96 +82,67 @@ struct nn_chunk_ptr {
 static struct nn_chunk *nn_chunk_getptr (void *p);
 static void *nn_chunk_getdata (struct nn_chunk *c);
 static void nn_chunk_default_free (void *p, void*user);
-static size_t nn_chunk_hdrsize ();
+static int nn_chunk_local_alloc ( size_t sz, int alloc_type,
+    struct nn_chunk ** self, size_t * pad );
+static int nn_chunk_local_init (struct nn_chunk *self, 
+    size_t size, uint32_t tag, nn_chunk_free_fn ffn, void * ffnptr );
 
-static int nn_chunk_new (size_t size, int type, uint32_t tag, 
-    struct nn_chunk ** result, size_t * pad)
+size_t nn_chunk_hdrsize ()
+{
+    return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+}
+
+int nn_chunk_init( void * ptr, size_t ptr_size, nn_chunk_free_fn ffn, 
+    void * ffnptr, void ** result )
 {
     int ret;
     size_t sz;
-    struct nn_chunk *self;
+    struct nn_chunk *self = (struct nn_chunk *) ptr;
     const size_t hdrsz = nn_chunk_hdrsize ();
 
-    /*  Compute total size to be allocated. Check for overflow. */
-    sz = hdrsz + size;
-    if (nn_slow (sz < hdrsz))
+    /* Make sure header fits in the given size. */
+    if (nn_slow (ptr_size < hdrsz))
         return -ENOMEM;
 
-    /*  Allocate the actual memory depending on the type. */
-    switch (type) {
-    case 0:
-        self = nn_alloc (sz, "message chunk");
-        *pad = 0;
-        break;
+    /* Initialize chunk */
+    ret = nn_chunk_local_init(self, ptr_size-hdrsz, NN_CHUNK_TAG, ffn, ffnptr);
+    if (nn_slow( ret ))
+        return ret;
 
-    case NN_ALLOC_PAGEALIGN:
-        /* User requested a page-aligned chunk */
-#if defined NN_HAVE_WINDOWS
-        return -ENOSYS;
-#elif _POSIX_C_SOURCE >= 200112L
-        /* Make sure that the user will eventually receive a 
-           pagesize-aligned pointer. This means that there must
-           be enough empty space in order for the user to receive
-           a properly-aligned pointer.
-           NOTE: This is a waste of memory. Alternatively, the user
-                 must know the base address of the chunk in order to
-                 tell the transport send the whole chunk pointer,
-                 but starting from a specific offset. However this
-                 requires exposing the nn_chunk_getptr function to the 
-                 user.
-        */
-        *pad = sysconf(_SC_PAGESIZE) -
-               sizeof(struct nn_chunk) - sizeof(uint32_t) - sizeof(uint32_t);
-
-        /* Allocate memory */
-        ret = posix_memalign( (void**)&self, sysconf(_SC_PAGESIZE), sz + *pad );
-        if (nn_slow( ret != 0 )) return -ret;
-#else
-        return -ENOSYS;
-#endif
-        break;
-
-    default:
-        return -EINVAL;
-    }
-    if (nn_slow (!self))
-        return -ENOMEM;
-
-    /*  Fill in the chunk header. */
-    nn_atomic_init (&self->refcount, 1);
-    self->size = size + *pad;
-    self->ffn = nn_chunk_default_free;
-    self->ffnptr = NULL;
-
-    /*  Fill in the size of the empty space between the chunk header
-        and the message. */
-    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
-
-    /*  Fill in the tag. */
-    nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), tag);
-
-    /* Sucess */
-    *result = self;
+    /* Update result */
+    *result = nn_chunk_getdata (self);
     return 0;
 }
 
 int nn_chunk_alloc (size_t size, int type, void **result)
 {
     int ret;
-    size_t pad;
+    size_t sz, pad;
     struct nn_chunk *self;
+    const size_t hdrsz = nn_chunk_hdrsize ();
 
-    /* Create new chunk */
-    ret = nn_chunk_new( size, type, NN_CHUNK_TAG, &self, &pad );
-    if (ret)
+    /* Compute total size to be allocated. Check for overflow. */
+    sz = hdrsz + size;
+    if (nn_slow (sz < hdrsz))
+        return -ENOMEM;
+
+    /* Allocate new chunk */
+    ret = nn_chunk_local_alloc( sz, type, &self, &pad );
+    if (nn_slow( ret ))
+        return ret;
+
+    /* Initialize chunk */
+    ret = nn_chunk_local_init( self, size, NN_CHUNK_TAG, 
+        nn_chunk_default_free, NULL );
+    if (nn_slow( ret ))
         return ret;
 
     /* Update result */
     *result = nn_chunk_getdata (self);
 
-    /* If we have padding (ex. for proper alignment of the user pointer), 
-       trim data accordingly */
-    if (pad) *result = nn_chunk_trim( *result, pad );
+    /* Apply padding */
+    if (nn_slow( pad ))
+        *result = nn_chunk_trim(*result, pad);
 
     return 0;
 }
@@ -180,19 +151,22 @@ int nn_chunk_alloc_ptr ( void * data, size_t size, nn_chunk_free_fn destructor,
     void *userptr, void **result)
 {
     int ret;
-    size_t pad;
+    size_t sz, pad;
     struct nn_chunk_ptr *ptr_chunk;
     struct nn_chunk *self;
+    const size_t hdrsz = nn_chunk_hdrsize ();
 
-    /* Create new user-pointer chunk */
-    ret = nn_chunk_new(sizeof(struct nn_chunk_ptr), 0, NN_CHUNK_TAG_PTR, 
-        &self, &pad);
-    if (ret)
+    /* Allocate new chunk-pointer chunk */
+    ret = nn_chunk_local_alloc( hdrsz + sizeof(struct nn_chunk_ptr), 0, 
+        &self, &pad );
+    if (nn_slow( ret ))
         return ret;
 
-    /* Re-use size field since it's otherwise useless, since the size
-       of the data we carry is always `sizeof(void *)` */
-    self->size = size;
+    /* Initialize chunk */
+    ret = nn_chunk_local_init( self, size, NN_CHUNK_TAG_PTR, 
+        nn_chunk_default_free, NULL );
+    if (nn_slow( ret ))
+        return ret;
 
     /* Update chunk pointer properties */
     ptr_chunk = (struct nn_chunk_ptr *) nn_chunk_getdata (self);
@@ -455,8 +429,72 @@ static void nn_chunk_default_free (void *p, void *user)
     nn_free (p);
 }
 
-static size_t nn_chunk_hdrsize ()
+static int nn_chunk_local_alloc ( size_t sz, int alloc_type,
+    struct nn_chunk ** self, size_t * pad )
 {
-    return sizeof (struct nn_chunk) + 2 * sizeof (uint32_t);
+    int ret;
+
+    /*  Allocate the actual memory depending on the type. */
+    switch (alloc_type) {
+    case 0:
+        *self = nn_alloc (sz, "message chunk");
+        *pad = 0;
+        break;
+
+    case NN_ALLOC_PAGEALIGN:
+        /* User requested a page-aligned chunk */
+#if defined NN_HAVE_WINDOWS
+        return -ENOSYS;
+#elif _POSIX_C_SOURCE >= 200112L
+
+        /* In order for the user to receive a page-aligned pointer,
+           the header should reside in the previous page.
+
+           The padding calculated here should give an offset of 1 page
+           away from the header.
+        */
+        *pad = sysconf(_SC_PAGESIZE) - nn_chunk_hdrsize();
+
+        /* Allocate memory */
+        ret = posix_memalign( (void**)self, sysconf(_SC_PAGESIZE), 
+            sz + sysconf(_SC_PAGESIZE) );
+        if (nn_slow( ret != 0 )) return -ret;
+
+#else
+        return -ENOSYS;
+#endif
+        break;
+
+    default:
+        return -EINVAL;
+    }
+
+    /*  Test sanity of allocated pointer */
+    if (nn_slow (!*self))
+        return -ENOMEM;
+
+    /*  Success */
+    return 0;
 }
 
+static int nn_chunk_local_init (struct nn_chunk *self, size_t size, 
+    uint32_t tag, nn_chunk_free_fn ffn, void * ffnptr )
+{
+    int ret;
+
+    /*  Fill in the chunk header. */
+    nn_atomic_init (&self->refcount, 1);
+    self->size = size;
+    self->ffn = ffn;
+    self->ffnptr = ffnptr;
+
+    /*  Fill in the size of the empty space between the chunk header
+        and the message. */
+    nn_putl ((uint8_t*) ((uint32_t*) (self + 1)), 0);
+
+    /*  Fill in the tag. */
+    nn_putl ((uint8_t*) ((((uint32_t*) (self + 1))) + 1), tag);
+
+    /* Sucess */
+    return 0;
+}

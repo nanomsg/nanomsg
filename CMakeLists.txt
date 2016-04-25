@@ -25,13 +25,14 @@
 #
 
 cmake_minimum_required (VERSION 2.8.7)
+
+project (nanomsg C)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
 include (CheckStructHasMember)
 include (CheckLibraryExists)
 include (CheckCSourceCompiles)
-
-project (nanomsg C)
+include (GNUInstallDirs)
 
 set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg with your findings")
 
@@ -83,6 +84,7 @@ endif()
 # User-defined options.
 
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
+option (NN_ENABLE_DOC "Enable building documentation." ON)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
@@ -205,6 +207,98 @@ if (NN_ENABLE_NANOCAT)
     target_link_libraries (nanocat ${PROJECT_NAME})
 endif ()
 
+find_program (ASCIIDOCTOR_EXE asciidoctor)
+if (NOT ASCIIDOCTOR_EXE)
+    message (WARNING "asciidoctor not found, skipping docs")
+    set (NN_ENABLE_DOC OFF)
+else ()
+    if (NN_ENABLE_DOC)
+        message (STATUS "Using asciidoctor at ${ASCIIDOCTOR_EXE}")
+    endif ()
+endif ()
+
+# Build the documenation
+if (NN_ENABLE_DOC)
+
+    set (NN_DOCDIR ${CMAKE_CURRENT_SOURCE_DIR}/doc)
+    set (NN_STYLESHEET ${NN_DOCDIR}/stylesheet.css)
+    set (NN_TITLE ${PROJECT_NAME} ${NN_PACKAGE_VERSION})
+    set (NN_A2M ${ASCIIDOCTOR_EXE} -b manpage -amanmanual='${NN_TITLE}')
+    set (NN_A2H ${ASCIIDOCTOR_EXE} -d manpage -b html5 -a stylesheeet=${NN_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${NN_PACKAGE_VERSION})
+
+    macro (add_libnanomsg_man NAME SECT)
+        add_custom_command (
+            OUTPUT ${NAME}.${SECT}
+            COMMAND ${NN_A2M} -o ${NAME}.${SECT} ${NN_DOCDIR}/${NAME}.txt
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+        )
+
+        add_custom_command (
+            OUTPUT ${NAME}.${SECT}.html
+            COMMAND ${NN_A2H} -o ${NAME}.${SECT}.html ${NN_DOCDIR}/${NAME}.txt
+            DEPENDS ${NN_STYLESHEET}
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+        )
+
+        set(NN_MANS ${NN_MANS} ${NAME}.${SECT})
+        set(NN_HTMLS ${NN_HTMLS} ${NAME}.${SECT}.html)
+
+        install (
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        )
+        install (
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
+            DESTINATION ${CMAKE_INSTALL_MANDIR}/man${SECT}
+        )
+
+    endmacro (add_libnanomsg_man)
+
+    if (NN_ENABLE_NANOCAT)
+        add_libnanomsg_man (nanocat 1)
+    endif ()
+
+    add_libnanomsg_man (nn_errno 3)
+    add_libnanomsg_man (nn_strerror 3)
+    add_libnanomsg_man (nn_symbol 3)
+    add_libnanomsg_man (nn_symbol_info 3)
+    add_libnanomsg_man (nn_allocmsg 3)
+    add_libnanomsg_man (nn_reallocmsg 3)
+    add_libnanomsg_man (nn_freemsg 3)
+    add_libnanomsg_man (nn_socket 3)
+    add_libnanomsg_man (nn_close 3)
+    add_libnanomsg_man (nn_get_statistic 3)
+    add_libnanomsg_man (nn_getsockopt 3)
+    add_libnanomsg_man (nn_setsockopt 3)
+    add_libnanomsg_man (nn_bind 3)
+    add_libnanomsg_man (nn_connect 3)
+    add_libnanomsg_man (nn_shutdown 3)
+    add_libnanomsg_man (nn_send 3)
+    add_libnanomsg_man (nn_recv 3)
+    add_libnanomsg_man (nn_sendmsg 3)
+    add_libnanomsg_man (nn_recvmsg 3)
+    add_libnanomsg_man (nn_device 3)
+    add_libnanomsg_man (nn_cmsg 3)
+    add_libnanomsg_man (nn_poll 3)
+
+    add_libnanomsg_man (nanomsg 7)
+    add_libnanomsg_man (nn_pair 7)
+    add_libnanomsg_man (nn_reqrep 7)
+    add_libnanomsg_man (nn_pubsub 7)
+    add_libnanomsg_man (nn_survey 7)
+    add_libnanomsg_man (nn_pipeline 7)
+    add_libnanomsg_man (nn_bus 7)
+    add_libnanomsg_man (nn_inproc 7)
+    add_libnanomsg_man (nn_ipc 7)
+    add_libnanomsg_man (nn_tcp 7)
+    add_libnanomsg_man (nn_ws 7)
+    add_libnanomsg_man (nn_env 7)
+
+     add_custom_target (man ALL DEPENDS ${NN_MANS})
+     add_custom_target (html ALL DEPENDS ${NN_HTMLS})
+
+endif ()
+
 #  Build unit tests.
 
 if (NN_TESTS)
@@ -306,6 +400,6 @@ if (NN_ENABLE_NANOCAT)
     install (TARGETS nanocat RUNTIME DESTINATION bin)
 endif()
 
-set (CPACK_GENERATOR "NSIS")
 set (CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set (CPACK_PACKAGE_VERSION ${NN_PACKAGE_VERSION})
 include (CPack)

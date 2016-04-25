@@ -34,6 +34,11 @@ include (CheckLibraryExists)
 include (CheckCSourceCompiles)
 include (GNUInstallDirs)
 
+if (POLICY CMP0042)
+    # Newer cmake on MacOS should use @rpath
+    cmake_policy (SET CMP0042 NEW)
+endif ()
+
 set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg with your findings")
 
 # Determine library versions.

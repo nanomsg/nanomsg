@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -46,44 +46,43 @@ void nn_worker_fd_term (NN_UNUSED struct nn_worker_fd *self)
 
 void nn_worker_add_fd (struct nn_worker *self, int s, struct nn_worker_fd *fd)
 {
-    nn_poller_add (&((struct nn_worker*) self)->poller, s, &fd->hndl);
+    nn_poller_add (&self->poller, s, &fd->hndl);
 }
 
 void nn_worker_rm_fd (struct nn_worker *self, struct nn_worker_fd *fd)
 {
-    nn_poller_rm (&((struct nn_worker*) self)->poller, &fd->hndl);
+    nn_poller_rm (&self->poller, &fd->hndl);
 }
 
 void nn_worker_set_in (struct nn_worker *self, struct nn_worker_fd *fd)
 {
-    nn_poller_set_in (&((struct nn_worker*) self)->poller, &fd->hndl);
+    nn_poller_set_in (&self->poller, &fd->hndl);
 }
 
 void nn_worker_reset_in (struct nn_worker *self, struct nn_worker_fd *fd)
 {
-    nn_poller_reset_in (&((struct nn_worker*) self)->poller, &fd->hndl);
+    nn_poller_reset_in (&self->poller, &fd->hndl);
 }
 
 void nn_worker_set_out (struct nn_worker *self, struct nn_worker_fd *fd)
 {
-    nn_poller_set_out (&((struct nn_worker*) self)->poller, &fd->hndl);
+    nn_poller_set_out (&self->poller, &fd->hndl);
 }
 
 void nn_worker_reset_out (struct nn_worker *self, struct nn_worker_fd *fd)
 {
-    nn_poller_reset_out (&((struct nn_worker*) self)->poller, &fd->hndl);
+    nn_poller_reset_out (&self->poller, &fd->hndl);
 }
 
 void nn_worker_add_timer (struct nn_worker *self, int timeout,
     struct nn_worker_timer *timer)
 {
-    nn_timerset_add (&((struct nn_worker*) self)->timerset, timeout,
-        &timer->hndl);
+    nn_timerset_add (&self->timerset, timeout, &timer->hndl);
 }
 
 void nn_worker_rm_timer (struct nn_worker *self, struct nn_worker_timer *timer)
 {
-    nn_timerset_rm (&((struct nn_worker*) self)->timerset, &timer->hndl);
+    nn_timerset_rm (&self->timerset, &timer->hndl);
 }
 
 void nn_worker_task_init (struct nn_worker_task *self, int src,

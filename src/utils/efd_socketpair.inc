@@ -23,13 +23,13 @@
 
 #include "err.h"
 #include "fast.h"
-#include "int.h"
 #include "closefd.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 int nn_efd_init (struct nn_efd *self)
 {

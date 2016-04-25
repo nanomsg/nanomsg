@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -417,7 +417,10 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     int out;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
+    if (self->state != NN_USOCK_STATE_ACTIVE) {
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+        return;
+    }
 
     /*  Copy the iovecs to the socket. */
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
@@ -458,7 +461,10 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     size_t nbytes;
 
     /*  Make sure that the socket is actually alive. */
-    nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
+    if (self->state != NN_USOCK_STATE_ACTIVE) {
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+        return;
+    }
 
     /*  Try to receive the data immediately. */
     nbytes = len;
@@ -832,6 +838,13 @@ error:
         case NN_USOCK_SRC_FD:
             return;
 
+        case NN_FSM_ACTION:
+            switch (type) {
+            case NN_USOCK_ACTION_ERROR:
+                return;
+            default:
+                nn_fsm_bad_action (usock->state, src, type);
+            }
         default:
             nn_fsm_bad_source (usock->state, src, type);
         }
@@ -842,7 +855,7 @@ error:
 /*  stopping the usock.                                                       */
 /******************************************************************************/
     case NN_USOCK_STATE_DONE:
-        nn_fsm_bad_source (usock->state, src, type);
+        return;
 
 /******************************************************************************/
 /*  LISTENING state.                                                          */

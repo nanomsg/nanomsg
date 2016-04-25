@@ -391,7 +391,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_ws_handshake *handshaker;
 
-    unsigned i;
+    size_t i;
 
     handshaker = nn_cont (self, struct nn_ws_handshake, fsm);
 

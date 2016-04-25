@@ -36,39 +36,7 @@
 #include "err.h"
 #include "attr.h"
 
-/* 1 millisecond expressed in CPU ticks. The value is chosen is such a way that
-   it works pretty well for CPU frequencies above 500MHz. */
-#define NN_CLOCK_PRECISION 1000000
-
-#if defined NN_HAVE_OSX
-static mach_timebase_info_data_t nn_clock_timebase_info;
-#endif
-
-static uint64_t nn_clock_rdtsc ()
-{
-#if (defined _MSC_VER && (defined _M_IX86 || defined _M_X64))
-    return __rdtsc ();
-#elif (defined __GNUC__ && (defined __i386__ || defined __x86_64__))
-    uint32_t low;
-    uint32_t high;
-    __asm__ volatile ("rdtsc" : "=a" (low), "=d" (high));
-    return (uint64_t) high << 32 | low;
-#elif (defined __SUNPRO_CC && (__SUNPRO_CC >= 0x5100) && (defined __i386 || \
-    defined __amd64 || defined __x86_64))
-    union {
-        uint64_t u64val;
-        uint32_t u32val [2];
-    } tsc;
-    asm("rdtsc" : "=a" (tsc.u32val [0]), "=d" (tsc.u32val [1]));
-    return tsc.u64val;
-#else
-
-    /*  RDTSC is not available. */
-    return 0;
-#endif
-}
-
-static uint64_t nn_clock_time ()
+uint64_t nn_clock_ms (void)
 {
 #if defined NN_HAVE_WINDOWS
 
@@ -83,6 +51,7 @@ static uint64_t nn_clock_time ()
 
 #elif defined NN_HAVE_OSX
 
+    static mach_timebase_info_data_t nn_clock_timebase_info;
     uint64_t ticks;
 
     /*  If the global timebase info is not initialised yet, init it. */
@@ -119,39 +88,3 @@ static uint64_t nn_clock_time ()
 
 #endif
 }
-
-void nn_clock_init (struct nn_clock *self)
-{
-    self->last_tsc = nn_clock_rdtsc ();
-    self->last_time = nn_clock_time ();
-}
-
-void nn_clock_term (NN_UNUSED struct nn_clock *self)
-{
-}
-
-uint64_t nn_clock_now (struct nn_clock *self)
-{
-    /*  If TSC is not supported, use the non-optimised time measurement. */
-    uint64_t tsc = nn_clock_rdtsc ();
-    if (!tsc)
-        return nn_clock_time ();
-
-    /*  If tsc haven't jumped back or run away too far, we can use the cached
-        time value. */
-    if (nn_fast (tsc - self->last_tsc <= (NN_CLOCK_PRECISION / 2) &&
-          tsc >= self->last_tsc))
-        return self->last_time;
-
-    /*  It's a long time since we've last measured the time. We'll do a new
-        measurement now. */
-    self->last_tsc = tsc;
-    self->last_time = nn_clock_time ();
-    return self->last_time;
-}
-
-uint64_t nn_clock_timestamp ()
-{
-    return nn_clock_rdtsc ();
-}
-

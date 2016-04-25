@@ -26,9 +26,9 @@
 
 #include "err.h"
 #include "fast.h"
-#include "int.h"
 
 #include <string.h>
+#include <stdint.h>
 
 int nn_efd_init (struct nn_efd *self)
 {

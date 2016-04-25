@@ -19,8 +19,7 @@ DESCRIPTION
 Allocate a message from existing 'data' of a given 'size' to be sent in 
 zero-copy fashion. This function is simmilar to linknanomsg:nn_allocmsg[3], 
 but instead of allocating a new data chunk, it creates a pointer chunk that 
-refers to the 'data' pointer given. While linknanomsg:nn_send[3] and 
-linknanomsg:nn_sendmsg[3] allow to send arbitrary buffers, messages allocated 
+refers to the 'data' pointer given. While <<nn_send.3.txt#,nn_send(3)>> and <<nn_sendmsg.3.txt#,nn_sendmsg(3)>> allow to send arbitrary buffers, messages allocated 
 using _nn_allocmsg_ptr()_ can be more efficient for large messages as they allow 
 for using zero-copy techniques.
 
@@ -55,12 +54,11 @@ nn_send (s, &buf, NN_MSG, 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_freemsg[3]
-linknanomsg:nn_send[3]
-linknanomsg:nn_sendmsg[3]
-linknanomsg:nanomsg[7]
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Ioannis Charalampidis <icharala@cern.ch>
-
+link:mailto:icharala@cern.ch[Ioannis Charalampidis]

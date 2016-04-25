@@ -14,7 +14,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Reallocate a message previously allocated by linknanomsg:nn_allocmsg[3] or
+Reallocate a message previously allocated by <<nn_allocmsg.3.txt#,nn_allocmsg(3)>> or
 received from a peer using NN_MSG mechanism.
 
 Note that as with the standard _realloc_, the operation may involve copying
@@ -51,11 +51,11 @@ nn_freemsg (newbuf);
 
 SEE ALSO
 --------
-linknanomsg:nn_allocmsg[3]
-linknanomsg:nn_freemsg[3]
-linknanomsg:nanomsg[7]
+<<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

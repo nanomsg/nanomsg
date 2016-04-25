@@ -24,18 +24,17 @@
 
 #include "../utils/fast.h"
 #include "../utils/cont.h"
+#include "../utils/clock.h"
 #include "../utils/err.h"
 
 void nn_timerset_init (struct nn_timerset *self)
 {
-    nn_clock_init (&self->clock);
     nn_list_init (&self->timeouts);
 }
 
 void nn_timerset_term (struct nn_timerset *self)
 {
     nn_list_term (&self->timeouts);
-    nn_clock_term (&self->clock);
 }
 
 int nn_timerset_add (struct nn_timerset *self, int timeout,
@@ -46,7 +45,7 @@ int nn_timerset_add (struct nn_timerset *self, int timeout,
     int first;
 
     /*  Compute the instant when the timeout will be due. */
-    hndl->timeout = nn_clock_now (&self->clock) + timeout;
+    hndl->timeout = nn_clock_ms()  + timeout;
 
     /*  Insert it into the ordered list of timeouts. */
     for (it = nn_list_begin (&self->timeouts);
@@ -87,7 +86,7 @@ int nn_timerset_timeout (struct nn_timerset *self)
         return -1;
 
     timeout = (int) (nn_cont (nn_list_begin (&self->timeouts),
-        struct nn_timerset_hndl, list)->timeout - nn_clock_now (&self->clock));
+        struct nn_timerset_hndl, list)->timeout - nn_clock_ms());
     return timeout < 0 ? 0 : timeout;
 }
 
@@ -102,7 +101,7 @@ int nn_timerset_event (struct nn_timerset *self, struct nn_timerset_hndl **hndl)
     /*  If no timeout have expired yet, there's no event to return. */
     first = nn_cont (nn_list_begin (&self->timeouts),
         struct nn_timerset_hndl, list);
-    if (first->timeout > nn_clock_now (&self->clock))
+    if (first->timeout > nn_clock_ms())
         return -EAGAIN;
 
     /*  Return the first timeout and remove it from the list of active

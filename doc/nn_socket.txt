@@ -33,7 +33,7 @@ protocols to get the list of available socket types.
 
 The newly created socket is initially not associated with any endpoints.
 In order to establish a message flow at least one endpoint has to be added
-to the socket using linknanomsg:nn_bind[3] or linknanomsg:nn_connect[3]
+to the socket using <<nn_bind.3.txt#,nn_bind(3)>> or <<nn_connect.3.txt#,nn_connect(3)>>
 function.
 
 Also note that 'type' argument as found in standard _socket(2)_ function is
@@ -76,17 +76,17 @@ assert (s >= 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_pubsub[7]
-linknanomsg:nn_reqrep[7]
-linknanomsg:nn_pipeline[7]
-linknanomsg:nn_survey[7]
-linknanomsg:nn_bus[7]
-linknanomsg:nn_bind[3]
-linknanomsg:nn_connect[3]
-linknanomsg:nn_close[3]
-linknanomsg:nanomsg[7]
+<<nn_pubsub.7.txt#,nn_pubsub(7)>>
+<<nn_reqrep.7.txt#,nn_reqrep(7)>>
+<<nn_pipeline.7.txt#,nn_pipeline(7)>>
+<<nn_survey.7.txt#,nn_survey(7)>>
+<<nn_bus.7.txt#,nn_bus(7)>>
+<<nn_bind.3.txt#,nn_bind(3)>>
+<<nn_connect.3.txt#,nn_connect(3)>>
+<<nn_close.3.txt#,nn_close(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

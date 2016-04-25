@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,20 +26,22 @@
 
 #include "testutil.h"
 
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5777"
-
-int main ()
+int main (int argc, const char *argv[])
 {
     int sb;
     int sc;
     int s1;
+    char socket_address[128];
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
-    test_bind (s1, SOCKET_ADDRESS);
+    test_bind (s1, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
+    test_connect (sc, socket_address);
 
     nn_sleep(100);
     test_send (sc, "ABC");

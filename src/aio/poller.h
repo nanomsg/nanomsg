@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,18 +24,18 @@
 #ifndef NN_POLLER_INCLUDED
 #define NN_POLLER_INCLUDED
 
-#if !defined NN_HAVE_WINDOWS
-
 #define NN_POLLER_IN 1
 #define NN_POLLER_OUT 2
 #define NN_POLLER_ERR 3
 
-#if defined NN_USE_POLL
-#include "poller_poll.h"
-#elif defined NN_USE_EPOLL
-#include "poller_epoll.h"
+#if defined NN_USE_EPOLL
+    #include "poller_epoll.h"
 #elif defined NN_USE_KQUEUE
-#include "poller_kqueue.h"
+    #include "poller_kqueue.h"
+#elif defined NN_USE_POLL
+    #include "poller_poll.h"
+#else
+    #error
 #endif
 
 int nn_poller_init (struct nn_poller *self);
@@ -51,6 +52,3 @@ int nn_poller_event (struct nn_poller *self, int *event,
     struct nn_poller_hndl **hndl);
 
 #endif
-
-#endif
-

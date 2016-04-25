@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,16 +29,12 @@
 #include "../../aio/fsm.h"
 #include "../../aio/timer.h"
 #include "../../utils/msg.h"
-#include "../../utils/int.h"
 
 struct nn_task {
 
     /*  ID of the request being currently processed. Replies for different
         requests are considered stale and simply dropped. */
     uint32_t id;
-
-    /*  User-defined handle of the task. */
-    nn_req_handle hndl;
 
     /*  Stored request, so that it can be re-sent if needed. */
     struct nn_msg request;
@@ -53,7 +50,7 @@ struct nn_task {
     struct nn_pipe *sent_to;
 };
 
-void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl);
+void nn_task_init (struct nn_task *self, uint32_t id);
 void nn_task_term (struct nn_task *self);
 
 #endif

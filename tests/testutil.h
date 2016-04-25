@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Insollo Entertainment, LLC. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -198,6 +199,17 @@ static void NN_UNUSED test_drop_impl (char *file, int line, int sock, int err)
             rc, file, line);
         nn_err_abort ();
     }
+}
+
+static int get_test_port(int argc, const char *argv[])
+{
+    return atoi(argc < 2 ? "5555" : argv[1]);
+}
+
+static void test_addr_from(char *out, const char *proto,
+        const char *ip, int port)
+{
+    sprintf(out, "%s://%s:%d", proto, ip, port);
 }
 
 #endif

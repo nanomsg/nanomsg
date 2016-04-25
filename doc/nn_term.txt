@@ -20,9 +20,9 @@ _nn_term()_ function which informs all the open sockets that process
 termination is underway.
 
 If a socket is blocked inside a blocking function, such as
-linknanomsg:nn_recv[3], it will be unblocked  and ETERM error will be returned
+<<nn_recv.3.txt#,nn_recv(3)>>, it will be unblocked  and ETERM error will be returned
 to the user. Similarly, any subsequent attempt to invoke a socket function other
-than linknanomsg:nn_close[3] after _nn_term()_ was called will result
+than <<nn_close.3.txt#,nn_close(3)>> after _nn_term()_ was called will result
 in ETERM error.
 
 If waiting for _NN_SNDFD_ or _NN_RCVFD_ using a polling function, such as
@@ -45,14 +45,14 @@ assert (rc == -1 && errno == ETERM);
 
 SEE ALSO
 --------
-linknanomsg:nn_close[3]
-linknanomsg:nn_send[3]
-linknanomsg:nn_recv[3]
-linknanomsg:nn_getsockopt[3]
-linknanomsg:nanomsg[7]
+<<nn_close.3.txt#,nn_close(3)>>
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_recv.3.txt#,nn_recv(3)>>
+<<nn_getsockopt.3.txt#,nn_getsockopt(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

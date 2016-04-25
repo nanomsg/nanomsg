@@ -25,7 +25,7 @@
 #define NN_CHUNK_INCLUDED
 
 #include <stddef.h>
-#include "int.h"
+#include <stdint.h>
 
 /*  Signature of the chunk deallocator function */
 typedef void (*nn_chunk_free_fn) (void *p, void *user);

@@ -49,11 +49,11 @@ assert (rc == 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_socket[3]
-linknanomsg:nn_setsockopt[3]
-linknanomsg:nanomsg[7]
+<<nn_socket.3.txt#,nn_socket(3)>>
+<<nn_setsockopt.3.txt#,nn_setsockopt(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

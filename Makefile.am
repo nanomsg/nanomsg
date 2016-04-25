@@ -1,4 +1,5 @@
 # Copyright (c) 2013 Luca Barbato
+# Copyright 2016 Garrett D'Amore <garrett@damore.org>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"),
@@ -40,8 +41,7 @@ nninclude_HEADERS = \
     src/reqrep.h \
     src/pipeline.h \
     src/survey.h \
-    src/bus.h \
-    src/tcpmux.h
+    src/bus.h
 
 lib_LTLIBRARIES = libnanomsg.la
 
@@ -60,8 +60,7 @@ NANOMSG_CORE = \
 
 NANOMSG_DEVICES =\
     src/devices/device.c \
-    src/devices/device.h \
-    src/devices/tcpmuxd.c
+    src/devices/device.h
 
 NANOMSG_AIO = \
     src/aio/ctx.h \
@@ -128,7 +127,6 @@ NANOMSG_UTILS = \
     src/utils/glock.c \
     src/utils/hash.h \
     src/utils/hash.c \
-    src/utils/int.h \
     src/utils/list.h \
     src/utils/list.c \
     src/utils/msg.h \
@@ -306,25 +304,12 @@ TRANSPORTS_WS = \
     src/transports/ws/sha1.h \
     src/transports/ws/sha1.c
 
-TRANSPORTS_TCPMUX = \
-    src/transports/tcpmux/atcpmux.h \
-    src/transports/tcpmux/atcpmux.c \
-    src/transports/tcpmux/btcpmux.h \
-    src/transports/tcpmux/btcpmux.c \
-    src/transports/tcpmux/ctcpmux.h \
-    src/transports/tcpmux/ctcpmux.c \
-    src/transports/tcpmux/stcpmux.h \
-    src/transports/tcpmux/stcpmux.c \
-    src/transports/tcpmux/tcpmux.h \
-    src/transports/tcpmux/tcpmux.c
-
 NANOMSG_TRANSPORTS = \
     $(TRANSPORTS_UTILS) \
     $(TRANSPORTS_INPROC) \
     $(TRANSPORTS_IPC) \
     $(TRANSPORTS_TCP) \
-    $(TRANSPORTS_WS) \
-    $(TRANSPORTS_TCPMUX)
+    $(TRANSPORTS_WS)
 
 libnanomsg_la_SOURCES = \
     src/transport.h \
@@ -359,7 +344,6 @@ MAN7 = \
     doc/nn_inproc.txt \
     doc/nn_ipc.txt \
     doc/nn_tcp.txt \
-    doc/nn_tcpmux.txt \
     doc/nn_ws.txt \
     doc/nn_env.txt
 
@@ -374,6 +358,7 @@ MAN3 = \
     doc/nn_freemsg.txt \
     doc/nn_socket.txt \
     doc/nn_close.txt \
+    doc/nn_get_statistic.txt \
     doc/nn_getsockopt.txt \
     doc/nn_setsockopt.txt \
     doc/nn_bind.txt \
@@ -388,43 +373,40 @@ MAN3 = \
     doc/nn_poll.txt
 
 MAN1 = \
-    doc/nanocat.txt \
-    doc/tcpmuxd.txt
+    doc/nanocat.txt
 
 if DOC
 
 #  Build instructions.
 
-.txt.xml:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b docbook \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
-
 SUFFIXES = .1 .3 .7 .1.html .3.html .7.html
-.xml.1:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.3:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
-.xml.7:
-	$(AM_V_GEN)$(XMLTO) -o doc man $<
+.txt.1:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
+.txt.3:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
+.txt.7:
+	$(AM_V_GEN)$(ASCIIDOCTOR) -b manpage -D doc \
+	-amanmanual="nanomsg @NN_PACKAGE_VERSION@" $<
 
 .txt.1.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 .txt.3.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 .txt.7.html:
-	$(AM_V_GEN)$(ASCIIDOC) -d manpage -b xhtml11 \
-        -a stylesheet=$(abs_srcdir)/doc/htmldoc.css \
-        -f $(abs_srcdir)/doc/asciidoc.conf \
-        -aversion=@NN_PACKAGE_VERSION@ -o $@ $<
+	$(AM_V_GEN)$(ASCIIDOCTOR) -d manpage -b html5 \
+        -a stylesheet=$(abs_srcdir)/doc/stylesheet.css -atoc=left \
+        -a version-label=$(PACKAGE) -a revnumber=$(PACKAGE_VERSION) \
+        -o $@ $<
 
 #  Cause man pages to be generated and installed.
 
@@ -445,7 +427,7 @@ endif
 
 #  Extra files to be included into the source package.
 
-EXTRA_DIST += doc/asciidoc.conf doc/htmldoc.css $(MAN1) $(MAN3) $(MAN7)
+EXTRA_DIST += doc/stylesheet.css $(MAN1) $(MAN3) $(MAN7)
 
 ################################################################################
 #  performance tests                                                           #
@@ -473,8 +455,7 @@ TRANSPORT_TESTS = \
     tests/ipc_stress \
     tests/tcp \
     tests/tcp_shutdown \
-    tests/ws \
-    tests/tcpmux
+    tests/ws
 
 PROTOCOL_TESTS = \
     tests/pair \
@@ -508,6 +489,7 @@ FEATURE_TESTS = \
     tests/separation \
     tests/zerocopy \
     tests/shutdown \
+    tests/stats \
     tests/cmsg \
     tests/bug328
 
@@ -535,13 +517,6 @@ nanocat_SOURCES = \
 if NANOCAT
 bin_PROGRAMS += nanocat
 endif #NANOCAT
-
-tcpmuxd_SOURCES = \
-	tools/tcpmuxd.c
-
-if TCPMUXD
-bin_PROGRAMS += tcpmuxd
-endif #TCPMUXD
 
 ################################################################################
 #  RFCs                                                                        #
@@ -608,12 +583,6 @@ EXTRA_DIST += \
     ./package_version.sh \
     ./src/CMakeLists.txt \
     ./CMakeLists.txt
-
-diagrams:
-	-mkdir -p doc/diagrams
-	$(abs_srcdir)/doc/diag.py $(DEFS) $(CPPFLAGS) \
-		$(shell clang -E - -v < /dev/null 2>&1 | \
-			sed -n '/#include </{:x;n;/^End/q;s/^ */-I/;p;bx}')
 
 clean-local:
 	-rm -f test.ipc test-shutdown.ipc test-separation.ipc test-stress.ipc

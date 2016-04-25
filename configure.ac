@@ -173,20 +173,16 @@ AC_ARG_ENABLE([doc],
 )
 
 AS_IF([test x"$enable_doc" = "xyes"], [
-    AC_CHECK_PROGS([ASCIIDOC], [asciidoc])
-    AS_IF([test x"$ASCIIDOC" = "x"],[
-        AC_MSG_ERROR([Please install asciidoc to build the documentation])
-    ])
-    AC_CHECK_PROGS([XMLTO], [xmlto])
-    AS_IF([test x"$XMLTO" = "x"], [
-        AC_MSG_ERROR([Please install xmlto to build the documentation])
+    AC_CHECK_PROGS([ASCIIDOCTOR], [asciidoctor])
+    AS_IF([test x"$ASCIIDOCTOR" = "x"],[
+        AC_MSG_ERROR([Please install asciidoctor to build the documentation])
     ])
     AS_IF([test ! -d "doc"], [
         AC_PROG_MKDIR_P
         AS_MKDIR_P("doc")
     ])
 ])
-AM_CONDITIONAL([DOC], [test x"$ASCIIDOC" != "x" -a x"$XMLTO" != "x" ])
+AM_CONDITIONAL([DOC], [test x"$ASCIIDOCTOR" != "x"])
 
 ################################################################################
 #  Build nanocat                                                               #
@@ -207,19 +203,6 @@ AM_CONDITIONAL([NANOCAT], [test x"$enable_nanocat" != "xno" ])
 AM_CONDITIONAL([SYMLINKS], [test x"$enable_symlinks" != "xno" ])
 
 ################################################################################
-#  Build tcpmuxd                                                               #
-################################################################################
-
-AC_ARG_ENABLE([tcpmuxd],
-    AS_HELP_STRING([--enable-tcpmuxd], [Build tcpmuxd executable [default=yes]])
-)
-
-AS_IF([test x"$enable_tcpmuxd" != "xno"], [
-    AC_PROG_LN_S
-])
-AM_CONDITIONAL([TCPMUXD], [test x"$enable_tcpmuxd" != "xno" ])
-
-################################################################################
 #  Check which OS we are building for.                                         #
 ################################################################################
 
@@ -229,7 +212,7 @@ AS_CASE([${host_os}],
         AC_DEFINE([NN_HAVE_WINDOWS])
         AC_DEFINE([NN_HAVE_MINGW])
         AC_DEFINE([_WIN32_WINNT],0x0600)
-        LIBS="$LIBS -lws2_32 -lMswsock"
+        LIBS="$LIBS -lws2_32 -lmswsock"
     ],
     [*darwin*],  [AC_DEFINE([NN_HAVE_OSX])],
     [*freebsd*], [AC_DEFINE([NN_HAVE_FREEBSD])],
@@ -256,14 +239,6 @@ AX_PTHREAD([
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
   CC="$PTHREAD_CC"
 ])
-
-AC_CHECK_HEADERS([netinet/in.h])
-AC_CHECK_HEADERS([netdb.h])
-AC_CHECK_HEADERS([arpa/inet.h])
-AC_CHECK_HEADERS([unistd.h])
-AC_CHECK_HEADERS([sys/socket.h])
-AC_CHECK_HEADERS([sys/ioctl.h])
-AC_CHECK_HEADERS([stdint.h], [AC_DEFINE([NN_HAVE_STDINT])])
 
 AC_CHECK_FUNCS([eventfd], [AC_DEFINE([NN_HAVE_EVENTFD])])
 AC_CHECK_FUNCS([pipe], [AC_DEFINE([NN_HAVE_PIPE])])

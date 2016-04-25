@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,11 +31,9 @@
 
 /*  Tests TCP transport. */
 
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
-
 int sc;
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int rc;
     int sb;
@@ -43,16 +42,23 @@ int main ()
     size_t sz;
     int s1, s2;
     void * dummy_buf;
+    char addr[128];
+    char socket_address[128];
+
+    int port = get_test_port(argc, argv);
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     test_close (sb);
 
     /*  Try closing a TCP socket while it not connected. At the same time
         test specifying the local address for the connection. */
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, "tcp://127.0.0.1;127.0.0.1:5555");
+    test_addr_from(addr, "tcp", "127.0.0.1;127.0.0.1", port);
+    test_connect (sc, addr);
     test_close (sc);
 
     /*  Open the socket anew. */
@@ -123,13 +129,13 @@ int main ()
     errno_assert (nn_errno () == EINVAL);
 
     /*  Connect correctly. Do so before binding the peer socket. */
-    test_connect (sc, SOCKET_ADDRESS);
+    test_connect (sc, socket_address);
 
     /*  Leave enough time for at least on re-connect attempt. */
     nn_sleep (200);
 
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
@@ -154,11 +160,11 @@ int main ()
 
     /*  Test whether connection rejection is handled decently. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
-    test_connect (s1, SOCKET_ADDRESS);
+    test_connect (s1, socket_address);
     s2 = test_socket (AF_SP, NN_PAIR);
-    test_connect (s2, SOCKET_ADDRESS);
+    test_connect (s2, socket_address);
     nn_sleep (100);
     test_close (s2);
     test_close (s1);
@@ -166,11 +172,11 @@ int main ()
 
     /*  Test two sockets binding to the same address. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
-    test_bind (s1, SOCKET_ADDRESS);
+    test_bind (s1, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
+    test_connect (sc, socket_address);
     nn_sleep (100);
     test_send (sb, "ABC");
     test_recv (sc, "ABC");
@@ -182,9 +188,9 @@ int main ()
 
     /*  Test NN_RCVMAXSIZE limit */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
-    test_connect (s1, SOCKET_ADDRESS);
+    test_connect (s1, socket_address);
     opt = 4;
     rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
     nn_assert (rc == 0);
@@ -211,12 +217,12 @@ int main ()
 
     /*  Test closing a socket that is waiting to bind. */
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS);
+    test_bind (sb, socket_address);
     nn_sleep (100);
     s1 = test_socket (AF_SP, NN_PAIR);
-    test_bind (s1, SOCKET_ADDRESS);
+    test_bind (s1, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS);
+    test_connect (sc, socket_address);
     nn_sleep (100);
     test_send (sb, "ABC");
     test_recv (sc, "ABC");

@@ -9,14 +9,19 @@
     IPC Mapping for Scalability Protocols
     </title>
 
-    <author fullname="Martin Sustrik" initials="M." role="editor"
-            surname="Sustrik">
+    <author fullname="Garrett D'Amore" initials="G." role="editor"
+            surname="D'Amore">
+      <address>
+        <email>garrett@damore.org</email>
+      </address>
+    </author>
+    <author fullname="Martin Sustrik" initials="M." surname="Sustrik">
       <address>
         <email>sustrik@250bpm.com</email>
       </address>
     </author>
 
-    <date month="November" year="2014" />
+    <date month="APril" year="2016" />
 
     <area>Applications</area>
     <workgroup>Internet Engineering Task Force</workgroup>
@@ -116,14 +121,14 @@
          messages. Every message starts with a message header consisting of
          of a single byte called 'message type'.</t>
 
-      <t>The only value of this field that is currently allowed is zero, which
+      <t>The only value of this field that is currently allowed is 0x1, which
          means "in-band" message, i.e. message whose body is passed as a stream
          of bytes via the AF_UNIX socket.</t>
 
       <t>The intent of this field is to eventually allow out-of-band transfer
          of the message bodies, e.g. via shared memory.</t>
 
-      <t>In-band message type MUST be implemented.</t>
+      <t>The in-band message type MUST be implemented.</t>
 
     </section>
 
@@ -157,4 +162,3 @@
   </middle>
 
 </rfc>
-

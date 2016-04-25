@@ -23,10 +23,10 @@
 #ifndef NN_BASE64_INCLUDED
 #define NN_BASE64_INCLUDED
 
-#include "../../utils/int.h"
 #include "../../utils/err.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 /*  Based on base64.c (Public Domain) by Jon Mayo.
     Base64 is defined in RFC 2045, section 6.8. */

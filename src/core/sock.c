@@ -31,6 +31,7 @@
 
 #include "../utils/err.h"
 #include "../utils/cont.h"
+#include "../utils/clock.h"
 #include "../utils/fast.h"
 #include "../utils/alloc.h"
 #include "../utils/msg.h"
@@ -119,7 +120,6 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
 
     self->holds = 1;   /*  Callers hold. */
     self->flags = 0;
-    nn_clock_init (&self->clock);
     nn_list_init (&self->eps);
     nn_list_init (&self->sdeps);
     self->eid = 1;
@@ -253,7 +253,6 @@ int nn_sock_term (struct nn_sock *self)
     nn_sem_term (&self->termsem);
     nn_list_term (&self->sdeps);
     nn_list_term (&self->eps);
-    nn_clock_term (&self->clock);
     nn_ctx_term (&self->ctx);
 
     /*  Destroy any optsets associated with the socket. */
@@ -598,7 +597,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         timeout = -1;
     }
     else {
-        deadline = nn_clock_now (&self->clock) + self->sndtimeo;
+        deadline = nn_clock_ms() + self->sndtimeo;
         timeout = self->sndtimeo;
     }
 
@@ -670,7 +669,7 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
         if (self->sndtimeo >= 0) {
-            now = nn_clock_now (&self->clock);
+            now = nn_clock_ms();
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
     }
@@ -695,7 +694,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         timeout = -1;
     }
     else {
-        deadline = nn_clock_now (&self->clock) + self->rcvtimeo;
+        deadline = nn_clock_ms() + self->rcvtimeo;
         timeout = self->rcvtimeo;
     }
 
@@ -767,7 +766,7 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         /*  If needed, re-compute the timeout to reflect the time that have
             already elapsed. */
         if (self->rcvtimeo >= 0) {
-            now = nn_clock_now (&self->clock);
+            now = nn_clock_ms();
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
     }

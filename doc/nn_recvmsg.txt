@@ -33,7 +33,7 @@ the size of the array.
 the received message. 'msg_controllen' specifies the length of the buffer.
 If the control information should not be retrieved, set 'msg_control' parameter
 to NULL. For detailed discussion of how to parse the control information check
-linknanomsg:nn_cmsg[3] man page.
+<<nn_cmsg.3.txt#,nn_cmsg(3)>> man page.
 
 Structure 'nn_iovec' defines one element in the gather array (a buffer to be
 filled in by message data) and contains following members:
@@ -44,7 +44,7 @@ filled in by message data) and contains following members:
 Alternatively, _nanomsg_ library can allocate the buffer for you. To do so,
 let the 'iov_base' point to void* variable to receive the buffer and set
 'iov_len' to _NN_MSG_. After successful completion user is responsible
-for deallocating the message using linknanomsg:nn_freemsg[3] function. Gather
+for deallocating the message using <<nn_freemsg.3.txt#,nn_freemsg(3)>> function. Gather
 array in _nn_msghdr_ structure can contain only one element in this case.
 
 The 'flags' argument is a combination of the flags defined below:
@@ -104,16 +104,16 @@ nn_recvmsg (s, &hdr, 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_recv[3]
-linknanomsg:nn_sendmsg[3]
-linknanomsg:nn_allocmsg[3]
-linknanomsg:nn_allocmsg_ptr[3]
-linknanomsg:nn_freemsg[3]
-linknanomsg:nn_cmsg[3]
-linknanomsg:nanomsg[7]
+<<nn_recv.3.txt#,nn_recv(3)>>
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nn_cmsg.3.txt#,nn_cmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

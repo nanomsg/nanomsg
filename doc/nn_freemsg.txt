@@ -15,9 +15,9 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Deallocates a message allocated using linknanomsg:nn_allocmsg[3] function or
-received via linknanomsg:nn_recv[3] or linknanomsg:nn_recvmsg[3] function.
-While linknanomsg:nn_recv[3] and linknanomsg:nn_recvmsg[3] allow to receive data
+Deallocates a message allocated using <<nn_allocmsg.3.txt#,nn_allocmsg(3)>> function or
+received via <<nn_recv.3.txt#,nn_recv(3)>> or <<nn_recvmsg.3.txt#,nn_recvmsg(3)>> function.
+While <<nn_recv.3.txt#,nn_recv(3)>> and <<nn_recvmsg.3.txt#,nn_recvmsg(3)>> allow to receive data
 into arbitrary buffers, using library-allocated buffers can be more
 efficient for large messages as it allows for using zero-copy techniques.
 
@@ -46,14 +46,14 @@ nn_freemsg (buf);
 
 SEE ALSO
 --------
-linknanomsg:nn_allocmsg[3]
-linknanomsg:nn_allocmsg_ptr[3]
-linknanomsg:nn_reallocmsg[3]
-linknanomsg:nn_recv[3]
-linknanomsg:nn_recvmsg[3]
-linknanomsg:nanomsg[7]
+<<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
+<<nn_reallocmsg.3.txt#,nn_reallocmsg(3)>>
+<<nn_recv.3.txt#,nn_recv(3)>>
+<<nn_recvmsg.3.txt#,nn_recvmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

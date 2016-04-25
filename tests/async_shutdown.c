@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright (c) 2015 Jack R. Dunaway.  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -35,7 +36,6 @@
 /*  Test condition of closing sockets that are blocking in another thread. */
 
 #define TEST_LOOPS 10
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5557"
 
 struct nn_atomic active;
 
@@ -56,15 +56,19 @@ static void routine (NN_UNUSED void *arg)
     errno_assert (nn_errno () == EBADF);
 }
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int sb;
     int i;
     struct nn_thread thread;
+    char socket_address[128];
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     for (i = 0; i != TEST_LOOPS; ++i) {
         sb = test_socket (AF_SP, NN_PULL);
-        test_bind (sb, SOCKET_ADDRESS);
+        test_bind (sb, socket_address);
         nn_sleep (100);
         nn_thread_init (&thread, routine, &sb);
         nn_sleep (100);

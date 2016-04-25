@@ -23,7 +23,6 @@
 
 #include "err.h"
 #include "fast.h"
-#include "int.h"
 #include "closefd.h"
 
 #include <sys/types.h>

@@ -2,6 +2,7 @@
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,8 +31,7 @@
 #include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
 
-#define SOCKET_ADDRESS_F "tcp://127.0.0.1:5565"
-#define SOCKET_ADDRESS_G "tcp://127.0.0.1:5566"
+static char socket_address_f[128], socket_address_g[128];
 
 void device4 (NN_UNUSED void *arg)
 {
@@ -41,9 +41,9 @@ void device4 (NN_UNUSED void *arg)
 
     /*  Intialise the device sockets. */
     devf = test_socket (AF_SP_RAW, NN_REP);
-    test_bind (devf, SOCKET_ADDRESS_F);
+    test_bind (devf, socket_address_f);
     devg = test_socket (AF_SP_RAW, NN_REQ);
-    test_bind (devg, SOCKET_ADDRESS_G);
+    test_bind (devg, socket_address_g);
 
     /*  Run the device. */
     rc = nn_device (devf, devg);
@@ -54,11 +54,16 @@ void device4 (NN_UNUSED void *arg)
     test_close (devf);
 }
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int endf;
     int endg;
     struct nn_thread thread4;
+
+    int port = get_test_port(argc, argv);
+
+    test_addr_from(socket_address_f, "tcp", "127.0.0.1", port);
+    test_addr_from(socket_address_g, "tcp", "127.0.0.1", port + 1);
 
     /*  Test the bi-directional device with REQ/REP (headers). */
 
@@ -67,9 +72,9 @@ int main ()
 
     /*  Create two sockets to connect to the device. */
     endf = test_socket (AF_SP, NN_REQ);
-    test_connect (endf, SOCKET_ADDRESS_F);
+    test_connect (endf, socket_address_f);
     endg = test_socket (AF_SP, NN_REP);
-    test_connect (endg, SOCKET_ADDRESS_G);
+    test_connect (endg, socket_address_g);
 
     /*  Wait for TCP to establish. */
     nn_sleep (100);

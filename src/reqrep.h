@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -40,9 +41,6 @@ typedef union nn_req_handle {
     int i;
     void *ptr;
 } nn_req_handle;
-
-NN_EXPORT int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len, int flags);
-NN_EXPORT int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len, int flags);
 
 #ifdef __cplusplus
 }

@@ -37,7 +37,6 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/list.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <string.h>

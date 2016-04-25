@@ -33,7 +33,7 @@ the size of the array.
 associated with the message being sent. 'msg_controllen' specifies the length
 of the buffer. If there's no control information to send, 'msg_control' should
 be set to NULL. For detailed discussion of how to set control data check
-linknanomsg:nn_cmsg[3] man page.
+<<nn_cmsg.3.txt#,nn_cmsg(3)>> man page.
 
 Structure 'nn_iovec' defines one element in the scatter array (i.e. a buffer
 to send to the socket) and contains following members:
@@ -41,7 +41,7 @@ to send to the socket) and contains following members:
     void *iov_base;
     size_t iov_len;
 
-Alternatively, to send a buffer allocated by linknanomsg:nn_allocmsg[3] function
+Alternatively, to send a buffer allocated by <<nn_allocmsg.3.txt#,nn_allocmsg(3)>> function
 set 'iov_base' to point to the pointer to the buffer and 'iov_len' to _NN_MSG_
 constant. In this case a successful call to _nn_sendmsg_ will deallocate the
 buffer. Trying to deallocate it afterwards will result in undefined behaviour.
@@ -137,16 +137,16 @@ nn_sendmsg (s, &hdr, 0);
 
 SEE ALSO
 --------
-linknanomsg:nn_send[3]
-linknanomsg:nn_recvmsg[3]
-linknanomsg:nn_allocmsg[3]
-linknanomsg:nn_allocmsg_ptr[3]
-linknanomsg:nn_freemsg[3]
-linknanomsg:nn_cmsg[3]
-linknanomsg:nanomsg[7]
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_recvmsg.3.txt#,nn_recvmsg(3)>>
+<<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nn_cmsg.3.txt#,nn_cmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

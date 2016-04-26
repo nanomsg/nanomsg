@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -168,6 +169,11 @@ static void nn_bipc_destroy (struct nn_epbase *self)
 static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
+#if defined NN_HAVE_UNIX_SOCKETS
+    const char *addr;
+    int rc;
+#endif
+
     struct nn_bipc *bipc;
     struct nn_list_item *it;
     struct nn_aipc *aipc;
@@ -190,6 +196,14 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
         nn_aipc_term (bipc->aipc);
         nn_free (bipc->aipc);
         bipc->aipc = NULL;
+
+        /* On *nixes, unlink the domain socket file */
+#if defined NN_HAVE_UNIX_SOCKETS
+        addr = nn_epbase_getaddr (&bipc->epbase);
+        rc = unlink(addr);
+        errno_assert (rc == 0 || errno == ENOENT);
+#endif
+
         nn_usock_stop (&bipc->usock);
         bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
     }
@@ -383,7 +397,7 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
     struct sockaddr_storage ss;
     struct sockaddr_un *un;
     const char *addr;
-#if !defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_UNIX_SOCKETS
     int fd;
 #endif
 
@@ -399,7 +413,7 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
         the application. We'll check whether the file is still in use by
         connecting to the endpoint. On Windows plaform, NamedPipe is used
         which does not have an underlying file. */
-#if !defined NN_HAVE_WINDOWS
+#if defined NN_HAVE_UNIX_SOCKETS
     fd = socket (AF_UNIX, SOCK_STREAM, 0);
     if (fd >= 0) {
         rc = fcntl (fd, F_SETFL, O_NONBLOCK);

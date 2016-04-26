@@ -181,6 +181,10 @@ nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
 
 nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
 
+# Windows defines AF_UNIX in winsock2.h rather than sys/socket.h, so
+# we don't need to blacklist windows in the check.
+nn_check_sym (AF_UNIX sys/socket.h NN_HAVE_UNIX_SOCKETS)
+
 if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
     add_definitions (-DNN_HAVE_SEMAPHORE)
 endif ()

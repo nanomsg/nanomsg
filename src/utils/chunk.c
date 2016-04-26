@@ -132,7 +132,7 @@ int nn_chunk_alloc (size_t size, int type, void **result)
         return ret;
 
     /* Initialize chunk */
-    ret = nn_chunk_local_init( self, size, NN_CHUNK_TAG, 
+    ret = nn_chunk_local_init( self, size + pad, NN_CHUNK_TAG, 
         nn_chunk_default_free, NULL );
     if (nn_slow( ret ))
         return ret;

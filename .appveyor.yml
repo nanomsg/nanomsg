@@ -1,5 +1,8 @@
 version: 0.8.{build}
 environment:
+  global:
+    ASCIIDOCTOR_VER: 1.5.4
+    CFLAGS: /MP
   matrix:
     # array of all environments used to test builds
     - GENERATOR: NMake Makefiles
@@ -17,8 +20,22 @@ environment:
     - GENERATOR: Visual Studio 12 2013 Win64
       CFG: Debug
       VS_VERSION: 12.0
+
+cache:
+  - '%USERPROFILE%\asciidoctor-%ASCIIDOCTOR_VER%.gem -> .appveyor.yml'
+
 install:
-  - gem install asciidoctor
+  # Gem fetching can sometimes be excruciatingly slow due to the rubygems database,
+  # so we have to manually download our target gem.
+  - ps: |
+      $asciidoctor = "$($env:USERPROFILE)\asciidoctor-$($env:ASCIIDOCTOR_VER).gem"
+      if (-not (Test-Path $asciidoctor)) {
+          $url = "https://rubygems.org/downloads/asciidoctor-$($env:ASCIIDOCTOR_VER).gem"
+          Write-Output "Downloading asciidoctor $env:ASCIIDOCTOR_VER from $url"
+          (New-Object Net.WebClient).DownloadFile($url, $asciidoctor)
+      }
+      gem install --no-document --local $asciidoctor
+
 build:
   parallel: true
 build_script:
@@ -29,4 +46,4 @@ build_script:
   - cmd: cmake -G "%GENERATOR%" ..
   - cmd: cmake --build .
 test_script:
-  - cmd: ctest --output-on-failure -C "%CFG%"
+  - cmd: ctest --output-on-failure -C "%CFG%" -j4

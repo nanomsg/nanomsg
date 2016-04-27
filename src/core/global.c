@@ -307,7 +307,6 @@ static void nn_global_term (void)
 void nn_term (void)
 {
     int i;
-    struct nn_sock *sock;
 
     nn_glock_lock ();
 

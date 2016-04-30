@@ -36,6 +36,10 @@ install:
       }
       gem install --no-document --local $asciidoctor
 
+# This section is a workaround for: https://github.com/nanomsg/nanomsg/issues/683
+before_build:
+  - del "C:\Program Files (x86)\MSBuild\%VS_VERSION%\Microsoft.Common.targets\ImportAfter\Xamarin.Common.targets"
+
 build:
   parallel: true
 build_script:

@@ -356,21 +356,23 @@ set_target_properties (${PROJECT_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PRO
 set_target_properties (${PROJECT_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 target_link_libraries (${PROJECT_NAME} ${NN_REQUIRED_LIBRARIES})
-if (WIN32)
-    target_link_libraries (${PROJECT_NAME} ws2_32)
-    target_link_libraries (${PROJECT_NAME} mswsock)
-    target_link_libraries (${PROJECT_NAME} advapi32)
-elseif (UNIX)
-    if(THREADS_HAVE_PTHREAD_ARG)
-        add_definitions (-pthread)
-    endif()
-    if(CMAKE_THREAD_LIBS_INIT)
-        target_link_libraries (${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
-    endif()
-else ()
-    message (FATAL_ERROR "Assertion failed; this path is unreachable.")
-endif ()
+if(THREADS_HAVE_PTHREAD_ARG)
+    add_definitions (-pthread)
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+    target_link_libraries (${PROJECT_NAME} "${CMAKE_THREAD_LIBS_INIT}")
+endif()
 
+# pkg-config file
+if(NN_REQUIRED_LIBRARIES)
+    foreach (lib ${NN_REQUIRED_LIBRARIES})
+        set (NN_REQUIRED_LFLAGS "${NN_REQUIRED_LFLAGS} -l${lib}")
+    endforeach()
+endif()
+configure_file (pkgconfig.in ${PROJECT_NAME}.pc @ONLY)
+install (
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 install (TARGETS ${PROJECT_NAME}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib

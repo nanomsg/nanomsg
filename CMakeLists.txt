@@ -39,7 +39,8 @@ if (POLICY CMP0042)
     cmake_policy (SET CMP0042 NEW)
 endif ()
 
-set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg with your findings")
+set (NN_DESCRIPTION "High-Performance Scalability Protocols")
+set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg")
 
 # Determine library versions.
 
@@ -151,43 +152,46 @@ macro (nn_check_struct_member STR MEM HDR DEF)
     endif ()
 endmacro (nn_check_struct_member)
 
-# Unconditionally declare the following feature test macros.  These are
-# needed for some platforms (glibc and SunOS/illumos) and should be harmless
-# on the others.
-add_definitions (-D_GNU_SOURCE)
-add_definitions (-D_REENTRANT)
-add_definitions (-D_THREAD_SAFE)
-add_definitions (-D_POSIX_PTHREAD_SEMANTICS)
+if (WIN32)
+    # Windows is a special snowflake.
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} ws2_32)
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} mswsock)
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} advapi32)
+else ()
+    # Unconditionally declare the following feature test macros.  These are
+    # needed for some platforms (glibc and SunOS/illumos) and should be harmless
+    # on the others.
+    add_definitions (-D_GNU_SOURCE)
+    add_definitions (-D_REENTRANT)
+    add_definitions (-D_THREAD_SAFE)
+    add_definitions (-D_POSIX_PTHREAD_SEMANTICS)
 
-nn_check_func (gethrtime NN_HAVE_GETHRTIME)
-nn_check_func (socketpair NN_HAVE_SOCKETPAIR)
-nn_check_func (eventfd NN_HAVE_EVENTFD)
-nn_check_func (pipe NN_HAVE_PIPE)
-nn_check_func (pipe2 NN_HAVE_PIPE2)
-nn_check_func (accept4 NN_HAVE_ACCEPT4)
-nn_check_func (epoll_create NN_HAVE_EPOLL)
-nn_check_func (kqueue NN_HAVE_KQUEUE)
-nn_check_func (poll NN_HAVE_POLL)
+    nn_check_func (gethrtime NN_HAVE_GETHRTIME)
+    nn_check_func (socketpair NN_HAVE_SOCKETPAIR)
+    nn_check_func (eventfd NN_HAVE_EVENTFD)
+    nn_check_func (pipe NN_HAVE_PIPE)
+    nn_check_func (pipe2 NN_HAVE_PIPE2)
+    nn_check_func (accept4 NN_HAVE_ACCEPT4)
+    nn_check_func (epoll_create NN_HAVE_EPOLL)
+    nn_check_func (kqueue NN_HAVE_KQUEUE)
+    nn_check_func (poll NN_HAVE_POLL)
 
-nn_check_lib (anl getaddrinfo_a NN_HAVE_GETADDRINFO_A)
-nn_check_lib (rt clock_gettime  NN_HAVE_CLOCK_GETTIME)
-nn_check_lib (rt sem_wait NN_HAVE_SEMAPHORE_RT)
-nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
+    nn_check_lib (anl getaddrinfo_a NN_HAVE_GETADDRINFO_A)
+    nn_check_lib (rt clock_gettime  NN_HAVE_CLOCK_GETTIME)
+    nn_check_lib (rt sem_wait NN_HAVE_SEMAPHORE_RT)
+    nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
+    nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
+    nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
 
-nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
-nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
-nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
-nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
-
-nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
-
-# Windows defines AF_UNIX in winsock2.h rather than sys/socket.h, so
-# we don't need to blacklist windows in the check.
-nn_check_sym (AF_UNIX sys/socket.h NN_HAVE_UNIX_SOCKETS)
-
-if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
-    add_definitions (-DNN_HAVE_SEMAPHORE)
+    nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
+    nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
+    nn_check_sym (AF_UNIX sys/socket.h NN_HAVE_UNIX_SOCKETS)
+    nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
+    if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
+        add_definitions (-DNN_HAVE_SEMAPHORE)
+    endif ()
 endif ()
+
 
 if (NOT NN_ENABLE_GETADDRINFO_A)
     add_definitions (-DNN_DISABLE_GETADDRINFO_A)
@@ -390,8 +394,6 @@ if (NN_TESTS)
     add_libnanomsg_perf (remote_thr)
 
 endif ()
-
-#  NSIS package
 
 install (FILES src/nn.h DESTINATION include/nanomsg)
 install (FILES src/inproc.h DESTINATION include/nanomsg)

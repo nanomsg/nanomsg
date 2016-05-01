@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015-2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
     Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,27 +35,16 @@ extern "C" {
 #include <stdint.h>
 
 /*  Handle DSO symbol visibility. */
-#if defined NN_NO_EXPORTS
-#   define NN_EXPORT
-#else
-#   if defined _WIN32
-#      if defined NN_STATIC_LIB
-#          define NN_EXPORT extern
-#      elif defined NN_SHARED_LIB
-#          define NN_EXPORT __declspec(dllexport)
-#      else
-#          define NN_EXPORT __declspec(dllimport)
-#      endif
-#   else
-#      if defined __SUNPRO_C
-#          define NN_EXPORT __global
-#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
-             defined __INTEL_COMPILER || defined __clang__
-#          define NN_EXPORT __attribute__ ((visibility("default")))
-#      else
-#          define NN_EXPORT
-#      endif
-#   endif
+#if !defined(NN_EXPORT)
+#    if defined(_WIN32) && !defined(NN_STATIC_LIB)
+#        if defined NN_SHARED_LIB
+#            define NN_EXPORT __declspec(dllexport)
+#        else
+#            define NN_EXPORT __declspec(dllimport)
+#        endif
+#    else
+#        define NN_EXPORT extern
+#    endif
 #endif
 
 /******************************************************************************/

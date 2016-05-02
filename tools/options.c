@@ -333,8 +333,8 @@ static void nn_append_string (struct nn_parse_context *ctx,
 {
     struct nn_string_list *lst;
 
-    lst = (struct nn_string_list *)(
-        ((char *)ctx->target) + opt->offset);
+    lst = (struct nn_string_list *)(((char *)ctx->target) + opt->offset);
+    nn_assert (lst);
     if (lst->items) {
         lst->num += 1;
         lst->items = realloc (lst->items, sizeof (char *) * lst->num);
@@ -345,7 +345,9 @@ static void nn_append_string (struct nn_parse_context *ctx,
     if (!lst->items) {
         nn_memory_error (ctx);
     }
-    lst->items[lst->num-1] = str;
+
+    nn_assert (lst && lst->items);
+    lst->items [lst->num - 1] = str;
 }
 
 static void nn_append_string_to_free (struct nn_parse_context *ctx,
@@ -355,6 +357,7 @@ static void nn_append_string_to_free (struct nn_parse_context *ctx,
 
     lst = (struct nn_string_list *)(
         ((char *)ctx->target) + opt->offset);
+    nn_assert (lst);
     if (lst->to_free) {
         lst->to_free_num += 1;
         lst->to_free = realloc (lst->items,
@@ -366,7 +369,8 @@ static void nn_append_string_to_free (struct nn_parse_context *ctx,
     if (!lst->items) {
         nn_memory_error (ctx);
     }
-    lst->to_free[lst->to_free_num-1] = str;
+    nn_assert (lst->to_free);
+    lst->to_free [lst->to_free_num - 1] = str;
 }
 
 static void nn_process_option (struct nn_parse_context *ctx,
@@ -789,6 +793,7 @@ void nn_free_options (struct nn_commandline *cline, void *target) {
         case NN_OPT_LIST_APPEND:
         case NN_OPT_LIST_APPEND_FMT:
             lst = (struct nn_string_list *)(((char *)target) + opt->offset);
+            nn_assert (lst);
             if(lst->items) {
                 free(lst->items);
                 lst->items = NULL;

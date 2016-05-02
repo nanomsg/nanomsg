@@ -253,7 +253,6 @@ int nn_trie_subscribe (struct nn_trie *self, const uint8_t *data, size_t size)
     /*  Step 1 -- Traverse the trie. */
 
     node = &self->root;
-    pos = 0;
     while (1) {
 
         /*  If there are no more nodes on the path, go to step 4. */
@@ -299,7 +298,6 @@ step2:
     memmove (ch->prefix, ch->prefix + pos + 1, ch->prefix_len);
     ch = nn_node_compact (ch);
     *nn_node_child (*node, 0) = ch;
-    pos = (*node)->prefix_len;
 
     /*  Step 3 -- Adjust the child array to accommodate the new character. */
 step3:

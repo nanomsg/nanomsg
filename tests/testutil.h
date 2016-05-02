@@ -201,12 +201,12 @@ static void NN_UNUSED test_drop_impl (char *file, int line, int sock, int err)
     }
 }
 
-static int get_test_port(int argc, const char *argv[])
+static int NN_UNUSED get_test_port (int argc, const char *argv[])
 {
     return atoi(argc < 2 ? "5555" : argv[1]);
 }
 
-static void test_addr_from(char *out, const char *proto,
+static void NN_UNUSED test_addr_from (char *out, const char *proto,
         const char *ip, int port)
 {
     sprintf(out, "%s://%s:%d", proto, ip, port);

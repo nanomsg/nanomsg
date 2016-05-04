@@ -875,8 +875,8 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     sock = nn_cont (self, struct nn_sock, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
-            sock->state == NN_SOCK_STATE_ZOMBIE);
+        nn_assert (sock->state != NN_SOCK_STATE_ZOMBIE);
+        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE);
 
         /*  Close sndfd and rcvfd. This should make any current
             select/poll using SNDFD and/or RCVFD exit. */
@@ -1043,6 +1043,14 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 /*  ZOMBIE state.                                                             */
 /******************************************************************************/
     case NN_SOCK_STATE_ZOMBIE:
+        /*  We can reasonably wind up here as endpoints are shutting down. */
+        if (src == NN_SOCK_SRC_EP && type == NN_EP_STOPPED) {
+            ep = (struct nn_ep*) srcptr;
+            nn_list_erase (&sock->sdeps, &ep->item);
+            nn_ep_term (ep);
+            nn_free (ep);
+            return;
+        }
         nn_fsm_bad_state (sock->state, src, type);
 
 /******************************************************************************/
@@ -1059,21 +1067,29 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 
 static void nn_sock_action_zombify (struct nn_sock *self)
 {
+    struct nn_list_item *it;
+    struct nn_ep *ep;
+
     /*  Switch to the zombie state. From now on all the socket
         functions will return ETERM. */
     self->state = NN_SOCK_STATE_ZOMBIE;
 
-    /*  Set IN and OUT events to unblock any polling function. */
-    if (!(self->flags & NN_SOCK_FLAG_IN)) {
-        self->flags |= NN_SOCK_FLAG_IN;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
-            nn_efd_signal (&self->rcvfd);
+    if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
+        nn_efd_stop (&self->rcvfd);
     }
-    if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-        self->flags |= NN_SOCK_FLAG_OUT;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
-            nn_efd_signal (&self->sndfd);
+    if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
+        nn_efd_stop (&self->sndfd);
     }
+    /*  Ask all the associated endpoints to stop. */
+    it = nn_list_begin (&self->eps);
+    while (it != nn_list_end (&self->eps)) {
+        ep = nn_cont (it, struct nn_ep, item);
+        it = nn_list_next (&self->eps, it);
+        nn_list_erase (&self->eps, &ep->item);
+        nn_list_insert (&self->sdeps, &ep->item,
+        nn_list_end (&self->sdeps));
+            nn_ep_stop (ep);
+        }
 }
 
 void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)

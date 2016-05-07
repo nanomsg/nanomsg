@@ -76,6 +76,8 @@ set (NN_SOURCES
     utils/closefd.h
     utils/closefd.c
     utils/cont.h
+    utils/cond.c
+    utils/cond.h
     utils/efd.h
     utils/efd.c
     utils/err.h
@@ -255,6 +257,8 @@ elseif (UNIX)
         aio/usock_posix.inc
         aio/worker_posix.h
         aio/worker_posix.inc
+        utils/fork.c
+        utils/fork.h
         utils/thread_posix.h
         utils/thread_posix.inc
     )

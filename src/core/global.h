@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -29,5 +30,17 @@ struct nn_transport *nn_global_transport (int id);
 /*  Returns the global worker thread pool. */
 struct nn_pool *nn_global_getpool ();
 int nn_global_print_errors();
+
+/* Force clean up nanomsg after a fork, when everything is broken. */
+int nn_global_postfork_cleanup ();
+
+/* Enter & leave the context of each socket. */
+void nn_global_lock_all_sockets (void);
+void nn_global_unlock_all_sockets (void);
+
+void nn_global_fork_lock (void);
+void nn_global_fork_unlock (void);
+
+void nn_global_reset_all_socket_locks (void);
 
 #endif

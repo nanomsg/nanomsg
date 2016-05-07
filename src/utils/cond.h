@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,37 +20,26 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_MUTEX_INCLUDED
-#define NN_MUTEX_INCLUDED
+#ifndef NN_COND_INCLUDED
+#define NN_COND_INCLUDED
 
-#ifdef NN_HAVE_WINDOWS
-#include "win.h"
-#else
+#include "mutex.h"
+
+#ifndef NN_HAVE_WINDOWS
 #include <pthread.h>
 #endif
 
-struct nn_mutex {
 #ifdef NN_HAVE_WINDOWS
-    CRITICAL_SECTION mutex;
+struct nn_cond;
 #else
-    pthread_mutex_t mutex;
-#endif
+struct nn_cond {
+    pthread_cond_t cond;
 };
-
-/*  Initialise the mutex. */
-void nn_mutex_init (struct nn_mutex *self);
-
-/*  Terminate the mutex. */
-void nn_mutex_term (struct nn_mutex *self);
-
-/*  Lock the mutex. Behaviour of multiple locks from the same thread is
-    undefined. */
-void nn_mutex_lock (struct nn_mutex *self);
-
-/*  Unlock the mutex. Behaviour of unlocking an unlocked mutex is undefined */
-void nn_mutex_unlock (struct nn_mutex *self);
-
-void nn_mutex_reset (struct nn_mutex *self);
-
 #endif
 
+void nn_cond_init (struct nn_cond *self);
+void nn_cond_term (struct nn_cond *self);
+void nn_cond_wait (struct nn_cond *self, struct nn_mutex *mut);
+void nn_cond_signal (struct nn_cond *self);
+
+#endif

@@ -45,6 +45,10 @@ void nn_mutex_unlock (struct nn_mutex *self)
     LeaveCriticalSection (&self->mutex);
 }
 
+void nn_mutex_reset (struct nn_mutex *self)
+{
+}
+
 #else
 
 void nn_mutex_init (struct nn_mutex *self)
@@ -76,6 +80,20 @@ void nn_mutex_unlock (struct nn_mutex *self)
     int rc;
 
     rc = pthread_mutex_unlock (&self->mutex);
+    errnum_assert (rc == 0, rc);
+}
+
+void nn_mutex_reset (struct nn_mutex *self)
+{
+    int rc;
+
+    rc = pthread_mutex_unlock (&self->mutex);
+    errnum_assert (rc == 0, rc);
+    pthread_mutex_destroy (&self->mutex);
+
+    rc = pthread_mutex_init (&self->mutex, NULL);
+    errnum_assert (rc == 0, rc);
+    rc = pthread_mutex_lock (&self->mutex);
     errnum_assert (rc == 0, rc);
 }
 

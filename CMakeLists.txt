@@ -95,6 +95,7 @@ option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
+option (NN_FORK_STRATEGY "Use a specific fork strategy (NONE or RESET)" NONE)
 
 #  Platform checks.
 
@@ -209,6 +210,10 @@ check_c_source_compiles ("
 " NN_HAVE_GCC_ATOMIC_BUILTINS)
 if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
+endif ()
+
+if (NN_FORK_STRATEGY STREQUAL "RESET")
+    add_definitions (-DNN_RESET_AFTER_FORK)
 endif ()
 
 add_subdirectory (src)
@@ -377,6 +382,10 @@ if (NN_TESTS)
     # Platform-specific tests
     if (WIN32)
         add_libnanomsg_test (win_sec_attr 5)
+    endif ()
+
+    if (NOT NN_FORK_STRATEGY STREQUAL "NONE")
+        add_libnanomsg_test (fork 5)
     endif()
 
     #  Build the performance tests.

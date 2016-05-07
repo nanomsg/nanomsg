@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,6 +24,7 @@
 #include "../utils/fast.h"
 #include "../utils/err.h"
 #include "../utils/closefd.h"
+#include "../utils/cont.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -50,12 +52,16 @@ int nn_poller_init (struct nn_poller *self)
     self->nevents = 0;
     self->index = 0;
 
+    nn_mutex_init (&self->sync);
+    nn_list_init (&self->fds);
+
     return 0;
 }
 
 void nn_poller_term (struct nn_poller *self)
 {
     nn_closefd (self->ep);
+    nn_mutex_term (&self->sync);
 }
 
 void nn_poller_add (struct nn_poller *self, int fd,
@@ -67,10 +73,16 @@ void nn_poller_add (struct nn_poller *self, int fd,
     /*  Initialise the handle and add the file descriptor to the pollset. */
     hndl->fd = fd;
     hndl->events = 0;
+    nn_list_item_init (&hndl->item);
+
     memset (&ev, 0, sizeof (ev));
     ev.events = 0;
     ev.data.ptr = (void*) hndl;
     epoll_ctl (self->ep, EPOLL_CTL_ADD, fd, &ev);
+
+    nn_mutex_lock (&self->sync);
+    nn_list_insert (&self->fds, &hndl->item, nn_list_end(&self->fds));
+    nn_mutex_unlock (&self->sync);
 }
 
 void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
@@ -84,6 +96,10 @@ void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
     for (i = self->index; i != self->nevents; ++i)
         if (self->events [i].data.ptr == hndl)
             self->events [i].events = 0;
+
+    nn_mutex_lock (&self->sync);
+    nn_list_erase (&self->fds, &hndl->item);
+    nn_mutex_unlock (&self->sync);
 }
 
 void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
@@ -217,3 +233,8 @@ int nn_poller_event (struct nn_poller *self, int *event,
     }
 }
 
+int nn_poller_reinit (struct nn_poller *self)
+{
+    nn_poller_term (self);
+    return nn_poller_init (self);
+}

@@ -108,6 +108,8 @@ NANOMSG_UTILS = \
     src/utils/clock.c \
     src/utils/closefd.h \
     src/utils/closefd.c \
+    src/utils/cond.h \
+    src/utils/cond.c \
     src/utils/cont.h \
     src/utils/efd.h \
     src/utils/efd.c \
@@ -123,6 +125,8 @@ NANOMSG_UTILS = \
     src/utils/err.c \
     src/utils/fast.h \
     src/utils/fd.h \
+    src/utils/fork.h \
+    src/utils/fork.c \
     src/utils/glock.h \
     src/utils/glock.c \
     src/utils/hash.h \
@@ -489,6 +493,7 @@ FEATURE_TESTS = \
     tests/zerocopy \
     tests/shutdown \
     tests/stats \
+    tests/fork \
     tests/cmsg \
     tests/bug328
 

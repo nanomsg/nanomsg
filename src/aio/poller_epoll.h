@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,9 +29,13 @@
 
 #define NN_POLLER_MAX_EVENTS 32
 
+#include "../utils/list.h"
+#include "../utils/mutex.h"
+
 struct nn_poller_hndl {
     int fd;
     uint32_t events;
+    struct nn_list_item item;
 };
 
 struct nn_poller {
@@ -46,5 +51,7 @@ struct nn_poller {
 
     /*  Events being processed at the moment. */
     struct epoll_event events [NN_POLLER_MAX_EVENTS];
-};
 
+    struct nn_list fds;
+    struct nn_mutex sync;
+};

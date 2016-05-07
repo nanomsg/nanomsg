@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright (c) 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,37 +20,9 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_MUTEX_INCLUDED
-#define NN_MUTEX_INCLUDED
+#ifndef NN_FORK_INCLUDED
+#define NN_FORK_INCLUDED
 
-#ifdef NN_HAVE_WINDOWS
-#include "win.h"
-#else
-#include <pthread.h>
-#endif
+int nn_setup_atfork_handlers(void);
 
-struct nn_mutex {
-#ifdef NN_HAVE_WINDOWS
-    CRITICAL_SECTION mutex;
-#else
-    pthread_mutex_t mutex;
-#endif
-};
-
-/*  Initialise the mutex. */
-void nn_mutex_init (struct nn_mutex *self);
-
-/*  Terminate the mutex. */
-void nn_mutex_term (struct nn_mutex *self);
-
-/*  Lock the mutex. Behaviour of multiple locks from the same thread is
-    undefined. */
-void nn_mutex_lock (struct nn_mutex *self);
-
-/*  Unlock the mutex. Behaviour of unlocking an unlocked mutex is undefined */
-void nn_mutex_unlock (struct nn_mutex *self);
-
-void nn_mutex_reset (struct nn_mutex *self);
-
-#endif
-
+#endif /* !NN_FORK_INCLUDED */

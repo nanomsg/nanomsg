@@ -51,7 +51,7 @@ void device1 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (deva, devb);
-    nn_assert (rc < 0 && (nn_errno () == ETERM));
+    nn_assert (rc < 0 && (nn_errno () == EBADF));
 
     /*  Clean up. */
     test_close (devb);
@@ -72,7 +72,7 @@ void device2 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (devc, devd);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (devd);
@@ -90,7 +90,7 @@ void device3 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (deve, -1);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (deve);

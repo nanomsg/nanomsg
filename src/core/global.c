@@ -308,10 +308,7 @@ void nn_term (void)
     int i;
 
     nn_glock_lock ();
-
-    /*  Switch the global state into the zombie state. */
     self.flags |= NN_CTX_FLAG_TERMING;
-
     nn_glock_unlock ();
 
     /* Make sure we really close resources, this will cause global

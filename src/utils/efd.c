@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
     Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy

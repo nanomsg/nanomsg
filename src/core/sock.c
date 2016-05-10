@@ -47,14 +47,12 @@
 /*  Possible states of the socket. */
 #define NN_SOCK_STATE_INIT 1
 #define NN_SOCK_STATE_ACTIVE 2
-#define NN_SOCK_STATE_ZOMBIE 3
-#define NN_SOCK_STATE_STOPPING_EPS 4
-#define NN_SOCK_STATE_STOPPING 5
-#define NN_SOCK_STATE_FINI 6
+#define NN_SOCK_STATE_STOPPING_EPS 3
+#define NN_SOCK_STATE_STOPPING 4
+#define NN_SOCK_STATE_FINI 5
 
 /*  Events sent to the state machine. */
-#define NN_SOCK_ACTION_ZOMBIFY 1
-#define NN_SOCK_ACTION_STOPPED 2
+#define NN_SOCK_ACTION_STOPPED 1
 
 /*  Subordinated source objects. */
 #define NN_SOCK_SRC_EP 1
@@ -68,7 +66,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_sock_action_zombify (struct nn_sock *self);
 
 /*  Initialize a socket.  A hold is placed on the initialized socket for
     the caller as well. */
@@ -193,13 +190,6 @@ void nn_sock_stopped (struct nn_sock *self)
     nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
 }
 
-void nn_sock_zombify (struct nn_sock *self)
-{
-    nn_ctx_enter (&self->ctx);
-    nn_fsm_action (&self->fsm, NN_SOCK_ACTION_ZOMBIFY);
-    nn_ctx_leave (&self->ctx);
-}
-
 /*  Stop the socket.  This will prevent new calls from aquiring a
     hold on the socket, cause endpoints to shut down, and wake any
     threads waiting to recv or send data. */
@@ -288,10 +278,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     int rc;
 
     nn_ctx_enter (&self->ctx);
-    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
-        nn_ctx_leave (&self->ctx);
-        return -ETERM;
-    }
     rc = nn_sock_setopt_inner (self, level, option, optval, optvallen);
     nn_ctx_leave (&self->ctx);
 
@@ -401,10 +387,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     int rc;
 
     nn_ctx_enter (&self->ctx);
-    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
-        nn_ctx_leave (&self->ctx);
-        return -ETERM;
-    }
     rc = nn_sock_getopt_inner (self, level, option, optval, optvallen);
     nn_ctx_leave (&self->ctx);
 
@@ -608,7 +590,6 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         case NN_SOCK_STATE_INIT:
              break;
 
-        case NN_SOCK_STATE_ZOMBIE:
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
         case NN_SOCK_STATE_FINI:
@@ -701,7 +682,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         case NN_SOCK_STATE_INIT:
              break;
 
-        case NN_SOCK_STATE_ZOMBIE:
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
         case NN_SOCK_STATE_FINI:
@@ -867,8 +847,7 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     sock = nn_cont (self, struct nn_sock, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
-            sock->state == NN_SOCK_STATE_ZOMBIE);
+        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE);
 
         /*  Close sndfd and rcvfd. This should make any current
             select/poll using SNDFD and/or RCVFD exit. */
@@ -972,9 +951,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
                 return;
-            case NN_SOCK_ACTION_ZOMBIFY:
-                nn_sock_action_zombify (sock);
-                return;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -991,9 +967,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 
         case NN_FSM_ACTION:
             switch (type) {
-            case NN_SOCK_ACTION_ZOMBIFY:
-                nn_sock_action_zombify (sock);
-                return;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -1032,12 +1005,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  ZOMBIE state.                                                             */
-/******************************************************************************/
-    case NN_SOCK_STATE_ZOMBIE:
-        nn_fsm_bad_state (sock->state, src, type);
-
-/******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
@@ -1048,25 +1015,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  State machine actions.                                                    */
 /******************************************************************************/
-
-static void nn_sock_action_zombify (struct nn_sock *self)
-{
-    /*  Switch to the zombie state. From now on all the socket
-        functions will return ETERM. */
-    self->state = NN_SOCK_STATE_ZOMBIE;
-
-    /*  Set IN and OUT events to unblock any polling function. */
-    if (!(self->flags & NN_SOCK_FLAG_IN)) {
-        self->flags |= NN_SOCK_FLAG_IN;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
-            nn_efd_signal (&self->rcvfd);
-    }
-    if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-        self->flags |= NN_SOCK_FLAG_OUT;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
-            nn_efd_signal (&self->sndfd);
-    }
-}
 
 void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
 {
@@ -1166,7 +1114,6 @@ int nn_sock_hold (struct nn_sock *self)
     case NN_SOCK_STATE_INIT:
         self->holds++;
         return 0;
-    case NN_SOCK_STATE_ZOMBIE:
     case NN_SOCK_STATE_STOPPING:
     case NN_SOCK_STATE_STOPPING_EPS:
     case NN_SOCK_STATE_FINI:

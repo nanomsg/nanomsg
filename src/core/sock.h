@@ -152,9 +152,6 @@ int nn_sock_term (struct nn_sock *self);
 /*  Called by sockbase when stopping is done. */
 void nn_sock_stopped (struct nn_sock *self);
 
-/*  Called by nn_term() to let the socket know about the process shutdown. */
-void nn_sock_zombify (struct nn_sock *self);
-
 /*  Returns the AIO context associated with the socket. */
 struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
 

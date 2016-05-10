@@ -50,7 +50,7 @@ void device5 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (dev0, dev1);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (dev0);
@@ -70,7 +70,7 @@ void device6 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (dev2, dev3);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (dev2);

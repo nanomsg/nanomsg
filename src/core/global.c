@@ -43,6 +43,7 @@
 #include "../utils/chunk.h"
 #include "../utils/msg.h"
 #include "../utils/attr.h"
+#include "../utils/sleep.h"
 
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
@@ -92,7 +93,9 @@
     the type should be changed to uint32_t or int. */
 CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 
-#define NN_CTX_FLAG_ZOMBIE 1
+#define NN_CTX_FLAG_TERMED 1
+#define NN_CTX_FLAG_TERMING 2
+#define NN_CTX_FLAG_TERM (NN_CTX_FLAG_TERMED | NN_CTX_FLAG_TERMING)
 
 #define NN_GLOBAL_SRC_STAT_TIMER 1
 
@@ -155,12 +158,8 @@ static int nn_global_create_socket (int domain, int protocol);
 
 /*  Socket holds. */
 static int nn_global_hold_socket (struct nn_sock **sockp, int s);
-static int nn_global_hold_socket_locked (struct nn_sock **sockp, int s,
-    int is_term);
+static int nn_global_hold_socket_locked (struct nn_sock **sockp, int s);
 static void nn_global_rele_socket(struct nn_sock *);
-
-/*  Close helper. */
-static int nn_close_impl (int s, int is_term);
 
 int nn_errno (void)
 {
@@ -309,25 +308,33 @@ void nn_term (void)
     int i;
 
     nn_glock_lock ();
-
-    /*  Switch the global state into the zombie state. */
-    self.flags |= NN_CTX_FLAG_ZOMBIE;
-
-    /*  Mark all open sockets as terminating. */
-    if (self.nsocks != 0) {
-        for (i = 0; i != NN_MAX_SOCKETS; ++i)
-            if (self.socks [i] != NULL) {
-                nn_sock_zombify (self.socks [i]);
-            }
-    }
-
+    self.flags |= NN_CTX_FLAG_TERMING;
     nn_glock_unlock ();
 
     /* Make sure we really close resources, this will cause global
        resources to be freed too when the last socket is closed. */
     for (i = 0; i < NN_MAX_SOCKETS; i++) {
-        (void) nn_close_impl (i, 1);
+        (void) nn_close (i);
     }
+
+    nn_glock_lock ();
+    self.flags |= NN_CTX_FLAG_TERMED;
+    self.flags &= ~NN_CTX_FLAG_TERMING;
+    /*  TODO: Add a signal to wake nn_init ()  */
+    nn_glock_unlock ();
+}
+
+void nn_init (void)
+{
+    nn_glock_lock ();
+    /*  Make sure any nn_term in progress is done. */
+    while (self.flags & NN_CTX_FLAG_TERMING) {
+        nn_glock_unlock ();
+        nn_sleep (100);
+        nn_glock_lock ();
+    }
+    self.flags &= ~NN_CTX_FLAG_TERMED;
+    nn_glock_unlock ();
 }
 
 void *nn_allocmsg (size_t size, int type)
@@ -457,7 +464,7 @@ int nn_socket (int domain, int protocol)
     nn_glock_lock ();
 
     /*  If nn_term() was already called, return ETERM. */
-    if (nn_slow (self.flags & NN_CTX_FLAG_ZOMBIE)) {
+    if (nn_slow (self.flags & NN_CTX_FLAG_TERM)) {
         nn_glock_unlock ();
         errno = ETERM;
         return -1;
@@ -480,13 +487,13 @@ int nn_socket (int domain, int protocol)
     return rc;
 }
 
-int nn_close_impl (int s, int is_term)
+int nn_close (int s)
 {
     int rc;
     struct nn_sock *sock;
 
     nn_glock_lock ();
-    rc = nn_global_hold_socket_locked (&sock, s, is_term);
+    rc = nn_global_hold_socket_locked (&sock, s);
     if (nn_slow (rc < 0)) {
         nn_glock_unlock ();
         errno = -rc;
@@ -529,11 +536,6 @@ int nn_close_impl (int s, int is_term)
     nn_glock_unlock ();
 
     return 0;
-}
-
-int nn_close (int s)
-{
-    return (nn_close_impl (s, 0));
 }
 
 int nn_setsockopt (int s, int level, int option, const void *optval,
@@ -829,10 +831,6 @@ int nn_sendmsg (int s, const struct nn_msghdr *msghdr, int flags)
     return (int) sz;
 
 fail:
-    /*  Socket may have closed asynchronously; check for nn_term. */
-    if (self.flags & NN_CTX_FLAG_ZOMBIE) {
-        rc = -ETERM;
-    }
     nn_global_rele_socket (sock);
 
     errno = -rc;
@@ -966,10 +964,6 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
     return (int) sz;
 
 fail:
-    /*  Socket may have closed asynchronously; check for nn_term. */
-    if (self.flags & NN_CTX_FLAG_ZOMBIE) {
-        rc = -ETERM;
-    }
     nn_global_rele_socket (sock);
 
     errno = -rc;
@@ -1138,20 +1132,11 @@ int nn_global_print_errors ()
 /*  Get the socket structure for a socket id.  This must be called under
     the global lock (nn_glock_lock.)  The socket itself will not be freed
     while the hold is active. */
-int nn_global_hold_socket_locked(struct nn_sock **sockp, int s, int is_term)
+int nn_global_hold_socket_locked(struct nn_sock **sockp, int s)
 {
     struct nn_sock *sock;
 
-    if (nn_slow (self.socks == NULL)) {
-        *sockp = NULL;
-        return -ETERM;
-    }
-    if (nn_slow ((!is_term) && ((self.flags & NN_CTX_FLAG_ZOMBIE) != 0))) {
-        *sockp = NULL;
-        return -ETERM;
-    }
-
-    if (nn_slow (s < 0 || s >= NN_MAX_SOCKETS))
+    if (nn_slow (s < 0 || s >= NN_MAX_SOCKETS || self.socks == NULL))
         return -EBADF;
 
     sock = self.socks[s];
@@ -1170,7 +1155,7 @@ int nn_global_hold_socket(struct nn_sock **sockp, int s)
 {
     int rc;
     nn_glock_lock();
-    rc = nn_global_hold_socket_locked(sockp, s, 0);
+    rc = nn_global_hold_socket_locked(sockp, s);
     nn_glock_unlock();
     return rc;
 }

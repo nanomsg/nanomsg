@@ -23,6 +23,7 @@
 */
 
 #include "efd.h"
+#include "clock.h"
 
 #if defined NN_USE_EVENTFD
     #include "efd_eventfd.inc"
@@ -44,18 +45,60 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 {
     int rc;
     struct pollfd pfd;
+    uint64_t expire;
 
-    pfd.fd = nn_efd_getfd (self);
-    pfd.events = POLLIN;
-    if (nn_slow (pfd.fd < 0))
-        return -EBADF;
-    rc = poll (&pfd, 1, timeout);
-    if (nn_slow (rc < 0 && errno == EINTR))
-        return -EINTR;
-    errno_assert (rc >= 0);
-    if (nn_slow (rc == 0))
-        return -ETIMEDOUT;
-    return 0;
+    if (timeout > 0) {
+        expire = nn_clock_ms() + timeout;
+    } else {
+        expire = timeout;
+    }
+
+    /*  In order to solve a problem where the poll call doesn't wake up
+        when a file is closed, we sleep a maximum of 100 msec.  This is
+        a somewhat unfortunate band-aid to prevent hangs caused by a race
+        condition involving nn_close.  In the future this code should be
+        replaced by a simpler design using condition variables. */
+    for (;;) {
+        pfd.fd = nn_efd_getfd (self);
+        pfd.events = POLLIN;
+        if (nn_slow (pfd.fd < 0))
+            return -EBADF;
+
+        switch (expire) {
+        case 0:
+            /* poll once */
+            timeout = 0;
+            break;
+
+        case (uint64_t)-1:
+            /* infinite wait */
+            timeout = 100;
+            break;
+
+        default:
+            /* bounded wait */
+            timeout = expire - nn_clock_ms();
+            if (timeout < 0) {
+                return -ETIMEDOUT;
+            } else if (timeout > 100) {
+                timeout = 100;
+            }
+        }
+        rc = poll (&pfd, 1, timeout);
+        if (nn_slow (rc < 0 && errno == EINTR))
+            return -EINTR;
+        errno_assert (rc >= 0);
+        if (nn_slow (rc == 0)) {
+            if (expire == 0)
+                return -ETIMEDOUT;
+            if ((expire != (uint64_t)-1) && (expire < nn_clock_ms())) {
+                /* NB: will not be true for expire == (uint64_t)-1 */
+                return -ETIMEDOUT;
+            }
+            continue;
+	}
+        return 0;
+    }
 }
 
 #elif defined NN_HAVE_WINDOWS

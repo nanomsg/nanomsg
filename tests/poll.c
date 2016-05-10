@@ -184,7 +184,7 @@ int main ()
     rc = getevents (sb, NN_IN, 1000);
     nn_assert (rc == NN_IN);
     rc = nn_recv (sb, buf, sizeof (buf), 0);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
     nn_thread_term (&thread);
 
     /*  Clean up. */

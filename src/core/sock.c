@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -609,10 +609,6 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
              break;
 
         case NN_SOCK_STATE_ZOMBIE:
-            /*  If nn_term() was already called, return ETERM. */
-            nn_ctx_leave (&self->ctx);
-            return -ETERM;
-
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
         case NN_SOCK_STATE_FINI:
@@ -706,10 +702,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
              break;
 
         case NN_SOCK_STATE_ZOMBIE:
-            /*  If nn_term() was already called, return ETERM. */
-            nn_ctx_leave (&self->ctx);
-            return -ETERM;
-
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
         case NN_SOCK_STATE_FINI:
@@ -1175,7 +1167,6 @@ int nn_sock_hold (struct nn_sock *self)
         self->holds++;
         return 0;
     case NN_SOCK_STATE_ZOMBIE:
-        return -ETERM;
     case NN_SOCK_STATE_STOPPING:
     case NN_SOCK_STATE_STOPPING_EPS:
     case NN_SOCK_STATE_FINI:

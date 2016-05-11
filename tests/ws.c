@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
@@ -35,8 +35,8 @@ static char socket_address[128];
 
 /*  test_text() verifies that we drop messages properly when sending invalid
     UTF-8, but not when we send valid data. */
-void test_text() {
-
+void test_text ()
+{
     int sb;
     int sc;
     int opt;
@@ -46,15 +46,12 @@ void test_text() {
     sb = test_socket (AF_SP, NN_PAIR);
     sc = test_socket (AF_SP, NN_PAIR);
 
-    /*  Wait for connects to establish. */
-    nn_sleep (200);
-
     opt = NN_WS_MSG_TYPE_TEXT;
-    test_setsockopt(sb, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
+    test_setsockopt (sb, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
     opt = NN_WS_MSG_TYPE_TEXT;
-    test_setsockopt(sc, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
+    test_setsockopt (sc, NN_WS, NN_WS_MSG_TYPE, &opt, sizeof (opt));
     opt = 500;
-    test_setsockopt(sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
 
     test_bind (sb, socket_address);
     test_connect (sc, socket_address);
@@ -63,12 +60,17 @@ void test_text() {
     test_recv (sb, "GOOD");
 
     /*  and the bad ... */
-    strcpy((char *)bad, "BAD.");
+    strcpy ((char *)bad, "BAD.");
     bad[2] = (char)0xDD;
     test_send (sc, (char *)bad);
 
     /*  Make sure we dropped the frame. */
     test_drop (sb, ETIMEDOUT);
+
+    test_close (sb);
+    test_close (sc);
+
+    return;
 }
 
 int main (int argc, const char *argv[])
@@ -76,16 +78,17 @@ int main (int argc, const char *argv[])
     int rc;
     int sb;
     int sc;
+    int sb2;
     int opt;
     size_t sz;
     int i;
     char any_address[128];
 
-    test_addr_from(socket_address, "ws", "127.0.0.1",
-            get_test_port(argc, argv));
+    test_addr_from (socket_address, "ws", "127.0.0.1",
+            get_test_port (argc, argv));
 
-    test_addr_from(any_address, "ws", "*",
-            get_test_port(argc, argv));
+    test_addr_from (any_address, "ws", "*",
+            get_test_port (argc, argv));
 
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
@@ -159,15 +162,10 @@ int main (int argc, const char *argv[])
 
     test_close (sc);
 
-    nn_sleep (200);
-
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
-
-    /*  Leave enough time for connection establishment. */
-    nn_sleep (200);
 
     /*  Ping-pong test. */
     for (i = 0; i != 100; ++i) {
@@ -190,7 +188,64 @@ int main (int argc, const char *argv[])
     test_close (sc);
     test_close (sb);
 
+    /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
+    sb = test_socket (AF_SP, NN_PAIR);
+    opt = -1;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc >= 0);
+    opt = -2;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    test_close (sb);
+
+    /*  Test NN_RCVMAXSIZE limit */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, socket_address);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, socket_address);
+    opt = 1000;
+    test_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &opt, sizeof (opt));
+    nn_assert (opt == 1000);
+    opt = 1000;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVTIMEO, &opt, sizeof (opt));
+    nn_assert (opt == 1000);
+    opt = 4;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_send (sc, "ABCD");
+    test_recv (sb, "ABCD");
+    test_send (sc, "ABCDE");
+    test_drop (sb, ETIMEDOUT);
+
+    /*  Increase the size limit, reconnect, then try sending again. The reason a
+        reconnect is necessary is because after a protocol violation, the
+        connecting socket will not continue automatic reconnection attempts. */
+    opt = 5;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    test_connect (sc, socket_address);
+    test_send (sc, "ABCDE");
+    test_recv (sb, "ABCDE");
+    test_close (sb);
+    test_close (sc);
+
     test_text ();
+
+    /*  Test closing a socket that is waiting to bind. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, socket_address);
+    sb2 = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb2, socket_address);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, socket_address);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb2);
+    test_send (sb, "ABC");
+    test_recv (sc, "ABC");
+    test_close (sb);
+    test_close (sc);
 
     return 0;
 }

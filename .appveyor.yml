@@ -50,4 +50,4 @@ build_script:
   - cmd: cmake -G "%GENERATOR%" ..
   - cmd: cmake --build .
 test_script:
-  - cmd: ctest --output-on-failure -C "%CFG%" -j4
+  - cmd: ctest --output-on-failure -C "%CFG%"

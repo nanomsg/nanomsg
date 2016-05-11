@@ -67,7 +67,7 @@ static void routine2 (NN_UNUSED void *arg)
         test_connect (s, socket_address);
     }
 
-    ms = 2000;
+    ms = 100;
     test_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO, &ms, sizeof (ms));
 
     for (i = 0; i < MESSAGES_PER_THREAD; ++i) {

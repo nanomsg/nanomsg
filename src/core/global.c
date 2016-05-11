@@ -175,9 +175,9 @@ static void nn_global_init (void)
 {
     int i;
     char *envvar;
-    int rc;
 
 #if defined NN_HAVE_WINDOWS
+    int rc;
     WSADATA data;
 #endif
 

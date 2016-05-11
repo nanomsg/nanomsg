@@ -63,7 +63,6 @@ void nn_poller_add (NN_UNUSED struct nn_poller *self, int fd,
 
 void nn_poller_rm (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
-    int rc;
     struct kevent ev;
     int i;
 
@@ -87,7 +86,6 @@ void nn_poller_set_in (struct nn_poller *self, struct nn_poller_hndl *hndl)
 {
     int rc;
     struct kevent ev;
-    int fd = hndl->fd;
 
     if (!(hndl->events & NN_POLLER_EVENT_IN)) {
         EV_SET (&ev, hndl->fd, EVFILT_READ, EV_ADD, 0, 0,

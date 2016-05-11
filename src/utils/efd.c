@@ -107,7 +107,7 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 {
     int rc;
     struct timeval tv;
-    SOCKET fd = self->r;
+    SOCKET fd;
     uint64_t expire;
 
     if (timeout > 0) {
@@ -119,6 +119,7 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
     }
 
     for (;;) {
+        fd = self->r;
         if (nn_slow (fd == INVALID_SOCKET)) {
             return -EBADF;
         }

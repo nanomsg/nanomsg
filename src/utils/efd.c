@@ -77,7 +77,7 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
 
         default:
             /* bounded wait */
-            timeout = expire - nn_clock_ms();
+            timeout = (int)(expire - nn_clock_ms());
             if (timeout < 0) {
                 return -ETIMEDOUT;
             }
@@ -126,14 +126,14 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
         switch (expire) {
         case 0:
             tv.tv_sec = 0;
-            tv.usec = 0;
+            tv.tv_usec = 0;
             break;
         case (uint64_t)-1:
             tv.tv_sec = 0;
             tv.tv_usec = 100000;
             break;
         default:
-            timeout = expire - nn_clock_ms();
+            timeout = (int)(expire - nn_clock_ms());
             if (timeout < 0) {
                 return -ETIMEDOUT;
             }

@@ -336,7 +336,7 @@ if (NN_TESTS)
     add_libnanomsg_test (ipc_shutdown 30)
     add_libnanomsg_test (ipc_stress 5)
     add_libnanomsg_test (tcp 5)
-    add_libnanomsg_test (tcp_shutdown 30)
+    add_libnanomsg_test (tcp_shutdown 120)
     add_libnanomsg_test (ws 5)
 
     #  Protocol tests.

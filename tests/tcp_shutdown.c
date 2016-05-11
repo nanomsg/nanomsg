@@ -118,10 +118,10 @@ int main (int argc, const char *argv[])
             nn_thread_init (&threads [i], routine2, &threads[i]);
         nn_atomic_init(&active, TEST2_THREAD_COUNT);
 
-	ms = 2000;
+	ms = 10;
 	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
-            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            (void) nn_send (sb, "hello", 5, 0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

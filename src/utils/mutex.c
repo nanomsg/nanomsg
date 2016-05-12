@@ -25,29 +25,29 @@
 
 #ifdef NN_HAVE_WINDOWS
 
-void nn_mutex_init (struct nn_mutex *self)
+void nn_mutex_init (nn_mutex_t *self)
 {
     InitializeCriticalSection (&self->mutex);
 }
 
-void nn_mutex_term (struct nn_mutex *self)
+void nn_mutex_term (nn_mutex_t *self)
 {
     DeleteCriticalSection (&self->mutex);
 }
 
-void nn_mutex_lock (struct nn_mutex *self)
+void nn_mutex_lock (nn_mutex_t *self)
 {
     EnterCriticalSection (&self->mutex);
 }
 
-void nn_mutex_unlock (struct nn_mutex *self)
+void nn_mutex_unlock (nn_mutex_t *self)
 {
     LeaveCriticalSection (&self->mutex);
 }
 
 #else
 
-void nn_mutex_init (struct nn_mutex *self)
+void nn_mutex_init (nn_mutex_t *self)
 {
     int rc;
 
@@ -55,7 +55,7 @@ void nn_mutex_init (struct nn_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void nn_mutex_term (struct nn_mutex *self)
+void nn_mutex_term (nn_mutex_t *self)
 {
     int rc;
 
@@ -63,7 +63,7 @@ void nn_mutex_term (struct nn_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void nn_mutex_lock (struct nn_mutex *self)
+void nn_mutex_lock (nn_mutex_t *self)
 {
     int rc;
 
@@ -71,7 +71,7 @@ void nn_mutex_lock (struct nn_mutex *self)
     errnum_assert (rc == 0, rc);
 }
 
-void nn_mutex_unlock (struct nn_mutex *self)
+void nn_mutex_unlock (nn_mutex_t *self)
 {
     int rc;
 

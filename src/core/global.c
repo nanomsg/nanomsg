@@ -36,14 +36,14 @@
 #include "../utils/err.h"
 #include "../utils/alloc.h"
 #include "../utils/mutex.h"
+#include "../utils/condvar.h"
+#include "../utils/once.h"
 #include "../utils/list.h"
 #include "../utils/cont.h"
 #include "../utils/random.h"
-#include "../utils/glock.h"
 #include "../utils/chunk.h"
 #include "../utils/msg.h"
 #include "../utils/attr.h"
-#include "../utils/sleep.h"
 
 #include "../transports/inproc/inproc.h"
 #include "../transports/ipc/ipc.h"
@@ -135,10 +135,15 @@ struct nn_global {
     int state;
 
     int print_errors;
+
+    nn_mutex_t lock;
+    nn_condvar_t cond;
 };
 
 /*  Singleton object containing the global state of the library. */
 static struct nn_global self;
+static nn_once_t once = NN_ONCE_INITIALIZER;
+
 
 /*  Context creation- and termination-related private functions. */
 static void nn_global_init (void);
@@ -307,9 +312,9 @@ void nn_term (void)
 {
     int i;
 
-    nn_glock_lock ();
+    nn_mutex_lock (&self.lock);
     self.flags |= NN_CTX_FLAG_TERMING;
-    nn_glock_unlock ();
+    nn_mutex_unlock (&self.lock);
 
     /* Make sure we really close resources, this will cause global
        resources to be freed too when the last socket is closed. */
@@ -317,24 +322,22 @@ void nn_term (void)
         (void) nn_close (i);
     }
 
-    nn_glock_lock ();
+    nn_mutex_lock (&self.lock);
     self.flags |= NN_CTX_FLAG_TERMED;
     self.flags &= ~NN_CTX_FLAG_TERMING;
-    /*  TODO: Add a signal to wake nn_init ()  */
-    nn_glock_unlock ();
+    nn_condvar_broadcast(&self.cond);
+    nn_mutex_unlock (&self.lock);
 }
 
 void nn_init (void)
 {
-    nn_glock_lock ();
-    /*  Make sure any nn_term in progress is done. */
+    nn_mutex_lock (&self.lock);
+    /*  Wait for any in progress term to complete. */
     while (self.flags & NN_CTX_FLAG_TERMING) {
-        nn_glock_unlock ();
-        nn_sleep (100);
-        nn_glock_lock ();
+        nn_condvar_wait (&self.cond, &self.lock, -1);
     }
     self.flags &= ~NN_CTX_FLAG_TERMED;
-    nn_glock_unlock ();
+    nn_mutex_unlock (&self.lock);
 }
 
 void *nn_allocmsg (size_t size, int type)
@@ -418,7 +421,8 @@ int nn_global_create_socket (int domain, int protocol)
     struct nn_list_item *it;
     struct nn_socktype *socktype;
     struct nn_sock *sock;
-    /* The function is called with nn_glock held */
+
+    /* The function is called with lock held */
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
     if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
@@ -457,15 +461,24 @@ int nn_global_create_socket (int domain, int protocol)
     return -EINVAL;
 }
 
+static void nn_lib_init(void)
+{
+    /*  This function is executed once to initialize global locks. */
+    nn_mutex_init (&self.lock);
+    nn_condvar_init (&self.cond);
+}
+
 int nn_socket (int domain, int protocol)
 {
     int rc;
 
-    nn_glock_lock ();
+    nn_do_once (&once, nn_lib_init);
+
+    nn_mutex_lock (&self.lock);
 
     /*  If nn_term() was already called, return ETERM. */
     if (nn_slow (self.flags & NN_CTX_FLAG_TERM)) {
-        nn_glock_unlock ();
+        nn_mutex_unlock (&self.lock);
         errno = ETERM;
         return -1;
     }
@@ -477,12 +490,12 @@ int nn_socket (int domain, int protocol)
 
     if (rc < 0) {
         nn_global_term ();
-        nn_glock_unlock ();
+        nn_mutex_unlock (&self.lock);
         errno = -rc;
         return -1;
     }
 
-    nn_glock_unlock();
+    nn_mutex_unlock (&self.lock);
 
     return rc;
 }
@@ -492,17 +505,17 @@ int nn_close (int s)
     int rc;
     struct nn_sock *sock;
 
-    nn_glock_lock ();
+    nn_mutex_lock (&self.lock);
     rc = nn_global_hold_socket_locked (&sock, s);
     if (nn_slow (rc < 0)) {
-        nn_glock_unlock ();
+        nn_mutex_unlock (&self.lock);
         errno = -rc;
         return -1;
     }
 
     /*  Start the shutdown process on the socket.  This will cause
         all other socket users, as well as endpoints, to begin cleaning up.
-        This is done with the glock held to ensure that two instances
+        This is done with the lock held to ensure that two instances
         of nn_close can't access the same socket. */
     nn_sock_stop (sock);
 
@@ -510,7 +523,7 @@ int nn_close (int s)
         the original hold, in order for nn_sock_term to complete. */
     nn_sock_rele (sock);
     nn_sock_rele (sock);
-    nn_glock_unlock ();
+    nn_mutex_unlock (&self.lock);
 
     /*  Now clean up.  The termination routine below will block until
         all other consumers of the socket have dropped their holds, and
@@ -524,7 +537,7 @@ int nn_close (int s)
 
     /*  Remove the socket from the socket table, add it to unused socket
         table. */
-    nn_glock_lock ();
+    nn_mutex_lock (&self.lock);
     self.socks [s] = NULL;
     self.unused [NN_MAX_SOCKETS - self.nsocks] = s;
     --self.nsocks;
@@ -533,7 +546,7 @@ int nn_close (int s)
     /*  Destroy the global context if there's no socket remaining. */
     nn_global_term ();
 
-    nn_glock_unlock ();
+    nn_mutex_unlock (&self.lock);
 
     return 0;
 }
@@ -1130,7 +1143,7 @@ int nn_global_print_errors ()
 }
 
 /*  Get the socket structure for a socket id.  This must be called under
-    the global lock (nn_glock_lock.)  The socket itself will not be freed
+    the global lock (self.lock.)  The socket itself will not be freed
     while the hold is active. */
 int nn_global_hold_socket_locked(struct nn_sock **sockp, int s)
 {
@@ -1154,15 +1167,15 @@ int nn_global_hold_socket_locked(struct nn_sock **sockp, int s)
 int nn_global_hold_socket(struct nn_sock **sockp, int s)
 {
     int rc;
-    nn_glock_lock();
+    nn_mutex_lock(&self.lock);
     rc = nn_global_hold_socket_locked(sockp, s);
-    nn_glock_unlock();
+    nn_mutex_unlock(&self.lock);
     return rc;
 }
 
 void nn_global_rele_socket(struct nn_sock *sock)
 {
-    nn_glock_lock();
+    nn_mutex_lock(&self.lock);
     nn_sock_rele(sock);
-    nn_glock_unlock();
+    nn_mutex_unlock(&self.lock);
 }

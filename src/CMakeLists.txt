@@ -82,16 +82,18 @@ set (NN_SOURCES
     utils/err.c
     utils/fast.h
     utils/fd.h
-    utils/glock.h
-    utils/glock.c
     utils/hash.h
     utils/hash.c
     utils/list.h
     utils/list.c
     utils/msg.h
     utils/msg.c
+    utils/condvar.h
+    utils/condvar.c
     utils/mutex.h
     utils/mutex.c
+    utils/once.h
+    utils/once.c
     utils/queue.h
     utils/queue.c
     utils/random.h

@@ -96,6 +96,7 @@ int main (int argc, const char *argv[])
 
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, socket_address);
+    nn_sleep (100);
 
     for (j = 0; j != TEST_LOOPS; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)

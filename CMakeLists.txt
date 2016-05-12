@@ -396,6 +396,8 @@ if (NN_TESTS)
 
 endif ()
 
+install (TARGETS LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install (TARGETS ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install (FILES src/nn.h DESTINATION include/nanomsg)
 install (FILES src/inproc.h DESTINATION include/nanomsg)
 install (FILES src/ipc.h DESTINATION include/nanomsg)
@@ -409,7 +411,7 @@ install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
 if (NN_ENABLE_NANOCAT)
-    install (TARGETS nanocat RUNTIME DESTINATION bin)
+    install (TARGETS nanocat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 set (CPACK_PACKAGE_NAME ${PROJECT_NAME})

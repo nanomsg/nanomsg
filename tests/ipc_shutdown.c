@@ -28,12 +28,13 @@
 
 #include "testutil.h"
 #include "../src/utils/thread.c"
+#include "../src/utils/mutex.c"
 
 /*  Stress test the IPC transport. */
 
 #define THREAD_COUNT 100
-#define TEST2_THREAD_COUNT 10
-#define MESSAGES_PER_THREAD 10
+#define TEST2_THREAD_COUNT 5
+#define MESSAGES_PER_THREAD 100
 #define TEST_LOOPS 10
 #define SOCKET_ADDRESS "ipc://test-shutdown.ipc"
 
@@ -51,12 +52,16 @@ static void routine (NN_UNUSED void *arg)
     test_close (s);
 }
 
-static void routine2 (NN_UNUSED void *arg)
+static void routine2 (void *arg)
 {
     int s;
     int i;
 
+    struct nn_mutex *lock = arg;
     s = test_socket (AF_SP, NN_PULL);
+
+    nn_mutex_lock(lock);
+    nn_mutex_unlock(lock);
 
     for (i = 0; i < 10; ++i) {
         test_connect (s, SOCKET_ADDRESS);
@@ -67,7 +72,9 @@ static void routine2 (NN_UNUSED void *arg)
     }
 
     test_close (s);
+    nn_mutex_lock(arg);
     active --;
+    nn_mutex_unlock(arg);
 }
 
 int main ()
@@ -75,6 +82,8 @@ int main ()
     int sb;
     int i;
     int j;
+    int ms;
+    struct nn_mutex lock;
     struct nn_thread threads [THREAD_COUNT];
 
     /*  Stress the shutdown algorithm. */
@@ -99,14 +108,27 @@ int main ()
 
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, SOCKET_ADDRESS);
+    nn_sleep(100);
+    ms = 20;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
 
+    nn_mutex_init(&lock);
     for (j = 0; j != TEST_LOOPS; ++j) {
-        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
-            nn_thread_init (&threads [i], routine2, NULL);
-        active = TEST2_THREAD_COUNT;
 
-        while (active) {
-            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+        nn_mutex_lock(&lock);
+        active = TEST2_THREAD_COUNT;
+        for (i = 0; i != TEST2_THREAD_COUNT; ++i)
+            nn_thread_init (&threads [i], routine2, &lock);
+        nn_mutex_unlock(&lock);
+
+        for (;;) {
+            nn_mutex_lock (&lock);
+            if (active == 0) {
+                nn_mutex_unlock (&lock);
+                break;
+            }
+            nn_mutex_unlock (&lock);
+            (void) nn_send (sb, "hello", 5, 0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

@@ -35,8 +35,8 @@
 /*  Stress test the TCP transport. */
 
 #define THREAD_COUNT 100
-#define TEST2_THREAD_COUNT 10
-#define MESSAGES_PER_THREAD 10
+#define TEST2_THREAD_COUNT 5
+#define MESSAGES_PER_THREAD 100
 #define TEST_LOOPS 10
 
 struct nn_atomic active;
@@ -83,6 +83,7 @@ int main (int argc, const char *argv[])
     int sb;
     int i;
     int j;
+    int ms;
     struct nn_thread threads [THREAD_COUNT];
 
     test_addr_from(socket_address, "tcp", "127.0.0.1",
@@ -111,17 +112,16 @@ int main (int argc, const char *argv[])
 
     sb = test_socket (AF_SP, NN_PUSH);
     test_bind (sb, socket_address);
+    ms = 20;
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
 
     for (j = 0; j != TEST_LOOPS; ++j) {
-	int ms;
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine2, &threads[i]);
         nn_atomic_init(&active, TEST2_THREAD_COUNT);
 
-	ms = 2000;
-	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
-            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            (void) nn_send (sb, "hello", 5, 0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

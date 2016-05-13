@@ -23,25 +23,44 @@
 #include "mutex.h"
 #include "err.h"
 
+#include <stdlib.h>
+
 #ifdef NN_HAVE_WINDOWS
 
 void nn_mutex_init (nn_mutex_t *self)
 {
     InitializeCriticalSection (&self->mutex);
+    self->owner = 0;
+    self->debug = (getenv("NN_NO_MUTEX_DEBUG") != NULL) ? 0 : 1;
 }
 
 void nn_mutex_term (nn_mutex_t *self)
 {
+    if (self->debug) {
+        /*  Make sure we don't free a locked mutex. */
+        nn_assert(self->owner == 0);
+    }
     DeleteCriticalSection (&self->mutex);
 }
 
 void nn_mutex_lock (nn_mutex_t *self)
 {
     EnterCriticalSection (&self->mutex);
+
+    if (self->debug) {
+        /*  Make sure we don't recursively enter mutexes. */
+        nn_assert(self->owner == 0);
+        self->owner = GetCurrentThreadId();
+    }
 }
 
 void nn_mutex_unlock (nn_mutex_t *self)
 {
+    if (self->debug) {
+        /*  Make sure that we own the mutex we are releasing. */
+        nn_assert(self->owner == GetCurrentThreadId());
+        self->owner = 0;
+    }
     LeaveCriticalSection (&self->mutex);
 }
 
@@ -50,9 +69,15 @@ void nn_mutex_unlock (nn_mutex_t *self)
 void nn_mutex_init (nn_mutex_t *self)
 {
     int rc;
+    pthread_mutexattr_t attr;
 
+    pthread_mutexattr_init(&attr);
+    if (getenv("NN_NO_MUTEX_DEBUG") == NULL) {
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    }
     rc = pthread_mutex_init (&self->mutex, NULL);
     errnum_assert (rc == 0, rc);
+    pthread_mutexattr_destroy(&attr);
 }
 
 void nn_mutex_term (nn_mutex_t *self)

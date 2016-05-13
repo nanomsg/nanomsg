@@ -34,6 +34,8 @@ struct nn_mutex {
         implementation. */
 #ifdef NN_HAVE_WINDOWS
     CRITICAL_SECTION mutex;
+    DWORD owner;
+    int debug;
 #else
     pthread_mutex_t mutex;
 #endif

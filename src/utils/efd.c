@@ -155,7 +155,7 @@ int nn_efd_wait (struct nn_efd *self, int timeout)
                 socket is being closed from a separate thread during a blocking
                 I/O operation. */
             if (rc == EINTR || rc == ENOTSOCK)
-                return -EINTR;
+                return self->r == INVALID_SOCKET ? -EBADF : -EINTR;
         } else if (rc == 0) {
             if (expire == 0)
                 return -ETIMEDOUT;

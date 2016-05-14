@@ -67,7 +67,7 @@ static void routine2 (NN_UNUSED void *arg)
         test_connect (s, socket_address);
     }
 
-    ms = 2000;
+    ms = 100;
     test_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO, &ms, sizeof (ms));
 
     for (i = 0; i < MESSAGES_PER_THREAD; ++i) {
@@ -96,6 +96,7 @@ int main (int argc, const char *argv[])
 
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, socket_address);
+    nn_sleep (100);
 
     for (j = 0; j != TEST_LOOPS; ++j) {
         for (i = 0; i != THREAD_COUNT; ++i)
@@ -118,10 +119,10 @@ int main (int argc, const char *argv[])
             nn_thread_init (&threads [i], routine2, &threads[i]);
         nn_atomic_init(&active, TEST2_THREAD_COUNT);
 
-	ms = 2000;
+	ms = 10;
 	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
-            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            (void) nn_send (sb, "hello", 5, 0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

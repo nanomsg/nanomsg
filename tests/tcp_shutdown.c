@@ -63,9 +63,7 @@ static void routine2 (NN_UNUSED void *arg)
 
     s = test_socket (AF_SP, NN_PULL);
 
-    for (i = 0; i < 10; ++i) {
-        test_connect (s, socket_address);
-    }
+    test_connect (s, socket_address);
 
     ms = 2000;
     test_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO, &ms, sizeof (ms));
@@ -122,6 +120,7 @@ int main (int argc, const char *argv[])
 	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
             (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            nn_sleep(0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

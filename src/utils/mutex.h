@@ -33,7 +33,7 @@ struct nn_mutex {
     /*  NB: The fields of this structure are private to the mutex
         implementation. */
 #ifdef NN_HAVE_WINDOWS
-    CRITICAL_SECTION mutex;
+    CRITICAL_SECTION cs;
     DWORD owner;
     int debug;
 #else

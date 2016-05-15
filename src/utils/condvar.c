@@ -43,7 +43,19 @@ int nn_condvar_wait (nn_condvar_t *cond, nn_mutex_t *lock, int timeout)
 
     /*  Likely this is redundant, but for API correctness be explicit. */
     expire = (timeout < 0) ? INFINITE : (DWORD) timeout;
-    brc = SleepConditionVariableCS (&cond->cv, &lock->mutex, expire);
+
+    /*  We must own the lock if we are going to call this. */
+    nn_assert (lock->owner == GetCurrentThreadId());
+    /*  Clear ownership as SleepConditionVariableCS will drop it. */
+    lock->owner = 0;
+
+    brc = SleepConditionVariableCS (&cond->cv, &lock->cs, expire);
+
+    /*  We have reacquired the lock, so nobody should own it right now. */
+    nn_assert (lock->owner == 0);
+    /*  Note we own it now. */
+    lock->owner = GetCurrentThreadId();
+
     if (!brc && GetLastError () == ERROR_TIMEOUT) {
         return (-ETIMEDOUT);
     }

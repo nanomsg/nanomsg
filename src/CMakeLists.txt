@@ -343,7 +343,6 @@ endforeach ()
 
 if (NN_STATIC_LIB)
     add_library (${PROJECT_NAME} STATIC ${NN_SOURCES})
-    add_definitions (-DNN_STATIC_LIB)
 else ()
     add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
     add_definitions (-DNN_SHARED_LIB)

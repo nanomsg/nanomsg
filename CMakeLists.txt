@@ -123,6 +123,10 @@ else ()
     message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
 endif ()
 
+if (NN_STATIC_LIB)
+    add_definitions (-DNN_STATIC_LIB)
+endif ()
+
 macro (nn_check_func SYM DEF)
     check_function_exists (${SYM} ${DEF})
     if (${DEF})

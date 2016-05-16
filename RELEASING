@@ -1,43 +1,43 @@
 Release process
 ===============
 
-1. Check CI (http://build.nanomsg.org/waterfall).
+1. Check CI
 
-2. Check AppVeyor https://ci.appveyor.com/project/nanomsg/nanomsg
+   * Travis: https://travis-ci.org/nanomsg/nanomsg
+   * AppVeyor: https://ci.appveyor.com/project/nanomsg/nanomsg
+   * Waterfall: http://build.nanomsg.org/waterfall (note may be broken)
 
-3. Check Travis CI https://travis-ci.org/nanomsg/nanomsg
+2. "make dist" to check whether the packaging process still works.
 
-4. "make distcheck" to check whether the packaging process still works.
+3. Try to build the resulting package to make sure packages compile.
 
-5. Bump ABI version as appropriate (see the docs on versioning). This happens
+4. Bump ABI version as appropriate (see the docs on versioning). This happens
    in src/nn.h, check links there on which numbers to update.
 
-6. Commit and push back to the public repo.
+5. Commit and push back to the public repo.
 
-7. Tag the new version, e.g. git tag -a 0.3-beta.  (Make sure to use -a
+6. Tag the new version, e.g. git tag -a 0.3-beta.  (Make sure to use -a
    to create an annotated tag.)
 
-8. Push the tag to the repo, e.g. git push origin 0.3-beta.
+7. Push the tag to the repo, e.g. git push origin 0.3-beta.
 
-9. Wait a little bit for Travis CI to build, and create artifacts.
+8. Wait a little bit for Travis CI to build, and create artifacts.
    (Travis does this automatically for tagged releases.)
 
-10. Check the github releases page - a release for the tag should have
-    already been created with artifacts ready to download.
+9. Check the github releases page - a release for the tag should have
+   already been created with artifacts ready to download.
 
-11. Upload the "download" page on the website (see gh-pages branch of the
+10. Upload the "download" page on the website (see gh-pages branch of the
     repo).  The only thing that needs to be updated is the LATEST RELEASE
     number and date.
 
-12. Generate the docs (./configure --enable-doc; make).
+11. In online docs (gh-pages) make a new folder (e.g. v0.3) and copy the HTML
+    docs (*.html from build directory) there.
 
-13. In online docs (gh-pages) make a new folder (e.g. v0.3) and copy the HTML
-    docs there.
+12. Link the docs from "documentation.html" page.
 
-14. Link the docs from "documentation.html" page.
-
-15. Send the announcement about the release. These commands might be useful:
+13. Send the announcement about the release. These commands might be useful:
     git log --oneline 0.2-alpha..0.3-beta | wc -l
     git diff -U0 0.2-alpha..0.3-beta AUTHORS
 
-16. Update the topic in the chatroom accordingly.
+14. Update the topic in the chatroom accordingly.

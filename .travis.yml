@@ -25,6 +25,8 @@ script:
   - cmake ..
   - cmake --build . -- -j4
   - ctest --output-on-failure -C Debug -j4
+  # Generate source package
+  - make package_source
 deploy:
   provider: releases
   api_key:
@@ -32,6 +34,7 @@ deploy:
   file:
     - nanomsg-${TRAVIS_TAG}.zip
     - nanomsg-${TRAVIS_TAG}.tar.gz
+    - nanomsg-${TRAVIS_TAG}.tar.bz2
   skip_cleanup: true
   on:
     tags: true

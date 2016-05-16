@@ -157,14 +157,6 @@ if (WIN32)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} ws2_32)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} mswsock)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} advapi32)
-
-    # Ensure tests/tools built as EXE choose symbol visibility appropriate for
-    # linking the library, whether static or dynamic.
-    if (NN_STATIC_LIB)
-        add_definitions (-DNN_WIN32_LIB_LINK)
-    else ()
-        add_definitions (-DNN_WIN32_DLL_LINK)
-    endif ()
 else ()
     # Unconditionally declare the following feature test macros.  These are
     # needed for some platforms (glibc and SunOS/illumos) and should be harmless

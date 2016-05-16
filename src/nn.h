@@ -36,10 +36,14 @@ extern "C" {
 
 /*  Handle DSO symbol visibility. */
 #if !defined(NN_EXPORT)
-#    if defined(_WIN32) && !defined(NN_STATIC_LIB)
-#        if defined NN_SHARED_LIB
+#    if defined(_WIN32)
+#        if defined(NN_STATIC_LIB)
+#            define NN_EXPORT
+#        elif defined(NN_WIN32_LIB_LINK)
+#            define NN_EXPORT
+#        elif defined(NN_SHARED_LIB)
 #            define NN_EXPORT __declspec(dllexport)
-#        else
+#        else defined(NN_WIN32_DLL_LINK)
 #            define NN_EXPORT __declspec(dllimport)
 #        endif
 #    else

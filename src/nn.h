@@ -57,7 +57,7 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 4
+#define NN_VERSION_CURRENT 5
 
 /*  The latest revision of the current interface. */
 #define NN_VERSION_REVISION 0

@@ -90,11 +90,13 @@ endif()
 # User-defined options.
 
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
-option (NN_ENABLE_DOC "Enable building documentation." ON)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
+
+set (NN_ENABLE_DOC "DEFAULT" CACHE STRING "Enable building documentation.")
+set_property (CACHE NN_ENABLE_DOC PROPERTY STRINGS "ON" "OFF" "DEFAULT")
 
 #  Platform checks.
 
@@ -224,19 +226,26 @@ if (NN_ENABLE_NANOCAT)
     target_link_libraries (nanocat ${PROJECT_NAME})
 endif ()
 
-if (NN_ENABLE_DOC)
-    find_program (ASCIIDOCTOR_EXE asciidoctor)
-    if (NOT ASCIIDOCTOR_EXE)
-        message (WARNING "Could not find asciidoctor: skipping docs")
-        set (NN_ENABLE_DOC OFF)
-    else ()
+# Build the documentation
+string (TOUPPER "${NN_ENABLE_DOC}" NN_ENABLE_DOC)
+if (NN_ENABLE_DOC STREQUAL "OFF")
+    set (NN_BUILD_DOC OFF)
+elseif (NN_ENABLE_DOC STREQUAL "DEFAULT" OR NN_ENABLE_DOC STREQUAL "ON")
+    find_program (NN_ASCIIDOCTOR_INSTALLED asciidoctor)
+    if (NN_ASCIIDOCTOR_INSTALLED)
         message (STATUS "Using asciidoctor at ${ASCIIDOCTOR_EXE}")
+        set (NN_BUILD_DOC ON)
+    elseif (NN_ENABLE_DOC STREQUAL "DEFAULT")
+        message (WARNING "Could not find asciidoctor; skipping docs.")
+        set (NN_BUILD_DOC OFF)
+    else ()
+        message (FATAL_ERROR "asciidoctor is not installed. (hint: use -DNN_ENABLE_DOC=DEFAULT to suppress this error)")
     endif ()
+else ()
+    message (FATAL_ERROR "Unknown option: NN_ENABLE_DOC=${NN_ENABLE_DOC} (hint: use ON|OFF|DEFAULT)")
 endif ()
 
-# Build the documenation
-if (NN_ENABLE_DOC)
-
+if (NN_BUILD_DOC)
     set (NN_DOCDIR ${CMAKE_CURRENT_SOURCE_DIR}/doc)
     set (NN_STYLESHEET ${NN_DOCDIR}/stylesheet.css)
     set (NN_TITLE ${PROJECT_NAME} ${NN_PACKAGE_VERSION})

@@ -40,6 +40,10 @@ Build it with CMake
 3.  `mkdir build`
 4.  `cd build`
 5.  `cmake ..`
+    * optionally, `cmake -DNN_ENABLE_DOC=ON ..`, where valid options include:
+        - `ON` - any failure to build the documentation aborts the build (e.g., not having asciidoctor installed)
+        - `OFF` - docs will not be built
+        - `DEFAULT` - best-effort to build documentation; failure to do so outputs a warning
 6.  `cmake --build .`
 7.  `ctest .`
 8.  `cmake --build . --target install`

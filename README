@@ -12,11 +12,28 @@ applications communicate to form a single distributed application.
 
 For more info check the web site: http://nanomsg.org
 
+Prerequests
+-----------
+
+1. Windows.
+   * Windows Vista or newer (Windows XP and 2003 are *NOT* supported)
+   * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64
+     (Specifically mingw and older Microsoft compilers are *NOT supported)
+   * CMake 2.8.7 or newer, available in $PATH as `cmake`
+
+2. POSIX (Linux, MacOS X, UNIX)
+   * ANSI C compiler supporting C89
+   * POSIX pthreads (should be present on all modern POSIX systems)
+   * BSD sockets support for both TCP and UNIX domain sockets
+   * CMake 2.8.7 or newer, available in $PATH as `cmake`
+
+3. Documentation (optional)
+   * asciidoctor (http://asciidoctor.org/) available as `asciidoctor`
+   * If not present, docs are not formatted, but left in readable ASCII
+   * Also available on-line at http://nanomsg.org/documentation
 
 Build it with CMake
 -------------------
-
-**Prerequisites:** CMake >=2.8.7 installed and available in $PATH as `cmake`
 
 1.  Go to the root directory of the local source repository.
 2.  To perform an out-of-source build, run:
@@ -25,40 +42,22 @@ Build it with CMake
 5.  `cmake ..`
 6.  `cmake --build .`
 7.  `ctest .`
-8.  *Note: this CMake build process is evolving. Please [report an issue](https://github.com/nanomsg/nanomsg/issues/new)
-    if you run into problems.*
-
-Build it with Autotools (deprecated)
-------------------------------------
-
-**Warning: this build method is being deprecated; see [issue #648](https://github.com/nanomsg/nanomsg/issues/648)**
-
-1.  Download the package.
-2.  Unpack it.
-3.  Go to the root directory of the package.
-4.  sh autogen.sh
-5.  ./configure
-6.  make
-7.  make check
-8.  sudo make install
-9.  On Linux or other platforms which use ld.so for dynamic linking, run
-    ldconfig or equivalent as root to update your system’s shared library cache.
+8.  `cmake --build . --target install`
+    *NB:* This may have to be done as a privileged user.
 
 Resources
 ---------
 
-Website: http://nanomsg.org
+Website: [http://nanomsg.org](http://nanomsg.org)
 
-Source code: https://github.com/nanomsg/nanomsg
+Source code: [https://github.com/nanomsg/nanomsg](http://github.com/nanomsg/nanomsg)
 
-Documentation: http://nanomsg.org/documentation.html
+Documentation: [http://nanomsg.org/documentation.html](http://nanomsg.org/documentation.html)
 
-Bug tracker: https://github.com/nanomsg/nanomsg/issues
+Bug tracker: [https://github.com/nanomsg/nanomsg/issues](http://github.com/nanomsg/nanomsg/issues)
 
-Mailing list: nanomsg@freelists.org
+Mailing list: [nanomsg@freelists.org](http://www.freelists.org/list/nanomsg)
 
-Subscribe to the list here: http://www.freelists.org/list/nanomsg
+Gitter Chat: [https://gitter.im/nanomsg/nanomsg](https://gitter.im/nanomsg/nanomsg)
 
-IRC chatroom: channel #nanomsg at irc.freenode.net/8001
-
-Gitter: [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/nanomsg/nanomsg?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+IRC chatroom: [#nanomsg at irc.freenode.net/8001](http://webchat.freenode.net?channels=%23nanomsg)

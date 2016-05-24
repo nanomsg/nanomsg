@@ -38,6 +38,8 @@ int main (int argc, const char *argv[])
     /*  Test req/rep with full socket types. */
     rep1 = test_socket (AF_SP, NN_REP);
     test_bind (rep1, socket_address);
+    nn_sleep (100);
+
     req1 = test_socket (AF_SP, NN_REQ);
     test_connect (req1, socket_address);
     nn_sleep (200);

@@ -12,10 +12,10 @@ applications communicate to form a single distributed application.
 
 For more info check the web site: http://nanomsg.org
 
-Prerequests
+Prerequisites
 -----------
 
-1. Windows.
+1. Windows
    * Windows Vista or newer (Windows XP and 2003 are *NOT* supported)
    * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64
      (Specifically mingw and older Microsoft compilers are *NOT supported)
@@ -30,7 +30,7 @@ Prerequests
 3. Documentation (optional)
    * asciidoctor (http://asciidoctor.org/) available as `asciidoctor`
    * If not present, docs are not formatted, but left in readable ASCII
-   * Also available on-line at http://nanomsg.org/documentation
+   * Also available online at http://nanomsg.org/documentation
 
 Build it with CMake
 -------------------
@@ -40,10 +40,14 @@ Build it with CMake
 3.  `mkdir build`
 4.  `cd build`
 5.  `cmake ..`
+    * optionally, `cmake -DNN_ENABLE_DOC=ON ..`, where valid options include:
+        - `ON` - any failure to build the documentation aborts the build (e.g., not having asciidoctor installed)
+        - `OFF` - docs will not be built
+        - `DEFAULT` - best-effort to build documentation; failure to do so outputs a warning
 6.  `cmake --build .`
 7.  `ctest .`
 8.  `cmake --build . --target install`
-    *NB:* This may have to be done as a privileged user.
+    *NB: This may have to be done as a privileged user.*
 
 Resources
 ---------

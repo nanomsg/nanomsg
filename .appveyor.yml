@@ -47,7 +47,7 @@ build_script:
   - cmd: cmake --version
   - cmd: md build
   - cmd: cd build
-  - cmd: cmake -G "%GENERATOR%" ..
+  - cmd: cmake -G "%GENERATOR%" -DNN_ENABLE_DOC=ON ..
   - cmd: cmake --build .
 test_script:
   - cmd: ctest --output-on-failure -C "%CFG%"

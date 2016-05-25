@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,9 +26,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include "../src/utils/stopwatch.c"
+#include "../src/utils/err.c"
 
 int main (int argc, char *argv [])
 {
@@ -53,20 +54,20 @@ int main (int argc, char *argv [])
     count = atoi (argv [3]);
 
     s = nn_socket (AF_SP, NN_PAIR);
-    assert (s != -1);
+    nn_assert (s != -1);
     rc = nn_bind (s, bind_to);
-    assert (rc >= 0);
+    nn_assert (rc >= 0);
 
     buf = malloc (sz);
-    assert (buf);
+    nn_assert (buf);
 
     nbytes = nn_recv (s, buf, sz, 0);
-    assert (nbytes == 0);
+    nn_assert (nbytes == 0);
 
     nn_stopwatch_init (&sw);
     for (i = 0; i != count; i++) {
         nbytes = nn_recv (s, buf, sz, 0);
-        assert (nbytes == (int)sz);
+        nn_assert (nbytes == (int)sz);
     }
     total = nn_stopwatch_term (&sw);
     if (total == 0)
@@ -83,7 +84,7 @@ int main (int argc, char *argv [])
     free (buf);
 
     rc = nn_close (s);
-    assert (rc == 0);
+    nn_assert (rc == 0);
 
     return 0;
 }

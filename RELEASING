@@ -1,31 +1,31 @@
 Release process
 ===============
 
-1. Check CI
+ 1. Check CI
 
    * Travis: https://travis-ci.org/nanomsg/nanomsg
    * AppVeyor: https://ci.appveyor.com/project/nanomsg/nanomsg
-   * Waterfall: http://build.nanomsg.org/waterfall (note may be broken)
 
-2. "make dist" to check whether the packaging process still works.
+ 2. Bump ABI version as appropriate (see the docs on versioning). This happens
+    in src/nn.h, check links there on which numbers to update.
 
-3. Try to build the resulting package to make sure packages compile.
+ 3. Bump the version in the .version file, such as 0.10-beta or 1.0 or
+    whatever.  This should match the tag you are going to use.
 
-4. Bump ABI version as appropriate (see the docs on versioning). This happens
-   in src/nn.h, check links there on which numbers to update.
+ 4. Commit and push both of the above changes back to the public repo.
 
-5. Commit and push back to the public repo.
+ 5. Tag the new version, e.g. git tag -a 0.3-beta.  (Make sure to use -a
+    to create an annotated tag.)
 
-6. Tag the new version, e.g. git tag -a 0.3-beta.  (Make sure to use -a
-   to create an annotated tag.)
+ 6. Push the tag to the repo, e.g. git push origin 0.3-beta.
 
-7. Push the tag to the repo, e.g. git push origin 0.3-beta.
+ 7. Wait a little bit for Travis CI to build, and create artifacts.
+    (Travis does this automatically for tagged releases.)
 
-8. Wait a little bit for Travis CI to build, and create artifacts.
-   (Travis does this automatically for tagged releases.)
+ 8. Also check the AppVeyor CI again just to be sure.
 
-9. Check the github releases page - a release for the tag should have
-   already been created with artifacts ready to download.
+ 9. Check the github releases page - a release for the tag should have
+    already been created with artifacts ready to download.
 
 10. Upload the "download" page on the website (see gh-pages branch of the
     repo).  The only thing that needs to be updated is the LATEST RELEASE

@@ -1,19 +1,23 @@
 Welcome to nanomsg
-------------------
+==================
 
+[![Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)](https://github.com/nanomsg/nanomsg/releases/latest)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanomsg/nanomsg/blob/master/COPYING)
 [![Linux Status](https://img.shields.io/travis/nanomsg/nanomsg/master.svg?label=linux)](https://travis-ci.org/nanomsg/nanomsg)
 [![Windows Status](https://img.shields.io/appveyor/ci/nanomsg/nanomsg/master.svg?label=windows)](https://ci.appveyor.com/project/nanomsg/nanomsg)
 [![Gitter](https://img.shields.io/badge/gitter-join-brightgreen.svg)](https://gitter.im/nanomsg/nanomsg)
 
-nanomsg library is a simple high-performance implementation of several
-"scalability protocols". Scalability protocol's job is to define how multiple
-applications communicate to form a single distributed application.
+The nanomsg library is a simple high-performance implementation of several
+"scalability protocols". These scalability protocols are light-weight messaging
+protocols which can be used to solve a number of very common messaging
+patterns, such as request/reply, publish/subscribe, surveyor/respondent,
+and so forth.  These protocols can run over a variety of transports such
+as TCP, UNIX sockets, and even WebSocket.
 
-For more info check the web site: http://nanomsg.org
+For more information check the [website](http://nanomsg.org).
 
-Prerequests
------------
+Prerequisites
+-------------
 
 1. Windows.
    * Windows Vista or newer (Windows XP and 2003 are *NOT* supported)
@@ -25,7 +29,7 @@ Prerequests
    * ANSI C compiler supporting C89
    * POSIX pthreads (should be present on all modern POSIX systems)
    * BSD sockets support for both TCP and UNIX domain sockets
-   * CMake 2.8.7 or newer, available in $PATH as `cmake`
+   * CMake (http://cmake.org) 2.8.7 or newer, available in $PATH as `cmake`
 
 3. Documentation (optional)
    * asciidoctor (http://asciidoctor.org/) available as `asciidoctor`

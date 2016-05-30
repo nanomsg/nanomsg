@@ -44,6 +44,7 @@ Build it with CMake
 3.  `mkdir build`
 4.  `cd build`
 5.  `cmake ..`
+    (You can add -DCMAKE_INSTALL_PREFIX=/usr/local or some other directory.)
 6.  `cmake --build .`
 7.  `ctest .`
 8.  `cmake --build . --target install`

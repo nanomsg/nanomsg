@@ -48,6 +48,7 @@ Build it with CMake
 7.  `ctest .`
 8.  `cmake --build . --target install`
     *NB:* This may have to be done as a privileged user.
+9.  (Linux only).  `ldconfig` (As a privileged or root user.)
 
 Resources
 ---------

@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.h"
 
 int main (int argc, char *argv [])
 {
@@ -40,6 +41,7 @@ int main (int argc, char *argv [])
     int s;
     int rc;
     int i;
+    int opt;
 
     if (argc != 4) {
         printf ("usage: remote_thr <connect-to> <msg-size> <msg-count>\n");
@@ -54,6 +56,14 @@ int main (int argc, char *argv [])
     rc = nn_connect (s, connect_to);
     nn_assert (rc >= 0);
 
+    opt = -1;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+
+    opt = 1000;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+
     buf = malloc (sz);
     nn_assert (buf);
     memset (buf, 111, sz);
@@ -67,6 +77,9 @@ int main (int argc, char *argv [])
     }
 
     free (buf);
+
+    /*  Linger doesn't always do the trick, so sleep a bit to be sure. */
+    nn_sleep (1000);
 
     rc = nn_close (s);
     nn_assert (rc == 0);

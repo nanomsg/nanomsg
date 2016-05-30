@@ -40,6 +40,7 @@ int main (int argc, char *argv [])
     int s;
     int rc;
     int i;
+    int opt;
     struct nn_stopwatch sw;
     uint64_t total;
     uint64_t thr;
@@ -57,6 +58,14 @@ int main (int argc, char *argv [])
     nn_assert (s != -1);
     rc = nn_bind (s, bind_to);
     nn_assert (rc >= 0);
+
+    opt = -1;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+
+    opt = 1000;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &opt, sizeof (opt));
+    nn_assert (rc == 0);
 
     buf = malloc (sz);
     nn_assert (buf);

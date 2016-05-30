@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "../src/utils/err.c"
+#include "../src/utils/sleep.h"
 
 int main (int argc, char *argv [])
 {
@@ -56,6 +57,12 @@ int main (int argc, char *argv [])
     opt = 1;
     rc = nn_setsockopt (s, NN_TCP, NN_TCP_NODELAY, &opt, sizeof (opt));
     nn_assert (rc == 0);
+    opt = -1;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+    opt = 1000;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &opt, sizeof (opt));
+    nn_assert (rc == 0);
     rc = nn_bind (s, bind_to);
     nn_assert (rc >= 0);
 
@@ -72,6 +79,8 @@ int main (int argc, char *argv [])
 
     free (buf);
 
+    /*  Linger doesn't always work, so stick around another second. */
+    nn_sleep (1000);
     rc = nn_close (s);
     nn_assert (rc == 0);
 

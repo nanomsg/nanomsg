@@ -61,6 +61,9 @@ int main (int argc, char *argv [])
     opt = 1;
     rc = nn_setsockopt (s, NN_TCP, NN_TCP_NODELAY, &opt, sizeof (opt));
     nn_assert (rc == 0);
+    opt = -1;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
     rc = nn_connect (s, connect_to);
     nn_assert (rc >= 0);
 

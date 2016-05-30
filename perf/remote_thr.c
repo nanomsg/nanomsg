@@ -29,7 +29,7 @@
 #include <string.h>
 
 #include "../src/utils/err.c"
-#include "../src/utils/sleep.h"
+#include "../src/utils/sleep.c"
 
 int main (int argc, char *argv [])
 {

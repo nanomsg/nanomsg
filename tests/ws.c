@@ -188,6 +188,17 @@ int main (int argc, const char *argv[])
     test_close (sc);
     test_close (sb);
 
+    /*  Test two sockets binding to the same address. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, socket_address);
+    sb2 = test_socket (AF_SP, NN_PAIR);
+
+    rc = nn_bind (sb2, socket_address);
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EADDRINUSE);
+    test_close(sb);
+    test_close(sb2);
+
     /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
     sb = test_socket (AF_SP, NN_PAIR);
     opt = -1;
@@ -232,19 +243,10 @@ int main (int argc, const char *argv[])
 
     test_text ();
 
-    /*  Test closing a socket that is waiting to bind. */
-    sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, socket_address);
-    sb2 = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb2, socket_address);
+    /*  Test closing a socket that is waiting to connect. */
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
-    test_send (sb, "ABC");
-    test_recv (sc, "ABC");
-    test_close (sb2);
-    test_send (sb, "ABC");
-    test_recv (sc, "ABC");
-    test_close (sb);
+    nn_sleep (100);
     test_close (sc);
 
     return 0;

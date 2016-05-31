@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -27,8 +28,6 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
-#include "../utils/backoff.h"
-
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -51,14 +50,9 @@
 #define NN_BIPC_STATE_STOPPING_AIPC 3
 #define NN_BIPC_STATE_STOPPING_USOCK 4
 #define NN_BIPC_STATE_STOPPING_AIPCS 5
-#define NN_BIPC_STATE_LISTENING 6
-#define NN_BIPC_STATE_WAITING 7
-#define NN_BIPC_STATE_CLOSING 8
-#define NN_BIPC_STATE_STOPPING_BACKOFF 9
 
 #define NN_BIPC_SRC_USOCK 1
 #define NN_BIPC_SRC_AIPC 2
-#define NN_BIPC_SRC_RECONNECT_TIMER 3
 
 struct nn_bipc {
 
@@ -78,9 +72,6 @@ struct nn_bipc {
 
     /*  List of accepted connections. */
     struct nn_list aipcs;
-
-    /*  Used to wait before retrying to connect. */
-    struct nn_backoff retry;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -96,43 +87,38 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_bipc_start_listening (struct nn_bipc *self);
+static int nn_bipc_listen (struct nn_bipc *self);
 static void nn_bipc_start_accepting (struct nn_bipc *self);
 
 int nn_bipc_create (void *hint, struct nn_epbase **epbase)
 {
     struct nn_bipc *self;
-    int reconnect_ivl;
-    int reconnect_ivl_max;
     size_t sz;
+    int rc;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_bipc), "bipc");
     alloc_assert (self);
+
 
     /*  Initialise the structure. */
     nn_epbase_init (&self->epbase, &nn_bipc_epbase_vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BIPC_STATE_IDLE;
-    sz = sizeof (reconnect_ivl);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
-        &reconnect_ivl, &sz);
-    nn_assert (sz == sizeof (reconnect_ivl));
-    sz = sizeof (reconnect_ivl_max);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
-        &reconnect_ivl_max, &sz);
-    nn_assert (sz == sizeof (reconnect_ivl_max));
-    if (reconnect_ivl_max == 0)
-        reconnect_ivl_max = reconnect_ivl;
-    nn_backoff_init (&self->retry, NN_BIPC_SRC_RECONNECT_TIMER,
-        reconnect_ivl, reconnect_ivl_max, &self->fsm);
-    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm);
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
+
+    nn_usock_init (&self->usock, NN_BIPC_SRC_USOCK, &self->fsm);
+
+    rc = nn_bipc_listen (self);
+    if (rc != 0) {
+        nn_epbase_term (&self->epbase);
+        return rc;
+    }
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -159,7 +145,6 @@ static void nn_bipc_destroy (struct nn_epbase *self)
     nn_list_term (&bipc->aipcs);
     nn_assert (bipc->aipc == NULL);
     nn_usock_term (&bipc->usock);
-    nn_backoff_term (&bipc->retry);
     nn_epbase_term (&bipc->epbase);
     nn_fsm_term (&bipc->fsm);
 
@@ -181,7 +166,6 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     bipc = nn_cont (self, struct nn_bipc, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_backoff_stop (&bipc->retry);
         if (bipc->aipc) {
             nn_aipc_stop (bipc->aipc);
             bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
@@ -208,8 +192,7 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
         bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
     }
     if (nn_slow (bipc->state == NN_BIPC_STATE_STOPPING_USOCK)) {
-       if (!nn_usock_isidle (&bipc->usock) ||
-           !nn_backoff_isidle (&bipc->retry))
+       if (!nn_usock_isidle (&bipc->usock))
             return;
         for (it = nn_list_begin (&bipc->aipcs);
               it != nn_list_end (&bipc->aipcs);
@@ -257,51 +240,32 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BIPC_STATE_IDLE:
-        switch (src) {
-
-        case NN_FSM_ACTION:
-            switch (type) {
-            case NN_FSM_START:
-                nn_bipc_start_listening (bipc);
-                return;
-            default:
-                nn_fsm_bad_action (bipc->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bipc->state, src, type);
-        }
+        nn_assert (src == NN_FSM_ACTION);
+        nn_assert (type == NN_FSM_START);
+        bipc->state = NN_BIPC_STATE_ACTIVE;
+        return;
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  The execution is yielded to the aipc state machine in this state.         */
 /******************************************************************************/
     case NN_BIPC_STATE_ACTIVE:
-        if (srcptr == bipc->aipc) {
-            switch (type) {
-            case NN_AIPC_ACCEPTED:
-
-                /*  Move the newly created connection to the list of existing
-                    connections. */
-                nn_list_insert (&bipc->aipcs, &bipc->aipc->item,
-                    nn_list_end (&bipc->aipcs));
-                bipc->aipc = NULL;
-
-                /*  Start waiting for a new incoming connection. */
-                nn_bipc_start_accepting (bipc);
-
-                return;
-
-            default:
-                nn_fsm_bad_action (bipc->state, src, type);
-            }
+        if (src == NN_BIPC_SRC_USOCK) {
+            nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
+            return;
         }
 
-        /*  For all remaining events we'll assume they are coming from one
-            of remaining child aipc objects. */
+        /* All other events come from child aipc objects. */
         nn_assert (src == NN_BIPC_SRC_AIPC);
         aipc = (struct nn_aipc*) srcptr;
         switch (type) {
+        case NN_AIPC_ACCEPTED:
+
+            nn_list_insert (&bipc->aipcs, &aipc->item,
+                nn_list_end (&bipc->aipcs));
+            bipc->aipc = NULL;
+            nn_bipc_start_accepting (bipc);
+            return;
         case NN_AIPC_ERROR:
             nn_aipc_stop (aipc);
             return;
@@ -315,71 +279,6 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  CLOSING_USOCK state.                                                     */
-/*  usock object was asked to stop but it haven't stopped yet.                */
-/******************************************************************************/
-    case NN_BIPC_STATE_CLOSING:
-        switch (src) {
-
-        case NN_BIPC_SRC_USOCK:
-            switch (type) {
-            case NN_USOCK_SHUTDOWN:
-                return;
-            case NN_USOCK_STOPPED:
-                nn_backoff_start (&bipc->retry);
-                bipc->state = NN_BIPC_STATE_WAITING;
-                return;
-            default:
-                nn_fsm_bad_action (bipc->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bipc->state, src, type);
-        }
-
-/******************************************************************************/
-/*  WAITING state.                                                            */
-/*  Waiting before re-bind is attempted. This way we won't overload           */
-/*  the system by continuous re-bind attemps.                                 */
-/******************************************************************************/
-    case NN_BIPC_STATE_WAITING:
-        switch (src) {
-
-        case NN_BIPC_SRC_RECONNECT_TIMER:
-            switch (type) {
-            case NN_BACKOFF_TIMEOUT:
-                nn_backoff_stop (&bipc->retry);
-                bipc->state = NN_BIPC_STATE_STOPPING_BACKOFF;
-                return;
-            default:
-                nn_fsm_bad_action (bipc->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bipc->state, src, type);
-        }
-
-/******************************************************************************/
-/*  STOPPING_BACKOFF state.                                                   */
-/*  backoff object was asked to stop, but it haven't stopped yet.             */
-/******************************************************************************/
-    case NN_BIPC_STATE_STOPPING_BACKOFF:
-        switch (src) {
-
-        case NN_BIPC_SRC_RECONNECT_TIMER:
-            switch (type) {
-            case NN_BACKOFF_STOPPED:
-                nn_bipc_start_listening (bipc);
-                return;
-            default:
-                nn_fsm_bad_action (bipc->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bipc->state, src, type);
-        }
-
-/******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
@@ -387,11 +286,7 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
     }
 }
 
-/******************************************************************************/
-/*  State machine actions.                                                    */
-/******************************************************************************/
-
-static void nn_bipc_start_listening (struct nn_bipc *self)
+static int nn_bipc_listen (struct nn_bipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -431,29 +326,30 @@ static void nn_bipc_start_listening (struct nn_bipc *self)
 
     /*  Start listening for incoming connections. */
     rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
-    if (nn_slow (rc < 0)) {
-        nn_backoff_start (&self->retry);
-        self->state = NN_BIPC_STATE_WAITING;
-        return;
+    if (rc < 0) {
+        return rc;
     }
 
     rc = nn_usock_bind (&self->usock,
         (struct sockaddr*) &ss, sizeof (struct sockaddr_un));
-    if (nn_slow (rc < 0)) {
+    if (rc < 0) {
         nn_usock_stop (&self->usock);
-        self->state = NN_BIPC_STATE_CLOSING;
-        return;
+        return rc;
     }
 
     rc = nn_usock_listen (&self->usock, NN_BIPC_BACKLOG);
-    if (nn_slow (rc < 0)) {
+    if (rc < 0) {
         nn_usock_stop (&self->usock);
-        self->state = NN_BIPC_STATE_CLOSING;
-        return;
+        return rc;
     }
     nn_bipc_start_accepting (self);
-    self->state = NN_BIPC_STATE_ACTIVE;
+
+    return 0;
 }
+
+/******************************************************************************/
+/*  State machine actions.                                                    */
+/******************************************************************************/
 
 static void nn_bipc_start_accepting (struct nn_bipc *self)
 {

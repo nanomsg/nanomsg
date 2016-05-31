@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,7 +31,6 @@ int main (int argc, const char *argv[])
 {
     int sb;
     int sc;
-    int s1;
     char socket_address[128];
 
     test_addr_from(socket_address, "tcp", "127.0.0.1",
@@ -38,21 +38,17 @@ int main (int argc, const char *argv[])
 
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
-    s1 = test_socket (AF_SP, NN_PAIR);
-    test_bind (s1, socket_address);
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
 
     nn_sleep(100);
     test_send (sc, "ABC");
     test_recv (sb, "ABC");
+    nn_assert (nn_get_statistic (sc, NN_STAT_CURRENT_CONNECTIONS) == 1);
     test_close (sb);
     nn_sleep(300);
-    test_send (s1, "ABC");
-    test_recv (sc, "ABC");
-
+    nn_assert (nn_get_statistic (sc, NN_STAT_CURRENT_CONNECTIONS) == 0);
     test_close (sc);
-    test_close (s1);
 
     return 0;
 }

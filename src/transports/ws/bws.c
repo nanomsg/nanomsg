@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,8 +31,6 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 
-#include "../utils/backoff.h"
-
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
@@ -56,14 +55,9 @@
 #define NN_BWS_STATE_STOPPING_AWS 3
 #define NN_BWS_STATE_STOPPING_USOCK 4
 #define NN_BWS_STATE_STOPPING_AWSS 5
-#define NN_BWS_STATE_LISTENING 6
-#define NN_BWS_STATE_WAITING 7
-#define NN_BWS_STATE_CLOSING 8
-#define NN_BWS_STATE_STOPPING_BACKOFF 9
 
 #define NN_BWS_SRC_USOCK 1
 #define NN_BWS_SRC_AWS 2
-#define NN_BWS_SRC_RECONNECT_TIMER 3
 
 struct nn_bws {
 
@@ -83,9 +77,6 @@ struct nn_bws {
 
     /*  List of accepted connections. */
     struct nn_list awss;
-
-    /*  Timer used to throttle reconnection attempts. */
-    struct nn_backoff retry;
 };
 
 /*  nn_epbase virtual interface implementation. */
@@ -101,7 +92,7 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_bws_start_listening (struct nn_bws *self);
+static int nn_bws_listen (struct nn_bws *self);
 static void nn_bws_start_accepting (struct nn_bws *self);
 
 int nn_bws_create (void *hint, struct nn_epbase **epbase)
@@ -115,8 +106,6 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
     size_t sslen;
     int ipv4only;
     size_t ipv4onlylen;
-    int reconnect_ivl;
-    int reconnect_ivl_max;
     size_t sz;
 
     /*  Allocate the new endpoint object. */
@@ -158,24 +147,19 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_bws_handler, nn_bws_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BWS_STATE_IDLE;
-    sz = sizeof (reconnect_ivl);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
-        &reconnect_ivl, &sz);
-    nn_assert (sz == sizeof (reconnect_ivl));
-    sz = sizeof (reconnect_ivl_max);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
-        &reconnect_ivl_max, &sz);
-    nn_assert (sz == sizeof (reconnect_ivl_max));
-    if (reconnect_ivl_max == 0)
-        reconnect_ivl_max = reconnect_ivl;
-    nn_backoff_init (&self->retry, NN_BWS_SRC_RECONNECT_TIMER,
-        reconnect_ivl, reconnect_ivl_max, &self->fsm);
-    nn_usock_init (&self->usock, NN_BWS_SRC_USOCK, &self->fsm);
     self->aws = NULL;
     nn_list_init (&self->awss);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
+
+    nn_usock_init (&self->usock, NN_BWS_SRC_USOCK, &self->fsm);
+
+    rc = nn_bws_listen (self);
+    if (rc != 0) {
+        nn_epbase_term (&self->epbase);
+        return rc;
+    }
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -202,7 +186,6 @@ static void nn_bws_destroy (struct nn_epbase *self)
     nn_list_term (&bws->awss);
     nn_assert (bws->aws == NULL);
     nn_usock_term (&bws->usock);
-    nn_backoff_term (&bws->retry);
     nn_epbase_term (&bws->epbase);
     nn_fsm_term (&bws->fsm);
 
@@ -219,7 +202,6 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
     bws = nn_cont (self, struct nn_bws, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_backoff_stop (&bws->retry);
         if (bws->aws) {
             nn_aws_stop (bws->aws);
             bws->state = NN_BWS_STATE_STOPPING_AWS;
@@ -238,7 +220,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
         bws->state = NN_BWS_STATE_STOPPING_USOCK;
     }
     if (nn_slow (bws->state == NN_BWS_STATE_STOPPING_USOCK)) {
-       if (!nn_usock_isidle (&bws->usock) || !nn_backoff_isidle (&bws->retry))
+       if (!nn_usock_isidle (&bws->usock))
             return;
         for (it = nn_list_begin (&bws->awss);
               it != nn_list_end (&bws->awss);
@@ -286,44 +268,19 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BWS_STATE_IDLE:
-        switch (src) {
-
-        case NN_FSM_ACTION:
-            switch (type) {
-            case NN_FSM_START:
-                nn_bws_start_listening (bws);
-                return;
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bws->state, src, type);
-        }
+        nn_assert (src == NN_FSM_ACTION);
+        nn_assert (type == NN_FSM_START);
+        bws->state = NN_BWS_STATE_ACTIVE;
+        return;
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  The execution is yielded to the aws state machine in this state.          */
 /******************************************************************************/
     case NN_BWS_STATE_ACTIVE:
-        if (srcptr == bws->aws) {
-            switch (type) {
-            case NN_AWS_ACCEPTED:
-
-                /*  Move the newly created connection to the list of existing
-                    connections. */
-                nn_list_insert (&bws->awss, &bws->aws->item,
-                    nn_list_end (&bws->awss));
-                bws->aws = NULL;
-
-                /*  Start waiting for a new incoming connection. */
-                nn_bws_start_accepting (bws);
-
-                return;
-
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
+        if (src == NN_BWS_SRC_USOCK) {
+            nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
+            return;
         }
 
         /*  For all remaining events we'll assume they are coming from one
@@ -331,6 +288,18 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
         nn_assert (src == NN_BWS_SRC_AWS);
         aws = (struct nn_aws*) srcptr;
         switch (type) {
+        case NN_AWS_ACCEPTED:
+
+            /*  Move the newly created connection to the list of existing
+                connections. */
+            nn_list_insert (&bws->awss, &bws->aws->item,
+                nn_list_end (&bws->awss));
+            bws->aws = NULL;
+
+            /*  Start waiting for a new incoming connection. */
+            nn_bws_start_accepting (bws);
+            return;
+
         case NN_AWS_ERROR:
             nn_aws_stop (aws);
             return;
@@ -344,71 +313,6 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  CLOSING_USOCK state.                                                      */
-/*  usock object was asked to stop but it hasn't stopped yet.                 */
-/******************************************************************************/
-    case NN_BWS_STATE_CLOSING:
-        switch (src) {
-
-        case NN_BWS_SRC_USOCK:
-            switch (type) {
-            case NN_USOCK_SHUTDOWN:
-                return;
-            case NN_USOCK_STOPPED:
-                nn_backoff_start (&bws->retry);
-                bws->state = NN_BWS_STATE_WAITING;
-                return;
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bws->state, src, type);
-        }
-
-/******************************************************************************/
-/*  WAITING state.                                                            */
-/*  Waiting before re-bind is attempted. This way we won't overload           */
-/*  the system by continuous re-bind attempts.                                */
-/******************************************************************************/
-    case NN_BWS_STATE_WAITING:
-        switch (src) {
-
-        case NN_BWS_SRC_RECONNECT_TIMER:
-            switch (type) {
-            case NN_BACKOFF_TIMEOUT:
-                nn_backoff_stop (&bws->retry);
-                bws->state = NN_BWS_STATE_STOPPING_BACKOFF;
-                return;
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bws->state, src, type);
-        }
-
-/******************************************************************************/
-/*  STOPPING_BACKOFF state.                                                   */
-/*  backoff object was asked to stop, but it haven't stopped yet.             */
-/******************************************************************************/
-    case NN_BWS_STATE_STOPPING_BACKOFF:
-        switch (src) {
-
-        case NN_BWS_SRC_RECONNECT_TIMER:
-            switch (type) {
-            case NN_BACKOFF_STOPPED:
-                nn_bws_start_listening (bws);
-                return;
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bws->state, src, type);
-        }
-
-/******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
@@ -416,11 +320,7 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
     }
 }
 
-/******************************************************************************/
-/*  State machine actions.                                                    */
-/******************************************************************************/
-
-static void nn_bws_start_listening (struct nn_bws *self)
+static int nn_bws_listen (struct nn_bws *self)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -442,8 +342,10 @@ static void nn_bws_start_listening (struct nn_bws *self)
     nn_assert (pos);
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
-    nn_assert (rc >= 0);
-    port = rc;
+    if (rc < 0) {
+        return rc;
+    }
+    port = (uint16_t) rc;
 
     /*  Parse the address. */
     ipv4onlylen = sizeof (ipv4only);
@@ -451,7 +353,9 @@ static void nn_bws_start_listening (struct nn_bws *self)
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
-    errnum_assert (rc == 0, -rc);
+    if (rc < 0) {
+        return rc;
+    }
 
     /*  Combine the port and the address. */
     if (ss.ss_family == AF_INET) {
@@ -467,28 +371,29 @@ static void nn_bws_start_listening (struct nn_bws *self)
 
     /*  Start listening for incoming connections. */
     rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
-    if (nn_slow (rc < 0)) {
-        nn_backoff_start (&self->retry);
-        self->state = NN_BWS_STATE_WAITING;
-        return;
+    if (rc < 0) {
+        return rc;
     }
 
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
-    if (nn_slow (rc < 0)) {
+    if (rc < 0) {
         nn_usock_stop (&self->usock);
-        self->state = NN_BWS_STATE_CLOSING;
-        return;
+        return rc;
     }
 
     rc = nn_usock_listen (&self->usock, NN_BWS_BACKLOG);
-    if (nn_slow (rc < 0)) {
+    if (rc < 0) {
         nn_usock_stop (&self->usock);
-        self->state = NN_BWS_STATE_CLOSING;
-        return;
+        return rc;
     }
     nn_bws_start_accepting(self);
-    self->state = NN_BWS_STATE_ACTIVE;
+
+    return 0;
 }
+
+/******************************************************************************/
+/*  State machine actions.                                                    */
+/******************************************************************************/
 
 static void nn_bws_start_accepting (struct nn_bws *self)
 {

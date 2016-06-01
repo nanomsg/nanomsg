@@ -130,6 +130,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
     self->reconnect_ivl_max = 0;
+    self->maxttl = 8;
     self->ep_template.sndprio = 8;
     self->ep_template.rcvprio = 8;
     self->ep_template.ipv4only = 1;
@@ -289,7 +290,6 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 {
     struct nn_optset *optset;
     int val;
-    int *dst;
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
@@ -304,8 +304,10 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
         return optset->vfptr->setopt (optset, option, optval, optvallen);
     }
 
+    nn_assert (level == NN_SOL_SOCKET);
+
     /*  Special-casing socket name for now as it's the only string option  */
-    if (level == NN_SOL_SOCKET && option == NN_SOCKET_NAME) {
+    if (option == NN_SOCKET_NAME) {
         if (optvallen > 63)
             return -EINVAL;
         memcpy (self->socket_name, optval, optvallen);
@@ -319,66 +321,64 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     val = *(int*) optval;
 
     /*  Generic socket-level options. */
-    if (level == NN_SOL_SOCKET) {
-        switch (option) {
-        case NN_LINGER:
-            dst = &self->linger;
-            break;
-        case NN_SNDBUF:
-            if (nn_slow (val <= 0))
-                return -EINVAL;
-            dst = &self->sndbuf;
-            break;
-        case NN_RCVBUF:
-            if (nn_slow (val <= 0))
-                return -EINVAL;
-            dst = &self->rcvbuf;
-            break;
-        case NN_RCVMAXSIZE:
-            if (nn_slow (val < -1))
-                return -EINVAL;
-            dst = &self->rcvmaxsize;
-            break;
-        case NN_SNDTIMEO:
-            dst = &self->sndtimeo;
-            break;
-        case NN_RCVTIMEO:
-            dst = &self->rcvtimeo;
-            break;
-        case NN_RECONNECT_IVL:
-            if (nn_slow (val < 0))
-                return -EINVAL;
-            dst = &self->reconnect_ivl;
-            break;
-        case NN_RECONNECT_IVL_MAX:
-            if (nn_slow (val < 0))
-                return -EINVAL;
-            dst = &self->reconnect_ivl_max;
-            break;
-        case NN_SNDPRIO:
-            if (nn_slow (val < 1 || val > 16))
-                return -EINVAL;
-            dst = &self->ep_template.sndprio;
-            break;
-        case NN_RCVPRIO:
-            if (nn_slow (val < 1 || val > 16))
-                return -EINVAL;
-            dst = &self->ep_template.rcvprio;
-            break;
-        case NN_IPV4ONLY:
-            if (nn_slow (val != 0 && val != 1))
-                return -EINVAL;
-            dst = &self->ep_template.ipv4only;
-            break;
-        default:
-            return -ENOPROTOOPT;
-        }
-        *dst = val;
-
+    switch (option) {
+    case NN_LINGER:
+        self->linger = val;
+        return 0;
+    case NN_SNDBUF:
+        if (val <= 0)
+            return -EINVAL;
+        self->sndbuf = val;
+        return 0;
+    case NN_RCVBUF:
+        if (val <= 0)
+            return -EINVAL;
+        self->rcvbuf = val;
+        return 0;
+    case NN_RCVMAXSIZE:
+        if (val < -1)
+            return -EINVAL;
+        self->rcvmaxsize = val;
+        return 0;
+    case NN_SNDTIMEO:
+        self->sndtimeo = val;
+        return 0;
+    case NN_RCVTIMEO:
+        self->rcvtimeo = val;
+        return 0;
+    case NN_RECONNECT_IVL:
+        if (val < 0)
+            return -EINVAL;
+        self->reconnect_ivl = val;
+        return 0;
+    case NN_RECONNECT_IVL_MAX:
+        if (val < 0)
+            return -EINVAL;
+        self->reconnect_ivl_max = val;
+        return 0;
+    case NN_SNDPRIO:
+        if (val < 1 || val > 16)
+            return -EINVAL;
+        self->ep_template.sndprio = val;
+        return 0;
+    case NN_RCVPRIO:
+        if (val < 1 || val > 16)
+            return -EINVAL;
+        self->ep_template.rcvprio = val;
+        return 0;
+    case NN_IPV4ONLY:
+        if (val != 0 && val != 1)
+            return -EINVAL;
+        self->ep_template.ipv4only = val;
+        return 0;
+    case NN_MAXTTL:
+        if (val < 1 || val > 255)
+            return -EINVAL;
+        self->maxttl = val;
         return 0;
     }
 
-    nn_assert (0);
+    return -ENOPROTOOPT;
 }
 
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
@@ -401,79 +401,6 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
     int intval;
     nn_fd fd;
 
-    /*  Generic socket-level options. */
-    if (level == NN_SOL_SOCKET) {
-        switch (option) {
-        case NN_DOMAIN:
-            intval = self->socktype->domain;
-            break;
-        case NN_PROTOCOL:
-            intval = self->socktype->protocol;
-            break;
-        case NN_LINGER:
-            intval = self->linger;
-            break;
-        case NN_SNDBUF:
-            intval = self->sndbuf;
-            break;
-        case NN_RCVBUF:
-            intval = self->rcvbuf;
-            break;
-        case NN_RCVMAXSIZE:
-            intval = self->rcvmaxsize;
-            break;
-        case NN_SNDTIMEO:
-            intval = self->sndtimeo;
-            break;
-        case NN_RCVTIMEO:
-            intval = self->rcvtimeo;
-            break;
-        case NN_RECONNECT_IVL:
-            intval = self->reconnect_ivl;
-            break;
-        case NN_RECONNECT_IVL_MAX:
-            intval = self->reconnect_ivl_max;
-            break;
-        case NN_SNDPRIO:
-            intval = self->ep_template.sndprio;
-            break;
-        case NN_RCVPRIO:
-            intval = self->ep_template.rcvprio;
-            break;
-        case NN_IPV4ONLY:
-            intval = self->ep_template.ipv4only;
-            break;
-        case NN_SNDFD:
-            if (self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)
-                return -ENOPROTOOPT;
-            fd = nn_efd_getfd (&self->sndfd);
-            memcpy (optval, &fd,
-                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
-            *optvallen = sizeof (nn_fd);
-            return 0;
-        case NN_RCVFD:
-            if (self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)
-                return -ENOPROTOOPT;
-            fd = nn_efd_getfd (&self->rcvfd);
-            memcpy (optval, &fd,
-                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
-            *optvallen = sizeof (nn_fd);
-            return 0;
-        case NN_SOCKET_NAME:
-            strncpy (optval, self->socket_name, *optvallen);
-            *optvallen = strlen(self->socket_name);
-            return 0;
-        default:
-            return -ENOPROTOOPT;
-        }
-
-        memcpy (optval, &intval,
-            *optvallen < sizeof (int) ? *optvallen : sizeof (int));
-        *optvallen = sizeof (int);
-
-        return 0;
-    }
-
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
         return rc = self->sockbase->vfptr->getopt (self->sockbase,
@@ -487,7 +414,81 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
         return optset->vfptr->getopt (optset, option, optval, optvallen);
     }
 
-    nn_assert (0);
+    nn_assert (level == NN_SOL_SOCKET);
+
+    /*  Generic socket-level options. */
+    switch (option) {
+    case NN_DOMAIN:
+        intval = self->socktype->domain;
+        break;
+    case NN_PROTOCOL:
+        intval = self->socktype->protocol;
+        break;
+    case NN_LINGER:
+        intval = self->linger;
+        break;
+    case NN_SNDBUF:
+        intval = self->sndbuf;
+        break;
+    case NN_RCVBUF:
+        intval = self->rcvbuf;
+        break;
+    case NN_RCVMAXSIZE:
+        intval = self->rcvmaxsize;
+        break;
+    case NN_SNDTIMEO:
+        intval = self->sndtimeo;
+        break;
+    case NN_RCVTIMEO:
+        intval = self->rcvtimeo;
+        break;
+    case NN_RECONNECT_IVL:
+        intval = self->reconnect_ivl;
+        break;
+    case NN_RECONNECT_IVL_MAX:
+        intval = self->reconnect_ivl_max;
+        break;
+    case NN_SNDPRIO:
+        intval = self->ep_template.sndprio;
+        break;
+    case NN_RCVPRIO:
+        intval = self->ep_template.rcvprio;
+        break;
+    case NN_IPV4ONLY:
+        intval = self->ep_template.ipv4only;
+        break;
+    case NN_MAXTTL:
+        intval = self->maxttl;
+        break;
+    case NN_SNDFD:
+        if (self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)
+            return -ENOPROTOOPT;
+        fd = nn_efd_getfd (&self->sndfd);
+        memcpy (optval, &fd,
+            *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+        *optvallen = sizeof (nn_fd);
+        return 0;
+    case NN_RCVFD:
+        if (self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)
+            return -ENOPROTOOPT;
+        fd = nn_efd_getfd (&self->rcvfd);
+        memcpy (optval, &fd,
+            *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+        *optvallen = sizeof (nn_fd);
+        return 0;
+    case NN_SOCKET_NAME:
+        strncpy (optval, self->socket_name, *optvallen);
+        *optvallen = strlen(self->socket_name);
+        return 0;
+    default:
+        return -ENOPROTOOPT;
+    }
+
+    memcpy (optval, &intval,
+        *optvallen < sizeof (int) ? *optvallen : sizeof (int));
+    *optvallen = sizeof (int);
+
+    return 0;
 }
 
 int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,

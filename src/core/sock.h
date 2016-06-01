@@ -80,6 +80,7 @@ struct nn_sock
     int rcvtimeo;
     int reconnect_ivl;
     int reconnect_ivl_max;
+    int maxttl;
 
     /*  Endpoint-specific options.  */
     struct nn_ep_options ep_template;

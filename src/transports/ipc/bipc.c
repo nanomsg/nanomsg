@@ -93,7 +93,6 @@ static void nn_bipc_start_accepting (struct nn_bipc *self);
 int nn_bipc_create (void *hint, struct nn_epbase **epbase)
 {
     struct nn_bipc *self;
-    size_t sz;
     int rc;
 
     /*  Allocate the new endpoint object. */

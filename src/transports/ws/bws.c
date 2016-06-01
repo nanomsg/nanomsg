@@ -106,7 +106,6 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
     size_t sslen;
     int ipv4only;
     size_t ipv4onlylen;
-    size_t sz;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_bws), "bws");

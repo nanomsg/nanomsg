@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -198,6 +198,7 @@ int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
     void *data;
     struct nn_chunkref ref;
     struct nn_xrespondent_data *pipedata;
+    int maxttl;
 
     xrespondent = nn_cont (self, struct nn_xrespondent, sockbase);
 
@@ -207,6 +208,10 @@ int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Split the header (including survey ID) from the body, if needed. */
     if (!(rc & NN_PIPE_PARSED)) {
+
+        sz = sizeof (maxttl);
+        rc = nn_sockbase_getopt (self, NN_MAXTTL, &maxttl, &sz);
+        errnum_assert (rc == 0, -rc);
 
         /*  Determine the size of the message header. */
         data = nn_chunkref_data (&msg->body);
@@ -228,6 +233,12 @@ int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg)
         }
         ++i;
     
+        /*  Ignore messages with too many hops. */
+        if (i > maxttl) {
+            nn_msg_term (msg);
+            return -EAGAIN;
+        }
+
         nn_assert (nn_chunkref_size (&msg->sphdr) == 0);
         nn_chunkref_term (&msg->sphdr);
         nn_chunkref_init (&msg->sphdr, i * sizeof (uint32_t));

@@ -29,21 +29,26 @@ CURDIR=`pwd`
 
 strip_arg()
 {
-	echo "$1" | sed "s/[^=]*=//"
+	x=`echo "$1" | sed "s/[^=]*=//"`
+	eval $2=\"$x\"
 }
 
 warn() {
-	echo "$*" 2>&1
+	echo "$*" 1>&2
 }
 
 find_prog() {
-	for p in `echo "$PATH" | sed 's/:/ /'`; do
+	SIFS="${IFS=	 }"
+	IFS=:
+	for p in $PATH; do
 		if [ -x ${p}/$1 ]
 		then
+			IFS="${SIFS}"
 			echo "${p}/${1}"
 			return 0
 		fi
 	done
+	IFS="${SIFS}"
 	return 1
 }
 
@@ -68,8 +73,8 @@ help() {
 	exit 1
 }
 
+CMAKE_ARGS=()
 # Argument parsing
-#
 while [ -n "$1" ]; do
 	case "$1" in
 	--with-cmake)
@@ -77,15 +82,16 @@ while [ -n "$1" ]; do
 		shift 2
 		;;
 	--with-cmake=*)
-		CMAKE=`strip_arg "$1"`
+		strip_arg "$1" CMAKE
 		shift
 		;;
 	--prefix)
-		PREFIX="-DCMAKE_INSTALL_PREFIX=$2"
+		CMAKE_ARGS+=( "-DCMAKE_INSTALL_PREFIX=$2" )
 		shift 2
 		;;
 	--prefix=*)
-		PREFIX=-DCMAKE_INSTALL_PREFIX=`strip_arg "$1"`
+		strip_arg "$1" PFX
+		CMAKE_ARGS+=( "-DCMAKE_INSTALL_PREFIX=$PFX" )
 		shift
 		;;
 	*)
@@ -100,9 +106,9 @@ fi
 
 if [ -f src/nn.h ]
 then
-	warn "NB: In-tree building is not recommended."
+	warn "NOTE: Building in the source directory is not recommended."
 fi
 
 GENERATOR="Unix Makefiles"
 
-$CMAKE $PREFIX -G "$GENERATOR" $SRCDIR
+"$CMAKE" "${CMAKE_ARGS[@]}" -G "$GENERATOR" $SRCDIR

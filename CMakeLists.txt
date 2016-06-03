@@ -163,13 +163,14 @@ if (WIN32)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} ws2_32)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} mswsock)
     set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} advapi32)
-    nn_check_func (InitializeConditionVariable NN_HAVE_CONDVAR)
+    nn_check_sym (InitializeConditionVariable windows.h NN_HAVE_CONDVAR)
     if (NOT NN_HAVE_CONDVAR)
-        message (ERROR "Modern Windows API support is missing.")
-        message (ERROR "Versions of Windows prior to Vista are not supported.")
-        message (ERROR "Further, the 32-bit MinGW environment is not supported.")
-        message (ERROR "Ensure you have at least Windows Vista or newer, and are")
-        message (ERROR "using either Visual Studio 2010 or newer or MinGW-W64.")
+        message (FATAL_ERROR
+	    "Modern Windows API support is missing. "
+	    "Versions of Windows prior to Vista are not supported.  "
+	    "Further, the 32-bit MinGW environment is not supported. "
+	    "Ensure you have at least Windows Vista or newer, and are "
+	    "using either Visual Studio 2010 or newer or MinGW-W64.")
     endif()
 else ()
     # Unconditionally declare the following feature test macros.  These are

@@ -34,46 +34,16 @@
 
 <h2>Download</h2>
 
-<h3>LATEST RELEASE</h3>
-<p><i>0.8-beta, released on November 20th, 2015</i></p>
+<h3>LATEST PRE-RELEASE</h3>
+<p><i>1.0.0rc1, released on June 3, 2016</i></p>
 
 <p>Releases with downloadable archives can  be found on the
 <a href="https://github.com/nanomsg/nanomsg/releases">github releases</a> page.
 </p>
 
-<h3>POSIX Platforms</h3>
-
-<p>On POSIX platforms, nanomsg uses the standard autotools build procedure.</p>
-
-<p>To build and install the library, unpack the package, ensure your system has a C compiler installed, and proceed with the following steps:</p>
-
-<ol>
-<li>Run <tt>./configure</tt>, then <tt>make</tt> to build the library.</li>
-<li>Optionally, run <tt>make check</tt> to run the built-in test suite.</li>
-<li>Run <tt>make install</tt> as root.</li>
-<li>On Linux or other platforms which use ld.so for dynamic linking, run <tt>ldconfig</tt> or equivalent as root to update your systems shared library cache.</li>
-</ol>
-
-<h3>OSX platforms</h3>
-
-<p>OSX is a POSIX-compliant platform and so it should be built accordingly.</p>
-
-<p>One special OSX feature though are universal libraries. If you want to build an universal library for both i386 and x86_64 architectures you should replace the <tt>./configure</tt> line with the following:
-
-<p><tt>CFLAGS="-arch i386 -arch x86_64" ./configure -disable-dependency-tracking</tt></p>
-
-<h3>Windows Platforms</h3>
-
-<p>On Windows platforms, nanomsg uses the CMake build system.</p>
-
-<p>To build and install the library, unpack the package, ensure your system has CMake and MSVC compiler installed, and proceed with the following steps:</p>
-
-<ol>
-<li>Run <tt>cmake .</tt> to build the MSVC project.</li>
-<li>Open the solution <tt>nanomsg.sln</tt> in MSVC IDE.</li>
-<li>Build the entire solution.</li>
-<li>Optionally, build <tt>RUN_TESTS</tt> project to run the test suite.</li>
-</ol>
+<p>To build and install the library, unpack the package, and follow the
+directions given inthe <tt>README.md</tt> file.  You will need to have both
+CMake and a suitable compiler installed.
 
 <h3>Language Bindings</h3>
 

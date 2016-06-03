@@ -37,7 +37,9 @@ int main ()
     int sc;
     int i;
     int s1, s2;
+#if !defined(NN_HAVE_WINDOWS)
     int rc;
+#endif
 
     int size;
     char * buf;

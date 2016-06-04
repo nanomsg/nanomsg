@@ -108,6 +108,10 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
     set (NN_HAVE_WINSOCK 1)
     add_definitions (-DNN_HAVE_WINDOWS)
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
+
+    # Target Windows Vista and later
+    add_definitions (-D_WIN32_WINNT=0x0600)
+    list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_WIN32_WINNT=0x0600)
 elseif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-DNN_HAVE_FREEBSD)
 elseif (CMAKE_SYSTEM_NAME MATCHES "NetBSD")

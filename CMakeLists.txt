@@ -79,7 +79,7 @@ elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
         set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-dirty")
     endif()
 
-elseif (EXISTS .version)
+elseif (EXISTS ${PROJECT_SOURCE_DIR}/.version)
     #  If git is not available (e.g. when building from source package)
     #  we can extract the package version from .version file.
     file (READ .version NN_PACKAGE_VERSION)

@@ -82,7 +82,7 @@ elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 elseif (EXISTS ${PROJECT_SOURCE_DIR}/.version)
     #  If git is not available (e.g. when building from source package)
     #  we can extract the package version from .version file.
-    file (READ .version NN_PACKAGE_VERSION)
+    file (STRINGS .version NN_PACKAGE_VERSION)
 else ()
     set (NN_PACKAGE_VERSION "Unknown")
 endif()

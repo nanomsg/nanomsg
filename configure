@@ -73,8 +73,8 @@ help() {
 	exit 1
 }
 
-CMAKE_ARGS=()
 # Argument parsing
+PREFIX=/usr/local
 while [ -n "$1" ]; do
 	case "$1" in
 	--with-cmake)
@@ -86,12 +86,14 @@ while [ -n "$1" ]; do
 		shift
 		;;
 	--prefix)
-		CMAKE_ARGS+=( "-DCMAKE_INSTALL_PREFIX=$2" )
+		if [ -z "$2" ]; then
+			help
+		fi
+		PREFIX="$2"
 		shift 2
 		;;
 	--prefix=*)
-		strip_arg "$1" PFX
-		CMAKE_ARGS+=( "-DCMAKE_INSTALL_PREFIX=$PFX" )
+		strip_arg "$1" PREFIX
 		shift
 		;;
 	*)
@@ -111,4 +113,4 @@ fi
 
 GENERATOR="Unix Makefiles"
 
-"$CMAKE" "${CMAKE_ARGS[@]}" -G "$GENERATOR" $SRCDIR
+"$CMAKE" -G "$GENERATOR" "-DCMAKE_INSTALL_PREFIX=$PREFIX" $SRCDIR

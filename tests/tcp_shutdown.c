@@ -112,15 +112,15 @@ int main (int argc, const char *argv[])
 
     for (j = 0; j != TEST_LOOPS; ++j) {
 	int ms;
+        nn_atomic_init(&active, TEST2_THREAD_COUNT);
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine2, &threads[i]);
-        nn_atomic_init(&active, TEST2_THREAD_COUNT);
 
-	ms = 2000;
+	nn_sleep(100);
+	ms = 200;
 	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
         while (active.n) {
-            (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
-            nn_sleep(0);
+            (void) nn_send (sb, "hello", 5, 0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

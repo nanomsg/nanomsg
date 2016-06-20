@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway.  All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -1215,6 +1215,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     rc = nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
+    nn_assert (rc >=0);
 
     encoded_key_len = strlen (encoded_key);
 
@@ -1273,6 +1274,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         
         rc = nn_ws_handshake_hash_key (self->key, self->key_len,
             accept_key, sizeof (accept_key));
+        nn_assert (rc >= 0);
 
         nn_assert (strlen (accept_key) == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 

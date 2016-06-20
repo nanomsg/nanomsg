@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,7 +27,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+
+#include "../src/utils/err.c"
+#include "../src/utils/sleep.c"
 
 int main (int argc, char *argv [])
 {
@@ -38,6 +41,7 @@ int main (int argc, char *argv [])
     int s;
     int rc;
     int i;
+    int opt;
 
     if (argc != 4) {
         printf ("usage: remote_thr <connect-to> <msg-size> <msg-count>\n");
@@ -48,26 +52,37 @@ int main (int argc, char *argv [])
     count = atoi (argv [3]);
 
     s = nn_socket (AF_SP, NN_PAIR);
-    assert (s != -1);
+    nn_assert (s != -1);
     rc = nn_connect (s, connect_to);
-    assert (rc >= 0);
+    nn_assert (rc >= 0);
+
+    opt = -1;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, sizeof (opt));
+    nn_assert (rc == 0);
+
+    opt = 1000;
+    rc = nn_setsockopt (s, NN_SOL_SOCKET, NN_LINGER, &opt, sizeof (opt));
+    nn_assert (rc == 0);
 
     buf = malloc (sz);
-    assert (buf);
+    nn_assert (buf);
     memset (buf, 111, sz);
 
     nbytes = nn_send (s, buf, 0, 0);
-    assert (nbytes == 0);
+    nn_assert (nbytes == 0);
 
     for (i = 0; i != count; i++) {
         nbytes = nn_send (s, buf, sz, 0);
-        assert (nbytes == (int)sz);
+        nn_assert (nbytes == (int)sz);
     }
 
     free (buf);
 
+    /*  Linger doesn't always do the trick, so sleep a bit to be sure. */
+    nn_sleep (1000);
+
     rc = nn_close (s);
-    assert (rc == 0);
+    nn_assert (rc == 0);
 
     return 0;
 }

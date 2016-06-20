@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -47,14 +47,12 @@
 /*  Possible states of the socket. */
 #define NN_SOCK_STATE_INIT 1
 #define NN_SOCK_STATE_ACTIVE 2
-#define NN_SOCK_STATE_ZOMBIE 3
-#define NN_SOCK_STATE_STOPPING_EPS 4
-#define NN_SOCK_STATE_STOPPING 5
-#define NN_SOCK_STATE_FINI 6
+#define NN_SOCK_STATE_STOPPING_EPS 3
+#define NN_SOCK_STATE_STOPPING 4
+#define NN_SOCK_STATE_FINI 5
 
 /*  Events sent to the state machine. */
-#define NN_SOCK_ACTION_ZOMBIFY 1
-#define NN_SOCK_ACTION_STOPPED 2
+#define NN_SOCK_ACTION_STOPPED 1
 
 /*  Subordinated source objects. */
 #define NN_SOCK_SRC_EP 1
@@ -68,7 +66,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_sock_action_zombify (struct nn_sock *self);
 
 /*  Initialize a socket.  A hold is placed on the initialized socket for
     the caller as well. */
@@ -133,6 +130,7 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->rcvtimeo = -1;
     self->reconnect_ivl = 100;
     self->reconnect_ivl_max = 0;
+    self->maxttl = 8;
     self->ep_template.sndprio = 8;
     self->ep_template.rcvprio = 8;
     self->ep_template.ipv4only = 1;
@@ -191,13 +189,6 @@ void nn_sock_stopped (struct nn_sock *self)
     self->fsm.stopped.srcptr = NULL;
     self->fsm.stopped.type = NN_SOCK_ACTION_STOPPED;
     nn_ctx_raise (self->fsm.ctx, &self->fsm.stopped);
-}
-
-void nn_sock_zombify (struct nn_sock *self)
-{
-    nn_ctx_enter (&self->ctx);
-    nn_fsm_action (&self->fsm, NN_SOCK_ACTION_ZOMBIFY);
-    nn_ctx_leave (&self->ctx);
 }
 
 /*  Stop the socket.  This will prevent new calls from aquiring a
@@ -288,10 +279,6 @@ int nn_sock_setopt (struct nn_sock *self, int level, int option,
     int rc;
 
     nn_ctx_enter (&self->ctx);
-    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
-        nn_ctx_leave (&self->ctx);
-        return -ETERM;
-    }
     rc = nn_sock_setopt_inner (self, level, option, optval, optvallen);
     nn_ctx_leave (&self->ctx);
 
@@ -303,7 +290,6 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 {
     struct nn_optset *optset;
     int val;
-    int *dst;
 
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
@@ -318,8 +304,10 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
         return optset->vfptr->setopt (optset, option, optval, optvallen);
     }
 
+    nn_assert (level == NN_SOL_SOCKET);
+
     /*  Special-casing socket name for now as it's the only string option  */
-    if (level == NN_SOL_SOCKET && option == NN_SOCKET_NAME) {
+    if (option == NN_SOCKET_NAME) {
         if (optvallen > 63)
             return -EINVAL;
         memcpy (self->socket_name, optval, optvallen);
@@ -333,66 +321,64 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     val = *(int*) optval;
 
     /*  Generic socket-level options. */
-    if (level == NN_SOL_SOCKET) {
-        switch (option) {
-        case NN_LINGER:
-            dst = &self->linger;
-            break;
-        case NN_SNDBUF:
-            if (nn_slow (val <= 0))
-                return -EINVAL;
-            dst = &self->sndbuf;
-            break;
-        case NN_RCVBUF:
-            if (nn_slow (val <= 0))
-                return -EINVAL;
-            dst = &self->rcvbuf;
-            break;
-        case NN_RCVMAXSIZE:
-            if (nn_slow (val < -1))
-                return -EINVAL;
-            dst = &self->rcvmaxsize;
-            break;
-        case NN_SNDTIMEO:
-            dst = &self->sndtimeo;
-            break;
-        case NN_RCVTIMEO:
-            dst = &self->rcvtimeo;
-            break;
-        case NN_RECONNECT_IVL:
-            if (nn_slow (val < 0))
-                return -EINVAL;
-            dst = &self->reconnect_ivl;
-            break;
-        case NN_RECONNECT_IVL_MAX:
-            if (nn_slow (val < 0))
-                return -EINVAL;
-            dst = &self->reconnect_ivl_max;
-            break;
-        case NN_SNDPRIO:
-            if (nn_slow (val < 1 || val > 16))
-                return -EINVAL;
-            dst = &self->ep_template.sndprio;
-            break;
-        case NN_RCVPRIO:
-            if (nn_slow (val < 1 || val > 16))
-                return -EINVAL;
-            dst = &self->ep_template.rcvprio;
-            break;
-        case NN_IPV4ONLY:
-            if (nn_slow (val != 0 && val != 1))
-                return -EINVAL;
-            dst = &self->ep_template.ipv4only;
-            break;
-        default:
-            return -ENOPROTOOPT;
-        }
-        *dst = val;
-
+    switch (option) {
+    case NN_LINGER:
+        self->linger = val;
+        return 0;
+    case NN_SNDBUF:
+        if (val <= 0)
+            return -EINVAL;
+        self->sndbuf = val;
+        return 0;
+    case NN_RCVBUF:
+        if (val <= 0)
+            return -EINVAL;
+        self->rcvbuf = val;
+        return 0;
+    case NN_RCVMAXSIZE:
+        if (val < -1)
+            return -EINVAL;
+        self->rcvmaxsize = val;
+        return 0;
+    case NN_SNDTIMEO:
+        self->sndtimeo = val;
+        return 0;
+    case NN_RCVTIMEO:
+        self->rcvtimeo = val;
+        return 0;
+    case NN_RECONNECT_IVL:
+        if (val < 0)
+            return -EINVAL;
+        self->reconnect_ivl = val;
+        return 0;
+    case NN_RECONNECT_IVL_MAX:
+        if (val < 0)
+            return -EINVAL;
+        self->reconnect_ivl_max = val;
+        return 0;
+    case NN_SNDPRIO:
+        if (val < 1 || val > 16)
+            return -EINVAL;
+        self->ep_template.sndprio = val;
+        return 0;
+    case NN_RCVPRIO:
+        if (val < 1 || val > 16)
+            return -EINVAL;
+        self->ep_template.rcvprio = val;
+        return 0;
+    case NN_IPV4ONLY:
+        if (val != 0 && val != 1)
+            return -EINVAL;
+        self->ep_template.ipv4only = val;
+        return 0;
+    case NN_MAXTTL:
+        if (val < 1 || val > 255)
+            return -EINVAL;
+        self->maxttl = val;
         return 0;
     }
 
-    nn_assert (0);
+    return -ENOPROTOOPT;
 }
 
 int nn_sock_getopt (struct nn_sock *self, int level, int option,
@@ -401,10 +387,6 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
     int rc;
 
     nn_ctx_enter (&self->ctx);
-    if (nn_slow (self->state == NN_SOCK_STATE_ZOMBIE)) {
-        nn_ctx_leave (&self->ctx);
-        return -ETERM;
-    }
     rc = nn_sock_getopt_inner (self, level, option, optval, optvallen);
     nn_ctx_leave (&self->ctx);
 
@@ -419,79 +401,6 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
     int intval;
     nn_fd fd;
 
-    /*  Generic socket-level options. */
-    if (level == NN_SOL_SOCKET) {
-        switch (option) {
-        case NN_DOMAIN:
-            intval = self->socktype->domain;
-            break;
-        case NN_PROTOCOL:
-            intval = self->socktype->protocol;
-            break;
-        case NN_LINGER:
-            intval = self->linger;
-            break;
-        case NN_SNDBUF:
-            intval = self->sndbuf;
-            break;
-        case NN_RCVBUF:
-            intval = self->rcvbuf;
-            break;
-        case NN_RCVMAXSIZE:
-            intval = self->rcvmaxsize;
-            break;
-        case NN_SNDTIMEO:
-            intval = self->sndtimeo;
-            break;
-        case NN_RCVTIMEO:
-            intval = self->rcvtimeo;
-            break;
-        case NN_RECONNECT_IVL:
-            intval = self->reconnect_ivl;
-            break;
-        case NN_RECONNECT_IVL_MAX:
-            intval = self->reconnect_ivl_max;
-            break;
-        case NN_SNDPRIO:
-            intval = self->ep_template.sndprio;
-            break;
-        case NN_RCVPRIO:
-            intval = self->ep_template.rcvprio;
-            break;
-        case NN_IPV4ONLY:
-            intval = self->ep_template.ipv4only;
-            break;
-        case NN_SNDFD:
-            if (self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)
-                return -ENOPROTOOPT;
-            fd = nn_efd_getfd (&self->sndfd);
-            memcpy (optval, &fd,
-                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
-            *optvallen = sizeof (nn_fd);
-            return 0;
-        case NN_RCVFD:
-            if (self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)
-                return -ENOPROTOOPT;
-            fd = nn_efd_getfd (&self->rcvfd);
-            memcpy (optval, &fd,
-                *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
-            *optvallen = sizeof (nn_fd);
-            return 0;
-        case NN_SOCKET_NAME:
-            strncpy (optval, self->socket_name, *optvallen);
-            *optvallen = strlen(self->socket_name);
-            return 0;
-        default:
-            return -ENOPROTOOPT;
-        }
-
-        memcpy (optval, &intval,
-            *optvallen < sizeof (int) ? *optvallen : sizeof (int));
-        *optvallen = sizeof (int);
-
-        return 0;
-    }
-
     /*  Protocol-specific socket options. */
     if (level > NN_SOL_SOCKET)
         return rc = self->sockbase->vfptr->getopt (self->sockbase,
@@ -505,7 +414,81 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
         return optset->vfptr->getopt (optset, option, optval, optvallen);
     }
 
-    nn_assert (0);
+    nn_assert (level == NN_SOL_SOCKET);
+
+    /*  Generic socket-level options. */
+    switch (option) {
+    case NN_DOMAIN:
+        intval = self->socktype->domain;
+        break;
+    case NN_PROTOCOL:
+        intval = self->socktype->protocol;
+        break;
+    case NN_LINGER:
+        intval = self->linger;
+        break;
+    case NN_SNDBUF:
+        intval = self->sndbuf;
+        break;
+    case NN_RCVBUF:
+        intval = self->rcvbuf;
+        break;
+    case NN_RCVMAXSIZE:
+        intval = self->rcvmaxsize;
+        break;
+    case NN_SNDTIMEO:
+        intval = self->sndtimeo;
+        break;
+    case NN_RCVTIMEO:
+        intval = self->rcvtimeo;
+        break;
+    case NN_RECONNECT_IVL:
+        intval = self->reconnect_ivl;
+        break;
+    case NN_RECONNECT_IVL_MAX:
+        intval = self->reconnect_ivl_max;
+        break;
+    case NN_SNDPRIO:
+        intval = self->ep_template.sndprio;
+        break;
+    case NN_RCVPRIO:
+        intval = self->ep_template.rcvprio;
+        break;
+    case NN_IPV4ONLY:
+        intval = self->ep_template.ipv4only;
+        break;
+    case NN_MAXTTL:
+        intval = self->maxttl;
+        break;
+    case NN_SNDFD:
+        if (self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)
+            return -ENOPROTOOPT;
+        fd = nn_efd_getfd (&self->sndfd);
+        memcpy (optval, &fd,
+            *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+        *optvallen = sizeof (nn_fd);
+        return 0;
+    case NN_RCVFD:
+        if (self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)
+            return -ENOPROTOOPT;
+        fd = nn_efd_getfd (&self->rcvfd);
+        memcpy (optval, &fd,
+            *optvallen < sizeof (nn_fd) ? *optvallen : sizeof (nn_fd));
+        *optvallen = sizeof (nn_fd);
+        return 0;
+    case NN_SOCKET_NAME:
+        strncpy (optval, self->socket_name, *optvallen);
+        *optvallen = strlen(self->socket_name);
+        return 0;
+    default:
+        return -ENOPROTOOPT;
+    }
+
+    memcpy (optval, &intval,
+        *optvallen < sizeof (int) ? *optvallen : sizeof (int));
+    *optvallen = sizeof (int);
+
+    return 0;
 }
 
 int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
@@ -608,11 +591,6 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         case NN_SOCK_STATE_INIT:
              break;
 
-        case NN_SOCK_STATE_ZOMBIE:
-            /*  If nn_term() was already called, return ETERM. */
-            nn_ctx_leave (&self->ctx);
-            return -ETERM;
-
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
         case NN_SOCK_STATE_FINI:
@@ -704,11 +682,6 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         case NN_SOCK_STATE_ACTIVE:
         case NN_SOCK_STATE_INIT:
              break;
-
-        case NN_SOCK_STATE_ZOMBIE:
-            /*  If nn_term() was already called, return ETERM. */
-            nn_ctx_leave (&self->ctx);
-            return -ETERM;
 
         case NN_SOCK_STATE_STOPPING_EPS:
         case NN_SOCK_STATE_STOPPING:
@@ -875,8 +848,7 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
     sock = nn_cont (self, struct nn_sock, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE ||
-            sock->state == NN_SOCK_STATE_ZOMBIE);
+        nn_assert (sock->state == NN_SOCK_STATE_ACTIVE);
 
         /*  Close sndfd and rcvfd. This should make any current
             select/poll using SNDFD and/or RCVFD exit. */
@@ -980,9 +952,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
             case NN_FSM_START:
                 sock->state = NN_SOCK_STATE_ACTIVE;
                 return;
-            case NN_SOCK_ACTION_ZOMBIFY:
-                nn_sock_action_zombify (sock);
-                return;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -999,9 +968,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 
         case NN_FSM_ACTION:
             switch (type) {
-            case NN_SOCK_ACTION_ZOMBIFY:
-                nn_sock_action_zombify (sock);
-                return;
             default:
                 nn_fsm_bad_action (sock->state, src, type);
             }
@@ -1040,12 +1006,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
         }
 
 /******************************************************************************/
-/*  ZOMBIE state.                                                             */
-/******************************************************************************/
-    case NN_SOCK_STATE_ZOMBIE:
-        nn_fsm_bad_state (sock->state, src, type);
-
-/******************************************************************************/
 /*  Invalid state.                                                            */
 /******************************************************************************/
     default:
@@ -1056,25 +1016,6 @@ static void nn_sock_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  State machine actions.                                                    */
 /******************************************************************************/
-
-static void nn_sock_action_zombify (struct nn_sock *self)
-{
-    /*  Switch to the zombie state. From now on all the socket
-        functions will return ETERM. */
-    self->state = NN_SOCK_STATE_ZOMBIE;
-
-    /*  Set IN and OUT events to unblock any polling function. */
-    if (!(self->flags & NN_SOCK_FLAG_IN)) {
-        self->flags |= NN_SOCK_FLAG_IN;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV))
-            nn_efd_signal (&self->rcvfd);
-    }
-    if (!(self->flags & NN_SOCK_FLAG_OUT)) {
-        self->flags |= NN_SOCK_FLAG_OUT;
-        if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND))
-            nn_efd_signal (&self->sndfd);
-    }
-}
 
 void nn_sock_report_error (struct nn_sock *self, struct nn_ep *ep, int errnum)
 {
@@ -1174,8 +1115,6 @@ int nn_sock_hold (struct nn_sock *self)
     case NN_SOCK_STATE_INIT:
         self->holds++;
         return 0;
-    case NN_SOCK_STATE_ZOMBIE:
-        return -ETERM;
     case NN_SOCK_STATE_STOPPING:
     case NN_SOCK_STATE_STOPPING_EPS:
     case NN_SOCK_STATE_FINI:

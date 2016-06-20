@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -91,7 +92,7 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
-static void nn_bws_start_listening (struct nn_bws *self);
+static int nn_bws_listen (struct nn_bws *self);
 static void nn_bws_start_accepting (struct nn_bws *self);
 
 int nn_bws_create (void *hint, struct nn_epbase **epbase)
@@ -145,12 +146,19 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
     nn_fsm_init_root (&self->fsm, nn_bws_handler, nn_bws_shutdown,
         nn_epbase_getctx (&self->epbase));
     self->state = NN_BWS_STATE_IDLE;
-    nn_usock_init (&self->usock, NN_BWS_SRC_USOCK, &self->fsm);
     self->aws = NULL;
     nn_list_init (&self->awss);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
+
+    nn_usock_init (&self->usock, NN_BWS_SRC_USOCK, &self->fsm);
+
+    rc = nn_bws_listen (self);
+    if (rc != 0) {
+        nn_epbase_term (&self->epbase);
+        return rc;
+    }
 
     /*  Return the base class as an out parameter. */
     *epbase = &self->epbase;
@@ -193,8 +201,13 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
     bws = nn_cont (self, struct nn_bws, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        nn_aws_stop (bws->aws);
-        bws->state = NN_BWS_STATE_STOPPING_AWS;
+        if (bws->aws) {
+            nn_aws_stop (bws->aws);
+            bws->state = NN_BWS_STATE_STOPPING_AWS;
+        }
+        else {
+            bws->state = NN_BWS_STATE_STOPPING_USOCK;
+        }
     }
     if (nn_slow (bws->state == NN_BWS_STATE_STOPPING_AWS)) {
         if (!nn_aws_isidle (bws->aws))
@@ -254,46 +267,19 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BWS_STATE_IDLE:
-        switch (src) {
-
-        case NN_FSM_ACTION:
-            switch (type) {
-            case NN_FSM_START:
-                nn_bws_start_listening (bws);
-                nn_bws_start_accepting (bws);
-                bws->state = NN_BWS_STATE_ACTIVE;
-                return;
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
-
-        default:
-            nn_fsm_bad_source (bws->state, src, type);
-        }
+        nn_assert (src == NN_FSM_ACTION);
+        nn_assert (type == NN_FSM_START);
+        bws->state = NN_BWS_STATE_ACTIVE;
+        return;
 
 /******************************************************************************/
 /*  ACTIVE state.                                                             */
 /*  The execution is yielded to the aws state machine in this state.          */
 /******************************************************************************/
     case NN_BWS_STATE_ACTIVE:
-        if (srcptr == bws->aws) {
-            switch (type) {
-            case NN_AWS_ACCEPTED:
-
-                /*  Move the newly created connection to the list of existing
-                    connections. */
-                nn_list_insert (&bws->awss, &bws->aws->item,
-                    nn_list_end (&bws->awss));
-                bws->aws = NULL;
-
-                /*  Start waiting for a new incoming connection. */
-                nn_bws_start_accepting (bws);
-
-                return;
-
-            default:
-                nn_fsm_bad_action (bws->state, src, type);
-            }
+        if (src == NN_BWS_SRC_USOCK) {
+            nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
+            return;
         }
 
         /*  For all remaining events we'll assume they are coming from one
@@ -301,6 +287,18 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
         nn_assert (src == NN_BWS_SRC_AWS);
         aws = (struct nn_aws*) srcptr;
         switch (type) {
+        case NN_AWS_ACCEPTED:
+
+            /*  Move the newly created connection to the list of existing
+                connections. */
+            nn_list_insert (&bws->awss, &bws->aws->item,
+                nn_list_end (&bws->awss));
+            bws->aws = NULL;
+
+            /*  Start waiting for a new incoming connection. */
+            nn_bws_start_accepting (bws);
+            return;
+
         case NN_AWS_ERROR:
             nn_aws_stop (aws);
             return;
@@ -321,11 +319,7 @@ static void nn_bws_handler (struct nn_fsm *self, int src, int type,
     }
 }
 
-/******************************************************************************/
-/*  State machine actions.                                                    */
-/******************************************************************************/
-
-static void nn_bws_start_listening (struct nn_bws *self)
+static int nn_bws_listen (struct nn_bws *self)
 {
     int rc;
     struct sockaddr_storage ss;
@@ -347,8 +341,10 @@ static void nn_bws_start_listening (struct nn_bws *self)
     nn_assert (pos);
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
-    nn_assert (rc >= 0);
-    port = rc;
+    if (rc < 0) {
+        return rc;
+    }
+    port = (uint16_t) rc;
 
     /*  Parse the address. */
     ipv4onlylen = sizeof (ipv4only);
@@ -356,7 +352,9 @@ static void nn_bws_start_listening (struct nn_bws *self)
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
-    errnum_assert (rc == 0, -rc);
+    if (rc < 0) {
+        return rc;
+    }
 
     /*  Combine the port and the address. */
     if (ss.ss_family == AF_INET) {
@@ -372,13 +370,29 @@ static void nn_bws_start_listening (struct nn_bws *self)
 
     /*  Start listening for incoming connections. */
     rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
-    /*  TODO: EMFILE error can happen here. We can wait a bit and re-try. */
-    errnum_assert (rc == 0, -rc);
+    if (rc < 0) {
+        return rc;
+    }
+
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
-    errnum_assert (rc == 0, -rc);
+    if (rc < 0) {
+        nn_usock_stop (&self->usock);
+        return rc;
+    }
+
     rc = nn_usock_listen (&self->usock, NN_BWS_BACKLOG);
-    errnum_assert (rc == 0, -rc);
+    if (rc < 0) {
+        nn_usock_stop (&self->usock);
+        return rc;
+    }
+    nn_bws_start_accepting(self);
+
+    return 0;
 }
+
+/******************************************************************************/
+/*  State machine actions.                                                    */
+/******************************************************************************/
 
 static void nn_bws_start_accepting (struct nn_bws *self)
 {
@@ -392,4 +406,3 @@ static void nn_bws_start_accepting (struct nn_bws *self)
     /*  Start waiting for a new incoming connection. */
     nn_aws_start (self->aws, &self->usock);
 }
-

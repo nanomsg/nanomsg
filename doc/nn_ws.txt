@@ -16,13 +16,20 @@ SYNOPSIS
 DESCRIPTION
 -----------
 
-WARNING: THIS IS AN EXPERIMENTAL FEATURE. DO NOT USE.
-THE FUNCTIONALITY IS SUBJECT TO CHANGE WITHOUT PRIOR NOTICE.
+The WebSocket transport uses the framing protocol specified in RFC 6455 to
+transport messages. The initial handshake is done using HTTP headers, with the
+`Sec-Websocket-Protocol` header set to the SP protocol used by the server.
+For example, a REQ client will send `rep.sp.nanomsg.org`.
+
+Each SP message is transported in a single WebSocket frame, with no additional
+data or headers applied. By default this library sends and expects to receive
+binary frames.
 
 When calling either `nn_bind()` or `nn_connect()`, omitting the port defaults
-to the RFC 6455 default port 80 for HTTP. Example:
+to the RFC 6455 default port 80 for HTTP. For example, `ws://127.0.0.1` is
+equivalent to `ws://127.0.0.1:80`
 
-ws://127.0.0.1 is equivalent to ws://127.0.0.1:80
+WebSocket over TLS is not supported by this library, at this time.
 
 URI limitations
 ~~~~~~~~~~~~~~~

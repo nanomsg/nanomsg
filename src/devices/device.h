@@ -34,12 +34,10 @@ struct nn_device_recipe {
         int s1, int s2, int flags);
 
     /*  The two-way poll function. */
-    int (*nn_device_twoway) (struct nn_device_recipe *device,
-        int s1, nn_fd s1rcv, nn_fd s1snd, int s2, nn_fd s2rcv, nn_fd s2snd);
+    int (*nn_device_twoway) (struct nn_device_recipe *device, int s1, int s2);
 
     /*  The one-way poll function. */
-    int (*nn_device_oneway) (struct nn_device_recipe *device,
-        int s1, nn_fd s1rcv, int s2, nn_fd s2snd);
+    int (*nn_device_oneway) (struct nn_device_recipe *device, int s1, int s2);
 
     int (*nn_device_loopback) (struct nn_device_recipe *device, int s);
 
@@ -72,10 +70,8 @@ struct nn_device_recipe {
 
 /*  Default implementations of the functions. */
 int nn_device_loopback (struct nn_device_recipe *device, int s);
-int nn_device_twoway (struct nn_device_recipe *device,
-    int s1, nn_fd s1rcv, nn_fd s1snd, int s2, nn_fd s2rcv, nn_fd s2snd);
-int nn_device_oneway (struct nn_device_recipe *device,
-    int s1, nn_fd s1rcv, int s2, nn_fd s2snd);
+int nn_device_twoway (struct nn_device_recipe *device, int s1, int s2);
+int nn_device_oneway (struct nn_device_recipe *device, int s1, int s2);
 int nn_device_mvmsg (struct nn_device_recipe *device,
     int from, int to, int flags);
 int nn_device_entry(struct nn_device_recipe *device,

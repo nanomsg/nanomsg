@@ -107,6 +107,7 @@ int main ()
 
         while (active) {
             (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            nn_sleep (0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

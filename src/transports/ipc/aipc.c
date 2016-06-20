@@ -81,7 +81,9 @@ int nn_aipc_isidle (struct nn_aipc *self)
 
 void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 {
+#if defined NN_HAVE_WINDOWS
     size_t sz;
+#endif
     nn_assert_state (self, NN_AIPC_STATE_IDLE);
 
     /*  Take ownership of the listener socket. */
@@ -93,7 +95,6 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 #if defined NN_HAVE_WINDOWS
     /* Get/Set security attribute pointer*/
     nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
-
     nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
     nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
 #endif

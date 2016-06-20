@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,57 +20,30 @@
     IN THE SOFTWARE.
 */
 
-#include "glock.h"
+#include "once.h"
+#if NN_HAVE_WINDOWS
 
-#if defined NN_HAVE_WINDOWS
-
-#include "win.h"
-#include "err.h"
-
-static LONG nn_glock_initialised = 0;
-static CRITICAL_SECTION nn_glock_cs;
-
-static void nn_glock_init (void)
+/*  This craziness is required because Windows doesn't have the notion of
+    static initializers for CriticalSections.  */
+ 
+BOOL CALLBACK nn_do_once_cb (PINIT_ONCE InitOnce,
+    PVOID Parameter, PVOID *Context)
 {
-    if (InterlockedCompareExchange (&nn_glock_initialised, 1, 0) == 0)
-        InitializeCriticalSection (&nn_glock_cs);
+    void (*func)(void) = Parameter;
+    func();
+    return (TRUE);
 }
 
-void nn_glock_lock (void)
+void nn_do_once (nn_once_t *once, void (*func)(void))
 {
-    nn_glock_init ();
-    EnterCriticalSection (&nn_glock_cs);
+    (void) InitOnceExecuteOnce(&once->once, nn_do_once_cb, func, NULL);
 }
 
-void nn_glock_unlock (void)
+#else /* !NN_HAVE_WINDOWS */
+
+void nn_do_once (nn_once_t *once, void (*func)(void))
 {
-    nn_glock_init ();
-    LeaveCriticalSection (&nn_glock_cs);
-}
-
-#else
-
-#include "err.h"
-
-#include <pthread.h>
-
-static pthread_mutex_t nn_glock_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void nn_glock_lock (void)
-{
-    int rc;
-
-    rc = pthread_mutex_lock (&nn_glock_mutex);
-    errnum_assert (rc == 0, rc);
-}
-
-void nn_glock_unlock (void)
-{
-    int rc;
-
-    rc = pthread_mutex_unlock (&nn_glock_mutex);
-    errnum_assert (rc == 0, rc);
+    pthread_once (&once->once, func);
 }
 
 #endif
-

@@ -74,26 +74,27 @@ static void client(void *arg)
     intptr_t id = (intptr_t)arg;
     int bytes;
     char msg[3];
-    int sz_msg;
+    size_t sz_msg;
     int i;
 
     msg[0] = 'A' + id%26;
     msg[1] = 'a';
     msg[2] = '\0';
-    sz_msg = strlen (msg) + 1; // '\0' too
+    /*  '\0' too */
+    sz_msg = strlen (msg) + 1;
 
     for (i = 0; i < TEST_LOOPS; i++) {
-        int cli_sock = nn_socket(AF_SP, NN_PUSH);
+        int cli_sock = nn_socket (AF_SP, NN_PUSH);
         msg[1] = 'a' + i%26;
-        nn_assert(cli_sock >= 0);
-        nn_assert(nn_connect(cli_sock, SOCKET_ADDRESS) >= 0);
+        nn_assert (cli_sock >= 0);
+        nn_assert (nn_connect (cli_sock, SOCKET_ADDRESS) >= 0);
         /*  Give time to allow for connect to establish. */
-        nn_sleep(50);
-        bytes = nn_send(cli_sock, msg, sz_msg, 0);
+        nn_sleep (50);
+        bytes = nn_send (cli_sock, msg, sz_msg, 0);
         /*  This would better be handled via semaphore or condvar. */
-        nn_sleep(100);
-        nn_assert(bytes == sz_msg);
-        nn_close(cli_sock);
+        nn_sleep (100);
+        nn_assert (bytes == sz_msg);
+        nn_close (cli_sock);
     }
 }
 

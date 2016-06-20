@@ -1,7 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
-    Copyright (c) 2015 Jack R. Dunaway.  All rights reserved.
-    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,57 +22,88 @@
 */
 
 #include "../src/nn.h"
-#include "../src/pair.h"
 #include "../src/pubsub.h"
-#include "../src/pipeline.h"
-#include "../src/tcp.h"
 
 #include "testutil.h"
-#include "../src/utils/attr.h"
 #include "../src/utils/thread.c"
-#include "../src/utils/atomic.c"
+
+static char socket_address [128];
 
 /*  Test condition of closing sockets that are blocking in another thread. */
 
 #define TEST_LOOPS 10
-
-struct nn_atomic active;
+#define TEST_THREADS 10
 
 static void routine (NN_UNUSED void *arg)
 {
     int s;
     int rc;
-    int msg;
+    char msg[1];
 
     nn_assert (arg);
 
-    s = *((int *) arg);
+    s = *(int *)arg;
 
-    /*  We don't expect to actually receive a message here;
-        therefore, the datatype of 'msg' is irrelevant. */
-    rc = nn_recv (s, &msg, sizeof(msg), 0);
+    while (1) {
+        rc = nn_recv (s, &msg, sizeof(msg), 0);
+        if (rc == 0) {
+            continue;
+        }
 
-    errno_assert (rc == -1 && nn_errno () == EBADF);
+        nn_assert (rc == -1);
+
+        /*  A timeout is OK since PUB/SUB is lossy. */
+        if (nn_errno () == ETIMEDOUT) {
+            continue;
+        }
+        break;
+    }
+    /*  Socket is expected to be closed by caller.  */
+    errno_assert (nn_errno () == EBADF);
 }
 
 int main (int argc, const char *argv[])
 {
-    int sb;
     int i;
-    struct nn_thread thread;
-    char socket_address[128];
+    int j;
+    int s;
+    int sb;
+    int rcvtimeo = 10;
+    int sndtimeo = 0;
+    int sockets [TEST_THREADS];
+    struct nn_thread threads [TEST_THREADS];
 
-    test_addr_from(socket_address, "tcp", "127.0.0.1",
-            get_test_port(argc, argv));
+    test_addr_from (socket_address, "ws", "127.0.0.1",
+        get_test_port (argc, argv));
 
     for (i = 0; i != TEST_LOOPS; ++i) {
-        sb = test_socket (AF_SP, NN_PULL);
+
+        sb = test_socket (AF_SP, NN_PUB);
         test_bind (sb, socket_address);
+        test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO,
+            &sndtimeo, sizeof (sndtimeo));
+
+        for (j = 0; j < TEST_THREADS; j++){
+            s = test_socket (AF_SP, NN_SUB);
+            test_setsockopt (s, NN_SOL_SOCKET, NN_RCVTIMEO,
+                &rcvtimeo, sizeof (rcvtimeo));
+            test_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "", 0);
+            test_connect (s, socket_address);
+            sockets [j] = s;
+            nn_thread_init (&threads [j], routine, &sockets [j]);
+        }
+
+        /*  Allow all threads a bit of time to connect. */
         nn_sleep (100);
-        nn_thread_init (&thread, routine, &sb);
-        nn_sleep (100);
+
+        test_send (sb, "");
+
+        for (j = 0; j < TEST_THREADS; j++) {
+            test_close (sockets [j]);
+            nn_thread_term (&threads [j]);
+        }
+
         test_close (sb);
-        nn_thread_term (&thread);
     }
 
     return 0;

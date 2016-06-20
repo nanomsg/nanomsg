@@ -25,15 +25,22 @@
 #
 
 cmake_minimum_required (VERSION 2.8.7)
+
+project (nanomsg C)
 include (CheckFunctionExists)
 include (CheckSymbolExists)
 include (CheckStructHasMember)
 include (CheckLibraryExists)
 include (CheckCSourceCompiles)
+include (GNUInstallDirs)
 
-project (nanomsg C)
+if (POLICY CMP0042)
+    # Newer cmake on MacOS should use @rpath
+    cmake_policy (SET CMP0042 NEW)
+endif ()
 
-set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg with your findings")
+set (NN_DESCRIPTION "High-Performance Scalability Protocols")
+set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg")
 
 # Determine library versions.
 
@@ -72,10 +79,10 @@ elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
         set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-dirty")
     endif()
 
-elseif (EXISTS .version)
+elseif (EXISTS ${PROJECT_SOURCE_DIR}/.version)
     #  If git is not available (e.g. when building from source package)
     #  we can extract the package version from .version file.
-    file (READ .version NN_PACKAGE_VERSION)
+    file (STRINGS .version NN_PACKAGE_VERSION)
 else ()
     set (NN_PACKAGE_VERSION "Unknown")
 endif()
@@ -83,6 +90,7 @@ endif()
 # User-defined options.
 
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
+option (NN_ENABLE_DOC "Enable building documentation." ON)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
@@ -97,9 +105,13 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     add_definitions (-DNN_HAVE_OSX)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
-    SET (NN_HAVE_WINSOCK 1)
+    set (NN_HAVE_WINSOCK 1)
     add_definitions (-DNN_HAVE_WINDOWS)
     add_definitions (-D_CRT_SECURE_NO_WARNINGS)
+
+    # Target Windows Vista and later
+    add_definitions (-D_WIN32_WINNT=0x0600)
+    list (APPEND CMAKE_REQUIRED_DEFINITIONS -D_WIN32_WINNT=0x0600)
 elseif (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
     add_definitions (-DNN_HAVE_FREEBSD)
 elseif (CMAKE_SYSTEM_NAME MATCHES "NetBSD")
@@ -108,6 +120,8 @@ elseif (CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     add_definitions (-DNN_HAVE_OPENBSD)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Solaris|SunOS")
     add_definitions (-DNN_HAVE_SOLARIS)
+elseif (CMAKE_SYSTEM_NAME MATCHES "HP-UX")
+    add_definitions (-DNN_HAVE_HPUX)
 elseif (CMAKE_SYSTEM_NAME MATCHES "QNX")
     add_definitions (-DNN_HAVE_QNX)
 else ()
@@ -115,18 +129,22 @@ else ()
     message (AUTHOR_WARNING "${ISSUE_REPORT_MSG}")
 endif ()
 
+if (NN_STATIC_LIB)
+    add_definitions (-DNN_STATIC_LIB)
+endif ()
+
 macro (nn_check_func SYM DEF)
     check_function_exists (${SYM} ${DEF})
-     if (${DEF})
-         add_definitions (-D${DEF}=1)
-     endif ()
+    if (${DEF})
+        add_definitions (-D${DEF}=1)
+    endif ()
 endmacro (nn_check_func)
 
 macro (nn_check_sym SYM HDR DEF)
     check_symbol_exists (${SYM} ${HDR} ${DEF})
-     if (${DEF})
-         add_definitions (-D${DEF}=1)
-     endif ()
+    if (${DEF})
+        add_definitions (-D${DEF}=1)
+    endif ()
 endmacro (nn_check_sym)
 
 macro (nn_check_lib LIB SYM DEF)
@@ -144,39 +162,56 @@ macro (nn_check_struct_member STR MEM HDR DEF)
     endif ()
 endmacro (nn_check_struct_member)
 
-# Unconditionally declare the following feature test macros.  These are
-# needed for some platforms (glibc and SunOS/illumos) and should be harmless
-# on the others.
-add_definitions (-D_GNU_SOURCE)
-add_definitions (-D_REENTRANT)
-add_definitions (-D_THREAD_SAFE)
-add_definitions (-D_POSIX_PTHREAD_SEMANTICS)
+if (WIN32)
+    # Windows is a special snowflake.
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} ws2_32)
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} mswsock)
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} advapi32)
+    nn_check_sym (InitializeConditionVariable windows.h NN_HAVE_CONDVAR)
+    if (NOT NN_HAVE_CONDVAR)
+        message (FATAL_ERROR
+	    "Modern Windows API support is missing. "
+	    "Versions of Windows prior to Vista are not supported.  "
+	    "Further, the 32-bit MinGW environment is not supported. "
+	    "Ensure you have at least Windows Vista or newer, and are "
+	    "using either Visual Studio 2010 or newer or MinGW-W64.")
+    endif()
+else ()
+    # Unconditionally declare the following feature test macros.  These are
+    # needed for some platforms (glibc and SunOS/illumos) and should be harmless
+    # on the others.
+    add_definitions (-D_GNU_SOURCE)
+    add_definitions (-D_REENTRANT)
+    add_definitions (-D_THREAD_SAFE)
+    add_definitions (-D_POSIX_PTHREAD_SEMANTICS)
 
-nn_check_func (gethrtime NN_HAVE_GETHRTIME)
-nn_check_func (socketpair NN_HAVE_SOCKETPAIR)
-nn_check_func (eventfd NN_HAVE_EVENTFD)
-nn_check_func (pipe NN_HAVE_PIPE)
-nn_check_func (pipe2 NN_HAVE_PIPE2)
-nn_check_func (accept4 NN_HAVE_ACCEPT4)
-nn_check_func (epoll_create NN_HAVE_EPOLL)
-nn_check_func (kqueue NN_HAVE_KQUEUE)
-nn_check_func (poll NN_HAVE_POLL)
+    nn_check_func (gethrtime NN_HAVE_GETHRTIME)
+    nn_check_func (socketpair NN_HAVE_SOCKETPAIR)
+    nn_check_func (eventfd NN_HAVE_EVENTFD)
+    nn_check_func (pipe NN_HAVE_PIPE)
+    nn_check_func (pipe2 NN_HAVE_PIPE2)
+    nn_check_func (accept4 NN_HAVE_ACCEPT4)
+    nn_check_func (epoll_create NN_HAVE_EPOLL)
+    nn_check_func (kqueue NN_HAVE_KQUEUE)
+    nn_check_func (poll NN_HAVE_POLL)
 
-nn_check_lib (anl getaddrinfo_a NN_HAVE_GETADDRINFO_A)
-nn_check_lib (rt clock_gettime  NN_HAVE_CLOCK_GETTIME)
-nn_check_lib (rt sem_wait NN_HAVE_SEMAPHORE_RT)
-nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
+    nn_check_lib (anl getaddrinfo_a NN_HAVE_GETADDRINFO_A)
+    nn_check_lib (rt clock_gettime  NN_HAVE_CLOCK_GETTIME)
+    nn_check_lib (rt sem_wait NN_HAVE_SEMAPHORE_RT)
+    nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
+    nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
+    nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
 
-nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
-nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
-nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
-nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
-
-nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
-
-if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
-    add_definitions (-DNN_HAVE_SEMAPHORE)
+    nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
+    nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)
+    nn_check_sym (AF_UNIX sys/socket.h NN_HAVE_UNIX_SOCKETS)
+    nn_check_sym (backtrace_symbols_fd execinfo.h NN_HAVE_BACKTRACE)
+    nn_check_struct_member(msghdr msg_control sys/socket.h NN_HAVE_MSG_CONTROL)
+    if (NN_HAVE_SEMAPHORE_RT OR NN_HAVE_SEMAPHORE_PTHREAD)
+        add_definitions (-DNN_HAVE_SEMAPHORE)
+    endif ()
 endif ()
+
 
 if (NOT NN_ENABLE_GETADDRINFO_A)
     add_definitions (-DNN_DISABLE_GETADDRINFO_A)
@@ -205,6 +240,98 @@ if (NN_ENABLE_NANOCAT)
     target_link_libraries (nanocat ${PROJECT_NAME})
 endif ()
 
+if (NN_ENABLE_DOC)
+    find_program (ASCIIDOCTOR_EXE asciidoctor)
+    if (NOT ASCIIDOCTOR_EXE)
+        message (WARNING "Could not find asciidoctor: skipping docs")
+        set (NN_ENABLE_DOC OFF)
+    else ()
+        message (STATUS "Using asciidoctor at ${ASCIIDOCTOR_EXE}")
+    endif ()
+endif ()
+
+# Build the documenation
+if (NN_ENABLE_DOC)
+
+    set (NN_DOCDIR ${CMAKE_CURRENT_SOURCE_DIR}/doc)
+    set (NN_STYLESHEET ${NN_DOCDIR}/stylesheet.css)
+    set (NN_TITLE ${PROJECT_NAME} ${NN_PACKAGE_VERSION})
+    set (NN_A2M ${ASCIIDOCTOR_EXE} -b manpage -amanmanual='${NN_TITLE}')
+    set (NN_A2H ${ASCIIDOCTOR_EXE} -d manpage -b html5 -a stylesheeet=${NN_STYLESHEET} -aversion-label=${PROJECT_NAME} -arevnumber=${NN_PACKAGE_VERSION})
+
+    macro (add_libnanomsg_man NAME SECT)
+        add_custom_command (
+            OUTPUT ${NAME}.${SECT}
+            COMMAND ${NN_A2M} -o ${NAME}.${SECT} ${NN_DOCDIR}/${NAME}.txt
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+        )
+
+        add_custom_command (
+            OUTPUT ${NAME}.${SECT}.html
+            COMMAND ${NN_A2H} -o ${NAME}.${SECT}.html ${NN_DOCDIR}/${NAME}.txt
+            DEPENDS ${NN_STYLESHEET}
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+        )
+
+        set(NN_MANS ${NN_MANS} ${NAME}.${SECT})
+        set(NN_HTMLS ${NN_HTMLS} ${NAME}.${SECT}.html)
+
+        install (
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        )
+        install (
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
+            DESTINATION ${CMAKE_INSTALL_MANDIR}/man${SECT}
+        )
+
+    endmacro (add_libnanomsg_man)
+
+    if (NN_ENABLE_NANOCAT)
+        add_libnanomsg_man (nanocat 1)
+    endif ()
+
+    add_libnanomsg_man (nn_errno 3)
+    add_libnanomsg_man (nn_strerror 3)
+    add_libnanomsg_man (nn_symbol 3)
+    add_libnanomsg_man (nn_symbol_info 3)
+    add_libnanomsg_man (nn_allocmsg 3)
+    add_libnanomsg_man (nn_reallocmsg 3)
+    add_libnanomsg_man (nn_freemsg 3)
+    add_libnanomsg_man (nn_socket 3)
+    add_libnanomsg_man (nn_close 3)
+    add_libnanomsg_man (nn_get_statistic 3)
+    add_libnanomsg_man (nn_getsockopt 3)
+    add_libnanomsg_man (nn_setsockopt 3)
+    add_libnanomsg_man (nn_bind 3)
+    add_libnanomsg_man (nn_connect 3)
+    add_libnanomsg_man (nn_shutdown 3)
+    add_libnanomsg_man (nn_send 3)
+    add_libnanomsg_man (nn_recv 3)
+    add_libnanomsg_man (nn_sendmsg 3)
+    add_libnanomsg_man (nn_recvmsg 3)
+    add_libnanomsg_man (nn_device 3)
+    add_libnanomsg_man (nn_cmsg 3)
+    add_libnanomsg_man (nn_poll 3)
+
+    add_libnanomsg_man (nanomsg 7)
+    add_libnanomsg_man (nn_pair 7)
+    add_libnanomsg_man (nn_reqrep 7)
+    add_libnanomsg_man (nn_pubsub 7)
+    add_libnanomsg_man (nn_survey 7)
+    add_libnanomsg_man (nn_pipeline 7)
+    add_libnanomsg_man (nn_bus 7)
+    add_libnanomsg_man (nn_inproc 7)
+    add_libnanomsg_man (nn_ipc 7)
+    add_libnanomsg_man (nn_tcp 7)
+    add_libnanomsg_man (nn_ws 7)
+    add_libnanomsg_man (nn_env 7)
+
+    add_custom_target (man ALL DEPENDS ${NN_MANS})
+    add_custom_target (html ALL DEPENDS ${NN_HTMLS})
+
+endif ()
+
 #  Build unit tests.
 
 if (NN_TESTS)
@@ -229,7 +356,7 @@ if (NN_TESTS)
     add_libnanomsg_test (ipc_shutdown 30)
     add_libnanomsg_test (ipc_stress 5)
     add_libnanomsg_test (tcp 5)
-    add_libnanomsg_test (tcp_shutdown 30)
+    add_libnanomsg_test (tcp_shutdown 120)
     add_libnanomsg_test (ws 5)
 
     #  Protocol tests.
@@ -266,6 +393,9 @@ if (NN_TESTS)
     add_libnanomsg_test (shutdown 5)
     add_libnanomsg_test (cmsg 5)
     add_libnanomsg_test (bug328 5)
+    add_libnanomsg_test (ws_async_shutdown 5)
+    add_libnanomsg_test (reqttl 10)
+    add_libnanomsg_test (surveyttl 10)
 
     # Platform-specific tests
     if (WIN32)
@@ -288,8 +418,8 @@ if (NN_TESTS)
 
 endif ()
 
-#  NSIS package
-
+install (TARGETS LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install (TARGETS ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install (FILES src/nn.h DESTINATION include/nanomsg)
 install (FILES src/inproc.h DESTINATION include/nanomsg)
 install (FILES src/ipc.h DESTINATION include/nanomsg)
@@ -303,9 +433,13 @@ install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
 if (NN_ENABLE_NANOCAT)
-    install (TARGETS nanocat RUNTIME DESTINATION bin)
+    install (TARGETS nanocat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
-set (CPACK_GENERATOR "NSIS")
 set (CPACK_PACKAGE_NAME ${PROJECT_NAME})
+set (CPACK_PACKAGE_VERSION ${NN_PACKAGE_VERSION})
+set (CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
+set (CPACK_SOURCE_IGNORE_FILES "/build/;/.git/;~$;${CPACK_SOURCE_IGNORE_FILES}")
+set (CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${NN_PACKAGE_VERSION}")
+add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 include (CPack)

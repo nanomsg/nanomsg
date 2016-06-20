@@ -29,7 +29,7 @@ extern "C" {
 
 #define NN_IPC -2
 
-// The object set here must be valid as long as you are using the socket
+/* The object set here must be valid as long as you are using the socket */
 #define NN_IPC_SEC_ATTR 1
 #define NN_IPC_OUTBUFSZ 2
 #define NN_IPC_INBUFSZ 3

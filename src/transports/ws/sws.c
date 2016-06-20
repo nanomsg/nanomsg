@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
     Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -115,7 +115,7 @@ static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
 
 /*  Ceases further I/O on the underlying socket and prepares to send a
     close handshake on the next receive. */
-static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason);
+static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason);
 
 /*  Start receiving new message chunk. */
 static int nn_sws_recv_hdr (struct nn_sws *self);
@@ -126,6 +126,10 @@ static void nn_sws_mask_payload (uint8_t *payload, size_t payload_len,
 
 /*  Validates incoming text chunks for UTF-8 compliance as per RFC 3629. */
 static void nn_sws_validate_utf8_chunk (struct nn_sws *self);
+
+/*  Ensures that Close frames received from peer conform to
+    RFC 6455 section 7. */
+static void nn_sws_acknowledge_close_handshake (struct nn_sws *self);
 
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner)
@@ -237,12 +241,14 @@ void nn_msg_array_term (struct nn_list *msg_array)
     nn_list_term (msg_array);
 }
 
+/*  Given a buffer location, this function determines whether the leading
+    octets form a valid UTF-8 code point. */
 static int nn_utf8_code_point (const uint8_t *buffer, size_t len)
 {
     /*  The lack of information is considered neither valid nor invalid. */
     if (!buffer || !len)
         return NN_SWS_UTF8_FRAGMENT;
-    
+
     /*  RFC 3629 section 4 UTF8-1. */
     if (buffer [0] <= 0x7F)
         return 1;
@@ -433,7 +439,7 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 
         /*  Generate 32-bit mask as per RFC 6455 5.3. */
         nn_random_generate (rand_mask, NN_SWS_FRAME_SIZE_MASK);
-        
+
         memcpy (&sws->outhdr [hdr_len], rand_mask, NN_SWS_FRAME_SIZE_MASK);
         hdr_len += NN_SWS_FRAME_SIZE_MASK;
 
@@ -468,13 +474,6 @@ static int nn_sws_send (struct nn_pipebase *self, struct nn_msg *msg)
 
     sws->outstate = NN_SWS_OUTSTATE_SENDING;
 
-    /*  If a Close handshake was just sent, it's time to shut down. */
-    if ((sws->outhdr [0] & NN_SWS_FRAME_BITMASK_OPCODE) ==
-        NN_WS_OPCODE_CLOSE) {
-        nn_pipebase_stop (&sws->pipebase);
-        sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
-    }
-
     return 0;
 }
 
@@ -485,6 +484,7 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     struct msg_chunk *ch;
     struct nn_cmsghdr *cmsg;
     uint8_t opcode_hdr;
+    uint8_t opcode;
     size_t cmsgsz;
     size_t pos;
 
@@ -495,14 +495,22 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
     switch (sws->instate) {
     case NN_SWS_INSTATE_RECVD_CHUNKED:
 
-        /*  This library should not deliver fragmented messages to the application,
-            so it's expected that this is the final frame. */
-        nn_assert (sws->is_final_frame);
-
-        nn_msg_init (msg, sws->inmsg_total_size);
-
         /*  Relay opcode to the user in order to interpret payload. */
         opcode_hdr = sws->inmsg_hdr;
+
+        /*  This library should not deliver fragmented messages to the
+            application, so it's expected that this is the final frame. */
+        nn_assert (sws->is_final_frame);
+        nn_assert (opcode_hdr & NN_SWS_FRAME_BITMASK_FIN);
+        opcode_hdr &= ~NN_SWS_FRAME_BITMASK_FIN;
+
+        /*  The library is expected to have failed any connections with other
+            opcodes; these are the only two opcodes that can be chunked. */
+        opcode = opcode_hdr & NN_SWS_FRAME_BITMASK_OPCODE;
+        nn_assert (opcode == NN_WS_OPCODE_BINARY ||
+                   opcode == NN_WS_OPCODE_TEXT);
+
+        nn_msg_init (msg, sws->inmsg_total_size);
 
         pos = 0;
 
@@ -529,26 +537,27 @@ static int nn_sws_recv (struct nn_pipebase *self, struct nn_msg *msg)
 
     case NN_SWS_INSTATE_RECVD_CONTROL:
 
-        /*  This library should not deliver fragmented messages to the user, so
-        it's expected that this is the final frame. */
-        nn_assert (sws->is_final_frame);
-
-        nn_msg_init (msg, sws->inmsg_current_chunk_len);
-
         /*  Relay opcode to the user in order to interpret payload. */
         opcode_hdr = sws->inhdr [0];
+
+        /*  This library should not deliver fragmented messages to the
+            application, so it's expected that this is the final frame. */
+        nn_assert (sws->is_final_frame);
+        nn_assert (opcode_hdr & NN_SWS_FRAME_BITMASK_FIN);
+        opcode_hdr &= ~NN_SWS_FRAME_BITMASK_FIN;
+
+        /*  The library is expected to have failed any connections with other
+            opcodes; these are the only two control opcodes delivered. */
+        opcode = opcode_hdr & NN_SWS_FRAME_BITMASK_OPCODE;
+        nn_assert (opcode == NN_WS_OPCODE_PING ||
+                   opcode == NN_WS_OPCODE_PONG);
+
+        nn_msg_init (msg, sws->inmsg_current_chunk_len);
 
         memcpy (((uint8_t*) nn_chunkref_data (&msg->body)),
             sws->inmsg_control, sws->inmsg_current_chunk_len);
 
-        /*  If a closing handshake was just transferred to the application,
-            discontinue continual, async receives. */
-        if (sws->opcode == NN_WS_OPCODE_CLOSE) {
-            sws->instate = NN_SWS_INSTATE_CLOSED;
-        }
-        else {
-            nn_sws_recv_hdr (sws);
-        }
+        nn_sws_recv_hdr (sws);
 
         break;
 
@@ -597,7 +606,7 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
 
             code_point_len = nn_utf8_code_point (self->utf8_code_pt_fragment,
                 self->utf8_code_pt_fragment_len);
-            
+
             if (code_point_len > 0) {
                 /*  Valid code point found; continue validating. */
                 break;
@@ -626,12 +635,11 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
         nn_assert (0);
 
     while (len > 0) {
-
         code_point_len = nn_utf8_code_point (pos, len);
 
         if (code_point_len > 0) {
             /*  Valid code point found; continue validating. */
-            nn_assert (len >= code_point_len);
+            nn_assert (len >= (size_t) code_point_len);
             len -= code_point_len;
             pos += code_point_len;
             continue;
@@ -678,7 +686,76 @@ static void nn_sws_validate_utf8_chunk (struct nn_sws *self)
     return;
 }
 
-static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
+static void nn_sws_acknowledge_close_handshake (struct nn_sws *self)
+{
+    uint8_t *pos;
+    uint16_t close_code;
+    int code_point_len;
+    size_t len;
+
+    len = self->inmsg_current_chunk_len;
+    pos = self->inmsg_current_chunk_buf;
+
+    /*  Peer did not provide a Close Code, so choose our own here. */
+    if (len == 0) {
+        nn_sws_fail_conn (self, NN_SWS_CLOSE_NORMAL, "");
+        return;
+    }
+
+    /*  If the payload is not even long enough for the required 2-octet
+        Close Code, the connection should have already been failed. */
+    nn_assert (len >= NN_SWS_CLOSE_CODE_LEN);
+    len -= NN_SWS_CLOSE_CODE_LEN;
+    pos += NN_SWS_CLOSE_CODE_LEN;
+
+    /*  As per RFC 6455 7.1.6, the Close Reason following the Close Code
+        must be well-formed UTF-8. */
+    while (len > 0) {
+        code_point_len = nn_utf8_code_point (pos, len);
+
+        if (code_point_len > 0) {
+            /*  Valid code point found; continue validating. */
+            nn_assert (len >= (size_t) code_point_len);
+            len -= code_point_len;
+            pos += code_point_len;
+            continue;
+        }
+        else {
+            /*  RFC 6455 7.1.6 */
+            nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,
+                "Invalid UTF-8 sent as Close Reason.");
+            return;
+        }
+    }
+
+    /*  Entire Close Reason is well-formed UTF-8 (or empty) */
+    nn_assert (len == 0);
+
+    close_code = nn_gets (self->inmsg_current_chunk_buf);
+
+    if (close_code == NN_SWS_CLOSE_NORMAL ||
+        close_code == NN_SWS_CLOSE_GOING_AWAY ||
+        close_code == NN_SWS_CLOSE_ERR_PROTO ||
+        close_code == NN_SWS_CLOSE_ERR_WUT ||
+        close_code == NN_SWS_CLOSE_ERR_INVALID_FRAME ||
+        close_code == NN_SWS_CLOSE_ERR_POLICY ||
+        close_code == NN_SWS_CLOSE_ERR_TOOBIG ||
+        close_code == NN_SWS_CLOSE_ERR_EXTENSION ||
+        close_code == NN_SWS_CLOSE_ERR_SERVER ||
+        (close_code >= 3000 && close_code <= 3999) ||
+        (close_code >= 4000 && close_code <= 4999)) {
+        /*  Repeat close code, per RFC 6455 7.4.1 and 7.4.2 */
+        nn_sws_fail_conn (self, (int) close_code, "");
+    }
+    else {
+        nn_sws_fail_conn (self, NN_SWS_CLOSE_ERR_PROTO,
+            "Unrecognized close code.");
+    }
+
+    return;
+}
+
+static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 {
     size_t reason_len;
     size_t payload_len;
@@ -687,6 +764,10 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     struct nn_iovec iov;
 
     nn_assert_state (self, NN_SWS_STATE_ACTIVE);
+
+    /*  Stop user send/recv actions. */
+    self->instate = NN_SWS_INSTATE_CLOSED;
+    nn_pipebase_stop (&self->pipebase);
 
     /*  Destroy any remnant incoming message fragments. */
     nn_msg_array_term (&self->inmsg_array);
@@ -727,7 +808,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     }
 
     payload_pos = (uint8_t*) (&self->fail_msg [self->fail_msg_len]);
-    
+
     /*  Copy Status Code in network order (big-endian). */
     nn_puts (payload_pos, (uint16_t) code);
     self->fail_msg_len += NN_SWS_CLOSE_CODE_LEN;
@@ -743,11 +824,6 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 
     self->fail_msg_len += payload_len;
 
-    self->instate = NN_SWS_INSTATE_CLOSED;
-
-    /*  Stop user send/recv actions. */
-    nn_pipebase_stop (&self->pipebase);
-
     if (self->outstate == NN_SWS_OUTSTATE_IDLE) {
         iov.iov_base = self->fail_msg;
         iov.iov_len = self->fail_msg_len;
@@ -759,7 +835,7 @@ static int nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
         nn_fsm_raise (&self->fsm, &self->done, NN_SWS_RETURN_CLOSE_HANDSHAKE);
     }
 
-    return 0;
+    return;
 }
 
 static void nn_sws_shutdown (struct nn_fsm *self, int src, int type,
@@ -796,6 +872,8 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_sws *sws;
     int rc;
+    int opt;
+    size_t opt_sz = sizeof (opt);
 
     sws = nn_cont (self, struct nn_sws, fsm);
 
@@ -1093,7 +1171,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         }
                         /*  Continue to receive extended header+payload. */
                         break;
-                    
+
                     case NN_WS_OPCODE_PONG:
                         sws->is_control_frame = 1;
                         sws->pongs_received++;
@@ -1124,7 +1202,7 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         }
                         /*  Continue to receive extended header+payload. */
                         break;
-                    
+
                     case NN_WS_OPCODE_CLOSE:
                         /*  RFC 6455 section 5.5.1. */
                         sws->is_control_frame = 1;
@@ -1159,13 +1237,12 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             /*  Special case when there is no payload,
                                 mask, or additional frames. */
                             sws->inmsg_current_chunk_len = 0;
-                            sws->instate = NN_SWS_INSTATE_RECVD_CONTROL;
-                            nn_pipebase_received (&sws->pipebase);
+                            nn_sws_acknowledge_close_handshake (sws);
                             return;
                         }
                         /*  Continue to receive extended header+payload. */
                         break;
-                    
+
                     default:
                         /*  Client sent an invalid opcode; as per RFC 6455
                             section 10.7, close connection with code. */
@@ -1181,16 +1258,11 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         nn_assert (sws->mode == NN_WS_CLIENT);
 
                         /*  In the case of no additional header, the payload
-                            is known to not exceed this threshold. */
-                        nn_assert (sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH);
+                            is known to be within these bounds. */
+                        nn_assert (0 < sws->payload_ctl &&
+                            sws->payload_ctl <= NN_SWS_PAYLOAD_MAX_LENGTH);
 
-                        /*  In the case of no additional header, the payload
-                            is known to not exceed this threshold. */
-                        nn_assert (sws->payload_ctl > 0);
-
-                        sws->instate = NN_SWS_INSTATE_RECV_PAYLOAD;
                         sws->inmsg_current_chunk_len = sws->payload_ctl;
-
 
                         /*  Use scatter/gather array for application messages,
                             and a fixed-width buffer for control messages. This
@@ -1200,13 +1272,25 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                             sws->inmsg_current_chunk_buf = sws->inmsg_control;
                         }
                         else {
-                            sws->inmsg_chunks++;
                             sws->inmsg_total_size += sws->inmsg_current_chunk_len;
+                            /*  Protect non-control messages against the
+                                NN_RCVMAXSIZE threshold; control messages already
+                                have a small pre-allocated buffer, and therefore
+                                are not subject to this limit. */
+                            nn_pipebase_getopt (&sws->pipebase, NN_SOL_SOCKET,
+                                NN_RCVMAXSIZE, &opt, &opt_sz);
+                            if (opt >= 0 && sws->inmsg_total_size > (size_t) opt) {
+                                nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_TOOBIG,
+                                    "Message larger than application allows.");
+                                return;
+                            }
+                            sws->inmsg_chunks++;
                             sws->inmsg_current_chunk_buf =
                                 nn_msg_chunk_new (sws->inmsg_current_chunk_len,
                                 &sws->inmsg_array);
                         }
 
+                        sws->instate = NN_SWS_INSTATE_RECV_PAYLOAD;
                         nn_usock_recv (sws->usock, sws->inmsg_current_chunk_buf,
                             sws->inmsg_current_chunk_len, NULL);
                         return;
@@ -1267,25 +1351,22 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                     }
 
                     /*  Handle zero-length message bodies. */
-                    if (sws->inmsg_current_chunk_len == 0)
-                    {
+                    if (sws->inmsg_current_chunk_len == 0) {
                         if (sws->is_final_frame) {
-                           if (sws->opcode == NN_WS_OPCODE_CLOSE) {
-                             nn_pipebase_stop (&sws->pipebase);
-                             sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
+                            if (sws->opcode == NN_WS_OPCODE_CLOSE) {
+                                nn_sws_acknowledge_close_handshake (sws);
                             }
-                            else
-                            { 
-                              sws->instate = (sws->is_control_frame ?
-                                  NN_SWS_INSTATE_RECVD_CONTROL :
-                                  NN_SWS_INSTATE_RECVD_CHUNKED);
-                              nn_pipebase_received (&sws->pipebase);
+                            else {
+                                sws->instate = (sws->is_control_frame ?
+                                    NN_SWS_INSTATE_RECVD_CONTROL :
+                                    NN_SWS_INSTATE_RECVD_CHUNKED);
+                                nn_pipebase_received (&sws->pipebase);
                             }
                         }
                         else {
                             nn_sws_recv_hdr (sws);
                         }
-			return;
+                        return;
                     }
 
                     nn_assert (sws->inmsg_current_chunk_len > 0);
@@ -1298,8 +1379,19 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         sws->inmsg_current_chunk_buf = sws->inmsg_control;
                     }
                     else {
-                        sws->inmsg_chunks++;
                         sws->inmsg_total_size += sws->inmsg_current_chunk_len;
+                        /*  Protect non-control messages against the
+                            NN_RCVMAXSIZE threshold; control messages already
+                            have a small pre-allocated buffer, and therefore
+                            are not subject to this limit. */
+                        nn_pipebase_getopt (&sws->pipebase, NN_SOL_SOCKET,
+                            NN_RCVMAXSIZE, &opt, &opt_sz);
+                        if (opt >= 0 && sws->inmsg_total_size > (size_t) opt) {
+                            nn_sws_fail_conn (sws, NN_SWS_CLOSE_ERR_TOOBIG,
+                                "Message size exceeds limit.");
+                            return;
+                        }
+                        sws->inmsg_chunks++;
                         sws->inmsg_current_chunk_buf =
                             nn_msg_chunk_new (sws->inmsg_current_chunk_len,
                             &sws->inmsg_array);
@@ -1362,21 +1454,14 @@ static void nn_sws_handler (struct nn_fsm *self, int src, int type,
                         return;
 
                     case NN_WS_OPCODE_CLOSE:
-                        /*  If the payload is not even long enough for the
-                            required 2-octet Close Code, the connection
-                            should have been failed upstream. */
-                        nn_assert (sws->inmsg_current_chunk_len >=
-                            NN_SWS_CLOSE_CODE_LEN);
-                        
-                        nn_pipebase_stop (&sws->pipebase);
-                        sws->state = NN_SWS_STATE_CLOSING_CONNECTION;
+                        nn_sws_acknowledge_close_handshake (sws);
                         return;
 
                     default:
                         /*  This should have been prevented upstream. */
                         nn_assert (0);
                         return;
-                    } 
+                    }
 
                 default:
                     nn_fsm_error ("Unexpected socket instate",

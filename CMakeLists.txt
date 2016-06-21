@@ -339,7 +339,7 @@ if (NN_TESTS)
     enable_testing ()
     set (all_tests "")
 
-    set (TEST_PORT 5500)
+    set (TEST_PORT 12100)
     macro (add_libnanomsg_test NAME TIMEOUT)
         list (APPEND all_tests ${NAME})
         add_executable (${NAME} tests/${NAME}.c)

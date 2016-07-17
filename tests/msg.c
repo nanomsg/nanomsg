@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,11 +29,10 @@
 #include <string.h>
 
 #define SOCKET_ADDRESS "inproc://a"
-#define SOCKET_ADDRESS_TCP "tcp://127.0.0.1:5557"
 
 char longdata[1 << 20];
 
-int main ()
+int main (int argc, const char *argv[])
 {
     int rc;
     int sb;
@@ -41,6 +41,10 @@ int main ()
     int i;
     struct nn_iovec iov;
     struct nn_msghdr hdr;
+    char socket_address_tcp[128];
+
+    test_addr_from(socket_address_tcp, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, SOCKET_ADDRESS);
@@ -99,9 +103,9 @@ int main ()
     /*  Test receiving of large message  */
 
     sb = test_socket (AF_SP, NN_PAIR);
-    test_bind (sb, SOCKET_ADDRESS_TCP);
+    test_bind (sb, socket_address_tcp);
     sc = test_socket (AF_SP, NN_PAIR);
-    test_connect (sc, SOCKET_ADDRESS_TCP);
+    test_connect (sc, socket_address_tcp);
 
     for (i = 0; i < (int) sizeof (longdata); ++i)
         longdata[i] = '0' + (i % 10);

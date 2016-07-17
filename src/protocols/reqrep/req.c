@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -35,7 +36,6 @@
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
 #include "../../utils/list.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <stddef.h>
@@ -80,8 +80,6 @@ static const struct nn_sockbase_vfptr nn_req_sockbase_vfptr = {
 void nn_req_init (struct nn_req *self,
     const struct nn_sockbase_vfptr *vfptr, void *hint)
 {
-    nn_req_handle hndl;
-
     nn_xreq_init (&self->xreq, vfptr, hint);
     nn_fsm_init_root (&self->fsm, nn_req_handler, nn_req_shutdown,
         nn_sockbase_getctx (&self->xreq.sockbase));
@@ -98,9 +96,7 @@ void nn_req_init (struct nn_req *self,
     nn_timer_init (&self->task.timer, NN_REQ_SRC_RESEND_TIMER, &self->fsm);
     self->resend_ivl = NN_REQ_DEFAULT_RESEND_IVL;
 
-    /*  For now, handle is empty. */
-    memset (&hndl, 0, sizeof (hndl));
-    nn_task_init (&self->task, self->lastid, hndl);
+    nn_task_init (&self->task, self->lastid);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -232,12 +228,6 @@ int nn_req_events (struct nn_sockbase *self)
     return rc;
 }
 
-int nn_req_send (int s, nn_req_handle hndl, const void *buf, size_t len,
-    int flags)
-{
-    nn_assert (0);
-}
-
 int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
 {
     struct nn_req *req;
@@ -262,13 +252,6 @@ int nn_req_csend (struct nn_sockbase *self, struct nn_msg *msg)
 
     return 0;
 }
-
-int nn_req_recv (int s, nn_req_handle *hndl, void *buf, size_t len,
-    int flags)
-{
-    nn_assert (0);
-}
-
 
 int nn_req_crecv (struct nn_sockbase *self, struct nn_msg *msg)
 {

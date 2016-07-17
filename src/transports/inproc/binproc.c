@@ -232,6 +232,9 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
                 nn_fsm_bad_action (binproc->state, src, type);
             }
 
+        case NN_BINPROC_SRC_SINPROC:
+            return;
+
         default:
             nn_fsm_bad_source (binproc->state, src, type);
         }

@@ -1,0 +1,39 @@
+language: c
+sudo: false
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: clang
+#    - os: osx
+#      compiler: gcc
+    - os: osx
+      compiler: clang
+before_script:
+  - gem install asciidoctor
+script:
+  # Print all environment variables to aid in CI development
+  - printenv
+  # Print version and available CMake generators to aid in CI development
+  - cmake --version
+  - cmake --help
+  # Perform out-of-source build
+  - mkdir build
+  - cd build
+  # Perform CMake backend generation, build, and test
+  - cmake ..
+  - cmake --build . -- -j4
+  - ctest --output-on-failure -C Debug -j4
+#deploy:
+#  provider: releases
+#  api_key:
+#    secure: fVMvvlhsginfIB7gEhAoKG7xzvF6D94yl8Z+jjfHQG4YtG3SScKVeQUnpWK7NhT90uoUfPnxd5dN3ZWlApoLBSz7iVD0sT1+VGYerM0Gn3LTUj3xvTB3WAAft6YePKhQeJfduzSNqsRjQ7buKgI1SFH0Ek5xwZe4Kl/O/D2Tsw0=
+#  file:
+#    - nanomsg-${TRAVIS_TAG}.zip
+#    - nanomsg-${TRAVIS_TAG}.tar.gz
+#    - nanomsg-${TRAVIS_TAG}.tar.bz2
+#  skip_cleanup: true
+#  on:
+#    tags: true
+#    repo: nanomsg/nanomsg

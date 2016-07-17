@@ -51,7 +51,7 @@ void device1 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (deva, devb);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && (nn_errno () == EBADF));
 
     /*  Clean up. */
     test_close (devb);
@@ -72,7 +72,7 @@ void device2 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (devc, devd);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (devd);
@@ -90,7 +90,7 @@ void device3 (NN_UNUSED void *arg)
 
     /*  Run the device. */
     rc = nn_device (deve, -1);
-    nn_assert (rc < 0 && nn_errno () == ETERM);
+    nn_assert (rc < 0 && nn_errno () == EBADF);
 
     /*  Clean up. */
     test_close (deve);
@@ -98,7 +98,6 @@ void device3 (NN_UNUSED void *arg)
 
 int main ()
 {
-    int rc;
     int enda;
     int endb;
     int endc;
@@ -108,7 +107,6 @@ int main ()
     struct nn_thread thread1;
     struct nn_thread thread2;
     struct nn_thread thread3;
-    char buf [3];
     int timeo;
 
     /*  Test the bi-directional device. */
@@ -172,11 +170,9 @@ int main ()
     /*  Make sure that the message doesn't arrive at the socket it was
         originally sent to. */
     timeo = 100;
-    rc = nn_setsockopt (ende1, NN_SOL_SOCKET, NN_RCVTIMEO,
+    test_setsockopt (ende1, NN_SOL_SOCKET, NN_RCVTIMEO,
        &timeo, sizeof (timeo));
-    errno_assert (rc == 0);
-    rc = nn_recv (ende1, buf, sizeof (buf), 0);
-    errno_assert (rc < 0 && nn_errno () == EAGAIN);
+    test_drop (ende1, ETIMEDOUT);
 
     /*  Clean up. */
     test_close (ende2);

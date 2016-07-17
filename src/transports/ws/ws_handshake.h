@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -29,8 +30,6 @@
 #include "../../aio/fsm.h"
 #include "../../aio/usock.h"
 #include "../../aio/timer.h"
-
-#include "../../utils/int.h"
 
 /*  This state machine exchanges a handshake with a WebSocket client. */
 
@@ -88,63 +87,63 @@ struct nn_ws_handshake {
     const char* remote_host;
 
     /*  Opening handshake verbatim from client as per RFC 6455 1.3. */
-    uint8_t opening_hs [NN_WS_HANDSHAKE_MAX_SIZE];
+    char opening_hs [NN_WS_HANDSHAKE_MAX_SIZE];
 
     /*  Monitor/control the opening recv poll. */
     int retries;
-    int recv_pos;
+    size_t recv_pos;
     size_t recv_len;
 
     /*  Expected handshake fields from client as per RFC 6455 4.1,
         where these pointers reference the opening_hs. */
-    const uint8_t *host;
+    const char *host;
     size_t host_len;
 
-    const uint8_t *origin;
+    const char *origin;
     size_t origin_len;
 
-    const uint8_t *key;
+    const char *key;
     size_t key_len;
 
-    const uint8_t *upgrade;
+    const char *upgrade;
     size_t upgrade_len;
 
-    const uint8_t *conn;
+    const char *conn;
     size_t conn_len;
 
-    const uint8_t *version;
+    const char *version;
     size_t version_len;
 
     /*  Expected handshake fields from client required by nanomsg. */
-    const uint8_t *protocol;
+    const char *protocol;
     size_t protocol_len;
 
     /*  Expected handshake fields from server as per RFC 6455 4.2.2. */
-    const uint8_t *server;
+    const char *server;
     size_t server_len;
 
-    const uint8_t *accept_key;
+    const char *accept_key;
     size_t accept_key_len;
 
     char expected_accept_key [NN_WS_HANDSHAKE_ACCEPT_KEY_LEN + 1];
 
-    const uint8_t *status_code;
+    const char *status_code;
     size_t status_code_len;
 
-    const uint8_t *reason_phrase;
+    const char *reason_phrase;
     size_t reason_phrase_len;
 
     /*  Unused, optional handshake fields. */
-    const uint8_t *uri;
+    const char *uri;
     size_t uri_len;
-    const uint8_t *extensions;
+    const char *extensions;
     size_t extensions_len;
 
     /*  Identifies the response to be sent to client's opening handshake. */
     int response_code;
 
     /*  Response to send back to client. */
-    uint8_t response [512];
+    char response [512];
 
     /*  Event fired when the state machine ends. */
     struct nn_fsm_event done;
@@ -154,8 +153,11 @@ struct nn_ws_handshake {
     WebSocket header values. */
 struct nn_ws_sp_map {
 
-    /*  Scalability Protocol ID... */
-    int sp;
+    /*  Scalability Protocol ID for server... */
+    int server;
+
+    /*  ... and corresponding client Protocol ID */
+    int client;
 
     /*  ... and corresponding WebSocket header field value. */
     const char* ws_sp;
@@ -172,3 +174,4 @@ void nn_ws_handshake_start (struct nn_ws_handshake *self,
 void nn_ws_handshake_stop (struct nn_ws_handshake *self);
 
 #endif
+

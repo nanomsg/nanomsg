@@ -6,7 +6,8 @@ libdir=${prefix}/lib
 Name: @CMAKE_PROJECT_NAME@
 Description: @NN_DESCRIPTION@
 URL: http://nanomsg.org/
-Version: @NN_VERSION_STR@
+Version: @NN_PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -l@CMAKE_PROJECT_NAME@
+Libs.private:@NN_REQUIRED_LFLAGS@
 Cflags: -I${includedir}

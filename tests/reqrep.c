@@ -168,9 +168,6 @@ int main ()
     rep1 = test_socket (AF_SP, NN_REP);
     test_bind (rep1, SOCKET_ADDRESS);
     timeo = 100;
-//    rc = nn_setsockopt (rep1, NN_SOL_SOCKET, NN_RCVTIMEO,
-//       &timeo, sizeof (timeo));
-//    errno_assert (rc == 0);
     test_recv (rep1, "DEF");
 
     test_close (req1);

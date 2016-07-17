@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013-2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,14 +20,30 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CTCPMUX_INCLUDED
-#define NN_CTCPMUX_INCLUDED
+#include "once.h"
+#if NN_HAVE_WINDOWS
 
-#include "../../transport.h"
+/*  This craziness is required because Windows doesn't have the notion of
+    static initializers for CriticalSections.  */
+ 
+BOOL CALLBACK nn_do_once_cb (PINIT_ONCE InitOnce,
+    PVOID Parameter, PVOID *Context)
+{
+    void (*func)(void) = Parameter;
+    func();
+    return (TRUE);
+}
 
-/*  State machine managing connected TCPMUX socket. */
+void nn_do_once (nn_once_t *once, void (*func)(void))
+{
+    (void) InitOnceExecuteOnce(&once->once, nn_do_once_cb, func, NULL);
+}
 
-int nn_ctcpmux_create (void *hint, struct nn_epbase **epbase);
+#else /* !NN_HAVE_WINDOWS */
+
+void nn_do_once (nn_once_t *once, void (*func)(void))
+{
+    pthread_once (&once->once, func);
+}
 
 #endif
-

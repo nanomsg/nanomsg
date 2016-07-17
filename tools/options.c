@@ -26,7 +26,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -134,14 +133,14 @@ static void nn_print_usage (struct nn_parse_context *ctx, FILE *stream)
 
 static char *nn_print_line (FILE *out, char *str, size_t width)
 {
-    int i;
+    size_t i;
     if (strlen (str) < width) {
         fprintf (out, "%s", str);
         return "";
     }
     for (i = width; i > 1; --i) {
         if (isspace (str[i])) {
-            fprintf (out, "%.*s", i, str);
+            fprintf (out, "%.*s", (int) i, str);
             return str + i + 1;
         }
     }  /* no break points, just print as is */
@@ -152,7 +151,7 @@ static char *nn_print_line (FILE *out, char *str, size_t width)
 static void nn_print_help (struct nn_parse_context *ctx, FILE *stream)
 {
     int i;
-    int optlen;
+    size_t optlen;
     struct nn_option *opt;
     char *last_group;
     char *cursor;
@@ -334,8 +333,8 @@ static void nn_append_string (struct nn_parse_context *ctx,
 {
     struct nn_string_list *lst;
 
-    lst = (struct nn_string_list *)(
-        ((char *)ctx->target) + opt->offset);
+    lst = (struct nn_string_list *)(((char *)ctx->target) + opt->offset);
+    nn_assert (lst);
     if (lst->items) {
         lst->num += 1;
         lst->items = realloc (lst->items, sizeof (char *) * lst->num);
@@ -346,7 +345,9 @@ static void nn_append_string (struct nn_parse_context *ctx,
     if (!lst->items) {
         nn_memory_error (ctx);
     }
-    lst->items[lst->num-1] = str;
+
+    nn_assert (lst && lst->items);
+    lst->items [lst->num - 1] = str;
 }
 
 static void nn_append_string_to_free (struct nn_parse_context *ctx,
@@ -356,6 +357,7 @@ static void nn_append_string_to_free (struct nn_parse_context *ctx,
 
     lst = (struct nn_string_list *)(
         ((char *)ctx->target) + opt->offset);
+    nn_assert (lst);
     if (lst->to_free) {
         lst->to_free_num += 1;
         lst->to_free = realloc (lst->items,
@@ -367,7 +369,8 @@ static void nn_append_string_to_free (struct nn_parse_context *ctx,
     if (!lst->items) {
         nn_memory_error (ctx);
     }
-    lst->to_free[lst->to_free_num-1] = str;
+    nn_assert (lst->to_free);
+    lst->to_free [lst->to_free_num - 1] = str;
 }
 
 static void nn_process_option (struct nn_parse_context *ctx,
@@ -381,7 +384,7 @@ static void nn_process_option (struct nn_parse_context *ctx,
     char *data;
     size_t data_len;
     size_t data_buf;
-    int bytes_read;
+    size_t bytes_read;
 
     opt = &ctx->options[opt_index];
     if (ctx->mask & opt->conflicts_mask) {
@@ -603,8 +606,8 @@ static void nn_parse_long_option (struct nn_parse_context *ctx)
 {
     struct nn_option *opt;
     char *a, *b;
-    int longest_prefix;
-    int cur_prefix;
+    size_t longest_prefix;
+    size_t cur_prefix;
     int best_match;
     char *arg;
     int i;
@@ -790,6 +793,7 @@ void nn_free_options (struct nn_commandline *cline, void *target) {
         case NN_OPT_LIST_APPEND:
         case NN_OPT_LIST_APPEND_FMT:
             lst = (struct nn_string_list *)(((char *)target) + opt->offset);
+            nn_assert (lst);
             if(lst->items) {
                 free(lst->items);
                 lst->items = NULL;

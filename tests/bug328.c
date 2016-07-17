@@ -1,5 +1,7 @@
 /*
-    Copyright (c) 2013-2014 Martin Sustrik  All rights reserved.
+    Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,14 +22,34 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_BTCPMUX_INCLUDED
-#define NN_BTCPMUX_INCLUDED
+#include "../src/nn.h"
+#include "../src/pair.h"
 
-#include "../../transport.h"
+#include "testutil.h"
 
-/*  State machine managing bound TCPMUX socket. */
+int main (int argc, const char *argv[])
+{
+    int sb;
+    int sc;
+    char socket_address[128];
 
-int nn_btcpmux_create (void *hint, struct nn_epbase **epbase);
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
 
-#endif
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, socket_address);
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, socket_address);
+
+    nn_sleep(100);
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    nn_assert (nn_get_statistic (sc, NN_STAT_CURRENT_CONNECTIONS) == 1);
+    test_close (sb);
+    nn_sleep(300);
+    nn_assert (nn_get_statistic (sc, NN_STAT_CURRENT_CONNECTIONS) == 0);
+    test_close (sc);
+
+    return 0;
+}
 

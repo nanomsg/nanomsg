@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -20,14 +20,28 @@
     IN THE SOFTWARE.
 */
 
-#ifndef TCPMUX_INCLUDED
-#define TCPMUX_INCLUDED
+#ifndef NN_ONCE_INCLUDED
+#define NN_ONCE_INCLUDED
 
-#include <sys/socket.h>
+#ifdef NN_HAVE_WINDOWS
+#include "win.h"
+struct nn_once {
+    INIT_ONCE once;
+};
+#define	NN_ONCE_INITIALIZER	{ INIT_ONCE_STATIC_INIT }
 
-int tcpmux_listen (int port, const char *service);
-int tcpmux_accept (int s);
-int tcpmux_connect (int s, const struct sockaddr *addr,
-    socklen_t addrlen, const char *service);
+#else /* !NN_HAVE_WINDOWS */
 
-#endif
+#include <pthread.h>
+
+struct nn_once {
+    pthread_once_t once;
+};
+#define NN_ONCE_INITIALIZER	{ PTHREAD_ONCE_INIT }
+
+#endif /* NN_HAVE_WINDOWS */
+
+typedef struct nn_once nn_once_t;
+void nn_do_once (nn_once_t *once, void (*func)(void));
+
+#endif /* NN_ONCE_INCLUDED */

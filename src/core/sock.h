@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,20 +32,12 @@
 
 #include "../utils/efd.h"
 #include "../utils/sem.h"
-#include "../utils/clock.h"
 #include "../utils/list.h"
 
 struct nn_pipe;
 
 /*  The maximum implemented transport ID. */
 #define NN_MAX_TRANSPORT 4
-
-/*  The socket-internal statistics  */
-#define NN_STAT_MESSAGES_SENT          301
-#define NN_STAT_MESSAGES_RECEIVED      302
-#define NN_STAT_BYTES_SENT             303
-#define NN_STAT_BYTES_RECEIVED         304
-
 
 struct nn_sock
 {
@@ -64,10 +57,7 @@ struct nn_sock
     struct nn_efd sndfd;
     struct nn_efd rcvfd;
     struct nn_sem termsem;
-
-    /*  TODO: This clock can be accessed from different threads. If RDTSC
-        is out-of-sync among different CPU cores, this can be a problem. */
-    struct nn_clock clock;
+    struct nn_sem relesem;
 
     /*  List of all endpoints associated with the socket. */
     struct nn_list eps;
@@ -78,14 +68,19 @@ struct nn_sock
     /*  Next endpoint ID to assign to a new endpoint. */
     int eid;
 
+    /*  Count of active holds against the socket. */
+    int holds;
+
     /*  Socket-level socket options. */
     int linger;
     int sndbuf;
     int rcvbuf;
+    int rcvmaxsize;
     int sndtimeo;
     int rcvtimeo;
     int reconnect_ivl;
     int reconnect_ivl_max;
+    int maxttl;
 
     /*  Endpoint-specific options.  */
     struct nn_ep_options ep_template;
@@ -136,10 +131,20 @@ struct nn_sock
 
     /*  The socket name for statistics  */
     char socket_name[64];
+
+    /* Win32 Security Attribute */
+    void * sec_attr;
+    size_t sec_attr_size;
+    int outbuffersz;
+    int inbuffersz;
+
 };
 
 /*  Initialise the socket. */
 int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd);
+
+/*  Called by nn_close() to stop activity on the socket.  It doesn't block. */
+void nn_sock_stop (struct nn_sock *self);
 
 /*  Called by nn_close() to deallocate the socket. It's a blocking function
     and can return -EINTR. */
@@ -147,9 +152,6 @@ int nn_sock_term (struct nn_sock *self);
 
 /*  Called by sockbase when stopping is done. */
 void nn_sock_stopped (struct nn_sock *self);
-
-/*  Called by nn_term() to let the socket know about the process shutdown. */
-void nn_sock_zombify (struct nn_sock *self);
 
 /*  Returns the AIO context associated with the socket. */
 struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
@@ -191,6 +193,10 @@ void nn_sock_rm (struct nn_sock *self, struct nn_pipe *pipe);
 /*  Monitoring callbacks  */
 void nn_sock_report_error(struct nn_sock *self, struct nn_ep *ep,  int errnum);
 void nn_sock_stat_increment(struct nn_sock *self, int name, int64_t increment);
+
+/*  Holds and releases. */
+int nn_sock_hold (struct nn_sock *self);
+void nn_sock_rele (struct nn_sock *self);
 
 #endif
 

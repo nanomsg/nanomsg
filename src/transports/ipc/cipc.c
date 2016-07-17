@@ -416,6 +416,14 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     ss.ss_family = AF_UNIX;
     strncpy (un->sun_path, addr, sizeof (un->sun_path));
 
+#if defined NN_HAVE_WINDOWS
+    /* Get/Set security attribute pointer*/
+    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
+
+    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
+    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
+#endif
+
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
         sizeof (struct sockaddr_un));

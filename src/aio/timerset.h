@@ -23,7 +23,8 @@
 #ifndef NN_TIMERSET_INCLUDED
 #define NN_TIMERSET_INCLUDED
 
-#include "../utils/clock.h"
+#include <stdint.h>
+
 #include "../utils/list.h"
 
 /*  This class stores a list of timeouts and reports the next one to expire
@@ -35,7 +36,6 @@ struct nn_timerset_hndl {
 };
 
 struct nn_timerset {
-    struct nn_clock clock;
     struct nn_list timeouts;
 };
 

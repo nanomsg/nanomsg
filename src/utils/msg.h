@@ -52,7 +52,7 @@ void nn_msg_init_chunk (struct nn_msg *self, void *chunk);
 void nn_msg_term (struct nn_msg *self);
 
 /*  Moves the content of the message from src to dst. dst should not be
-    initialised prior to the operation. dst will be uninitialised after the
+    initialised prior to the operation. src will be uninitialised after the
     operation. */
 void nn_msg_mv (struct nn_msg *dst, struct nn_msg *src);
 

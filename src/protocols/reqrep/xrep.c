@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -174,8 +175,10 @@ int nn_xrep_send (struct nn_sockbase *self, struct nn_msg *msg)
         or if it's not ready for sending, silently drop the message. */
     data = nn_cont (nn_hash_get (&xrep->outpipes, key), struct nn_xrep_data,
         outitem);
-    if (!data || !(data->flags & NN_XREP_OUT))
+    if (!data || !(data->flags & NN_XREP_OUT)) {
+        nn_msg_term (msg);
         return 0;
+    }
 
     /*  Send the message. */
     rc = nn_pipe_send (data->pipe, msg);
@@ -192,6 +195,7 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
     struct nn_xrep *xrep;
     struct nn_pipe *pipe;
     int i;
+    int maxttl;
     void *data;
     size_t sz;
     struct nn_chunkref ref;
@@ -204,6 +208,10 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
         return rc;
 
     if (!(rc & NN_PIPE_PARSED)) {
+
+        sz = sizeof (maxttl);
+        rc = nn_sockbase_getopt (self, NN_MAXTTL, &maxttl, &sz);
+        errnum_assert (rc == 0, -rc);
 
         /*  Determine the size of the message header. */
         data = nn_chunkref_data (&msg->body);
@@ -224,6 +232,12 @@ int nn_xrep_recv (struct nn_sockbase *self, struct nn_msg *msg)
             ++i;
         }
         ++i;
+
+        /* If we encountered too many hops, just toss the message */
+        if (i > maxttl) {
+            nn_msg_term (msg);
+            return -EAGAIN;
+        }
 
         /*  Split the header and the body. */
         nn_assert (nn_chunkref_size (&msg->sphdr) == 0);

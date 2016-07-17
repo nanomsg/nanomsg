@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -21,14 +22,14 @@
 */
 
 #include "task.h"
+#include "../../utils/attr.h"
 
-void nn_task_init (struct nn_task *self, uint32_t id, nn_req_handle hndl)
+void nn_task_init (struct nn_task *self, uint32_t id)
 {
     self->id = id;
-    self->hndl = hndl;
 }
 
-void nn_task_term (struct nn_task *self)
+void nn_task_term (NN_UNUSED struct nn_task *self)
 {
 }
 

@@ -93,6 +93,11 @@ void nn_usock_init (struct nn_usock *self, int src, struct nn_fsm *owner)
     /* NamedPipe-related stuff. */
     memset (&self->pipename, 0, sizeof (self->pipename));
     self->pipesendbuf = NULL;
+    self->sec_attr = NULL;
+
+    /* default size for both in and out buffers is 4096 */
+    self->outbuffersz = 4096;
+    self->inbuffersz = 4096;
 }
 
 void nn_usock_term (struct nn_usock *self)
@@ -318,7 +323,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     size_t addrlen)
 {
     BOOL brc;
-    const GUID fid = WSAID_CONNECTEX;
+    GUID fid = WSAID_CONNECTEX;
     LPFN_CONNECTEX pconnectex;
     DWORD nbytes;
     DWORD winerror;
@@ -329,7 +334,6 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     /*  Notify the state machine that we've started connecting. */
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_CONNECT);
 
-	nn_assert(addrlen < INT_MAX);
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
 
     if (self->domain == AF_UNIX) {
@@ -338,16 +342,20 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     else
     {
         /*  Get the pointer to connect function. */
-        brc = WSAIoctl(self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
-            (void*)&fid, sizeof(fid), (void*)&pconnectex, sizeof(pconnectex),
+        brc = WSAIoctl (self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+            &fid, sizeof (fid), &pconnectex, sizeof (pconnectex),
             &nbytes, NULL, NULL) == 0;
-        wsa_assert(brc == TRUE);
-        nn_assert(nbytes == sizeof(pconnectex));
+        wsa_assert (brc == TRUE);
+        nn_assert (nbytes == sizeof (pconnectex));
+
+        /*  Ensure it is safe to cast this value to what might be a smaller
+            integer type to conform to the pconnectex function signature. */
+        nn_assert (addrlen < INT_MAX);
 
         /*  Connect itself. */
-        brc = pconnectex(self->s, (struct sockaddr*) addr, addrlen,
-            NULL, 0, NULL, &self->out.olpd);        
-        winerror = brc ? ERROR_SUCCESS : WSAGetLastError();
+        brc = pconnectex (self->s, addr, (int) addrlen, NULL, 0, NULL,
+            &self->out.olpd);
+        winerror = brc ? ERROR_SUCCESS : WSAGetLastError ();
     }
 
     /*  Immediate success. */
@@ -385,7 +393,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     nn_assert (iovcnt <= NN_USOCK_MAX_IOVCNT);
     for (i = 0; i != iovcnt; ++i) {
         wbuf [i].buf = (char FAR*) iov [i].iov_base;
-        wbuf [i].len = (u_long) iov [i].iov_len;
+        wbuf [i].len = (ULONG) iov [i].iov_len;
         len += iov [i].iov_len;
     }
 
@@ -396,6 +404,10 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         /* TODO: Do not copy the buffer, find an efficent way to Write 
            multiple buffers that doesn't affect the state machine. */
 
+        /*  Ensure the total buffer size does not exceed size limitation
+            of WriteFile. */
+        nn_assert (len <= MAXDWORD);
+
         nn_assert (!self->pipesendbuf);
         self->pipesendbuf = nn_alloc (len, "named pipe sendbuf");
 
@@ -404,7 +416,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
             memcpy ((char*)(self->pipesendbuf) + idx, iov [i].iov_base, iov [i].iov_len);
             idx += iov [i].iov_len;
         }
-        brc = WriteFile (self->p, self->pipesendbuf, len, NULL, &self->out.olpd);
+        brc = WriteFile (self->p, self->pipesendbuf, (DWORD) len, NULL, &self->out.olpd);
         if (nn_fast (brc || GetLastError() == ERROR_IO_PENDING)) {
             nn_worker_op_start (&self->out, 0);
             return;
@@ -449,13 +461,18 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
     /*  Start the receive operation. */
-    wbuf.len = (u_long) len;
+    wbuf.len = (ULONG) len;
     wbuf.buf = (char FAR*) buf;
     wflags = MSG_WAITALL;
     memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+
     if (self->domain == AF_UNIX) {
-        brc = ReadFile(self->p, buf, len, NULL, &self->in.olpd);
-        error = brc ? ERROR_SUCCESS : GetLastError();
+
+        /*  Ensure the total buffer size does not exceed size limitation
+            of WriteFile. */
+        nn_assert (len <= MAXDWORD);
+        brc = ReadFile (self->p, buf, (DWORD) len, NULL, &self->in.olpd);
+        error = brc ? ERROR_SUCCESS : GetLastError ();
     }
     else {
         rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
@@ -501,22 +518,19 @@ static void nn_usock_create_io_completion (struct nn_usock *self)
 static void nn_usock_create_pipe (struct nn_usock *self, const char *name)
 {
     char fullname [256];
-
     /*  First, create a fully qualified name for the named pipe. */
     _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
 
-    /* TODO: Expose custom nOutBufferSize, nInBufferSize, nDefaultTimeOut,
-             lpSecurityAttributes */
     self->p = CreateNamedPipeA (
         (char*) fullname,
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_BYTE | PIPE_READMODE_BYTE |
             PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,
         PIPE_UNLIMITED_INSTANCES,
-        4096,
-        4096,
+        self->outbuffersz,
+        self->inbuffersz,
         0,
-        NULL);
+        self->sec_attr);
 
     /* TODO: How to properly handle self->p == INVALID_HANDLE_VALUE? */
     win_assert (self->p != INVALID_HANDLE_VALUE);
@@ -535,12 +549,11 @@ DWORD nn_usock_open_pipe (struct nn_usock *self, const char *name)
     /*  First, create a fully qualified name for the named pipe. */
     _snprintf(fullname, sizeof (fullname), "\\\\.\\pipe\\%s", name);
 
-    /* TODO: Expose a way to pass lpSecurityAttributes */
     self->p = CreateFileA (
         fullname,
         GENERIC_READ | GENERIC_WRITE,
         0,
-        NULL,
+        self->sec_attr,
         OPEN_ALWAYS,
         FILE_FLAG_OVERLAPPED,
         NULL);

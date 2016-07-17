@@ -1,6 +1,8 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright (c) 2015-2016 Jack R. Dunaway.  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,27 +32,19 @@ extern "C" {
 
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 
-/*  Handle DSO symbol visibility                                             */
-#if defined NN_NO_EXPORTS
-#   define NN_EXPORT
-#else
-#   if defined _WIN32
-#      if defined NN_EXPORTS
-#          define NN_EXPORT __declspec(dllexport)
-#      else
-#          define NN_EXPORT __declspec(dllimport)
-#      endif
-#   else
-#      if defined __SUNPRO_C
-#          define NN_EXPORT __global
-#      elif (defined __GNUC__ && __GNUC__ >= 4) || \
-             defined __INTEL_COMPILER || defined __clang__
-#          define NN_EXPORT __attribute__ ((visibility("default")))
-#      else
-#          define NN_EXPORT
-#      endif
-#   endif
+/*  Handle DSO symbol visibility. */
+#if !defined(NN_EXPORT)
+#    if defined(_WIN32) && !defined(NN_STATIC_LIB)
+#        if defined NN_SHARED_LIB
+#            define NN_EXPORT __declspec(dllexport)
+#        else
+#            define NN_EXPORT __declspec(dllimport)
+#        endif
+#    else
+#        define NN_EXPORT extern
+#    endif
 #endif
 
 /******************************************************************************/
@@ -63,13 +57,13 @@ extern "C" {
 /*  www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html  */
 
 /*  The current interface version. */
-#define NN_VERSION_CURRENT 2
+#define NN_VERSION_CURRENT 5
 
 /*  The latest revision of the current interface. */
-#define NN_VERSION_REVISION 1
+#define NN_VERSION_REVISION 0
 
 /*  How many past interface versions are still supported. */
-#define NN_VERSION_AGE 2
+#define NN_VERSION_AGE 0
 
 /******************************************************************************/
 /*  Errors.                                                                   */
@@ -206,6 +200,8 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_NS_FLAG 10
 #define NN_NS_ERROR 11
 #define NN_NS_LIMIT 12
+#define NN_NS_EVENT 13
+#define NN_NS_STATISTIC 14
 
 /*  Constants that are returned in `type` member of nn_symbol_properties      */
 #define NN_TYPE_NONE 0
@@ -218,6 +214,8 @@ NN_EXPORT const char *nn_symbol (int i, int *value);
 #define NN_UNIT_MILLISECONDS 2
 #define NN_UNIT_PRIORITY 3
 #define NN_UNIT_BOOLEAN 4
+#define NN_UNIT_MESSAGES 5
+#define NN_UNIT_COUNTER 6
 
 /*  Structure that is returned from nn_symbol  */
 struct nn_symbol_properties {
@@ -335,6 +333,8 @@ NN_EXPORT  struct nn_cmsghdr *nn_cmsg_nxthdr_ (
 #define NN_PROTOCOL 13
 #define NN_IPV4ONLY 14
 #define NN_SOCKET_NAME 15
+#define NN_RCVMAXSIZE 16
+#define NN_MAXTTL 17
 
 /*  Send/recv options.                                                        */
 #define NN_DONTWAIT 1
@@ -379,14 +379,34 @@ NN_EXPORT int nn_poll (struct nn_pollfd *fds, int nfds, int timeout);
 NN_EXPORT int nn_device (int s1, int s2);
 
 /******************************************************************************/
-/*  Built-in support for multiplexers.                                        */
+/*  Statistics.                                                               */
 /******************************************************************************/
 
-NN_EXPORT int nn_tcpmuxd (int port);
+/*  Transport statistics  */
+#define NN_STAT_ESTABLISHED_CONNECTIONS 101
+#define NN_STAT_ACCEPTED_CONNECTIONS    102
+#define NN_STAT_DROPPED_CONNECTIONS     103
+#define NN_STAT_BROKEN_CONNECTIONS      104
+#define NN_STAT_CONNECT_ERRORS          105
+#define NN_STAT_BIND_ERRORS             106
+#define NN_STAT_ACCEPT_ERRORS           107
+
+#define NN_STAT_CURRENT_CONNECTIONS     201
+#define NN_STAT_INPROGRESS_CONNECTIONS  202
+#define NN_STAT_CURRENT_EP_ERRORS       203
+
+/*  The socket-internal statistics  */
+#define NN_STAT_MESSAGES_SENT           301
+#define NN_STAT_MESSAGES_RECEIVED       302
+#define NN_STAT_BYTES_SENT              303
+#define NN_STAT_BYTES_RECEIVED          304
+/*  Protocol statistics  */
+#define	NN_STAT_CURRENT_SND_PRIORITY    401
+
+NN_EXPORT uint64_t nn_get_statistic (int s, int stat);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

@@ -23,6 +23,8 @@
 #ifndef NN_OPTIONS_HEADER
 #define NN_OPTIONS_HEADER
 
+#include <stdlib.h>
+
 enum nn_option_type {
     NN_OPT_HELP,
     NN_OPT_INT,
@@ -81,7 +83,7 @@ struct nn_string_list {
 
 struct nn_blob {
     char *data;
-    int length;
+    size_t length;
     int need_free;
 };
 

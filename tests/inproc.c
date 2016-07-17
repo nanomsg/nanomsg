@@ -1,4 +1,4 @@
-/*
+ /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +20,7 @@
 */
 
 #include "../src/nn.h"
+#include "../src/bus.h"
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/reqrep.h"
@@ -36,6 +37,7 @@ int main ()
     int rc;
     int sb;
     int sc;
+    int s1, s2;
     int i;
     char buf [256];
     int val;
@@ -79,19 +81,17 @@ int main ()
     /*  Test whether queue limits are observed. */
     sb = test_socket (AF_SP, NN_PAIR);
     val = 200;
-    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
-    errno_assert (rc == 0);
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_RCVBUF, &val, sizeof (val));
     test_bind (sb, SOCKET_ADDRESS);
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, SOCKET_ADDRESS);
 
     val = 200;
-    rc = nn_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &val, sizeof (val));
-    errno_assert (rc == 0);
+    test_setsockopt (sc, NN_SOL_SOCKET, NN_SNDTIMEO, &val, sizeof (val));
     i = 0;
     while (1) {
         rc = nn_send (sc, "0123456789", 10, 0);
-        if (rc < 0 && nn_errno () == EAGAIN)
+        if (rc < 0 && nn_errno () == ETIMEDOUT)
             break;
         errno_assert (rc >= 0);
         nn_assert (rc == 10);
@@ -101,7 +101,7 @@ int main ()
     test_recv (sb, "0123456789");
     test_send (sc, "0123456789");
     rc = nn_send (sc, "0123456789", 10, 0);
-    nn_assert (rc < 0 && nn_errno () == EAGAIN);
+    nn_assert (rc < 0 && nn_errno () == ETIMEDOUT);
     for (i = 0; i != 20; ++i) {
         test_recv (sb, "0123456789");
     }
@@ -158,16 +158,65 @@ int main ()
             break;
         cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
     }
-    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8));
+    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8+sizeof (size_t)));
     data = NN_CMSG_DATA (cmsg);
-    nn_assert (!(data[0] & 0x80));
-    nn_assert (data[4] & 0x80);
+    nn_assert (!(data[0+sizeof (size_t)] & 0x80));
+    nn_assert (data[4+sizeof (size_t)] & 0x80);
 
     nn_freemsg (control);
 
     test_close (sc);
     test_close (sb);
-    
+
+    /* Test binding a new socket after originally bound socket shuts down. */
+    sb = test_socket (AF_SP, NN_BUS);
+    test_bind (sb, SOCKET_ADDRESS);
+
+    sc = test_socket (AF_SP, NN_BUS);
+    test_connect (sc, SOCKET_ADDRESS);
+
+    s1 = test_socket (AF_SP, NN_BUS);
+    test_connect (s1, SOCKET_ADDRESS);
+
+    /* Close bound socket, leaving connected sockets connect. */
+    test_close (sb);
+
+    nn_sleep (100);
+
+    /* Rebind a new socket to the address to which our connected sockets are listening. */
+    s2 = test_socket (AF_SP, NN_BUS);
+    test_bind (s2, SOCKET_ADDRESS);
+
+    /*  Ping-pong test. */
+    for (i = 0; i != 100; ++i) {
+
+        test_send (sc, "ABC");
+        test_send (s1, "QRS");
+        test_recv (s2, "ABC");
+        test_recv (s2, "QRS");
+        test_send (s2, "DEFG");
+        test_recv (sc, "DEFG");
+        test_recv (s1, "DEFG");
+    }
+
+    /*  Batch transfer test. */
+    for (i = 0; i != 100; ++i) {
+        test_send (sc, "XYZ");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_recv (s2, "XYZ");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_send (s1, "MNO");
+    }
+    for (i = 0; i != 100; ++i) {
+        test_recv (s2, "MNO");
+    }
+
+    test_close (s1);
+    test_close (sc);
+    test_close (s2);
+
     return 0;
 }
 

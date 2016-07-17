@@ -31,7 +31,7 @@ int nn_poller_init (struct nn_poller *self)
     self->index = 0;
     self->capacity = NN_POLLER_GRANULARITY;
     self->pollset =
-        nn_alloc (sizeof (struct pollfd*) * NN_POLLER_GRANULARITY,
+        nn_alloc (sizeof (struct pollfd) * NN_POLLER_GRANULARITY,
             "pollset");
     alloc_assert (self->pollset);
     self->hndls =
@@ -58,7 +58,7 @@ void nn_poller_add (struct nn_poller *self, int fd,
     if (nn_slow (self->size >= self->capacity)) {
         self->capacity *= 2;
         self->pollset = nn_realloc (self->pollset,
-            sizeof (struct pollfd*) * self->capacity);
+            sizeof (struct pollfd) * self->capacity);
         alloc_assert (self->pollset);
         self->hndls = nn_realloc (self->hndls,
             sizeof (struct nn_hndls_item) * self->capacity);

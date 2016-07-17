@@ -16,7 +16,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Broadcasts messages from any node to all other nodes in the topology. The socket
-should never receives messages that it sent itself.
+should never receive messages that it sent itself.
 
 This pattern scales only to local level (within a single machine or within
 a single LAN). Trying to scale it further can result in overloading individual
@@ -44,14 +44,14 @@ There are no options defined at the moment.
 
 SEE ALSO
 --------
-linknanomsg:nn_pubsub[7]
-linknanomsg:nn_reqrep[7]
-linknanomsg:nn_pipeline[7]
-linknanomsg:nn_survey[7]
-linknanomsg:nn_pair[7]
-linknanomsg:nanomsg[7]
+<<nn_pubsub.7.txt#,nn_pubsub(7)>>
+<<nn_reqrep.7.txt#,nn_reqrep(7)>>
+<<nn_pipeline.7.txt#,nn_pipeline(7)>>
+<<nn_survey.7.txt#,nn_survey(7)>>
+<<nn_pair.7.txt#,nn_pair(7)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

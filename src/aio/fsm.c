@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -24,6 +25,7 @@
 #include "ctx.h"
 
 #include "../utils/err.h"
+#include "../utils/attr.h"
 
 #include <stddef.h>
 
@@ -40,9 +42,18 @@ void nn_fsm_event_init (struct nn_fsm_event *self)
     nn_queue_item_init (&self->item);
 }
 
-void nn_fsm_event_term (struct nn_fsm_event *self)
+void nn_fsm_event_term (NN_UNUSED struct nn_fsm_event *self)
 {
-    nn_queue_item_term (&self->item);
+    /*  We don't term the queue item, although one might think we ought to.
+        It turns out that there are some hairy recursions which can cause
+        events to get submitted to queues even after the FSM is stopped.
+        We could spend more effort fixing this, and perhaps we ought to.
+        But given that the assertion itself is harmless, if an FSM event
+        is orphaned it should be pretty harmless -- the event won't be
+        processed but the FSM is shutting down anyway.  So skip it for now.
+        Later, if we don't rewrite/gut the entire FSM machinery, we can
+        revisit this. */
+    /* nn_queue_item_term (&self->item); */
 }
 
 int nn_fsm_event_active (struct nn_fsm_event *self)

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -81,6 +82,12 @@ struct nn_sws {
     /*  The state machine. */
     struct nn_fsm fsm;
     int state;
+
+    /*  Endpoint base. */
+    struct nn_epbase *epbase;
+
+    /*  Default message type set on outbound frames. */
+    uint8_t msg_type;
 
     /*  Controls Tx/Rx framing based on whether this peer is acting as
         a Client or a Server. */
@@ -185,19 +192,13 @@ void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array);
 /*  Deallocate an entire message array. */
 void nn_msg_array_term (struct nn_list *msg_array);
 
-/*  Returns the length in octets of a single UTF-8 codepoint,
-    NN_SWS_UTF8_FRAGMENT if a codepoint began correctly but the length
-    of the buffer ran out before validating a full code point, or
-    NN_SWS_UTF8_INVALID if an invalid code point is detected. */
-static int nn_utf8_code_point (const uint8_t *buffer, size_t len);
-
 void nn_sws_init (struct nn_sws *self, int src,
     struct nn_epbase *epbase, struct nn_fsm *owner);
 void nn_sws_term (struct nn_sws *self);
 
 int nn_sws_isidle (struct nn_sws *self);
 void nn_sws_start (struct nn_sws *self, struct nn_usock *usock, int mode,
-    const char *resource, const char *host);
+    const char *resource, const char *host, uint8_t msg_type);
 void nn_sws_stop (struct nn_sws *self);
 
 #endif

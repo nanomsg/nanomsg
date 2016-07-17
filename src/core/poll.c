@@ -78,8 +78,8 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
     }
     else {
 
-        //  POSIX platforms will sleep until timeout is expired,
-        //  so let's do the same on Windows.
+        /*  POSIX platforms will sleep until timeout is expired,
+            so let's do the same on Windows. */
         if (timeout > 0)
             nn_sleep(timeout);
         return 0;

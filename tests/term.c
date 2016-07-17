@@ -38,12 +38,11 @@ static void worker (NN_UNUSED void *arg)
     /*  Launch blocking function to check that it will be unblocked once
         nn_term() is called from the main thread. */
     rc = nn_recv (s, buf, sizeof (buf), 0);
-    nn_assert (rc == -1 && nn_errno () == ETERM);
+    nn_assert (rc == -1 && nn_errno () == EBADF);
 
     /*  Check that all subsequent operations fail in synchronous manner. */
     rc = nn_recv (s, buf, sizeof (buf), 0);
-    nn_assert (rc == -1 && nn_errno () == ETERM);
-
+    nn_assert (rc == -1 && nn_errno () == EBADF);
     test_close (s);
 }
 

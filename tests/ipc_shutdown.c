@@ -79,6 +79,10 @@ int main ()
 
     /*  Stress the shutdown algorithm. */
 
+#if defined(SIGPIPE) && defined(SIG_IGN)
+	signal (SIGPIPE, SIG_IGN);
+#endif
+
     sb = test_socket (AF_SP, NN_PUB);
     test_bind (sb, SOCKET_ADDRESS);
 
@@ -103,6 +107,7 @@ int main ()
 
         while (active) {
             (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
+            nn_sleep (0);
         }
 
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)

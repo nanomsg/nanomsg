@@ -21,10 +21,10 @@ On most systems, 'errno' can be accessed directly and this function is not
 needed. However, on Windows, there are multiple implementations of the CRT
 library (single-threaded, multi-threaded, release, debug) and each of them
 has its own instance of 'errno'. Thus, if nanomsg library and the application
-that uses it link with different versions of CRT library, they don't share
-same instance of 'errno'. Consequently, error codes set by nanomsg cannot be
+that uses it link with different versions of the CRT library, they don't share
+the same instance of 'errno'. Consequently, error codes set by nanomsg cannot be
 accessed by the application. To overcome this problem, application can use
-_nn_errno()_ function to retrieve the nanomsg's value of 'errno'.
+_nn_errno()_ function to retrieve nanomsg's value of 'errno'.
 
 RETURN VALUE
 ------------
@@ -48,10 +48,10 @@ if (rc < 0)
 
 SEE ALSO
 --------
-linknanomsg:nn_strerror[3]
-linknanomsg:nanomsg[7]
+<<nn_strerror.3.txt#,nn_strerror(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]
 

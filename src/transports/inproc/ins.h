@@ -40,10 +40,6 @@ struct nn_ins_item {
     /*  This is the local cache of the endpoint's protocol ID. This way we can
         check the value without actually locking the object. */
     int protocol;
-
-    /*  Number of connects on the fly. The object cannot be deallocated while
-        this value is non-zero. */
-    int connects;
 };
 
 void nn_ins_item_init (struct nn_ins_item *self,

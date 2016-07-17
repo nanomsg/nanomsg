@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway.  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -57,16 +58,16 @@
 #include "../../bus.h"
 
 static const struct nn_ws_sp_map NN_WS_HANDSHAKE_SP_MAP[] = {
-        { NN_PAIR, "x-nanomsg-pair" },
-        { NN_REQ, "x-nanomsg-req" },
-        { NN_REP, "x-nanomsg-rep" },
-        { NN_PUB, "x-nanomsg-pub" },
-        { NN_SUB, "x-nanomsg-sub" },
-        { NN_SURVEYOR, "x-nanomsg-surveyor" },
-        { NN_RESPONDENT, "x-nanomsg-respondent" },
-        { NN_PUSH, "x-nanomsg-push" },
-        { NN_PULL, "x-nanomsg-pull" },
-        { NN_BUS, "x-nanomsg-bus" }
+    { NN_PAIR,       NN_PAIR,       "pair.sp.nanomsg.org" },
+    { NN_REQ,        NN_REP,        "req.sp.nanomsg.org" },
+    { NN_REP,        NN_REQ,        "rep.sp.nanomsg.org" },
+    { NN_PUB,        NN_SUB,        "pub.sp.nanomsg.org" },
+    { NN_SUB,        NN_PUB,        "sub.sp.nanomsg.org" },
+    { NN_SURVEYOR,   NN_RESPONDENT, "surveyor.sp.nanomsg.org" },
+    { NN_RESPONDENT, NN_SURVEYOR,   "respondent.sp.nanomsg.org" },
+    { NN_PUSH,       NN_PULL,       "push.sp.nanomsg.org" },
+    { NN_PULL,       NN_PUSH,       "pull.sp.nanomsg.org" },
+    { NN_BUS,        NN_BUS,        "bus.sp.nanomsg.org" }
 };
 
 const size_t NN_WS_HANDSHAKE_SP_MAP_LEN = sizeof (NN_WS_HANDSHAKE_SP_MAP) /
@@ -126,8 +127,8 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self);
 static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self);
 static void nn_ws_handshake_client_request (struct nn_ws_handshake *self);
 static int nn_ws_handshake_parse_server_response (struct nn_ws_handshake *self);
-static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
-    uint8_t *hashed, size_t hashed_len);
+static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
+    char *hashed, size_t hashed_len);
 
 /*  String parsing support functions. */
 
@@ -145,12 +146,12 @@ static int nn_ws_match_token (const char* token, const char **subj,
     strings must be NULL terminated to avoid undefined behavior. If the
     match succeeds, values are stored into *addr and *len. */
 static int nn_ws_match_value (const char* termseq, const char **subj,
-    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
+    int ignore_leading_sp, int ignore_trailing_sp, const char **addr,
     size_t* const len);
 
 /*  Compares subject octet stream to expected value, optionally ignoring
     case sensitivity. Returns non-zero on success, zero on failure. */
-static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
+static int nn_ws_validate_value (const char* expected, const char *subj,
     size_t subj_len, int case_insensitive);
 
 void nn_ws_handshake_init (struct nn_ws_handshake *self, int src,
@@ -308,7 +309,7 @@ static int nn_ws_match_token (const char* token, const char **subj,
 }
 
 static int nn_ws_match_value (const char* termseq, const char **subj,
-    int ignore_leading_sp, int ignore_trailing_sp, const uint8_t **addr,
+    int ignore_leading_sp, int ignore_trailing_sp, const char **addr,
     size_t* const len)
 {
     const char *start;
@@ -359,7 +360,7 @@ static int nn_ws_match_value (const char* termseq, const char **subj,
     return NN_WS_HANDSHAKE_MATCH;
 }
 
-static int nn_ws_validate_value (const char* expected, const uint8_t *subj,
+static int nn_ws_validate_value (const char* expected, const char *subj,
     size_t subj_len, int case_insensitive)
 {
     if (strlen (expected) != subj_len)
@@ -390,7 +391,7 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
 {
     struct nn_ws_handshake *handshaker;
 
-    unsigned i;
+    size_t i;
 
     handshaker = nn_cont (self, struct nn_ws_handshake, fsm);
 
@@ -481,7 +482,11 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                     nn_assert (handshaker->recv_pos >=
                         (int) NN_WS_HANDSHAKE_TERMSEQ_LEN);
 
-                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i >= 0; i--) {
+                    /*  We only compare if we have at least one byte to
+                        compare against.  When i drops to zero, it means
+                        we don't have any bytes to match against, and it is
+                        automatically true. */
+                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i > 0; i--) {
                         if (memcmp (NN_WS_HANDSHAKE_TERMSEQ,
                             handshaker->opening_hs + handshaker->recv_pos - i,
                             i) == 0) {
@@ -659,7 +664,8 @@ static void nn_ws_handshake_handler (struct nn_fsm *self, int src, int type,
                     nn_assert (handshaker->recv_pos >=
                         (int) NN_WS_HANDSHAKE_TERMSEQ_LEN);
 
-                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i >= 0; i--) {
+                    /*  If i goes to 0, it no need to compare. */
+                    for (i = NN_WS_HANDSHAKE_TERMSEQ_LEN; i > 0; i--) {
                         if (memcmp (NN_WS_HANDSHAKE_TERMSEQ,
                             handshaker->response + handshaker->recv_pos - i,
                             i) == 0) {
@@ -1003,8 +1009,9 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
             if (nn_ws_validate_value (NN_WS_HANDSHAKE_SP_MAP [i].ws_sp,
                 self->protocol, self->protocol_len, 1)) {
-                if (nn_pipebase_ispeer (self->pipebase,
-                    NN_WS_HANDSHAKE_SP_MAP [i].sp)) {
+
+                if (self->pipebase->sock->socktype->protocol ==
+                    NN_WS_HANDSHAKE_SP_MAP [i].server) {
                     self->response_code = NN_WS_HANDSHAKE_RESPONSE_OK;
                     return NN_WS_HANDSHAKE_VALID;
                 }
@@ -1208,6 +1215,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     rc = nn_base64_encode (rand_key, sizeof (rand_key),
         encoded_key, sizeof (encoded_key));
+    nn_assert (rc >=0);
 
     encoded_key_len = strlen (encoded_key);
 
@@ -1222,7 +1230,7 @@ static void nn_ws_handshake_client_request (struct nn_ws_handshake *self)
 
     /*  Lookup SP header value. */
     for (i = 0; i < NN_WS_HANDSHAKE_SP_MAP_LEN; i++) {
-        if (NN_WS_HANDSHAKE_SP_MAP [i].sp ==
+        if (NN_WS_HANDSHAKE_SP_MAP [i].client ==
             self->pipebase->sock->socktype->protocol) {
             break;
         }
@@ -1266,6 +1274,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         
         rc = nn_ws_handshake_hash_key (self->key, self->key_len,
             accept_key, sizeof (accept_key));
+        nn_assert (rc >= 0);
 
         nn_assert (strlen (accept_key) == NN_WS_HANDSHAKE_ACCEPT_KEY_LEN);
 
@@ -1333,8 +1342,8 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
     return;
 }
 
-static int nn_ws_handshake_hash_key (const uint8_t *key, size_t key_len,
-    uint8_t *hashed, size_t hashed_len)
+static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
+    char *hashed, size_t hashed_len)
 {
     int rc;
     unsigned i;

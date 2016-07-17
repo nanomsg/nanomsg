@@ -23,7 +23,7 @@
 #ifndef NN_SHA1_INCLUDED
 #define NN_SHA1_INCLUDED
 
-#include "../../utils/int.h"
+#include <stdint.h>
 
 /*****************************************************************************/
 /*  SHA-1 SECURITY NOTICE:                                                   */

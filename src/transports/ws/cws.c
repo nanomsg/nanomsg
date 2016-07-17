@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
-    Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -39,7 +40,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <string.h>
@@ -85,6 +85,9 @@ struct nn_cws {
     /*  Used to wait before retrying to connect. */
     struct nn_backoff retry;
 
+    /*  Defines message validation and framing. */
+    uint8_t msg_type;
+
     /*  State machine that handles the active part of the connection
         lifetime. */
     struct nn_sws sws;
@@ -94,7 +97,7 @@ struct nn_cws {
     struct nn_chunkref remote_host;
     struct nn_chunkref nic;
     int remote_port;
-    int remote_hostname_len;
+    size_t remote_hostname_len;
 
     /*  If a close handshake is performed, this flag signals to not
         begin automatic reconnect retries. */
@@ -142,6 +145,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     struct nn_cws *self;
     int reconnect_ivl;
     int reconnect_ivl_max;
+    int msg_type;
     size_t sz;
 
     /*  Allocate the new endpoint object. */
@@ -166,7 +170,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     slash = colon ? strchr (colon, '/') : strchr (addr, '/');
     resource = slash ? slash : addr + addrlen;
     self->remote_hostname_len = colon ? colon - hostname : resource - hostname;
-    
+
     /*  Host contains both hostname and port. */
     hostlen = resource - hostname;
 
@@ -234,6 +238,13 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         nn_epbase_getctx (&self->epbase));
     self->state = NN_CWS_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CWS_SRC_USOCK, &self->fsm);
+
+    sz = sizeof (msg_type);
+    nn_epbase_getopt (&self->epbase, NN_WS, NN_WS_MSG_TYPE,
+        &msg_type, &sz);
+    nn_assert (sz == sizeof (msg_type));
+    self->msg_type = (uint8_t) msg_type;
+
     sz = sizeof (reconnect_ivl);
     nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
         &reconnect_ivl, &sz);
@@ -246,6 +257,7 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
         reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CWS_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
+
     nn_sws_init (&self->sws, NN_CWS_SRC_SWS, &self->epbase, &self->fsm);
     nn_dns_init (&self->dns, NN_CWS_SRC_DNS, &self->fsm);
 
@@ -411,7 +423,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_CONNECTED:
                 nn_sws_start (&cws->sws, &cws->usock, NN_WS_CLIENT,
                     nn_chunkref_data (&cws->resource),
-                    nn_chunkref_data (&cws->remote_host));
+                    nn_chunkref_data (&cws->remote_host), cws->msg_type);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 cws->peer_gone = 0;
                 nn_epbase_stat_increment (&cws->epbase,
@@ -506,11 +518,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                 /*  If the peer has confirmed itself gone with a Closing
                     Handshake, or if the local endpoint failed the remote,
                     don't try to reconnect. */
-                if (cws->peer_gone) {
-                    /*  It is expected that the application detects this and
-                        prunes the connection with nn_shutdown. */
-                }
-                else {
+                if (!cws->peer_gone) {
                     nn_backoff_start (&cws->retry);
                     cws->state = NN_CWS_STATE_WAITING;
                 }
@@ -661,7 +669,11 @@ static void nn_cws_start_connecting (struct nn_cws *self,
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-    errnum_assert (rc == 0, -rc);
+    if (nn_slow (rc != 0)) {
+        nn_backoff_start (&self->retry);
+        self->state = NN_CWS_STATE_WAITING;
+        return;
+    }
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);

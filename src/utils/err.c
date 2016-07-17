@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -24,6 +25,28 @@
 
 #ifdef NN_HAVE_WINDOWS
 #include "win.h"
+#endif
+
+#ifdef NN_HAVE_BACKTRACE
+#include <execinfo.h>
+
+void nn_backtrace_print (void)
+{
+    void *frames[50];
+    int size;
+    size = backtrace (frames, sizeof (frames) / sizeof (frames[0]));
+    if (size > 1) {
+        /*  Don't include the frame nn_backtrace_print itself. */
+        backtrace_symbols_fd (&frames[1], size-1, fileno (stderr));
+    }
+}
+
+/* XXX: Add Windows backtraces */
+
+#else
+void nn_backtrace_print (void)
+{
+}
 #endif
 
 #include <stdlib.h>
@@ -160,6 +183,8 @@ int nn_err_wsa_to_posix (int wsaerr)
         return ECONNABORTED;
     case WSAECONNRESET:
         return ECONNRESET;
+    case WSAENOTSOCK:
+        return ENOTSOCK;
     case ERROR_BROKEN_PIPE:
         return ECONNRESET;
     case WSAESOCKTNOSUPPORT:
@@ -185,4 +210,3 @@ void nn_win_error (int err, char *buf, size_t bufsize)
 }
 
 #endif
-

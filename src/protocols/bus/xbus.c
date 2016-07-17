@@ -30,7 +30,6 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/list.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 #include <stddef.h>

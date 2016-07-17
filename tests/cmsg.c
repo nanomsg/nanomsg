@@ -1,5 +1,7 @@
 /*
     Copyright (c) 2014 Martin Sustrik  All rights reserved.
+    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -26,9 +28,7 @@
 
 #include "testutil.h"
 
-#define SOCKET_ADDRESS "tcp://127.0.0.1:5555"
-
-int main ()
+int main (int argc, const char *argv[])
 {
     int rc;
     int rep;
@@ -40,11 +40,15 @@ int main ()
     struct nn_cmsghdr *cmsg;
     unsigned char *data;
     void *buf;
+    char socket_address[128];
+
+    test_addr_from(socket_address, "tcp", "127.0.0.1",
+            get_test_port(argc, argv));
     
     rep = test_socket (AF_SP_RAW, NN_REP);
-    test_bind (rep, SOCKET_ADDRESS);
+    test_bind (rep, socket_address);
     req = test_socket (AF_SP, NN_REQ);
-    test_connect (req, SOCKET_ADDRESS);
+    test_connect (req, socket_address);
 
     /* Test ancillary data in static buffer. */
 
@@ -66,10 +70,10 @@ int main ()
             break;
         cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
     }
-    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8));
+    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8+sizeof (size_t)));
     data = NN_CMSG_DATA (cmsg);
-    nn_assert (!(data[0] & 0x80));
-    nn_assert (data[4] & 0x80);
+    nn_assert (!(data[0+sizeof (size_t)] & 0x80));
+    nn_assert (data[4+sizeof (size_t)] & 0x80);
 
     rc = nn_sendmsg (rep, &hdr, 0);
     nn_assert (rc == 3);
@@ -95,10 +99,10 @@ int main ()
             break;
         cmsg = NN_CMSG_NXTHDR (&hdr, cmsg);
     }
-    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8));
+    nn_assert (cmsg->cmsg_len == NN_CMSG_SPACE (8+sizeof (size_t)));
     data = NN_CMSG_DATA (cmsg);
-    nn_assert (!(data[0] & 0x80));
-    nn_assert (data[4] & 0x80);
+    nn_assert (!(data[0+sizeof (size_t)] & 0x80));
+    nn_assert (data[4+sizeof (size_t)] & 0x80);
 
     rc = nn_sendmsg (rep, &hdr, 0);
     nn_assert (rc == 3);

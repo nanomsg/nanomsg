@@ -39,13 +39,13 @@ nn_connect (s2, "ipc:///tmp/test.ipc");
 
 SEE ALSO
 --------
-linknanomsg:nn_inproc[7]
-linknanomsg:nn_tcp[7]
-linknanomsg:nn_bind[3]
-linknanomsg:nn_connect[3]
-linknanomsg:nanomsg[7]
+<<nn_inproc.7.txt#,nn_inproc(7)>>
+<<nn_tcp.7.txt#,nn_tcp(7)>>
+<<nn_bind.3.txt#,nn_bind(3)>>
+<<nn_connect.3.txt#,nn_connect(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
 
 
 AUTHORS
 -------
-Martin Sustrik <sustrik@250bpm.com>
+link:mailto:sustrik@250bpm.com[Martin Sustrik]

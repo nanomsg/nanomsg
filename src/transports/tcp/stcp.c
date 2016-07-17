@@ -26,7 +26,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/wire.h"
-#include "../../utils/int.h"
 #include "../../utils/attr.h"
 
 /*  States of the object as a whole. */
@@ -204,6 +203,8 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
     int rc;
     struct nn_stcp *stcp;
     uint64_t size;
+    int opt;
+    size_t opt_sz = sizeof (opt);
 
     stcp = nn_cont (self, struct nn_stcp, fsm);
 
@@ -322,9 +323,21 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 switch (stcp->instate) {
                 case NN_STCP_INSTATE_HDR:
 
-                    /*  Message header was received. Allocate memory for the
-                        message. */
+                    /*  Message header was received. Check that message size
+                        is acceptable by comparing with NN_RCVMAXSIZE;
+                        if it's too large, drop the connection. */
                     size = nn_getll (stcp->inhdr);
+
+                    nn_pipebase_getopt (&stcp->pipebase, NN_SOL_SOCKET,
+                        NN_RCVMAXSIZE, &opt, &opt_sz);
+
+                    if (opt >= 0 && size > (unsigned)opt) {
+                        stcp->state = NN_STCP_STATE_DONE;
+                        nn_fsm_raise (&stcp->fsm, &stcp->done, NN_STCP_ERROR);
+                        return;
+                    }
+
+                    /*  Allocate memory for the message. */
                     nn_msg_term (&stcp->inmsg);
                     nn_msg_init (&stcp->inmsg, (size_t) size);
 

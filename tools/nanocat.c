@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Insollo Entertainment, LLC.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -362,7 +363,7 @@ int nn_create_socket (nn_options_t *options)
         nn_assert_errno (rc == 0, "Can't set send timeout");
     }
     if (options->recv_timeout >= 0) {
-        nn_set_recv_timeout (sock, (int) options->recv_timeout);
+        nn_set_recv_timeout (sock, (int) options->recv_timeout * 1000);
     }
     if (options->socket_name) {
         rc = nn_setsockopt (sock, NN_SOL_SOCKET, NN_SOCKET_NAME,
@@ -473,13 +474,11 @@ void nn_send_loop (nn_options_t *options, int sock)
     int rc;
     uint64_t start_time;
     int64_t time_to_sleep, interval;
-    struct nn_clock clock;
 
     interval = (int)(options->send_interval*1000);
-    nn_clock_init (&clock);
 
     for (;;) {
-        start_time = nn_clock_now (&clock);
+        start_time = nn_clock_ms();
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
@@ -489,7 +488,7 @@ void nn_send_loop (nn_options_t *options, int sock)
             nn_assert_errno (rc >= 0, "Can't send");
         }
         if (interval >= 0) {
-            time_to_sleep = (start_time + interval) - nn_clock_now (&clock);
+            time_to_sleep = (start_time + interval) - nn_clock_ms();
             if (time_to_sleep > 0) {
                 nn_sleep ((int) time_to_sleep);
             }
@@ -497,8 +496,6 @@ void nn_send_loop (nn_options_t *options, int sock)
             break;
         }
     }
-
-    nn_clock_term(&clock);
 }
 
 void nn_recv_loop (nn_options_t *options, int sock)
@@ -526,14 +523,12 @@ void nn_rw_loop (nn_options_t *options, int sock)
     void *buf;
     uint64_t start_time;
     int64_t time_to_sleep, interval, recv_timeout;
-    struct nn_clock clock;
 
     interval = (int)(options->send_interval*1000);
     recv_timeout = (int)(options->recv_timeout*1000);
-    nn_clock_init (&clock);
 
     for (;;) {
-        start_time = nn_clock_now (&clock);
+        start_time = nn_clock_ms();
         rc = nn_send (sock,
             options->data_to_send.data, options->data_to_send.length,
             0);
@@ -548,7 +543,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
         }
 
         for (;;) {
-            time_to_sleep = (start_time + interval) - nn_clock_now (&clock);
+            time_to_sleep = (start_time + interval) - nn_clock_ms();
             if (time_to_sleep <= 0) {
                 break;
             }
@@ -562,8 +557,7 @@ void nn_rw_loop (nn_options_t *options, int sock)
                 if (errno == EAGAIN) {
                     continue;
                 } else if (errno == ETIMEDOUT || errno == EFSM) {
-                    time_to_sleep = (start_time + interval)
-                        - nn_clock_now (&clock);
+                    time_to_sleep = (start_time + interval) - nn_clock_ms();
                     if (time_to_sleep > 0)
                         nn_sleep ((int) time_to_sleep);
                     continue;
@@ -574,8 +568,6 @@ void nn_rw_loop (nn_options_t *options, int sock)
             nn_freemsg (buf);
         }
     }
-
-    nn_clock_term(&clock);
 }
 
 void nn_resp_loop (nn_options_t *options, int sock)

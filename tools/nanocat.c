@@ -41,6 +41,9 @@
 #include <ctype.h>
 #if !defined NN_HAVE_WINDOWS
 #include <unistd.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #endif
 
 enum echo_format {
@@ -69,6 +72,9 @@ typedef struct nn_options {
     float send_delay;
     float send_interval;
     struct nn_blob data_to_send;
+#ifndef NN_HAVE_WINDOWS
+    struct nn_exec_data exec_data;
+#endif
 
     /* Input options */
     enum echo_format echo_format;
@@ -293,6 +299,14 @@ struct nn_option nn_options[] = {
      NN_MASK_DATA, NN_MASK_DATA, NN_MASK_WRITEABLE,
      "Output Options", "PATH", "Same as --data but get data from file PATH"},
 
+#ifndef NN_HAVE_WINDOWS
+    {"exec", 'E', NULL,
+     NN_OPT_EXEC, offsetof (nn_options_t, exec_data), NULL,
+     NN_MASK_DATA, NN_MASK_DATA, NN_MASK_WRITEABLE,
+     "Output Options", "PATH", "Launch an executable after retrieving
+                               "something from REP socket."},
+#endif
+
     /* Sentinel */
     {NULL, 0, NULL,
      0, 0, NULL,
@@ -469,6 +483,88 @@ void nn_connect_socket (nn_options_t *options, int sock)
     }
 }
 
+#ifndef NN_HAVE_WINDOWS
+int nn_spawn (struct nn_exec_data *exec_data, int sock,
+              char *buf, int buflen) 
+{
+    ssize_t sz;
+    int input_fds[2], output_fds[2];
+    pid_t child;
+    int rc;
+
+    /* Create two pipelines for reading and writing */
+    rc = pipe (input_fds);
+    nn_assert_errno (rc >= 0, "Error creating the pipe for input");
+
+    rc = pipe (output_fds);
+    nn_assert_errno (rc >= 0, "Error creating the pipe for output");
+
+    child = fork ();
+    nn_assert_errno ((int)child >= 0, "Error forking subprocess");
+
+    if (!child) {
+        close (input_fds[1]);
+        close (output_fds[0]);
+        close (STDIN_FILENO);
+        close (STDOUT_FILENO);
+
+        /* Bind the standard input to the input endpoint of input pipe */
+        dup (input_fds[0]);
+        /* Bind the standard output to the output endpoint of output pipe */
+        dup (output_fds[1]);
+        /* Drop the standard error */
+        close (STDERR_FILENO);
+
+        close(input_fds[0]);
+        close (output_fds[1]);
+
+        execvp (exec_data->argv[0], exec_data->argv);
+
+        /* Should not return */
+        nn_assert_errno (0, "Error executing subprocess");
+    }
+
+    close (input_fds[0]);
+    close (output_fds[1]);
+
+    while (buflen > 0) {
+        sz = write (input_fds[1], buf, buflen);
+        if (sz < 0 && errno == EPIPE)
+            break;
+
+        nn_assert_errno (sz >= 0, "Can't write");
+
+        if (sz == buflen)
+            break;
+
+        buf += sz;
+        buflen -= sz;
+    }
+
+    close (input_fds[1]);
+
+    rc = 0;
+    while (1) {
+        char data[PIPE_BUF];
+
+        sz = read (output_fds[0], data, sizeof (data));
+        nn_assert_errno (sz >= 0, "Can't read");
+
+        if (!sz)
+            break;
+
+        rc = nn_send (sock, data, sz, 0);
+        if (rc < 0)
+            break;
+    }
+
+    close (output_fds[0]);
+    wait(NULL);
+
+    return rc;
+}
+#endif
+
 void nn_send_loop (nn_options_t *options, int sock)
 {
     int rc;
@@ -582,11 +678,20 @@ void nn_resp_loop (nn_options_t *options, int sock)
         } else {
             nn_assert_errno (rc >= 0, "Can't recv");
         }
+
         nn_print_message (options, buf, rc);
+
+        if (options->data_to_send.data) {
+            rc = nn_send (sock,
+                options->data_to_send.data, options->data_to_send.length,
+                0);
+        }
+#ifndef NN_HAVE_WINDOWS
+        else
+            rc = nn_spawn (&options->exec_data, sock, buf, rc);
+#endif
         nn_freemsg (buf);
-        rc = nn_send (sock,
-            options->data_to_send.data, options->data_to_send.length,
-            0);
+
         if (rc < 0 && errno == EAGAIN) {
             fprintf (stderr, "Message not sent (EAGAIN)\n");
         } else {
@@ -610,6 +715,9 @@ int main (int argc, char **argv)
         /* send_delay        */ 0.f,
         /* send_interval     */ -1.f,
         /* data_to_send      */ {NULL, 0, 0},
+#ifndef NN_HAVE_WINDOWS
+        /* exec_data         */ {NULL, NULL},
+#endif
         /* echo_format       */ NN_NO_ECHO
     };
 
@@ -640,7 +748,11 @@ int main (int argc, char **argv)
         break;
     case NN_REP:
     case NN_RESPONDENT:
-        if (options.data_to_send.data) {
+        if (options.data_to_send.data
+#ifndef NN_HAVE_WINDOWS
+            || options.exec_data.args
+#endif
+        ) {
             nn_resp_loop (&options, sock);
         } else {
             nn_recv_loop (&options, sock);

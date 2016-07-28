@@ -29,6 +29,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
+#ifndef NN_HAVE_WINDOWS
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#endif
 
 struct nn_parse_context {
     /*  Initial state  */
@@ -63,6 +68,9 @@ static int nn_has_arg (struct nn_option *opt)
         case NN_OPT_LIST_APPEND:
         case NN_OPT_LIST_APPEND_FMT:
         case NN_OPT_READ_FILE:
+#ifndef NN_HAVE_WINDOWS
+        case NN_OPT_EXEC:
+#endif
             return 1;
     }
     nn_assert (0);
@@ -385,6 +393,12 @@ static void nn_process_option (struct nn_parse_context *ctx,
     size_t data_len;
     size_t data_buf;
     size_t bytes_read;
+#ifndef NN_HAVE_WINDOWS
+    int argc;
+    char **argv;
+    char *args, *curr_arg;
+    struct nn_exec_data *exec_data;
+#endif
 
     opt = &ctx->options[opt_index];
     if (ctx->mask & opt->conflicts_mask) {
@@ -521,6 +535,57 @@ static void nn_process_option (struct nn_parse_context *ctx,
             blob->length = data_len;
             blob->need_free = 1;
             return;
+#ifndef NN_HAVE_WINDOWS
+        case NN_OPT_EXEC:
+            assert (signal (SIGPIPE,SIG_IGN) != SIG_ERR);
+
+            /* Construct argv[] for execvp() */
+            args = malloc (strlen(argument) + 1);
+            if (!args)
+                nn_memory_error (ctx);
+
+            memcpy (args, argument, strlen(argument) + 1);
+
+            argv = (char **) malloc (sizeof (char *));
+            if (!argv)
+                nn_memory_error (ctx);
+
+            argc = 0;
+            argv[0] = NULL;
+            curr_arg = args;
+            while (*curr_arg) {
+                char *prev_arg;
+
+                /* Skip preposed spaces */
+                while (*curr_arg && isspace (*curr_arg))
+                    ++curr_arg;
+
+                if (*curr_arg)
+                    prev_arg = curr_arg++;
+                else
+                    break;
+
+                /* Skip characters */
+                while (*curr_arg && !isspace (*curr_arg))
+                    ++curr_arg;
+
+                argv = realloc (argv, sizeof (char *) * (++argc + 1));
+                if (!argv)
+                    nn_memory_error (ctx);
+
+                argv[argc - 1] = prev_arg;
+                argv[argc] = NULL;
+
+                if (*curr_arg)
+                    *curr_arg++ = 0;
+            }
+
+            exec_data = (struct nn_exec_data *)(((char *)ctx->target) + opt->offset);
+            exec_data->argv = argv;
+            exec_data->args = args;
+
+            return;
+#endif
     }
     abort ();
 }
@@ -784,6 +849,9 @@ void nn_free_options (struct nn_commandline *cline, void *target) {
     struct nn_option *opt;
     struct nn_blob *blob;
     struct nn_string_list *lst;
+#ifndef NN_HAVE_WINDOWS
+    struct nn_exec_data *exec_data;
+#endif
 
     for (i = 0;; ++i) {
         opt = &cline->options[i];
@@ -814,6 +882,13 @@ void nn_free_options (struct nn_commandline *cline, void *target) {
                 blob->need_free = 0;
             }
             break;
+#ifndef NN_HAVE_WINDOWS
+        case NN_OPT_EXEC:
+            exec_data = (struct nn_exec_data *)(((char *)target) + opt->offset);
+            free(exec_data->argv);
+            free(exec_data->args);
+            break;
+#endif
         default:
             break;
         }

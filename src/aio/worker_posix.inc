@@ -220,12 +220,12 @@ static void nn_worker_routine (void *arg)
 
                     /*  If the worker thread is asked to stop, do so. */
                     if (nn_slow (item == &self->stop)) {
-			/*  Make sure we remove all the other workers from
-			    the queue, because we're not doing anything with
-			    them. */
-			while (nn_queue_pop (&tasks) != NULL) {
-				continue;
-			}
+                        /*  Make sure we remove all the other workers from
+                            the queue, because we're not doing anything with
+                            them. */
+                        while (nn_queue_pop (&tasks) != NULL) {
+                            continue;
+                        }
                         nn_queue_term (&tasks);
                         return;
                     }

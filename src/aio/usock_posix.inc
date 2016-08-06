@@ -188,7 +188,7 @@ static void nn_usock_init_from_fd (struct nn_usock *self, int s)
     int opt;
 
     nn_assert (self->state == NN_USOCK_STATE_IDLE ||
-        NN_USOCK_STATE_BEING_ACCEPTED);
+        self->state == NN_USOCK_STATE_BEING_ACCEPTED);
 
     /*  Store the file descriptor. */
     nn_assert (self->s == -1);

@@ -83,7 +83,7 @@ EXAMPLE
 -------
 
 ----
-val = nn_get_statistic (s, NN_STAT_SENT_MESSAGES);
+val = nn_get_statistic (s, NN_STAT_MESSAGES_SENT);
 if (val == 0)
     printf ("No messages have been sent yet.\n");
 ----

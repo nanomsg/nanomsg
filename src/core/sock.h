@@ -72,7 +72,6 @@ struct nn_sock
     int holds;
 
     /*  Socket-level socket options. */
-    int linger;
     int sndbuf;
     int rcvbuf;
     int rcvmaxsize;

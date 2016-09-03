@@ -122,7 +122,6 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->eid = 1;
 
     /*  Default values for NN_SOL_SOCKET options. */
-    self->linger = 1000;
     self->sndbuf = 128 * 1024;
     self->rcvbuf = 128 * 1024;
     self->rcvmaxsize = 1024 * 1024;
@@ -322,9 +321,6 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
 
     /*  Generic socket-level options. */
     switch (option) {
-    case NN_LINGER:
-        self->linger = val;
-        return 0;
     case NN_SNDBUF:
         if (val <= 0)
             return -EINVAL;
@@ -376,6 +372,9 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
             return -EINVAL;
         self->maxttl = val;
         return 0;
+    case NN_LINGER:
+	/*  Ignored, retained for compatibility. */
+        return 0;
     }
 
     return -ENOPROTOOPT;
@@ -425,7 +424,7 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
         intval = self->socktype->protocol;
         break;
     case NN_LINGER:
-        intval = self->linger;
+        intval = 0;
         break;
     case NN_SNDBUF:
         intval = self->sndbuf;

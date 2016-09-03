@@ -27,11 +27,6 @@ specified by the 'optvallen' argument.
 _<nanomsg/nn.h>_ header defines generic socket-level options
 (_NN_SOL_SOCKET_ level). The options are as follows:
 
-*NN_LINGER*::
-    Specifies how long the socket should try to send pending outbound messages
-    after _nn_close()_ have been called, in milliseconds. Negative value means
-    infinite linger. The type of the option is int. Default value
-    is 1000 (1 second).
 *NN_SNDBUF*::
     Size of the send buffer, in bytes. To prevent blocking for messages larger
     than the buffer, exactly one message may be buffered in addition to the data
@@ -95,6 +90,13 @@ _<nanomsg/nn.h>_ header defines generic socket-level options
     it is dropped.  Each time the message is received (for example via
     the <<nn_device.3.txt#,nn_device(3)>> function) counts as a single hop.
     This provides a form of protection against inadvertent loops.
+*NN_LINGER*::
+    This option is not implemented, and should not be used in new code.
+    Applications which need to be sure that their messages are delivered
+    to a remote peer should either use an acknowledgement (implied when
+    receiving a reply on <<nn_reqrep.7.txt#,NN_REQ>> sockets), or insert
+    a suitable delay before calling <<nn_close.3.txt#,nn_close(3)>> or
+    exiting the application.
 
 
 

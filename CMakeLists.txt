@@ -42,7 +42,7 @@ endif ()
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 list (FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 if ("${isSystemDir}" STREQUAL "-1")
-    set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+    set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 endif ("${isSystemDir}" STREQUAL "-1")
 
 set (NN_DESCRIPTION "High-Performance Scalability Protocols")

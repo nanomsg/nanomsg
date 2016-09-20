@@ -10,4 +10,4 @@ Version: @NN_PACKAGE_VERSION@
 Requires:
 Libs: -L${libdir} -l@CMAKE_PROJECT_NAME@
 Libs.private:@NN_REQUIRED_LFLAGS@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/@CMAKE_PROJECT_NAME@

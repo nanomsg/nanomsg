@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright (c) 2012 Julien Ammous
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -62,6 +63,10 @@ uint64_t nn_clock_ms (void)
     return ticks * nn_clock_timebase_info.numer /
         nn_clock_timebase_info.denom / 1000000;
 
+#elif defined NN_HAVE_GETHRTIME
+
+    return gethrtime () / 1000000;
+
 #elif defined NN_HAVE_CLOCK_MONOTONIC
 
     int rc;
@@ -70,10 +75,6 @@ uint64_t nn_clock_ms (void)
     rc = clock_gettime (CLOCK_MONOTONIC, &tv);
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_nsec / 1000000;
-
-#elif defined NN_HAVE_GETHRTIME
-
-    return gethrtime () / 1000000;
 
 #else
 

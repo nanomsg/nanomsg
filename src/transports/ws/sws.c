@@ -815,6 +815,7 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
 
     /*  Copy Close Reason immediately following the code. */
     memcpy (payload_pos + NN_SWS_CLOSE_CODE_LEN, reason, reason_len);
+    self->fail_msg_len += reason_len;
 
     /*  If this is a client, apply mask. */
     if (self->mode == NN_WS_CLIENT) {
@@ -822,7 +823,6 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
             rand_mask, NN_SWS_FRAME_SIZE_MASK, NULL);
     }
 
-    self->fail_msg_len += payload_len;
 
     if (self->outstate == NN_SWS_OUTSTATE_IDLE) {
         iov.iov_base = self->fail_msg;

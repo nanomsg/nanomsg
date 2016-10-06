@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -30,6 +31,8 @@
 
 #include "../../aio/fsm.h"
 
+#include "../../utils/list.h"
+
 struct nn_cinproc {
 
     /*  The state machine. */
@@ -40,7 +43,7 @@ struct nn_cinproc {
     struct nn_ins_item item;
 
     /*  The actual inproc session. */
-    struct nn_sinproc sinproc;
+    struct nn_list sinprocs;
 };
 
 int nn_cinproc_create (void *hint, struct nn_epbase **epbase);

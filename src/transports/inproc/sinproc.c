@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -389,6 +389,16 @@ static void nn_sinproc_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_SINPROC_ACCEPTED:
                 rc = nn_pipebase_start (&sinproc->pipebase);
+		/*  We can fail this due to excl_add saying we are already
+                    connected. */
+                if (rc != 0) {
+                    nn_pipebase_stop (&sinproc->pipebase);
+                    sinproc->state = NN_SINPROC_STATE_DISCONNECTED;
+                    sinproc->peer = NULL;
+                    nn_fsm_raise (&sinproc->fsm, &sinproc->event_disconnect,
+                        NN_SINPROC_DISCONNECT);
+                    return;
+                }
                 errnum_assert (rc == 0, -rc);
                 sinproc->state = NN_SINPROC_STATE_ACTIVE;
                 return;

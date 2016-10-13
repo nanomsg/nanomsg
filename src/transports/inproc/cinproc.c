@@ -228,6 +228,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 nn_epbase_stat_increment (&cinproc->item.epbase,
                     NN_STAT_INPROGRESS_CONNECTIONS, 1);
 
+                nn_sinproc_term (&cinproc->sinproc);
                 nn_sinproc_init (&cinproc->sinproc, NN_CINPROC_SRC_SINPROC,
                     &cinproc->item.epbase, &cinproc->fsm);
                 return;

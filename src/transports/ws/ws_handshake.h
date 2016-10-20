@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -50,7 +50,6 @@
 
 /*  WebSocket protocol tokens as per RFC 6455. */
 #define NN_WS_HANDSHAKE_MAGIC_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-#define NN_WS_HANDSHAKE_CRLF "\r\n"
 #define NN_WS_HANDSHAKE_TERMSEQ "\r\n\r\n"
 #define NN_WS_HANDSHAKE_TERMSEQ_LEN strlen (NN_WS_HANDSHAKE_TERMSEQ)
 

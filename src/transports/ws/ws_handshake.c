@@ -38,6 +38,7 @@
 #include "../../utils/wire.h"
 #include "../../utils/attr.h"
 #include "../../utils/random.h"
+#include "../../utils/strcasestr.h"
 
 #include <stddef.h>
 #include <string.h>
@@ -905,6 +906,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     /*  RFC 7230 3.1.1 Request Line: HTTP version. Note case sensitivity. */
     if (!nn_ws_match_token ("HTTP/1.1", &pos, 0, 0))
         return NN_WS_HANDSHAKE_RECV_MORE;
+
     if (!nn_ws_match_token (CRLF, &pos, 0, 0))
         return NN_WS_HANDSHAKE_RECV_MORE;
 
@@ -912,6 +914,9 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         header field. Match them one by one. */
     while (strlen (pos))
     {
+        const char *conn = NULL;
+        size_t conn_len = 0;
+fprintf(stderr, "POS is %s\n", pos);
         if (nn_ws_match_token ("Host:", &pos, 1, 0)) {
             rc = nn_ws_match_value (CRLF, &pos, 1, 1,
                 &self->host, &self->host_len);
@@ -933,8 +938,19 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         }
         else if (nn_ws_match_token ("Connection:",
             &pos, 1, 0) == NN_WS_HANDSHAKE_MATCH) {
-            rc = nn_ws_match_value (CRLF, &pos, 1, 1,
-                &self->conn, &self->conn_len);
+
+            rc = nn_ws_match_value (CRLF, &pos, 1, 1, &conn, &conn_len);
+
+            /*  The values here can be comma delimited, or they can be
+                listed as separate Connection headers.  We only care about
+                the presence of the Upgrade header, and we're willing to
+                assume well-formedness.  This crummy parse may let clients
+                send us a malformed header that we ought to reject, but
+                we'll just cite Postel's law here if anyone asks. */
+            self->conn = nn_strcasestr (conn, "upgrade");
+            if (self->conn != NULL) {
+                self->conn_len = strlen ("upgrade");
+            }
         }
         else if (nn_ws_match_token ("Sec-WebSocket-Version:",
             &pos, 1, 0) == NN_WS_HANDSHAKE_MATCH) {

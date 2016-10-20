@@ -329,6 +329,11 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     /*  Try to accept new connection in synchronous manner. */
 #if NN_HAVE_ACCEPT4
     s = accept4 (listener->s, NULL, NULL, SOCK_CLOEXEC);
+    if ((s < 0) && (errno == ENOTSUP)) {
+        /*  Apparently some old versions of Linux have a stub for this in libc,
+            without any of the underlying kernel support. */
+        s = accept (listener->s, NULL, NULL);
+    }
 #else
     s = accept (listener->s, NULL, NULL);
 #endif

@@ -38,6 +38,10 @@ int nn_efd_init (struct nn_efd *self)
 
 #if defined NN_HAVE_PIPE2
     rc = pipe2 (p, O_NONBLOCK | O_CLOEXEC);
+    if ((rc == -1) &&  (errno == ENOTSUP)) {
+        /*  Deal with unimplemented system call/libc mismatch (Linux). */
+        rc = pipe (p);
+    }
 #else
     rc = pipe (p);
 #endif

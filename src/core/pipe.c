@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -86,8 +87,7 @@ int nn_pipebase_start (struct nn_pipebase *self)
         self->state = NN_PIPEBASE_STATE_FAILED;
         return rc;
     }
-    if (self->sock)
-        nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
+    nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
 
     return 0;
 }
@@ -107,8 +107,7 @@ void nn_pipebase_received (struct nn_pipebase *self)
     }
     nn_assert (self->instate == NN_PIPEBASE_INSTATE_ASYNC);
     self->instate = NN_PIPEBASE_INSTATE_IDLE;
-    if (self->sock)
-        nn_fsm_raise (&self->fsm, &self->in, NN_PIPE_IN);
+    nn_fsm_raise (&self->fsm, &self->in, NN_PIPE_IN);
 }
 
 void nn_pipebase_sent (struct nn_pipebase *self)
@@ -119,8 +118,7 @@ void nn_pipebase_sent (struct nn_pipebase *self)
     }
     nn_assert (self->outstate == NN_PIPEBASE_OUTSTATE_ASYNC);
     self->outstate = NN_PIPEBASE_OUTSTATE_IDLE;
-    if (self->sock)
-        nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
+    nn_fsm_raise (&self->fsm, &self->out, NN_PIPE_OUT);
 }
 
 void nn_pipebase_getopt (struct nn_pipebase *self, int level, int option,

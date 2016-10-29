@@ -16,7 +16,7 @@
       </address>
     </author>
 
-    <date month="August" year="2016" />
+    <date month="October" year="2016" />
 
     <area>Applications</area>
     <workgroup>Internet Engineering Task Force</workgroup>
@@ -75,38 +75,24 @@
 
         <figure>
            <artwork>
- 0                   1            
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Dest Mac Address (bytes 0-1) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Dest Mac Address (bytes 2-3) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Dest Mac Address (bytes 4-5) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Src Mac Address (bytes (0-1) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Src Mac Address (bytes (2-3) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Src Mac Address (bytes (4-5) |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|    0x90       |   0x01        |  &lt;- EtherType (0x901)
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  op   | flags |   version     |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|   reserved (must be 0)        |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  fragment offset              |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  fragment length              |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Dest port                    |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  Src port                     |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  message ID                   |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|  payload...                  
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|              destination mac address (bytes 0-3)              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  destination mac (bytes 4-5)  |    source mac (bytes 0-1)     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                   source mac address (bytes 2-5)              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|    0x90       |   0x01        |  op   | flags |   version     |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|        fragment offset        |       fragment length         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|        destination port       |         source port           |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          type                 |           message ID          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|       payload...                  
 +-+-+-+-+-+-+-+-
 
            </artwork>
@@ -136,9 +122,6 @@
 
         <t>The version byte MUST be set to 0x1.  Implementations MUST
         discard any messages received for any other version.</t>
-
-        <t>The reserved field MUST be 0.  Implementations MUST discard
-        any messages received that have other values here.</t>
 
         <t>The fragment length and offset are given in terms of octets,
         and only include the payload.  For example, the first fragment

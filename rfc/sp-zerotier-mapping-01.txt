@@ -4,8 +4,8 @@
 
 Internet Engineering Task Force                          G. D'Amore, Ed.
 Internet-Draft
-Intended status: Informational                               August 2016
-Expires: February 2, 2017
+Intended status: Informational                          October 26, 2016
+Expires: April 29, 2017
 
 
                ZeroTier Mapping for Scalability Protocols
@@ -30,7 +30,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on February 2, 2017.
+   This Internet-Draft will expire on April 29, 2017.
 
 Copyright Notice
 
@@ -53,9 +53,9 @@ Copyright Notice
 
 
 
-D'Amore                 Expires February 2, 2017                [Page 1]
+D'Amore                  Expires April 29, 2017                 [Page 1]
 
-Internet-Draft          ZeroTier mapping for SPs             August 2016
+Internet-Draft          ZeroTier mapping for SPs            October 2016
 
 
 1.  Underlying protocol
@@ -109,43 +109,29 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
 
 
 
-D'Amore                 Expires February 2, 2017                [Page 2]
+D'Amore                  Expires April 29, 2017                 [Page 2]
 
-Internet-Draft          ZeroTier mapping for SPs             August 2016
+Internet-Draft          ZeroTier mapping for SPs            October 2016
 
 
-    0                   1
-    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Dest Mac Address (bytes 0-1) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Dest Mac Address (bytes 2-3) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Dest Mac Address (bytes 4-5) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Src Mac Address (bytes (0-1) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Src Mac Address (bytes (2-3) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Src Mac Address (bytes (4-5) |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |    0x90       |   0x01        |  <- EtherType (0x901)
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  op   | flags |   version     |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |   reserved (must be 0)        |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  fragment offset              |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  fragment length              |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Dest port                    |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  Src port                     |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  message ID                   |
-   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |  payload...
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |              destination mac address (bytes 0-3)              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |  destination mac (bytes 4-5)  |    source mac (bytes 0-1)     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                   source mac address (bytes 2-5)              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |    0x90       |   0x01        |  op   | flags |   version     |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        fragment offset        |       fragment length         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |        destination port       |         source port           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |          type                 |           message ID          |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |       payload...
    +-+-+-+-+-+-+-+-
 
 
@@ -161,15 +147,6 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
 
    There are two flags defined.  The first is MF (1), which indicates
    that a message is fragmented, and more fragments follow.  This flag
-
-
-
-
-D'Amore                 Expires February 2, 2017                [Page 3]
-
-Internet-Draft          ZeroTier mapping for SPs             August 2016
-
-
    may only be set on DATA messages.  The last fragment of a message
    will not have this flag set.
 
@@ -182,12 +159,17 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    The version byte MUST be set to 0x1.  Implementations MUST discard
    any messages received for any other version.
 
-   The reserved field MUST be 0.  Implementations MUST discard any
-   messages received that have other values here.
-
    The fragment length and offset are given in terms of octets, and only
    include the payload.  For example, the first fragment of a message
    bearing a 2000 byte payload, itself only carrying 1400 bytes of that
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 3]
+
+Internet-Draft          ZeroTier mapping for SPs            October 2016
+
+
    payload would have the MF bit set in flags, offset 0, and length
    1400.  The second fragment would have the MF bit clear, length 600,
    and offset 1400.
@@ -218,14 +200,6 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    Note that it is not by accident that the payload is 32-bit aligned in
    this message format.
 
-
-
-
-D'Amore                 Expires February 2, 2017                [Page 4]
-
-Internet-Draft          ZeroTier mapping for SPs             August 2016
-
-
    Source and destination MAC addresses shall be constructed
    algorithmically from the relevant ZeroTier IDs.
 
@@ -244,6 +218,13 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    advertise its port number to a remote peer, and to verify that a peer
    is responsive.  The payload for the CONN frame is a 4 byte (big-
    endian) value, consisting of the SP protocol ID of the sender.
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 4]
+
+Internet-Draft          ZeroTier mapping for SPs            October 2016
+
 
    The connection is initiated by the initiator sending this message,
    with its own SP protocol ID.  The AK flag will in this case be clear.
@@ -273,15 +254,6 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    In order to keep session state, implementations will generally store
    data for each session.  In order to prevent a stale session from
    consuming these resources forever, and in order to keep underlying
-
-
-
-
-D'Amore                 Expires February 2, 2017                [Page 5]
-
-Internet-Draft          ZeroTier mapping for SPs             August 2016
-
-
    ZeroTier sessions alive, a PING message may be sent.  This message
    has no payload.
 
@@ -301,6 +273,14 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    no reply to the Nth attempt is received after T2 seconds have passed,
    then the remote peer should be assumed offline or dead, and the
    session closed.
+
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 5]
+
+Internet-Draft          ZeroTier mapping for SPs            October 2016
+
 
    It is recommended that T1, T2, and N all be configurable, with
    recommended default values of 60, 10, and 5.  With these values,
@@ -329,15 +309,6 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
 
       0xff Other uncategorized error.
 
-
-
-
-
-D'Amore                 Expires February 2, 2017                [Page 6]
-
-Internet-Draft          ZeroTier mapping for SPs             August 2016
-
-
    Implemenations MUST discard any session state upon receiving an ERR
    message.  These messages are not acknowledged.
 
@@ -355,6 +326,17 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    messages arrive before a message is reassembled, or more than 5
    seconds pass before the reassembly is complete, that the unassembled
    fragments be discarded.
+
+
+
+
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 6]
+
+Internet-Draft          ZeroTier mapping for SPs            October 2016
+
 
 9.  Ports
 
@@ -386,14 +368,6 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
    The URI scheme used to represent ZeroTier addresses makes use of
    ZeroTier IDs, ZeroTier network IDs, and our own 16-bit ports.
 
-
-
-
-D'Amore                 Expires February 2, 2017                [Page 7]
-
-Internet-Draft          ZeroTier mapping for SPs             August 2016
-
-
    The format shall be nnzt://<nwid>/<ztid>:<port>, where the <nwid>
    component represents the 16-digit hexadecimal ZeroTier network ID,
    the <ztid> represents the 10-digit hexadecimal ZeroTier Device ID,
@@ -407,6 +381,18 @@ Internet-Draft          ZeroTier mapping for SPs             August 2016
 
    The mapping isn't intended to provide any additional security in
    addition to what ZeroTier does.
+
+
+
+
+
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 7]
+
+Internet-Draft          ZeroTier mapping for SPs            October 2016
+
 
 Author's Address
 
@@ -445,4 +431,18 @@ Author's Address
 
 
 
-D'Amore                 Expires February 2, 2017                [Page 8]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+D'Amore                  Expires April 29, 2017                 [Page 8]

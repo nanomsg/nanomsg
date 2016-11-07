@@ -209,6 +209,8 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
     int rc;
     struct nn_sipc *sipc;
     uint64_t size;
+    int opt;
+    size_t opt_sz = sizeof (opt);
 
     sipc = nn_cont (self, struct nn_sipc, fsm);
 
@@ -328,10 +330,22 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 switch (sipc->instate) {
                 case NN_SIPC_INSTATE_HDR:
 
-                    /*  Message header was received. Allocate memory for the
-                        message. */
+                    /*  Message header was received. Check that message size
+                        is acceptable by comparing with NN_RCVMAXSIZE;
+                        if it's too large, drop the connection. */
                     nn_assert (sipc->inhdr [0] == NN_SIPC_MSG_NORMAL);
                     size = nn_getll (sipc->inhdr + 1);
+
+                    nn_pipebase_getopt (&sipc->pipebase, NN_SOL_SOCKET,
+                        NN_RCVMAXSIZE, &opt, &opt_sz);
+
+                    if (opt >= 0 && size > (unsigned)opt) {
+                        sipc->state = NN_SIPC_STATE_DONE;
+                        nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
+                        return;
+                    }
+
+                    /*  Allocate memory for the message. */
                     nn_msg_term (&sipc->inmsg);
                     nn_msg_init (&sipc->inmsg, (size_t) size);
 

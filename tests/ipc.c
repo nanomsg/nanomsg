@@ -37,9 +37,10 @@ int main ()
     int sc;
     int i;
     int s1, s2;
-#if !defined(NN_HAVE_WINDOWS)
+    void * dummy_buf;
     int rc;
-#endif
+    int opt;
+    size_t opt_sz = sizeof (opt);
 
     int size;
     char * buf;
@@ -122,6 +123,38 @@ int main ()
     test_close (sc);
     test_close (s1);
 #endif
+
+    /*  Test NN_RCVMAXSIZE limit */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    s1 = test_socket (AF_SP, NN_PAIR);
+    test_connect (s1, SOCKET_ADDRESS);
+    opt = 4;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, opt_sz);
+    nn_assert (rc == 0);
+    nn_sleep (100);
+    test_send (s1, "ABCD");
+    test_recv (sb, "ABCD");
+    test_send (s1, "ABCDE");
+    /*  Without sleep nn_recv returns EAGAIN even for string
+        of acceptable size, so false positives are possible. */
+    nn_sleep (100);
+    rc = nn_recv (sb, &dummy_buf, NN_MSG, NN_DONTWAIT);
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EAGAIN);
+    test_close (sb);
+    test_close (s1);
+
+    /*  Test that NN_RCVMAXSIZE can be -1, but not lower */
+    sb = test_socket (AF_SP, NN_PAIR);
+    opt = -1;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, opt_sz);
+    nn_assert (rc >= 0);
+    opt = -2;
+    rc = nn_setsockopt (sb, NN_SOL_SOCKET, NN_RCVMAXSIZE, &opt, opt_sz);
+    nn_assert (rc < 0);
+    errno_assert (nn_errno () == EINVAL);
+    test_close (sb);
 
     /*  Test closing a socket that is waiting to connect. */
     sc = test_socket (AF_SP, NN_PAIR);

@@ -313,6 +313,7 @@ if (NN_ENABLE_DOC)
     add_libnanomsg_man (nn_device 3)
     add_libnanomsg_man (nn_cmsg 3)
     add_libnanomsg_man (nn_poll 3)
+    add_libnanomsg_man (nn_term 3)
 
     add_libnanomsg_man (nanomsg 7)
     add_libnanomsg_man (nn_pair 7)

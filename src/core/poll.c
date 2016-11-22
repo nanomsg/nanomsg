@@ -190,7 +190,7 @@ int nn_poll (struct nn_pollfd *fds, int nfds, int timeout)
             ++pos;
         }
         if (fds [i].events & NN_POLLOUT) {
-            if (pfd [pos].revents & POLLIN)
+            if (pfd [pos].revents & POLLOUT)
                 fds [i].revents |= NN_POLLOUT;
             ++pos;
         }

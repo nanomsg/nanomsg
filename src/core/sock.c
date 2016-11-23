@@ -134,24 +134,8 @@ int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
     self->ep_template.rcvprio = 8;
     self->ep_template.ipv4only = 1;
 
-    /* Initialize statistic entries */
-    self->statistics.established_connections = 0;
-    self->statistics.accepted_connections = 0;
-    self->statistics.dropped_connections = 0;
-    self->statistics.broken_connections = 0;
-    self->statistics.connect_errors = 0;
-    self->statistics.bind_errors = 0;
-    self->statistics.accept_errors = 0;
-
-    self->statistics.messages_sent = 0;
-    self->statistics.messages_received = 0;
-    self->statistics.bytes_sent = 0;
-    self->statistics.bytes_received = 0;
-
-    self->statistics.current_connections = 0;
-    self->statistics.inprogress_connections = 0;
-    self->statistics.current_snd_priority = 0;
-    self->statistics.current_ep_errors = 0;
+    /* Clear statistic entries */
+    memset(&self->statistics, 0, sizeof (self->statistics));
 
     /*  Should be pretty much enough space for just the number  */
     sprintf(self->socket_name, "%d", fd);

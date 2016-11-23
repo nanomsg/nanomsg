@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -49,7 +50,7 @@ struct nn_aws {
     int state;
 
     /*  Pointer to the associated endpoint. */
-    struct nn_epbase *epbase;
+    struct nn_ep *ep;
 
     /*  Underlying socket. */
     struct nn_usock usock;
@@ -70,7 +71,7 @@ struct nn_aws {
 };
 
 void nn_aws_init (struct nn_aws *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner);
+    struct nn_ep *ep, struct nn_fsm *owner);
 void nn_aws_term (struct nn_aws *self);
 
 int nn_aws_isidle (struct nn_aws *self);

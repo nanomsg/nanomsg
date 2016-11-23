@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -49,17 +49,17 @@ static void nn_aws_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_aws_init (struct nn_aws *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner)
+    struct nn_ep *ep, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_aws_handler, nn_aws_shutdown,
         src, self, owner);
     self->state = NN_AWS_STATE_IDLE;
-    self->epbase = epbase;
+    self->ep = ep;
     nn_usock_init (&self->usock, NN_AWS_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;
-    nn_sws_init (&self->sws, NN_AWS_SRC_SWS, epbase, &self->fsm);
+    nn_sws_init (&self->sws, NN_AWS_SRC_SWS, ep, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);
@@ -110,8 +110,7 @@ static void nn_aws_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sws_isidle (&aws->sws)) {
-            nn_epbase_stat_increment (aws->epbase,
-                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_ep_stat_increment (aws->ep, NN_STAT_DROPPED_CONNECTIONS, 1);
             nn_sws_stop (&aws->sws);
         }
         aws->state = NN_AWS_STATE_STOPPING_SWS_FINAL;
@@ -183,24 +182,21 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
         case NN_AWS_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
-                nn_epbase_clear_error (aws->epbase);
+                nn_ep_clear_error (aws->ep);
 
                 /*  Set the relevant socket options. */
                 sz = sizeof (val);
-                nn_epbase_getopt (aws->epbase, NN_SOL_SOCKET, NN_SNDBUF,
-                    &val, &sz);
+                nn_ep_getopt (aws->ep, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&aws->usock, SOL_SOCKET, SO_SNDBUF,
                     &val, sizeof (val));
                 sz = sizeof (val);
-                nn_epbase_getopt (aws->epbase, NN_SOL_SOCKET, NN_RCVBUF,
-                    &val, &sz);
+                nn_ep_getopt (aws->ep, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&aws->usock, SOL_SOCKET, SO_RCVBUF,
                     &val, sizeof (val));
                 sz = sizeof (val);
-                nn_epbase_getopt (aws->epbase, NN_WS, NN_WS_MSG_TYPE,
-                    &val, &sz);
+                nn_ep_getopt (aws->ep, NN_WS, NN_WS_MSG_TYPE, &val, &sz);
                 msg_type = (uint8_t)val;
 
                 /*   Since the WebSocket handshake must poll, the receive
@@ -224,8 +220,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
                     NULL, NULL, msg_type);
                 aws->state = NN_AWS_STATE_ACTIVE;
 
-                nn_epbase_stat_increment (aws->epbase,
-                    NN_STAT_ACCEPTED_CONNECTIONS, 1);
+                nn_ep_stat_increment (aws->ep, NN_STAT_ACCEPTED_CONNECTIONS, 1);
 
                 return;
 
@@ -237,10 +232,8 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
             switch (type) {
 
             case NN_USOCK_ACCEPT_ERROR:
-                nn_epbase_set_error (aws->epbase,
-                    nn_usock_geterrno (aws->listener));
-                nn_epbase_stat_increment (aws->epbase,
-                    NN_STAT_ACCEPT_ERRORS, 1);
+                nn_ep_set_error (aws->ep, nn_usock_geterrno (aws->listener));
+                nn_ep_stat_increment (aws->ep, NN_STAT_ACCEPT_ERRORS, 1);
                 nn_usock_accept (&aws->usock, aws->listener);
                 return;
 
@@ -269,8 +262,7 @@ static void nn_aws_handler (struct nn_fsm *self, int src, int type,
             case NN_SWS_RETURN_ERROR:
                 nn_sws_stop (&aws->sws);
                 aws->state = NN_AWS_STATE_STOPPING_SWS;
-                nn_epbase_stat_increment (aws->epbase,
-                    NN_STAT_BROKEN_CONNECTIONS, 1);
+                nn_ep_stat_increment (aws->ep, NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (aws->state, src, type);

@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014-2016 Jack R. Dunaway. All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -75,9 +75,7 @@ struct nn_cws {
     struct nn_fsm fsm;
     int state;
 
-    /*  This object is a specific type of endpoint.
-        Thus it is derived from epbase. */
-    struct nn_epbase epbase;
+    struct nn_ep *ep;
 
     /*  The underlying WS socket. */
     struct nn_usock usock;
@@ -109,10 +107,10 @@ struct nn_cws {
     struct nn_dns_result dns_result;
 };
 
-/*  nn_epbase virtual interface implementation. */
-static void nn_cws_stop (struct nn_epbase *self);
-static void nn_cws_destroy (struct nn_epbase *self);
-const struct nn_epbase_vfptr nn_cws_epbase_vfptr = {
+/*  nn_ep virtual interface implementation. */
+static void nn_cws_stop (struct nn_ep *ep);
+static void nn_cws_destroy (struct nn_ep *ep);
+const struct nn_ep_vfptr nn_cws_ep_vfptr = {
     nn_cws_stop,
     nn_cws_destroy
 };
@@ -126,7 +124,7 @@ static void nn_cws_start_resolving (struct nn_cws *self);
 static void nn_cws_start_connecting (struct nn_cws *self,
     struct sockaddr_storage *ss, size_t sslen);
 
-int nn_cws_create (void *hint, struct nn_epbase **epbase)
+int nn_cws_create (struct nn_ep *ep)
 {
     int rc;
     const char *addr;
@@ -151,18 +149,18 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_cws), "cws");
     alloc_assert (self);
+    self->ep = ep;
 
     /*  Initalise the endpoint. */
-    nn_epbase_init (&self->epbase, &nn_cws_epbase_vfptr, hint);
+    nn_ep_tran_setup (ep, &nn_cws_ep_vfptr, self);
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-        &ipv4only, &ipv4onlylen);
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_IPV4ONLY, &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
     /*  Start parsing the address. */
-    addr = nn_epbase_getaddr (&self->epbase);
+    addr = nn_ep_getaddr (ep);
     addrlen = strlen (addr);
     semicolon = strchr (addr, ';');
     hostname = semicolon ? semicolon + 1 : addr;
@@ -175,10 +173,9 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     hostlen = resource - hostname;
 
     /*  Parse the port; assume port 80 if not explicitly declared. */
-    if (nn_slow (colon != NULL)) {
+    if (colon != NULL) {
         rc = nn_port_resolve (colon + 1, resource - colon - 1);
-        if (nn_slow (rc < 0)) {
-            nn_epbase_term (&self->epbase);
+        if (rc < 0) {
             return -EINVAL;
         }
         self->remote_port = rc;
@@ -192,7 +189,6 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     if (nn_dns_check_hostname (hostname, self->remote_hostname_len) < 0 &&
           nn_literal_resolve (hostname, self->remote_hostname_len, ipv4only,
           &ss, &sslen) < 0) {
-        nn_epbase_term (&self->epbase);
         return -EINVAL;
     }
 
@@ -200,7 +196,6 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     if (semicolon) {
         rc = nn_iface_resolve (addr, semicolon - addr, ipv4only, &ss, &sslen);
         if (rc < 0) {
-            nn_epbase_term (&self->epbase);
             return -ENODEV;
         }
     }
@@ -235,22 +230,20 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
 
     /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_cws_handler, nn_cws_shutdown,
-        nn_epbase_getctx (&self->epbase));
+        nn_ep_getctx (ep));
     self->state = NN_CWS_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CWS_SRC_USOCK, &self->fsm);
 
     sz = sizeof (msg_type);
-    nn_epbase_getopt (&self->epbase, NN_WS, NN_WS_MSG_TYPE,
-        &msg_type, &sz);
+    nn_ep_getopt (ep, NN_WS, NN_WS_MSG_TYPE, &msg_type, &sz);
     nn_assert (sz == sizeof (msg_type));
     self->msg_type = (uint8_t) msg_type;
 
     sz = sizeof (reconnect_ivl);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
-        &reconnect_ivl, &sz);
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_RECONNECT_IVL, &reconnect_ivl, &sz);
     nn_assert (sz == sizeof (reconnect_ivl));
     sz = sizeof (reconnect_ivl_max);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
         &reconnect_ivl_max, &sz);
     nn_assert (sz == sizeof (reconnect_ivl_max));
     if (reconnect_ivl_max == 0)
@@ -258,32 +251,29 @@ int nn_cws_create (void *hint, struct nn_epbase **epbase)
     nn_backoff_init (&self->retry, NN_CWS_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
 
-    nn_sws_init (&self->sws, NN_CWS_SRC_SWS, &self->epbase, &self->fsm);
+    nn_sws_init (&self->sws, NN_CWS_SRC_SWS, ep, &self->fsm);
     nn_dns_init (&self->dns, NN_CWS_SRC_DNS, &self->fsm);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
-    /*  Return the base class as an out parameter. */
-    *epbase = &self->epbase;
-
     return 0;
 }
 
-static void nn_cws_stop (struct nn_epbase *self)
+static void nn_cws_stop (struct nn_ep *ep)
 {
     struct nn_cws *cws;
 
-    cws = nn_cont (self, struct nn_cws, epbase);
+    cws = nn_ep_tran_private (ep);
 
     nn_fsm_stop (&cws->fsm);
 }
 
-static void nn_cws_destroy (struct nn_epbase *self)
+static void nn_cws_destroy (struct nn_ep *ep)
 {
     struct nn_cws *cws;
 
-    cws = nn_cont (self, struct nn_cws, epbase);
+    cws = nn_ep_tran_private (ep);
 
     nn_chunkref_term (&cws->resource);
     nn_chunkref_term (&cws->remote_host);
@@ -293,7 +283,6 @@ static void nn_cws_destroy (struct nn_epbase *self)
     nn_backoff_term (&cws->retry);
     nn_usock_term (&cws->usock);
     nn_fsm_term (&cws->fsm);
-    nn_epbase_term (&cws->epbase);
 
     nn_free (cws);
 }
@@ -307,8 +296,7 @@ static void nn_cws_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sws_isidle (&cws->sws)) {
-            nn_epbase_stat_increment (&cws->epbase,
-                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_ep_stat_increment (cws->ep, NN_STAT_DROPPED_CONNECTIONS, 1);
             nn_sws_stop (&cws->sws);
         }
         cws->state = NN_CWS_STATE_STOPPING_SWS_FINAL;
@@ -328,7 +316,7 @@ static void nn_cws_shutdown (struct nn_fsm *self, int src, int type,
             return;
         cws->state = NN_CWS_STATE_IDLE;
         nn_fsm_stopped_noevent (&cws->fsm);
-        nn_epbase_stopped (&cws->epbase);
+        nn_ep_stopped (cws->ep);
         return;
     }
 
@@ -426,21 +414,19 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
                     nn_chunkref_data (&cws->remote_host), cws->msg_type);
                 cws->state = NN_CWS_STATE_ACTIVE;
                 cws->peer_gone = 0;
-                nn_epbase_stat_increment (&cws->epbase,
+                nn_ep_stat_increment (cws->ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
-                nn_epbase_stat_increment (&cws->epbase,
+                nn_ep_stat_increment (cws->ep,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
-                nn_epbase_clear_error (&cws->epbase);
+                nn_ep_clear_error (cws->ep);
                 return;
             case NN_USOCK_ERROR:
-                nn_epbase_set_error (&cws->epbase,
-                    nn_usock_geterrno (&cws->usock));
+                nn_ep_set_error (cws->ep, nn_usock_geterrno (&cws->usock));
                 nn_usock_stop (&cws->usock);
                 cws->state = NN_CWS_STATE_STOPPING_USOCK;
-                nn_epbase_stat_increment (&cws->epbase,
+                nn_ep_stat_increment (cws->ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
-                nn_epbase_stat_increment (&cws->epbase,
-                    NN_STAT_CONNECT_ERRORS, 1);
+                nn_ep_stat_increment (cws->ep, NN_STAT_CONNECT_ERRORS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cws->state, src, type);
@@ -469,8 +455,7 @@ static void nn_cws_handler (struct nn_fsm *self, int src, int type,
             case NN_SWS_RETURN_ERROR:
                 nn_sws_stop (&cws->sws);
                 cws->state = NN_CWS_STATE_STOPPING_SWS;
-                nn_epbase_stat_increment (&cws->epbase,
-                    NN_STAT_BROKEN_CONNECTIONS, 1);
+                nn_ep_stat_increment (cws->ep, NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cws->state, src, type);
@@ -593,7 +578,7 @@ static void nn_cws_start_resolving (struct nn_cws *self)
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_IPV4ONLY,
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
@@ -615,7 +600,6 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     struct sockaddr_storage local;
     size_t locallen;
     int ipv4only;
-    size_t ipv4onlylen;
     int val;
     size_t sz;
 
@@ -623,10 +607,9 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     memset (&local, 0, sizeof (local));
 
     /*  Check whether IPv6 is to be used. */
-    ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-        &ipv4only, &ipv4onlylen);
-    nn_assert (ipv4onlylen == sizeof (ipv4only));
+    sz = sizeof (ipv4only);
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_IPV4ONLY, &ipv4only, &sz);
+    nn_assert (sz == sizeof (ipv4only));
 
     rc = nn_iface_resolve (nn_chunkref_data (&self->nic),
     nn_chunkref_size (&self->nic), ipv4only, &local, &locallen);
@@ -657,12 +640,12 @@ static void nn_cws_start_connecting (struct nn_cws *self,
 
     /*  Set the relevant socket options. */
     sz = sizeof (val);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
     nn_assert (sz == sizeof (val));
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_SNDBUF,
         &val, sizeof (val));
     sz = sizeof (val);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
     nn_assert (sz == sizeof (val));
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
         &val, sizeof (val));
@@ -678,6 +661,5 @@ static void nn_cws_start_connecting (struct nn_cws *self,
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &remote, remotelen);
     self->state = NN_CWS_STATE_CONNECTING;
-    nn_epbase_stat_increment (&self->epbase,
-        NN_STAT_INPROGRESS_CONNECTIONS, 1);
+    nn_ep_stat_increment (self->ep, NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }

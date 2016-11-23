@@ -33,8 +33,8 @@
 /*  nn_transport interface. */
 static void nn_inproc_init (void);
 static void nn_inproc_term (void);
-static int nn_inproc_bind (void *hint, struct nn_epbase **epbase);
-static int nn_inproc_connect (void *hint, struct nn_epbase **epbase);
+static int nn_inproc_bind (struct nn_ep *);
+static int nn_inproc_connect (struct nn_ep *);
 
 static struct nn_transport nn_inproc_vfptr = {
     "inproc",
@@ -59,13 +59,13 @@ static void nn_inproc_term (void)
     nn_ins_term ();
 }
 
-static int nn_inproc_bind (void *hint, struct nn_epbase **epbase)
+static int nn_inproc_bind (struct nn_ep *ep)
 {
-    return nn_binproc_create (hint, epbase);
+    return nn_binproc_create (ep);
 }
 
-static int nn_inproc_connect (void *hint, struct nn_epbase **epbase)
+static int nn_inproc_connect (struct nn_ep *ep)
 {
-    return nn_cinproc_create (hint, epbase);
+    return nn_cinproc_create (ep);
 }
 

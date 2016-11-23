@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -69,7 +70,7 @@ static void nn_sipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 void nn_sipc_init (struct nn_sipc *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner)
+    struct nn_ep *ep, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_sipc_handler, nn_sipc_shutdown,
         src, self, owner);
@@ -78,7 +79,7 @@ void nn_sipc_init (struct nn_sipc *self, int src,
     self->usock = NULL;
     self->usock_owner.src = -1;
     self->usock_owner.fsm = NULL;
-    nn_pipebase_init (&self->pipebase, &nn_sipc_pipebase_vfptr, epbase);
+    nn_pipebase_init (&self->pipebase, &nn_sipc_pipebase_vfptr, ep);
     self->instate = -1;
     nn_msg_init (&self->inmsg, 0);
     self->outstate = -1;

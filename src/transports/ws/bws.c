@@ -65,9 +65,7 @@ struct nn_bws {
     struct nn_fsm fsm;
     int state;
 
-    /*  This object is a specific type of endpoint.
-        Thus it is derived from epbase. */
-    struct nn_epbase epbase;
+    struct nn_ep *ep;
 
     /*  The underlying listening WS socket. */
     struct nn_usock usock;
@@ -79,10 +77,10 @@ struct nn_bws {
     struct nn_list awss;
 };
 
-/*  nn_epbase virtual interface implementation. */
-static void nn_bws_stop (struct nn_epbase *self);
-static void nn_bws_destroy (struct nn_epbase *self);
-const struct nn_epbase_vfptr nn_bws_epbase_vfptr = {
+/*  nn_ep virtual interface implementation. */
+static void nn_bws_stop (struct nn_ep *);
+static void nn_bws_destroy (struct nn_ep *);
+const struct nn_ep_vfptr nn_bws_ep_vfptr = {
     nn_bws_stop,
     nn_bws_destroy
 };
@@ -95,7 +93,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
 static int nn_bws_listen (struct nn_bws *self);
 static void nn_bws_start_accepting (struct nn_bws *self);
 
-int nn_bws_create (void *hint, struct nn_epbase **epbase)
+int nn_bws_create (struct nn_ep *ep)
 {
     int rc;
     struct nn_bws *self;
@@ -110,41 +108,37 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_bws), "bws");
     alloc_assert (self);
+    self->ep = ep;
 
-    /*  Initalise the epbase. */
-    nn_epbase_init (&self->epbase, &nn_bws_epbase_vfptr, hint);
-    addr = nn_epbase_getaddr (&self->epbase);
+    nn_ep_tran_setup (ep, &nn_bws_ep_vfptr, self);
+    addr = nn_ep_getaddr (ep);
 
     /*  Parse the port. */
     end = addr + strlen (addr);
     pos = strrchr (addr, ':');
-    if (nn_slow (!pos)) {
-        nn_epbase_term (&self->epbase);
+    if (!pos) {
         return -EINVAL;
     }
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
-    if (nn_slow (rc < 0)) {
-        nn_epbase_term (&self->epbase);
+    if (rc < 0) {
         return -EINVAL;
     }
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
-        &ipv4only, &ipv4onlylen);
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_IPV4ONLY, &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
 
     /*  Parse the address. */
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
-    if (nn_slow (rc < 0)) {
-        nn_epbase_term (&self->epbase);
+    if (rc < 0) {
         return -ENODEV;
     }
 
     /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_bws_handler, nn_bws_shutdown,
-        nn_epbase_getctx (&self->epbase));
+        nn_ep_getctx (ep));
     self->state = NN_BWS_STATE_IDLE;
     self->aws = NULL;
     nn_list_init (&self->awss);
@@ -156,36 +150,31 @@ int nn_bws_create (void *hint, struct nn_epbase **epbase)
 
     rc = nn_bws_listen (self);
     if (rc != 0) {
-        nn_epbase_term (&self->epbase);
         return rc;
     }
-
-    /*  Return the base class as an out parameter. */
-    *epbase = &self->epbase;
 
     return 0;
 }
 
-static void nn_bws_stop (struct nn_epbase *self)
+static void nn_bws_stop (struct nn_ep *ep)
 {
     struct nn_bws *bws;
 
-    bws = nn_cont (self, struct nn_bws, epbase);
+    bws = nn_ep_tran_private (ep);
 
     nn_fsm_stop (&bws->fsm);
 }
 
-static void nn_bws_destroy (struct nn_epbase *self)
+static void nn_bws_destroy (struct nn_ep *ep)
 {
     struct nn_bws *bws;
 
-    bws = nn_cont (self, struct nn_bws, epbase);
+    bws = nn_ep_tran_private (ep);
 
     nn_assert_state (bws, NN_BWS_STATE_IDLE);
     nn_list_term (&bws->awss);
     nn_assert (bws->aws == NULL);
     nn_usock_term (&bws->usock);
-    nn_epbase_term (&bws->epbase);
     nn_fsm_term (&bws->fsm);
 
     nn_free (bws);
@@ -200,7 +189,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
 
     bws = nn_cont (self, struct nn_bws, fsm);
 
-    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
+    if (src == NN_FSM_ACTION && type == NN_FSM_STOP) {
         if (bws->aws) {
             nn_aws_stop (bws->aws);
             bws->state = NN_BWS_STATE_STOPPING_AWS;
@@ -209,7 +198,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
             bws->state = NN_BWS_STATE_STOPPING_USOCK;
         }
     }
-    if (nn_slow (bws->state == NN_BWS_STATE_STOPPING_AWS)) {
+    if (bws->state == NN_BWS_STATE_STOPPING_AWS) {
         if (!nn_aws_isidle (bws->aws))
             return;
         nn_aws_term (bws->aws);
@@ -218,7 +207,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
         nn_usock_stop (&bws->usock);
         bws->state = NN_BWS_STATE_STOPPING_USOCK;
     }
-    if (nn_slow (bws->state == NN_BWS_STATE_STOPPING_USOCK)) {
+    if (bws->state == NN_BWS_STATE_STOPPING_USOCK) {
        if (!nn_usock_isidle (&bws->usock))
             return;
         for (it = nn_list_begin (&bws->awss);
@@ -230,7 +219,7 @@ static void nn_bws_shutdown (struct nn_fsm *self, int src, int type,
         bws->state = NN_BWS_STATE_STOPPING_AWSS;
         goto awss_stopping;
     }
-    if (nn_slow (bws->state == NN_BWS_STATE_STOPPING_AWSS)) {
+    if (bws->state == NN_BWS_STATE_STOPPING_AWSS) {
         nn_assert (src == NN_BWS_SRC_AWS && type == NN_AWS_STOPPED);
         aws = (struct nn_aws *) srcptr;
         nn_list_erase (&bws->awss, &aws->item);
@@ -243,7 +232,7 @@ awss_stopping:
         if (nn_list_empty (&bws->awss)) {
             bws->state = NN_BWS_STATE_IDLE;
             nn_fsm_stopped_noevent (&bws->fsm);
-            nn_epbase_stopped (&bws->epbase);
+            nn_ep_stopped (bws->ep);
             return;
         }
 
@@ -332,7 +321,7 @@ static int nn_bws_listen (struct nn_bws *self)
     uint16_t port;
 
     /*  First, resolve the IP address. */
-    addr = nn_epbase_getaddr (&self->epbase);
+    addr = nn_ep_getaddr (self->ep);
     memset (&ss, 0, sizeof (ss));
 
     /*  Parse the port. */
@@ -348,7 +337,7 @@ static int nn_bws_listen (struct nn_bws *self)
 
     /*  Parse the address. */
     ipv4onlylen = sizeof (ipv4only);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_IPV4ONLY,
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_IPV4ONLY,
         &ipv4only, &ipv4onlylen);
     nn_assert (ipv4onlylen == sizeof (ipv4only));
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
@@ -401,7 +390,7 @@ static void nn_bws_start_accepting (struct nn_bws *self)
     /*  Allocate new aws state machine. */
     self->aws = nn_alloc (sizeof (struct nn_aws), "aws");
     alloc_assert (self->aws);
-    nn_aws_init (self->aws, NN_BWS_SRC_AWS, &self->epbase, &self->fsm);
+    nn_aws_init (self->aws, NN_BWS_SRC_AWS, self->ep, &self->fsm);
 
     /*  Start waiting for a new incoming connection. */
     nn_aws_start (self->aws, &self->usock);

@@ -48,18 +48,17 @@
 #define NN_PIPEBASE_OUTSTATE_ASYNC 4
 
 void nn_pipebase_init (struct nn_pipebase *self,
-    const struct nn_pipebase_vfptr *vfptr, struct nn_epbase *epbase)
+    const struct nn_pipebase_vfptr *vfptr, struct nn_ep *ep)
 {
-    nn_assert (epbase->ep->sock);
+    nn_assert (ep->sock);
 
-    nn_fsm_init (&self->fsm, NULL, NULL, 0, self, &epbase->ep->sock->fsm);
+    nn_fsm_init (&self->fsm, NULL, NULL, 0, self, &ep->sock->fsm);
     self->vfptr = vfptr;
     self->state = NN_PIPEBASE_STATE_IDLE;
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
-    self->sock = epbase->ep->sock;
-    memcpy (&self->options, &epbase->ep->options,
-        sizeof (struct nn_ep_options));
+    self->sock = ep->sock;
+    memcpy (&self->options, &ep->options, sizeof (struct nn_ep_options));
     nn_fsm_event_init (&self->in);
     nn_fsm_event_init (&self->out);
 }
@@ -223,4 +222,3 @@ void nn_pipe_getopt (struct nn_pipe *self, int level, int option,
     pipebase = (struct nn_pipebase*) self;
     nn_pipebase_getopt (pipebase, level, option, optval, optvallen);
 }
-

@@ -46,7 +46,7 @@ struct nn_cinproc {
     struct nn_list sinprocs;
 };
 
-int nn_cinproc_create (void *hint, struct nn_epbase **epbase);
+int nn_cinproc_create (struct nn_ep *);
 
 #endif
 

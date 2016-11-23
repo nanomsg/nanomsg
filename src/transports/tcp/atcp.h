@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -48,7 +49,7 @@ struct nn_atcp {
     int state;
 
     /*  Pointer to the associated endpoint. */
-    struct nn_epbase *epbase;
+    struct nn_ep *ep;
 
     /*  Underlying socket. */
     struct nn_usock usock;
@@ -69,7 +70,7 @@ struct nn_atcp {
 };
 
 void nn_atcp_init (struct nn_atcp *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner);
+    struct nn_ep *ep, struct nn_fsm *owner);
 void nn_atcp_term (struct nn_atcp *self);
 
 int nn_atcp_isidle (struct nn_atcp *self);

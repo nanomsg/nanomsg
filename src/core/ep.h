@@ -35,15 +35,21 @@
 struct nn_ep {
     struct nn_fsm fsm;
     int state;
-    struct nn_epbase *epbase;
     struct nn_sock *sock;
     struct nn_ep_options options;
     int eid;
     struct nn_list_item item;
     char addr [NN_SOCKADDR_MAX + 1];
+    int protocol;
 
     /*  Error state for endpoint */
     int last_errno;
+
+    /*  Transport private state structure */
+    void *tran_private;
+
+    /*  Transport specific operations */
+    const struct nn_ep_vfptr *vfptr;
 };
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,

@@ -31,19 +31,17 @@
 
 struct nn_ins_item {
 
-    /*  Every ins_item is an endpoint. */
-    struct nn_epbase epbase;
-
     /*  Every ins_item is either in the list of bound or connected endpoints. */
     struct nn_list_item item;
+
+    struct nn_ep *ep;
 
     /*  This is the local cache of the endpoint's protocol ID. This way we can
         check the value without actually locking the object. */
     int protocol;
 };
 
-void nn_ins_item_init (struct nn_ins_item *self,
-    const struct nn_epbase_vfptr *vfptr, void *hint);
+void nn_ins_item_init (struct nn_ins_item *self, struct nn_ep *ep);
 void nn_ins_item_term (struct nn_ins_item *self);
 
 void nn_ins_init (void);

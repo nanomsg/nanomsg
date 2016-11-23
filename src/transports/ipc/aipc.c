@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -46,17 +47,17 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
    void *srcptr);
 
 void nn_aipc_init (struct nn_aipc *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner)
+    struct nn_ep *ep, struct nn_fsm *owner)
 {
     nn_fsm_init (&self->fsm, nn_aipc_handler, nn_aipc_shutdown,
         src, self, owner);
     self->state = NN_AIPC_STATE_IDLE;
-    self->epbase = epbase;
+    self->ep = ep;
     nn_usock_init (&self->usock, NN_AIPC_SRC_USOCK, &self->fsm);
     self->listener = NULL;
     self->listener_owner.src = -1;
     self->listener_owner.fsm = NULL;
-    nn_sipc_init (&self->sipc, NN_AIPC_SRC_SIPC, epbase, &self->fsm);
+    nn_sipc_init (&self->sipc, NN_AIPC_SRC_SIPC, ep, &self->fsm);
     nn_fsm_event_init (&self->accepted);
     nn_fsm_event_init (&self->done);
     nn_list_item_init (&self->item);
@@ -94,9 +95,9 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
 
 #if defined NN_HAVE_WINDOWS
     /* Get/Set security attribute pointer*/
-    nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
-    nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
-    nn_epbase_getopt (self->epbase, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
 #endif
 
     /*  Start the state machine. */
@@ -117,8 +118,7 @@ static void nn_aipc_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sipc_isidle (&aipc->sipc)) {
-            nn_epbase_stat_increment (aipc->epbase,
-                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_ep_stat_increment (aipc->ep, NN_STAT_DROPPED_CONNECTIONS, 1);
             nn_sipc_stop (&aipc->sipc);
         }
         aipc->state = NN_AIPC_STATE_STOPPING_SIPC_FINAL;
@@ -189,18 +189,16 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_USOCK:
             switch (type) {
             case NN_USOCK_ACCEPTED:
-                nn_epbase_clear_error (aipc->epbase);
+                nn_ep_clear_error (aipc->ep);
 
                 /*  Set the relevant socket options. */
                 sz = sizeof (val);
-                nn_epbase_getopt (aipc->epbase, NN_SOL_SOCKET, NN_SNDBUF,
-                    &val, &sz);
+                nn_ep_getopt (aipc->ep, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&aipc->usock, SOL_SOCKET, SO_SNDBUF,
                     &val, sizeof (val));
                 sz = sizeof (val);
-                nn_epbase_getopt (aipc->epbase, NN_SOL_SOCKET, NN_RCVBUF,
-                    &val, &sz);
+                nn_ep_getopt (aipc->ep, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&aipc->usock, SOL_SOCKET, SO_RCVBUF,
                     &val, sizeof (val));
@@ -217,7 +215,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
                 nn_sipc_start (&aipc->sipc, &aipc->usock);
                 aipc->state = NN_AIPC_STATE_ACTIVE;
 
-                nn_epbase_stat_increment (aipc->epbase,
+                nn_ep_stat_increment (aipc->ep,
                     NN_STAT_ACCEPTED_CONNECTIONS, 1);
 
                 return;
@@ -229,10 +227,8 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
         case NN_AIPC_SRC_LISTENER:
             switch (type) {
             case NN_USOCK_ACCEPT_ERROR:
-                nn_epbase_set_error (aipc->epbase,
-                    nn_usock_geterrno (aipc->listener));
-                nn_epbase_stat_increment (aipc->epbase,
-                    NN_STAT_ACCEPT_ERRORS, 1);
+                nn_ep_set_error (aipc->ep, nn_usock_geterrno (aipc->listener));
+                nn_ep_stat_increment (aipc->ep, NN_STAT_ACCEPT_ERRORS, 1);
                 nn_usock_accept (&aipc->usock, aipc->listener);
 
                 return;
@@ -256,8 +252,7 @@ static void nn_aipc_handler (struct nn_fsm *self, int src, int type,
             case NN_SIPC_ERROR:
                 nn_sipc_stop (&aipc->sipc);
                 aipc->state = NN_AIPC_STATE_STOPPING_SIPC;
-                nn_epbase_stat_increment (aipc->epbase,
-                    NN_STAT_BROKEN_CONNECTIONS, 1);
+                nn_ep_stat_increment (aipc->ep, NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                 nn_fsm_bad_action (aipc->state, src, type);

@@ -48,23 +48,15 @@ struct nn_ins {
     inproc endpoints in the current process. */
 static struct nn_ins self;
 
-void nn_ins_item_init (struct nn_ins_item *self,
-    const struct nn_epbase_vfptr *vfptr, void *hint)
+void nn_ins_item_init (struct nn_ins_item *self, struct nn_ep *ep)
 {
-    size_t sz;
-
-    nn_epbase_init (&self->epbase, vfptr, hint);
+    self->ep = ep;
     nn_list_item_init (&self->item);
-    sz = sizeof (self->protocol);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_PROTOCOL,
-        &self->protocol, &sz);
-    nn_assert (sz == sizeof (self->protocol));
 }
 
 void nn_ins_item_term (struct nn_ins_item *self)
 {
     nn_list_item_term (&self->item);
-    nn_epbase_term (&self->epbase);
 }
 
 void nn_ins_init (void)
@@ -93,8 +85,10 @@ int nn_ins_bind (struct nn_ins_item *item, nn_ins_fn fn)
     for (it = nn_list_begin (&self.bound); it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         bitem = nn_cont (it, struct nn_ins_item, item);
-        if (strncmp (nn_epbase_getaddr (&item->epbase),
-              nn_epbase_getaddr (&bitem->epbase), NN_SOCKADDR_MAX) == 0) {
+
+        if (strncmp (nn_ep_getaddr(bitem->ep), nn_ep_getaddr(item->ep),
+            NN_SOCKADDR_MAX) == 0) {
+
             nn_mutex_unlock (&self.sync);
             return -EADDRINUSE;
         }
@@ -109,11 +103,11 @@ int nn_ins_bind (struct nn_ins_item *item, nn_ins_fn fn)
           it != nn_list_end (&self.connected);
           it = nn_list_next (&self.connected, it)) {
         citem = nn_cont (it, struct nn_ins_item, item);
-        if (strncmp (nn_epbase_getaddr (&item->epbase),
-              nn_epbase_getaddr (&citem->epbase), NN_SOCKADDR_MAX) == 0) {
+        if (strncmp (nn_ep_getaddr(item->ep), nn_ep_getaddr(citem->ep),
+            NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&item->epbase, citem->protocol))
+            if (!nn_ep_ispeer_ep (item->ep, citem->ep))
                 continue;
 
             fn (item, citem);
@@ -141,11 +135,12 @@ void nn_ins_connect (struct nn_ins_item *item, nn_ins_fn fn)
           it != nn_list_end (&self.bound);
           it = nn_list_next (&self.bound, it)) {
         bitem = nn_cont (it, struct nn_ins_item, item);
-        if (strncmp (nn_epbase_getaddr (&item->epbase),
-              nn_epbase_getaddr (&bitem->epbase), NN_SOCKADDR_MAX) == 0) {
+
+        if (strncmp (nn_ep_getaddr(item->ep), nn_ep_getaddr(bitem->ep),
+            NN_SOCKADDR_MAX) == 0) {
 
             /*  Check whether the two sockets are compatible. */
-            if (!nn_epbase_ispeer (&item->epbase, bitem->protocol))
+            if (!nn_ep_ispeer_ep (item->ep, bitem->ep))
                 break;
 
             /*  Call back to cinproc to create actual connection. */

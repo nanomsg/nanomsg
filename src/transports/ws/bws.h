@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,7 +29,6 @@
 
 /*  State machine managing bound WS socket. */
 
-int nn_bws_create (void *hint, struct nn_epbase **epbase);
+int nn_bws_create (struct nn_ep *ep);
 
 #endif
-

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -63,8 +64,8 @@ static const struct nn_optset_vfptr nn_tcp_optset_vfptr = {
 };
 
 /*  nn_transport interface. */
-static int nn_tcp_bind (void *hint, struct nn_epbase **epbase);
-static int nn_tcp_connect (void *hint, struct nn_epbase **epbase);
+static int nn_tcp_bind (struct nn_ep *ep);
+static int nn_tcp_connect (struct nn_ep *ep);
 static struct nn_optset *nn_tcp_optset (void);
 
 static struct nn_transport nn_tcp_vfptr = {
@@ -80,14 +81,14 @@ static struct nn_transport nn_tcp_vfptr = {
 
 struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
-static int nn_tcp_bind (void *hint, struct nn_epbase **epbase)
+static int nn_tcp_bind (struct nn_ep *ep)
 {
-    return nn_btcp_create (hint, epbase);
+    return nn_btcp_create (ep);
 }
 
-static int nn_tcp_connect (void *hint, struct nn_epbase **epbase)
+static int nn_tcp_connect (struct nn_ep *ep)
 {
-    return nn_ctcp_create (hint, epbase);
+    return nn_ctcp_create (ep);
 }
 
 static struct nn_optset *nn_tcp_optset ()

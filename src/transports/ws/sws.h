@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -82,9 +82,6 @@ struct nn_sws {
     /*  The state machine. */
     struct nn_fsm fsm;
     int state;
-
-    /*  Endpoint base. */
-    struct nn_epbase *epbase;
 
     /*  Default message type set on outbound frames. */
     uint8_t msg_type;
@@ -193,7 +190,7 @@ void nn_msg_chunk_term (struct msg_chunk *it, struct nn_list *msg_array);
 void nn_msg_array_term (struct nn_list *msg_array);
 
 void nn_sws_init (struct nn_sws *self, int src,
-    struct nn_epbase *epbase, struct nn_fsm *owner);
+    struct nn_ep *ep, struct nn_fsm *owner);
 void nn_sws_term (struct nn_sws *self);
 
 int nn_sws_isidle (struct nn_sws *self);

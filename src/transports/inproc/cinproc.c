@@ -1,6 +1,7 @@
  /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -40,10 +41,10 @@
 
 #define NN_CINPROC_SRC_SINPROC 1
 
-/*  Implementation of nn_epbase callback interface. */
-static void nn_cinproc_stop (struct nn_epbase *self);
-static void nn_cinproc_destroy (struct nn_epbase *self);
-static const struct nn_epbase_vfptr nn_cinproc_vfptr = {
+/*  Implementation of nn_ep callback interface. */
+static void nn_cinproc_stop (struct nn_ep *);
+static void nn_cinproc_destroy (struct nn_ep *);
+static const struct nn_ep_vfptr nn_cinproc_vfptr = {
     nn_cinproc_stop,
     nn_cinproc_destroy
 };
@@ -56,21 +57,22 @@ static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
 static void nn_cinproc_connect (struct nn_ins_item *self,
     struct nn_ins_item *peer);
 
-int nn_cinproc_create (void *hint, struct nn_epbase **epbase)
+int nn_cinproc_create (struct nn_ep *ep)
 {
     struct nn_cinproc *self;
 
     self = nn_alloc (sizeof (struct nn_cinproc), "cinproc");
     alloc_assert (self);
 
-    nn_ins_item_init (&self->item, &nn_cinproc_vfptr, hint);
+    nn_ep_tran_setup (ep, &nn_cinproc_vfptr, self);
+
+    nn_ins_item_init (&self->item, ep);
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler, nn_cinproc_shutdown,
-        nn_epbase_getctx (&self->item.epbase));
+        nn_ep_getctx (ep));
     self->state = NN_CINPROC_STATE_IDLE;
     nn_list_init (&self->sinprocs);
 
-    nn_epbase_stat_increment (&self->item.epbase,
-        NN_STAT_INPROGRESS_CONNECTIONS, 1);
+    nn_ep_stat_increment (ep, NN_STAT_INPROGRESS_CONNECTIONS, 1);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
@@ -78,24 +80,23 @@ int nn_cinproc_create (void *hint, struct nn_epbase **epbase)
     /*  Register the inproc endpoint into a global repository. */
     nn_ins_connect (&self->item, nn_cinproc_connect);
 
-    *epbase = &self->item.epbase;
     return 0;
 }
 
-static void nn_cinproc_stop (struct nn_epbase *self)
+static void nn_cinproc_stop (struct nn_ep *ep)
 {
     struct nn_cinproc *cinproc;
 
-    cinproc = nn_cont (self, struct nn_cinproc, item.epbase);
+    cinproc = nn_ep_tran_private (ep);
 
     nn_fsm_stop (&cinproc->fsm);
 }
 
-static void nn_cinproc_destroy (struct nn_epbase *self)
+static void nn_cinproc_destroy (struct nn_ep *ep)
 {
     struct nn_cinproc *cinproc;
 
-    cinproc = nn_cont (self, struct nn_cinproc, item.epbase);
+    cinproc = nn_ep_tran_private (ep);
 
     nn_list_term (&cinproc->sinprocs);
     nn_fsm_term (&cinproc->fsm);
@@ -119,17 +120,15 @@ static void nn_cinproc_connect (struct nn_ins_item *self,
     sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
     alloc_assert (sinproc);
     nn_sinproc_init (sinproc, NN_CINPROC_SRC_SINPROC,
-        &cinproc->item.epbase, &cinproc->fsm);
+        cinproc->item.ep, &cinproc->fsm);
 
     nn_list_insert (&cinproc->sinprocs, &sinproc->item,
         nn_list_end (&cinproc->sinprocs));
 
     nn_sinproc_connect (sinproc, &binproc->fsm);
 
-    nn_epbase_stat_increment (&cinproc->item.epbase,
-        NN_STAT_INPROGRESS_CONNECTIONS, -1);
-    nn_epbase_stat_increment (&cinproc->item.epbase,
-        NN_STAT_ESTABLISHED_CONNECTIONS, 1);
+    nn_ep_stat_increment (cinproc->item.ep, NN_STAT_INPROGRESS_CONNECTIONS, -1);
+    nn_ep_stat_increment (cinproc->item.ep, NN_STAT_ESTABLISHED_CONNECTIONS, 1);
 }
 
 static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
@@ -141,7 +140,7 @@ static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
 
     cinproc = nn_cont (self, struct nn_cinproc, fsm);
 
-    if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
+    if (src == NN_FSM_ACTION && type == NN_FSM_STOP) {
 
         /*  First, unregister the endpoint from the global repository of inproc
             endpoints. This way, new connections cannot be created anymore. */
@@ -157,7 +156,7 @@ static void nn_cinproc_shutdown (struct nn_fsm *self, int src, int type,
         cinproc->state = NN_CINPROC_STATE_STOPPING;
         goto finish;
     }
-    if (nn_slow (cinproc->state == NN_CINPROC_STATE_STOPPING)) {
+    if (cinproc->state == NN_CINPROC_STATE_STOPPING) {
         sinproc = (struct nn_sinproc *) srcptr;
         nn_list_erase (&cinproc->sinprocs, &sinproc->item);
         nn_sinproc_term (sinproc);
@@ -168,7 +167,7 @@ finish:
             return;
         cinproc->state = NN_CINPROC_STATE_IDLE;
         nn_fsm_stopped_noevent (&cinproc->fsm);
-        nn_epbase_stopped (&cinproc->item.epbase);
+        nn_ep_stopped (cinproc->item.ep);
         return;
     }
 
@@ -219,13 +218,13 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
                 sinproc = nn_alloc (sizeof (struct nn_sinproc), "sinproc");
                 alloc_assert (sinproc);
                 nn_sinproc_init (sinproc, NN_CINPROC_SRC_SINPROC,
-                    &cinproc->item.epbase, &cinproc->fsm);
+                    cinproc->item.ep, &cinproc->fsm);
                 nn_list_insert (&cinproc->sinprocs, &sinproc->item,
                     nn_list_end (&cinproc->sinprocs));
                 nn_sinproc_accept (sinproc, peer);
-                nn_epbase_stat_increment (&cinproc->item.epbase,
+                nn_ep_stat_increment (cinproc->item.ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
-                nn_epbase_stat_increment (&cinproc->item.epbase,
+                nn_ep_stat_increment (cinproc->item.ep,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
                 return;
             default:
@@ -235,7 +234,7 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
         case NN_CINPROC_SRC_SINPROC:
             switch (type) {
             case NN_SINPROC_DISCONNECT:
-                nn_epbase_stat_increment (&cinproc->item.epbase,
+                nn_ep_stat_increment (cinproc->item.ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, 1);
                 return;
             }
@@ -252,4 +251,3 @@ static void nn_cinproc_handler (struct nn_fsm *self, int src, int type,
         nn_fsm_bad_state (cinproc->state, src, type);
     }
 }
-

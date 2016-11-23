@@ -60,9 +60,7 @@ struct nn_bipc {
     struct nn_fsm fsm;
     int state;
 
-    /*  This object is a specific type of endpoint.
-        Thus it is derived from epbase. */
-    struct nn_epbase epbase;
+    struct nn_ep *ep;
 
     /*  The underlying listening IPC socket. */
     struct nn_usock usock;
@@ -74,10 +72,10 @@ struct nn_bipc {
     struct nn_list aipcs;
 };
 
-/*  nn_epbase virtual interface implementation. */
-static void nn_bipc_stop (struct nn_epbase *self);
-static void nn_bipc_destroy (struct nn_epbase *self);
-const struct nn_epbase_vfptr nn_bipc_epbase_vfptr = {
+/*  nn_ep virtual interface implementation. */
+static void nn_bipc_stop (struct nn_ep *self);
+static void nn_bipc_destroy (struct nn_ep *self);
+const struct nn_ep_vfptr nn_bipc_ep_vfptr = {
     nn_bipc_stop,
     nn_bipc_destroy
 };
@@ -90,7 +88,7 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
 static int nn_bipc_listen (struct nn_bipc *self);
 static void nn_bipc_start_accepting (struct nn_bipc *self);
 
-int nn_bipc_create (void *hint, struct nn_epbase **epbase)
+int nn_bipc_create (struct nn_ep *ep)
 {
     struct nn_bipc *self;
     int rc;
@@ -101,9 +99,10 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
 
 
     /*  Initialise the structure. */
-    nn_epbase_init (&self->epbase, &nn_bipc_epbase_vfptr, hint);
+    nn_ep_tran_setup (ep, &nn_bipc_ep_vfptr, self);
+    self->ep = ep;
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
-        nn_epbase_getctx (&self->epbase));
+        nn_ep_getctx (ep));
     self->state = NN_BIPC_STATE_IDLE;
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
@@ -115,36 +114,31 @@ int nn_bipc_create (void *hint, struct nn_epbase **epbase)
 
     rc = nn_bipc_listen (self);
     if (rc != 0) {
-        nn_epbase_term (&self->epbase);
         return rc;
     }
-
-    /*  Return the base class as an out parameter. */
-    *epbase = &self->epbase;
 
     return 0;
 }
 
-static void nn_bipc_stop (struct nn_epbase *self)
+static void nn_bipc_stop (struct nn_ep *ep)
 {
     struct nn_bipc *bipc;
 
-    bipc = nn_cont (self, struct nn_bipc, epbase);
+    bipc = nn_ep_tran_private (ep);
 
     nn_fsm_stop (&bipc->fsm);
 }
 
-static void nn_bipc_destroy (struct nn_epbase *self)
+static void nn_bipc_destroy (struct nn_ep *ep)
 {
     struct nn_bipc *bipc;
 
-    bipc = nn_cont (self, struct nn_bipc, epbase);
+    bipc = nn_ep_tran_private (ep);
 
     nn_assert_state (bipc, NN_BIPC_STATE_IDLE);
     nn_list_term (&bipc->aipcs);
     nn_assert (bipc->aipc == NULL);
     nn_usock_term (&bipc->usock);
-    nn_epbase_term (&bipc->epbase);
     nn_fsm_term (&bipc->fsm);
 
     nn_free (bipc);
@@ -182,7 +176,7 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
 
         /* On *nixes, unlink the domain socket file */
 #if defined NN_HAVE_UNIX_SOCKETS
-        addr = nn_epbase_getaddr (&bipc->epbase);
+        addr = nn_ep_getaddr (bipc->ep);
         rc = unlink(addr);
         errno_assert (rc == 0 || errno == ENOENT);
 #endif
@@ -215,7 +209,7 @@ aipcs_stopping:
         if (nn_list_empty (&bipc->aipcs)) {
             bipc->state = NN_BIPC_STATE_IDLE;
             nn_fsm_stopped_noevent (&bipc->fsm);
-            nn_epbase_stopped (&bipc->epbase);
+            nn_ep_stopped (bipc->ep);
             return;
         }
 
@@ -296,7 +290,7 @@ static int nn_bipc_listen (struct nn_bipc *self)
 #endif
 
     /*  First, create the AF_UNIX address. */
-    addr = nn_epbase_getaddr (&self->epbase);
+    addr = nn_ep_getaddr (self->ep);
     memset (&ss, 0, sizeof (ss));
     un = (struct sockaddr_un*) &ss;
     nn_assert (strlen (addr) < sizeof (un->sun_path));
@@ -357,7 +351,7 @@ static void nn_bipc_start_accepting (struct nn_bipc *self)
     /*  Allocate new aipc state machine. */
     self->aipc = nn_alloc (sizeof (struct nn_aipc), "aipc");
     alloc_assert (self->aipc);
-    nn_aipc_init (self->aipc, NN_BIPC_SRC_AIPC, &self->epbase, &self->fsm);
+    nn_aipc_init (self->aipc, NN_BIPC_SRC_AIPC, self->ep, &self->fsm);
 
     /*  Start waiting for a new incoming connection. */
     nn_aipc_start (self->aipc, &self->usock);

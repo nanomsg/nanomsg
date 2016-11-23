@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -46,6 +47,6 @@ struct nn_binproc {
     struct nn_list sinprocs;
 };
 
-int nn_binproc_create (void *hint, struct nn_epbase **epbase);
+int nn_binproc_create (struct nn_ep *);
 
 #endif

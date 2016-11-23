@@ -916,7 +916,6 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     {
         const char *conn = NULL;
         size_t conn_len = 0;
-fprintf(stderr, "POS is %s\n", pos);
         if (nn_ws_match_token ("Host:", &pos, 1, 0)) {
             rc = nn_ws_match_value (CRLF, &pos, 1, 1,
                 &self->host, &self->host_len);

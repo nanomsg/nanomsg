@@ -2,7 +2,7 @@
     Copyright (c) 2012-2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright (c) 2014 Wirebird Labs LLC.  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -65,8 +65,8 @@ static const struct nn_optset_vfptr nn_ws_optset_vfptr = {
 };
 
 /*  nn_transport interface. */
-static int nn_ws_bind (void *hint, struct nn_epbase **epbase);
-static int nn_ws_connect (void *hint, struct nn_epbase **epbase);
+static int nn_ws_bind (struct nn_ep *);
+static int nn_ws_connect (struct nn_ep *);
 static struct nn_optset *nn_ws_optset (void);
 
 static struct nn_transport nn_ws_vfptr = {
@@ -82,14 +82,14 @@ static struct nn_transport nn_ws_vfptr = {
 
 struct nn_transport *nn_ws = &nn_ws_vfptr;
 
-static int nn_ws_bind (void *hint, struct nn_epbase **epbase)
+static int nn_ws_bind (struct nn_ep *ep)
 {
-    return nn_bws_create (hint, epbase);
+    return nn_bws_create (ep);
 }
 
-static int nn_ws_connect (void *hint, struct nn_epbase **epbase)
+static int nn_ws_connect (struct nn_ep *ep)
 {
-    return nn_cws_create (hint, epbase); 
+    return nn_cws_create (ep);
 }
 
 static struct nn_optset *nn_ws_optset ()

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -27,6 +28,6 @@
 
 /*  State machine managing bound IPC socket. */
 
-int nn_bipc_create (void *hint, struct nn_epbase **epbase);
+int nn_bipc_create (struct nn_ep *);
 
 #endif

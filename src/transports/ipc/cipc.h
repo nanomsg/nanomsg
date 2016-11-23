@@ -28,6 +28,6 @@
 
 /*  State machine managing connected IPC socket. */
 
-int nn_cipc_create (void *hint, struct nn_epbase **epbase);
+int nn_cipc_create (struct nn_ep *ep);
 
 #endif

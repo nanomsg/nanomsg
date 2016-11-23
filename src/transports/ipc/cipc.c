@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -62,9 +63,7 @@ struct nn_cipc {
     struct nn_fsm fsm;
     int state;
 
-    /*  This object is a specific type of endpoint.
-        Thus it is derived from epbase. */
-    struct nn_epbase epbase;
+    struct nn_ep *ep;
 
     /*  The underlying IPC socket. */
     struct nn_usock usock;
@@ -77,10 +76,10 @@ struct nn_cipc {
     struct nn_sipc sipc;
 };
 
-/*  nn_epbase virtual interface implementation. */
-static void nn_cipc_stop (struct nn_epbase *self);
-static void nn_cipc_destroy (struct nn_epbase *self);
-const struct nn_epbase_vfptr nn_cipc_epbase_vfptr = {
+/*  nn_ep virtual interface implementation. */
+static void nn_cipc_stop (struct nn_ep *ep);
+static void nn_cipc_destroy (struct nn_ep *ep);
+const struct nn_ep_vfptr nn_cipc_ep_vfptr = {
     nn_cipc_stop,
     nn_cipc_destroy
 };
@@ -92,7 +91,7 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_cipc_start_connecting (struct nn_cipc *self);
 
-int nn_cipc_create (void *hint, struct nn_epbase **epbase)
+int nn_cipc_create (struct nn_ep *ep)
 {
     struct nn_cipc *self;
     int reconnect_ivl;
@@ -104,54 +103,50 @@ int nn_cipc_create (void *hint, struct nn_epbase **epbase)
     alloc_assert (self);
 
     /*  Initialise the structure. */
-    nn_epbase_init (&self->epbase, &nn_cipc_epbase_vfptr, hint);
+    self->ep = ep;
+    nn_ep_tran_setup (ep, &nn_cipc_ep_vfptr, self);
     nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
-        nn_epbase_getctx (&self->epbase));
+        nn_ep_getctx (ep));
     self->state = NN_CIPC_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CIPC_SRC_USOCK, &self->fsm);
     sz = sizeof (reconnect_ivl);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL,
-        &reconnect_ivl, &sz);
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_RECONNECT_IVL, &reconnect_ivl, &sz);
     nn_assert (sz == sizeof (reconnect_ivl));
     sz = sizeof (reconnect_ivl_max);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
+    nn_ep_getopt (ep, NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX,
         &reconnect_ivl_max, &sz);
     nn_assert (sz == sizeof (reconnect_ivl_max));
     if (reconnect_ivl_max == 0)
         reconnect_ivl_max = reconnect_ivl;
     nn_backoff_init (&self->retry, NN_CIPC_SRC_RECONNECT_TIMER,
         reconnect_ivl, reconnect_ivl_max, &self->fsm);
-    nn_sipc_init (&self->sipc, NN_CIPC_SRC_SIPC, &self->epbase, &self->fsm);
+    nn_sipc_init (&self->sipc, NN_CIPC_SRC_SIPC, ep, &self->fsm);
 
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
-    /*  Return the base class as an out parameter. */
-    *epbase = &self->epbase;
-
     return 0;
 }
 
-static void nn_cipc_stop (struct nn_epbase *self)
+static void nn_cipc_stop (struct nn_ep *ep)
 {
     struct nn_cipc *cipc;
 
-    cipc = nn_cont (self, struct nn_cipc, epbase);
+    cipc = nn_ep_tran_private (ep);
 
     nn_fsm_stop (&cipc->fsm);
 }
 
-static void nn_cipc_destroy (struct nn_epbase *self)
+static void nn_cipc_destroy (struct nn_ep *ep)
 {
     struct nn_cipc *cipc;
 
-    cipc = nn_cont (self, struct nn_cipc, epbase);
+    cipc = nn_ep_tran_private (ep);
 
     nn_sipc_term (&cipc->sipc);
     nn_backoff_term (&cipc->retry);
     nn_usock_term (&cipc->usock);
     nn_fsm_term (&cipc->fsm);
-    nn_epbase_term (&cipc->epbase);
 
     nn_free (cipc);
 }
@@ -165,8 +160,7 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
         if (!nn_sipc_isidle (&cipc->sipc)) {
-            nn_epbase_stat_increment (&cipc->epbase,
-                NN_STAT_DROPPED_CONNECTIONS, 1);
+            nn_ep_stat_increment (cipc->ep, NN_STAT_DROPPED_CONNECTIONS, 1);
             nn_sipc_stop (&cipc->sipc);
         }
         cipc->state = NN_CIPC_STATE_STOPPING_SIPC_FINAL;
@@ -184,7 +178,7 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
             return;
         cipc->state = NN_CIPC_STATE_IDLE;
         nn_fsm_stopped_noevent (&cipc->fsm);
-        nn_epbase_stopped (&cipc->epbase);
+        nn_ep_stopped (cipc->ep);
         return;
     }
 
@@ -232,21 +226,19 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             case NN_USOCK_CONNECTED:
                 nn_sipc_start (&cipc->sipc, &cipc->usock);
                 cipc->state = NN_CIPC_STATE_ACTIVE;
-                nn_epbase_stat_increment (&cipc->epbase,
+                nn_ep_stat_increment (cipc->ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
-                nn_epbase_stat_increment (&cipc->epbase,
+                nn_ep_stat_increment (cipc->ep,
                     NN_STAT_ESTABLISHED_CONNECTIONS, 1);
-                nn_epbase_clear_error (&cipc->epbase);
+                nn_ep_clear_error (cipc->ep);
                 return;
             case NN_USOCK_ERROR:
-                nn_epbase_set_error (&cipc->epbase,
-                    nn_usock_geterrno (&cipc->usock));
+                nn_ep_set_error (cipc->ep, nn_usock_geterrno (&cipc->usock));
                 nn_usock_stop (&cipc->usock);
                 cipc->state = NN_CIPC_STATE_STOPPING_USOCK;
-                nn_epbase_stat_increment (&cipc->epbase,
+                nn_ep_stat_increment (cipc->ep,
                     NN_STAT_INPROGRESS_CONNECTIONS, -1);
-                nn_epbase_stat_increment (&cipc->epbase,
-                    NN_STAT_CONNECT_ERRORS, 1);
+                nn_ep_stat_increment (cipc->ep, NN_STAT_CONNECT_ERRORS, 1);
                 return;
             default:
                 nn_fsm_bad_action (cipc->state, src, type);
@@ -268,8 +260,7 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
             case NN_SIPC_ERROR:
                 nn_sipc_stop (&cipc->sipc);
                 cipc->state = NN_CIPC_STATE_STOPPING_SIPC;
-                nn_epbase_stat_increment (&cipc->epbase,
-                    NN_STAT_BROKEN_CONNECTIONS, 1);
+                nn_ep_stat_increment (cipc->ep, NN_STAT_BROKEN_CONNECTIONS, 1);
                 return;
             default:
                nn_fsm_bad_action (cipc->state, src, type);
@@ -398,18 +389,18 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
 
     /*  Set the relevant socket options. */
     sz = sizeof (val);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_SNDBUF, &val, &sz);
     nn_assert (sz == sizeof (val));
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_SNDBUF,
         &val, sizeof (val));
     sz = sizeof (val);
-    nn_epbase_getopt (&self->epbase, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
+    nn_ep_getopt (self->ep, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
     nn_assert (sz == sizeof (val));
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
         &val, sizeof (val));
 
     /*  Create the IPC address from the address string. */
-    addr = nn_epbase_getaddr (&self->epbase);
+    addr = nn_ep_getaddr (self->ep);
     memset (&ss, 0, sizeof (ss));
     un = (struct sockaddr_un*) &ss;
     nn_assert (strlen (addr) < sizeof (un->sun_path));
@@ -418,10 +409,10 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
 
 #if defined NN_HAVE_WINDOWS
     /* Get/Set security attribute pointer*/
-    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
 
-    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
-    nn_epbase_getopt (&self->epbase, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
+    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
 #endif
 
     /*  Start connecting. */
@@ -429,7 +420,5 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
         sizeof (struct sockaddr_un));
     self->state  = NN_CIPC_STATE_CONNECTING;
 
-    nn_epbase_stat_increment (&self->epbase,
-        NN_STAT_INPROGRESS_CONNECTIONS, 1);
+    nn_ep_stat_increment (self->ep, NN_STAT_INPROGRESS_CONNECTIONS, 1);
 }
-

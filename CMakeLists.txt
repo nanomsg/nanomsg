@@ -268,22 +268,22 @@ if (NN_ENABLE_DOC)
     macro (add_libnanomsg_man NAME SECT)
         add_custom_command (
             OUTPUT ${NAME}.${SECT}
-            COMMAND ${NN_A2M} -o ${NAME}.${SECT} ${NN_DOCDIR}/${NAME}.txt
-            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+            COMMAND ${NN_A2M} -o ${NAME}.${SECT} ${NN_DOCDIR}/${NAME}.adoc
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.adoc
         )
 
         add_custom_command (
-            OUTPUT ${NAME}.${SECT}.html
-            COMMAND ${NN_A2H} -o ${NAME}.${SECT}.html ${NN_DOCDIR}/${NAME}.txt
+            OUTPUT ${NAME}.html
+            COMMAND ${NN_A2H} -o ${NAME}.html ${NN_DOCDIR}/${NAME}.adoc
             DEPENDS ${NN_STYLESHEET}
-            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.txt
+            MAIN_DEPENDENCY ${NN_DOCDIR}/${NAME}.adoc
         )
 
         set(NN_MANS ${NN_MANS} ${NAME}.${SECT})
-        set(NN_HTMLS ${NN_HTMLS} ${NAME}.${SECT}.html)
+        set(NN_HTMLS ${NN_HTMLS} ${NAME}.html)
 
         install (
-            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.html
             DESTINATION ${CMAKE_INSTALL_DOCDIR}
         )
         install (

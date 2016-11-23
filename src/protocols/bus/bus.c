@@ -20,7 +20,6 @@
     IN THE SOFTWARE.
 */
 
-#include "bus.h"
 #include "xbus.h"
 
 #include "../../nn.h"
@@ -29,7 +28,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/alloc.h"
 #include "../../utils/err.h"
-#include "../../utils/list.h"
 
 struct nn_bus {
     struct nn_xbus xbus;
@@ -130,14 +128,10 @@ static int nn_bus_create (void *hint, struct nn_sockbase **sockbase)
     return 0;
 }
 
-static struct nn_socktype nn_bus_socktype_struct = {
+struct nn_socktype nn_bus_socktype = {
     AF_SP,
     NN_BUS,
     0,
     nn_bus_create,
     nn_xbus_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_bus_socktype = &nn_bus_socktype_struct;
-

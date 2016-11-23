@@ -31,7 +31,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 struct nn_xpush_data {
@@ -195,14 +194,10 @@ int nn_xpush_ispeer (int socktype)
     return socktype == NN_PULL ? 1 : 0;
 }
 
-static struct nn_socktype nn_xpush_socktype_struct = {
+struct nn_socktype nn_xpush_socktype = {
     AF_SP_RAW,
     NN_PUSH,
     NN_SOCKTYPE_FLAG_NORECV,
     nn_xpush_create,
     nn_xpush_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xpush_socktype = &nn_xpush_socktype_struct;
-

@@ -35,7 +35,6 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 #include <stddef.h>
@@ -658,14 +657,10 @@ void nn_req_rm (struct nn_sockbase *self, struct nn_pipe *pipe) {
     }
 }
 
-static struct nn_socktype nn_req_socktype_struct = {
+struct nn_socktype nn_req_socktype = {
     AF_SP,
     NN_REQ,
     0,
     nn_req_create,
     nn_xreq_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_req_socktype = &nn_req_socktype_struct;
-

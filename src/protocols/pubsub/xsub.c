@@ -33,7 +33,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 struct nn_xsub_data {
@@ -237,14 +236,10 @@ int nn_xsub_ispeer (int socktype)
     return socktype == NN_PUB ? 1 : 0;
 }
 
-static struct nn_socktype nn_xsub_socktype_struct = {
+struct nn_socktype nn_xsub_socktype = {
     AF_SP_RAW,
     NN_SUB,
     NN_SOCKTYPE_FLAG_NOSEND,
     nn_xsub_create,
     nn_xsub_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xsub_socktype = &nn_xsub_socktype_struct;
-

@@ -72,6 +72,4 @@ int nn_xrep_getopt (struct nn_sockbase *self, int level, int option,
 
 int nn_xrep_ispeer (int socktype);
 
-extern struct nn_socktype *nn_xrep_socktype;
-
 #endif

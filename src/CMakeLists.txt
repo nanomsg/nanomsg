@@ -127,28 +127,22 @@ set (NN_SOURCES
     protocols/utils/priolist.h
     protocols/utils/priolist.c
 
-    protocols/bus/bus.h
     protocols/bus/bus.c
     protocols/bus/xbus.h
     protocols/bus/xbus.c
 
-    protocols/pipeline/push.h
     protocols/pipeline/push.c
-    protocols/pipeline/pull.h
     protocols/pipeline/pull.c
     protocols/pipeline/xpull.h
     protocols/pipeline/xpull.c
     protocols/pipeline/xpush.h
     protocols/pipeline/xpush.c
 
-    protocols/pair/pair.h
     protocols/pair/pair.c
     protocols/pair/xpair.h
     protocols/pair/xpair.c
 
-    protocols/pubsub/pub.h
     protocols/pubsub/pub.c
-    protocols/pubsub/sub.h
     protocols/pubsub/sub.c
     protocols/pubsub/trie.h
     protocols/pubsub/trie.c
@@ -168,9 +162,7 @@ set (NN_SOURCES
     protocols/reqrep/xreq.h
     protocols/reqrep/xreq.c
 
-    protocols/survey/respondent.h
     protocols/survey/respondent.c
-    protocols/survey/surveyor.h
     protocols/survey/surveyor.c
     protocols/survey/xrespondent.h
     protocols/survey/xrespondent.c

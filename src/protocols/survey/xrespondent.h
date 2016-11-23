@@ -29,8 +29,6 @@
 #include "../../utils/hash.h"
 #include "../utils/fq.h"
 
-extern struct nn_socktype *nn_xrespondent_socktype;
-
 #define NN_XRESPONDENT_OUT 1
 
 struct nn_xrespondent_data {

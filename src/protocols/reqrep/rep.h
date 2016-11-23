@@ -26,9 +26,6 @@
 #include "../../protocol.h"
 #include "xrep.h"
 
-extern struct nn_socktype *nn_rep_socktype;
-
-
 struct nn_rep {
     struct nn_xrep xrep;
     uint32_t flags;

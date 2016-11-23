@@ -54,6 +54,4 @@ int nn_xreq_getopt (struct nn_sockbase *self, int level, int option,
 
 int nn_xreq_ispeer (int socktype);
 
-extern struct nn_socktype *nn_xreq_socktype;
-
 #endif

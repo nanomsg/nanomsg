@@ -21,7 +21,6 @@
     IN THE SOFTWARE.
 */
 
-#include "respondent.h"
 #include "xrespondent.h"
 
 #include "../../nn.h"
@@ -32,7 +31,6 @@
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
 #include "../../utils/wire.h"
-#include "../../utils/list.h"
 
 #include <string.h>
 
@@ -173,14 +171,10 @@ static int nn_respondent_create (void *hint, struct nn_sockbase **sockbase)
     return 0;
 }
 
-static struct nn_socktype nn_respondent_socktype_struct = {
+struct nn_socktype nn_respondent_socktype = {
     AF_SP,
     NN_RESPONDENT,
     0,
     nn_respondent_create,
     nn_xrespondent_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_respondent_socktype = &nn_respondent_socktype_struct;
-

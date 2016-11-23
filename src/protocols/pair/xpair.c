@@ -29,9 +29,7 @@
 
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
-#include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 struct nn_xpair {
@@ -177,14 +175,10 @@ int nn_xpair_ispeer (int socktype)
     return socktype == NN_PAIR ? 1 : 0;
 }
 
-static struct nn_socktype nn_xpair_socktype_struct = {
+struct nn_socktype nn_xpair_socktype = {
     AF_SP_RAW,
     NN_PAIR,
     0,
     nn_xpair_create,
     nn_xpair_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xpair_socktype = &nn_xpair_socktype_struct;
-

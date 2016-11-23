@@ -25,8 +25,6 @@
 
 #include "../../protocol.h"
 
-extern struct nn_socktype *nn_xsub_socktype;
-
 int nn_xsub_create (void *hint, struct nn_sockbase **sockbase);
 int nn_xsub_ispeer (int socktype);
 

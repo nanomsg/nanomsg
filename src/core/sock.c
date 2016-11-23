@@ -69,7 +69,8 @@ static void nn_sock_shutdown (struct nn_fsm *self, int src, int type,
 
 /*  Initialize a socket.  A hold is placed on the initialized socket for
     the caller as well. */
-int nn_sock_init (struct nn_sock *self, struct nn_socktype *socktype, int fd)
+int nn_sock_init (struct nn_sock *self, const struct nn_socktype *socktype,
+    int fd)
 {
     int rc;
     int i;

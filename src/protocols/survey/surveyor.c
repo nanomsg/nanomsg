@@ -21,7 +21,6 @@
     IN THE SOFTWARE.
 */
 
-#include "surveyor.h"
 #include "xsurveyor.h"
 
 #include "../../nn.h"
@@ -36,7 +35,6 @@
 #include "../../utils/wire.h"
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 #include <string.h>
@@ -512,14 +510,10 @@ static int nn_surveyor_create (void *hint, struct nn_sockbase **sockbase)
     return 0;
 }
 
-static struct nn_socktype nn_surveyor_socktype_struct = {
+struct nn_socktype nn_surveyor_socktype = {
     AF_SP,
     NN_SURVEYOR,
     0,
     nn_surveyor_create,
     nn_xsurveyor_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_surveyor_socktype = &nn_surveyor_socktype_struct;
-

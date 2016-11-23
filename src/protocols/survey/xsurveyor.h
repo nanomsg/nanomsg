@@ -28,8 +28,6 @@
 #include "../utils/dist.h"
 #include "../utils/fq.h"
 
-extern struct nn_socktype *nn_xsurveyor_socktype;
-
 struct nn_xsurveyor_data {
     struct nn_pipe *pipe;
     struct nn_dist_data outitem;

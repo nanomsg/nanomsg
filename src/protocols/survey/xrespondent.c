@@ -32,7 +32,6 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 /*  Private functions. */
@@ -289,14 +288,10 @@ int nn_xrespondent_ispeer (int socktype)
     return socktype == NN_SURVEYOR ? 1 : 0;
 }
 
-static struct nn_socktype nn_xrespondent_socktype_struct = {
+struct nn_socktype nn_xrespondent_socktype = {
     AF_SP_RAW,
     NN_RESPONDENT,
     0,
     nn_xrespondent_create,
     nn_xrespondent_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xrespondent_socktype = &nn_xrespondent_socktype_struct;
-

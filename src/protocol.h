@@ -187,10 +187,6 @@ struct nn_socktype {
         SP protocol. Peers speaking other SP protocols are discarded by the
         core and socket is not even asked to validate them. */
     int (*ispeer) (int socktype);
-
-    /*  This member is owned by the core. Never touch it directly from inside
-        the protocol implementation. */
-    struct nn_list_item item;
 };
 
 #endif

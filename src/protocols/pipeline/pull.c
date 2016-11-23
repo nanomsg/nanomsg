@@ -20,21 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#include "pull.h"
 #include "xpull.h"
 
 #include "../../nn.h"
 #include "../../pipeline.h"
-#include "../../utils/list.h"
 
-static struct nn_socktype nn_pull_socktype_struct = {
+struct nn_socktype nn_pull_socktype = {
     AF_SP,
     NN_PULL,
     NN_SOCKTYPE_FLAG_NOSEND,
     nn_xpull_create,
     nn_xpull_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_pull_socktype = &nn_pull_socktype_struct;
-

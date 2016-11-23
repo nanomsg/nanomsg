@@ -32,7 +32,6 @@
 #include "../../utils/alloc.h"
 #include "../../utils/random.h"
 #include "../../utils/wire.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 #include <string.h>
@@ -291,14 +290,10 @@ int nn_xrep_ispeer (int socktype)
     return socktype == NN_REQ ? 1 : 0;
 }
 
-static struct nn_socktype nn_xrep_socktype_struct = {
+struct nn_socktype nn_xrep_socktype = {
     AF_SP_RAW,
     NN_REP,
     0,
     nn_xrep_create,
     nn_xrep_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xrep_socktype = &nn_xrep_socktype_struct;
-

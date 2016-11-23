@@ -48,8 +48,6 @@ struct nn_req {
     struct nn_task task;
 };
 
-extern struct nn_socktype *nn_req_socktype;
-
 /*  Some users may want to extend the REQ protocol similar to how REQ extends XREQ.
     Expose these methods to improve extensibility. */
 void nn_req_init (struct nn_req *self,

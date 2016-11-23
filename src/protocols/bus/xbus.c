@@ -227,14 +227,10 @@ int nn_xbus_ispeer (int socktype)
     return socktype == NN_BUS ? 1 : 0;
 }
 
-static struct nn_socktype nn_xbus_socktype_struct = {
+struct nn_socktype nn_xbus_socktype = {
     AF_SP_RAW,
     NN_BUS,
     0,
     nn_xbus_create,
     nn_xbus_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xbus_socktype = &nn_xbus_socktype_struct;
-

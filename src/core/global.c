@@ -50,27 +50,6 @@
 #include "../transports/tcp/tcp.h"
 #include "../transports/ws/ws.h"
 
-#include "../protocols/pair/pair.h"
-#include "../protocols/pair/xpair.h"
-#include "../protocols/pubsub/pub.h"
-#include "../protocols/pubsub/sub.h"
-#include "../protocols/pubsub/xpub.h"
-#include "../protocols/pubsub/xsub.h"
-#include "../protocols/reqrep/rep.h"
-#include "../protocols/reqrep/req.h"
-#include "../protocols/reqrep/xrep.h"
-#include "../protocols/reqrep/xreq.h"
-#include "../protocols/pipeline/push.h"
-#include "../protocols/pipeline/pull.h"
-#include "../protocols/pipeline/xpush.h"
-#include "../protocols/pipeline/xpull.h"
-#include "../protocols/survey/respondent.h"
-#include "../protocols/survey/surveyor.h"
-#include "../protocols/survey/xrespondent.h"
-#include "../protocols/survey/xsurveyor.h"
-#include "../protocols/bus/bus.h"
-#include "../protocols/bus/xbus.h"
-
 #include "../pubsub.h"
 #include "../pipeline.h"
 
@@ -103,6 +82,54 @@ CT_ASSERT (NN_MAX_SOCKETS <= 0x10000);
 #define NN_GLOBAL_STATE_ACTIVE         2
 #define NN_GLOBAL_STATE_STOPPING_TIMER 3
 
+/*  We could put these in an external header file, but there really is
+    need to.  We are the only thing that needs them. */
+extern struct nn_socktype nn_pair_socktype;
+extern struct nn_socktype nn_xpair_socktype;
+extern struct nn_socktype nn_pub_socktype;
+extern struct nn_socktype nn_sub_socktype;
+extern struct nn_socktype nn_xpub_socktype;
+extern struct nn_socktype nn_xsub_socktype;
+extern struct nn_socktype nn_rep_socktype;
+extern struct nn_socktype nn_req_socktype;
+extern struct nn_socktype nn_xrep_socktype;
+extern struct nn_socktype nn_xreq_socktype;
+extern struct nn_socktype nn_push_socktype;
+extern struct nn_socktype nn_xpush_socktype;
+extern struct nn_socktype nn_pull_socktype;
+extern struct nn_socktype nn_xpull_socktype;
+extern struct nn_socktype nn_respondent_socktype;
+extern struct nn_socktype nn_surveyor_socktype;
+extern struct nn_socktype nn_xrespondent_socktype;
+extern struct nn_socktype nn_xsurveyor_socktype;
+extern struct nn_socktype nn_bus_socktype;
+extern struct nn_socktype nn_xbus_socktype;
+
+/*  Array of known socket types. */
+const struct nn_socktype *nn_socktypes[] = {
+    &nn_pair_socktype,
+    &nn_xpair_socktype,
+    &nn_pub_socktype,
+    &nn_sub_socktype,
+    &nn_xpub_socktype,
+    &nn_xsub_socktype,
+    &nn_rep_socktype,
+    &nn_req_socktype,
+    &nn_xrep_socktype,
+    &nn_xreq_socktype,
+    &nn_push_socktype,
+    &nn_xpush_socktype,
+    &nn_pull_socktype,
+    &nn_xpull_socktype,
+    &nn_respondent_socktype,
+    &nn_surveyor_socktype,
+    &nn_xrespondent_socktype,
+    &nn_xsurveyor_socktype,
+    &nn_bus_socktype,
+    &nn_xbus_socktype,
+    NULL,
+};
+
 struct nn_global {
 
     /*  The global table of existing sockets. The descriptor representing
@@ -124,9 +151,6 @@ struct nn_global {
         dynamic; i.e. it is created during global initialization and
         is never modified. */
     struct nn_list transports;
-
-    /*  List of all available socket types.  Again this list is not dynamic.*/
-    struct nn_list socktypes;
 
     /*  Pool of worker threads. */
     struct nn_pool pool;
@@ -151,7 +175,6 @@ static void nn_global_term (void);
 
 /*  Transport-related private functions. */
 static void nn_global_add_transport (struct nn_transport *transport);
-static void nn_global_add_socktype (struct nn_socktype *socktype);
 
 /*  Private function that unifies nn_bind and nn_connect functionality.
     It returns the ID of the newly created endpoint. */
@@ -226,35 +249,12 @@ static void nn_global_init (void)
 
     /*  Initialise other parts of the global state. */
     nn_list_init (&self.transports);
-    nn_list_init (&self.socktypes);
 
     /*  Plug in individual transports. */
     nn_global_add_transport (nn_inproc);
     nn_global_add_transport (nn_ipc);
     nn_global_add_transport (nn_tcp);
     nn_global_add_transport (nn_ws);
-
-    /*  Plug in individual socktypes. */
-    nn_global_add_socktype (nn_pair_socktype);
-    nn_global_add_socktype (nn_xpair_socktype);
-    nn_global_add_socktype (nn_pub_socktype);
-    nn_global_add_socktype (nn_sub_socktype);
-    nn_global_add_socktype (nn_xpub_socktype);
-    nn_global_add_socktype (nn_xsub_socktype);
-    nn_global_add_socktype (nn_rep_socktype);
-    nn_global_add_socktype (nn_req_socktype);
-    nn_global_add_socktype (nn_xrep_socktype);
-    nn_global_add_socktype (nn_xreq_socktype);
-    nn_global_add_socktype (nn_push_socktype);
-    nn_global_add_socktype (nn_xpush_socktype);
-    nn_global_add_socktype (nn_pull_socktype);
-    nn_global_add_socktype (nn_xpull_socktype);
-    nn_global_add_socktype (nn_respondent_socktype);
-    nn_global_add_socktype (nn_surveyor_socktype);
-    nn_global_add_socktype (nn_xrespondent_socktype);
-    nn_global_add_socktype (nn_xsurveyor_socktype);
-    nn_global_add_socktype (nn_bus_socktype);
-    nn_global_add_socktype (nn_xbus_socktype);
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);
@@ -285,13 +285,7 @@ static void nn_global_term (void)
         nn_list_erase (&self.transports, it);
     }
 
-    /*  For now there's nothing to deallocate about socket types, however,
-        let's remove them from the list anyway. */
-    while (!nn_list_empty (&self.socktypes))
-        nn_list_erase (&self.socktypes, nn_list_begin (&self.socktypes));
-
     /*  Final deallocation of the nn_global object itself. */
-    nn_list_term (&self.socktypes);
     nn_list_term (&self.transports);
     nn_free (self.socks);
 
@@ -418,19 +412,20 @@ int nn_global_create_socket (int domain, int protocol)
 {
     int rc;
     int s;
+    int i;
     struct nn_list_item *it;
-    struct nn_socktype *socktype;
+    const struct nn_socktype *socktype;
     struct nn_sock *sock;
 
     /* The function is called with lock held */
 
     /*  Only AF_SP and AF_SP_RAW domains are supported. */
-    if (nn_slow (domain != AF_SP && domain != AF_SP_RAW)) {
+    if (domain != AF_SP && domain != AF_SP_RAW) {
         return -EAFNOSUPPORT;
     }
 
     /*  If socket limit was reached, report error. */
-    if (nn_slow (self.nsocks >= NN_MAX_SOCKETS)) {
+    if (self.nsocks >= NN_MAX_SOCKETS) {
         return -EMFILE;
     }
 
@@ -438,15 +433,12 @@ int nn_global_create_socket (int domain, int protocol)
     s = self.unused [NN_MAX_SOCKETS - self.nsocks - 1];
 
     /*  Find the appropriate socket type. */
-    for (it = nn_list_begin (&self.socktypes);
-          it != nn_list_end (&self.socktypes);
-          it = nn_list_next (&self.socktypes, it)) {
-        socktype = nn_cont (it, struct nn_socktype, item);
+    for (i = 0; (socktype = nn_socktypes[i]) != NULL; i++) {
         if (socktype->domain == domain && socktype->protocol == protocol) {
 
             /*  Instantiate the socket. */
-            sock = nn_alloc (sizeof (struct nn_sock), "sock");
-            alloc_assert (sock);
+            if ((sock = nn_alloc (sizeof (struct nn_sock), "sock")) == NULL)
+                return -ENOMEM;
             rc = nn_sock_init (sock, socktype, s);
             if (rc < 0)
                 return rc;
@@ -1057,12 +1049,6 @@ static void nn_global_add_transport (struct nn_transport *transport)
         transport->init ();
     nn_list_insert (&self.transports, &transport->item,
         nn_list_end (&self.transports));
-}
-
-static void nn_global_add_socktype (struct nn_socktype *socktype)
-{
-    nn_list_insert (&self.socktypes, &socktype->item,
-        nn_list_end (&self.socktypes));
 }
 
 static int nn_global_create_ep (struct nn_sock *sock, const char *addr,

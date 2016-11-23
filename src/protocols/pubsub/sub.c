@@ -20,21 +20,15 @@
     IN THE SOFTWARE.
 */
 
-#include "sub.h"
 #include "xsub.h"
 
 #include "../../nn.h"
 #include "../../pubsub.h"
-#include "../../utils/list.h"
 
-static struct nn_socktype nn_sub_socktype_struct = {
+struct nn_socktype nn_sub_socktype = {
     AF_SP,
     NN_SUB,
     NN_SOCKTYPE_FLAG_NOSEND,
     nn_xsub_create,
     nn_xsub_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_sub_socktype = &nn_sub_socktype_struct;
-

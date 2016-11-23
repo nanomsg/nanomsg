@@ -29,7 +29,6 @@
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
 #include "../../utils/alloc.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 struct nn_xreq_data {
@@ -235,14 +234,10 @@ int nn_xreq_ispeer (int socktype)
     return socktype == NN_REP ? 1 : 0;
 }
 
-static struct nn_socktype nn_xreq_socktype_struct = {
+struct nn_socktype nn_xreq_socktype = {
     AF_SP_RAW,
     NN_REQ,
     0,
     nn_xreq_create,
     nn_xreq_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xreq_socktype = &nn_xreq_socktype_struct;
-

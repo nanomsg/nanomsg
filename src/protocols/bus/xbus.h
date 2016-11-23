@@ -28,8 +28,6 @@
 #include "../utils/dist.h"
 #include "../utils/fq.h"
 
-extern struct nn_socktype *nn_xbus_socktype;
-
 struct nn_xbus_data {
     struct nn_dist_data outitem;
     struct nn_fq_data initem;

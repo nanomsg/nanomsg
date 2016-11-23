@@ -28,9 +28,7 @@
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/alloc.h"
-#include "../../utils/list.h"
 #include "../../utils/attr.h"
 
 #include <stddef.h>
@@ -217,14 +215,10 @@ int nn_xsurveyor_ispeer (int socktype)
     return socktype == NN_RESPONDENT ? 1 : 0;
 }
 
-static struct nn_socktype nn_xsurveyor_socktype_struct = {
+struct nn_socktype nn_xsurveyor_socktype = {
     AF_SP_RAW,
     NN_SURVEYOR,
     0,
     nn_xsurveyor_create,
     nn_xsurveyor_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xsurveyor_socktype = &nn_xsurveyor_socktype_struct;
-

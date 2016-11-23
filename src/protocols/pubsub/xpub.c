@@ -191,14 +191,10 @@ int nn_xpub_ispeer (int socktype)
      return socktype == NN_SUB ? 1 : 0;
 }
 
-static struct nn_socktype nn_xpub_socktype_struct = {
+struct nn_socktype nn_xpub_socktype = {
     AF_SP_RAW,
     NN_PUB,
     NN_SOCKTYPE_FLAG_NORECV,
     nn_xpub_create,
     nn_xpub_ispeer,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_socktype *nn_xpub_socktype = &nn_xpub_socktype_struct;
-

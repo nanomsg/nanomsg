@@ -1,4 +1,4 @@
-{% if site.version = site.latest %}
+{% if site.version != site.latest %}
    {% include old_version.html %}
 {% endif %}
 {{ content }}

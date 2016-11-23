@@ -37,7 +37,10 @@ enum nn_option_type {
     NN_OPT_FLOAT,
     NN_OPT_LIST_APPEND,
     NN_OPT_LIST_APPEND_FMT,
-    NN_OPT_READ_FILE
+    NN_OPT_READ_FILE,
+#ifndef NN_HAVE_WINDOWS
+    NN_OPT_EXEC,
+#endif
 };
 
 struct nn_option {
@@ -87,6 +90,12 @@ struct nn_blob {
     int need_free;
 };
 
+#ifndef NN_HAVE_WINDOWS
+struct nn_exec_data {
+    char **argv;
+    char *args;
+};
+#endif
 
 void nn_parse_options (struct nn_commandline *cline,
                       void *target, int argc, char **argv);

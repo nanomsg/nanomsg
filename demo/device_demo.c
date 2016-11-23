@@ -218,7 +218,6 @@ int device (const char *url1, const char *url2)
         fprintf (stderr, "nn_device: %s\n", nn_strerror (nn_errno ()));
         return (-1);
     }
-    pause();
     return (0);
 }
 
@@ -233,9 +232,9 @@ int main (int argc, char **argv)
     } else if ((argc == 4) && (strcmp (argv[1], "-c") == 0)) {
         rc = client (argv[2], argv[3]);
     } else {
-        fprintf (stderr, "Usage: %s -s <serverurl>", argv[0]);
-        fprintf (stderr, "Usage: %s -d <serverurl> <clienturl>", argv[0]);
-        fprintf (stderr, "Usage: %s -c <clienturl> <name>", argv[0]);
+        fprintf (stderr, "Usage: %s -s <serverurl>\n", argv[0]);
+        fprintf (stderr, "Usage: %s -d <serverurl> <clienturl>\n", argv[0]);
+        fprintf (stderr, "Usage: %s -c <clienturl> <name>\n", argv[0]);
         exit (EXIT_FAILURE);
     }
     

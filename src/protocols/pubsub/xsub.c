@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -60,8 +61,6 @@ static int nn_xsub_events (struct nn_sockbase *self);
 static int nn_xsub_recv (struct nn_sockbase *self, struct nn_msg *msg);
 static int nn_xsub_setopt (struct nn_sockbase *self, int level, int option,
     const void *optval, size_t optvallen);
-static int nn_xsub_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xsub_sockbase_vfptr = {
     NULL,
     nn_xsub_destroy,
@@ -73,7 +72,7 @@ static const struct nn_sockbase_vfptr nn_xsub_sockbase_vfptr = {
     NULL,
     nn_xsub_recv,
     nn_xsub_setopt,
-    nn_xsub_getopt
+    NULL
 };
 
 static void nn_xsub_init (struct nn_xsub *self,
@@ -209,13 +208,6 @@ static int nn_xsub_setopt (struct nn_sockbase *self, int level, int option,
         return rc;
     }
 
-    return -ENOPROTOOPT;
-}
-
-static int nn_xsub_getopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
-{
     return -ENOPROTOOPT;
 }
 

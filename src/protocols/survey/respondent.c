@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -62,8 +62,8 @@ static const struct nn_sockbase_vfptr nn_respondent_sockbase_vfptr = {
     nn_respondent_events,
     nn_respondent_send,
     nn_respondent_recv,
-    nn_xrespondent_setopt,
-    nn_xrespondent_getopt
+    NULL,
+    NULL
 };
 
 static void nn_respondent_init (struct nn_respondent *self,

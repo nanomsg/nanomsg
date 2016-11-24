@@ -1,6 +1,6 @@
 /*
     Copyright (c) 201-2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -62,10 +62,6 @@ void nn_xrespondent_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 int nn_xrespondent_events (struct nn_sockbase *self);
 int nn_xrespondent_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xrespondent_recv (struct nn_sockbase *self, struct nn_msg *msg);
-int nn_xrespondent_setopt (struct nn_sockbase *self, int level, int option,
-    const void *optval, size_t optvallen);
-int nn_xrespondent_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen);
 
 int nn_xrespondent_ispeer (int socktype);
 

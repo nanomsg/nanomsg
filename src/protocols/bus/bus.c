@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -52,8 +53,8 @@ static const struct nn_sockbase_vfptr nn_bus_sockbase_vfptr = {
     nn_xbus_events,
     nn_bus_send,
     nn_bus_recv,
-    nn_xbus_setopt,
-    nn_xbus_getopt
+    NULL,
+    NULL
 };
 
 static void nn_bus_init (struct nn_bus *self,

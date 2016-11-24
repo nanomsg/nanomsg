@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -50,10 +51,6 @@ void nn_xbus_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 int nn_xbus_events (struct nn_sockbase *self);
 int nn_xbus_send (struct nn_sockbase *self, struct nn_msg *msg);
 int nn_xbus_recv (struct nn_sockbase *self, struct nn_msg *msg);
-int nn_xbus_setopt (struct nn_sockbase *self, int level, int option,
-    const void *optval, size_t optvallen);
-int nn_xbus_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen);
 
 int nn_xbus_ispeer (int socktype);
 

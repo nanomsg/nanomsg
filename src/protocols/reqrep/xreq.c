@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -49,8 +50,8 @@ static const struct nn_sockbase_vfptr nn_xreq_sockbase_vfptr = {
     nn_xreq_events,
     nn_xreq_send,
     nn_xreq_recv,
-    nn_xreq_setopt,
-    nn_xreq_getopt
+    NULL,
+    NULL
 };
 
 void nn_xreq_init (struct nn_xreq *self, const struct nn_sockbase_vfptr *vfptr,
@@ -201,20 +202,6 @@ int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
     }
 
     return 0;
-}
-
-int nn_xreq_setopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
-{
-    return -ENOPROTOOPT;
-}
-
-int nn_xreq_getopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
-{
-    return -ENOPROTOOPT;
 }
 
 static int nn_xreq_create (void *hint, struct nn_sockbase **sockbase)

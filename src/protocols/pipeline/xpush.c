@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -55,10 +56,6 @@ static void nn_xpush_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpush_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xpush_events (struct nn_sockbase *self);
 static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xpush_setopt (struct nn_sockbase *self, int level, int option,
-    const void *optval, size_t optvallen);
-static int nn_xpush_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     NULL,
     nn_xpush_destroy,
@@ -69,8 +66,8 @@ static const struct nn_sockbase_vfptr nn_xpush_sockbase_vfptr = {
     nn_xpush_events,
     nn_xpush_send,
     NULL,
-    nn_xpush_setopt,
-    nn_xpush_getopt
+    NULL,
+    NULL
 };
 
 static void nn_xpush_init (struct nn_xpush *self,
@@ -161,20 +158,6 @@ static int nn_xpush_send (struct nn_sockbase *self, struct nn_msg *msg)
 {
     return nn_lb_send (&nn_cont (self, struct nn_xpush, sockbase)->lb,
         msg, NULL);
-}
-
-static int nn_xpush_setopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
-{
-    return -ENOPROTOOPT;
-}
-
-static int nn_xpush_getopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
-{
-    return -ENOPROTOOPT;
 }
 
 int nn_xpush_create (void *hint, struct nn_sockbase **sockbase)

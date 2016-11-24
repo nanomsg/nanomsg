@@ -56,10 +56,6 @@ static void nn_xpull_in (struct nn_sockbase *self, struct nn_pipe *pipe);
 static void nn_xpull_out (struct nn_sockbase *self, struct nn_pipe *pipe);
 static int nn_xpull_events (struct nn_sockbase *self);
 static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg);
-static int nn_xpull_setopt (struct nn_sockbase *self, int level, int option,
-    const void *optval, size_t optvallen);
-static int nn_xpull_getopt (struct nn_sockbase *self, int level, int option,
-    void *optval, size_t *optvallen);
 static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     NULL,
     nn_xpull_destroy,
@@ -70,8 +66,8 @@ static const struct nn_sockbase_vfptr nn_xpull_sockbase_vfptr = {
     nn_xpull_events,
     NULL,
     nn_xpull_recv,
-    nn_xpull_setopt,
-    nn_xpull_getopt
+    NULL,
+    NULL
 };
 
 static void nn_xpull_init (struct nn_xpull *self,
@@ -163,20 +159,6 @@ static int nn_xpull_recv (struct nn_sockbase *self, struct nn_msg *msg)
 
     /*  Discard NN_PIPEBASE_PARSED flag. */
     return rc < 0 ? rc : 0;
-}
-
-static int nn_xpull_setopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED const void *optval, NN_UNUSED size_t optvallen)
-{
-    return -ENOPROTOOPT;
-}
-
-static int nn_xpull_getopt (NN_UNUSED struct nn_sockbase *self,
-    NN_UNUSED int level, NN_UNUSED int option,
-    NN_UNUSED void *optval, NN_UNUSED size_t *optvallen)
-{
-    return -ENOPROTOOPT;
 }
 
 int nn_xpull_create (void *hint, struct nn_sockbase **sockbase)

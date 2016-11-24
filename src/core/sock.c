@@ -276,9 +276,13 @@ static int nn_sock_setopt_inner (struct nn_sock *self, int level,
     int val;
 
     /*  Protocol-specific socket options. */
-    if (level > NN_SOL_SOCKET)
+    if (level > NN_SOL_SOCKET) {
+        if (self->sockbase->vfptr->setopt == NULL) {
+            return -ENOPROTOOPT;
+        }
         return self->sockbase->vfptr->setopt (self->sockbase, level, option,
             optval, optvallen);
+    }
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {
@@ -380,15 +384,18 @@ int nn_sock_getopt (struct nn_sock *self, int level, int option,
 int nn_sock_getopt_inner (struct nn_sock *self, int level,
     int option, void *optval, size_t *optvallen)
 {
-    int rc;
     struct nn_optset *optset;
     int intval;
     nn_fd fd;
 
     /*  Protocol-specific socket options. */
-    if (level > NN_SOL_SOCKET)
-        return rc = self->sockbase->vfptr->getopt (self->sockbase,
+    if (level > NN_SOL_SOCKET) {
+        if (self->sockbase->vfptr->getopt == NULL) {
+            return -ENOPROTOOPT;
+        }
+        return self->sockbase->vfptr->getopt (self->sockbase,
             level, option, optval, optvallen);
+    }
 
     /*  Transport-specific options. */
     if (level < NN_SOL_SOCKET) {

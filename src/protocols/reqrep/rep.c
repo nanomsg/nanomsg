@@ -47,8 +47,8 @@ static const struct nn_sockbase_vfptr nn_rep_sockbase_vfptr = {
     nn_rep_events,
     nn_rep_send,
     nn_rep_recv,
-    nn_xrep_setopt,
-    nn_xrep_getopt
+    NULL,
+    NULL
 };
 
 void nn_rep_init (struct nn_rep *self,

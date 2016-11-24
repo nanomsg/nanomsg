@@ -482,7 +482,7 @@ int nn_sock_getopt_inner (struct nn_sock *self, int level,
     return 0;
 }
 
-int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
+int nn_sock_add_ep (struct nn_sock *self, const struct nn_transport *transport,
     int bind, const char *addr)
 {
     int rc;
@@ -805,7 +805,7 @@ static void nn_sock_onleave (struct nn_ctx *self)
 static struct nn_optset *nn_sock_optset (struct nn_sock *self, int id)
 {
     int index;
-    struct nn_transport *tp;
+    const struct nn_transport *tp;
 
     /*  Transport IDs are negative and start from -1. */
     index = (-id) - 1;

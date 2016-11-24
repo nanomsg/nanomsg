@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -53,7 +54,7 @@ struct nn_ep {
 };
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
-    struct nn_transport *transport, int bind, const char *addr);
+    const struct nn_transport *transport, int bind, const char *addr);
 void nn_ep_term (struct nn_ep *self);
 
 void nn_ep_start (struct nn_ep *self);

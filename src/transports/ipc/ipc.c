@@ -22,7 +22,6 @@
     IN THE SOFTWARE.
 */
 
-#include "ipc.h"
 #include "bipc.h"
 #include "cipc.h"
 
@@ -31,7 +30,6 @@
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/cont.h"
 
 #include <string.h>
@@ -70,7 +68,7 @@ static int nn_ipc_bind (struct nn_ep *ep);
 static int nn_ipc_connect (struct nn_ep *ep);
 static struct nn_optset *nn_ipc_optset (void);
 
-static struct nn_transport nn_ipc_vfptr = {
+struct nn_transport nn_ipc = {
     "ipc",
     NN_IPC,
     NULL,
@@ -78,10 +76,7 @@ static struct nn_transport nn_ipc_vfptr = {
     nn_ipc_bind,
     nn_ipc_connect,
     nn_ipc_optset,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_transport *nn_ipc = &nn_ipc_vfptr;
 
 static int nn_ipc_bind (struct nn_ep *ep)
 {

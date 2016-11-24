@@ -23,7 +23,6 @@
     IN THE SOFTWARE.
 */
 
-#include "ws.h"
 #include "bws.h"
 #include "cws.h"
 #include "sws.h"
@@ -36,7 +35,6 @@
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/cont.h"
 
 #include <string.h>
@@ -69,7 +67,7 @@ static int nn_ws_bind (struct nn_ep *);
 static int nn_ws_connect (struct nn_ep *);
 static struct nn_optset *nn_ws_optset (void);
 
-static struct nn_transport nn_ws_vfptr = {
+struct nn_transport nn_ws = {
     "ws",
     NN_WS,
     NULL,
@@ -77,10 +75,7 @@ static struct nn_transport nn_ws_vfptr = {
     nn_ws_bind,
     nn_ws_connect,
     nn_ws_optset,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_transport *nn_ws = &nn_ws_vfptr;
 
 static int nn_ws_bind (struct nn_ep *ep)
 {

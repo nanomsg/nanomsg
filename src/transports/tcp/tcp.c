@@ -22,7 +22,6 @@
     IN THE SOFTWARE.
 */
 
-#include "tcp.h"
 #include "btcp.h"
 #include "ctcp.h"
 
@@ -34,7 +33,6 @@
 #include "../../utils/err.h"
 #include "../../utils/alloc.h"
 #include "../../utils/fast.h"
-#include "../../utils/list.h"
 #include "../../utils/cont.h"
 
 #include <string.h>
@@ -68,7 +66,7 @@ static int nn_tcp_bind (struct nn_ep *ep);
 static int nn_tcp_connect (struct nn_ep *ep);
 static struct nn_optset *nn_tcp_optset (void);
 
-static struct nn_transport nn_tcp_vfptr = {
+struct nn_transport nn_tcp = {
     "tcp",
     NN_TCP,
     NULL,
@@ -76,10 +74,7 @@ static struct nn_transport nn_tcp_vfptr = {
     nn_tcp_bind,
     nn_tcp_connect,
     nn_tcp_optset,
-    NN_LIST_ITEM_INITIALIZER
 };
-
-struct nn_transport *nn_tcp = &nn_tcp_vfptr;
 
 static int nn_tcp_bind (struct nn_ep *ep)
 {

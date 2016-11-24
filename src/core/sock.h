@@ -161,7 +161,7 @@ struct nn_ctx *nn_sock_getctx (struct nn_sock *self);
 int nn_sock_ispeer (struct nn_sock *self, int socktype);
 
 /*  Add new endpoint to the socket. */
-int nn_sock_add_ep (struct nn_sock *self, struct nn_transport *transport,
+int nn_sock_add_ep (struct nn_sock *self, const struct nn_transport *transport,
     int bind, const char *addr);
 
 /*  Remove the endpoint with the specified ID from the socket. */

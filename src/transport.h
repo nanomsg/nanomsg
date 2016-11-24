@@ -232,10 +232,6 @@ struct nn_transport {
         Set this member to NULL in case there are no transport-specific
         socket options available. */
     struct nn_optset *(*optset) (void);
-
-    /*  This member is used exclusively by the core. Never touch it directly
-        from the transport. */
-    struct nn_list_item item;
 };
 
 #endif

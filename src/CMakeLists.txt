@@ -192,7 +192,6 @@ set (NN_SOURCES
     transports/inproc/binproc.c
     transports/inproc/cinproc.h
     transports/inproc/cinproc.c
-    transports/inproc/inproc.h
     transports/inproc/inproc.c
     transports/inproc/ins.h
     transports/inproc/ins.c
@@ -207,7 +206,6 @@ set (NN_SOURCES
     transports/ipc/bipc.c
     transports/ipc/cipc.h
     transports/ipc/cipc.c
-    transports/ipc/ipc.h
     transports/ipc/ipc.c
     transports/ipc/sipc.h
     transports/ipc/sipc.c
@@ -220,7 +218,6 @@ set (NN_SOURCES
     transports/tcp/ctcp.c
     transports/tcp/stcp.h
     transports/tcp/stcp.c
-    transports/tcp/tcp.h
     transports/tcp/tcp.c
 
     transports/ws/aws.h
@@ -231,7 +228,6 @@ set (NN_SOURCES
     transports/ws/cws.c
     transports/ws/sws.h
     transports/ws/sws.c
-    transports/ws/ws.h
     transports/ws/ws.c
     transports/ws/ws_handshake.h
     transports/ws/ws_handshake.c

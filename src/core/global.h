@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2016 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -24,7 +25,7 @@
 #define NN_GLOBAL_INCLUDED
 
 /*  Provides access to the list of available transports. */
-struct nn_transport *nn_global_transport (int id);
+const struct nn_transport *nn_global_transport (int id);
 
 /*  Returns the global worker thread pool. */
 struct nn_pool *nn_global_getpool ();

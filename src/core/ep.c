@@ -47,7 +47,7 @@ static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,
-    struct nn_transport *transport, int bind, const char *addr)
+    const struct nn_transport *transport, int bind, const char *addr)
 {
     int rc;
 

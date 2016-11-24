@@ -52,6 +52,7 @@ Fine-grained alternative to nn_recv::
 
 Allocation of messages::
     <<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+    <<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
     <<nn_reallocmsg.3.txt#,nn_reallocmsg(3)>>
     <<nn_freemsg.3.txt#,nn_freemsg(3)>>
 
@@ -128,4 +129,4 @@ AUTHORS
 -------
 link:mailto:garrett@damore.org[Garrett D'Amore]
 link:mailto:sustrik@250bpm.com[Martin Sustrik]
-
+link:mailto:icharala@cern.ch[Ioannis Charalampidis]

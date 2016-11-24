@@ -82,13 +82,23 @@ void *nn_chunkref_getchunk (struct nn_chunkref *self)
 
     if (self->u.ref [0] == 0xff) {
         ch = (struct nn_chunkref_chunk*) self;
-        self->u.ref [0] = 0;
         return ch->chunk;
     }
 
     rc = nn_chunk_alloc (self->u.ref [0], 0, &chunk);
     errno_assert (rc == 0);
     memcpy (chunk, &self->u.ref [1], self->u.ref [0]);
+    return chunk;
+}
+
+void *nn_chunkref_popchunk (struct nn_chunkref *self)
+{
+    void *chunk;
+
+    /* Get chunk */
+    chunk = nn_chunkref_getchunk( self );
+
+    /* Reset reference & return chunk */
     self->u.ref [0] = 0;
     return chunk;
 }
@@ -97,6 +107,9 @@ void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src)
 {
     memcpy (dst, src, src->u.ref [0] == 0xff ?
         (int)sizeof (struct nn_chunkref_chunk) : src->u.ref [0] + 1);
+
+    /* Chunk data moved, reset self */
+    src->u.ref [0] = 0;
 }
 
 void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
@@ -113,7 +126,7 @@ void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)
 void *nn_chunkref_data (struct nn_chunkref *self)
 {
     return self->u.ref [0] == 0xff ?
-        ((struct nn_chunkref_chunk*) self)->chunk :
+        nn_chunk_deref( ((struct nn_chunkref_chunk*) self)->chunk ) :
         &self->u.ref [1];
 }
 

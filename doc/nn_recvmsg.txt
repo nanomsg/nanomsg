@@ -107,6 +107,7 @@ SEE ALSO
 <<nn_recv.3.txt#,nn_recv(3)>>
 <<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
 <<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
 <<nn_freemsg.3.txt#,nn_freemsg(3)>>
 <<nn_cmsg.3.txt#,nn_cmsg(3)>>
 <<nanomsg.7.txt#,nanomsg(7)>>

@@ -47,6 +47,7 @@ nn_freemsg (buf);
 SEE ALSO
 --------
 <<nn_allocmsg.3.txt#,nn_allocmsg(3)>>
+<<nn_allocmsg_ptr.3.txt#,nn_allocmsg_ptr(3)>>
 <<nn_reallocmsg.3.txt#,nn_reallocmsg(3)>>
 <<nn_recv.3.txt#,nn_recv(3)>>
 <<nn_recvmsg.3.txt#,nn_recvmsg(3)>>

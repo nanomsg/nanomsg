@@ -1,0 +1,64 @@
+nn_allocmsg_ptr(3)
+==================
+
+NAME
+----
+nn_allocmsg_ptr - allocate a message from existing data
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*typedef void (*nn_free_fn) (void *p);
+
+*void *nn_allocmsg_ptr (void *data, size_t size, nn_free_fn destructor);
+
+DESCRIPTION
+-----------
+Allocate a message from existing 'data' of a given 'size' to be sent in 
+zero-copy fashion. This function is simmilar to linknanomsg:nn_allocmsg[3], 
+but instead of allocating a new data chunk, it creates a pointer chunk that 
+refers to the 'data' pointer given. While <<nn_send.3.txt#,nn_send(3)>> and <<nn_sendmsg.3.txt#,nn_sendmsg(3)>> allow to send arbitrary buffers, messages allocated 
+using _nn_allocmsg_ptr()_ can be more efficient for large messages as they allow 
+for using zero-copy techniques.
+
+The 'destructor' parameter must be specified if the pointer was dynamically
+allocated, otherwise it can be NULL. This function will be called when there
+are no more references to the message.
+
+RETURN VALUE
+------------
+If the function succeeds pointer to newly allocated message is returned.
+Otherwise, NULL is returned and 'errno' is set to to one of the values
+defined below.
+
+
+ERRORS
+------
+*ENOMEM*::
+Not enough memory to allocate the message.
+
+
+EXAMPLE
+-------
+
+----
+char buf[12];
+memcpy (buf, "Hello world!", 12);
+
+void *msg = nn_allocmsg_ptr (buf, 12, NULL);
+nn_send (s, &buf, NN_MSG, 0);
+----
+
+
+SEE ALSO
+--------
+<<nn_freemsg.3.txt#,nn_freemsg(3)>>
+<<nn_send.3.txt#,nn_send(3)>>
+<<nn_sendmsg.3.txt#,nn_sendmsg(3)>>
+<<nanomsg.7.txt#,nanomsg(7)>>
+
+AUTHORS
+-------
+link:mailto:icharala@cern.ch[Ioannis Charalampidis]

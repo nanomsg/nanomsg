@@ -20,6 +20,10 @@ received from a peer using NN_MSG mechanism.
 Note that as with the standard _realloc_, the operation may involve copying
 the data in the buffer.
 
+Also note that, this method is not compatible with messages allocated by
+linknanomsg:nn_allocmsg_ptr[3], and such requests will always result to
+an _EINVAL_ error.
+
 
 RETURN VALUE
 ------------
@@ -32,7 +36,8 @@ ERRORS
 ------
 *ENOMEM*::
 Not enough memory to allocate the message.
-
+*EINVAL*::
+Tried to reallocate a message allocated by linknanomsg:nn_allocmsg_ptr[3].
 
 EXAMPLE
 -------

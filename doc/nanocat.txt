@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 
     nanocat --req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
-    nanocat --rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+    nanocat --rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH|--exec PATH} [-AQ]
     nanocat --push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
     nanocat --pull {--connect ADDR|--bind ADDR} [-AQ]
     nanocat --pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
@@ -23,7 +23,7 @@ SYNOPSIS
 In the case symlinks are installed:
 
     nn_req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
-    nn_rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+    nn_rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH|--exec PATH} [-AQ]
     nn_push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
     nn_pull {--connect ADDR|--bind ADDR} [-AQ]
     nn_pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
@@ -132,7 +132,8 @@ Output Options:
     socket. Send DATA as request for REQ or SURVEYOR socket.
  *--file,-F* 'PATH'::
     Same as --data but get data from file PATH
-
+ *--exec,-E* 'PATH'::
+    Launch an executable after retrieving something from REP socket.
 
 EXAMPLES
 --------
@@ -164,6 +165,9 @@ Send heartbeats to imaginary monitoring service:
 
     nanocat --pub --connect tpc://monitoring.example.org -D"I am alive!" --interval 10
 
+Launch an executable after retrieving something:
+
+    nanocat --rep --connect ipc:///var/run/app/req.socket -E 'ls -l'
 
 SEE ALSO
 --------

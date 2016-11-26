@@ -39,103 +39,52 @@
 <p>Source code of nanomsg library is hosted on GitHub:</p>
 <p><a href="https://github.com/nanomsg/nanomsg">https://github.com/nanomsg/nanomsg</a></p>
 
-<p>Source code of this website is located in gh-pages branch:</p>
+<p>Source code of this website is located in the gh-pages branch:</p>
 <p><a href="https://github.com/nanomsg/nanomsg/tree/gh-pages">https://github.com/nanomsg/nanomsg/tree/gh-pages</a></p>
 
 <h3>Build</h3>
 
-<h4>POSIX-compliant platforms</h4>
+<p>Building this software as a developer is very similar to building it
+the distribution as an end-user or system administrator.  The same tools
+will be needed, but no extra tools are required.  Please see the
+<a href="https://github.com/nanomsg/nanomsg/blob/master/README">README</a>
+file for more information.</p>
 
-<p>First, you have to have autotools installed. Once that is done following sequence of steps will build the project:</p>
-
-<pre>
-$ git clone git@github.com:nanomsg/nanomsg.git
-$ cd nanomsg
-$ ./autogen.sh
-$ ./configure
-$ make
-$ make check
-$ sudo make install
-</pre>
-
-<p>To build a version with documentation (man pages and HTML reference) included you will need <i>asciidoc</i> and <i>xmlto</i> tools installed. To build it modify the <i>./configure</i> step in following manner:
-
-<pre>
-$ ./configure --enable-doc
-</pre>
-
-<p>To build a version with debug info adjust the <i>./configure</i> step as follows:
-
-<pre>
-$ ./configure --enable-debug
-</pre>
-
-<h4>Windows</h4>
-
-<p>As autotools are not supported on Windows, you have to install <i>CMake</i> to be able to build the project. To do so, follow these steps:</p>
-
-<pre>
-$ git clone git@github.com:nanomsg/nanomsg.git
-$ cd nanomsg
-$ mkdir build
-$ cd build
-$ cmake ..
-</pre>
-
-<p>At this point MSVC project gets generated in <i>build</i> subdirectory. You can open it using MSVC IDE and build the project in the standard way.</p>
+<p>One thing that may be different is that you should obtain the
+latest development tree from git.  You can clone it from
+https://github.com/nanomsg/nanomsg.git</p>
 
 <h3>Auto-builds</h3>
 
-Auto-builds are run every time the project is updated. The results can be found here:
-<p><a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a></p>
-
-Currently there are FreeBSD, Linux, OSX, NetBSD and Solaris builds in place. In case you have a box with a different OS (or microarchitecture) you would like to add to the build cluster, send an email to the nanomsg mailing list.
+<p>
+Auto-builds are run every time the project is updated. The results are linked
+from the main repository page, and include tests on Linux, MacOS X, and Windows.</p>
 
 <h3>Bug tracker</h3>
 
-<p>Use GitHub bug tracker to report problems with nanomsg:</p>
+<p>Use GitHub Issues to report problems with nanomsg:</p>
 <p><a href="https://github.com/nanomsg/nanomsg/issues">https://github.com/nanomsg/nanomsg/issues</a></p>
 
 <h3>Contributing</h3>
 
-<p>To contribute to nanomsg project send your patch to the mailing list or, alternatively, send a GitHub pull request. In either case you have to state that your patch is submitted under MIT/X11 license, so that we can incorporate it into the mainline codebase.</p>
+<p>To contribute to nanomsg project send your patch to the mailing list or,
+alternatively, send a GitHub pull request. In either case you have to state
+that your patch is submitted under MIT/X11 license, so that we can incorporate
+it into the mainline codebase.</p>
 
-<p>If you make a substantial contribution to a file, add your copyright to the file header. Irrespective of whether you do so, your name will be added to the AUTHORS file to indicate you own copyright to a part of the codebase.</p>
+<p>If you make a substantial contribution to a file, add your copyright to the
+file header. You should also add your name to the AUTHORS file, 
+to indicate you own copyright to a part of the codebase.</p>
 
+<p>
 Please, make yourself familiar with nanomsg <a href="development-style.html">coding style</a> before contributing.
-
-<!-- diagrams have been "removed" for now...
-<h3>State diagrams</h3>
-
-To inspect state transition diagrams for various objects inside nanomsg codebase, click <a href="diagrams.html">here</a>.
-
-To build the diagrams yourself, use "make diagrams" command.
--->
+</p>
 
 <h3>Language bindings</h3>
 
+<p>
 If you want to implement a new language binding for nanomsg, check this <a href="development-bindings.html">document</a> describing best practices and offering helpful tips.
-
-<h3>Release process</h3>
-
-These instructions are intended for the project maintainers.
-
-<ol>
-<li>Check CI (<a href="http://build.nanomsg.org/waterfall">http://build.nanomsg.org/waterfall</a>).
-<li>Do "make distcheck" to check whether the packaging process still works.
-<li>Bump ABI version as appropriate (see here: <a href="http://250bpm.com/blog:41">http://250bpm.com/blog:41</a>). Commit it and push it back to the master on GitHub.
-<li>Tag the new version and push the tag to GitHub (e.g. <tt>git tag -a 0.3-beta; git push origin 0.3-beta</tt>).
-<li>Clone a clean repo from GitHub.
-<li>Build the package (make distcheck).
-<li>Upload the packages to <tt>download.nanomsg.org</tt>.
-<li>Get the checksums (<tt>md5sum</tt>) of the packages.
-<li>Upload the <tt>download.html</tt> page on the website (git branch <tt>gh-pages</tt>).
-<li>Generate the docs (<tt>./configure --enable-docs; make</tt>)
-<li>In online docs (git branch <tt>gh-pages</tt>) make a new folder (e.g. <tt>v0.3</tt>) and copy the HTML docs there.
-<li>Link the docs from <tt>documentation.html</tt> page.
-<li>Send the announcement about the release to the project mailing list.
-<li>Update the topic in the IRC chatroom accordingly.
-</ol>
+</p>
 
 </div>
 </body>

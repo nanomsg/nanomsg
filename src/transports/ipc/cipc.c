@@ -77,9 +77,9 @@ struct nn_cipc {
 };
 
 /*  nn_ep virtual interface implementation. */
-static void nn_cipc_stop (struct nn_ep *ep);
-static void nn_cipc_destroy (struct nn_ep *ep);
-const struct nn_ep_vfptr nn_cipc_ep_vfptr = {
+static void nn_cipc_stop (void *self);
+static void nn_cipc_destroy (void *self);
+const struct nn_ep_ops nn_cipc_ep_ops = {
     nn_cipc_stop,
     nn_cipc_destroy
 };
@@ -104,7 +104,7 @@ int nn_cipc_create (struct nn_ep *ep)
 
     /*  Initialise the structure. */
     self->ep = ep;
-    nn_ep_tran_setup (ep, &nn_cipc_ep_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_cipc_ep_ops, self);
     nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
         nn_ep_getctx (ep));
     self->state = NN_CIPC_STATE_IDLE;
@@ -128,20 +128,16 @@ int nn_cipc_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_cipc_stop (struct nn_ep *ep)
+static void nn_cipc_stop (void *self)
 {
-    struct nn_cipc *cipc;
-
-    cipc = nn_ep_tran_private (ep);
+    struct nn_cipc *cipc = self;
 
     nn_fsm_stop (&cipc->fsm);
 }
 
-static void nn_cipc_destroy (struct nn_ep *ep)
+static void nn_cipc_destroy (void *self)
 {
-    struct nn_cipc *cipc;
-
-    cipc = nn_ep_tran_private (ep);
+    struct nn_cipc *cipc = self;
 
     nn_sipc_term (&cipc->sipc);
     nn_backoff_term (&cipc->retry);

@@ -108,9 +108,9 @@ struct nn_cws {
 };
 
 /*  nn_ep virtual interface implementation. */
-static void nn_cws_stop (struct nn_ep *ep);
-static void nn_cws_destroy (struct nn_ep *ep);
-const struct nn_ep_vfptr nn_cws_ep_vfptr = {
+static void nn_cws_stop (void *);
+static void nn_cws_destroy (void *);
+const struct nn_ep_ops nn_cws_ep_ops = {
     nn_cws_stop,
     nn_cws_destroy
 };
@@ -152,7 +152,7 @@ int nn_cws_create (struct nn_ep *ep)
     self->ep = ep;
 
     /*  Initalise the endpoint. */
-    nn_ep_tran_setup (ep, &nn_cws_ep_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_cws_ep_ops, self);
 
     /*  Check whether IPv6 is to be used. */
     ipv4onlylen = sizeof (ipv4only);
@@ -260,20 +260,16 @@ int nn_cws_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_cws_stop (struct nn_ep *ep)
+static void nn_cws_stop (void *self)
 {
-    struct nn_cws *cws;
-
-    cws = nn_ep_tran_private (ep);
+    struct nn_cws *cws = self;
 
     nn_fsm_stop (&cws->fsm);
 }
 
-static void nn_cws_destroy (struct nn_ep *ep)
+static void nn_cws_destroy (void *self)
 {
-    struct nn_cws *cws;
-
-    cws = nn_ep_tran_private (ep);
+    struct nn_cws *cws = self;
 
     nn_chunkref_term (&cws->resource);
     nn_chunkref_term (&cws->remote_host);

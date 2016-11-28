@@ -78,9 +78,9 @@ struct nn_bws {
 };
 
 /*  nn_ep virtual interface implementation. */
-static void nn_bws_stop (struct nn_ep *);
-static void nn_bws_destroy (struct nn_ep *);
-const struct nn_ep_vfptr nn_bws_ep_vfptr = {
+static void nn_bws_stop (void *);
+static void nn_bws_destroy (void *);
+const struct nn_ep_ops nn_bws_ep_ops = {
     nn_bws_stop,
     nn_bws_destroy
 };
@@ -110,7 +110,7 @@ int nn_bws_create (struct nn_ep *ep)
     alloc_assert (self);
     self->ep = ep;
 
-    nn_ep_tran_setup (ep, &nn_bws_ep_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_bws_ep_ops, self);
     addr = nn_ep_getaddr (ep);
 
     /*  Parse the port. */
@@ -156,20 +156,16 @@ int nn_bws_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_bws_stop (struct nn_ep *ep)
+static void nn_bws_stop (void *self)
 {
-    struct nn_bws *bws;
-
-    bws = nn_ep_tran_private (ep);
+    struct nn_bws *bws = self;
 
     nn_fsm_stop (&bws->fsm);
 }
 
-static void nn_bws_destroy (struct nn_ep *ep)
+static void nn_bws_destroy (void *self)
 {
-    struct nn_bws *bws;
-
-    bws = nn_ep_tran_private (ep);
+    struct nn_bws *bws = self;
 
     nn_assert_state (bws, NN_BWS_STATE_IDLE);
     nn_list_term (&bws->awss);

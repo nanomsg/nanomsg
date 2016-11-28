@@ -73,9 +73,9 @@ struct nn_bipc {
 };
 
 /*  nn_ep virtual interface implementation. */
-static void nn_bipc_stop (struct nn_ep *self);
-static void nn_bipc_destroy (struct nn_ep *self);
-const struct nn_ep_vfptr nn_bipc_ep_vfptr = {
+static void nn_bipc_stop (void *self);
+static void nn_bipc_destroy (void *self);
+const struct nn_ep_ops nn_bipc_ep_ops = {
     nn_bipc_stop,
     nn_bipc_destroy
 };
@@ -99,8 +99,8 @@ int nn_bipc_create (struct nn_ep *ep)
 
 
     /*  Initialise the structure. */
-    nn_ep_tran_setup (ep, &nn_bipc_ep_vfptr, self);
     self->ep = ep;
+    nn_ep_tran_setup (ep, &nn_bipc_ep_ops, self);
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
         nn_ep_getctx (ep));
     self->state = NN_BIPC_STATE_IDLE;
@@ -120,20 +120,16 @@ int nn_bipc_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_bipc_stop (struct nn_ep *ep)
+static void nn_bipc_stop (void *self)
 {
-    struct nn_bipc *bipc;
-
-    bipc = nn_ep_tran_private (ep);
+    struct nn_bipc *bipc = self;
 
     nn_fsm_stop (&bipc->fsm);
 }
 
-static void nn_bipc_destroy (struct nn_ep *ep)
+static void nn_bipc_destroy (void *self)
 {
-    struct nn_bipc *bipc;
-
-    bipc = nn_ep_tran_private (ep);
+    struct nn_bipc *bipc = self;
 
     nn_assert_state (bipc, NN_BIPC_STATE_IDLE);
     nn_list_term (&bipc->aipcs);

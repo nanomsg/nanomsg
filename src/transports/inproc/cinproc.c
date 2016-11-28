@@ -42,9 +42,9 @@
 #define NN_CINPROC_SRC_SINPROC 1
 
 /*  Implementation of nn_ep callback interface. */
-static void nn_cinproc_stop (struct nn_ep *);
-static void nn_cinproc_destroy (struct nn_ep *);
-static const struct nn_ep_vfptr nn_cinproc_vfptr = {
+static void nn_cinproc_stop (void *);
+static void nn_cinproc_destroy (void *);
+static const struct nn_ep_ops nn_cinproc_ops = {
     nn_cinproc_stop,
     nn_cinproc_destroy
 };
@@ -64,7 +64,7 @@ int nn_cinproc_create (struct nn_ep *ep)
     self = nn_alloc (sizeof (struct nn_cinproc), "cinproc");
     alloc_assert (self);
 
-    nn_ep_tran_setup (ep, &nn_cinproc_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_cinproc_ops, self);
 
     nn_ins_item_init (&self->item, ep);
     nn_fsm_init_root (&self->fsm, nn_cinproc_handler, nn_cinproc_shutdown,
@@ -83,20 +83,16 @@ int nn_cinproc_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_cinproc_stop (struct nn_ep *ep)
+static void nn_cinproc_stop (void *self)
 {
-    struct nn_cinproc *cinproc;
-
-    cinproc = nn_ep_tran_private (ep);
+    struct nn_cinproc *cinproc = self;
 
     nn_fsm_stop (&cinproc->fsm);
 }
 
-static void nn_cinproc_destroy (struct nn_ep *ep)
+static void nn_cinproc_destroy (void *self)
 {
-    struct nn_cinproc *cinproc;
-
-    cinproc = nn_ep_tran_private (ep);
+    struct nn_cinproc *cinproc = self;
 
     nn_list_term (&cinproc->sinprocs);
     nn_fsm_term (&cinproc->fsm);

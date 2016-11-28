@@ -67,23 +67,20 @@ struct nn_optset {
 
 struct nn_ep;
 
-struct nn_ep_vfptr {
+struct nn_ep_ops {
 
     /*  Ask the endpoint to stop itself. The endpoint is allowed to linger
         to send the pending outbound data. When done, it reports the fact by
         invoking nn_ep_stopped() function. */
-    void (*stop) (struct nn_ep *);
+    void (*stop) (void *);
 
-    /*  Deallocate the endpoint object. */
-    void (*destroy) (struct nn_ep *);
+    /*  Deallocate the endpoint object. It will already have been stopped. */
+    void (*destroy) (void *);
 };
 
-/*  Gets the opaque value stored by a transport at setup time. */
-void *nn_ep_tran_private (struct nn_ep *);
-
-/*  Set up an ep for use by a transport.  The final opaque argument can be
-    accessed later by calling nn_ep_tran_private(). */
-void nn_ep_tran_setup (struct nn_ep *, const struct nn_ep_vfptr *, void *);
+/*  Set up an ep for use by a transport.  The final opaque argument is passed
+    as the first argument to the ops entry points. */
+void nn_ep_tran_setup (struct nn_ep *, const struct nn_ep_ops *, void *);
 
 /*  Notify the user that stopping is done. */
 void nn_ep_stopped (struct nn_ep *);

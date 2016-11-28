@@ -39,9 +39,9 @@
 #define NN_BINPROC_SRC_SINPROC 1
 
 /*  Implementation of nn_ep interface. */
-static void nn_binproc_stop (struct nn_ep *);
-static void nn_binproc_destroy (struct nn_ep *);
-static const struct nn_ep_vfptr nn_binproc_vfptr = {
+static void nn_binproc_stop (void *);
+static void nn_binproc_destroy (void *);
+static const struct nn_ep_ops nn_binproc_ops = {
     nn_binproc_stop,
     nn_binproc_destroy
 };
@@ -87,24 +87,20 @@ int nn_binproc_create (struct nn_ep *ep)
         return rc;
     }
 
-    nn_ep_tran_setup (ep, &nn_binproc_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_binproc_ops, self);
     return 0;
 }
 
-static void nn_binproc_stop (struct nn_ep *ep)
+static void nn_binproc_stop (void *self)
 {
-    struct nn_binproc *binproc;
-
-    binproc = nn_ep_tran_private (ep);
+    struct nn_binproc *binproc = self;
 
     nn_fsm_stop (&binproc->fsm);
 }
 
-static void nn_binproc_destroy (struct nn_ep *ep)
+static void nn_binproc_destroy (void *self)
 {
-    struct nn_binproc *binproc;
-
-    binproc = nn_ep_tran_private (ep);
+    struct nn_binproc *binproc = self;
 
     nn_list_term (&binproc->sinprocs);
     nn_fsm_term (&binproc->fsm);

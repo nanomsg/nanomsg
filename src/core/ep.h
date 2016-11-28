@@ -47,10 +47,10 @@ struct nn_ep {
     int last_errno;
 
     /*  Transport private state structure */
-    void *tran_private;
+    void *tran;
 
     /*  Transport specific operations */
-    const struct nn_ep_vfptr *vfptr;
+    struct nn_ep_ops ops;
 };
 
 int nn_ep_init (struct nn_ep *self, int src, struct nn_sock *sock, int eid,

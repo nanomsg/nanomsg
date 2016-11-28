@@ -79,9 +79,9 @@ struct nn_btcp {
 };
 
 /*  nn_ep virtual interface implementation. */
-static void nn_btcp_stop (struct nn_ep *);
-static void nn_btcp_destroy (struct nn_ep *);
-const struct nn_ep_vfptr nn_btcp_ep_vfptr = {
+static void nn_btcp_stop (void *);
+static void nn_btcp_destroy (void *);
+const struct nn_ep_ops nn_btcp_ep_ops = {
     nn_btcp_stop,
     nn_btcp_destroy
 };
@@ -111,7 +111,7 @@ int nn_btcp_create (struct nn_ep *ep)
     self->ep = ep;
     alloc_assert (self);
 
-    nn_ep_tran_setup (ep, &nn_btcp_ep_vfptr, self);
+    nn_ep_tran_setup (ep, &nn_btcp_ep_ops, self);
     addr = nn_ep_getaddr (ep);
 
     /*  Parse the port. */
@@ -157,20 +157,16 @@ int nn_btcp_create (struct nn_ep *ep)
     return 0;
 }
 
-static void nn_btcp_stop (struct nn_ep *ep)
+static void nn_btcp_stop (void *self)
 {
-    struct nn_btcp *btcp;
-
-    btcp = nn_ep_tran_private (ep);
+    struct nn_btcp *btcp = self;
 
     nn_fsm_stop (&btcp->fsm);
 }
 
-static void nn_btcp_destroy (struct nn_ep *ep)
+static void nn_btcp_destroy (void *self)
 {
-    struct nn_btcp *btcp;
-
-    btcp = nn_ep_tran_private (ep);
+    struct nn_btcp *btcp = self;
 
     nn_assert_state (btcp, NN_BTCP_STATE_IDLE);
     nn_list_term (&btcp->atcps);

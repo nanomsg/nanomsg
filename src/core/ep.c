@@ -85,7 +85,7 @@ void nn_ep_term (struct nn_ep *self)
 {
     nn_assert_state (self, NN_EP_STATE_IDLE);
 
-    self->vfptr->destroy (self);
+    self->ops.destroy (self->tran);
     nn_list_item_term (&self->item);
     nn_fsm_term (&self->fsm);
 }
@@ -143,7 +143,7 @@ static void nn_ep_shutdown (struct nn_fsm *self, int src, int type,
     ep = nn_cont (self, struct nn_ep, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
-        ep->vfptr->stop (ep);
+        ep->ops.stop (ep->tran);
         ep->state = NN_EP_STATE_STOPPING;
         return;
     }
@@ -229,23 +229,17 @@ void nn_ep_stat_increment (struct nn_ep *self, int name, int increment)
     nn_sock_stat_increment (self->sock, name, increment);
 }
 
-/*  Get transport private state object. */
-void *nn_ep_tran_private (struct nn_ep *self)
-{
-    return self->tran_private;
-}
-
 int nn_ep_ispeer_ep (struct nn_ep *self, struct nn_ep *other)
 {
     return nn_ep_ispeer (self, other->sock->socktype->protocol);
 }
 
 /*  Set up an ep for use by a transport.  Note that the core will already have
-    done most of the initialization steps.  The associated data can be retrieved
-    later with nn_ep_tran_private(). */
-void nn_ep_tran_setup (struct nn_ep *ep, const struct nn_ep_vfptr *vfptr,
-    void *data)
+    done most of the initialization steps.  The tran is passed as the argument
+    to the ops. */
+void nn_ep_tran_setup (struct nn_ep *ep, const struct nn_ep_ops *ops,
+    void *tran)
 {
-    ep->vfptr = vfptr;
-    ep->tran_private = data;
+    ep->ops = *ops;
+    ep->tran = tran;
 }

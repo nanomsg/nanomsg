@@ -118,11 +118,13 @@ int nn_btcp_create (struct nn_ep *ep)
     end = addr + strlen (addr);
     pos = strrchr (addr, ':');
     if (pos == NULL) {
+        nn_free (self);
         return -EINVAL;
     }
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
     if (rc < 0) {
+        nn_free (self);
         return -EINVAL;
     }
 
@@ -134,6 +136,7 @@ int nn_btcp_create (struct nn_ep *ep)
     /*  Parse the address. */
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
     if (nn_slow (rc < 0)) {
+        nn_free (self);
         return -ENODEV;
     }
 
@@ -151,6 +154,7 @@ int nn_btcp_create (struct nn_ep *ep)
 
     rc = nn_btcp_listen (self);
     if (rc != 0) {
+        // I suspect we might need to do nn_free here.
         return rc;
     }
 

@@ -150,10 +150,12 @@ int nn_ctcp_create (struct nn_ep *ep)
 
     /*  Parse the port. */
     if (!colon) {
+        nn_free (self);
         return -EINVAL;
     }
     rc = nn_port_resolve (colon + 1, end - colon - 1);
     if (rc < 0) {
+        nn_free (self);
         return -EINVAL;
     }
 
@@ -162,6 +164,7 @@ int nn_ctcp_create (struct nn_ep *ep)
     if (nn_dns_check_hostname (hostname, colon - hostname) < 0 &&
           nn_literal_resolve (hostname, colon - hostname, ipv4only,
           &ss, &sslen) < 0) {
+        nn_free (self);
         return -EINVAL;
     }
 
@@ -169,6 +172,7 @@ int nn_ctcp_create (struct nn_ep *ep)
     if (semicolon) {
         rc = nn_iface_resolve (addr, semicolon - addr, ipv4only, &ss, &sslen);
         if (rc < 0) {
+            nn_free (self);
             return -ENODEV;
         }
     }

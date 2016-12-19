@@ -35,7 +35,7 @@
     <section title="Underlying protocol">
 
       <t>ZeroTier expresses an 802.3 style layer 2, where frames
-      maybe excchanged as if they were Ethernet frames. Virtual broadcast
+      maybe exchanged as if they were Ethernet frames. Virtual broadcast
       domains are created within a numbered "network", and frames may then
       be exchanged with any peers on that network.</t>
 

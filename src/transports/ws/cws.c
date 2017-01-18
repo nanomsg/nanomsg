@@ -233,6 +233,12 @@ int nn_cws_create (struct nn_ep *ep)
         nn_ep_getctx (ep));
     self->state = NN_CWS_STATE_IDLE;
     nn_usock_init (&self->usock, NN_CWS_SRC_USOCK, &self->fsm);
+    
+    sz = sizeof (msg_type);
+    nn_epbase_getopt (&self->epbase, NN_WS, NN_WS_MSG_TYPE,
+        &msg_type, &sz);
+    nn_assert (sz == sizeof (msg_type));
+    self->msg_type = (uint8_t) msg_type;
 
     sz = sizeof (msg_type);
     nn_ep_getopt (ep, NN_WS, NN_WS_MSG_TYPE, &msg_type, &sz);

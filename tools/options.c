@@ -138,7 +138,7 @@ static char *nn_print_line (FILE *out, char *str, size_t width)
         fprintf (out, "%s", str);
         return "";
     }
-    for (i = width; i > 1; --i) {
+    for (i = (int)width; i > 1; --i) {
         if (isspace (str[i])) {
             fprintf (out, "%.*s", (int) i, str);
             return str + i + 1;

@@ -25,6 +25,6 @@
 
 /*  Platform independent implementation of sleeping. */
 
-void nn_sleep (int milliseconds);
+NN_EXPORT void nn_sleep (int milliseconds);
 
 #endif

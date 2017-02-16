@@ -39,6 +39,7 @@ int main (int argc, const char *argv[])
     int sb;
     int i;
     int opt;
+    int eid;
     size_t sz;
     int s1, s2;
     void * dummy_buf;

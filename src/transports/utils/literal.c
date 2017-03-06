@@ -30,6 +30,34 @@
 #ifndef NN_HAVE_WINDOWS
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#else
+#if (_WIN32_WINNT <= 0x0501) || (WINVER <= 0x0501)
+#define inet_pton nn_inet_pton
+static int nn_inet_pton(int family, const char *src, void *dst)
+{
+    int rc;
+    struct sockaddr_storage addr;
+    int addr_len = sizeof(addr);
+
+    addr.ss_family = family;
+
+    rc = WSAStringToAddressA((char *) src, family, NULL,
+        (struct sockaddr*) &addr, &addr_len);
+    if (rc != 0) {
+        return -1;
+    }
+
+    if (family == AF_INET) {
+        memcpy(dst, &((struct sockaddr_in *) &addr)->sin_addr,
+            sizeof(struct in_addr));
+    } else if (family == AF_INET6) {
+        memcpy(dst, &((struct sockaddr_in6 *)&addr)->sin6_addr,
+            sizeof(struct in6_addr));
+    }
+
+    return 1;
+}
+#endif
 #endif
 
 int nn_literal_resolve (const char *addr, size_t addrlen,

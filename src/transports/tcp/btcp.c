@@ -154,7 +154,7 @@ int nn_btcp_create (struct nn_ep *ep)
 
     rc = nn_btcp_listen (self);
     if (rc != 0) {
-        // I suspect we might need to do nn_free here.
+        nn_free (self);
         return rc;
     }
 

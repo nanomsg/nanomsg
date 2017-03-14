@@ -29,6 +29,8 @@
 
 #include "testutil.h"
 
+#define DBG(msg) printf msg
+
 /*  Tests TCP transport. */
 
 int sc;
@@ -50,6 +52,7 @@ int main (int argc, const char *argv[])
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
     /*  Try closing bound but unconnected socket. */
+    DBG (("Try closing bound but unconnected socket\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     test_close (sb);
@@ -65,6 +68,7 @@ int main (int argc, const char *argv[])
     sc = test_socket (AF_SP, NN_PAIR);
 
     /*  Check NODELAY socket option. */
+    DBG (("Check NODELAY socket option\n"));
     sz = sizeof (opt);
     rc = nn_getsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, &sz);
     errno_assert (rc == 0);
@@ -83,6 +87,7 @@ int main (int argc, const char *argv[])
     nn_assert (opt == 1);
 
     /*  Try using invalid address strings. */
+    DBG (("Test invalid address strings\n"));
     rc = nn_connect (sc, "tcp://*:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
@@ -138,6 +143,7 @@ int main (int argc, const char *argv[])
     test_bind (sb, socket_address);
 
     /*  Ping-pong test. */
+    DBG (("Ping pong test\n"));
     for (i = 0; i != 100; ++i) {
 
         test_send (sc, "ABC");
@@ -159,6 +165,7 @@ int main (int argc, const char *argv[])
     test_close (sb);
 
     /*  Test whether connection rejection is handled decently. */
+    DBG (("Test Connection Rejection\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
@@ -171,14 +178,17 @@ int main (int argc, const char *argv[])
     test_close (sb);
 
     /*  Test two sockets binding to the same address. */
+    DBG (("Test rebinding to same address\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
 
+    DBG (("Rebind\n"));
     rc = nn_bind (s1, socket_address);
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EADDRINUSE);
 
+    DBG (("Connect to same address"));
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
     nn_sleep (100);

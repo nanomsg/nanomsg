@@ -47,8 +47,11 @@ build_script:
   - cmd: cmake --version
   - cmd: md build
   - cmd: cd build
-  - cmd: cmake -G "%GENERATOR%" ..
-  - cmd: cmake --build .
+#  - cmd: cmake -G "%GENERATOR%" ..
+#  - cmd: cmake --build .
+  - cmd: cmake ..
+  - cmd: make
 test_script:
-  - cmd: ctest -VV
+  - cmd: export ARGS="-VV"
+  - cmd: make test
 #  - cmd: ctest --output-on-failure -C "%CFG%"

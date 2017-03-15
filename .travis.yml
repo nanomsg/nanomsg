@@ -12,19 +12,19 @@ matrix:
       compiler: clang
 before_script:
   - gem install asciidoctor
-script:
+#script:
   # Print all environment variables to aid in CI development
-  - printenv
+#  - printenv
   # Print version and available CMake generators to aid in CI development
-  - cmake --version
-  - cmake --help
+#  - cmake --version
+#  - cmake --help
   # Perform out-of-source build
-  - mkdir build
-  - cd build
+#  - mkdir build
+#  - cd build
   # Perform CMake backend generation, build, and test
-  - cmake ..
-  - cmake --build . -- -j4
-  - ctest --output-on-failure -C Debug -j4 -VV
+#  - cmake ..
+#  - cmake --build . -- -j4
+#  - ctest --output-on-failure -C Debug -j4 -VV
 #deploy:
 #  provider: releases
 #  api_key:

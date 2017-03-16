@@ -1,3 +1,5 @@
+// Description: Header file we can use to include the proper stdint.h since stdint.h 
+//              doesn't exist in VS2008 and it is defined in current version of g++.
 
 #ifndef STDINT_INC_H
 #define STDINT_INC_H

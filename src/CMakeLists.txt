@@ -34,6 +34,7 @@ set (NN_SOURCES
     reqrep.h
     pipeline.h
     stdint_inc.h
+    stdint_ms.h
     survey.h
     bus.h
 

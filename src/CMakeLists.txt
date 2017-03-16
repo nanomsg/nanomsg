@@ -335,7 +335,7 @@ foreach (f ${NN_SOURCES})
     # CMake source_group expects \\, not /
     string (REPLACE / \\ SRC_GROUP ${SRC_GROUP})
 
-    # Put files directly under src under Source
+    # Put files directly under src under Source project
     if (${f} STREQUAL ${SRC_GROUP})
        set (SRC_GROUP "Source")
     endif()
@@ -377,7 +377,7 @@ install (
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 install (TARGETS ${PROJECT_NAME}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

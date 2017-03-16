@@ -33,6 +33,7 @@ set (NN_SOURCES
     pubsub.h
     reqrep.h
     pipeline.h
+    stdint_inc.h
     survey.h
     bus.h
 
@@ -325,14 +326,21 @@ foreach (f ${NN_SOURCES})
         file (RELATIVE_PATH f ${CMAKE_CURRENT_SOURCE_DIR} ${f})
     endif ()
     set (SRC_GROUP "${f}")
-    set (f "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
+    set (fullPath "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
 
     # Remove the filename part
     string (REGEX REPLACE "(.*)(/[^/]*)$" "\\1" SRC_GROUP ${SRC_GROUP})
 
     # CMake source_group expects \\, not /
     string (REPLACE / \\ SRC_GROUP ${SRC_GROUP})
-    source_group ("${SRC_GROUP}" FILES ${f})
+
+    # Put files directly under src under Source
+    if (${f} STREQUAL ${SRC_GROUP})
+       set (SRC_GROUP "Source")
+    endif()
+    
+    source_group ("${SRC_GROUP}" FILES ${fullPath})
+
 endforeach ()
 
 if (NN_STATIC_LIB)
@@ -368,7 +376,7 @@ install (
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 install (TARGETS ${PROJECT_NAME}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

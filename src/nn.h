@@ -32,7 +32,7 @@ extern "C" {
 
 #include <errno.h>
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  Handle DSO symbol visibility. */
 #if !defined(NN_EXPORT)

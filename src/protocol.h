@@ -28,7 +28,7 @@
 #include "utils/list.h"
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 struct nn_ctx;
 

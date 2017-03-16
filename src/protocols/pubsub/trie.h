@@ -24,7 +24,7 @@
 #define NN_TRIE_INCLUDED
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  This class implements highly memory-efficient patricia trie. */
 

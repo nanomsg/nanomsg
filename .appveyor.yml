@@ -52,6 +52,7 @@ build_script:
   - cmd: cmake ..
   - cmd: make
 test_script:
-  - cmd: export ARGS="-VV"
-  - cmd: make test
-#  - cmd: ctest --output-on-failure -C "%CFG%"
+  - cmd: ctest --output-on-failure -C "%CFG%" -VV
+after_test:
+  - cmd: cat Testing/Temporary/LastTest.log
+

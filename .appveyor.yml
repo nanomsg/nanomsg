@@ -51,6 +51,5 @@ build_script:
   - cmd: cmake --build .
 test_script:
   - cmd: ctest --output-on-failure -C "%CFG%" -VV
-after_test:
   - cmd: cat Testing/Temporary/LastTest.log
 

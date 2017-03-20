@@ -25,7 +25,7 @@ script:
   - cmake ..
   #- cmake --build . -- -j4
   #- ctest --output-on-failure -C Debug -j4 -VV
-  - cmake --build . --
+  - cmake --build .
   - ctest --output-on-failure -C Debug -VV
 after_script:
   - cat Testing/Temporary/LastTest.log

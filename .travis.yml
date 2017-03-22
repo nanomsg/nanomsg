@@ -28,7 +28,7 @@ script:
   - cmake --build . --
   - ctest -VV
 after_script:
-  - cat Testing/Temporary/LastTest.log
+  - cat Testing/Temporary/TcpTest.log
 #deploy:
 #  provider: releases
 #  api_key:

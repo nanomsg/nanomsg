@@ -29,7 +29,10 @@
 
 #include "testutil.h"
 
-#define DBG(msg) printf msg
+#define DBG(msg) if (dbg_file) { \
+  fprintf msg; \
+  fflush (dbg_file); \
+}
 
 /*  Tests TCP transport. */
 
@@ -46,13 +49,15 @@ int main (int argc, const char *argv[])
     void * dummy_buf;
     char addr[128];
     char socket_address[128];
-
+    FILE *dbg_file;
     int port = get_test_port(argc, argv);
+
+    dbg_file = fopen ("Testing/Temporary/Tcp.log", "w");
 
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
     /*  Try closing bound but unconnected socket. */
-    DBG (("Try closing bound but unconnected socket\n"));
+    DBG ((dbg_file, "Try closing bound but unconnected socket\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     test_close (sb);
@@ -68,7 +73,7 @@ int main (int argc, const char *argv[])
     sc = test_socket (AF_SP, NN_PAIR);
 
     /*  Check NODELAY socket option. */
-    DBG (("Check NODELAY socket option\n"));
+    DBG ((dbg_file, "Check NODELAY socket option\n"));
     sz = sizeof (opt);
     rc = nn_getsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, &sz);
     errno_assert (rc == 0);
@@ -87,7 +92,7 @@ int main (int argc, const char *argv[])
     nn_assert (opt == 1);
 
     /*  Try using invalid address strings. */
-    DBG (("Test invalid address strings\n"));
+    DBG ((dbg_file, "Test invalid address strings\n"));
     rc = nn_connect (sc, "tcp://*:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
@@ -143,7 +148,7 @@ int main (int argc, const char *argv[])
     test_bind (sb, socket_address);
 
     /*  Ping-pong test. */
-    DBG (("Ping pong test\n"));
+    DBG ((dbg_file, "Ping pong test\n"));
     for (i = 0; i != 100; ++i) {
 
         test_send (sc, "ABC");
@@ -165,7 +170,7 @@ int main (int argc, const char *argv[])
     test_close (sb);
 
     /*  Test whether connection rejection is handled decently. */
-    DBG (("Test Connection Rejection\n"));
+    DBG ((dbg_file, "Test Connection Rejection\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
@@ -178,17 +183,17 @@ int main (int argc, const char *argv[])
     test_close (sb);
 
     /*  Test two sockets binding to the same address. */
-    DBG (("Test rebinding to same address\n"));
+    DBG ((dbg_file, "Test rebinding to same address\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
 
-    DBG (("Rebind\n"));
+    DBG ((dbg_file, "Rebind\n"));
     rc = nn_bind (s1, socket_address);
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EADDRINUSE);
 
-    DBG (("Connect to same address"));
+    DBG ((dbg_file, "Connect to same address\n"));
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
     nn_sleep (100);
@@ -232,6 +237,8 @@ int main (int argc, const char *argv[])
     test_connect (sc, socket_address);
     nn_sleep (100);
     test_close (sc);
-
+    DBG ((dbg_file, "End Tcp Test\n"));
+    if (dbg_file)
+      fclose (dbg_file);
     return 0;
 }

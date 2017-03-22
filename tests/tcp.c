@@ -52,7 +52,7 @@ int main (int argc, const char *argv[])
     FILE *dbg_file;
     int port = get_test_port(argc, argv);
 
-    dbg_file = fopen ("Testing/Temporary/Tcp.log", "w");
+    dbg_file = fopen ("Testing/Temporary/TcpTest.log", "w");
 
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 

@@ -613,14 +613,16 @@ int nn_bind (int s, const char *addr)
 
     rc = nn_global_create_ep (sock, addr, 1);
     if (nn_slow (rc < 0)) {
+        nn_dbg (("calling nn_global_rele_socket\n"));
         nn_global_rele_socket (sock);
+        nn_dbg (("calling nn_global_rele_socket\n"));
         errno = -rc;
         return -1;
     }
 
-    nn_dbg (("calling nn_global_rele_socket\n"));
+    /* nn_dbg (("calling nn_global_rele_socket\n")); */
     nn_global_rele_socket (sock);
-    nn_dbg (("called nn_global_rele_socket\n"));
+    /* nn_dbg (("called nn_global_rele_socket\n")); */
     return rc;
 }
 

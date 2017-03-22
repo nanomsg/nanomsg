@@ -12,6 +12,7 @@ matrix:
       compiler: clang
 before_script:
   - gem install asciidoctor
+  - rm -f Testing/Temporary/NNTestOutput.log
 script:
   # Print all environment variables to aid in CI development
   - printenv

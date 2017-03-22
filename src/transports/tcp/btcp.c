@@ -152,6 +152,7 @@ int nn_btcp_create (struct nn_ep *ep)
 
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
 
+    nn_dbg (("Calling nn_btcp_listen\n"));
     rc = nn_btcp_listen (self);
     if (rc != 0) {
         nn_dbg (("Freeing nn_btcp struct\n"));
@@ -370,6 +371,7 @@ static int nn_btcp_listen (struct nn_btcp *self)
        return rc;
     }
 
+    nn_dbg (("Calling nn_usock_listen\n"));
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     if (rc < 0) {
         nn_usock_stop (&self->usock);

@@ -618,7 +618,9 @@ int nn_bind (int s, const char *addr)
         return -1;
     }
 
+    nn_dbg (("calling nn_global_rele_socket\n"));
     nn_global_rele_socket (sock);
+    nn_dbg (("called nn_global_rele_socket\n"));
     return rc;
 }
 

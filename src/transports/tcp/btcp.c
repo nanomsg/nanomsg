@@ -150,6 +150,7 @@ int nn_btcp_create (struct nn_ep *ep)
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
+    nn_dbg (("Calling nn_usock_init\n"));
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
 
     nn_dbg (("Calling nn_btcp_listen\n"));

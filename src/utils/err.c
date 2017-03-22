@@ -214,7 +214,7 @@ void nn_win_error (int err, char *buf, size_t bufsize)
 #ifdef NN_DBG_OUTPUT
 #include <stdarg.h>
 
-FILE *dbg_file = NULL;
+static FILE *dbg_file = NULL;
 
 void nn_init_dbg (void)
 {

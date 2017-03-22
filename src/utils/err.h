@@ -176,8 +176,6 @@ void nn_win_error (int err, char *buf, size_t bufsize);
 /* -------- Debug Output ------------ */
 #ifdef NN_DBG_OUTPUT
 
-extern FILE *dbg_file;
-
 void nn_init_dbg (void);
 
 void nn_dbg_print (const char *msg, ...);

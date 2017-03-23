@@ -1115,7 +1115,9 @@ static int nn_global_create_ep (struct nn_sock *sock, const char *addr,
     }
 
     /*  Ask the socket to create the endpoint. */
+    nn_dbg (("calling nn_sock_add_ep\n"));
     rc = nn_sock_add_ep (sock, tp, bind, addr);
+    nn_dbg (("called nn_sock_add_ep\n"));
     return rc;
 }
 

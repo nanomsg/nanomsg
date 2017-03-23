@@ -216,7 +216,8 @@ void nn_dbg_print (const char *msg, ...)
 {
 	va_list arg_ptr; 
 	va_start(arg_ptr, msg); 
-	vprintf (msg, arg_ptr);
+  if (msg[0] != '-')
+	  vprintf (msg, arg_ptr);
   if (dbg_file) {
     vfprintf (dbg_file, msg, arg_ptr);
     fflush (dbg_file);
@@ -226,8 +227,10 @@ void nn_dbg_print (const char *msg, ...)
 
 void nn_end_dbg (void)
 {
-  if (dbg_file)
+  if (dbg_file) {
     fclose (dbg_file);
+    dbg_file = NULL;
+  }
 }
 
 #endif
@@ -644,9 +647,9 @@ int nn_bind (int s, const char *addr)
 
     rc = nn_global_create_ep (sock, addr, 1);
     if (nn_slow (rc < 0)) {
-        nn_dbg (("calling nn_global_rele_socket\n"));
+        nn_dbg (("-calling nn_global_rele_socket\n"));
         nn_global_rele_socket (sock);
-        nn_dbg (("called nn_global_rele_socket\n"));
+        nn_dbg (("-called nn_global_rele_socket\n"));
         errno = -rc;
         return -1;
     }
@@ -1115,9 +1118,9 @@ static int nn_global_create_ep (struct nn_sock *sock, const char *addr,
     }
 
     /*  Ask the socket to create the endpoint. */
-    nn_dbg (("calling nn_sock_add_ep\n"));
+    nn_dbg (("-calling nn_sock_add_ep\n"));
     rc = nn_sock_add_ep (sock, tp, bind, addr);
-    nn_dbg (("called nn_sock_add_ep\n"));
+    nn_dbg (("-called nn_sock_add_ep\n"));
     return rc;
 }
 

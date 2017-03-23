@@ -52,6 +52,7 @@ int main (int argc, const char *argv[])
 
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
+    
     /*  Try closing bound but unconnected socket. */
     nn_dbg (("Try closing bound but unconnected socket\n"));
     sb = test_socket (AF_SP, NN_PAIR);

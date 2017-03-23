@@ -202,6 +202,36 @@ const char *nn_strerror (int errnum)
     return nn_err_strerror (errnum);
 }
 
+#ifdef NN_DBG_OUTPUT
+#include <stdarg.h>
+
+static FILE *dbg_file = NULL;
+
+void nn_init_dbg (void)
+{
+  dbg_file = fopen ("Testing/Temporary/NNTestOutput.log", "w");
+}
+
+void nn_dbg_print (const char *msg, ...)
+{
+	va_list arg_ptr; 
+	va_start(arg_ptr, msg); 
+	vprintf (msg, arg_ptr);
+  if (dbg_file) {
+    vfprintf (dbg_file, msg, arg_ptr);
+    fflush (dbg_file);
+  }
+	va_end (arg_ptr);
+}
+
+void nn_end_dbg (void)
+{
+  if (dbg_file)
+    fclose (dbg_file);
+}
+
+#endif
+
 static void nn_global_init (void)
 {
     int i;
@@ -260,6 +290,7 @@ static void nn_global_init (void)
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);
+
 }
 
 static void nn_global_term (void)
@@ -615,7 +646,7 @@ int nn_bind (int s, const char *addr)
     if (nn_slow (rc < 0)) {
         nn_dbg (("calling nn_global_rele_socket\n"));
         nn_global_rele_socket (sock);
-        nn_dbg (("calling nn_global_rele_socket\n"));
+        nn_dbg (("called nn_global_rele_socket\n"));
         errno = -rc;
         return -1;
     }

@@ -150,7 +150,7 @@ int nn_btcp_create (struct nn_ep *ep)
     /*  Start the state machine. */
     nn_fsm_start (&self->fsm);
 
-    nn_dbg (("Calling nn_usock_init\n"));
+    nn_dbg (("-Calling nn_usock_init\n"));
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
 
     nn_dbg (("Calling nn_btcp_listen\n"));
@@ -169,12 +169,15 @@ static void nn_btcp_stop (void *self)
 {
     struct nn_btcp *btcp = self;
 
+    nn_dbg (("nn_btcp_stop\n"));
     nn_fsm_stop (&btcp->fsm);
 }
 
 static void nn_btcp_destroy (void *self)
 {
     struct nn_btcp *btcp = self;
+
+    nn_dbg (("nn_btcp_destroy\n"));
 
     nn_assert_state (btcp, NN_BTCP_STATE_IDLE);
     nn_list_term (&btcp->atcps);
@@ -192,6 +195,7 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_list_item *it;
     struct nn_atcp *atcp;
 
+    nn_dbg (("nn_btcp_shutdown\n"));
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
@@ -253,6 +257,7 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
     struct nn_btcp *btcp;
     struct nn_atcp *atcp;
 
+    nn_dbg (("-nn_btcp_handler\n"));
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     switch (btcp->state) {
@@ -372,7 +377,7 @@ static int nn_btcp_listen (struct nn_btcp *self)
        return rc;
     }
 
-    nn_dbg (("Calling nn_usock_listen\n"));
+    nn_dbg (("-Calling nn_usock_listen\n"));
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     if (rc < 0) {
         nn_usock_stop (&self->usock);
@@ -390,6 +395,7 @@ static int nn_btcp_listen (struct nn_btcp *self)
 static void nn_btcp_start_accepting (struct nn_btcp *self)
 {
     nn_assert (self->atcp == NULL);
+    nn_dbg (("-nn_btcp_start_accepting\n"));
 
     /*  Allocate new atcp state machine. */
     self->atcp = nn_alloc (sizeof (struct nn_atcp), "atcp");

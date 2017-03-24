@@ -54,19 +54,22 @@ void nn_ctx_leave (struct nn_ctx *self)
     struct nn_fsm_event *event;
     struct nn_queue eventsto;
 
+		nn_dbg (("-nn_ctx_leave\n"));
     /*  Process any queued events before leaving the context. */
     while (1) {
         item = nn_queue_pop (&self->events);
         event = nn_cont (item, struct nn_fsm_event, item);
         if (!event)
             break;
+				nn_dbg (("-process queued event\n"));
         nn_fsm_event_process (event);
     }
 
     /*  Notify the owner that we are leaving the context. */
-    if (nn_fast (self->onleave != NULL))
+    if (nn_fast (self->onleave != NULL)) {
+				nn_dbg (("-call onleave\n"));
         self->onleave (self);
-
+    }
     /*  Shortcut in the case there are no external events. */
     if (nn_queue_empty (&self->eventsto)) {
         nn_mutex_unlock (&self->sync);
@@ -87,11 +90,12 @@ void nn_ctx_leave (struct nn_ctx *self)
         event = nn_cont (item, struct nn_fsm_event, item);
         if (!event)
             break;
+        nn_dbg (("-process queued external event\n"));
         nn_ctx_enter (event->fsm->ctx);
         nn_fsm_event_process (event);
         nn_ctx_leave (event->fsm->ctx);
     }
-
+		nn_dbg (("-call nn_queue_term\n"));
     nn_queue_term (&eventsto);
 }
 

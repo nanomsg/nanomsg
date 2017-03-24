@@ -266,6 +266,7 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BTCP_STATE_IDLE:
+        nn_dbg (("-nn_btcp_handler state idle\n"));
         nn_assert (src == NN_FSM_ACTION);
         nn_assert (type == NN_FSM_START);
         btcp->state = NN_BTCP_STATE_ACTIVE;
@@ -276,13 +277,16 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /*  The execution is yielded to the atcp state machine in this state.         */
 /******************************************************************************/
     case NN_BTCP_STATE_ACTIVE:
+        nn_dbg (("-nn_btcp_handler state active\n"));
         if (src == NN_BTCP_SRC_USOCK) {
             /*  usock object cleaning up */
+            nn_dbg (("-nn_btcp_handler state active src usock\n"));
             nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
             return;
         }
 
         /*  All other events come from child atcp objects. */
+        nn_dbg (("-nn_btcp_handler state active src atcp\n"));
         nn_assert (src == NN_BTCP_SRC_ATCP);
         atcp = (struct nn_atcp*) srcptr;
         switch (type) {

@@ -48,7 +48,6 @@ int main (int argc, const char *argv[])
     char socket_address[128];
     int port = get_test_port(argc, argv);
 
-    nn_init_dbg ();
 
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
@@ -178,6 +177,8 @@ int main (int argc, const char *argv[])
     test_close (s2);
     test_close (s1);
     test_close (sb);
+
+    nn_init_dbg ();
 
     /*  Test two sockets binding to the same address. */
     nn_dbg (("Test rebinding to same address\n"));

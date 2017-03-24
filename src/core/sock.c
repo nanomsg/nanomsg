@@ -498,8 +498,11 @@ int nn_sock_add_ep (struct nn_sock *self, const struct nn_transport *transport,
         bind, addr);
     nn_dbg (("-called nn_ep_init rc %d\n", rc));
     if (nn_slow (rc < 0)) {
+        nn_dbg (("-freeing nn_ep.\n"));
         nn_free (ep);
+        nn_dbg (("-freed nn_ep. leaving ctx\n"));
         nn_ctx_leave (&self->ctx);
+        nn_dbg (("-left ctx\n"));
         return rc;
     }
     nn_ep_start (ep);

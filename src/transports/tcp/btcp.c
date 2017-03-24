@@ -169,7 +169,7 @@ static void nn_btcp_stop (void *self)
 {
     struct nn_btcp *btcp = self;
 
-    nn_dbg (("nn_btcp_stop\n"));
+    nn_dbg (("-nn_btcp_stop\n"));
     nn_fsm_stop (&btcp->fsm);
 }
 
@@ -177,7 +177,7 @@ static void nn_btcp_destroy (void *self)
 {
     struct nn_btcp *btcp = self;
 
-    nn_dbg (("nn_btcp_destroy\n"));
+    nn_dbg (("-nn_btcp_destroy\n"));
 
     nn_assert_state (btcp, NN_BTCP_STATE_IDLE);
     nn_list_term (&btcp->atcps);
@@ -195,7 +195,7 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_list_item *it;
     struct nn_atcp *atcp;
 
-    nn_dbg (("nn_btcp_shutdown\n"));
+    nn_dbg (("-nn_btcp_shutdown\n"));
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {

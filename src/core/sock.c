@@ -779,13 +779,17 @@ static void nn_sock_onleave (struct nn_ctx *self)
         if (events & NN_SOCKBASE_EVENT_IN) {
             if (!(sock->flags & NN_SOCK_FLAG_IN)) {
                 sock->flags |= NN_SOCK_FLAG_IN;
+								nn_dbg (("-Calling nn_efd_signal for rcv"));
                 nn_efd_signal (&sock->rcvfd);
+								nn_dbg (("-Called nn_efd_signal for rcv"));
             }
         }
         else {
             if (sock->flags & NN_SOCK_FLAG_IN) {
                 sock->flags &= ~NN_SOCK_FLAG_IN;
+								nn_dbg (("-Calling nn_efd_unsignal for rcv"));
                 nn_efd_unsignal (&sock->rcvfd);
+								nn_dbg (("-Called nn_efd_unsignal for rcv"));
             }
         }
     }
@@ -795,13 +799,17 @@ static void nn_sock_onleave (struct nn_ctx *self)
         if (events & NN_SOCKBASE_EVENT_OUT) {
             if (!(sock->flags & NN_SOCK_FLAG_OUT)) {
                 sock->flags |= NN_SOCK_FLAG_OUT;
+								nn_dbg (("-Calling nn_efd_signal for semd"));
                 nn_efd_signal (&sock->sndfd);
+								nn_dbg (("-Called nn_efd_signal for send"));
             }
         }
         else {
             if (sock->flags & NN_SOCK_FLAG_OUT) {
                 sock->flags &= ~NN_SOCK_FLAG_OUT;
+								nn_dbg (("-Calling nn_efd_unsignal for send"));
                 nn_efd_unsignal (&sock->sndfd);
+								nn_dbg (("-Called nn_efd_unsignal for send"));
             }
         }
     }

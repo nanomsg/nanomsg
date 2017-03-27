@@ -156,9 +156,11 @@ int nn_btcp_create (struct nn_ep *ep)
     nn_dbg (("Calling nn_btcp_listen\n"));
     rc = nn_btcp_listen (self);
     if (rc != 0) {
+/*
         nn_dbg (("Freeing nn_btcp struct\n"));
         nn_free (self);
         nn_dbg (("Freed nn_btcp struct\n"));
+*/ 
         return rc;
     }
 
@@ -209,6 +211,7 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
         }
     }
     if (nn_slow (btcp->state == NN_BTCP_STATE_STOPPING_ATCP)) {
+		    nn_dbg (("-nn_btcp_shutdown stopping atcp\n"));
         if (!nn_atcp_isidle (btcp->atcp))
             return;
         nn_atcp_term (btcp->atcp);
@@ -218,6 +221,7 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
         btcp->state = NN_BTCP_STATE_STOPPING_USOCK;
     }
     if (nn_slow (btcp->state == NN_BTCP_STATE_STOPPING_USOCK)) {
+		    nn_dbg (("-nn_btcp_shutdown stopping usock\n"));
        if (!nn_usock_isidle (&btcp->usock))
             return;
         for (it = nn_list_begin (&btcp->atcps);
@@ -239,7 +243,9 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
         /*  If there are no more atcp state machines, we can stop the whole
             btcp object. */
 atcps_stopping:
+		    nn_dbg (("-nn_btcp_shutdown atcps_stopping\n"));
         if (nn_list_empty (&btcp->atcps)) {
+				    nn_dbg (("-nn_btcp_shutdown atcps_stopping list empty\n"));
             btcp->state = NN_BTCP_STATE_IDLE;
             nn_fsm_stopped_noevent (&btcp->fsm);
             nn_ep_stopped (btcp->ep);

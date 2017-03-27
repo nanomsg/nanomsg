@@ -199,6 +199,7 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
+		    nn_dbg (("-nn_btcp_shutdown fsm stop\n"));
         if (btcp->atcp) {
             nn_atcp_stop (btcp->atcp);
             btcp->state = NN_BTCP_STATE_STOPPING_ATCP;

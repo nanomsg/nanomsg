@@ -63,6 +63,7 @@ void nn_ctx_leave (struct nn_ctx *self)
             break;
 				nn_dbg (("-process queued event\n"));
         nn_fsm_event_process (event);
+				nn_dbg (("-processed queued event\n"));
     }
 
     /*  Notify the owner that we are leaving the context. */

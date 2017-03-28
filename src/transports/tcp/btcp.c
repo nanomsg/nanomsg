@@ -377,11 +377,13 @@ static int nn_btcp_listen (struct nn_btcp *self)
     }
 
     /*  Start listening for incoming connections. */
+    nn_dbg (("-Calling nn_usock_start\n"));
     rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
     if (rc < 0) {
         return rc;
     }
 
+    nn_dbg (("-Calling nn_usock_bind\n"));
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     if (rc < 0) {
        nn_usock_stop (&self->usock);

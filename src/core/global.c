@@ -647,16 +647,12 @@ int nn_bind (int s, const char *addr)
 
     rc = nn_global_create_ep (sock, addr, 1);
     if (nn_slow (rc < 0)) {
-        nn_dbg (("-calling nn_global_rele_socket\n"));
         nn_global_rele_socket (sock);
-        nn_dbg (("-called nn_global_rele_socket\n"));
         errno = -rc;
         return -1;
     }
 
-    /* nn_dbg (("calling nn_global_rele_socket\n")); */
     nn_global_rele_socket (sock);
-    /* nn_dbg (("called nn_global_rele_socket\n")); */
     return rc;
 }
 
@@ -1118,9 +1114,7 @@ static int nn_global_create_ep (struct nn_sock *sock, const char *addr,
     }
 
     /*  Ask the socket to create the endpoint. */
-    nn_dbg (("-calling nn_sock_add_ep\n"));
     rc = nn_sock_add_ep (sock, tp, bind, addr);
-    nn_dbg (("-called nn_sock_add_ep\n"));
     return rc;
 }
 

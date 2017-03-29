@@ -24,10 +24,8 @@ script:
   - cd build
   # Perform CMake backend generation, build, and test
   - cmake ..
-  #- cmake --build . -- -j4
-  #- ctest --output-on-failure -C Debug -j4 -VV
-  - cmake --build . --
-  - ctest --output-on-failure -VV
+  - cmake --build . -- -j4
+  - ctest --output-on-failure -C Debug -j4
 after_script:
   - cat Testing/Temporary/NNTestOutput.log
 #deploy:

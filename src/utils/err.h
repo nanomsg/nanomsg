@@ -36,6 +36,7 @@
 #define NN_DBG_OUTPUT 1
 
 #if defined _MSC_VER
+#undef NN_DBG_OUTPUT
 #define NN_NORETURN __declspec(noreturn)
 #elif defined __GNUC__
 #define NN_NORETURN __attribute__ ((noreturn))
@@ -174,7 +175,7 @@ void nn_win_error (int err, char *buf, size_t bufsize);
 #endif
 
 /* -------- Debug Output ------------ */
-#if defined (NN_DBG_OUTPUT) && !defined(_MSC_VER)
+#ifdef NN_DBG_OUTPUT
 
 void nn_init_dbg (void);
 

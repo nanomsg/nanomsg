@@ -174,11 +174,7 @@ void nn_win_error (int err, char *buf, size_t bufsize);
 #endif
 
 /* -------- Debug Output ------------ */
-#ifdef NN_DBG_OUTPUT
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if defined (NN_DBG_OUTPUT) && !defined(_MSC_VER)
 
 void nn_init_dbg (void);
 
@@ -188,10 +184,6 @@ void nn_dbg_print (const char *msg, ...);
 #define nn_dbg(msg) nn_dbg_print msg;
 
 void nn_end_dbg (void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #else
 

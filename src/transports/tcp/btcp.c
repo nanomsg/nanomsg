@@ -410,7 +410,6 @@ static int nn_btcp_listen (struct nn_btcp *self)
 static void nn_btcp_start_accepting (struct nn_btcp *self)
 {
     nn_assert (self->atcp == NULL);
-    nn_dbg (("-nn_btcp_start_accepting\n"));
 
     /*  Allocate new atcp state machine. */
     self->atcp = nn_alloc (sizeof (struct nn_atcp), "atcp");

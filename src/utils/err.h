@@ -33,7 +33,9 @@
 
 #include "fast.h"
 
+/* define for dbg
 #define NN_DBG_OUTPUT 1
+*/
 
 #if defined _MSC_VER
 #undef NN_DBG_OUTPUT

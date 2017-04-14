@@ -53,7 +53,6 @@ int main (int argc, const char *argv[])
 
     
     /*  Try closing bound but unconnected socket. */
-    nn_dbg (("Try closing bound but unconnected socket\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     test_close (sb);
@@ -69,7 +68,6 @@ int main (int argc, const char *argv[])
     sc = test_socket (AF_SP, NN_PAIR);
 
     /*  Check NODELAY socket option. */
-    nn_dbg (("Check NODELAY socket option\n"));
     sz = sizeof (opt);
     rc = nn_getsockopt (sc, NN_TCP, NN_TCP_NODELAY, &opt, &sz);
     errno_assert (rc == 0);
@@ -88,7 +86,6 @@ int main (int argc, const char *argv[])
     nn_assert (opt == 1);
 
     /*  Try using invalid address strings. */
-    nn_dbg (("Test invalid address strings\n"));
     rc = nn_connect (sc, "tcp://*:");
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EINVAL);
@@ -144,7 +141,6 @@ int main (int argc, const char *argv[])
     test_bind (sb, socket_address);
 
     /*  Ping-pong test. */
-    nn_dbg (("Ping pong test\n"));
     for (i = 0; i != 100; ++i) {
 
         test_send (sc, "ABC");
@@ -166,7 +162,6 @@ int main (int argc, const char *argv[])
     test_close (sb);
 
     /*  Test whether connection rejection is handled decently. */
-    nn_dbg (("Test Connection Rejection\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
@@ -178,20 +173,15 @@ int main (int argc, const char *argv[])
     test_close (s1);
     test_close (sb);
 
-    nn_init_dbg ();
-
     /*  Test two sockets binding to the same address. */
-    nn_dbg (("Test rebinding to same address\n"));
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
     s1 = test_socket (AF_SP, NN_PAIR);
 
-    nn_dbg (("Rebind\n"));
     rc = nn_bind (s1, socket_address);
     nn_assert (rc < 0);
     errno_assert (nn_errno () == EADDRINUSE);
 
-    nn_dbg (("Connect to same address\n"));
     sc = test_socket (AF_SP, NN_PAIR);
     test_connect (sc, socket_address);
     nn_sleep (100);
@@ -235,7 +225,5 @@ int main (int argc, const char *argv[])
     test_connect (sc, socket_address);
     nn_sleep (100);
     test_close (sc);
-    nn_dbg (("End Tcp Test\n"));
-    nn_end_dbg ();
     return 0;
 }

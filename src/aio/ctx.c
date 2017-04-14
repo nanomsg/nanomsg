@@ -54,7 +54,6 @@ void nn_ctx_leave (struct nn_ctx *self)
     struct nn_fsm_event *event;
     struct nn_queue eventsto;
 
-		nn_dbg (("-nn_ctx_leave\n"));
     /*  Process any queued events before leaving the context. */
     while (1) {
         item = nn_queue_pop (&self->events);

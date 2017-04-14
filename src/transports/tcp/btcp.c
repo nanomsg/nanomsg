@@ -158,7 +158,6 @@ int nn_btcp_create (struct nn_ep *ep)
 
     nn_usock_init (&self->usock, NN_BTCP_SRC_USOCK, &self->fsm);
 
-    nn_dbg (("Calling nn_btcp_listen\n"));
     rc = nn_btcp_listen (self);
     if (rc != 0) {
         nn_fsm_raise_from_src (&self->fsm, &self->listen_error,
@@ -196,7 +195,6 @@ static void nn_btcp_shutdown (struct nn_fsm *self, int src, int type,
     struct nn_list_item *it;
     struct nn_atcp *atcp;
 
-    nn_dbg (("-nn_btcp_shutdown\n"));
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
@@ -258,7 +256,6 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
     struct nn_btcp *btcp;
     struct nn_atcp *atcp;
 
-    nn_dbg (("-nn_btcp_handler\n"));
     btcp = nn_cont (self, struct nn_btcp, fsm);
 
     switch (btcp->state) {
@@ -267,7 +264,6 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /*  IDLE state.                                                               */
 /******************************************************************************/
     case NN_BTCP_STATE_IDLE:
-        nn_dbg (("-nn_btcp_handler state idle\n"));
         nn_assert (src == NN_FSM_ACTION);
         nn_assert (type == NN_FSM_START);
         btcp->state = NN_BTCP_STATE_ACTIVE;
@@ -278,24 +274,19 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /*  The execution is yielded to the atcp state machine in this state.         */
 /******************************************************************************/
     case NN_BTCP_STATE_ACTIVE:
-        nn_dbg (("-nn_btcp_handler state active\n"));
         if (src == NN_BTCP_SRC_BTCP) {   
             nn_assert (type == NN_BTCP_TYPE_LISTEN_ERR);
-            nn_dbg (("nn_btcp_handler state active, freeing btcp\n"));
             nn_free (btcp);
-            nn_dbg (("nn_btcp_handler state active, freed btcp\n"));
             return;
         }
 
         if (src == NN_BTCP_SRC_USOCK) {
             /*  usock object cleaning up */
-            nn_dbg (("-nn_btcp_handler state active src usock\n"));
             nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
             return;
         }
 
         /*  All other events come from child atcp objects. */
-        nn_dbg (("-nn_btcp_handler state active src atcp\n"));
         nn_assert (src == NN_BTCP_SRC_ATCP);
         atcp = (struct nn_atcp*) srcptr;
         switch (type) {
@@ -379,20 +370,17 @@ static int nn_btcp_listen (struct nn_btcp *self)
     }
 
     /*  Start listening for incoming connections. */
-    nn_dbg (("-Calling nn_usock_start\n"));
     rc = nn_usock_start (&self->usock, ss.ss_family, SOCK_STREAM, 0);
     if (rc < 0) {
         return rc;
     }
 
-    nn_dbg (("-Calling nn_usock_bind\n"));
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     if (rc < 0) {
        nn_usock_stop (&self->usock);
        return rc;
     }
 
-    nn_dbg (("-Calling nn_usock_listen\n"));
     rc = nn_usock_listen (&self->usock, NN_BTCP_BACKLOG);
     if (rc < 0) {
         nn_usock_stop (&self->usock);

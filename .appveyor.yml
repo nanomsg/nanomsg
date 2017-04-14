@@ -51,4 +51,3 @@ build_script:
   - cmd: cmake --build .
 test_script:
   - cmd: ctest --output-on-failure -C "%CFG%"
-

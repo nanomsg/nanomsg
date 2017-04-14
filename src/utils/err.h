@@ -33,12 +33,7 @@
 
 #include "fast.h"
 
-/* define for dbg
-#define NN_DBG_OUTPUT 1
-*/
-
 #if defined _MSC_VER
-#undef NN_DBG_OUTPUT
 #define NN_NORETURN __declspec(noreturn)
 #elif defined __GNUC__
 #define NN_NORETURN __attribute__ ((noreturn))
@@ -174,26 +169,6 @@ void nn_backtrace_print (void);
 #ifdef NN_HAVE_WINDOWS
 int nn_err_wsa_to_posix (int wsaerr);
 void nn_win_error (int err, char *buf, size_t bufsize);
-#endif
-
-/* -------- Debug Output ------------ */
-#ifdef NN_DBG_OUTPUT
-
-void nn_init_dbg (void);
-
-void nn_dbg_print (const char *msg, ...);
-
-/* Note the need for double parentheses */
-#define nn_dbg(msg) nn_dbg_print msg;
-
-void nn_end_dbg (void);
-
-#else
-
-#define nn_init_dbg()
-#define nn_dbg(msg)
-#define nn_end_dbg()
-
 #endif
 
 #endif

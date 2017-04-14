@@ -202,39 +202,6 @@ const char *nn_strerror (int errnum)
     return nn_err_strerror (errnum);
 }
 
-#ifdef NN_DBG_OUTPUT
-#include <stdarg.h>
-
-static FILE *dbg_file = NULL;
-
-void nn_init_dbg (void)
-{
-  dbg_file = fopen ("Testing/Temporary/NNTestOutput.log", "w");
-}
-
-void nn_dbg_print (const char *msg, ...)
-{
-	va_list arg_ptr; 
-	va_start(arg_ptr, msg); 
-  if (msg[0] != '-')
-	  vprintf (msg, arg_ptr);
-  if (dbg_file) {
-    vfprintf (dbg_file, msg, arg_ptr);
-    fflush (dbg_file);
-  }
-	va_end (arg_ptr);
-}
-
-void nn_end_dbg (void)
-{
-  if (dbg_file) {
-    fclose (dbg_file);
-    dbg_file = NULL;
-  }
-}
-
-#endif
-
 static void nn_global_init (void)
 {
     int i;

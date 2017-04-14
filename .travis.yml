@@ -12,7 +12,6 @@ matrix:
       compiler: clang
 before_script:
   - gem install asciidoctor
-# - rm -f Testing/Temporary/NNTestOutput.log
 script:
   # Print all environment variables to aid in CI development
   - printenv
@@ -26,8 +25,6 @@ script:
   - cmake ..
   - cmake --build . -- -j4
   - ctest --output-on-failure -C Debug -j4
-#after_script:
-#  - cat Testing/Temporary/NNTestOutput.log
 #deploy:
 #  provider: releases
 #  api_key:

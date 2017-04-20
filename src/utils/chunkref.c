@@ -97,6 +97,7 @@ void nn_chunkref_mv (struct nn_chunkref *dst, struct nn_chunkref *src)
 {
     memcpy (dst, src, src->u.ref [0] == 0xff ?
         (int)sizeof (struct nn_chunkref_chunk) : src->u.ref [0] + 1);
+    src->u.ref[0] = 0x00;
 }
 
 void nn_chunkref_cp (struct nn_chunkref *dst, struct nn_chunkref *src)

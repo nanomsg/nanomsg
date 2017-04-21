@@ -58,6 +58,7 @@ void nn_pipebase_init (struct nn_pipebase *self,
     self->instate = NN_PIPEBASE_INSTATE_DEACTIVATED;
     self->outstate = NN_PIPEBASE_OUTSTATE_DEACTIVATED;
     self->sock = ep->sock;
+    self->data = NULL;
     memcpy (&self->options, &ep->options, sizeof (struct nn_ep_options));
     nn_fsm_event_init (&self->in);
     nn_fsm_event_init (&self->out);

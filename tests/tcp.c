@@ -26,8 +26,10 @@
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/tcp.h"
+#include "../src/utils/err.h"
 
 #include "testutil.h"
+
 
 /*  Tests TCP transport. */
 
@@ -44,11 +46,12 @@ int main (int argc, const char *argv[])
     void * dummy_buf;
     char addr[128];
     char socket_address[128];
-
     int port = get_test_port(argc, argv);
+
 
     test_addr_from(socket_address, "tcp", "127.0.0.1", port);
 
+    
     /*  Try closing bound but unconnected socket. */
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, socket_address);
@@ -222,6 +225,5 @@ int main (int argc, const char *argv[])
     test_connect (sc, socket_address);
     nn_sleep (100);
     test_close (sc);
-
     return 0;
 }

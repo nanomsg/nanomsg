@@ -64,9 +64,9 @@ void nn_ctx_leave (struct nn_ctx *self)
     }
 
     /*  Notify the owner that we are leaving the context. */
-    if (nn_fast (self->onleave != NULL))
+    if (nn_fast (self->onleave != NULL)) {
         self->onleave (self);
-
+    }
     /*  Shortcut in the case there are no external events. */
     if (nn_queue_empty (&self->eventsto)) {
         nn_mutex_unlock (&self->sync);
@@ -91,7 +91,6 @@ void nn_ctx_leave (struct nn_ctx *self)
         nn_fsm_event_process (event);
         nn_ctx_leave (event->fsm->ctx);
     }
-
     nn_queue_term (&eventsto);
 }
 

@@ -260,6 +260,7 @@ static void nn_global_init (void)
 
     /*  Start the worker threads. */
     nn_pool_init (&self.pool);
+
 }
 
 static void nn_global_term (void)

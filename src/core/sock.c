@@ -616,8 +616,8 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EAGAIN;
         }
 
-        /*  With blocking send, wait while there are new pipes available
-            for sending. */
+        /*  While waiting until there is a pipe available for sending, release
+            context to enable operations on this socket from other threads. */
         nn_ctx_leave (&self->ctx);
         rc = nn_efd_wait (&self->sndfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
@@ -627,10 +627,9 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
         if (nn_slow (rc == -EBADF))
             return -EBADF;
         errnum_assert (rc == 0, rc);
+
+        /*  Within context again, ensure a pipe is still available for sending. */
         nn_ctx_enter (&self->ctx);
-        /*
-         *  Double check if pipes are still available for sending
-         */
         if (!nn_efd_wait (&self->sndfd, 0)) {
             self->flags |= NN_SOCK_FLAG_OUT;
         }
@@ -642,6 +641,8 @@ int nn_sock_send (struct nn_sock *self, struct nn_msg *msg, int flags)
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
     }
+
+    nn_assert (0);
 }
 
 int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
@@ -708,8 +709,8 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             return -EAGAIN;
         }
 
-        /*  With blocking recv, wait while there are new pipes available
-            for receiving. */
+        /*  While waiting until there is a pipe available for recv, release
+            context to enable operations on this socket from other threads. */
         nn_ctx_leave (&self->ctx);
         rc = nn_efd_wait (&self->rcvfd, timeout);
         if (nn_slow (rc == -ETIMEDOUT))
@@ -719,10 +720,9 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
         if (nn_slow (rc == -EBADF))
             return -EBADF;
         errnum_assert (rc == 0, rc);
+
+        /*  Within context again, ensure a pipe is still available for sending. */
         nn_ctx_enter (&self->ctx);
-        /*
-         *  Double check if pipes are still available for receiving
-         */
         if (!nn_efd_wait (&self->rcvfd, 0)) {
             self->flags |= NN_SOCK_FLAG_IN;
         }
@@ -734,6 +734,9 @@ int nn_sock_recv (struct nn_sock *self, struct nn_msg *msg, int flags)
             timeout = (int) (now > deadline ? 0 : deadline - now);
         }
     }
+
+    /*  Impossible code path. */
+    nn_assert (0);
 }
 
 int nn_sock_add (struct nn_sock *self, struct nn_pipe *pipe)

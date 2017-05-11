@@ -598,6 +598,11 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
     nn_assert (sz == sizeof (val));
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
         &val, sizeof (val));
+    sz = sizeof (val);
+    nn_ep_getopt (self->ep, NN_TCP, NN_TCP_NODELAY, &val, &sz);
+    nn_assert (sz == sizeof (val));
+    nn_usock_setsockopt (&self->usock, IPPROTO_TCP, TCP_NODELAY,
+        &val, sizeof (val));
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);

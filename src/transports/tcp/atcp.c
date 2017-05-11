@@ -23,9 +23,18 @@
 
 #include "atcp.h"
 
+#include "../../tcp.h"
+
 #include "../../utils/err.h"
 #include "../../utils/cont.h"
 #include "../../utils/attr.h"
+
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#endif
 
 #define NN_ATCP_STATE_IDLE 1
 #define NN_ATCP_STATE_ACCEPTING 2
@@ -191,6 +200,11 @@ static void nn_atcp_handler (struct nn_fsm *self, int src, int type,
                 nn_ep_getopt (atcp->ep, NN_SOL_SOCKET, NN_RCVBUF, &val, &sz);
                 nn_assert (sz == sizeof (val));
                 nn_usock_setsockopt (&atcp->usock, SOL_SOCKET, SO_RCVBUF,
+                    &val, sizeof (val));
+                sz = sizeof (val);
+                nn_ep_getopt (atcp->ep, NN_TCP, NN_TCP_NODELAY, &val, &sz);
+                nn_assert (sz == sizeof (val));
+                nn_usock_setsockopt (&atcp->usock, IPPROTO_TCP, TCP_NODELAY,
                     &val, sizeof (val));
 
                 /*  Return ownership of the listening socket to the parent. */

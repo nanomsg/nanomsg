@@ -10,7 +10,7 @@ SYNOPSIS
 --------
 *#include <nanomsg/nn.h>*
 
-*uint64_t *nn_get_statistic (int 's', int 'statistic');*
+*uint64_t nn_get_statistic (int 's', int 'statistic');*
 
 
 DESCRIPTION

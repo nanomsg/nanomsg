@@ -891,6 +891,15 @@ int nn_recvmsg (int s, struct nn_msghdr *msghdr, int flags)
         for (i = 0; i != msghdr->msg_iovlen; ++i) {
             iov = &msghdr->msg_iov [i];
             if (nn_slow (iov->iov_len == NN_MSG)) {
+                if (i == msghdr->msg_iovlen - 1) {
+                    void *buf;
+                    buf = nn_allocmsg(sz, 0);
+                    if (nn_slow (buf != NULL)) {
+                        memcpy (buf, data, sz);
+			*(void **)(iov->iov_base) = buf;
+                        break;
+                    }
+                }
                 nn_msg_term (&msg);
                 rc = -EINVAL;
                 goto fail;

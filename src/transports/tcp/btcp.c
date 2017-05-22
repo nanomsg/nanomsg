@@ -59,11 +59,16 @@
 
 #define NN_BTCP_SRC_USOCK 1
 #define NN_BTCP_SRC_ATCP 2
+#define NN_BTCP_SRC_BTCP 3
+
+#define NN_BTCP_TYPE_LISTEN_ERR 1
+
 
 struct nn_btcp {
 
     /*  The state machine. */
     struct nn_fsm fsm;
+    struct nn_fsm_event listen_error;
     int state;
 
     struct nn_ep *ep;
@@ -143,6 +148,7 @@ int nn_btcp_create (struct nn_ep *ep)
     /*  Initialise the structure. */
     nn_fsm_init_root (&self->fsm, nn_btcp_handler, nn_btcp_shutdown,
         nn_ep_getctx (ep));
+    nn_fsm_event_init (&self->listen_error);
     self->state = NN_BTCP_STATE_IDLE;
     self->atcp = NULL;
     nn_list_init (&self->atcps);
@@ -154,7 +160,8 @@ int nn_btcp_create (struct nn_ep *ep)
 
     rc = nn_btcp_listen (self);
     if (rc != 0) {
-        // I suspect we might need to do nn_free here.
+        nn_fsm_raise_from_src (&self->fsm, &self->listen_error,
+            NN_BTCP_SRC_BTCP, NN_BTCP_TYPE_LISTEN_ERR);
         return rc;
     }
 
@@ -267,6 +274,12 @@ static void nn_btcp_handler (struct nn_fsm *self, int src, int type,
 /*  The execution is yielded to the atcp state machine in this state.         */
 /******************************************************************************/
     case NN_BTCP_STATE_ACTIVE:
+        if (src == NN_BTCP_SRC_BTCP) {   
+            nn_assert (type == NN_BTCP_TYPE_LISTEN_ERR);
+            nn_free (btcp);
+            return;
+        }
+
         if (src == NN_BTCP_SRC_USOCK) {
             /*  usock object cleaning up */
             nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);

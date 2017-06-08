@@ -365,6 +365,7 @@ static int nn_btcp_listen (struct nn_btcp *self)
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &ss, (size_t) sslen);
     if (rc < 0) {
        nn_usock_stop (&self->usock);
+       nn_free(self);
        return rc;
     }
 

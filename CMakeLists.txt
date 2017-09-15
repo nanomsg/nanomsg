@@ -237,6 +237,8 @@ if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
 
+include_directories("${CMAKE_SOURCE_DIR}/src")
+
 add_subdirectory (src)
 
 #  Build the tools
@@ -439,6 +441,8 @@ install (FILES src/reqrep.h DESTINATION include/nanomsg)
 install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
+install (FILES src/stdint_inc.h DESTINATION include/nanomsg)
+install (FILES src/stdint_ms.h DESTINATION include/nanomsg)
 
 if (NN_ENABLE_NANOCAT)
     install (TARGETS nanocat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

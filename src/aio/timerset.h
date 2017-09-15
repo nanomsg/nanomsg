@@ -23,7 +23,7 @@
 #ifndef NN_TIMERSET_INCLUDED
 #define NN_TIMERSET_INCLUDED
 
-#include <stdint.h>
+#include "stdint_inc.h"
 
 #include "../utils/list.h"
 

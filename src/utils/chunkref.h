@@ -28,7 +28,7 @@
 #include "chunk.h"
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  This class represents a reference to a data chunk. It's either an actual
     reference to data allocated on the heap, or if short enough, it may store

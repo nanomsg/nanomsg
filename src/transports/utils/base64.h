@@ -26,7 +26,7 @@
 #include "../../utils/err.h"
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  Based on base64.c (Public Domain) by Jon Mayo.
     Base64 is defined in RFC 2045, section 6.8. */

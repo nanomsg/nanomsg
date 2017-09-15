@@ -26,7 +26,7 @@
 #include "list.h"
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  Use for initialising a hash item statically. */
 #define NN_HASH_ITEM_INITIALIZER {0xffff, NN_LIST_ITEM_INITILIZER}

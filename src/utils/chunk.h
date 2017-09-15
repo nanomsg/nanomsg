@@ -24,7 +24,7 @@
 #define NN_CHUNK_INCLUDED
 
 #include <stddef.h>
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  Allocates the chunk using the allocation mechanism specified by 'type'. */
 int nn_chunk_alloc (size_t size, int type, void **result);

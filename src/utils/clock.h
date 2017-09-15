@@ -23,7 +23,7 @@
 #ifndef NN_CLOCK_INCLUDED
 #define NN_CLOCK_INCLUDED
 
-#include <stdint.h>
+#include "stdint_inc.h"
 
 /*  Returns current time in milliseconds. */
 uint64_t nn_clock_ms (void);

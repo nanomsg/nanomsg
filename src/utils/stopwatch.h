@@ -24,7 +24,7 @@
 #ifndef NN_STOPWATCH_INCLUDED
 #define NN_STOPWATCH_INCLUDED
 
-#include <stdint.h>
+#include "stdint_inc.h"
 
 #include "err.h"
 

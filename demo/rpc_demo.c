@@ -185,9 +185,12 @@ int client (const char *url, const char *username)
         return (-1);
     }
     memcpy(greeting, msg, rc);
+    greeting[rc] = '\0';
 
     nn_freemsg (msg);
     printf ("%s\n", greeting); 
+    free(greeting);
+
     return (0);
 }
 

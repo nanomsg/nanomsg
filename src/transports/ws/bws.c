@@ -117,11 +117,13 @@ int nn_bws_create (struct nn_ep *ep)
     end = addr + strlen (addr);
     pos = strrchr (addr, ':');
     if (!pos) {
+        nn_free(self);
         return -EINVAL;
     }
     ++pos;
     rc = nn_port_resolve (pos, end - pos);
     if (rc < 0) {
+        nn_free(self);
         return -EINVAL;
     }
 
@@ -133,6 +135,7 @@ int nn_bws_create (struct nn_ep *ep)
     /*  Parse the address. */
     rc = nn_iface_resolve (addr, pos - addr - 1, ipv4only, &ss, &sslen);
     if (rc < 0) {
+        nn_free(self);
         return -ENODEV;
     }
 
@@ -150,6 +153,7 @@ int nn_bws_create (struct nn_ep *ep)
 
     rc = nn_bws_listen (self);
     if (rc != 0) {
+        nn_free(self);
         return rc;
     }
 

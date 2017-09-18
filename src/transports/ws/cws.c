@@ -176,6 +176,7 @@ int nn_cws_create (struct nn_ep *ep)
     if (colon != NULL) {
         rc = nn_port_resolve (colon + 1, resource - colon - 1);
         if (rc < 0) {
+            nn_free(self);
             return -EINVAL;
         }
         self->remote_port = rc;
@@ -189,6 +190,7 @@ int nn_cws_create (struct nn_ep *ep)
     if (nn_dns_check_hostname (hostname, self->remote_hostname_len) < 0 &&
           nn_literal_resolve (hostname, self->remote_hostname_len, ipv4only,
           &ss, &sslen) < 0) {
+        nn_free(self);
         return -EINVAL;
     }
 
@@ -196,6 +198,7 @@ int nn_cws_create (struct nn_ep *ep)
     if (semicolon) {
         rc = nn_iface_resolve (addr, semicolon - addr, ipv4only, &ss, &sslen);
         if (rc < 0) {
+            nn_free(self);
             return -ENODEV;
         }
     }

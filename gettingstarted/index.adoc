@@ -1,12 +1,10 @@
-[NOTE]
--------------
-This document is taken from an original post by Tim Dysinger.  That post
-is no longer available, but we have modified it from HTML and posted it
-here for your enjoyment.
--------------
+:source-highlighter: coderay
 
-Getting Started with 'nanomsg'
-------------------------------
+= Getting Started with 'nanomsg'
+
+NOTE: This document is taken from an original post by Tim Dysinger.
+That post is no longer available, but we have modified it from HTML
+and posted it here for your enjoyment.
 
 Posted on September 16, 2013 by Tim Dysinger
 
@@ -14,12 +12,11 @@ I played around with http://nanomsg.org/[nanomsg]. It’s natural to describe it
 
 I placed the code on github also https://github.com/dysinger/nanomsg-examples[here] so you don’t have to type much if you want to play with it.
 
-Pipeline (A One-Way Pipe)
-=========================
+== Pipeline (A One-Way Pipe)
 
-image:pipeline.png
+image::pipeline.png[A One-Way Pipe]
 
-[source,c]
+[source,C]
 ----------
 #include <assert.h>
 #include <libc.h>
@@ -88,10 +85,9 @@ NODE1: SENDING "Goodbye."
 NODE0: RECEIVED "Goodbye."
 -------------
 
-Request/Reply (I ask, you answer)
-=================================
+== Request/Reply (I ask, you answer)
 
-image:reqrep.png
+image::reqrep.png[I ask, you answer]
 
 [source,c]
 ----------
@@ -161,10 +157,9 @@ NODE0: SENDING DATE Sat Sep  7 17:39:01 2013
 NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013
 -------------
 
-Pair (Two Way Radio)
-====================
+== Pair (Two Way Radio)
 
-image:pair.png
+image::pair.png[Two Way Radio]
 
 [source,c]
 ----------
@@ -257,10 +252,9 @@ NODE0: SENDING DATE Sat Sep  7 17:39:01 2013
 NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013
 -------------
 
-Pub/Sub (Topics & Broadcast)
-============================
+== Pub/Sub (Topics & Broadcast)
 
-image:pubsub.png
+image::pubsub.png[Topics & Broadcast]
 
 [source,c]
 ----------
@@ -364,10 +358,9 @@ CLIENT (client2): RECEIVED Sat Sep  7 17:40:16 2013
 CLIENT (client0): RECEIVED Sat Sep  7 17:40:16 2013
 -------------
 
-Survey (Everybody Votes)
-========================
+== Survey (Everybody Votes)
 
-image:survey.png
+image::survey.png[Everybody Votes]
 
 [source,c]
 ----------
@@ -476,10 +469,9 @@ SERVER: RECEIVED "Sun Sep 15 13:39:46 2013" SURVEY RESPONSE
 SERVER: RECEIVED "Sun Sep 15 13:39:46 2013" SURVEY RESPONSE
 -------------
 
-Bus (Routing)
-=============
+== Bus (Routing)
 
-image:bus.png
+image::bus.png[A Simple Bus]
 
 [source,c]
 ----------

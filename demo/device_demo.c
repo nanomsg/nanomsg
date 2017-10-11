@@ -189,6 +189,7 @@ int client (const char *url, const char *username)
 
     nn_freemsg (msg);
     printf ("%s\n", greeting); 
+    free (greeting);
     return (0);
 }
 

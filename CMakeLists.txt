@@ -101,6 +101,7 @@ option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
+set (NN_MAX_SOCKETS 512 CACHE STRING "max number of nanomsg sockets that can be created")
 
 #  Platform checks.
 
@@ -236,6 +237,8 @@ check_c_source_compiles ("
 if (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
+
+add_definitions(-DNN_MAX_SOCKETS=${NN_MAX_SOCKETS})
 
 add_subdirectory (src)
 

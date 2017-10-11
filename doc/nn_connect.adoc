@@ -32,6 +32,16 @@ Note that nn_connect and <<nn_bind#,nn_bind(3)>> may be called multiple times
 on the same socket thus allowing the socket to communicate with multiple
 heterogeneous endpoints.
 
+NOTE
+----
+
+Unlike with traditional BSD sockets, this function operates asynchronously,
+and returns to the caller before the operation is complete.
+As a result, attempts to send data or receive data on the socket may not
+succeed until the underlying transport actually establishes the connection.
+Further, the connection may be lost, without any notification to the caller.
+The library will attempt to reconnect automatically in such an event.
+
 RETURN VALUE
 ------------
 If the function succeeds positive endpoint ID is returned. Endpoint ID can be
@@ -83,4 +93,5 @@ SEE ALSO
 AUTHORS
 -------
 link:mailto:sustrik@250bpm.com[Martin Sustrik]
+link:mailto:garrett@damore.org[Garrett D'Amore]
 

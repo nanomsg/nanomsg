@@ -150,6 +150,7 @@ int nn_cws_create (struct nn_ep *ep)
     self = nn_alloc (sizeof (struct nn_cws), "cws");
     alloc_assert (self);
     self->ep = ep;
+    self->peer_gone = 0;
 
     /*  Initalise the endpoint. */
     nn_ep_tran_setup (ep, &nn_cws_ep_ops, self);

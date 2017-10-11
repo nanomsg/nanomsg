@@ -779,7 +779,7 @@ static void nn_sws_fail_conn (struct nn_sws *self, int code, char *reason)
     nn_assert (payload_len <= NN_SWS_PAYLOAD_MAX_LENGTH);
 
     /*  RFC 6455 section 5.5.1. */
-    self->fail_msg [0] = NN_SWS_FRAME_BITMASK_FIN | NN_WS_OPCODE_CLOSE;
+    self->fail_msg [0] = (char)(NN_SWS_FRAME_BITMASK_FIN | NN_WS_OPCODE_CLOSE);
 
     /*  Size of the payload, which is the status code plus the reason. */
     self->fail_msg [1] = (char)payload_len;

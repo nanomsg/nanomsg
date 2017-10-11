@@ -39,6 +39,10 @@ Prerequisites
 Build it with CMake
 -------------------
 
+(This assumes you want to use the default generator.  To use a
+different generator specify `-G <generator>` to the cmake command line.
+The list of generators supported can be obtained using `cmake --help`.)
+
 1.  Go to the root directory of the local source repository.
 2.  To perform an out-of-source build, run:
 3.  `mkdir build`

@@ -30,7 +30,6 @@ int main (int argc, const char *argv[])
     int sb;
     int sc1;
     int sc2;
-    char socket_address[128];
 
     sb = test_socket (AF_SP, NN_PAIR);
     test_bind (sb, "inproc://pair");

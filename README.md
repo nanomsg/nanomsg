@@ -44,12 +44,27 @@ Build it with CMake
 3.  `mkdir build`
 4.  `cd build`
 5.  `cmake ..`
-    (You can add -DCMAKE_INSTALL_PREFIX=/usr/local or some other directory.)
+    (You can add `-DCMAKE_INSTALL_PREFIX=/usr/local` or some other directory.
+    You can specify a release build with `-DCMAKE_BUILD_TYPE=Release`.
 6.  `cmake --build .`
 7.  `ctest -C Debug .`
 8.  `cmake --build . --target install`
     *NB:* This may have to be done as a privileged user.
 9.  (Linux only).  `ldconfig` (As a privileged or root user.)
+
+Static Library (Windows Only)
+-----------------------------
+
+We normally build a dynamic library (.DLL) by default.
+
+If you want a static library (.LIB) , configure by passing `-DNN_STATIC_LIB=ON`
+to the `cmake` command.
+
+You will also need to define `NN_STATIC_LIB` in your compilation environment
+when building programs that use this library.
+
+This is required because of the way Windows DLL exports happen.  This is not
+necessary when compiling on POSIX platforms.
 
 Resources
 ---------

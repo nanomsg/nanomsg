@@ -59,8 +59,10 @@
 #include <unistd.h>
 #endif
 
-/*  Max number of concurrent SP sockets. */
+/*  Max number of concurrent SP sockets. Configureable at build time */
+#ifndef NN_MAX_SOCKETS
 #define NN_MAX_SOCKETS 512
+#endif
 
 /*  To save some space, list of unused socket slots uses uint16_t integers to
     refer to individual sockets. If there's a need to more that 0x10000 sockets,

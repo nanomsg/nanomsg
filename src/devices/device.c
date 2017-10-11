@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,6 +31,12 @@
 #include "device.h"
 
 #include <string.h>
+
+#ifndef NN_HAVE_WINDOWS
+#define NN_BAD_FD	-1
+#else
+#define	NN_BAD_FD	INVALID_SOCKET
+#endif
 
 int nn_custom_device(struct nn_device_recipe *device, int s1, int s2,
     int flags)
@@ -113,60 +119,56 @@ int nn_device_entry (struct nn_device_recipe *device, int s1, int s2,
     if (rc < 0) {
         if (nn_errno () != ENOPROTOOPT)
             return -1;
-        s1rcv = -1;
+        s1rcv = NN_BAD_FD;
     } else {
         nn_assert (rc == 0);
         nn_assert (opsz == sizeof (s1rcv));
-        nn_assert (s1rcv >= 0);
     }
     opsz = sizeof (s1snd);
     rc = nn_getsockopt (s1, NN_SOL_SOCKET, NN_SNDFD, &s1snd, &opsz);
     if (rc < 0) {
         if (nn_errno () != ENOPROTOOPT)
             return -1;
-        s1snd = -1;
+        s1snd = NN_BAD_FD;
     } else {
         nn_assert (rc == 0);
         nn_assert (opsz == sizeof (s1snd));
-        nn_assert (s1snd >= 0);
     }
     opsz = sizeof (s2rcv);
     rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_RCVFD, &s2rcv, &opsz);
     if (rc < 0) {
         if (nn_errno () != ENOPROTOOPT)
             return -1;
-        s2rcv = -1;
+        s2rcv = NN_BAD_FD;
     } else {
         nn_assert (rc == 0);
         nn_assert (opsz == sizeof (s2rcv));
-        nn_assert (s2rcv >= 0);
     }
     opsz = sizeof (s2snd);
     rc = nn_getsockopt (s2, NN_SOL_SOCKET, NN_SNDFD, &s2snd, &opsz);
     if (rc < 0) {
         if (nn_errno () != ENOPROTOOPT)
             return -1;
-        s2snd = -1;
+        s2snd = NN_BAD_FD;
     } else {
         nn_assert (rc == 0);
         nn_assert (opsz == sizeof (s2snd));
-        nn_assert (s2snd >= 0);
     }
     if (device->required_checks & NN_CHECK_SOCKET_DIRECTIONALITY) {
         /*  Check the directionality of the sockets. */
-        if (s1rcv != -1 && s2snd == -1) {
+        if (s1rcv != NN_BAD_FD && s2snd == NN_BAD_FD) {
             errno = EINVAL;
             return -1;
         }
-        if (s1snd != -1 && s2rcv == -1) {
+        if (s1snd != NN_BAD_FD && s2rcv == NN_BAD_FD) {
             errno = EINVAL;
             return -1;
         }
-        if (s2rcv != -1 && s1snd == -1) {
+        if (s2rcv != NN_BAD_FD && s1snd == NN_BAD_FD) {
             errno = EINVAL;
             return -1;
         }
-        if (s2snd != -1 && s1rcv == -1) {
+        if (s2snd != NN_BAD_FD && s1rcv == NN_BAD_FD) {
             errno = EINVAL;
             return -1;
         }
@@ -174,17 +176,20 @@ int nn_device_entry (struct nn_device_recipe *device, int s1, int s2,
 
     /*  Two-directional device. */
     if (device->required_checks & NN_CHECK_ALLOW_BIDIRECTIONAL) {
-        if (s1rcv != -1 && s1snd != -1 && s2rcv != -1 && s2snd != -1)
+        if (s1rcv != NN_BAD_FD && s1snd != NN_BAD_FD &&
+            s2rcv != NN_BAD_FD && s2snd != NN_BAD_FD)
             return nn_device_twoway (device, s1, s2);
     }
 
     if (device->required_checks & NN_CHECK_ALLOW_UNIDIRECTIONAL) {
         /*  Single-directional device passing messages from s1 to s2. */
-        if (s1rcv != -1 && s1snd == -1 && s2rcv == -1 && s2snd != -1)
+        if (s1rcv != NN_BAD_FD && s1snd == NN_BAD_FD &&
+            s2rcv == NN_BAD_FD && s2snd != NN_BAD_FD)
             return nn_device_oneway (device, s1, s2);
 
         /*  Single-directional device passing messages from s2 to s1. */
-        if (s1rcv == -1 && s1snd != -1 && s2rcv != -1 && s2snd == -1)
+        if (s1rcv == NN_BAD_FD && s1snd != NN_BAD_FD &&
+            s2rcv != NN_BAD_FD && s2snd == NN_BAD_FD)
             return nn_device_oneway (device, s2, s1);
     }
 
@@ -293,10 +298,10 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
     hdr.msg_control = &control;
     hdr.msg_controllen = NN_MSG;
     rc = nn_recvmsg (from, &hdr, flags);
-    if (nn_slow (rc < 0 && (nn_errno () == ETERM || nn_errno () == EBADF))) {
+    if (nn_slow (rc < 0)) {
+        /* any error is fatal */
         return -1;
     }
-    errno_assert (rc >= 0);
 
     rc = device->nn_device_rewritemsg (device, from, to, flags, &hdr, rc);
     if (nn_slow (rc == -1))
@@ -306,10 +311,10 @@ int nn_device_mvmsg (struct nn_device_recipe *device,
     nn_assert(rc == 1);
 
     rc = nn_sendmsg (to, &hdr, flags);
-    if (nn_slow (rc < 0 && (nn_errno () == ETERM || nn_errno () == EBADF))) {
+    if (nn_slow (rc < 0)) {
+        /* any error is fatal */
         return -1;
     }
-    errno_assert (rc >= 0);
     return 0;
 }
 

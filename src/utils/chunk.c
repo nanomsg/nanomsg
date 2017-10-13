@@ -99,10 +99,8 @@ int nn_chunk_alloc (size_t size, int type, void **result)
 int nn_chunk_realloc (size_t size, void **chunk)
 {
     struct nn_chunk *self;
-    struct nn_chunk *new_chunk;
     void *new_ptr;
     size_t hdr_size;
-    size_t new_size;
     int rc;
     void *p = *chunk;
 

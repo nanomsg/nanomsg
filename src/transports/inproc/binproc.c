@@ -229,6 +229,17 @@ static void nn_binproc_handler (struct nn_fsm *self, int src, int type,
             }
 
         case NN_BINPROC_SRC_SINPROC:
+            sinproc = srcptr;
+            switch (type) {
+            case NN_SINPROC_STOPPED:
+                nn_list_erase (&binproc->sinprocs, &sinproc->item);
+                nn_sinproc_term (sinproc);
+                nn_free (sinproc);
+                return;
+            case NN_SINPROC_DISCONNECT:
+                nn_sinproc_stop (sinproc);
+                return;
+            }
             return;
 
         default:

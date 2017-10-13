@@ -16,20 +16,19 @@ SYNOPSIS
 DESCRIPTION
 -----------
 To help with shutdown of multi-threaded programs nanomsg provides the
-_nn_term()_ function which informs all the open sockets that process
-termination is underway.
+_nn_term()_ function which closes all open sockets, and releases all
+related resources.
 
 If a socket is blocked inside a blocking function, such as
-<<nn_recv#,nn_recv(3)>>, it will be unblocked  and ETERM error will be returned
-to the user. Similarly, any subsequent attempt to invoke a socket function other
-than <<nn_close#,nn_close(3)>> after _nn_term()_ was called will result
-in ETERM error.
+<<nn_recv#,nn_recv(3)>>, it will be unblocked  and EBADF error will be returned
+to the user.  Subsequent calls on such sockets will also return EBADF.
+
+Attempting to open a new socket with <<nn_socket#,nn_socket(3)>> will
+result in an ETERM error.
 
 If waiting for _NN_SNDFD_ or _NN_RCVFD_ using a polling function, such as
 _poll()_ or _select()_, the call will unblock with both _NN_SNDFD_ and
 _NN_RCVFD_ signaled.
-
-The _nn_term()_ function itself is non-blocking.
 
 
 EXAMPLE
@@ -39,7 +38,7 @@ EXAMPLE
 s = nn_socket (AF_SP, NN_PAIR);
 nn_term ();
 rc = nn_send (s, "ABC", 3, 0);
-assert (rc == -1 && errno == ETERM);
+assert (rc == -1 && errno == EBADF);
 ----
 
 
@@ -47,12 +46,13 @@ SEE ALSO
 --------
 <<nn_close#,nn_close(3)>>
 <<nn_send#,nn_send(3)>>
+<<nn_socket#,nn_socket(3)>>
 <<nn_recv#,nn_recv(3)>>
-<<nn_getsockopt#,nn_getsockopt(3)>>
 <<nanomsg#,nanomsg(7)>>
 
 
 AUTHORS
 -------
 link:mailto:sustrik@250bpm.com[Martin Sustrik]
+link:mailto:garrett@damore.org[Garrett D'Amore]
 

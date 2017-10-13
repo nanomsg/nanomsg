@@ -114,7 +114,7 @@ build:
 build_script:
   - md build
   - cd build
-  - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CFG% %STATIC_LIB% %PREFIX_PATH% ...
+  - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CFG% %STATIC_LIB% %PREFIX_PATH% ..
   - cmake --build .
 
 test_script:

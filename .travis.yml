@@ -10,19 +10,22 @@ matrix:
 #      compiler: gcc
     - os: osx
       compiler: clang
-before_script:
+cache:
+  directories:
+    - $HOME/.cache/pip
+install:
+  - pip install --user autobahntestsuite
   - gem install asciidoctor
 script:
-  # Print all environment variables to aid in CI development
+  # The following commands are used to develop and debug the CI environment
   - printenv
-  # Print version and available CMake generators to aid in CI development
   - cmake --version
-  - cmake --help
+  - wstest --autobahnversion
   # Perform out-of-source build
   - mkdir build
   - cd build
   # Perform CMake backend generation, build, and test
-  - cmake ..
+  - cmake -DNN_WS_AUTOBAHN_TESTS=ON ..
   - cmake --build . -- -j4
   - ctest --output-on-failure -C Debug -j4
 #deploy:

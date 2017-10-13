@@ -101,6 +101,7 @@ option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
 option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
+option (NN_WS_AUTOBAHN_TESTS "Enable Autobahn TestSuite test for WebSocket transport. Required: http://autobahn.ws/testsuite/installation.html" OFF)
 
 #  Platform checks.
 
@@ -409,6 +410,19 @@ if (NN_TESTS)
     if (WIN32)
         add_libnanomsg_test (win_sec_attr 5)
     endif()
+
+    # Optional tests.
+    if (NN_WS_AUTOBAHN_TESTS)
+        find_program (NN_AUTOBAHN_INSTALLED wstest)
+        if (NN_AUTOBAHN_INSTALLED)
+          add_libnanomsg_test (ws_stress 60)
+          message (STATUS "Autobahn TestSuite for WebSocket enabled: ${NN_AUTOBAHN_INSTALLED}")
+        else ()
+          message (FATAL_ERROR "Autobahn not installed.")
+        endif ()
+    else ()
+        message (STATUS "Autobahn TestSuite for WebSocket is disabled." )
+    endif ()
 
     #  Build the performance tests.
 

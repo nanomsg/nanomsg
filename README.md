@@ -56,19 +56,29 @@ The list of generators supported can be obtained using `cmake --help`.)
     *NB:* This may have to be done as a privileged user.
 9.  (Linux only).  `ldconfig` (As a privileged or root user.)
 
-Static Library (Windows Only)
------------------------------
+Static Library
+--------------
 
-We normally build a dynamic library (.DLL) by default.
+We normally build a dynamic library (.so or .DLL) by default.
 
-If you want a static library (.LIB) , configure by passing `-DNN_STATIC_LIB=ON`
-to the `cmake` command.
+If you want a static library (.a or .LIB), configure by passing
+`-DNN_STATIC_LIB=ON` to the `cmake` command.
+
+### Windows
 
 You will also need to define `NN_STATIC_LIB` in your compilation environment
 when building programs that use this library.
 
 This is required because of the way Windows DLL exports happen.  This is not
 necessary when compiling on POSIX platforms.
+
+When using the static library on Windows, you will also need to link with the
+ws2_32, mswsock, and advapi32 libraries, as nanomsg depends on them.
+
+### POSIX
+
+POSIX systems will need to link with the libraries normally used when building
+network applications.  For some systems this might mean -lnsl or -lsocket.
 
 Resources
 ---------

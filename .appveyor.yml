@@ -122,7 +122,7 @@ build_script:
   - md build
   - cd build
   - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CFG% %STATIC_LIB% %PREFIX_PATH% ..
-  - cmake --build --config %CFG% .
+  - cmake --build . --config %CFG% 
 
 test_script:
-  - ctest --output-on-failure -C %CFG"%
+  - ctest --output-on-failure --config %CFG"%

@@ -5,21 +5,89 @@ environment:
     CFLAGS: /MP
   matrix:
     # array of all environments used to test builds
+    # The latest Visual Studio 2017 is our "preferred" environment.
+    # We expect that it runs fastest too.
+
+    # MSys2, 64-bit
+    - GENERATOR: MSYS Makefiles
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      PREFIX_PATH: -DCMAKE_PREFIX_PATH=C:\msys64
+      CFG: Debug
+      MSVC_PLATFORM: amd64
+
+    # VS 2017, 64-bit, Release
+    - GENERATOR: Visual Studio 15 2017
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CFG: Release
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: amd64
+
+    # VS 2017, 64-bit
+    - GENERATOR: Visual Studio 15 2017
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CFG: Debug
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: amd64
+
+    # VS 2017, 32-bit
+    - GENERATOR: Visual Studio 15 2017
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CFG: Debug
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: x86
+
+    # VS 2017, 64-bit, NMakefiles
     - GENERATOR: NMake Makefiles
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       CFG: Debug
-      VS_VERSION: 12.0
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: amd64
+
+    # VS 2017 64-bit, Static
+    - GENERATOR: Visual Studio 15 2017
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CFG: Debug
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: amd64
+      STATIC_LIB: -DNN_STATIC_LIB=ON
+
+    # VS 2017 32-bit, Static
+    - GENERATOR: Visual Studio 15 2017
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CFG: Debug
+      VSINSTALL: '"Microsoft Visual Studio"/2017/Community/VC/Auxiliary/Build'
+      MSVC_PLATFORM: x86
+      STATIC_LIB: -DNN_STATIC_LIB=ON
+
+    # VS 2015, 32-bit
     - GENERATOR: Visual Studio 14 2015
-      VS_VERSION: 14.0
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       CFG: Debug
+      VSINSTALL: '"Microsoft Visual Studio 14.0"/VC'
+      MSVC_PLATFORM: x86
+
+    # VS 2013, 32-bit
     - GENERATOR: Visual Studio 12 2013
-      VS_VERSION: 12.0
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       CFG: Debug
-    - GENERATOR: Visual Studio 14 2015 Win64
+      VSINSTALL: '"Microsoft Visual Studio 12.0"/VC'
+      MSVC_PLATFORM: x86
+
+    # VS 2012 32-bit
+    - GENERATOR: Visual Studio 11 2012
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       CFG: Debug
-      VS_VERSION: 14.0
-    - GENERATOR: Visual Studio 12 2013 Win64
+      VSINSTALL: '"Microsoft Visual Studio 11.0"/VC'
+      MSVC_PLATFORM: x86
+
+    # VS 2010, 64-bit
+    - GENERATOR: Visual Studio 10 2010 Win64
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       CFG: Debug
-      VS_VERSION: 12.0
+      VSINSTALL: '"Microsoft Visual Studio 10.0"/VC'
+      MSVC_PLATFORM: amd64
+
 
 cache:
   - '%USERPROFILE%\asciidoctor-%ASCIIDOCTOR_VER%.gem -> .appveyor.yml'
@@ -40,14 +108,18 @@ install:
 before_build:
   - del "C:\Program Files (x86)\MSBuild\%VS_VERSION%\Microsoft.Common.targets\ImportAfter\Xamarin.Common.targets"
 
+init:
+   - cmake --version
+   - C:\"Program Files (x86)"/%VSINSTALL%/vcvarsall.bat %MSVC_PLATFORM%
+
 build:
   parallel: true
+
 build_script:
-  - cmd: IF NOT %VS_VERSION% == NONE call "C:/Program Files (x86)/Microsoft Visual Studio %VS_VERSION%/Common7/Tools/vsvars32.bat"
-  - cmd: cmake --version
-  - cmd: md build
-  - cmd: cd build
-  - cmd: cmake -G "%GENERATOR%" ..
-  - cmd: cmake --build .
+  - md build
+  - cd build
+  - cmake -G "%GENERATOR%" -DCMAKE_BUILD_TYPE=%CFG% %STATIC_LIB% %PREFIX_PATH% ...
+  - cmake --build .
+
 test_script:
-  - cmd: ctest --output-on-failure -C "%CFG%"
+  - ctest --output-on-failure -C "%CFG%"

@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2014 Achille Roussel All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -103,42 +104,63 @@ int nn_chunk_realloc (size_t size, void **chunk)
     size_t hdr_size;
     size_t new_size;
     int rc;
+    void *p = *chunk;
 
-    self = nn_chunk_getptr (*chunk);
+    self = nn_chunk_getptr (p);
 
     /*  Check if we only have one reference to this object, in that case we can
         reallocate the memory chunk. */
     if (self->refcount.n == 1) {
 
-        /* Compute new size, check for overflow. */
-        hdr_size = nn_chunk_hdrsize ();
-        new_size = hdr_size + size;
-        if (nn_slow (new_size < hdr_size))
-            return -ENOMEM;
+         size_t grow;
+         size_t empty;
 
-        /*  Reallocate memory chunk. */
-        new_chunk = nn_realloc (self, new_size);
-        if (nn_slow (new_chunk == NULL))
-            return -ENOMEM;
-
-        new_chunk->size = size;
-        *chunk = nn_chunk_getdata (new_chunk);
-    }
-
-    /*  There are many references to this memory chunk, we have to create a new
-        one and copy the data. */
-    else {
-        new_ptr = NULL;
-        rc = nn_chunk_alloc (size, 0, &new_ptr);
-
-        if (nn_slow (rc != 0)) {
-            return rc;
+        /*  If the new size is smaller than the old size, we can just keep
+            it.  Avoid an allocation.  We'll have wasted & lost data
+            at the end, but who cares.  This is basically "chop". */
+        if (size <= self->size) {
+            self->size = size;
+            return (0);
         }
 
-        memcpy (new_ptr, nn_chunk_getdata (self), self->size);
-        *chunk = new_ptr;
-        nn_atomic_dec (&self->refcount, 1);
+        hdr_size = nn_chunk_hdrsize ();
+        empty = (uint8_t*) p - (uint8_t*) self - hdr_size;
+        grow = size - self->size;
+
+        /* Check for overflow. */
+        if (hdr_size + size < size) {
+            return -ENOMEM;
+	}
+
+        /* Can we grow into empty space? */
+        if (grow <= empty) {
+            new_ptr = (uint8_t *)p - grow;
+            memmove (new_ptr, p, self->size);
+            self->size = size;
+
+            /*  Recalculate the size of empty space, and reconstruct
+                the tag and prefix. */
+            empty = (uint8_t *)new_ptr - (uint8_t *)self - hdr_size;
+            nn_putl ((uint8_t*) (((uint32_t*) new_ptr) - 1), NN_CHUNK_TAG);
+            nn_putl ((uint8_t*) (((uint32_t*) new_ptr) - 2), empty);
+            *chunk = p;
+            return (0);
+        }
     }
+
+    /*  There are either multiple references to this memory chunk,
+        or we cannot reuse the existing space.  We create a new one
+        copy the data.  (This is no worse than nn_realloc, btw.) */
+    new_ptr = NULL;
+    rc = nn_chunk_alloc (size, 0, &new_ptr);
+
+    if (nn_slow (rc != 0)) {
+        return rc;
+    }
+
+    memcpy (new_ptr, nn_chunk_getdata (self), self->size);
+    *chunk = new_ptr;
+    nn_chunk_free (p);
 
     return 0;
 }

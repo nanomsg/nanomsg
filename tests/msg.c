@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -123,6 +124,21 @@ int main (int argc, const char *argv[])
 
     test_close (sc);
     test_close (sb);
+
+
+    /*  Test reallocmsg  */
+    buf1 = nn_allocmsg (8, 0);
+    alloc_assert (buf1);
+
+    buf2 = nn_reallocmsg (buf1, 1);
+
+    nn_assert (buf2 == buf1);
+
+    buf1 = nn_reallocmsg (buf2, 100);
+    nn_assert (buf1 != buf2);
+    nn_assert (buf1 != 0);
+
+    nn_freemsg (buf1);
 
     return 0;
 }

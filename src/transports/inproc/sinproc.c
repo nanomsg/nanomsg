@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -256,7 +256,10 @@ static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
                 self->state = NN_SINPROC_STATE_STOPPING;
                 return;
             default:
-                nn_fsm_bad_action (self->state, src, type);
+                /*  We could get a notification about state that
+                    was queued earlier, or about a sent message.  We
+                    do not care about those anymore, we're closing! */
+                return;
             }
         default:
             nn_fsm_bad_source (self->state, src, type);

@@ -37,7 +37,7 @@
       <t>Different mappings for scalability protocols (see, for example
          <xref target='SPoverTCP'>SPoverTCP</xref>) define a protocol header
          which in turn contains SP endpoint type ID. The ID consists of
-         protocol ID and end the endpoint role:</t>
+         the protocol ID and the endpoint role:</t>
 
       <figure>
         <artwork>

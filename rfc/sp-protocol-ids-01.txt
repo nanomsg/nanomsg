@@ -3,9 +3,9 @@
 
 
 Internet Engineering Task Force                          M. Sustrik, Ed.
-Internet-Draft
-Intended status: Informational                              June 5, 2014
-Expires: December 7, 2014
+Internet-Draft                                                 June 2014
+Intended status: Informational
+Expires: December 3, 2014
 
 
                         List of SP protocol IDs
@@ -31,7 +31,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on December 7, 2014.
+   This Internet-Draft will expire on December 3, 2014.
 
 Copyright Notice
 
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Sustrik                 Expires December 7, 2014                [Page 1]
+Sustrik                 Expires December 3, 2014                [Page 1]
 
 Internet-Draft           List of SP protocol IDs               June 2014
 
@@ -62,7 +62,7 @@ Internet-Draft           List of SP protocol IDs               June 2014
 
    Different mappings for scalability protocols (see, for example
    SPoverTCP [SPoverTCP]) define a protocol header which in turn
-   contains SP endpoint type ID.  The ID consists of protocol ID and end
+   contains SP endpoint type ID.  The ID consists of the protocol ID and
    the endpoint role:
 
    +-----------------------+------------------------+
@@ -103,18 +103,21 @@ Internet-Draft           List of SP protocol IDs               June 2014
 
    3840-4095 local and experimental
 
+
+
+
+
+
+
+Sustrik                 Expires December 3, 2014                [Page 2]
+
+Internet-Draft           List of SP protocol IDs               June 2014
+
+
 3.  IANA Considerations
 
    This memo describes numbers that should be eventually managed by
    IANA.
-
-
-
-
-Sustrik                 Expires December 7, 2014                [Page 2]
-
-Internet-Draft           List of SP protocol IDs               June 2014
-
 
 4.  Security Considerations
 
@@ -162,10 +165,4 @@ Author's Address
 
 
 
-
-
-
-
-
-Sustrik                 Expires December 7, 2014                [Page 3]
-
+Sustrik                 Expires December 3, 2014                [Page 3]

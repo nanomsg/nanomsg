@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -38,17 +39,14 @@
 static size_t message_size;
 static int roundtrip_count;
 
-void worker (NN_UNUSED void *arg)
+void worker (void *arg)
 {
     int rc;
     int s;
     int i;
     char *buf;
 
-    s = nn_socket (AF_SP, NN_PAIR);
-    assert (s != -1);
-    rc = nn_connect (s, "inproc://inproc_lat");
-    assert (rc >= 0);
+    s = *(int *)arg;
 
     buf = malloc (message_size);
     assert (buf);
@@ -61,14 +59,13 @@ void worker (NN_UNUSED void *arg)
     }
 
     free (buf);
-    rc = nn_close (s);
-    assert (rc == 0);
 }
 
 int main (int argc, char *argv [])
 {
     int rc;
     int s;
+    int w;
     int i;
     char *buf;
     struct nn_thread thread;
@@ -89,12 +86,17 @@ int main (int argc, char *argv [])
     rc = nn_bind (s, "inproc://inproc_lat");
     assert (rc >= 0);
 
+    w = nn_socket (AF_SP, NN_PAIR);
+    assert (w != -1);
+    rc = nn_connect (w, "inproc://inproc_lat");
+    assert (rc >= 0);
+
     buf = malloc (message_size);
     assert (buf);
     memset (buf, 111, message_size);
 
     /*  Wait a bit till the worker thread blocks in nn_recv(). */
-    nn_thread_init (&thread, worker, NULL);
+    nn_thread_init (&thread, worker, &w);
     nn_sleep (100);
 
     nn_stopwatch_init (&stopwatch);
@@ -116,6 +118,8 @@ int main (int argc, char *argv [])
     nn_thread_term (&thread);
     free (buf);
     rc = nn_close (s);
+    assert (rc == 0);
+    rc = nn_close (w);
     assert (rc == 0);
 
     return 0;

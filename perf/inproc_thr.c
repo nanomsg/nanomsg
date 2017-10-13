@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -37,17 +38,14 @@
 static size_t message_size;
 static int message_count;
 
-void worker (NN_UNUSED void *arg)
+void worker (void *arg)
 {
     int rc;
     int s;
     int i;
     char *buf;
 
-    s = nn_socket (AF_SP, NN_PAIR);
-    assert (s != -1);
-    rc = nn_connect (s, "inproc://inproc_thr");
-    assert (rc >= 0);
+    s = *(int *)arg;
 
     buf = malloc (message_size);
     assert (buf);
@@ -62,14 +60,13 @@ void worker (NN_UNUSED void *arg)
     }
 
     free (buf);
-    rc = nn_close (s);
-    assert (rc == 0);
 }
 
 int main (int argc, char *argv [])
 {
     int rc;
     int s;
+    int w;
     int i;
     char *buf;
     struct nn_thread thread;
@@ -91,10 +88,15 @@ int main (int argc, char *argv [])
     rc = nn_bind (s, "inproc://inproc_thr");
     assert (rc >= 0);
 
+    w = nn_socket (AF_SP, NN_PAIR);
+    assert (w != -1);
+    rc = nn_connect (w, "inproc://inproc_thr");
+    assert (rc >= 0);
+
     buf = malloc (message_size);
     assert (buf);
 
-    nn_thread_init (&thread, worker, NULL);
+    nn_thread_init (&thread, worker, &w);
 
     /*  First message is used to start the stopwatch. */
     rc = nn_recv (s, buf, message_size, 0);
@@ -112,6 +114,8 @@ int main (int argc, char *argv [])
     nn_thread_term (&thread);
     free (buf);
     rc = nn_close (s);
+    assert (rc == 0);
+    rc = nn_close (w);
     assert (rc == 0);
 
     if (elapsed == 0)

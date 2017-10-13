@@ -2,8 +2,8 @@
 #   Copyright (c) 2012 Martin Sustrik  All rights reserved.
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #   Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
-#   Copyright 2016 Garrett D'Amore <garrett@damore.org>
 #   Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+#   Copyright 2017 Garrett D'Amore <garrett@damore.org>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -107,8 +107,13 @@ set (NN_MAX_SOCKETS 512 CACHE STRING "max number of nanomsg sockets that can be 
 
 find_package (Threads REQUIRED)
 
+message(STATUS "OS System is ${CMAKE_SYSTEM_NAME}")
+message(STATUS "OS Version is ${CMAKE_SYSTEM_VERSION}")
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_definitions (-DNN_HAVE_LINUX)
+    if (CMAKE_SYSTEM_VERSION MATCHES "Microsoft")
+        add_definitions (-DNN_HAVE_WSL)
+    endif()
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     add_definitions (-DNN_HAVE_OSX)
 elseif (CMAKE_SYSTEM_NAME MATCHES "Windows")
@@ -365,9 +370,9 @@ if (NN_TESTS)
     add_libnanomsg_test (ipc 5)
     add_libnanomsg_test (ipc_shutdown 30)
     add_libnanomsg_test (ipc_stress 5)
-    add_libnanomsg_test (tcp 5)
+    add_libnanomsg_test (tcp 20)
     add_libnanomsg_test (tcp_shutdown 120)
-    add_libnanomsg_test (ws 5)
+    add_libnanomsg_test (ws 20)
 
     #  Protocol tests.
     add_libnanomsg_test (pair 5)

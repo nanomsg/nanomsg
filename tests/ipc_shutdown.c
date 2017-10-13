@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -28,6 +29,8 @@
 
 #include "testutil.h"
 #include "../src/utils/thread.c"
+
+#ifndef NN_HAVE_WSL
 
 /*  Stress test the IPC transport. */
 
@@ -70,8 +73,12 @@ static void routine2 (NN_UNUSED void *arg)
     active --;
 }
 
+#endif /* NN_HAVE_WSL */
+
 int main ()
 {
+
+#ifndef NN_HAVE_WSL
     int sb;
     int i;
     int j;
@@ -115,6 +122,7 @@ int main ()
     }
 
     test_close (sb);
+#endif /* NN_HAVE_WSL */
 
     return 0;
 }

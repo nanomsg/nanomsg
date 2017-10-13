@@ -2,6 +2,7 @@
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -73,7 +74,7 @@ int main (int argc, const char *argv[])
     test_close (pull);
     test_close (pair);
 
-#if !defined NN_HAVE_WINDOWS
+#if !defined NN_HAVE_WINDOWS && !defined NN_HAVE_WSL
 
     /*  IPC */
     pair = test_socket (AF_SP, NN_PAIR);

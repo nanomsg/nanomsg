@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -33,6 +34,7 @@
 
 int main ()
 {
+#ifndef NN_HAVE_WSL
     int sb;
     int sc;
     int i;
@@ -161,6 +163,7 @@ int main ()
     test_connect (sc, SOCKET_ADDRESS);
     nn_sleep (100);
     test_close (sc);
+#endif /* NN_HAVE_WSL */
 
     return 0;
 }

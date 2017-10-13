@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013 250bpm s.r.o.  All rights reserved.
     Copyright (c) 2014-2016 Jack R. Dunaway.  All rights reserved.
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -889,6 +889,10 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     self->protocol_len = 0;
     self->uri_len = 0;
 
+    /*  NB: If we got here, we already have a fully received set of
+        HTTP headers.  So there is no point in asking for more if the
+        headers lack what we need. */
+
     /*  This function, if generating a return value that triggers
         a response to the client, should replace this sentinel value
         with a proper response code. */
@@ -897,18 +901,18 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
     /*  RFC 7230 3.1.1 Request Line: HTTP Method
         Note requirement of one space and case sensitivity. */
     if (!nn_ws_match_token ("GET\x20", &pos, 0, 0))
-        return NN_WS_HANDSHAKE_RECV_MORE;
+        return NN_WS_HANDSHAKE_INVALID;
 
     /*  RFC 7230 3.1.1 Request Line: Requested Resource. */
     if (!nn_ws_match_value ("\x20", &pos, 0, 0, &self->uri, &self->uri_len))
-        return NN_WS_HANDSHAKE_RECV_MORE;
+        return NN_WS_HANDSHAKE_INVALID;
 
     /*  RFC 7230 3.1.1 Request Line: HTTP version. Note case sensitivity. */
     if (!nn_ws_match_token ("HTTP/1.1", &pos, 0, 0))
-        return NN_WS_HANDSHAKE_RECV_MORE;
+        return NN_WS_HANDSHAKE_INVALID;
 
     if (!nn_ws_match_token (CRLF, &pos, 0, 0))
-        return NN_WS_HANDSHAKE_RECV_MORE;
+        return NN_WS_HANDSHAKE_INVALID;
 
     /*  It's expected the current position is now at the first
         header field. Match them one by one. */
@@ -978,7 +982,7 @@ static int nn_ws_handshake_parse_client_opening (struct nn_ws_handshake *self)
         }
 
         if (rc != NN_WS_HANDSHAKE_MATCH)
-            return NN_WS_HANDSHAKE_RECV_MORE;
+            return NN_WS_HANDSHAKE_INVALID;
     }
 
     /*  Validate the opening handshake is now fully parsed. Additionally,

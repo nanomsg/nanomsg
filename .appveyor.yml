@@ -125,4 +125,4 @@ build_script:
   - cmake --build . --config %CFG% 
 
 test_script:
-  - ctest --output-on-failure --config %CFG"%
+  - ctest --output-on-failure -C %CFG%

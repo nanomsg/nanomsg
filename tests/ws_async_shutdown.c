@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -31,22 +32,37 @@ static char socket_address [128];
 
 /*  Test condition of closing sockets that are blocking in another thread. */
 
-#define TEST_LOOPS 10
+#define TEST_LOOPS 5
 #define TEST_THREADS 10
 
-static void routine (NN_UNUSED void *arg)
+static void sender (void *arg)
 {
     int s;
     int rc;
-    char msg[1];
+
+    s = *(int *)arg;
+    for (;;) {
+        rc = nn_send (s, "hello", 5, 0);
+        if (rc < 0) {
+            break;
+        }
+        nn_sleep(10);
+    }
+}
+
+static void routine (void *arg)
+{
+    int s;
+    int rc;
+    char msg[10];
 
     nn_assert (arg);
 
     s = *(int *)arg;
 
-    while (1) {
+    for (;;) {
         rc = nn_recv (s, &msg, sizeof(msg), 0);
-        if (rc == 0) {
+        if (rc >= 0) {
             continue;
         }
 
@@ -72,16 +88,19 @@ int main (int argc, const char *argv[])
     int sndtimeo = 0;
     int sockets [TEST_THREADS];
     struct nn_thread threads [TEST_THREADS];
+    struct nn_thread send_thr;
 
     test_addr_from (socket_address, "ws", "127.0.0.1",
         get_test_port (argc, argv));
 
+    sb = test_socket (AF_SP, NN_PUB);
+    test_bind (sb, socket_address);
+    test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO,
+        &sndtimeo, sizeof (sndtimeo));
+    nn_thread_init (&send_thr, sender, &sb);
+
     for (i = 0; i != TEST_LOOPS; ++i) {
 
-        sb = test_socket (AF_SP, NN_PUB);
-        test_bind (sb, socket_address);
-        test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO,
-            &sndtimeo, sizeof (sndtimeo));
 
         for (j = 0; j < TEST_THREADS; j++){
             s = test_socket (AF_SP, NN_SUB);
@@ -96,15 +115,14 @@ int main (int argc, const char *argv[])
         /*  Allow all threads a bit of time to connect. */
         nn_sleep (100);
 
-        test_send (sb, "");
-
         for (j = 0; j < TEST_THREADS; j++) {
             test_close (sockets [j]);
             nn_thread_term (&threads [j]);
         }
-
-        test_close (sb);
     }
+
+    test_close (sb);
+    nn_thread_term (&send_thr);
 
     return 0;
 }

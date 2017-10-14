@@ -21,8 +21,9 @@ Prerequisites
 
 1. Windows.
    * Windows Vista or newer (Windows XP and 2003 are *NOT* supported)
-   * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64
-     (Specifically mingw and older Microsoft compilers are *NOT supported)
+   * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64.
+     (Specifically mingw and older Microsoft compilers are *NOT supported,
+     and we do not test mingw-w64 at all, so YMMV.)
    * CMake 2.8.7 or newer, available in $PATH as `cmake`
 
 2. POSIX (Linux, MacOS X, UNIX)
@@ -36,25 +37,44 @@ Prerequisites
    * If not present, docs are not formatted, but left in readable ASCII
    * Also available on-line at http://nanomsg.org/documentation
 
-Build it with CMake
--------------------
+Quick Build Instructions
+------------------------
 
-(This assumes you want to use the default generator.  To use a
-different generator specify `-G <generator>` to the cmake command line.
-The list of generators supported can be obtained using `cmake --help`.)
+These steps here are the minimum steps to get a default Debug
+build.  Using CMake you can do many other things, including
+setting additional variables, setting up for static builds, or
+generation project or solution files for different development
+environments.  Please check the CMake website for all the various
+options that CMake supports.
 
-1.  Go to the root directory of the local source repository.
-2.  To perform an out-of-source build, run:
-3.  `mkdir build`
-4.  `cd build`
-5.  `cmake ..`
-    (You can add `-DCMAKE_INSTALL_PREFIX=/usr/local` or some other directory.
-    You can specify a release build with `-DCMAKE_BUILD_TYPE=Release`.
-6.  `cmake --build .`
-7.  `ctest -C Debug .`
-8.  `cmake --build . --target install`
-    *NB:* This may have to be done as a privileged user.
-9.  (Linux only).  `ldconfig` (As a privileged or root user.)
+## POSIX
+
+This assumes you have a shell in the project directory, and have
+the cmake and suitable compilers (and any required supporting tools
+like linkers or archivers) on your path.
+
+1.  `% mkdir build`
+2.  `% cd build`
+3.  `% cmake ..`
+4.  `% cmake --build .`
+5.  `% ctest .`
+6.  `% sudo cmake --build . --target install` 
+7.  `% sudo ldconfig` (if on Linux)
+
+## Windows
+
+This assumes you are in a command or powershell window and have
+the appropriate variables setup to support Visual Studio, typically
+by running `vcvarsall.bat` or similar with the appropriate argument(s).
+It also assumes you are in the project directory.
+
+1.  `md build`
+2.  `cd build`
+3.  `cmake ..`
+4.  `cmake --build . --config Debug`
+5.  `ctest --config Debug .`
+6.  `cmake --build . --config Debug --target install`
+    *NB:* This may have to be done using an Administrator account.
 
 Static Library
 --------------
@@ -62,23 +82,22 @@ Static Library
 We normally build a dynamic library (.so or .DLL) by default.
 
 If you want a static library (.a or .LIB), configure by passing
-`-DNN_STATIC_LIB=ON` to the `cmake` command.
-
-### Windows
-
-You will also need to define `NN_STATIC_LIB` in your compilation environment
-when building programs that use this library.
-
-This is required because of the way Windows DLL exports happen.  This is not
-necessary when compiling on POSIX platforms.
-
-When using the static library on Windows, you will also need to link with the
-ws2_32, mswsock, and advapi32 libraries, as nanomsg depends on them.
+`-DNN_STATIC_LIB=ON` to the first `cmake` command.
 
 ### POSIX
 
 POSIX systems will need to link with the libraries normally used when building
 network applications.  For some systems this might mean -lnsl or -lsocket.
+
+### Windows
+
+You will also need to define `NN_STATIC_LIB` in your compilation environment
+when building programs that use this library.  This is required because of
+the way Windows changes symbol names depending on whether the symbols should
+be exported in a DLL or not.
+
+When using the .LIB on Windows, you will also need to link with the
+ws2_32, mswsock, and advapi32 libraries, as nanomsg depends on them.
 
 Resources
 ---------

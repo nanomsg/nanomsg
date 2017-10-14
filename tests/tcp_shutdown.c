@@ -37,6 +37,8 @@
 
 #ifdef NN_HAVE_WSL
 #define THREAD_COUNT 10
+#elif defined(NN_HAVE_WINDOWS)
+#define THREAD_COUNT 20
 #else
 #define THREAD_COUNT 100
 #endif

@@ -5,7 +5,7 @@ layout: default
 
 == Documentation
 
-* Browse the libnanomsg C API reference manual <</v1.0.0/nanomsg.7.adoc#,here>>.
+* Browse the libnanomsg C API reference manual <</v{{ site.latest }}/nanomsg.adoc#,here>>.
 
 * <<gettingstarted/index.adoc#,Getting Started with nanomsg>> by Tim Dysinger
 

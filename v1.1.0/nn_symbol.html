@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nn_symbol(3)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,119 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nn_symbol(3) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nn_symbol - query the names and values of nanomsg symbols</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p><strong>const char *nn_symbol (int <em>i</em>, int <em>*value</em>);</strong></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Retrieves the symbol name and value at index <em>i</em>.  Indices start at 0.  An index
+has no significance to its associated symbol; the mappings may change between
+library versions.</p>
 </div>
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
+<p>Typically a client will iterate through the symbols until nn_symbol returns
+NULL in order to collect all the symbols.</p>
 </div>
 <div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
+<p>All symbols exposed by <em>nn_symbol</em> are available directly in the C API,
+generally as preprocessor macros.  Thus, this function is useful mostly for
+language bindings that can&#8217;t parse the header file and rely on retrieving the
+symbols in the runtime.</p>
 </div>
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
+<p>Note that the NN_MSG symbol is not exported by the <em>nn_symbol</em> function. First,
+it is a pointer rather than an integer; second, the symbol is not supposed to
+be exported from language bindings to the user. Instead, language bindings
+should provide the zero-copy functionality in a language-specific way, if at
+all (zero-copy functionality may not make sense for some languages/bindings).</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If <em>i</em> is valid, returns the name of the symbol at that index.  If the pointer
+<em>value</em> is not NULL, the symbol&#8217;s value is stored there.</p>
 </div>
 <div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p>If <em>i</em> is out-of-range, nn_symbol returns NULL and sets <em>errno</em> to EINVAL.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>EINVAL</strong></dt>
+<dd>
+<p>The passed index <em>i</em> was out-of-range; it was less than zero or greater-than-or-
+equal-to the number of symbols.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre>int value, i;
+for (i = 0; ; ++i) {
+    const char* name = nn_symbol (i, &amp;value);
+    if (name == NULL) break;
+    printf ("'%s' = %d\n", name, value);
+}</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nn_symbol_info.html">nn_symbol_info(3)</a>
+<a href="nn_errno.html">nn_errno(3)</a>
+<a href="nn_strerror.html">nn_strerror(3)</a>
+<a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:evan@neomantra.net">Evan Wies</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

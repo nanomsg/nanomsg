@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nanocat(1)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,318 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nanocat(1) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nanocat - a command-line interface to nanomsg</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nanocat --push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nanocat --pull {--connect ADDR|--bind ADDR} [-AQ]
+nanocat --pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nanocat --sub {--connect ADDR|--bind ADDR} [--subscribe PREFIX ...] [-AQ]
+nanocat --surveyor {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --respondent {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nanocat --bus {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --pair {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]</pre>
+</div>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p>In the case symlinks are installed:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nn_push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nn_pull {--connect ADDR|--bind ADDR} [-AQ]
+nn_pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nn_sub {--connect ADDR|--bind ADDR} [--subscribe PREFIX ...] [-AQ]
+nn_surveyor {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_respondent {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nn_bus {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_pair {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The nanocat is a command-line tool to send and receive data via nanomsg
+sockets. It can be used for debugging purposes, sending files through the
+network, health checking the system or whatever else you can think of.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_options">OPTIONS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Generic:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--verbose,-v</strong></dt>
+<dd>
+<p>Increase verbosity of the nanocat</p>
+</dd>
+<dt class="hdlist1"><strong>--silent,-q</strong></dt>
+<dd>
+<p>Decrease verbosity of the nanocat</p>
+</dd>
+<dt class="hdlist1"><strong>--help,-h</strong></dt>
+<dd>
+<p>This help text</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
+<p>Socket Types:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--push</strong></dt>
+<dd>
+<p>Use NN_PUSH socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pull</strong></dt>
+<dd>
+<p>Use NN_PULL socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pub</strong></dt>
+<dd>
+<p>Use NN_PUB socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--sub</strong></dt>
+<dd>
+<p>Use NN_SUB socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--req</strong></dt>
+<dd>
+<p>Use NN_REQ socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--rep</strong></dt>
+<dd>
+<p>Use NN_REP socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--surveyor</strong></dt>
+<dd>
+<p>Use NN_SURVEYOR socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--respondent</strong></dt>
+<dd>
+<p>Use NN_RESPONDENT socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--bus</strong></dt>
+<dd>
+<p>Use NN_BUS socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pair</strong></dt>
+<dd>
+<p>Use NN_PAIR socket type</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
+<p>Socket Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--bind</strong> <em>ADDR</em></dt>
+<dd>
+<p>Bind socket to the address ADDR</p>
+</dd>
+<dt class="hdlist1"><strong>--connect</strong> <em>ADDR</em></dt>
+<dd>
+<p>Connect socket to the address ADDR</p>
+</dd>
+<dt class="hdlist1"><strong>--bind-ipc,-X</strong> <em>PATH</em></dt>
+<dd>
+<p>Bind socket to the ipc address "ipc://PATH".</p>
+</dd>
+<dt class="hdlist1"><strong>--connect-ipc,-x</strong> <em>PATH</em></dt>
+<dd>
+<p>Connect socket to the ipc address "ipc://PATH".</p>
+</dd>
+<dt class="hdlist1"><strong>--bind-local,-L</strong> <em>PORT</em></dt>
+<dd>
+<p>Bind socket to the tcp address "tcp://127.0.0.1:PORT".</p>
+</dd>
+<dt class="hdlist1"><strong>--connect-local,-l</strong> <em>PORT</em></dt>
+<dd>
+<p>Connect socket to the tcp address "tcp://127.0.0.1:PORT".</p>
+</dd>
+<dt class="hdlist1"><strong>--recv-timeout</strong> <em>SEC</em></dt>
+<dd>
+<p>Set timeout for receiving a message</p>
+</dd>
+<dt class="hdlist1"><strong>--send-timeout</strong> <em>SEC</em></dt>
+<dd>
+<p>Set timeout for sending a message</p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p>SUB Socket Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--subscribe</strong> <em>PREFIX</em></dt>
+<dd>
+<p>Subscribe to the prefix PREFIX. Note: socket will be
+subscribed to everything (empty prefix) if no prefixes
+are specified on the command-line.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Input Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--format</strong> <em>FORMAT</em></dt>
+<dd>
+<p>Use echo format FORMAT (same as the options below)</p>
+</dd>
+<dt class="hdlist1"><strong>--raw</strong></dt>
+<dd>
+<p>Dump message as is (Note: no delimiters are printed)</p>
+</dd>
+<dt class="hdlist1"><strong>--ascii,-A</strong></dt>
+<dd>
+<p>Print ASCII part of message delimited by newline. All
+                    non-ascii characters replaced by dot.</p>
+</dd>
+<dt class="hdlist1"><strong>--quoted,-Q</strong></dt>
+<dd>
+<p>Print each message on separate line in double quotes
+with C-like character escaping</p>
+</dd>
+<dt class="hdlist1"><strong>--msgpack</strong></dt>
+<dd>
+<p>Print each message as msgpacked string (raw type). This
+is useful for programmatic parsing.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Output Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--interval,-i</strong> <em>SEC</em></dt>
+<dd>
+<p>Send message (or request) every SEC seconds</p>
+</dd>
+<dt class="hdlist1"><strong>--delay,-d</strong> <em>SEC</em></dt>
+<dd>
+<p>Wait for SEC seconds before sending message (useful for one-shot
+PUB sockets)</p>
+</dd>
+<dt class="hdlist1"><strong>--data,-D</strong> <em>DATA</em></dt>
+<dd>
+<p>Send DATA to the socket and quit for PUB, PUSH, PAIR,
+BUS socket. Use DATA to reply for REP or  RESPONDENT
+socket. Send DATA as request for REQ or SURVEYOR socket.</p>
+</dd>
+<dt class="hdlist1"><strong>--file,-F</strong> <em>PATH</em></dt>
+<dd>
+<p>Same as --data but get data from file PATH</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examples">EXAMPLES</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The ping-pong with nn_req/nn_rep sockets (must be run simultaneously):</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --rep --bind tcp://127.0.0.1:1234 --data pong --format ascii
+nanocat --req --connect tcp://127.0.0.1:1234 --data ping --format ascii</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or in shorter to write form:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_rep -L1234 -Dpong -A
+nn_req -l1234 -Dping -A</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Do periodic requests once a second:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_req -l1234 -Dping -A -i 1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The rep socket that never reply (no -D option), may be used to check if
+resending the requests is actually work:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --rep --connect ipc:///var/run/app/req.socket</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Send an output of the ls to whatever would connect to 127.0.0.1:1234 then exit:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>ls | nanocat --push -L1234 -F-</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Send heartbeats to imaginary monitoring service:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --pub --connect tpc://monitoring.example.org -D"I am alive!" --interval 10</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:paul@colomiets.name">Paul Colomiets</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

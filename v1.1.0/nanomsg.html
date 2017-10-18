@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nanomsg(7)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,205 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nanomsg(7) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nanomsg - scalability protocols library</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p><strong>cc</strong> [<em>flags</em>] <em>files</em> <strong>-lnanomsg</strong> [<em>libraries</em>]</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Following functions are exported by nanomsg library:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">Create an SP socket</dt>
+<dd>
+<p><a href="nn_socket.html">nn_socket(3)</a></p>
+</dd>
+<dt class="hdlist1">Close an SP socket</dt>
+<dd>
+<p><a href="nn_close.html">nn_close(3)</a></p>
+</dd>
+<dt class="hdlist1">Set a socket option</dt>
+<dd>
+<p><a href="nn_setsockopt.html">nn_setsockopt(3)</a></p>
+</dd>
+<dt class="hdlist1">Retrieve a socket option</dt>
+<dd>
+<p><a href="nn_getsockopt.html">nn_getsockopt(3)</a></p>
+</dd>
+<dt class="hdlist1">Add a local endpoint to the socket</dt>
+<dd>
+<p><a href="nn_bind.html">nn_bind(3)</a></p>
+</dd>
+<dt class="hdlist1">Add a remote endpoint to the socket</dt>
+<dd>
+<p><a href="nn_connect.html">nn_connect(3)</a></p>
+</dd>
+<dt class="hdlist1">Remove an endpoint from the socket</dt>
+<dd>
+<p><a href="nn_shutdown.html">nn_shutdown(3)</a></p>
+</dd>
+<dt class="hdlist1">Send a message</dt>
+<dd>
+<p><a href="nn_send.html">nn_send(3)</a></p>
+</dd>
+<dt class="hdlist1">Receive a message</dt>
+<dd>
+<p><a href="nn_recv.html">nn_recv(3)</a></p>
+</dd>
+<dt class="hdlist1">Fine-grained alternative to nn_send</dt>
+<dd>
+<p><a href="nn_sendmsg.html">nn_sendmsg(3)</a></p>
+</dd>
+<dt class="hdlist1">Fine-grained alternative to nn_recv</dt>
+<dd>
+<p><a href="nn_recvmsg.html">nn_recvmsg(3)</a></p>
+</dd>
+<dt class="hdlist1">Allocation of messages</dt>
+<dd>
+<p><a href="nn_allocmsg.html">nn_allocmsg(3)</a>
+<a href="nn_reallocmsg.html">nn_reallocmsg(3)</a>
+<a href="nn_freemsg.html">nn_freemsg(3)</a></p>
+</dd>
+<dt class="hdlist1">Manipulation of message control data</dt>
+<dd>
+<p><a href="nn_cmsg.html">nn_cmsg(3)</a></p>
+</dd>
+<dt class="hdlist1">Multiplexing</dt>
+<dd>
+<p><a href="nn_poll.html">nn_poll(3)</a></p>
+</dd>
+<dt class="hdlist1">Retrieve the current errno</dt>
+<dd>
+<p><a href="nn_errno.html">nn_errno(3)</a></p>
+</dd>
+<dt class="hdlist1">Convert an error number into human-readable string</dt>
+<dd>
+<p><a href="nn_strerror.html">nn_strerror(3)</a></p>
+</dd>
+<dt class="hdlist1">Query the names and values of nanomsg symbols</dt>
+<dd>
+<p><a href="nn_symbol.html">nn_symbol(3)</a></p>
+</dd>
+<dt class="hdlist1">Query properties of nanomsg symbols</dt>
+<dd>
+<p><a href="nn_symbol_info.html">nn_symbol_info(3)</a></p>
+</dd>
+<dt class="hdlist1">Query statistics on a socket</dt>
+<dd>
+<p><a href="nn_get_statistic.html">nn_get_statistic(3)</a></p>
+</dd>
+<dt class="hdlist1">Start a device</dt>
+<dd>
+<p><a href="nn_device.html">nn_device(3)</a></p>
+</dd>
+<dt class="hdlist1">Notify all sockets about process termination</dt>
+<dd>
+<p><a href="nn_term.html">nn_term(3)</a></p>
+</dd>
+<dt class="hdlist1">Environment variables that influence nanomsg work</dt>
+<dd>
+<p><a href="nn_env.html">nn_env(7)</a></p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p>Following scalability protocols are provided by nanomsg:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">One-to-one protocol</dt>
+<dd>
+<p><a href="nn_pair.html">nn_pair(7)</a></p>
+</dd>
+<dt class="hdlist1">Request/reply protocol</dt>
+<dd>
+<p><a href="nn_reqrep.html">nn_reqrep(7)</a></p>
+</dd>
+<dt class="hdlist1">Publish/subscribe protocol</dt>
+<dd>
+<p><a href="nn_pubsub.html">nn_pubsub(7)</a></p>
+</dd>
+<dt class="hdlist1">Survey protocol</dt>
+<dd>
+<p><a href="nn_survey.html">nn_survey(7)</a></p>
+</dd>
+<dt class="hdlist1">Pipeline protocol</dt>
+<dd>
+<p><a href="nn_pipeline.html">nn_pipeline(7)</a></p>
+</dd>
+<dt class="hdlist1">Message bus protocol</dt>
+<dd>
+<p><a href="nn_bus.html">nn_bus(7)</a></p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
+<p>Following transport mechanisms are provided by nanomsg:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">In-process transport</dt>
+<dd>
+<p><a href="nn_inproc.html">nn_inproc(7)</a></p>
+</dd>
+<dt class="hdlist1">Inter-process transport</dt>
+<dd>
+<p><a href="nn_ipc.html">nn_ipc(7)</a></p>
+</dd>
+<dt class="hdlist1">TCP transport</dt>
+<dd>
+<p><a href="nn_tcp.html">nn_tcp(7)</a></p>
+</dd>
+<dt class="hdlist1">WebSocket transport</dt>
+<dd>
+<p><a href="nn_ws.html">nn_ws(7)</a></p>
+</dd>
+</dl>
 </div>
 <div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
+<p>The following tool is installed with the library:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">nanocat</dt>
+<dd>
+<p><a href="nanocat.html">nanocat(1)</a></p>
+</dd>
+</dl>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
-</div>
-<div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p><a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a>
+<a href="mailto:sustrik@250bpm.com">Martin Sustrik</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

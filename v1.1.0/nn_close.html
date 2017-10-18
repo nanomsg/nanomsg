@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nn_close(3)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,101 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nn_close(3) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nn_close - close an SP socket</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p><strong>int nn_close (int <em>s</em>);</strong></p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
+<p>Closes the socket <em>s</em>. Any buffered inbound messages that were not yet received
+by the application will be discarded. The library will try to deliver any
+outstanding outbound messages for the time specified by <em>NN_LINGER</em> socket
+option. The call will block in the meantime.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
+<p>If the function succeeds zero is returned. Otherwise, -1 is
+returned and <em>errno</em> is set to to one of the values defined below.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>EBADF</strong></dt>
+<dd>
+<p>The provided socket is invalid.</p>
+</dd>
+<dt class="hdlist1"><strong>EINTR</strong></dt>
+<dd>
+<p>Operation was interrupted by a signal. The socket is not fully closed yet.
+Operation can be re-started by calling <em>nn_close()</em> again.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre>int s = nn_socket (AF_SP, NN_PUB);
+assert (s &gt;= 0);
+int rc = nn_close (s);
+assert (rc == 0);</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
+<p><a href="nn_socket.html">nn_socket(3)</a>
+<a href="nn_setsockopt.html">nn_setsockopt(3)</a>
+<a href="nanomsg.html">nanomsg(7)</a></p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p><a href="mailto:sustrik@250bpm.com">Martin Sustrik</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

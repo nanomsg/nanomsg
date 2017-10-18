@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nn_sendmsg(3)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,229 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nn_sendmsg(3) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nn_sendmsg - fine-grained alternative to nn_send</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p><strong>int nn_sendmsg (int <em>s</em>, const struct nn_msghdr <em>*msghdr</em>, int <em>flags</em>);</strong></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Sends data specified by <em>msghdr</em> parameter to socket <em>s</em> along with any
+additional control data. <em>msghdr</em> structure should be nullified before being
+used.</p>
 </div>
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
+<p>Structure <em>nn_msghdr</em> contains at least following members:</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
+<div class="literalblock">
+<div class="content">
+<pre>struct nn_iovec *msg_iov;
+int msg_iovlen;
+void *msg_control;
+size_t msg_controllen;</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
+<p><em>msg_iov</em> points to a scatter array of buffers to send. <em>msg_iovlen</em> specifies
+the size of the array.</p>
 </div>
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
+<p><em>msg_control</em> points to the buffer containing control information to be
+associated with the message being sent. <em>msg_controllen</em> specifies the length
+of the buffer. If there&#8217;s no control information to send, <em>msg_control</em> should
+be set to NULL. For detailed discussion of how to set control data check
+<a href="nn_cmsg.html">nn_cmsg(3)</a> man page.</p>
 </div>
 <div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p>Structure <em>nn_iovec</em> defines one element in the scatter array (i.e. a buffer
+to send to the socket) and contains following members:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>void *iov_base;
+size_t iov_len;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, to send a buffer allocated by <a href="nn_allocmsg.html">nn_allocmsg(3)</a> function
+set <em>iov_base</em> to point to the pointer to the buffer and <em>iov_len</em> to <em>NN_MSG</em>
+constant. In this case a successful call to <em>nn_sendmsg</em> will deallocate the
+buffer. Trying to deallocate it afterwards will result in undefined behaviour.
+Also, scatter array in <em>nn_msghdr</em> structure can contain only one element
+in this case.</p>
+</div>
+<div class="paragraph">
+<p>To which of the peers will the message be sent to is determined by
+the particular socket type.</p>
+</div>
+<div class="paragraph">
+<p>The <em>flags</em> argument is a combination of the flags defined below:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>NN_DONTWAIT</strong></dt>
+<dd>
+<p>Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be sent straight away, the function will fail with <em>errno</em> set
+to EAGAIN.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If the function succeeds number of bytes in the message is returned. Otherwise,
+-1 is returned and <em>errno</em> is set to to one of the values defined below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>EINVAL</strong></dt>
+<dd>
+<p>Either <em>msghdr</em> is NULL, there are multiple scatter buffers but length is
+set to <em>NN_MSG</em> for one of them, or the sum of <em>iov_len</em> values for the
+scatter buffers overflows <em>size_t</em>. These are early checks and no
+pre-allocated message is freed in this case.</p>
+</dd>
+<dt class="hdlist1"><strong>EMSGSIZE</strong></dt>
+<dd>
+<p>msghdr&#8594;msg_iovlen is negative. This is an early check and no pre-allocated
+message is freed in this case.</p>
+</dd>
+<dt class="hdlist1"><strong>EFAULT</strong></dt>
+<dd>
+<p>The supplied pointer for the pre-allocated message buffer or the scatter
+buffer is NULL, or the length for the scatter buffer is 0.</p>
+</dd>
+<dt class="hdlist1"><strong>EBADF</strong></dt>
+<dd>
+<p>The provided socket is invalid.</p>
+</dd>
+<dt class="hdlist1"><strong>ENOTSUP</strong></dt>
+<dd>
+<p>The operation is not supported by this socket type.</p>
+</dd>
+<dt class="hdlist1"><strong>EFSM</strong></dt>
+<dd>
+<p>The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.</p>
+</dd>
+<dt class="hdlist1"><strong>EAGAIN</strong></dt>
+<dd>
+<p>Non-blocking mode was requested and the message cannot be sent at the moment.</p>
+</dd>
+<dt class="hdlist1"><strong>EINTR</strong></dt>
+<dd>
+<p>The operation was interrupted by delivery of a signal before the message was
+sent.</p>
+</dd>
+<dt class="hdlist1"><strong>ETIMEDOUT</strong></dt>
+<dd>
+<p>Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.</p>
+</dd>
+<dt class="hdlist1"><strong>ETERM</strong></dt>
+<dd>
+<p>The library is terminating.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Usage of multiple scatter buffers:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>struct nn_msghdr hdr;
+struct nn_iovec iov [2];
+
+iov [0].iov_base = "Hello";
+iov [0].iov_len = 5;
+iov [1].iov_base = "World";
+iov [1].iov_len = 5;
+memset (&amp;hdr, 0, sizeof (hdr));
+hdr.msg_iov = iov;
+hdr.msg_iovlen = 2;
+nn_sendmsg (s, &amp;hdr, 0);</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Usage of a single message:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>void *msg;
+struct nn_msghdr hdr;
+struct nn_iovec iov;
+
+msg = nn_allocmsg(12, 0);
+strcpy(msg, "Hello World");
+iov.iov_base = &amp;msg;
+iov.iov_len = NN_MSG;
+memset (&amp;hdr, 0, sizeof (hdr));
+hdr.msg_iov = &amp;iov;
+hdr.msg_iovlen = 1;
+nn_sendmsg (s, &amp;hdr, 0);</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nn_send.html">nn_send(3)</a>
+<a href="nn_recvmsg.html">nn_recvmsg(3)</a>
+<a href="nn_allocmsg.html">nn_allocmsg(3)</a>
+<a href="nn_freemsg.html">nn_freemsg(3)</a>
+<a href="nn_cmsg.html">nn_cmsg(3)</a>
+<a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:sustrik@250bpm.com">Martin Sustrik</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

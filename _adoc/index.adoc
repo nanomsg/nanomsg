@@ -2,8 +2,11 @@
 title: Nanomsg
 layout: default
 ---
+:icons: font
 
-## About Nanomsg
+== About Nanomsg
+
+NOTE: The latest release of nanomsg is {{ site.latest }}.
 
 *_nanomsg_* is a  is a socket library that provides several common communication
 patterns.

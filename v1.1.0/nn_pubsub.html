@@ -1,4 +1,5 @@
 ---
+version: 1.1.0
 layout: default
 ---
 <!DOCTYPE html>
@@ -8,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>About Nanomsg</title>
+<title>nn_pubsub(7)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,96 +428,153 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nn_pubsub(7) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nn_pubsub - publish/subscribe scalability protocol</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_about_nanomsg">About Nanomsg</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The latest release of nanomsg is {{ site.latest }}.
-</td>
-</tr>
-</table>
+<div class="paragraph">
+<p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p>
 </div>
 <div class="paragraph">
-<p><strong><em>nanomsg</em></strong> is a  is a socket library that provides several common communication
-patterns.
-It aims to make the networking layer fast, scalable, and easy to use.
-Implemented in C, it works on a wide range of operating systems with no further
-dependencies.</p>
+<p><strong>#include &lt;nanomsg/pubsub.h&gt;</strong></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_description">DESCRIPTION</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Broadcasts messages to multiple destinations.</p>
 </div>
 <div class="paragraph">
-<p>The communication patterns, also called "scalability protocols", are basic
-blocks for building distributed systems.
-By combining them you can create a vast array of distributed applications.
-The following scalability protocols are currently available:</p>
+<p>Messages are sent from NN_PUB sockets and will only be received by NN_SUB
+sockets that have subscribed to the matching <em>topic</em>. Topic is an arbitrary
+sequence of bytes at the beginning of the message body. The NN_SUB socket will
+determine whether a message should be delivered to the user by comparing the
+subscribed topics (using NN_SUB_SUBSCRIBE on a full SUB socket) to the bytes
+initial bytes in the incoming message, up to the size of the topic.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>PAIR - simple one-to-one communication</p>
-</li>
-<li>
-<p>BUS - simple many-to-many communication</p>
-</li>
-<li>
-<p>REQREP - allows to build clusters of stateless services to process user requests</p>
-</li>
-<li>
-<p>PUBSUB - distributes messages to large sets of interested subscribers</p>
-</li>
-<li>
-<p>PIPELINE - aggregates messages from multiple sources and load balances them among many destinations</p>
-</li>
-<li>
-<p>SURVEY - allows to query state of multiple applications in a single go</p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="content">
+<pre>nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "Hello", 5);</pre>
+</div>
 </div>
 <div class="paragraph">
-<p>Scalability protocols are layered on top of the transport layer in the network
-stack.
-At the moment, the <em>nanomsg</em> library supports the following transports
-mechanisms:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>INPROC - transport within a process (between threads, modules etc.)</p>
-</li>
-<li>
-<p>IPC - transport between processes on a single machine</p>
-</li>
-<li>
-<p>TCP - network transport via TCP</p>
-</li>
-<li>
-<p>WS - websockets over TCP</p>
-</li>
-</ul>
+<p>Will match any message with intial 5 bytes being "Hello", for example,
+message "Hello, World!" will match.</p>
 </div>
 <div class="paragraph">
-<p>The library exposes a BSD-socket-like C API to the applications.</p>
+<p>Topic with zero length matches any message.</p>
 </div>
 <div class="paragraph">
-<p>It is licensed under MIT/X11 license.</p>
+<p>If the socket is subscribed to multiple topics, message matching any of them
+will be delivered to the user.</p>
+</div>
+<div class="paragraph">
+<p>Since the filtering is performed on the Subscriber side, all the messages
+from Publisher will be sent over the transport layer.</p>
+</div>
+<div class="paragraph">
+<p>The entire message, including the topic, is delivered to the user.</p>
+</div>
+<div class="sect2">
+<h3 id="_socket_types">Socket Types</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">NN_PUB</dt>
+<dd>
+<p>This socket is used to distribute messages to multiple destinations.
+Receive operation is not defined.</p>
+</dd>
+<dt class="hdlist1">NN_SUB</dt>
+<dd>
+<p>Receives messages from the publisher. Only messages that the socket is
+subscribed to are received. When the socket is created there are no
+subscriptions and thus no messages will be received. Send operation is
+not defined on this socket.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_socket_options">Socket Options</h3>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">NN_SUB_SUBSCRIBE</dt>
+<dd>
+<p>Defined on full SUB socket. Subscribes for a particular topic. Type of the
+option is string. A single NN_SUB socket can handle multiple subscriptions.</p>
+</dd>
+<dt class="hdlist1">NN_SUB_UNSUBSCRIBE</dt>
+<dd>
+<p>Defined on full SUB socket. Unsubscribes from a particular topic. Type of
+the option is string.</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_example">EXAMPLE</h3>
+<div class="listingblock">
+<div class="content">
+<pre>int pub = nn_socket (AF_SP, NN_PUB);
+int sub = nn_socket (AF_SP, NN_SUB);
+int nbytes;
+void *buf = NULL;
+
+nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "foo", 3);
+nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "bar", 3);
+
+nbytes = nn_send (pub, "foo|Hello!", 10);
+assert(nbytes == 10);
+nbytes = nn_recv (sub, &amp;buf, NN_MSG, 0);
+assert (nbytes == 10);
+nn_freemsg (buf);
+
+nbytes = nn_send (pub, "baz|World!", 10);
+
+/* Message is not delivered because if matches no subscription. */
+nbytes = nn_recv(sub, &amp;buf, NN_MSG, 0);</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nn_bus.html">nn_bus(7)</a>
+<a href="nn_reqrep.html">nn_reqrep(7)</a>
+<a href="nn_pipeline.html">nn_pipeline(7)</a>
+<a href="nn_survey.html">nn_survey(7)</a>
+<a href="nn_pair.html">nn_pair(7)</a>
+<a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:sustrik@250bpm.com">Martin Sustrik</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-17 18:11:01 PDT
+nanomsg 1.1.0<br>
+Last updated 2017-10-17 18:00:05 PDT
 </div>
 </div>
 </body>

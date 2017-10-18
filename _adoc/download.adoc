@@ -1,0 +1,25 @@
+---
+layout: default
+---
+## Download
+
+### LATEST RELEASE
+
+1.0.0, released on June 10, 2016
+
+Releases with downloadable archives can  be found on the
+https://github.com/nanomsg/nanomsg/releases[GitHub releases] page.
+
+To build and install the library, unpack the package, and follow the
+directions given inthe `README.md` file.  You will need to have both
+https://cmake.org[CMake] and a suitable compiler installed.
+
+### Language Bindings
+
+For the list of bindings to different programming languages check the
+<<documentation.adoc#bindings,documentation>>.
+
+### More Information
+
+Refer to the `README.md` file included with the distribution,
+or ask on the mailing list.

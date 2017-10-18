@@ -1,0 +1,36 @@
+---
+layout: default
+---
+== Community
+
+=== Mailing List
+
+Discussion about nanomsg happens on nanomsg@freelists.org mailing list.
+
+Subscribe to the mailing list http://www.freelists.org/list/nanomsg[here].
+You can also browse the mailing list archive 
+http://www.freelists.org/archive/nanomsg/[here].
+
+We do ask that discussions on the mailing list be kept on-topic.
+
+=== Gitter chatroom
+
+http://www.gitter.im[Gitter] provides a persistent chatroom for nanomsg.  You'll need to use your
+GitHub account to join.  Join the Gitter chat from your web browser 
+https://gitter.im/nanomsg/nanomsg[here], or you can use Gitter's nice
+app (which is available for all major platforms.)
+
+=== IRC chatroom
+
+There is also an IRC (Internet Relay Chat) room on #freenode for nanomsg.
+Unlike Gitter, IRC is not persistent, and does not require you to authenticate.
+Note that owing to its lack of persistency, the nanomsg core team prefers
+Gitter, so if you need to reach the developers please use Gitter instead.
+
+Join the nanomsg IRC chat from your web browser 
+http://webchat.freenode.net/?channels=#nanomsg[here].
+
+To access the chatroom from an IRC client connect to irc.freenode.net/8001, channel #nanomsg.
+
+Find the logs of past IRC discussion
+http://linuxcnc.mah.priv.at/irc/%23nanomsg/index-2014.html[here].

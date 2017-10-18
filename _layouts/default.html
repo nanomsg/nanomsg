@@ -1,4 +1,6 @@
-{% if page.version != site.latest %}
+{% include header.html %}
+{% if page.version and page.version != site.latest  %}
    {% include old_version.html %}
 {% endif %}
 {{ content }}
+{% include footer.html %}

@@ -1,0 +1,56 @@
+---
+layout: default
+---
+## Development
+
+### Source code
+
+The source code of the nanomsg library is hosted on
+https://github.com/nanomsg/nanomsg[GitHub].
+
+The source code of this website is located in the
+https://github.com/nanomsg/nanomsg/tree/gh-pages[gh-pages branch].
+
+### Build
+
+Building this software as a developer is very similar to building it
+the distribution as an end-user or system administrator.
+The same tools will be needed, but no extra tools are required.
+Please see the https://github.com/nanomsg/nanomsg/blob/master/README.md[README]
+file for more information.
+
+One thing that may be different is that you should obtain the
+latest development tree from git.  You can clone it from
+https://github.com/nanomsg/nanomsg.git[GitHub].
+
+### Auto-builds
+
+Auto-builds are run every time the project is updated. The results are linked
+from the main repository page, and include tests on Linux, MacOS X, and Windows.
+
+### Bug tracker
+
+We use
+https://github.com/nanomsg/nanomsg/issues[GithubIssues]
+to report problems with nanomsg.
+
+### Contributing
+
+To contribute to nanomsg project, send a GitHub pull request.
+We insist that all contributions are submitted under the MIT/X11 license,
+so that we can incorporate them under the same terms.
+
+If you make a substantial contribution to a file, add your copyright to the
+file header. You should also add your name to the AUTHORS file, 
+to indicate you own copyright to a part of the codebase.
+
+There is a <<development-style.adoc#,Development Style>> guide with which you
+should familiarize yourself.  (Note that the in recent times adherence
+to the style guide has been somewhat relaxed, the best approach is to
+attempt to use the same style found in the current code base.)
+
+### Language bindings
+
+If you want to implement a new language binding for nanomsg, check this
+<<development-bindings.adoc#,document>> describing best practices and offering
+helpful tips.

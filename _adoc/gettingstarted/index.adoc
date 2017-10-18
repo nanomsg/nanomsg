@@ -1,4 +1,8 @@
+---
+layout: default
+---
 :source-highlighter: coderay
+:icons: font
 
 = Getting Started with 'nanomsg'
 

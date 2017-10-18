@@ -1,0 +1,148 @@
+---
+title: Documentation
+layout: default
+---
+
+== Documentation
+
+* Browse the libnanomsg C API reference manual <</v1.0.0/nanomsg.7.adoc#,here>>.
+
+* <<gettingstarted/index.adoc#,Getting Started with nanomsg>> by Tim Dysinger
+
+* http://dirkjan.ochtman.nl/talks/2013/09/nanomsg-sss/#/step-1[Simple Smart Sockets] presentation by Dirkjan Ochtman
+
+* Relative to ZeroMQ: Martin Sustrik's essay describing the differences relative
+to ZeroMQ is located <<documentation-zeromq.adoc#,here>>.
+
+== Language bindings
+
+[[bindings]]
+[cols="20%,30%,50%"]
+|===
+
+.2+<|C++
+<|https://github.com/achille-roussel/nanomsgxx[nanomsgxx]|Some notes
+
+<|https://github.com/nanomsg/cppnanomsg[cppnanomsg]|
+
+|Clojure
+|https://github.com/niwibe/jnanomsg[jnanomsg]
+|
+
+|D
+|https://github.com/Laeeth/d-nanomsg[d-nanomsg]
+|
+
+|Dylan
+|https://github.com/dylan-foundry/nanomsg-dylan[nanomsg-dylan]
+|
+
+|Erlang
+|https://github.com/basho/enm[enm]
+|
+
+|Fortran
+|https://github.com/jshahbazi/nanofort[nanofort]
+|
+
+.2+<|Go
+|https://github.com/go-mangos/mangos[mangos]
+|(full re-implementation of SP protocols in Go, recommended)
+
+|https://github.com/op/go-nanomsg[go-nanomsg]
+|
+
+.2+<|Haskell
+| http://hackage.haskell.org/package/nanomsg-haskell[nanomsg-haskell]
+|
+
+|http://hackage.haskell.org/package/nanomsg[nanomsg]
+|
+
+|Haxe
+|https://github.com/michelkaeser/hx-nanomsg[hx-nanomsg]
+|
+
+
+|iOS
+|https://github.com/reqshark/nanomsg.ios[nanomsg.ios]
+|
+
+.2+<|Java
+|https://github.com/gonzus/jnano[jnano]
+|
+
+|https://github.com/niwibe/jnanomsg[jnanomsg]
+|
+
+|JavaScript (Node.js)
+|https://github.com/nickdesaulniers/node-nanomsg[node-nanomsg]
+|
+
+.3+<|Lua
+|https://github.com/Neopallium/lua-nanomsg[lua-nanomsg]
+|
+
+|https://github.com/nanomsg/luajit-nanomsg[luajit-nanomsg]
+|
+
+|https://github.com/mbalmer/luananomsg[luananomsg]
+|
+
+|.NET
+|https://github.com/mhowlett/NNanomsg[NNanomsg]
+|
+
+|Ocaml
+|https://github.com/rgrinberg/onanomsg[onanomsg]
+|
+
+|Perl
+|https://metacpan.org/module/NanoMsg::Raw[NanoMsg::Raw]
+|
+
+|PHP
+|https://github.com/mkoppanen/php-nano[php-nano]
+|
+
+|PicoLisp
+|https://github.com/aw/picolisp-nanomsg[picolisp-nanomsg] FFI bindings
+|
+
+.3+<|Python
+|https://github.com/tonysimpson/nanomsg-python[nanomsg-python]
+|(recommended)
+
+|https://github.com/sdiehl/pynanomsg[pynanomsg]
+|
+
+|https://github.com/djc/nnpy[nnpy]
+|
+
+|R
+|https://github.com/mhowlett/rnanomsg[rnanomsg]
+|
+
+.2+<|Ruby
+|https://github.com/chuckremes/nn-core[nn-core]
+|FFI bindings: `ruby -S gem install nn-core`
+
+|https://bitbucket.org/kschiess/nanomsg[nanomsg]
+|Native bindings: `gem install nanomsg`
+
+|Rust
+|https://github.com/glycerine/rust-nanomsg[rust-nanomsg]
+|
+
+|Scheme (CHICKEN)
+|https://github.com/Adellica/chicken-nanomsg[chicken-nanomsg]
+|
+
+|Smalltalk
+|https://github.com/mumez/NanoStrand[NanoStrand]
+|
+
+|===
+
+Finally, if you decide to implement your own language binding check this
+<<development-bindings.adoc#,document>>.

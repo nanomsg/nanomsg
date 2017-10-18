@@ -1,1 +1,4 @@
 This is source code for http://nanomsg.org website.
+
+The sources for it are maintained in asciidoctor.  Please see the _adoc
+folder, and update things there.

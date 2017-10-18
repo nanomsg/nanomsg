@@ -1,0 +1,69 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+= Coding style
+
+NOTE: The coding style rules here are currently under review, and
+are subject to change.  Please check on the mailing list if you are in doubt.
+
+== General rules
+
+* Maximal line length is limited to 80 characters.
+* If a statement has to be broken into two lines, second (and any subsequent) line should be indented by one level.
+* Indentation is always done using spaces, tabs are never used.
+* One level of indentation is 4 characters long.
+* Each file starts with a header containing the copyrights and the short license text.
+
+== Comments
+
+* Each comment starts with \/\* followed by two spaces.
+* Each new line of the comment starts with 4 spaces (one level of identation).
+* The last line of comment is closed by a space followed by \*\/
+* The text of comment should begin with a capital letter and end with a period.
+* Code should be broken to small pieces (couple of lines each), every piece doing one simple task.
+* Each piece should be preceded by a comment explaining its intent.
+* Each code piece should be followed by a blank line.
+
+== Identifiers
+
+* Function, struct and variable names are in lower case.
+* Constants and macros are in upper case.
+* If identifier consists of multiple words, the words are separated by underscores.
+* No hungarian notation: The type of the variable or its scope should not be explicitly marked in the identifier.
+* All globally visible identifiers and identifiers local to file (static) are prefixed by `nn_`.
+* Identifiers local to function require no prefix.
+* Identifiers should be meaningful rather than arbitrary, although they may be shortened (e.g. sock instead of socket). The only exception are local variables with very limited scope, e.g. control variable for a short cycle may be named 'i'.
+
+== Code blocks
+
+* The opening bracket is put on the same line with conditional statement, struct definition etc.
+* The only exception to the above rule are functions where the opening bracket is put on new line.
+* Even a single-statement block with no brackets should be placed on a separate line.
+* If the indenting of the controlled block incidentally collides with the control statement that's broken into two lines, second and any subsequent line of the control statement should be indented by 6 spaces rather than 4 to prevent confusion.
+
+== Operators
+
+* Unary operators are not separated from the expression in any way.
+* Binary operators should be separated from adjacent expression by spaces.
+* Subscripts and function calls are separated from the expression by space.
+
+== Error handling
+
+* Use assertion where you don't expect the situation to happen; it only happens if there is a bug in the library. Use assertion generously.
+* Return an error where the condition can happen even if there's no bug in the library.
+* Returned error code should be always handled by the caller, even if it just means asserting that the function finished all right.
+* Except for public API of nanomsg library which uses POSIX-style errors (return code + errno), all functions either have no return value (where error is not expected) or return `int`. In the latter case negative values should be treated as errors (-EAGAIN etc.)
+
+== Objects
+
+* Although nanomsg is written in C, it's designed in object-oriented way.
+* Each class should be defined in its own header and source file.
+* Classes are defined as raw structs. No typedefs are used.
+* Names of all the functions of the class are prefixed by the class name.
+* First argument in the class function should be pointer to the class. The argument should be called `self`. This rule doesn't apply for singleton classes.
+* `init` function initialises the object, but does not allocate it.
+* `term` function terminates the object, but does not deallocate it.
+

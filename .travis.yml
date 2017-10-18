@@ -1,15 +1,71 @@
 language: c
 sudo: false
+
+_environments:
+  - &gcc-warnings
+    - CFLAGS="-std=c89 -Wall -Wextra -pedantic"
+
+_scripts:
+  - &install_cmake35
+    - |
+        if [ ! -f $HOME/bin/cmake ]; then
+          wget --no-check-certificate http://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz &&
+          tar xfC $(basename $_) $HOME --strip-components=1
+        fi
+
+_caches:
+  - &cache_homedir
+    directories: [$HOME/bin, $HOME/share]
+
 matrix:
+  fast_finish: true
+
   include:
+  # Linux
+    # GCC
     - os: linux
       compiler: gcc
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: linux
+      compiler: gcc
+      env: [CONFIGURATION=Release, DEPLOY=true, *gcc-warnings]
+    # Clang
     - os: linux
       compiler: clang
-#    - os: osx
-#      compiler: gcc
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: linux
+      compiler: clang
+      env: [CONFIGURATION=Release, *gcc-warnings]
+  # OS X
+    # GCC 4.9
+    - os: osx
+      compiler: gcc-4.9
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: osx
+      compiler: gcc-4.9
+      env: [CONFIGURATION=Release, *gcc-warnings]
+    # AppleClang
     - os: osx
       compiler: clang
+      env: [CONFIGURATION=Debug, *gcc-warnings]
+    - os: osx
+      compiler: clang
+      env: [CONFIGURATION=Release, *gcc-warnings]
+
+  # Sporadic failure builds
+    - compiler: gcc
+      env: &env_sporadic_dbg CONFIGURATION=Debug    CTEST_OPTS="--repeat-until-fail 25 --schedule-random"
+      install: *install_cmake35
+      cache: *cache_homedir
+    - compiler: gcc
+      env: &env_sporadic_rel CONFIGURATION=Release  CTEST_OPTS="--repeat-until-fail 25 --schedule-random"
+      install: *install_cmake35
+      cache: *cache_homedir
+
+  allow_failures:
+    - env: *env_sporadic_dbg
+    - env: *env_sporadic_rel
+
 before_script:
   - gem install asciidoctor
 script:
@@ -18,13 +74,14 @@ script:
   # Print version and available CMake generators to aid in CI development
   - cmake --version
   - cmake --help
-  # Perform out-of-source build
-  - mkdir build
-  - cd build
-  # Perform CMake backend generation, build, and test
-  - cmake ..
-  - cmake --build . -- -j4
-  - ctest --output-on-failure -C Debug -j4
+
+  # Perform out-of-source CMake backend generation, build, and test
+  - |
+      mkdir build && cd $_ &&
+      cmake -DCMAKE_BUILD_TYPE=${CONFIGURATION} ${CMAKE_OPTS} .. &&
+      cmake --build . -- -j4 &&
+      ctest --output-on-failure -C Debug -j4 ${CTEST_OPTS}
+
 #deploy:
 #  provider: releases
 #  api_key:
@@ -35,5 +92,6 @@ script:
 #    - nanomsg-${TRAVIS_TAG}.tar.bz2
 #  skip_cleanup: true
 #  on:
+#    condition: $DEPLOY = true
 #    tags: true
 #    repo: nanomsg/nanomsg

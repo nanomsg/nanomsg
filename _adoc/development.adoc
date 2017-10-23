@@ -31,17 +31,19 @@ from the main repository page, and include tests on Linux, MacOS X, and Windows.
 ### Bug tracker
 
 We use
-https://github.com/nanomsg/nanomsg/issues[GithubIssues]
+https://github.com/nanomsg/nanomsg/issues[Github Issues]
 to report problems with nanomsg.
 
 ### Contributing
 
 To contribute to nanomsg project, send a GitHub pull request.
-We insist that all contributions are submitted under the MIT/X11 license,
+We insist that all contributions are submitted under the
+https://github.com/nanomsg/nanomsg/blob/master/COPYING[MIT/X11 license],
 so that we can incorporate them under the same terms.
 
 If you make a substantial contribution to a file, add your copyright to the
-file header. You should also add your name to the AUTHORS file, 
+file header. You should also add your name to the
+https://github.com/nanomsg/nanomsg/blob/master/AUTHORS[AUTHORS] file,
 to indicate you own copyright to a part of the codebase.
 
 There is a <<development-style.adoc#,Development Style>> guide with which you

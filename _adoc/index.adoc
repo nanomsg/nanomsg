@@ -38,4 +38,5 @@ mechanisms:
 
 The library exposes a BSD-socket-like C API to the applications.
 
-It is licensed under MIT/X11 license.
+It is licensed under the
+https://github.com/nanomsg/nanomsg/blob/master/COPYING[MIT/X11 license].

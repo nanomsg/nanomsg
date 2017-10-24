@@ -5,7 +5,7 @@
 # of annoying, since Jekyll on github-pages doesn't support asciidoctor
 # properly.
 
-cd $(basename $0)
+cd $(dirname $0)
 for f in $(find . -name '*.adoc'); do
 
 	input=${f#./}
@@ -14,12 +14,7 @@ for f in $(find . -name '*.adoc'); do
 	output=../${input%.adoc}.html
         outdir=../${indir}
 
-	if [ $output -nt $input ]
-	then
-		echo "$output up to date"
-		continue
-	fi
-
+	when=$(git log -n1 --format='%ad' '--date=format-local:%s' $f)
 	echo "Processing $input -> $output"
 	infrontmatter=0
 	manpage=0
@@ -28,7 +23,7 @@ for f in $(find . -name '*.adoc'); do
         v[0-9]*)
 		vers=${input#v}
 		vers=${vers%%/*}
-		aargs="-aversion-label=nanomsg -arevnumber=${vers} -dmanpage"
+		aargs="${aargs} -aversion-label=nanomsg -arevnumber=${vers} -dmanpage"
 		manpage=1
 		;;
 	esac
@@ -69,6 +64,6 @@ for f in $(find . -name '*.adoc'); do
 		echo "---"
 		echo "$frontmatter"
 		echo "---"
-		asciidoctor ${aargs} -b html5 -o - -a skip-front-matter $input 
+		env SOURCE_DATE_EPOCH=${when} asciidoctor ${aargs} -b html5 -o - -a skip-front-matter $input
 	fi > $output
 done

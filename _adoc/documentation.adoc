@@ -20,10 +20,19 @@ to ZeroMQ is located <<documentation-zeromq.adoc#,here>>.
 [cols="20%,30%,50%"]
 |===
 
-.2+<|C++
-<|https://github.com/achille-roussel/nanomsgxx[nanomsgxx]|Some notes
+.2+<|C
+|https://github.com/nanomsg/nanomsg[nanomsg]
+|Reference implementation.
 
-<|https://github.com/nanomsg/cppnanomsg[cppnanomsg]|
+|https://github.com/nanomsg/nng[nng]
+|Next-gen implementation, under development.
+
+.2+<|C++
+|https://github.com/achille-roussel/nanomsgxx[nanomsgxx]
+|
+
+|https://github.com/nanomsg/cppnanomsg[cppnanomsg]
+|
 
 |Clojure
 |https://github.com/niwibe/jnanomsg[jnanomsg]

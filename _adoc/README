@@ -1,0 +1,9 @@
+This directory contains asciidoctor sources for the nanomsg website.
+
+To update the site, first commit your changes to the adoc files here,
+(using git commit).
+
+Then run the build.sh script to update the HTML content.
+
+Finally git commit those results, and push the result back to the gh-pages
+branch.

@@ -10,11 +10,11 @@ NOTE: This document is taken from an original post by Tim Dysinger.
 That post is no longer available, but we have modified it from HTML
 and posted it here for your enjoyment.
 
-Posted on September 16, 2013 by Tim Dysinger
+Posted on September 16, 2013 by [Tim Dysinger](https://github.com/dysinger/nanomsg-examples)
 
 I played around with http://nanomsg.org/[nanomsg]. It’s natural to describe it as a mini-zeromq in C. The following are my examples of each pattern type in C. Error handling and such has been left out for brevity.
 
-I placed the code on github also https://github.com/dysinger/nanomsg-examples[here] so you don’t have to type much if you want to play with it.
+The code is on https://github.com/dysinger/nanomsg-examples[github as well], but may be more out of date.
 
 == Pipeline (A One-Way Pipe)
 
@@ -55,6 +55,7 @@ int node1 (const char *url, const char *msg)
   printf ("NODE1: SENDING \"%s\"\n", msg);
   int bytes = nn_send (sock, msg, sz_msg, 0);
   assert (bytes == sz_msg);
+  sleep(1); // wait for messages to flush before shutting down
   return nn_shutdown (sock, 0);
 }
 
@@ -128,6 +129,7 @@ int node1 (const char *url, const char *msg)
   printf ("NODE1: SENDING \"%s\"\n", msg);
   int bytes = nn_send (sock, msg, sz_msg, 0);
   assert (bytes == sz_msg);
+  sleep(1); // wait for messages to flush before shutting down
   return nn_shutdown (sock, 0);
 }
 
@@ -222,6 +224,7 @@ int node1 (const char *url)
   assert (sock >= 0);
   assert (nn_connect (sock, url) >= 0);
   send_recv(sock, NODE1);
+  sleep(1); // wait for messages to flush before shutting down
   return nn_shutdown (sock, 0);
 }
 

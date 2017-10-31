@@ -2,3 +2,7 @@ This is source code for http://nanomsg.org website.
 
 The sources for it are maintained in asciidoctor.  Please see the _adoc
 folder, and update things there.
+
+To install asciidoctor check the [instructions here](http://asciidoctor.org/docs/install-toolchain/).
+
+To build the site from the root directory run `./_adoc/build.sh`.

@@ -562,54 +562,54 @@ and posted it here for your enjoyment.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="C">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/pipeline.h&gt;
+<pre class="CodeRay highlight"><code data-lang="C"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pipeline.h&gt;</span>
 
-#define NODE0 "node0"
-#define NODE1 "node1"
+<span class="preprocessor">#define</span> NODE0 <span class="string"><span class="delimiter">&quot;</span><span class="content">node0</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> NODE1 <span class="string"><span class="delimiter">&quot;</span><span class="content">node1</span><span class="delimiter">&quot;</span></span>
 
-int node0 (const char *url)
+<span class="predefined-type">int</span> node0 (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_PULL);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, url) &gt;= 0);
-  while (1)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PULL);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, url) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *buf = NULL;
-      int bytes = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      assert (bytes &gt;= 0);
-      printf ("NODE0: RECEIVED \"%s\"\n", buf);
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> bytes = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      assert (bytes &gt;= <span class="integer">0</span>);
+      printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE0: RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, buf);
       nn_freemsg (buf);
     }
 }
 
-int node1 (const char *url, const char *msg)
+<span class="predefined-type">int</span> node1 (<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *msg)
 {
-  int sz_msg = strlen (msg) + 1; // '\0' too
-  int sock = nn_socket (AF_SP, NN_PUSH);
-  assert (sock &gt;= 0);
-  assert (nn_connect (sock, url) &gt;= 0);
-  printf ("NODE1: SENDING \"%s\"\n", msg);
-  int bytes = nn_send (sock, msg, sz_msg, 0);
+  <span class="predefined-type">int</span> sz_msg = strlen (msg) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PUSH);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_connect (sock, url) &gt;= <span class="integer">0</span>);
+  printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE1: SENDING </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, msg);
+  <span class="predefined-type">int</span> bytes = nn_send (sock, msg, sz_msg, <span class="integer">0</span>);
   assert (bytes == sz_msg);
-  sleep(1); // wait for messages to flush before shutting down
-  return nn_shutdown (sock, 0);
+  sleep(<span class="integer">1</span>); <span class="comment">// wait for messages to flush before shutting down</span>
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (strncmp (NODE0, argv[1], strlen (NODE0)) == 0 &amp;&amp; argc &gt; 1)
-    return node0 (argv[2]);
-  else if (strncmp (NODE1, argv[1], strlen (NODE1)) == 0 &amp;&amp; argc &gt; 2)
-    return node1 (argv[2], argv[3]);
-  else
+  <span class="keyword">if</span> (strncmp (NODE0, argv[<span class="integer">1</span>], strlen (NODE0)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">1</span>)
+    <span class="keyword">return</span> node0 (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (strncmp (NODE1, argv[<span class="integer">1</span>], strlen (NODE1)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">2</span>)
+    <span class="keyword">return</span> node1 (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: pipeline %s|%s &lt;URL&gt; &lt;ARG&gt; ...'\n",
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pipeline %s|%s &lt;URL&gt; &lt;ARG&gt; ...'</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
                NODE0, NODE1);
-      return 1;
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -618,8 +618,8 @@ int main (const int argc, const char **argv)
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="bash">gcc pipeline.c /usr/local/lib/libnanomsg.a -o pipeline
 ./pipeline node0 ipc:///tmp/pipeline.ipc &amp; node0=$! &amp;&amp; sleep 1
-./pipeline node1 ipc:///tmp/pipeline.ipc "Hello, World!"
-./pipeline node1 ipc:///tmp/pipeline.ipc "Goodbye."
+./pipeline node1 ipc:///tmp/pipeline.ipc &quot;Hello, World!&quot;
+./pipeline node1 ipc:///tmp/pipeline.ipc &quot;Goodbye.&quot;
 kill $node0</code></pre>
 </div>
 </div>
@@ -643,54 +643,54 @@ NODE0: RECEIVED "Goodbye."</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="c">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/pipeline.h&gt;
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pipeline.h&gt;</span>
 
-#define NODE0 "node0"
-#define NODE1 "node1"
+<span class="preprocessor">#define</span> NODE0 <span class="string"><span class="delimiter">&quot;</span><span class="content">node0</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> NODE1 <span class="string"><span class="delimiter">&quot;</span><span class="content">node1</span><span class="delimiter">&quot;</span></span>
 
-int node0 (const char *url)
+<span class="predefined-type">int</span> node0 (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_PULL);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, url) &gt;= 0);
-  while (1)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PULL);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, url) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *buf = NULL;
-      int bytes = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      assert (bytes &gt;= 0);
-      printf ("NODE0: RECEIVED \"%s\"\n", buf);
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> bytes = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      assert (bytes &gt;= <span class="integer">0</span>);
+      printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE0: RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, buf);
       nn_freemsg (buf);
     }
 }
 
-int node1 (const char *url, const char *msg)
+<span class="predefined-type">int</span> node1 (<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *msg)
 {
-  int sz_msg = strlen (msg) + 1; // '\0' too
-  int sock = nn_socket (AF_SP, NN_PUSH);
-  assert (sock &gt;= 0);
-  assert (nn_connect (sock, url) &gt;= 0);
-  printf ("NODE1: SENDING \"%s\"\n", msg);
-  int bytes = nn_send (sock, msg, sz_msg, 0);
+  <span class="predefined-type">int</span> sz_msg = strlen (msg) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PUSH);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_connect (sock, url) &gt;= <span class="integer">0</span>);
+  printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE1: SENDING </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, msg);
+  <span class="predefined-type">int</span> bytes = nn_send (sock, msg, sz_msg, <span class="integer">0</span>);
   assert (bytes == sz_msg);
-  sleep(1); // wait for messages to flush before shutting down
-  return nn_shutdown (sock, 0);
+  sleep(<span class="integer">1</span>); <span class="comment">// wait for messages to flush before shutting down</span>
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (strncmp (NODE0, argv[1], strlen (NODE0)) == 0 &amp;&amp; argc &gt; 1)
-    return node0 (argv[2]);
-  else if (strncmp (NODE1, argv[1], strlen (NODE1)) == 0 &amp;&amp; argc &gt; 2)
-    return node1 (argv[2], argv[3]);
-  else
+  <span class="keyword">if</span> (strncmp (NODE0, argv[<span class="integer">1</span>], strlen (NODE0)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">1</span>)
+    <span class="keyword">return</span> node0 (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (strncmp (NODE1, argv[<span class="integer">1</span>], strlen (NODE1)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">2</span>)
+    <span class="keyword">return</span> node1 (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: pipeline %s|%s &lt;URL&gt; &lt;ARG&gt; ...'\n",
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pipeline %s|%s &lt;URL&gt; &lt;ARG&gt; ...'</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
                NODE0, NODE1);
-      return 1;
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -723,76 +723,76 @@ NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="c">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/pair.h&gt;
-#include &lt;stdio.h&gt;
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pair.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
 
-#define NODE0 "node0"
-#define NODE1 "node1"
+<span class="preprocessor">#define</span> NODE0 <span class="string"><span class="delimiter">&quot;</span><span class="content">node0</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> NODE1 <span class="string"><span class="delimiter">&quot;</span><span class="content">node1</span><span class="delimiter">&quot;</span></span>
 
-int send_name(int sock, const char *name)
+<span class="predefined-type">int</span> send_name(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-  printf ("%s: SENDING \"%s\"\n", name, name);
-  int sz_n = strlen (name) + 1; // '\0' too
-  return nn_send (sock, name, sz_n, 0);
+  printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: SENDING </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, name);
+  <span class="predefined-type">int</span> sz_n = strlen (name) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+  <span class="keyword">return</span> nn_send (sock, name, sz_n, <span class="integer">0</span>);
 }
 
-int recv_name(int sock, const char *name)
+<span class="predefined-type">int</span> recv_name(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-  char *buf = NULL;
-  int result = nn_recv (sock, &amp;buf, NN_MSG, 0);
-  if (result &gt; 0)
+  <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+  <span class="predefined-type">int</span> result = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+  <span class="keyword">if</span> (result &gt; <span class="integer">0</span>)
     {
-      printf ("%s: RECEIVED \"%s\"\n", name, buf);
+      printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf);
       nn_freemsg (buf);
     }
-  return result;
+  <span class="keyword">return</span> result;
 }
 
-int send_recv(int sock, const char *name)
+<span class="predefined-type">int</span> send_recv(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-  int to = 100;
-  assert (nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to, sizeof (to)) &gt;= 0);
-  while(1)
+  <span class="predefined-type">int</span> to = <span class="integer">100</span>;
+  assert (nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to, <span class="keyword">sizeof</span> (to)) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span>(<span class="integer">1</span>)
     {
       recv_name(sock, name);
-      sleep(1);
+      sleep(<span class="integer">1</span>);
       send_name(sock, name);
     }
 }
 
-int node0 (const char *url)
+<span class="predefined-type">int</span> node0 (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_PAIR);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, url) &gt;= 0);
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PAIR);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, url) &gt;= <span class="integer">0</span>);
   send_recv(sock, NODE0);
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int node1 (const char *url)
+<span class="predefined-type">int</span> node1 (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_PAIR);
-  assert (sock &gt;= 0);
-  assert (nn_connect (sock, url) &gt;= 0);
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PAIR);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_connect (sock, url) &gt;= <span class="integer">0</span>);
   send_recv(sock, NODE1);
-  sleep(1); // wait for messages to flush before shutting down
-  return nn_shutdown (sock, 0);
+  sleep(<span class="integer">1</span>); <span class="comment">// wait for messages to flush before shutting down</span>
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (strncmp (NODE0, argv[1], strlen (NODE0)) == 0 &amp;&amp; argc &gt; 1)
-    return node0 (argv[2]);
-  else if (strncmp (NODE1, argv[1], strlen (NODE1)) == 0 &amp;&amp; argc &gt; 1)
-    return node1 (argv[2]);
-  else
+  <span class="keyword">if</span> (strncmp (NODE0, argv[<span class="integer">1</span>], strlen (NODE0)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">1</span>)
+    <span class="keyword">return</span> node0 (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (strncmp (NODE1, argv[<span class="integer">1</span>], strlen (NODE1)) == <span class="integer">0</span> &amp;&amp; argc &gt; <span class="integer">1</span>)
+    <span class="keyword">return</span> node1 (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: pair %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n",
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pair %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
                NODE0, NODE1);
-      return 1;
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -826,70 +826,70 @@ NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="c">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/pubsub.h&gt;
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pubsub.h&gt;</span>
 
-#define SERVER "server"
-#define CLIENT "client"
+<span class="preprocessor">#define</span> SERVER <span class="string"><span class="delimiter">&quot;</span><span class="content">server</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> CLIENT <span class="string"><span class="delimiter">&quot;</span><span class="content">client</span><span class="delimiter">&quot;</span></span>
 
-char *date ()
+<span class="predefined-type">char</span> *date ()
 {
   time_t raw = time (&amp;raw);
-  struct tm *info = localtime (&amp;raw);
-  char *text = asctime (info);
-  text[strlen(text)-1] = '\0'; // remove '\n'
-  return text;
+  <span class="keyword">struct</span> tm *info = localtime (&amp;raw);
+  <span class="predefined-type">char</span> *text = asctime (info);
+  text[strlen(text)-<span class="integer">1</span>] = <span class="char">'\0'</span>; <span class="comment">// remove '\n'</span>
+  <span class="keyword">return</span> text;
 }
 
-int server (const char *url)
+<span class="predefined-type">int</span> server (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_PUB);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, url) &gt;= 0);
-  while (1)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_PUB);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, url) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *d = date();
-      int sz_d = strlen(d) + 1; // '\0' too
-      printf ("SERVER: PUBLISHING DATE %s\n", d);
-      int bytes = nn_send (sock, d, sz_d, 0);
+      <span class="predefined-type">char</span> *d = date();
+      <span class="predefined-type">int</span> sz_d = strlen(d) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+      printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">SERVER: PUBLISHING DATE %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, d);
+      <span class="predefined-type">int</span> bytes = nn_send (sock, d, sz_d, <span class="integer">0</span>);
       assert (bytes == sz_d);
-      sleep(1);
+      sleep(<span class="integer">1</span>);
     }
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int client (const char *url, const char *name)
+<span class="predefined-type">int</span> client (<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-  int sock = nn_socket (AF_SP, NN_SUB);
-  assert (sock &gt;= 0);
-  // TODO learn more about publishing/subscribe keys
-  assert (nn_setsockopt (sock, NN_SUB, NN_SUB_SUBSCRIBE, "", 0) &gt;= 0);
-  assert (nn_connect (sock, url) &gt;= 0);
-  while (1)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_SUB);
+  assert (sock &gt;= <span class="integer">0</span>);
+  <span class="comment">// TODO learn more about publishing/subscribe keys</span>
+  assert (nn_setsockopt (sock, NN_SUB, NN_SUB_SUBSCRIBE, <span class="string"><span class="delimiter">&quot;</span><span class="delimiter">&quot;</span></span>, <span class="integer">0</span>) &gt;= <span class="integer">0</span>);
+  assert (nn_connect (sock, url) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *buf = NULL;
-      int bytes = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      assert (bytes &gt;= 0);
-      printf ("CLIENT (%s): RECEIVED %s\n", name, buf);
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> bytes = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      assert (bytes &gt;= <span class="integer">0</span>);
+      printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">CLIENT (%s): RECEIVED %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf);
       nn_freemsg (buf);
     }
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (strncmp (SERVER, argv[1], strlen (SERVER)) == 0 &amp;&amp; argc &gt;= 2)
-    return server (argv[2]);
-  else if (strncmp (CLIENT, argv[1], strlen (CLIENT)) == 0 &amp;&amp; argc &gt;= 3)
-    return client (argv[2], argv[3]);
-  else
+  <span class="keyword">if</span> (strncmp (SERVER, argv[<span class="integer">1</span>], strlen (SERVER)) == <span class="integer">0</span> &amp;&amp; argc &gt;= <span class="integer">2</span>)
+    <span class="keyword">return</span> server (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (strncmp (CLIENT, argv[<span class="integer">1</span>], strlen (CLIENT)) == <span class="integer">0</span> &amp;&amp; argc &gt;= <span class="integer">3</span>)
+    <span class="keyword">return</span> client (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: pubsub %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n",
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pubsub %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
                SERVER, CLIENT);
-      return 1;
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -939,83 +939,83 @@ CLIENT (client0): RECEIVED Sat Sep  7 17:40:16 2013</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="c">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/survey.h&gt;
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/survey.h&gt;</span>
 
-#define SERVER "server"
-#define CLIENT "client"
-#define DATE   "DATE"
+<span class="preprocessor">#define</span> SERVER <span class="string"><span class="delimiter">&quot;</span><span class="content">server</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> CLIENT <span class="string"><span class="delimiter">&quot;</span><span class="content">client</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> DATE   <span class="string"><span class="delimiter">&quot;</span><span class="content">DATE</span><span class="delimiter">&quot;</span></span>
 
-char *date ()
+<span class="predefined-type">char</span> *date ()
 {
   time_t raw = time (&amp;raw);
-  struct tm *info = localtime (&amp;raw);
-  char *text = asctime (info);
-  text[strlen(text)-1] = '\0'; // remove '\n'
-  return text;
+  <span class="keyword">struct</span> tm *info = localtime (&amp;raw);
+  <span class="predefined-type">char</span> *text = asctime (info);
+  text[strlen(text)-<span class="integer">1</span>] = <span class="char">'\0'</span>; <span class="comment">// remove '\n'</span>
+  <span class="keyword">return</span> text;
 }
 
-int server (const char *url)
+<span class="predefined-type">int</span> server (<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-  int sock = nn_socket (AF_SP, NN_SURVEYOR);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, url) &gt;= 0);
-  sleep(1); // wait for connections
-  int sz_d = strlen(DATE) + 1; // '\0' too
-  printf ("SERVER: SENDING DATE SURVEY REQUEST\n");
-  int bytes = nn_send (sock, DATE, sz_d, 0);
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_SURVEYOR);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, url) &gt;= <span class="integer">0</span>);
+  sleep(<span class="integer">1</span>); <span class="comment">// wait for connections</span>
+  <span class="predefined-type">int</span> sz_d = strlen(DATE) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+  printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">SERVER: SENDING DATE SURVEY REQUEST</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>);
+  <span class="predefined-type">int</span> bytes = nn_send (sock, DATE, sz_d, <span class="integer">0</span>);
   assert (bytes == sz_d);
-  while (1)
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *buf = NULL;
-      int bytes = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      if (bytes == ETIMEDOUT) break;
-      if (bytes &gt;= 0)
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> bytes = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      <span class="keyword">if</span> (bytes == ETIMEDOUT) <span class="keyword">break</span>;
+      <span class="keyword">if</span> (bytes &gt;= <span class="integer">0</span>)
       {
-        printf ("SERVER: RECEIVED \"%s\" SURVEY RESPONSE\n", buf);
+        printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">SERVER: RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="content"> SURVEY RESPONSE</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, buf);
         nn_freemsg (buf);
       }
     }
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int client (const char *url, const char *name)
+<span class="predefined-type">int</span> client (<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-  int sock = nn_socket (AF_SP, NN_RESPONDENT);
-  assert (sock &gt;= 0);
-  assert (nn_connect (sock, url) &gt;= 0);
-  while (1)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_RESPONDENT);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_connect (sock, url) &gt;= <span class="integer">0</span>);
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      char *buf = NULL;
-      int bytes = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      if (bytes &gt;= 0)
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> bytes = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      <span class="keyword">if</span> (bytes &gt;= <span class="integer">0</span>)
         {
-          printf ("CLIENT (%s): RECEIVED \"%s\" SURVEY REQUEST\n", name, buf);
+          printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">CLIENT (%s): RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="content"> SURVEY REQUEST</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf);
           nn_freemsg (buf);
-          char *d = date();
-          int sz_d = strlen(d) + 1; // '\0' too
-          printf ("CLIENT (%s): SENDING DATE SURVEY RESPONSE\n", name);
-          int bytes = nn_send (sock, d, sz_d, 0);
+          <span class="predefined-type">char</span> *d = date();
+          <span class="predefined-type">int</span> sz_d = strlen(d) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+          printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">CLIENT (%s): SENDING DATE SURVEY RESPONSE</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name);
+          <span class="predefined-type">int</span> bytes = nn_send (sock, d, sz_d, <span class="integer">0</span>);
           assert (bytes == sz_d);
         }
     }
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (strncmp (SERVER, argv[1], strlen (SERVER)) == 0 &amp;&amp; argc &gt;= 2)
-    return server (argv[2]);
-  else if (strncmp (CLIENT, argv[1], strlen (CLIENT)) == 0 &amp;&amp; argc &gt;= 3)
-    return client (argv[2], argv[3]);
-  else
+  <span class="keyword">if</span> (strncmp (SERVER, argv[<span class="integer">1</span>], strlen (SERVER)) == <span class="integer">0</span> &amp;&amp; argc &gt;= <span class="integer">2</span>)
+    <span class="keyword">return</span> server (argv[<span class="integer">2</span>]);
+  <span class="keyword">else</span> <span class="keyword">if</span> (strncmp (CLIENT, argv[<span class="integer">1</span>], strlen (CLIENT)) == <span class="integer">0</span> &amp;&amp; argc &gt;= <span class="integer">3</span>)
+    <span class="keyword">return</span> client (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: survey %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n",
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: survey %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
                SERVER, CLIENT);
-      return 1;
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -1057,53 +1057,53 @@ SERVER: RECEIVED "Sun Sep 15 13:39:46 2013" SURVEY RESPONSE</pre>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="c">#include &lt;assert.h&gt;
-#include &lt;libc.h&gt;
-#include &lt;stdio.h&gt;
-#include &lt;nanomsg/nn.h&gt;
-#include &lt;nanomsg/bus.h&gt;
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;assert.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;libc.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/bus.h&gt;</span>
 
-int node (const int argc, const char **argv)
+<span class="predefined-type">int</span> node (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  int sock = nn_socket (AF_SP, NN_BUS);
-  assert (sock &gt;= 0);
-  assert (nn_bind (sock, argv[2]) &gt;= 0);
-  sleep (1); // wait for connections
-  if (argc &gt;= 3)
+  <span class="predefined-type">int</span> sock = nn_socket (AF_SP, NN_BUS);
+  assert (sock &gt;= <span class="integer">0</span>);
+  assert (nn_bind (sock, argv[<span class="integer">2</span>]) &gt;= <span class="integer">0</span>);
+  sleep (<span class="integer">1</span>); <span class="comment">// wait for connections</span>
+  <span class="keyword">if</span> (argc &gt;= <span class="integer">3</span>)
     {
-      int x=3;
-      for(x; x&lt;argc; x++)
-        assert (nn_connect (sock, argv[x]) &gt;= 0);
+      <span class="predefined-type">int</span> x=<span class="integer">3</span>;
+      <span class="keyword">for</span>(x; x&lt;argc; x++)
+        assert (nn_connect (sock, argv[x]) &gt;= <span class="integer">0</span>);
     }
-  sleep (1); // wait for connections
-  int to = 100;
-  assert (nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to, sizeof (to)) &gt;= 0);
-  // SEND
-  int sz_n = strlen(argv[1]) + 1; // '\0' too
-  printf ("%s: SENDING '%s' ONTO BUS\n", argv[1], argv[1]);
-  int send = nn_send (sock, argv[1], sz_n, 0);
+  sleep (<span class="integer">1</span>); <span class="comment">// wait for connections</span>
+  <span class="predefined-type">int</span> to = <span class="integer">100</span>;
+  assert (nn_setsockopt (sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to, <span class="keyword">sizeof</span> (to)) &gt;= <span class="integer">0</span>);
+  <span class="comment">// SEND</span>
+  <span class="predefined-type">int</span> sz_n = strlen(argv[<span class="integer">1</span>]) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+  printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: SENDING '%s' ONTO BUS</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, argv[<span class="integer">1</span>], argv[<span class="integer">1</span>]);
+  <span class="predefined-type">int</span> send = nn_send (sock, argv[<span class="integer">1</span>], sz_n, <span class="integer">0</span>);
   assert (send == sz_n);
-  while (1)
+  <span class="keyword">while</span> (<span class="integer">1</span>)
     {
-      // RECV
-      char *buf = NULL;
-      int recv = nn_recv (sock, &amp;buf, NN_MSG, 0);
-      if (recv &gt;= 0)
+      <span class="comment">// RECV</span>
+      <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+      <span class="predefined-type">int</span> recv = nn_recv (sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+      <span class="keyword">if</span> (recv &gt;= <span class="integer">0</span>)
         {
-          printf ("%s: RECEIVED '%s' FROM BUS\n", argv[1], buf);
+          printf (<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: RECEIVED '%s' FROM BUS</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, argv[<span class="integer">1</span>], buf);
           nn_freemsg (buf);
         }
     }
-  return nn_shutdown (sock, 0);
+  <span class="keyword">return</span> nn_shutdown (sock, <span class="integer">0</span>);
 }
 
-int main (const int argc, const char **argv)
+<span class="predefined-type">int</span> main (<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-  if (argc &gt;= 3) node (argc, argv);
-  else
+  <span class="keyword">if</span> (argc &gt;= <span class="integer">3</span>) node (argc, argv);
+  <span class="keyword">else</span>
     {
-      fprintf (stderr, "Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...\n");
-      return 1;
+      fprintf (stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>);
+      <span class="keyword">return</span> <span class="integer">1</span>;
     }
 }</code></pre>
 </div>
@@ -1144,7 +1144,7 @@ node3: RECEIVED 'node2' FROM BUS</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-10-18 00:48:18 UTC
+Last updated 2017-10-31 04:59:35 UTC
 </div>
 </div>
 </body>

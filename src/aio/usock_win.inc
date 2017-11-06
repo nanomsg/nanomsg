@@ -998,6 +998,17 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
 
                 return;
 
+            case NN_WORKER_OP_ERROR:
+                nn_usock_close(usock->asock);
+                usock->asock->state = NN_USOCK_STATE_DONE;
+                nn_fsm_raise (&usock->asock->fsm, &usock->asock->event_error,
+                    NN_USOCK_ERROR);
+                usock->asock->asock = NULL;
+                usock->asock = NULL;
+                /*  Wait till the user starts accepting once again. */
+                usock->state = NN_USOCK_STATE_LISTENING;
+                return;
+
             default:
                 nn_fsm_bad_action (usock->state, src, type);
             }

@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,6 +23,6 @@
 #ifndef NN_STRNCASECMP_INCLUDED
 #define NN_STRNCASECMP_INCLUDED
 
-extern int nn_strncasecmp(const char *, const char *, int);
+extern int nn_strncasecmp(const char *, const char *, size_t);
 
 #endif /* NN_STRNCASECMP_INCLUDED */

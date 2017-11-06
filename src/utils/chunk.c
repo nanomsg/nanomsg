@@ -140,7 +140,7 @@ int nn_chunk_realloc (size_t size, void **chunk)
                 the tag and prefix. */
             empty = (uint8_t *)new_ptr - (uint8_t *)self - hdr_size;
             nn_putl ((uint8_t*) (((uint32_t*) new_ptr) - 1), NN_CHUNK_TAG);
-            nn_putl ((uint8_t*) (((uint32_t*) new_ptr) - 2), empty);
+            nn_putl ((uint8_t*) (((uint32_t*) new_ptr) - 2), (uint32_t) empty);
             *chunk = p;
             return (0);
         }

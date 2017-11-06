@@ -1,5 +1,5 @@
 /*
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -24,10 +24,10 @@
 #include "strncasecmp.h"
 
 int
-nn_strncasecmp(const char *a, const char *b, int len)
+nn_strncasecmp(const char *a, const char *b, size_t len)
 {
 	int rv;
-	int count;
+	size_t count;
 	for (count = 0; count < len; count++) {
 		if ((*a == 0) && (*b == 0)) {
 			return (0);

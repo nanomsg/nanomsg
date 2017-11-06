@@ -1,7 +1,8 @@
 /*
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Garrett D'Amore <garrett@damore.org>
+    Copyright 2017 Capitar IT Group BV <info@capitar.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -222,6 +223,14 @@ int nn_sock_term (struct nn_sock *self)
 
     /*  At this point, we can be reasonably certain that no other thread
         has any references to the socket. */
+
+    /*  Close the event FDs entirely. */
+    if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
+        nn_efd_term (&self->rcvfd);
+    }
+    if (!(self->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
+        nn_efd_term (&self->sndfd);
+    }
 
     nn_fsm_stopped_noevent (&self->fsm);
     nn_fsm_term (&self->fsm);
@@ -903,14 +912,6 @@ finish1:
             We can safely deallocate it. */
         sock->sockbase->vfptr->destroy (sock->sockbase);
         sock->state = NN_SOCK_STATE_FINI;
-
-        /*  Close the event FDs entirely. */
-        if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NORECV)) {
-            nn_efd_term (&sock->rcvfd);
-        }
-        if (!(sock->socktype->flags & NN_SOCKTYPE_FLAG_NOSEND)) {
-            nn_efd_term (&sock->sndfd);
-        }
 
         /*  Now we can unblock the application thread blocked in
             the nn_close() call. */

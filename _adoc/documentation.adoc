@@ -5,14 +5,15 @@ layout: default
 
 == Documentation
 
-* Browse the libnanomsg C API reference manual <</v{{ site.latest }}/nanomsg.adoc#,here>>.
+* The latest libnanomsg C API <</v{{ site.latest }}/nanomsg.adoc#,reference manual>>
 
 * <<gettingstarted/index.adoc#,Getting Started with nanomsg>> by Tim Dysinger
 
 * http://dirkjan.ochtman.nl/talks/2013/09/nanomsg-sss/#/step-1[Simple Smart Sockets] presentation by Dirkjan Ochtman
 
-* Relative to ZeroMQ: Martin Sustrik's essay describing the differences relative
-to ZeroMQ is located <<documentation-zeromq.adoc#,here>>.
+* Some <<rfcs/index.adoc#,RFCs>> describing the network protocols.
+
+* <<documentation-zeromq.adoc#,Differences between nanomsg and ZeroMQ>>, by Martin Sustrik (inventor of both nanomsg and ZeroMQ)
 
 == Language bindings
 

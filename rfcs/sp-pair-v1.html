@@ -433,8 +433,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="details">
 <span id="author" class="author">Garrett D'Amore</span><br>
 <span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
-<span id="revnumber">version 1.0,</span>
-<span id="revdate">2017-11-08</span>
+<span id="revnumber">version 1.2,</span>
+<span id="revdate">2017-11-07</span>
 </div>
 </div>
 <div id="content">
@@ -457,7 +457,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
 </li>
 <li>
-<p>Version: 1.0</p>
+<p>Version: 1.2</p>
 </li>
 </ul>
 </div>
@@ -671,12 +671,44 @@ however it chooses.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_peer_selection">Peer Selection</h2>
+<h2 id="_monogamous_mode">Monogamous Mode</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p><em>Monogamous</em> mode peers only communicate with at most one other peer.
+Furthermore, they are <em>strictly</em> monogamous, in that they will reject
+attempts to form additional relationships.</p>
+</div>
+<div class="paragraph">
+<p>Accordingly, when another peer attempts to establish communication
+with a monogamous peer, that peer <strong>MUST</strong> drop the connection or
+perform other transport-specific appropriate actions to reject
+the connection.</p>
+</div>
+<div class="paragraph">
+<p>Because there is exactly one other party with him the peer is communicating,
+there is no need for applications to specify the destination of
+the message.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST</strong> support monogamous mode.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_polyamorous_mode">Polyamorous Mode</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><em>Polyamorous</em> mode peers are willing to establish multiple relationships
+with peers, and communicate amongst them. However applications must be
+aware of this mode of operation.  Implementation of polyamorous mode
+is <strong>OPTIONAL</strong>.</p>
+</div>
+<div class="sect2">
+<h3 id="_peer_selection">Peer Selection</h3>
 <div class="paragraph">
 <p>Polyamorous implementations <strong>MUST</strong> provide a means for polyamorous
 applications to choose to which particular remote peer a message
-shall be sent.  Monogamous implementation <strong>MAY</strong> offer this ability.</p>
+shall be sent.</p>
 </div>
 <div class="paragraph">
 <p>In either case, if a remote peer is specified, the message <strong>MUST</strong>
@@ -696,6 +728,7 @@ to sending to the same peer when none is specified.  (As an exception,
 when an implementation knows that the upper protocol and applications
 are stateless, then if no peer is specified they <strong>MAY</strong> choose a remote peer
 at their own discretion.)</p>
+</div>
 </div>
 </div>
 </div>
@@ -760,8 +793,8 @@ reserved bits are not zero.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 1.0<br>
-Last updated 2017-11-07 20:20:31 UTC
+Version 1.2<br>
+Last updated 2017-11-07 21:46:21 UTC
 </div>
 </div>
 </body>

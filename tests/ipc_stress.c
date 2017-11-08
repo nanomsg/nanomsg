@@ -29,7 +29,6 @@
 
 #include "testutil.h"
 #include "../src/utils/thread.c"
-#include "../src/utils/atomic.h"
 #include "../src/utils/atomic.c"
 
 /*  Stress test the IPC transport. */
@@ -110,8 +109,11 @@ int main()
 
     for (i = 0; i != THREAD_COUNT; ++i)
         nn_thread_init(&cli_threads[i], client, (void *)(intptr_t)i);
+
     for (i = 0; i != THREAD_COUNT; ++i)
         nn_thread_term(&cli_threads[i]);
+
+    nn_thread_term(&srv_thread);
 
     return 0;
 }

@@ -8,7 +8,8 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>RFCs</title>
+<meta name="author" content="Garrett D'Amore">
+<title>TLS Mapping for Scalability Protocols</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -427,37 +428,303 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .hide-for-print{display:none!important}
 .show-for-print{display:inherit!important}}
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
 </head>
 <body class="article">
 <div id="header">
+<h1>TLS Mapping for Scalability Protocols</h1>
+<div class="details">
+<span id="author" class="author">Garrett D'Amore</span><br>
+<span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
+<span id="revnumber">version 1.1,</span>
+<span id="revdate">2017-11-08</span>
+</div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="_rfcs">RFCs</h2>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>These are RFCs (draft form) for the Scalability Protocols.</p>
+<p><span class="image"><img src="https://img.shields.io/badge/status-draft-yellow.svg" alt="draft"></span></p>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_tls_mapping_for_scalability_protocols">TLS Mapping for Scalability Protocols</h2>
+<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><a href="sp-pair-v1.html">Pair Protocol Version 1</a></p>
+<p>Status: draft</p>
 </li>
 <li>
-<p><a href="sp-tls-v1.html">TLS v1.2 Transport Version 1</a></p>
+<p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
 </li>
 <li>
-<p><a href="sp-zerotier-v0.html">ZeroTier Transport Version 0</a></p>
+<p>Version 1.1</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_abstract">Abstract</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This document defines the <a href="https://tools.ietf.org/html/rfc5246">TLS v1.2</a>
+mapping for scalability protocols, where TLS is running on top of
+<a href="https://tools.ietf.org/html/rfc793">TCP</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_license">License</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Copyright 2017 <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a><br>
+Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a></p>
+</div>
+<div class="paragraph">
+<p>This specification is licensed under the Apache License, Version 2.0
+(the "License");  you may not use this file except in compliance with the
+License.
+You may obtain a copy of the license
+<a href="http://www.apache.org/licenses/LICENSE-2.0">online</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_language">Language</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
+interpreted as described in <a href="https://tools.ietf.org/html/rfc2119">RFC 2119</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_underlying_protocol">Underlying protocol</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This mapping should be layered directly on the top of TLS v1.2
+secured connections.  While it is possible to use TLS on top of other
+transports, this document specifically concerns itself with TLS
+running on top of TCP.</p>
+</div>
+<div class="paragraph">
+<p>Other combinations may be contemplated, and should follow the same
+details as discussed here.</p>
+</div>
+<div class="paragraph">
+<p>As when running SP over TCP directly, the TCP port number is
+determined by the application or user.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> support versions of TLS or SSL older than
+v1.2.  Implementations <strong>MAY</strong> support newer versions, and <strong>SHOULD</strong>
+avoid using algorithms or features removed from newer versions.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> use RC4 or MD5.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> use renegotiation. An attempt to renegotiate
+<strong>MUST</strong> cause the connection to be closed immediately.</p>
+</div>
+<div class="paragraph">
+<p>Certificate and key management are out of scope for this document.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_connection_initiation">Connection Initiation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The first phase of connections involves setting up the TLS connection.
+The details of this are not specific to this protocol.  Implementations
+<strong>MUST</strong> validate remote peers using standard TLS verification methods.
+The specific validation checks, such as certificate enforcement and
+time/date checks <strong>SHOULD</strong> be administrator configurable.</p>
+</div>
+<div class="paragraph">
+<p>If a secure TLS connection cannot be established, then the underlying
+connection <strong>MUST</strong> be closed immediately.  (Each peer may apply it&#8217;s own
+checks in determining whether the connection is secure or not.)</p>
+</div>
+<div class="paragraph">
+<p>As soon as the TLS connection is established, both peers <strong>MUST</strong> send a
+protocol header immediately.  The protocol header has the following form,
+in big-endian:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="tls1-header.png" alt="tls1 header" width="896" height="200">
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>version</code> field <strong>MUST</strong> be zero.</p>
+</div>
+<div class="paragraph">
+<p>The first three bytes are used to identify that the connection is
+being used for scalability protocols (note that in ASCII this will look
+like "\0SP"), using this version of the standard (0x0).</p>
+</div>
+<div class="paragraph">
+<p>The 16-bit <code>type</code> field corresponds to the numeric scalability
+protocol ID of the sender.  For example, a <em>PAIRv1</em> sender would use the
+numeric value 0x11 here, corresponding to the <em>PAIR</em> protocol version 1.</p>
+</div>
+<div class="paragraph">
+<p>The final 16-bit <code>reserved</code> field <strong>MUST</strong> be set to zero.</p>
+</div>
+<div class="paragraph">
+<p>After each peer sends this initial handshake message, they <strong>MUST</strong>
+wait until the other peers handshake message is received.</p>
+</div>
+<div class="paragraph">
+<p>Each peer <strong>MUST</strong> validate that the remote peer is using the same
+values for the first 32-bits, and that the <code>type</code> fields are compatible.
+Additionally the <code>reserved</code> field <strong>MUST</strong> be zero.</p>
+</div>
+<div class="paragraph">
+<p>If any of these validation checks, the peer <strong>MUST</strong> close the connection.
+No error indication is sent to the other peer.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_message_format">Message Format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Each SP message sent over this mapping is prefixed by a
+64-bit<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnote_1" title="View footnote.">1</a>]</sup>
+(big-endian) length, followed by the payload:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="tls1-message.png" alt="tls1 message" width="896" height="320">
+</div>
+</div>
+<div class="paragraph">
+<p>The <code>payload size</code> represents the size of the <code>payload</code> field, in octets.</p>
+</div>
+<div class="paragraph">
+<p>The <code>payload</code> field may be absent, in which case the <code>payload size</code> field
+will be zero.  (This would indicate an empty message.)</p>
+</div>
+<div class="paragraph">
+<p>Sending the size in advance allows the receiver to preallocate a buffer
+large enough to hold the entire incoming message.  It also offers the
+receiver a chance to reject messages larger than it is willing to accept,
+which can be useful for avoiding certain forms of denial-of-service
+attacks.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST</strong> support a configurable maximum limit on the
+received message size.  It is <strong>RECOMMENDED</strong> the default value for
+this be one megabyte.  Implementations <strong>MUST</strong> also support disabling
+this check.</p>
+</div>
+<div class="paragraph">
+<p>If an implementation choosed to reject a received message as too large,
+it <strong>MUST</strong> immediately close the connection.</p>
+</div>
+<div class="sect2">
+<h3 id="_no_multiplexing">No Multiplexing</h3>
+<div class="paragraph">
+<p>While some modern protocols multiplex multiple communications channels
+over a single TCP or TLS stream, we have chosen not to do this.  Typically
+this is done to mitigate against the high cost of the 3-way TCP handshake
+used when setting up a connection.  Such approaches benefit primarily
+applications with very short-lived TCP connections.</p>
+</div>
+<div class="paragraph">
+<p>In contrast, we expect most SP applications to use longer lived
+connections.</p>
+</div>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>Don&#8217;t cross the streams.</p>
+</div>
+</blockquote>
+<div class="attribution">
+&#8212; Egon Spengler<br>
+<cite>Ghostbusters</cite>
+</div>
+</div>
+<div class="paragraph">
+<p>Protocols which multiplex multiple channels are subject to head-of-line
+blocking, where one slow channel can have a detrimental impact on others.
+Additionally, they add a great deal more complexity, and usually require
+extra data copying.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_uri_format">URI Format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The URI scheme used to represent TLS addresses is similar
+that used for TCP.</p>
+</div>
+<div class="paragraph">
+<p>The format <strong>SHALL</strong> be <code>tls+tcp://<em>host</em>:<em>port</em></code>, where the <em>host</em>
+represents either an Internet host name, or an IP address, and the <em>port</em>
+represents the TCP port number used.</p>
+</div>
+<div class="paragraph">
+<p>When specifying an IPv6 address for the <em>host</em>, the address <strong>SHALL</strong> be
+enclosed in square backets (<code>[</code> and <code>]</code>) to avoid confusion with the final colon
+separating the IP address and the <em>port</em>.  For example, to specify the IPv6
+loopback address, and port 4300, the URI would be <code>tls+tcp://[::1]:4300</code>.</p>
+</div>
+<div class="paragraph">
+<p>A responder <strong>MAY</strong> elide the <em>host</em> portion, to just bind to itself,
+in which case the format will be <code>tls+tcp://:<em>port</em></code>.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MAY</strong> offer the ability to specify a wild card of <code>*</code>
+when listening to indicate that the server should listen on all locally
+configured IP addresses.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MAY</strong> allow a <em>port</em> number of 0 to be specified when
+listening, in which case a randomly chosen ephemeral TCP port <strong>SHALL</strong> be
+used.<sup class="footnote">[<a id="_footnoteref_2" class="footnote" href="#_footnote_2" title="View footnote.">2</a>]</sup></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_security_considerations">Security Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The correct configuration and administration of TLS is required to
+provide a channel secure from eavesdropping, modification, and replay
+attacks.  The discussion of how to do this, and the important details
+around key and certificate administration, are implementation specific
+and out of scope for this document.</p>
+</div>
+<div class="paragraph">
+<p>Denial-of-service considerations are discussed, in particular the
+use of a limit on the incoming message sizes.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnote_1">
+<a href="#_footnoteref_1">1</a>. In practice no message will ever be so large as needing 64-bits to represent the length, but in our experience a simple fixed width field of this size will support any conceivable future message sizes, and is more efficient and easier to use than a variable length field. The overhead of a sending several extra bytes per message is negligible for most practical protocols, and unlikely to even be measurable.
+</div>
+<div class="footnote" id="_footnote_2">
+<a href="#_footnoteref_2">2</a>. In this case the implementation will need to offer a method for applications to determine the ephemeral TCP port number chosen.
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-11-08 20:50:48 UTC
+Version 1.1<br>
+Last updated 2017-11-08 20:49:51 UTC
 </div>
 </div>
 </body>

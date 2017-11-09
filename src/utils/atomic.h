@@ -29,6 +29,8 @@
 #elif NN_HAVE_ATOMIC_SOLARIS
 #include <atomic.h>
 #define NN_ATOMIC_SOLARIS
+#elif defined NN_HAVE_GCC_ATOMIC_MM_BUILTINS
+#define NN_ATOMIC_GCC_MM_BUILTINS
 #elif defined NN_HAVE_GCC_ATOMIC_BUILTINS
 #define NN_ATOMIC_GCC_BUILTINS
 #else
@@ -50,6 +52,9 @@ void nn_atomic_init (struct nn_atomic *self, uint32_t n);
 
 /*  Destroy the object. */
 void nn_atomic_term (struct nn_atomic *self);
+
+/* Atomically fetch value from nn_atomic structure */
+uint32_t nn_atomic_fetch (struct nn_atomic *self);
 
 /*  Atomically add n to the object, return old value of the object. */
 uint32_t nn_atomic_inc (struct nn_atomic *self, uint32_t n);

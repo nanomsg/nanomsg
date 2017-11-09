@@ -239,7 +239,23 @@ check_c_source_compiles ("
         return 0;
     }
 " NN_HAVE_GCC_ATOMIC_BUILTINS)
-if (NN_HAVE_GCC_ATOMIC_BUILTINS)
+
+check_c_source_compiles ("
+    #include <stdint.h>
+    int main()
+    {
+        volatile uint32_t n = 0;
+        __atomic_add_fetch (&n, 1, __ATOMIC_SEQ_CST);
+        __atomic_sub_fetch (&n, 1, __ATOMIC_SEQ_CST);
+        __atomic_load_n (&n, __ATOMIC_SEQ_CST);
+        __atomic_store_n (&n, 0, __ATOMIC_SEQ_CST);
+        return 0;
+    }
+" NN_HAVE_GCC_ATOMIC_MM_BUILTINS)
+
+if (NN_HAVE_GCC_ATOMIC_MM_BUILTINS)
+    add_definitions (-DNN_HAVE_GCC_ATOMIC_MM_BUILTINS)
+elseif (NN_HAVE_GCC_ATOMIC_BUILTINS)
     add_definitions (-DNN_HAVE_GCC_ATOMIC_BUILTINS)
 endif ()
 

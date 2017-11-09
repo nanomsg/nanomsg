@@ -29,6 +29,7 @@
 
 #include "testutil.h"
 #include "../src/utils/thread.c"
+#include "../src/utils/atomic.c"
 
 #ifndef NN_HAVE_WSL
 
@@ -40,7 +41,7 @@
 #define TEST_LOOPS 10
 #define SOCKET_ADDRESS "ipc://test-shutdown.ipc"
 
-volatile int active;
+struct nn_atomic active;
 
 static void routine (NN_UNUSED void *arg)
 {
@@ -70,7 +71,7 @@ static void routine2 (NN_UNUSED void *arg)
     }
 
     test_close (s);
-    active --;
+    nn_atomic_dec(&active, 1);
 }
 
 #endif /* NN_HAVE_WSL */
@@ -110,9 +111,9 @@ int main ()
     for (j = 0; j != TEST_LOOPS; ++j) {
         for (i = 0; i != TEST2_THREAD_COUNT; ++i)
             nn_thread_init (&threads [i], routine2, NULL);
-        active = TEST2_THREAD_COUNT;
+        nn_atomic_init(&active,TEST2_THREAD_COUNT);
 
-        while (active) {
+        while (nn_atomic_fetch(&active)) {
             (void) nn_send (sb, "hello", 5, NN_DONTWAIT);
             nn_sleep (0);
         }

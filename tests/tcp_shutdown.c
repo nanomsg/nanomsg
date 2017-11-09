@@ -125,7 +125,7 @@ int main (int argc, const char *argv[])
 	nn_sleep(100);
 	ms = 200;
 	test_setsockopt (sb, NN_SOL_SOCKET, NN_SNDTIMEO, &ms, sizeof (ms));
-        while (active.n) {
+        while (nn_atomic_fetch(&active)) {
             (void) nn_send (sb, "hello", 5, 0);
         }
 

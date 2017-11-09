@@ -339,9 +339,10 @@ if (NN_STATIC_LIB)
     add_library (${PROJECT_NAME} STATIC ${NN_SOURCES})
 else ()
     add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
-    add_definitions (-DNN_SHARED_LIB)
     set_target_properties (${PROJECT_NAME} PROPERTIES
         SOVERSION "${NN_ABI_VERSION}")
+    set_target_properties (${PROJECT_NAME} PROPERTIES
+        COMPILE_DEFINITIONS "NN_SHARED_LIB")
 endif ()
 
 # Set library outputs same as top-level project binary outputs

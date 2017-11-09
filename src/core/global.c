@@ -403,7 +403,7 @@ struct nn_cmsghdr *nn_cmsg_nxthdr_ (const struct nn_msghdr *mhdr,
     if (headsz + NN_CMSG_SPACE (0) > sz ||
           headsz + NN_CMSG_ALIGN_ (next->cmsg_len) > sz)
         return NULL;
-    
+
     /*  Success. */
     return next;
 }
@@ -439,8 +439,10 @@ int nn_global_create_socket (int domain, int protocol)
             if ((sock = nn_alloc (sizeof (struct nn_sock), "sock")) == NULL)
                 return -ENOMEM;
             rc = nn_sock_init (sock, socktype, s);
-            if (rc < 0)
+            if (rc < 0) {
+                nn_free (sock);
                 return rc;
+            }
 
             /*  Adjust the global socket table. */
             self.socks [s] = sock;

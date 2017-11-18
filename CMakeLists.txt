@@ -64,8 +64,11 @@ endif ()
 
 # Determine package version.
 find_package (Git QUIET)
-if (DEFINED ENV{TRAVIS_TAG})
+if (DEFINED ENV{TRAVIS_TAG} AND NOT ENV{TRAVIS_TAG} STREQUAL "")
     set (NN_PACKAGE_VERSION "$ENV{TRAVIS_TAG}")
+elseif (DEFINED ENV{TRAVIS_JOB_NUMBER} AND EXISTS ${PROJECT_SOURCE_DIR}/.version)
+    file (STRINGS .version NN_PACKAGE_VERSION)
+    set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-travisci-$ENV{TRAVIS_JOB_NUMBER}")
 elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Working off a git repo, using git versioning
 

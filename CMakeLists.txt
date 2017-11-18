@@ -64,13 +64,11 @@ endif ()
 
 # Determine package version.
 find_package (Git QUIET)
-if (DEFINED ENV{TRAVIS_TAG} AND NOT ENV{TRAVIS_TAG} STREQUAL "")
+if (DEFINED ENV{TRAVIS_TAG} AND NOT "$ENV{TRAVIS_TAG}" STREQUAL "")
     set (NN_PACKAGE_VERSION "$ENV{TRAVIS_TAG}")
-    message(STATUS "NN_PACKAGE_VERSION 1: [${NN_PACKAGE_VERSION}]")
 elseif (DEFINED ENV{TRAVIS_JOB_NUMBER} AND EXISTS ${PROJECT_SOURCE_DIR}/.version)
     file (STRINGS .version NN_PACKAGE_VERSION)
     set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-travisci-$ENV{TRAVIS_JOB_NUMBER}")
-    message(STATUS "NN_PACKAGE_VERSION 2: [${NN_PACKAGE_VERSION}]")
 elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Working off a git repo, using git versioning
 
@@ -90,15 +88,12 @@ elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
         set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-dirty")
     endif()
 
-    message(STATUS "NN_PACKAGE_VERSION 3: [${NN_PACKAGE_VERSION}]")
 elseif (EXISTS ${PROJECT_SOURCE_DIR}/.version)
     #  If git is not available (e.g. when building from source package)
     #  we can extract the package version from .version file.
     file (STRINGS .version NN_PACKAGE_VERSION)
-    message(STATUS "NN_PACKAGE_VERSION 4: [${NN_PACKAGE_VERSION}]")
 else ()
     set (NN_PACKAGE_VERSION "Unknown")
-    message(STATUS "NN_PACKAGE_VERSION 5: [${NN_PACKAGE_VERSION}]")
 endif()
 
 # User-defined options.
@@ -457,7 +452,6 @@ install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
 include (CMakePackageConfigHelpers)
-message(STATUS "NN_PACKAGE_VERSION [${NN_PACKAGE_VERSION}]")
 write_basic_package_version_file (
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
     VERSION "${NN_PACKAGE_VERSION}"

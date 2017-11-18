@@ -8,7 +8,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<meta name="author" content="Garrett D'Amore">
+<meta name="author" content=":icons:font">
 <title>TLS Mapping for Scalability Protocols</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -433,15 +433,16 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="header">
 <h1>TLS Mapping for Scalability Protocols</h1>
 <div class="details">
-<span id="author" class="author">Garrett D'Amore</span><br>
-<span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
-<span id="revnumber">version 1.1,</span>
-<span id="revdate">2017-11-08</span>
+<span id="author" class="author">:icons:font</span><br>
+<span id="revdate">Garrett D'Amore &lt;garrett@damore.org&gt;</span>
 </div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
+<div class="paragraph">
+<p>v 1.2, 2017-11-17</p>
+</div>
 <div class="paragraph">
 <p><span class="image"><img src="https://img.shields.io/badge/status-draft-yellow.svg" alt="draft"></span></p>
 </div>
@@ -459,7 +460,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
 </li>
 <li>
-<p>Version 1.1</p>
+<p>Version 1.2</p>
 </li>
 </ul>
 </div>
@@ -480,7 +481,8 @@ mapping for scalability protocols, where TLS is running on top of
 <div class="sectionbody">
 <div class="paragraph">
 <p>Copyright 2017 <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a><br>
-Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a></p>
+Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a><br>
+Copyright 2017 <a href="mailto:info@staysail.tech">Staysail Systems, Inc.</a></p>
 </div>
 <div class="paragraph">
 <p>This specification is licensed under the Apache License, Version 2.0
@@ -523,12 +525,45 @@ determined by the application or user.</p>
 v1.2.  Implementations <strong>MAY</strong> support newer versions, and <strong>SHOULD</strong>
 avoid using algorithms or features removed from newer versions.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+It is our intent that when TLS v1.3 is finalized, to support, and
+possibly even mandate, the use of TLS v1.3.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
-<p>Implementations <strong>MUST NOT</strong> use RC4 or MD5.</p>
+<p>Implementations <strong>MUST NOT</strong> use RC4, DES, MD5, SHA1, or any
+algorithm in CBC (cipher-block-chaining) mode.
+This prohibition applies to both use in cipher suites and in certificates.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> use RSA, DSA, or DH public key algorithms
+with key lengths smaller than 1024 bits, and <strong>SHOULD</strong> use 2048-bit key
+lengths or larger.</p>
 </div>
 <div class="paragraph">
 <p>Implementations <strong>MUST NOT</strong> use renegotiation. An attempt to renegotiate
 <strong>MUST</strong> cause the connection to be closed immediately.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> use session resumption, but <strong>MUST</strong> instead
+open a new TCP port when creating a new session, and <strong>MUST</strong> close the
+underlying TCP when completing a session (after processing any
+CLOSE-NOTIFY messages.  (It is assumed that implementations will
+generally use long-lived connections, and elimination of session resumption
+leads to simpler, and therefore more secure, implementation.)</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>MUST NOT</strong> use TLS layer compression, as it has been
+found to weak TLS.  (Compression <strong>MAY</strong> be done by the application
+in the layer above, if it is needed.)</p>
 </div>
 <div class="paragraph">
 <p>Certificate and key management are out of scope for this document.</p>
@@ -669,7 +704,7 @@ extra data copying.</p>
 that used for TCP.</p>
 </div>
 <div class="paragraph">
-<p>The format <strong>SHALL</strong> be <code>tls+tcp://<em>host</em>:<em>port</em></code>, where the <em>host</em>
+<p>The format <strong>SHALL</strong> be <code>tls://<em>host</em>:<em>port</em></code>, where the <em>host</em>
 represents either an Internet host name, or an IP address, and the <em>port</em>
 represents the TCP port number used.</p>
 </div>
@@ -677,11 +712,11 @@ represents the TCP port number used.</p>
 <p>When specifying an IPv6 address for the <em>host</em>, the address <strong>SHALL</strong> be
 enclosed in square backets (<code>[</code> and <code>]</code>) to avoid confusion with the final colon
 separating the IP address and the <em>port</em>.  For example, to specify the IPv6
-loopback address, and port 4300, the URI would be <code>tls+tcp://[::1]:4300</code>.</p>
+loopback address, and port 4300, the URI would be <code>tls://[::1]:4300</code>.</p>
 </div>
 <div class="paragraph">
 <p>A responder <strong>MAY</strong> elide the <em>host</em> portion, to just bind to itself,
-in which case the format will be <code>tls+tcp://:<em>port</em></code>.</p>
+in which case the format will be <code>tls://:<em>port</em></code>.</p>
 </div>
 <div class="paragraph">
 <p>Implementations <strong>MAY</strong> offer the ability to specify a wild card of <code>*</code>
@@ -723,8 +758,7 @@ use of a limit on the incoming message sizes.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 1.1<br>
-Last updated 2017-11-08 20:56:07 UTC
+Last updated 2017-11-18 18:35:27 UTC
 </div>
 </div>
 </body>

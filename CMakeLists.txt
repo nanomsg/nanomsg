@@ -452,9 +452,10 @@ install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
 include (CMakePackageConfigHelpers)
+message(STATUS "NN_PACKAGE_VERSION [${NN_PACKAGE_VERSION}]")
 write_basic_package_version_file (
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
-    VERSION ${NN_PACKAGE_VERSION}
+    VERSION "${NN_PACKAGE_VERSION}"
     COMPATIBILITY AnyNewerVersion
 )
 export (

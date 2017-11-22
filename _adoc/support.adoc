@@ -5,14 +5,14 @@ layout: default
 
 == Commercial Support
 
-Commercial support for _nanomsg_ and related proejcts is available.
+Commercial support for _nanomsg_ and related projects is available.
 
 NOTE: You are under no obligation to purchase commercial support from anyone
 to use these, and the latest source code is always open free of charge.
 
 === Vendors and Consultants
 
-mailto:info@staysail.tech[Staysail Systems, Inc.]::
+Staysail Systems, Inc mailto:info@staysail.tech[email] http://staysail.tech[web]::
 
 Staysail Systems employs the primary developer for nanomsg, nng, and mangos.
 Therefore, Staysail Systems can develop new language bindings, ports,

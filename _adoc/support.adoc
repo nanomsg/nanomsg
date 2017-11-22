@@ -1,9 +1,9 @@
 ---
 layout: default
 ---
+:icons: font
 
 == Commercial Support
-:icons: font
 
 Commercial support for _nanomsg_ and related proejcts is available.
 

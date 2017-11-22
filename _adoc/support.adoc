@@ -3,7 +3,7 @@ layout: default
 ---
 :icons: font
 
-== Commercial Support
+== Support Options
 
 Commercial support for _nanomsg_ and related projects is available.
 
@@ -12,18 +12,23 @@ to use these, and the latest source code is always open free of charge.
 
 === Vendors and Consultants
 
-Staysail Systems, Inc mailto:info@staysail.tech[email] http://staysail.tech[web]::
+Staysail Systems, Inc. mailto:info@staysail.tech[icon:envelope-o[]] http://staysail.tech[icon:external-link[]]::
 
 Staysail Systems employs the primary developer for nanomsg, nng, and mangos.
 Therefore, Staysail Systems can develop new language bindings, ports,
 transports, or even protocols, as well as support integration into larger
 projects.
 
-Adding to the List::
+Adding to this List::
 
-Consultants and companies that want to offer support for nanomsg
-and related products may have their names added to this list.  Simply
+In order to add your name to this list, simply
 send a message to mailto:garrett@damore.org[Garrett D'Amore].  Please
 include your name, a contact email address or URL, and a sentence or
-two about your offering.
+two about your offering.  Alternatively submit a PR for this against the
+`gh-pages` branch of the
+https://github.com/nanomsg/nanomsg[nanomsg GIT repository].
 
+=== Free/Self Support
+
+Please see the <<community.adoc#,Community>> page for links to community
+resources, including chat rooms and the mailing list.

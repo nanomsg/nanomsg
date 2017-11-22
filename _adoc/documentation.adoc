@@ -74,8 +74,11 @@ layout: default
 |
 
 
-|iOS
+.2+<|iOS
 |https://github.com/reqshark/nanomsg.ios[nanomsg.ios]
+|
+
+|https://github.com/swiftc-org/nanomsg
 |
 
 .2+<|Java

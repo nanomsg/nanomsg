@@ -9,7 +9,7 @@ layout: default
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
 <meta name="author" content="Garrett D'Amore">
-<title>ZeroTier Mapping for Scalability Protocols</title>
+<title>Status Levels for SP RFCs</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -432,11 +432,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>ZeroTier Mapping for Scalability Protocols</h1>
+<h1>Status Levels for SP RFCs</h1>
 <div class="details">
 <span id="author" class="author">Garrett D'Amore</span><br>
 <span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
-<span id="revnumber">version 0.8,</span>
+<span id="revnumber">version 1.0,</span>
 <span id="revdate">2017-11-07</span>
 </div>
 </div>
@@ -449,7 +449,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
-<h2 id="_zerotier_mapping_for_scalability_protocols">ZeroTier Mapping for Scalability Protocols</h2>
+<h2 id="_status_levels_for_sp_rfcs">Status Levels for SP RFCs</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
@@ -460,7 +460,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
 </li>
 <li>
-<p>Version 0.8</p>
+<p>Version: 1.0</p>
 </li>
 </ul>
 </div>
@@ -470,11 +470,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_abstract">Abstract</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This document defines the
-<a href="http://www.zerotier.com">ZeroTier</a> mapping for scalability protocols.
-This enables SP protocols to run over a ZeroTier network.  The transport
-defined here sits on top of an unreliable virtual Layer 2 transport,
-and does not require a TCP/IP stack.</p>
+<p>This document defines the meaning of the "Status" keyword used
+to label RFC documents for the Scalability Protocols suite of
+protocols.</p>
 </div>
 </div>
 </div>
@@ -482,8 +480,7 @@ and does not require a TCP/IP stack.</p>
 <h2 id="_license">License</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Copyright 2017 <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a><br>
-Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a></p>
+<p>Copyright 2017 <a href="mailto:info@staysail.tech">Staysail Systems, Inc.</a></p>
 </div>
 <div class="paragraph">
 <p>This specification is licensed under the Apache License, Version 2.0
@@ -505,491 +502,126 @@ interpreted as described in <a href="https://tools.ietf.org/html/rfc2119">RFC 21
 </div>
 </div>
 <div class="sect1">
-<h2 id="_underlying_protocol">Underlying protocol</h2>
+<h2 id="_goals">Goals</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>ZeroTier expresses an 802.3 style layer 2, where frames maybe exchanged as if
-they were Ethernet frames.  Virtual broadcast domains are created within a
-numbered "network", and frames may then be exchanged with any peers on that
-network.</p>
+<p>In order to ensure compatibility across different implementations of the
+SP protocols, it is important to document the details of those protocols,
+including expected mandatory and optional behaviors.  These are documented
+in the form of RFC (Request for Comments) documents, which are posted online
+for review and reference by implementors.</p>
 </div>
 <div class="paragraph">
-<p>Frames may arrive in any order, or be lost, just a with Ethernet
-(best effort delivery), but they are strongly protected by a
-cryptographic checksum, so frames that do arrive will be uncorrupted.
-Furthermore, ZeroTier guarantees that a given frame will be received
-at most once.</p>
+<p>A document undergoes a lifetime transition.  During its early phases, the
+authors and initial implementors may be uncertain about the details of
+the protocols, and the document itself may be evolving rather quickly.
+Conversely, at some point in the near the end of a document&#8217;s life time,
+a protocol may be deprecated, indicating that it should not be used by
+new implementations, or even retired entirely, where it should not be
+in use at all.</p>
 </div>
 <div class="paragraph">
-<p>Each application on a ZeroTier network has its own address<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnote_1" title="View footnote.">1</a>]</sup>,
-called a
-ZeroTier ID (<em>ZTID</em>), which is globally unique&#8201;&#8212;&#8201;this is generated
-from a hash of the public key associated with the application.</p>
-</div>
-<div class="paragraph">
-<p>A given application may participate in multiple ZeroTier networks.</p>
-</div>
-<div class="paragraph">
-<p>Sharing of ZeroTier IDs between applications, as well as use of multiple
-_ZTID_s within a single application, as well as management of the associated
-ZeroTier-specific state is out of scope for this document.</p>
-</div>
-<div class="paragraph">
-<p>ZeroTier networks have a standard MTU of 2800 bytes, but over typical
-public networks an "optimum" MTU of 1400 bytes is used.
-ZeroTier may be configured to have larger MTUs, but typically this involves
-extensive reassembly at underlying layers, and implementations <strong>SHOULD</strong>
-use the optimum MTU advertised by the ZeroTier implementation.</p>
-</div>
-<div class="paragraph">
-<p>Note that at this time, broadcast and multicast is not supported by
-this mapping.  (A future update may resolve this.)</p>
+<p>Understanding the phase a document (and the protocol described) is in
+is important for potential implementors, in order to avoid certain
+development risks and set expectations for likely changes.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_packet_layout">Packet layout</h2>
+<h2 id="_levels">Levels</h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="draft">Draft <span class="image"><img src="https://img.shields.io/badge/status-draft-yellow.svg?style=for-the-badge" alt="draft"></span></h3>
 <div class="paragraph">
-<p>Each SP message sent over ZeroTier is comprised of one or
-more fragments, where each fragment is mapped to a single underlying
-ZeroTier L2 frame.  We use the EtherType field of 0x0901 to indicate
-SP over ZeroTier protocol (number to be registered with IEEE).</p>
-</div>
-<div class="paragraph">
-<p>The ZeroTier L2 payload shall be encoded with a header as follows:</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="zerotier0-header.png" alt="zerotier0 header" width="896" height="360">
-</div>
+<p>All RFCs start life as <em>Draft</em> status.  These may very from extremely
+preliminary documents with no existing complete implementation,
+to documents where several implementations exist, but which
+have not been sufficiently reviewed by the SP community.</p>
 </div>
 <div class="paragraph">
-<p>All numeric fields are in big-endian byte order.  Note that ZeroTier
-APIs present this as the L2 payload, but ZeroTier itself may prepend
-additional data such as the Ethernet type, and source and destination
-MAC addresses, as well as ZeroTier specific headers.  The details of
-such headers are out of scope for this document.</p>
+<p>The yellow color in the badge serves as a warning against depending upon
+the document details too deeply.</p>
 </div>
-<div class="paragraph">
-<p>As above, the start of each frame is just as a normal Ethernet payload.
-The Ethernet type (ethertype) we use for these frames is 0x901, with
-a VLAN ID of 0.</p>
-</div>
-<div class="paragraph">
-<p>The <code>op</code> is a field that indicates the type of message being sent.  The
-following values are defined:</p>
-</div>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 20%;">
-<col style="width: 80%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x00</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_data_messages"><code>DATA</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x10</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_conn_req_and_conn_ack_messages"><code>CONN-REQ</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x12</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_conn_req_and_conn_ack_messages"><code>CONN-ACK</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x20</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_disc_messages"><code>DISC</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x30</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_ping_and_pong_messages"><code>PING</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x32</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_ping_and_pong_messages"><code>PONG</code></a></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x40</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="#_err_messages"><code>ERR</code></a></p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>These are discussed further below.  Implementations
-<strong>MUST</strong> discard messages where the <code>op</code> is not one of these.</p>
-</div>
-<div class="paragraph">
-<p>The <code>flags</code> field is reserved for future use, and <strong>MUST</strong> be zero.
-Implementations <strong>MUST</strong> discard frames for which this is not true.</p>
-</div>
-<div class="paragraph">
-<p>The <code>version</code> byte <strong>MUST</strong> be set to <code>0x1</code>.  Implementations <strong>MUST</strong> discard
-any messages received for any other version.</p>
-</div>
-<div class="paragraph">
-<p>The <code>source port</code> and <code>destination port</code> are used to construct a logical
-conversation.  These are 24-bits wide, and are discussed further below.
-The <code>reserved</code> fields must be set to zero.</p>
-</div>
-<div class="paragraph">
-<p>The remainder of frame varies depending on the <code>op</code> used.</p>
-</div>
-<div class="paragraph">
-<p>Note that it is not by accident that the payload is 32-bit aligned in
-this message format.  The payload is actually 64-bit aligned.</p>
 </div>
 <div class="sect2">
-<h3 id="_port_fields">Port Fields</h3>
+<h3 id="stable">Stable <span class="image"><img src="https://img.shields.io/badge/status-stable-brightgreen.svg?style=for-the-badge" alt="stable"></span></h3>
 <div class="paragraph">
-<p>The port fields are used to discriminate different uses, allowing one
-application to have multiple connections or sockets open.  The
-purpose is analogous to TCP port numbers, except that instead of the
-operating system performing the discrimination the application or
-library code must do so.  Note that port numbers are 24-bits.  This
-was chosen to allow a peer to allocate a unique port number for each
-local conversation, allowing up to 16 million concurrent conversations.
-This also allows a 40-bit node number to be combined with the 24-bit
-port number to create a 64-bit unique address.</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_data_messages">DATA messages</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code>DATA</code> messages carry SP protocol payload data.  They can only be sent
-on an established session (see <code>CONN</code> messages below), and are never
-acknowledged (in this version).  The op-specific payload they carry
-is formed like this:</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="zerotier0-data.png" alt="zerotier0 data" width="896" height="240">
-</div>
+<p>A <em>Stable</em> RFC is one that describes a protocol which itself
+is "finished", and suitable for implementation by other
+implementors.  Additionally, the document itself must have
+been reviewed for accuracy and completeness.</p>
 </div>
 <div class="paragraph">
-<p>All fragments, except for the last, <strong>MUST</strong> be the same size.  The fragment
-size field carries the size of every fragment, except that the last
-fragment may be shorter; however even for the last fragment, the fragment
-size <strong>MUST</strong> be the size of the rest of the fragments.  This is necessary
-to allow a receiver to know the fragment size of the other fragments even
-if the final fragment is received before any others.  (Typically this may
-occur if a message consisting of two fragments arrives with fragments
-out of order.)</p>
+<p>As a final check, there should be at least two independent
+implementations of the RFC in order to qualify for Stable
+status.</p>
 </div>
 <div class="paragraph">
-<p>The last fragment shall have the fragment number equal to
-the total fragments minus one, and the first fragment shall have fragment
-number 0.  Under typical optimal conditions, with an optimal MTU of 1400
-bytes, the largest message that can be transmitted is approximately 86 MB.
-Specifically the limit is (65534 * (1400 - 20)) = 90,436,920 bytes.
-(Larger MTUs may be used, if the implementation determines that it is
-advantageous to do so.  Doing so would necessarily give a larger maximum
-message size.)</p>
+<p>The bright green badge color indicates that the document
+and the protocol are suitable for broad adoption by
+implementors.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="deprecated">Deprecated <span class="image"><img src="https://img.shields.io/badge/status-deprecated-orange.svg?style=for-the-badge" alt="deprecated"></span></h3>
+<div class="paragraph">
+<p>A <em>Deprecated</em> RFC documents a protocol that is no longer
+recommended for use by implementors. Generally, a newer
+<em>Stable</em> RFC will document a newer protocol that should
+be used instead.</p>
 </div>
 <div class="paragraph">
-<p>However, transmitting such a large message would require sending over
-65 thousand fragments, and given the likelihood of fragment loss, and
-the lack of acknowledgment, it is likely that the entire message would
-be lost.  As a result, implementations are encouraged to limit the
-amount of data that they send to at most a few megabytes.  Implementations
-receiving the first fragment can easily calculate the worst case for
-the message size (the size of the user payload multiplied by the total
-number of fragments), and <strong>MAY</strong> reply to the sender with an <code>ERR</code> message
-using the code 0x05, indicating that the message is larger than the
-receiver is willing to accept.</p>
+<p>However, deprecated protocols are expected to be found
+in the wild, and implementors MAY choose to implement
+them anyway for compatibility reasons.</p>
 </div>
 <div class="paragraph">
-<p>Each fragment for a given message must carry the same <code>message ID</code>.
-Implementations <strong>MUST</strong> initialize this to a random value when starting
-a conversation, and <strong>MUST</strong> increment this each time a new message is sent.
-Message IDs of zero are not permitted; implementations <strong>MUST</strong> skip past zero
-when incrementing message IDs.</p>
+<p>The orange status badge color serves as a warning to
+implementors that they are discouraged from
+implementing this, and should look for a newer
+protocol instead.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="retired">Retired <span class="image"><img src="https://img.shields.io/badge/status-retired-red.svg?style=for-the-badge" alt="retired"></span></h3>
+<div class="paragraph">
+<p>A <em>Retired</em> RFC is one that has been removed from
+service.</p>
 </div>
 <div class="paragraph">
-<p>Implementations may detect the loss of a message by noticing skips in the
-message IDs that are received, accounting for the expected skip past zero.</p>
+<p>Generally these RFCs document protocols that new
+implementations MUST NOT implement, and that existing
+implementations SHOULD remove from service at their
+earliest opportunity.</p>
 </div>
 <div class="paragraph">
-<p>Note that no field conveys the length of the fragment itself, as
-this can be determined from the L2 length&#8201;&#8212;&#8201;the user data within
-the fragment extends to the end of the L2 payload supplied by ZeroTier.
-(And, all fragments other than the final fragment for a message must
-therefore have the same length.)</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_conn_req_and_conn_ack_messages">CONN-REQ and CONN-ACK messages</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code>CONN-REQ</code> frames represent a request from an initiator to establish a
-session, i.e. a new conversation or connection, and <code>CONN-ACK</code>
-messages are the normal successful reply from the responder.  They both
-take the same form, which consists of the usual headers along with the
-senders 16-bit (big-endian) SP protocol ID appended:</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="zerotier0-conn.png" alt="zerotier0 conn" width="536" height="160">
-</div>
+<p>The main motivation for retiring RFCs will be to
+cover the case where severe defects in an implementation
+exist.  For example, in the 802.11 arena, WEP would
+be a protocol that should be <em>Retired</em>, as it is
+defective in ways that are dangerous to the user.</p>
 </div>
 <div class="paragraph">
-<p>The connection is initiated by the initiator sending this message,
-with its own SP protocol ID, with the <code>op</code> set to <code>CONN-REQ</code>.
-The initiator must choose a <code>source port</code> number that is not currently
-being used with the remote peer. (Most implementations will choose a
-a source port that is not used at all. Source port numbers <strong>SHOULD</strong>
-be chosen randomly.)</p>
+<p>An RFC may also be retired when the protocol is
+believed to have become extinct in the wild.</p>
 </div>
 <div class="paragraph">
-<p>The responder will acknowledge this by replying with its SP protocol
-ID in the 4-byte payload, using the <code>CONN-ACK</code> op.  Additionally,
-the source port number that the responder replies with <strong>MUST</strong> be the
-one the intiator requested.</p>
+<p>The purpose of keeping the retired RFCs available
+is for historical context.  It may also help some
+party in the event that they come across an actual
+implementation in the wild.</p>
 </div>
 <div class="paragraph">
-<p>(Responders will identify the session using the initiators chosen
-<code>source port</code>, which the initiator <strong>MUST NOT</strong> concurrently use for any
-other sessions.)</p>
-</div>
-<div class="paragraph">
-<p>Alternatively, a responder <strong>MAY</strong> reject the connection attempt by
-sending a suitably formed ERR message (see below).</p>
-</div>
-<div class="paragraph">
-<p>If a sender does not receive a reply, it <strong>SHOULD</strong> retry this message
-before giving up and reporting an error to the user.  It is recommended
-that a configurable number of retries and time interval be used.</p>
-</div>
-<div class="paragraph">
-<p>Given modern Internet latencies of generally less than 500 ms, resending
-up to 12 <code>CONN-REQ</code> requests, once every 5 seconds, before giving up seems
-reasonable.  (These times are somewhat larger to allow for ZeroTier
-path discovery to take place; this results in a timeout of approximately
-a minute.)</p>
-</div>
-<div class="paragraph">
-<p>The initiator <strong>MUST NOT</strong> send any <code>DATA</code> messages for a conversation until
-it has received an ACK from the other party, and it <strong>MUST</strong> send all further
-messages for the conversation to the port number supplied by the responder.</p>
-</div>
-<div class="paragraph">
-<p>If a <code>CONN-REQ</code> frame is received by a responder for a conversation that already
-exists, the responder <strong>MUST</strong> reply.  Further, the source port it replies with,
-and the SP protocol IDs <strong>MUST</strong> be identical to what it first sent.  This
-ensures that the <code>CONN-REQ</code> request is idempotent.</p>
+<p>The red status color should be a strong indicator
+that nobody should be using RFCs with this status.</p>
 </div>
 </div>
 </div>
-<div class="sect1">
-<h2 id="_disc_messages">DISC messages</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>DISC messages are used to request a session be terminated.  This
-notifies the remote sender that no more data will be sent or
-accepted, and the session resources may be released.  There is no
-payload. There is no acknowledgment.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_ping_and_pong_messages">PING and PONG messages</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>In order to keep session state, implementations will generally store
-data for each session.  In order to prevent a stale session from
-consuming these resources forever, and in order to keep underlying
-ZeroTier sessions alive, a <code>PING</code> message <strong>MAY</strong> be sent to a peer
-with whom a session has been established.  This message has no payload.</p>
-</div>
-<div class="paragraph">
-<p>If the <code>PING</code> is is successful, then the responder <strong>MUST</strong> reply with a <code>PONG</code>
-message.  As with <code>PING</code>, the <code>PONG</code> message carries no payload.</p>
-</div>
-<div class="paragraph">
-<p>There is no response to a <code>PONG</code> message.</p>
-</div>
-<div class="paragraph">
-<p>In the event of an error, an implementation <strong>MAY</strong> reply with an <code>ERR</code>
-message.</p>
-</div>
-<div class="paragraph">
-<p>Implementations <strong>SHOULD NOT</strong> initiate <code>PING</code> messages if they have either
-received other session messages recently.</p>
-</div>
-<div class="paragraph">
-<p>Implementations <strong>SHOULD</strong> use a timeout <em>T1</em> seconds of be used before
-initiating a message the first time, and that in the absence of a
-reply, up to <em>N</em> further attempts be made, separated by <em>T2</em> seconds.  If
-no reply to the <em>N_th attempt is received after _T2</em> seconds have passed,
-then the remote peer should be assumed offline or dead, and the
-session closed.</p>
-</div>
-<div class="paragraph">
-<p>The values for <em>T1</em>, <em>T2</em>, and <em>N</em> <strong>SHOULD</strong> be configurable, with
-recommended default values of 60, 10, and 5.  With these values,
-sessions that appear dead after 2 minutes will be closed, and their
-resources reclaimed.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_err_messages">ERR messages</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p><code>ERR</code> messages indicate a failure in the session, and abruptly
-terminate the session.  The payload for these messages consists of a
-single byte error code, followed by an ASCII message describing the
-error (not terminated by zero).  This message <strong>MUST NOT</strong> be more than
-128 bytes in length.</p>
-</div>
-<div class="paragraph">
-<p>The following error codes are defined:</p>
-</div>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 20%;">
-<col style="width: 80%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x01</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No party listening at that address or port.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x02</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">No such session found.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x03</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">SP protocol ID invalid.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x04</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Generic protocol error.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0x05</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Message size too big.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">0xff</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Other uncategorized error.</p></td>
-</tr>
-</tbody>
-</table>
-<div class="paragraph">
-<p>Implementations <strong>MUST</strong> discard any session state upon receiving an <code>ERR</code>
-message.  These messages are not acknowledged.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_message_reassembly">Message Reassembly</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Implementations <strong>MUST</strong> accept and reassemble fragmented <code>DATA</code> messages.
-Implementations <strong>MUST</strong> discard fragmented messages of other types.</p>
-</div>
-<div class="paragraph">
-<p>Messages larger than the ZeroTier MTU <strong>MUST</strong> be fragmented.</p>
-</div>
-<div class="paragraph">
-<p>Implementations SHOULD limit the number of unassembled messages
-retained for reassembly, to minimize the likelihood of intentional
-abuse.  It is suggested that at most 2 unassembled messages be
-retained.  It is further suggested that if 2 or more unfragmented
-messages arrive before a message is reassembled, or more than 5
-seconds pass before the reassembly is complete, that the unassembled
-fragments be discarded.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_ports">Ports</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The port numbers are 24-bit fields, allowing a single <em>ZTID</em> to
-service multiple application layer protocols, which could be treated
-as separate end points, or as separate sockets in the application.
-The implementation is responsible for discriminating on these and
-delivering to the appropriate consumer.</p>
-</div>
-<div class="paragraph">
-<p>As with UDP or TCP, it is intended that each party have its own port
-number, and that a pair of ports (combined with ZeroTier IDs) be used
-to identify a single conversation.</p>
-</div>
-<div class="paragraph">
-<p>An SP server <strong>SHOULD</strong> allocate a port for number advertisement.  It is
-expected clients will generate ephemeral port numbers.</p>
-</div>
-<div class="paragraph">
-<p>Implementations are free to choose how to allocate port numbers, but
-it is <strong>RECOMMENDED</strong> that administratively configured port numbers are small,
-with the high order bit clear, and that numbers larger than 2<sup>23</sup> (high order
-bit set) be used for ephemeral allocations.</p>
-</div>
-<div class="paragraph">
-<p>It is <strong>RECOMMENDED</strong> that separate short queues (perhaps just one or two
-messages long) be kept per local port in implementations, to prevent
-head-of-line blocking issues where backpressure on one consumer
-(perhaps just a single thread or socket) blocks others.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_uri_format">URI Format</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The URI scheme used to represent ZeroTier addresses makes use of
-ZeroTier IDs, ZeroTier network IDs, and our own 24-bit ports.</p>
-</div>
-<div class="paragraph">
-<p>The format <strong>SHALL</strong> be <code>zt://<em>nwid</em>/<em>ztid:port</em></code>, where the <code><em>nwid</em></code>
-component represents the 64-bit hexadecimal ZeroTier network ID,
-the <code><em>ztid</em></code> represents the 40-bit hexadecimal ZeroTier Device ID,
-and the <code><em>port</em></code> is the 24-bit port number (decimal) previously described.</p>
-</div>
-<div class="paragraph">
-<p>A responder <strong>MAY</strong> elide the <code>/<em>ztid</em></code> portion, to just bind to itself,
-in which case the format will be <code>zt://<em>nwid:port</em></code>.</p>
-</div>
-<div class="paragraph">
-<p>A port number of 0 <strong>MAY</strong> be used when listening to indicate that a random
-ephemeral port should be chosen.</p>
-</div>
-<div class="paragraph">
-<p>An implementation <strong>MAY</strong> allow the <code><em>ztid</em></code> 0 be replaced with <code>*</code> to
-indicate that the node&#8217;s local <em>ZTID</em> be used.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_security_considerations">Security Considerations</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The mapping isn&#8217;t intended to provide any additional security beyond that
-provided by ZeroTier itself.  Managing the key materials used by ZeroTier
-is implementation-specific, and they must take the appropriate care when
-dealing with them.</p>
-</div>
-</div>
-</div>
-</div>
-<div id="footnotes">
-<hr>
-<div class="footnote" id="_footnote_1">
-<a href="#_footnoteref_1">1</a>. Technically an application may have more than one ZeroTier address, but such uses are unusual.
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 0.8<br>
+Version 1.0<br>
 Last updated 2017-11-27 18:05:44 UTC
 </div>
 </div>

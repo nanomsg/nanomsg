@@ -8,7 +8,8 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>RFCs</title>
+<meta name="author" content="Garrett D'Amore">
+<title>WebSocket Mapping for Scalability Protocols</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -431,61 +432,247 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>RFCs</h1>
+<h1>WebSocket Mapping for Scalability Protocols</h1>
+<div class="details">
+<span id="author" class="author">Garrett D'Amore</span><br>
+<span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
+<span id="revnumber">version 1.0.0,</span>
+<span id="revdate">2017-12-27</span>
+</div>
 </div>
 <div id="content">
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>These are RFCs for the Scalability Protocols.</p>
+<p><span class="image"><img src="https://img.shields.io/badge/status-draft-yellow.svg?style=for-the-badge" alt="draft"></span></p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_general_rfcs">General RFCs</h2>
+<h2 id="_websocket_mapping_for_scalability_protocols">WebSocket Mapping for Scalability Protocols</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p><a href="sp-status-v1.html">Status Levels for SP RFCs Version 1</a></p>
+<p>Status: draft</p>
+</li>
+<li>
+<p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
+</li>
+<li>
+<p>Version 1.0.0</p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_protocol_rfcs">Protocol RFCs</h2>
+<h2 id="_abstract">Abstract</h2>
 <div class="sectionbody">
+<div class="paragraph">
+<p>This document defines the <a href="https://tools.ietf.org/html/rfc6455">WebSocket</a>
+mapping for scalability protocols.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_license">License</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Copyright 2017 <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a><br>
+Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a><br>
+Copyright 2017 <a href="mailto:info@staysail.tech">Staysail Systems, Inc.</a></p>
+</div>
+<div class="paragraph">
+<p>This specification is licensed under the Apache License, Version 2.0
+(the "License");  you may not use this file except in compliance with the
+License.
+You may obtain a copy of the license
+<a href="http://www.apache.org/licenses/LICENSE-2.0">online</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_language">Language</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be
+interpreted as described in <a href="https://tools.ietf.org/html/rfc2119">RFC 2119</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_underlying_protocol">Underlying protocol</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This mapping should be layered directly on the top of WebSocket, as defined
+in <a href="https://tools.ietf.org/html/rfc6455">RFC 6455</a>.</p>
+</div>
+<div class="paragraph">
+<p>Additionally, implementations <strong>MUST</strong> support BINARY frame types.  They
+<strong>SHOULD NOT</strong> send or accept TEXT frame types.</p>
+</div>
+<div class="paragraph">
+<p>Implementations <strong>SHOULD</strong> support HTTPS as the transport, and if
+they do, then they <strong>MAY</strong> also choose not to support HTTP.  HTTPS
+<strong>SHOULD</strong> be used in preference to HTTP when practical.</p>
+</div>
+<div class="paragraph">
+<p>Client implementations <strong>MUST NOT</strong> send entity content with their request,
+and server implementations <strong>MUST NOT</strong> send entity content when responding
+with a successful HTTP 101 Switching Protocols response.  (The HTTP and
+WebSocket RFCs permit such content payloads to be sent, but explicitly
+require that it be ignored if present.  It is far easier to simply
+not send the data in the first place.)  Servers receiving requests with
+content data <strong>MUST</strong> respond with an error code, such as 400 Bad Request.</p>
+</div>
+<div class="paragraph">
+<p>The use of the path and query parameters in the HTTP request is not
+further considered here, except to note that servers <strong>SHOULD</strong> use this
+data to discriminate when multiple instances or applications are made
+available at the same host and port.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_subprotocol_names">Subprotocol Names</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Scalability Protocols uses subprotocols that are named as the individual
+protocol name appeneded with <code>.sp.nanomsg.org</code>.  For example, the
+PAIRv1 protocol (named <code>pair1</code>) has the subprotocol of <code>pair1.sp.nanomsg.org</code>.</p>
+</div>
+<div class="paragraph">
+<p>Individual protocols have their own names, but here is a list of legacy
+subprotocol names:</p>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="sp-pair-v1.html">Pair Protocol Version 1</a></p>
+<p><code>bus.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>pair.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>pub.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>pull.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>push.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>req.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>rep.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>respondent.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>sub.sp.nanomsg.org</code></p>
+</li>
+<li>
+<p><code>surveyor.sp.nanomsg.org</code></p>
 </li>
 </ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_transport_rfcs">Transport RFCs</h2>
+<h2 id="_connection_initiation">Connection Initiation</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p><a href="sp-tls-v1.html">TLS Mapping for Scalability Protocols</a></p>
-</li>
-<li>
-<p><a href="sp-websocket-v1.html">WebSocket Mapping for Scalablity Protocols</a></p>
-</li>
-<li>
-<p><a href="sp-zerotier-v0.html">ZeroTier Mapping for Scalablity Protocols</a></p>
-</li>
-</ul>
+<div class="paragraph">
+<p>Connections are established using HTTP negotiation as specified in
+RFC 6455.  The HTTP client side <strong>MUST</strong> include a <code>Sec-WebSocket-Protocol</code>
+header that lists the desired subprotocol, which is the subprotocol
+corresponding to the server&#8217;s scalability protocol.</p>
+</div>
+<div class="paragraph">
+<p>For example, a REQ client connecting to a REP server would use the
+subprotocol of <code>rep.sp.nanomsg.org</code>.</p>
 </div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_message_format">Message Format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Each SP message sent over this mapping corresponds exactly to one
+WebSocket message. Implementations <strong>MUST</strong> properly support receive
+of messages consisting of multiple WebSocket frames.  They <strong>MAY</strong>
+send messages in one or more frames, but <strong>SHOULD</strong> avoid fragmenting
+messages unless unavoidable.  (It will often be the case that applications
+can receive a single message consisting of just a single frame with
+less effort than one consisting of multiple frames.)</p>
+</div>
+<div class="sect2">
+<h3 id="_control_frames">Control Frames</h3>
+<div class="paragraph">
+<p>Fragments of a multi-frame message may be interspersed with control
+frames.  Implementations <strong>MUST</strong> respond as quickly as practical to
+<code>PING</code> frames with the appropriate <code>PONG</code> frame.  Implementations
+<strong>MUST</strong> cease activity on connections after receiving a <code>CLOSE</code> frame.</p>
+</div>
+<div class="paragraph">
+<p>If an implementation chooses to reject a received message as too large,
+it <strong>MUST</strong> immediately send a <code>CLOSE</code> frame and shut down the connection.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_uri_format">URI Format</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The URI scheme used to represent TLS addresses is the same as that
+that used for WebSockets.</p>
+</div>
+<div class="paragraph">
+<p>Server implementations <strong>MAY</strong> offer the ability to specify a wild card of <code>*</code>
+for a host name indicating that when listening, all interfaces of
+the local host should be listened to, and that the <code>Host</code> HTTP header
+sent by the client during HTTP negotiation will be ignored.</p>
+</div>
+<div class="paragraph">
+<p>Server implementations <strong>MAY</strong> allow a <em>port</em> number of 0 to be specified when
+listening, in which case a randomly chosen ephemeral TCP port <strong>SHALL</strong> be
+used.<sup class="footnote">[<a id="_footnoteref_1" class="footnote" href="#_footnote_1" title="View footnote.">1</a>]</sup></p>
+</div>
+<div class="paragraph">
+<p>The HTTP <code>Host</code> header sent by clients <strong>SHALL</strong> be the same as the host
+and port component of the URI.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_security_considerations">Security Considerations</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Implementations <strong>MAY</strong> support TLS, and may further support
+HTTP authentication mechanisms.  The details of this are out of
+scope for this document.</p>
+</div>
+<div class="paragraph">
+<p>Denial-of-service considerations are discussed, in particular the
+use of a limit on the incoming message sizes.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footnotes">
+<hr>
+<div class="footnote" id="_footnote_1">
+<a href="#_footnoteref_1">1</a>. In this case the implementation will need to offer a method for applications to determine the ephemeral TCP port number chosen.
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
+Version 1.0.0<br>
 Last updated 2017-12-27 17:42:51 UTC
 </div>
 </div>

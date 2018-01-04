@@ -58,8 +58,9 @@ string (REGEX REPLACE ".*#define +NN_VERSION_AGE +([0-9]+).*" "\\1" NN_VERSION_A
 if ((NN_VERSION_CURRENT STREQUAL "") OR (NN_VERSION_REVISION STREQUAL "") OR (NN_VERSION_AGE STREQUAL ""))
     message (FATAL_ERROR "Could not read ABI version from nn.h")
 else ()
-    set (NN_ABI_VERSION "${NN_VERSION_CURRENT}.${NN_VERSION_REVISION}.${NN_VERSION_AGE}")
-    message (STATUS "Detected nanomsg ABI v${NN_ABI_VERSION}")
+    set (NN_ABI_VERSION "${NN_VERSION_CURRENT}")
+    set (NN_LIB_VERSION "${NN_VERSION_CURRENT}.${NN_VERSION_REVISION}.${NN_VERSION_AGE}")
+    message (STATUS "Detected nanomsg ABI v${NN_ABI_VERSION} (v${NN_LIB_VERSION})")
 endif ()
 
 # Determine package version.

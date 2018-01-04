@@ -341,7 +341,9 @@ else ()
     add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
     add_definitions (-DNN_SHARED_LIB)
     set_target_properties (${PROJECT_NAME} PROPERTIES
-        SOVERSION "${NN_ABI_VERSION}")
+        SOVERSION "${NN_ABI_VERSION}"
+		VERSION "${NN_LIB_VERSION}"
+	)
 endif ()
 
 # Set library outputs same as top-level project binary outputs

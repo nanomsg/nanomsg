@@ -1,0 +1,6 @@
+= <<index#,Getting Started with 'nanomsg'>>
+
+NOTE: This document is derived from an original post by Tim Dysinger.
+That post is no longer available, but we have modified and restructured it,
+as well as making enhancments and corrections. 
+Tim's original code is on https://github.com/dysinger/nanomsg-examples[github], but we recommend using the examples here as they have a number of corrections.

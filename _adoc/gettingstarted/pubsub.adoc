@@ -1,0 +1,60 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Pub/Sub (Topics & Broadcast)
+
+image::pubsub.png[Topics & Broadcast]
+
+This pattern is used to allow a single broadcaster to publish messages
+to many subscribers, which may choose to limit which messages they receive.
+
+.pubsub.c
+[source,c]
+----
+include::src/pubsub.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc pubsub.c /usr/local/lib/libnanomsg.a -o pubsub
+----
+
+.Execution
+[source,bash]
+----
+./pubsub server ipc:///tmp/pubsub.ipc & server=$! && sleep 1
+./pubsub client ipc:///tmp/pubsub.ipc client0 & client0=$!
+./pubsub client ipc:///tmp/pubsub.ipc client1 & client1=$!
+./pubsub client ipc:///tmp/pubsub.ipc client2 & client2=$!
+sleep 5
+kill $server $client0 $client1 $client2
+----
+
+.Output
+----
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:11 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:12 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:13 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:13 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:13 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:13 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:14 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:14 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:14 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:14 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:15 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:15 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:15 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:15 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:16 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:16 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:16 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:16 2013
+----

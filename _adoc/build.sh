@@ -6,8 +6,14 @@
 # properly.
 
 cd $(dirname $0)
-for f in $(find . -name '*.adoc'); do
-
+if [ -n "$1" ]
+then
+	files=$*
+else
+	files=$(find . -name '*.adoc')
+fi
+for f in $files
+do
 	input=${f#./}
 	indir=$(dirname $f)
 	indir=${indir#./}
@@ -15,6 +21,11 @@ for f in $(find . -name '*.adoc'); do
         outdir=../${indir}
 
 	when=$(git log -n1 --format='%ad' '--date=format-local:%s' $f)
+	if [[ -z "${when}" ]]
+	then
+		when=$(date +%s)
+	fi
+	
 	echo "Processing $input -> $output"
 	infrontmatter=0
 	manpage=0

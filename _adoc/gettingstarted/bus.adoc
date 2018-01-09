@@ -1,0 +1,59 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Bus (Routing)
+
+image::bus.png[A Simple Bus]
+
+The bus protocol is useful for routing applications, or for building
+fully interconnected mesh networks.  In this pattern, messages are
+sent to every directly connected peer.
+
+.bus.c
+[source,c]
+----
+include::src/bus.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc bus.c -lnanomsg.a -o bus
+----
+
+.Execution
+[source,bash]
+----
+./bus node0 ipc:///tmp/node0.ipc ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc & node0=$!
+./bus node1 ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc & node1=$!
+./bus node2 ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc & node2=$!
+./bus node3 ipc:///tmp/node3.ipc ipc:///tmp/node0.ipc & node3=$!
+sleep 5
+kill $node0 $node1 $node2 $node3
+----
+
+.Output
+----
+node0: SENDING 'node0' ONTO BUS
+node1: SENDING 'node1' ONTO BUS
+node2: SENDING 'node2' ONTO BUS
+node3: SENDING 'node3' ONTO BUS
+node0: RECEIVED 'node1' FROM BUS
+node0: RECEIVED 'node2' FROM BUS
+node0: RECEIVED 'node3' FROM BUS
+node1: RECEIVED 'node0' FROM BUS
+node1: RECEIVED 'node2' FROM BUS
+node1: RECEIVED 'node3' FROM BUS
+node2: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node1' FROM BUS
+node2: RECEIVED 'node3' FROM BUS
+node3: RECEIVED 'node0' FROM BUS
+node3: RECEIVED 'node1' FROM BUS
+node3: RECEIVED 'node2' FROM BUS
+----

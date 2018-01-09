@@ -1,0 +1,57 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Survey (Everybody Votes)
+
+image::survey.png[Everybody Votes]
+
+The surveyor pattern is used to send a timed survey out, responses
+are individually returned until the survey has expired.  This pattern
+is useful for service discovery and voting algorithms.
+
+.survey.c
+[source,c]
+----
+include::src/survey.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc survey.c -lnanmosg -o survey
+----
+
+.Execution
+[source,bash]
+----
+./survey server ipc:///tmp/survey.ipc & server=$!
+./survey client ipc:///tmp/survey.ipc client0 & client0=$!
+./survey client ipc:///tmp/survey.ipc client1 & client1=$!
+./survey client ipc:///tmp/survey.ipc client2 & client2=$!
+sleep 4 <1>
+kill $server $client0 $client1 $client2
+----
+<1> The first survey times out with no responders because the clients aren’t started yet.
+
+.Output
+----
+SERVER: SENDING DATE SURVEY REQUEST
+SERVER: SURVEY COMPLETE
+SERVER: SENDING DATE SURVEY REQUEST
+CLIENT (client2): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client1): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client0): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client1): SENDING DATE SURVEY RESPONSE
+CLIENT (client0): SENDING DATE SURVEY RESPONSE
+CLIENT (client2): SENDING DATE SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: SURVEY COMPLETE
+----

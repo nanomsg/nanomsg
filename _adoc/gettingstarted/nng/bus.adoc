@@ -1,0 +1,39 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Bus (Routing)
+
+image::../bus.png[A Simple Bus]
+
+The bus protocol is useful for routing applications, or for building
+fully interconnected mesh networks.  In this pattern, messages are
+sent to every directly connected peer.
+
+.bus.c
+[source,c]
+----
+include::src/bus.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc bus.c -lnng -o bus
+----
+
+.Execution
+[source,bash]
+----
+include::src/bus.sh[]
+----
+
+.Output
+----
+include::src/bus.out[]
+----

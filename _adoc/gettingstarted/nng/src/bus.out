@@ -1,0 +1,16 @@
+node3: SENDING 'node3' ONTO BUS
+node0: SENDING 'node0' ONTO BUS
+node1: SENDING 'node1' ONTO BUS
+node2: SENDING 'node2' ONTO BUS
+node0: RECEIVED 'node1' FROM BUS
+node1: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node0' FROM BUS
+node3: RECEIVED 'node1' FROM BUS
+node0: RECEIVED 'node2' FROM BUS
+node1: RECEIVED 'node2' FROM BUS
+node3: RECEIVED 'node2' FROM BUS
+node0: RECEIVED 'node3' FROM BUS
+node2: RECEIVED 'node3' FROM BUS
+node1: RECEIVED 'node3' FROM BUS
+node3: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node1' FROM BUS

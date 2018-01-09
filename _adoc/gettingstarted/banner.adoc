@@ -4,3 +4,6 @@ NOTE: This document is derived from an original post by Tim Dysinger.
 That post is no longer available, but we have modified and restructured it,
 as well as making enhancments and corrections. 
 Tim's original code is on https://github.com/dysinger/nanomsg-examples[github], but we recommend using the examples here as they have a number of corrections.
+
+TIP: If you want to use the experimental https://github.com/nanomsg/nng[nng]
+library instead, see the document <<nng/index#,Getting Started with 'nng'>>.

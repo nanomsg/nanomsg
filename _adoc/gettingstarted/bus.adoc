@@ -24,7 +24,7 @@ include::src/bus.c[]
 .Compilation
 [source,bash]
 ----
-gcc bus.c -lnanomsg.a -o bus
+gcc bus.c -lnanomsg -o bus
 ----
 
 .Execution

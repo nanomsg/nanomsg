@@ -8,7 +8,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Getting Started with 'nanomsg'</title>
+<title>Getting Started with 'nng'</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -522,7 +522,7 @@ table.CodeRay td.code>pre{padding:0}
 </head>
 <body class="article">
 <div id="header">
-<h1><a href="index.html">Getting Started with 'nanomsg'</a></h1>
+<h1><a href="index.html">Getting Started with 'nng'</a></h1>
 </div>
 <div id="content">
 <div id="preamble">
@@ -535,22 +535,9 @@ table.CodeRay td.code>pre{padding:0}
 </td>
 <td class="content">
 This document is derived from an original post by Tim Dysinger.
-That post is no longer available, but we have modified and restructured it,
-as well as making enhancments and corrections.
-Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-examples">github</a>, but we recommend using the examples here as they have a number of corrections.
-</td>
-</tr>
-</table>
-</div>
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-If you want to use the experimental <a href="https://github.com/nanomsg/nng">nng</a>
-library instead, see the document <a href="nng/index.html">Getting Started with 'nng'</a>.
+However, the examples here are for <a href="https://github.com/nanomsg/nng">nng</a>
+instead of <a href="https://github.com/nanomsg/nanomsg">nanomsg</a>.  For the legacy
+nanomsg version of this, see <a href="../index.html">Getting Started with 'nanomsg'</a>.
 </td>
 </tr>
 </table>
@@ -558,39 +545,37 @@ library instead, see the document <a href="nng/index.html">Getting Started with 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_request_reply_i_ask_you_answer">Request/Reply (I ask, you answer)</h2>
+<h2 id="_pub_sub_topics_broadcast">Pub/Sub (Topics &amp; Broadcast)</h2>
 <div class="sectionbody">
 <div class="imageblock">
 <div class="content">
-<img src="reqrep.png" alt="I ask" width="you answer">
+<img src="../pubsub.png" alt="Topics &amp; Broadcast">
 </div>
 </div>
 <div class="paragraph">
-<p>Request/Reply is used for synchronous communications where each question
-is responded with a single answer, for example remote procedure calls (RPCs).
-Like <a href="pipeline.html">Pipeline</a>, it also can perform load-balancing.  This
-is the only reliaable messaging pattern in the suite, as it automatically
-will retry if a request is not matched with a response.</p>
+<p>This pattern is used to allow a single broadcaster to publish messages
+to many subscribers, which may choose to limit which messages they receive.</p>
 </div>
 <div class="listingblock">
-<div class="title">reqprep.c</div>
+<div class="title">pubsub.c</div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;stdlib.h&gt;</span>
 <span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
 <span class="preprocessor">#include</span> <span class="include">&lt;string.h&gt;</span>
 <span class="preprocessor">#include</span> <span class="include">&lt;time.h&gt;</span>
-<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
-<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/reqrep.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;unistd.h&gt;</span>
 
-<span class="preprocessor">#define</span> NODE0 <span class="string"><span class="delimiter">&quot;</span><span class="content">node0</span><span class="delimiter">&quot;</span></span>
-<span class="preprocessor">#define</span> NODE1 <span class="string"><span class="delimiter">&quot;</span><span class="content">node1</span><span class="delimiter">&quot;</span></span>
-<span class="preprocessor">#define</span> DATE <span class="string"><span class="delimiter">&quot;</span><span class="content">DATE</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nng/nng.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nng/protocol/pubsub0/pub.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nng/protocol/pubsub0/sub.h&gt;</span>
+
+<span class="preprocessor">#define</span> SERVER <span class="string"><span class="delimiter">&quot;</span><span class="content">server</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> CLIENT <span class="string"><span class="delimiter">&quot;</span><span class="content">client</span><span class="delimiter">&quot;</span></span>
 
 <span class="directive">void</span>
-fatal(<span class="directive">const</span> <span class="predefined-type">char</span> *func)
+fatal(<span class="directive">const</span> <span class="predefined-type">char</span> *func, <span class="predefined-type">int</span> rv)
 {
-        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">%s: %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, func, nn_strerror(nn_errno()));
-        exit(<span class="integer">1</span>);
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">%s: %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, func, nng_strerror(rv));
 }
 
 <span class="predefined-type">char</span> *
@@ -604,75 +589,67 @@ date(<span class="directive">void</span>)
 }
 
 <span class="predefined-type">int</span>
-node0(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
+server(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
 {
-        <span class="predefined-type">int</span> sz_date = strlen(DATE) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
-        <span class="predefined-type">int</span> sock;
+        nng_socket sock;
         <span class="predefined-type">int</span> rv;
 
-        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_REP)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">if</span> ((rv = nng_pub0_open(&amp;sock)) != <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_pub0_open</span><span class="delimiter">&quot;</span></span>, rv);
         }
-          <span class="keyword">if</span> ((rv = nn_bind(sock, url)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_bind</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">if</span> ((rv = nng_listen(sock, url, <span class="predefined-constant">NULL</span>, <span class="integer">0</span>)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_listen</span><span class="delimiter">&quot;</span></span>, rv);
         }
         <span class="keyword">for</span> (;;) {
-                <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
-                <span class="predefined-type">int</span> bytes;
-                <span class="keyword">if</span> ((bytes = nn_recv(sock, &amp;buf, NN_MSG, <span class="integer">0</span>)) &lt; <span class="integer">0</span>) {
-                        fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_recv</span><span class="delimiter">&quot;</span></span>);
+                <span class="predefined-type">char</span> *d = date();
+                printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">SERVER: PUBLISHING DATE %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, d);
+                <span class="keyword">if</span> ((rv = nng_send(sock, d, strlen(d) + <span class="integer">1</span>, <span class="integer">0</span>)) != <span class="integer">0</span>) {
+                        fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_send</span><span class="delimiter">&quot;</span></span>, rv);
                 }
-                <span class="keyword">if</span> ((bytes == (strlen(DATE) + <span class="integer">1</span>)) &amp;&amp; (strcmp(DATE, buf) == <span class="integer">0</span>)) {
-                        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE0: RECEIVED DATE REQUEST</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>);
-                        <span class="predefined-type">char</span> *d = date();
-                        <span class="predefined-type">int</span> sz_d = strlen(d) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
-                        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE0: SENDING DATE %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, d);
-                        <span class="keyword">if</span> ((bytes = nn_send(sock, d, sz_d, <span class="integer">0</span>)) &lt; <span class="integer">0</span>) {
-                                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_send</span><span class="delimiter">&quot;</span></span>);
-                        }
-                }
-                nn_freemsg(buf);
+                sleep(<span class="integer">1</span>);
         }
 }
 
 <span class="predefined-type">int</span>
-node1(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
+client(<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
 {
-        <span class="predefined-type">int</span> sz_date = strlen(DATE) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
-        <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
-        <span class="predefined-type">int</span> bytes = -<span class="integer">1</span>;
-        <span class="predefined-type">int</span> sock;
+        nng_socket sock;
         <span class="predefined-type">int</span> rv;
 
-        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_REQ)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">if</span> ((rv = nng_sub0_open(&amp;sock)) != <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_sub0_open</span><span class="delimiter">&quot;</span></span>, rv);
         }
-        <span class="keyword">if</span> ((rv = nn_connect (sock, url)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_connect</span><span class="delimiter">&quot;</span></span>);
+
+        <span class="comment">// subscribe to everything (empty means all topics)</span>
+        <span class="keyword">if</span> ((rv = nng_setopt(sock, NNG_OPT_SUB_SUBSCRIBE, <span class="string"><span class="delimiter">&quot;</span><span class="delimiter">&quot;</span></span>, <span class="integer">0</span>)) != <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_setopt</span><span class="delimiter">&quot;</span></span>, rv);
         }
-        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE1: SENDING DATE REQUEST %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, DATE);
-        <span class="keyword">if</span> ((bytes = nn_send(sock, DATE, sz_date, <span class="integer">0</span>)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_send</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">if</span> ((rv = nng_dial(sock, url, <span class="predefined-constant">NULL</span>, <span class="integer">0</span>)) != <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_dial</span><span class="delimiter">&quot;</span></span>, rv);
         }
-        <span class="keyword">if</span> ((bytes = nn_recv(sock, &amp;buf, NN_MSG, <span class="integer">0</span>)) &lt; <span class="integer">0</span>) {
-                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_recv</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">for</span> (;;) {
+                <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+                size_t sz;
+                <span class="keyword">if</span> ((rv = nng_recv(sock, &amp;buf, &amp;sz, NNG_FLAG_ALLOC)) != <span class="integer">0</span>) {
+                        fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nng_recv</span><span class="delimiter">&quot;</span></span>, rv);
+                }
+                printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">CLIENT (%s): RECEIVED %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                nng_free(buf, sz);
         }
-        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">NODE1: RECEIVED DATE %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, buf);  <i class="conum" data-value="1"></i><b>(1)</b>
-        nn_freemsg(buf);
-        <span class="keyword">return</span> (nn_shutdown(sock, <span class="integer">0</span>));
 }
 
 <span class="predefined-type">int</span>
 main(<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
 {
-        <span class="keyword">if</span> ((argc &gt; <span class="integer">1</span>) &amp;&amp; (strcmp(NODE0, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
-                <span class="keyword">return</span> (node0(argv[<span class="integer">2</span>]));
+        <span class="keyword">if</span> ((argc &gt;= <span class="integer">2</span>) &amp;&amp; (strcmp(SERVER, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (server(argv[<span class="integer">2</span>]));
 
-        <span class="keyword">if</span> ((argc &gt; <span class="integer">1</span>) &amp;&amp; (strcmp(NODE1, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
-                <span class="keyword">return</span> (node1(argv[<span class="integer">2</span>]));
+          <span class="keyword">if</span> ((argc &gt;= <span class="integer">3</span>) &amp;&amp; (strcmp(CLIENT, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (client (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]));
 
-      fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: reqrep %s|%s &lt;URL&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, NODE0, NODE1);
-      <span class="keyword">return</span> (<span class="integer">1</span>);
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pubsub %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
+            SERVER, CLIENT);
+        <span class="keyword">return</span> <span class="integer">1</span>;
 }</code></pre>
 </div>
 </div>
@@ -687,24 +664,44 @@ main(<span class="directive">const</span> <span class="predefined-type">int</spa
 <div class="listingblock">
 <div class="title">Compilation</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">gcc reqrep.c -lnanomsg -o reqrep</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">gcc pubsub.c -lnng -o pubsub</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Execution</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">./reqrep node0 ipc:///tmp/reqrep.ipc &amp; node0=$! &amp;&amp; sleep 1
-./reqrep node1 ipc:///tmp/reqrep.ipc
-kill $node0</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">./pubsub server ipc:///tmp/pubsub.ipc &amp; server=$! &amp;&amp; sleep 1
+./pubsub client ipc:///tmp/pubsub.ipc client0 &amp; client0=$!
+./pubsub client ipc:///tmp/pubsub.ipc client1 &amp; client1=$!
+./pubsub client ipc:///tmp/pubsub.ipc client2 &amp; client2=$!
+sleep 5
+kill $server $client0 $client1 $client2</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">Output</div>
 <div class="content">
-<pre>NODE1: SENDING DATE REQUEST DATE
-NODE0: RECEIVED DATE REQUEST
-NODE0: SENDING DATE Sat Sep  7 17:39:01 2013
-NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
+<pre>SERVER: PUBLISHING DATE Tue Jan  9 08:21:31 2018
+SERVER: PUBLISHING DATE Tue Jan  9 08:21:32 2018
+CLIENT (client2): RECEIVED Tue Jan  9 08:21:32 2018
+CLIENT (client1): RECEIVED Tue Jan  9 08:21:32 2018
+CLIENT (client0): RECEIVED Tue Jan  9 08:21:32 2018
+SERVER: PUBLISHING DATE Tue Jan  9 08:21:33 2018
+CLIENT (client0): RECEIVED Tue Jan  9 08:21:33 2018
+CLIENT (client2): RECEIVED Tue Jan  9 08:21:33 2018
+CLIENT (client1): RECEIVED Tue Jan  9 08:21:33 2018
+SERVER: PUBLISHING DATE Tue Jan  9 08:21:34 2018
+CLIENT (client2): RECEIVED Tue Jan  9 08:21:34 2018
+CLIENT (client0): RECEIVED Tue Jan  9 08:21:34 2018
+CLIENT (client1): RECEIVED Tue Jan  9 08:21:34 2018
+SERVER: PUBLISHING DATE Tue Jan  9 08:21:35 2018
+CLIENT (client0): RECEIVED Tue Jan  9 08:21:35 2018
+CLIENT (client1): RECEIVED Tue Jan  9 08:21:35 2018
+CLIENT (client2): RECEIVED Tue Jan  9 08:21:35 2018
+SERVER: PUBLISHING DATE Tue Jan  9 08:21:36 2018
+CLIENT (client0): RECEIVED Tue Jan  9 08:21:36 2018
+CLIENT (client1): RECEIVED Tue Jan  9 08:21:36 2018
+CLIENT (client2): RECEIVED Tue Jan  9 08:21:36 2018</pre>
 </div>
 </div>
 </div>
@@ -712,7 +709,7 @@ NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-01-09 01:08:26 UTC
+Last updated 2018-01-09 19:42:00 UTC
 </div>
 </div>
 </body>

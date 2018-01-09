@@ -1,0 +1,40 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Survey (Everybody Votes)
+
+image::../survey.png[Everybody Votes]
+
+The surveyor pattern is used to send a timed survey out, responses
+are individually returned until the survey has expired.  This pattern
+is useful for service discovery and voting algorithms.
+
+.survey.c
+[source,c]
+----
+include::src/survey.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc survey.c -lnng -o survey
+----
+
+.Execution
+[source,bash]
+----
+include::src/survey.sh[]
+----
+<1> The first survey times out with no responses because the clients aren’t connected yet.
+
+.Output
+----
+include::src/survey.out[]
+----

@@ -1,0 +1,6 @@
+node0: SENDING "node0"
+node1: RECEIVED "node0"
+node1: SENDING "node1"
+node0: SENDING "node0"
+node0: RECEIVED "node1"
+node1: RECEIVED "node0"

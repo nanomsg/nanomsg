@@ -24,7 +24,7 @@ include::src/survey.c[]
 .Compilation
 [source,bash]
 ----
-gcc survey.c -lnanmosg -o survey
+gcc survey.c -lnanomosg -o survey
 ----
 
 .Execution

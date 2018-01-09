@@ -1,0 +1,38 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Pub/Sub (Topics & Broadcast)
+
+image::../pubsub.png[Topics & Broadcast]
+
+This pattern is used to allow a single broadcaster to publish messages
+to many subscribers, which may choose to limit which messages they receive.
+
+.pubsub.c
+[source,c]
+----
+include::src/pubsub.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc pubsub.c -lnng -o pubsub
+----
+
+.Execution
+[source,bash]
+----
+include::src/pubsub.sh[]
+----
+
+.Output
+----
+include::src/pubsub.out[]
+----

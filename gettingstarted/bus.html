@@ -542,6 +542,19 @@ Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-exa
 </tr>
 </table>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If you want to use the experimental <a href="https://github.com/nanomsg/nng">nng</a>
+library instead, see the document <a href="nng/index.html">Getting Started with 'nng'</a>.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -643,7 +656,7 @@ main(<span class="predefined-type">int</span> argc, <span class="directive">cons
 <div class="listingblock">
 <div class="title">Compilation</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">gcc bus.c -lnanomsg.a -o bus</code></pre>
+<pre class="CodeRay highlight"><code data-lang="bash">gcc bus.c -lnanomsg -o bus</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -683,7 +696,7 @@ node3: RECEIVED 'node2' FROM BUS</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-01-09 01:08:26 UTC
+Last updated 2018-01-09 14:17:57 UTC
 </div>
 </div>
 </body>

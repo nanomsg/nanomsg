@@ -1,0 +1,41 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Request/Reply (I ask, you answer)
+
+image::../reqrep.png[I ask, you answer]
+
+Request/Reply is used for synchronous communications where each question
+is responded with a single answer, for example remote procedure calls (RPCs).
+Like <<pipeline#,Pipeline>>, it also can perform load-balancing.  This
+is the only reliable messaging pattern in the suite, as it automatically
+will retry if a request is not matched with a response.
+
+.reqprep.c
+[source,c]
+----
+include::src/reqrep.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc reqrep.c -lnng -o reqrep
+----
+
+.Execution
+[source,bash]
+----
+include::src/reqrep.sh[]
+----
+
+.Output
+----
+include::src/reqrep.out[]
+----

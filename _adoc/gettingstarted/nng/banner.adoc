@@ -1,0 +1,6 @@
+= <<index#,Getting Started with 'nng'>>
+
+NOTE: This document is derived from an original post by Tim Dysinger.
+However, the examples here are for https://github.com/nanomsg/nng[nng]
+instead of https://github.com/nanomsg/nanomsg[nanomsg].  For the legacy
+nanomsg version of this, see <<../index#,Getting Started with 'nanomsg'>>. 

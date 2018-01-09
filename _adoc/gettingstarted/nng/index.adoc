@@ -1,0 +1,22 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Messaging Patterns
+
+http://nanomsg.github.io/nng[nng] is a messaging framework that attempts to
+help solve common messaging problems with one of a few patterns ('protocols'
+in nng parlance.)
+
+Following are examples of each pattern type in C.
+
+* <<pipeline#,Pipeline (A One-Way Pipe)>>
+* <<reqrep#,Request/Reply (I ask, you answer)>> 
+* <<pair#,Pair (Two Way Radio)>>
+* <<pubsub#,Pub/Sub (Topics & Broadcast)>>
+* <<survey#,Survey (Everybody Votes)>>
+* <<bus#,Bus (Routing)>>

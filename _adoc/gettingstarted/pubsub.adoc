@@ -23,7 +23,7 @@ include::src/pubsub.c[]
 .Compilation
 [source,bash]
 ----
-gcc pubsub.c /usr/local/lib/libnanomsg.a -o pubsub
+gcc pubsub.c -lnanomsg -o pubsub
 ----
 
 .Execution

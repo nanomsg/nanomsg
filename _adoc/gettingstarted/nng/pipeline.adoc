@@ -1,0 +1,39 @@
+---
+layout: default
+---
+:source-highlighter: coderay
+:icons: font
+
+include::banner.adoc[]
+
+== Pipeline (A One-Way Pipe)
+
+image::../pipeline.png[A One-Way Pipe]
+
+This pattern is useful for solving producer/consumer problems, including
+load-balancing.  Messages flow from the push side to the pull side.  If
+multiple peers are connected, the pattern attempts to distribute fairly.
+
+.pipeline.c
+[source,C]
+----
+include::src/pipeline.c[]
+----
+<1> Blithely assumes message is ASCIIZ string. Real code should check it.
+
+.Compilation
+[source,bash]
+----
+gcc pipeline.c -lnng -o pipeline
+----
+
+.Execution
+[source,bash]
+----
+include::src/pipeline.sh[]
+----
+
+.Output
+----
+include::src/pipeline.out[]
+----

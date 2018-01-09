@@ -542,6 +542,19 @@ Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-exa
 </tr>
 </table>
 </div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+If you want to use the experimental <a href="https://github.com/nanomsg/nng">nng</a>
+library instead, see the document <a href="nng/index.html">Getting Started with 'nng'</a>.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -680,10 +693,11 @@ kill $node0 $node1</code></pre>
 <div class="listingblock">
 <div class="title">Output</div>
 <div class="content">
-<pre>NODE1: SENDING DATE REQUEST DATE
-NODE0: RECEIVED DATE REQUEST
-NODE0: SENDING DATE Sat Sep  7 17:39:01 2013
-NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
+<pre>node0: SENDING "node0"
+node1: SENDING "node1"
+node1: RECEIVED"node0"
+node0: SENDING "node0"
+node0: RECEIVED"node1"</pre>
 </div>
 </div>
 </div>
@@ -691,7 +705,7 @@ NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-01-09 01:08:26 UTC
+Last updated 2018-01-09 14:16:57 UTC
 </div>
 </div>
 </body>

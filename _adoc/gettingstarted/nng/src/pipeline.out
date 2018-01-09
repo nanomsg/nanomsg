@@ -1,0 +1,4 @@
+NODE1: SENDING "Hello, World!"
+NODE0: RECEIVED "Hello, World!"
+NODE1: SENDING "Goodbye."
+NODE0: RECEIVED "Goodbye."

@@ -522,7 +522,7 @@ table.CodeRay td.code>pre{padding:0}
 </head>
 <body class="article">
 <div id="header">
-<h1><a href="#">Getting Started with 'nanomsg'</a></h1>
+<h1><a href="index.html">Getting Started with 'nanomsg'</a></h1>
 </div>
 <div id="content">
 <div id="preamble">
@@ -545,37 +545,146 @@ Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-exa
 </div>
 </div>
 <div class="sect1">
-<h2 id="_messaging_patterns">Messaging Patterns</h2>
+<h2 id="_pair_two_way_radio">Pair (Two Way Radio)</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p><a href="http://nanomsg.org">Nanomsg</a> is a messaging framework that attempts to
-help solve common messaging problems with one of a few patterns ('protocols'
-in nanomsg parlance.)</p>
+<div class="imageblock">
+<div class="content">
+<img src="pair.png" alt="Two Way Radio">
+</div>
 </div>
 <div class="paragraph">
-<p>Following are examples of each pattern type in C.</p>
+<p>The pair pattern is used when there a one-to-one peer relationship.
+Only one peer may be connected to another peer at a time, but both
+may speak freely.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="pipeline.html">Pipeline (A One-Way Pipe)</a></p>
-</li>
-<li>
-<p><a href="reqrep.html">Request/Reply (I ask, you answer)</a></p>
-</li>
-<li>
-<p><a href="pair.html">Pair (Two Way Radio)</a></p>
-</li>
-<li>
-<p><a href="pubsub.html">Pub/Sub (Topics &amp; Broadcast)</a></p>
-</li>
-<li>
-<p><a href="survey.html">Survey (Everybody Votes)</a></p>
-</li>
-<li>
-<p><a href="bus.html">Bus (Routing)</a></p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="title">pair.c</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdlib.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;string.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;unistd.h&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pair.h&gt;</span>
+
+<span class="preprocessor">#define</span> NODE0 <span class="string"><span class="delimiter">&quot;</span><span class="content">node0</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> NODE1 <span class="string"><span class="delimiter">&quot;</span><span class="content">node1</span><span class="delimiter">&quot;</span></span>
+
+<span class="directive">void</span>
+fatal(<span class="directive">const</span> <span class="predefined-type">char</span> *func)
+{
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">%s: %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, func, nn_strerror(nn_errno()));
+        exit(<span class="integer">1</span>);
+}
+
+<span class="predefined-type">int</span>
+send_name(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
+{
+        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: SENDING </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, name);
+        <span class="predefined-type">int</span> sz_n = strlen(name) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+        <span class="keyword">return</span> (nn_send(sock, name, sz_n, <span class="integer">0</span>));
+}
+
+<span class="predefined-type">int</span>
+recv_name(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
+{
+        <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+        <span class="predefined-type">int</span> result = nn_recv(sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+        <span class="keyword">if</span> (result &gt; <span class="integer">0</span>) {
+                printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: RECEIVED </span><span class="char">\&quot;</span><span class="content">%s</span><span class="char">\&quot;</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                nn_freemsg(buf);
+        }
+        <span class="keyword">return</span> (result);
+}
+
+<span class="predefined-type">int</span>
+send_recv(<span class="predefined-type">int</span> sock, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
+{
+        <span class="predefined-type">int</span> to = <span class="integer">100</span>;
+        <span class="keyword">if</span> (nn_setsockopt(sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to,
+            <span class="keyword">sizeof</span> (to)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_setsockopt</span><span class="delimiter">&quot;</span></span>);
+        }
+
+        <span class="keyword">for</span> (;;) {
+                recv_name(sock, name);
+                sleep(<span class="integer">1</span>);
+                send_name(sock, name);
+        }
+}
+
+<span class="predefined-type">int</span>
+node0(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
+{
+        <span class="predefined-type">int</span> sock;
+        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_PAIR)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        }
+         <span class="keyword">if</span> (nn_bind(sock, url) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_bind</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">return</span> (send_recv(sock, NODE0));
+}
+
+<span class="predefined-type">int</span>
+node1(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
+{
+        <span class="predefined-type">int</span> sock;
+        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_PAIR)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">if</span> (nn_connect(sock, url) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_connect</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">return</span> (send_recv(sock, NODE1));
+}
+
+<span class="predefined-type">int</span>
+main(<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
+{
+        <span class="keyword">if</span> ((argc &gt; <span class="integer">1</span>) &amp;&amp; (strcmp(NODE0, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (node0(argv[<span class="integer">2</span>]));
+
+        <span class="keyword">if</span> ((argc &gt; <span class="integer">1</span>) &amp;&amp; (strcmp(NODE1, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (node1(argv[<span class="integer">2</span>]));
+
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pair %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, NODE0, NODE1);
+        <span class="keyword">return</span> <span class="integer">1</span>;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">gcc pair.c -lnanomsg -o pair</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">./pair node0 ipc:///tmp/pair.ipc &amp; node0=$!
+./pair node1 ipc:///tmp/pair.ipc &amp; node1=$!
+sleep 3
+kill $node0 $node1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>NODE1: SENDING DATE REQUEST DATE
+NODE0: RECEIVED DATE REQUEST
+NODE0: SENDING DATE Sat Sep  7 17:39:01 2013
+NODE1: RECEIVED DATE Sat Sep  7 17:39:01 2013</pre>
+</div>
 </div>
 </div>
 </div>

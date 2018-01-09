@@ -522,7 +522,7 @@ table.CodeRay td.code>pre{padding:0}
 </head>
 <body class="article">
 <div id="header">
-<h1><a href="#">Getting Started with 'nanomsg'</a></h1>
+<h1><a href="index.html">Getting Started with 'nanomsg'</a></h1>
 </div>
 <div id="content">
 <div id="preamble">
@@ -545,37 +545,160 @@ Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-exa
 </div>
 </div>
 <div class="sect1">
-<h2 id="_messaging_patterns">Messaging Patterns</h2>
+<h2 id="_pub_sub_topics_broadcast">Pub/Sub (Topics &amp; Broadcast)</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p><a href="http://nanomsg.org">Nanomsg</a> is a messaging framework that attempts to
-help solve common messaging problems with one of a few patterns ('protocols'
-in nanomsg parlance.)</p>
+<div class="imageblock">
+<div class="content">
+<img src="pubsub.png" alt="Topics &amp; Broadcast">
+</div>
 </div>
 <div class="paragraph">
-<p>Following are examples of each pattern type in C.</p>
+<p>This pattern is used to allow a single broadcaster to publish messages
+to many subscribers, which may choose to limit which messages they receive.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="pipeline.html">Pipeline (A One-Way Pipe)</a></p>
-</li>
-<li>
-<p><a href="reqrep.html">Request/Reply (I ask, you answer)</a></p>
-</li>
-<li>
-<p><a href="pair.html">Pair (Two Way Radio)</a></p>
-</li>
-<li>
-<p><a href="pubsub.html">Pub/Sub (Topics &amp; Broadcast)</a></p>
-</li>
-<li>
-<p><a href="survey.html">Survey (Everybody Votes)</a></p>
-</li>
-<li>
-<p><a href="bus.html">Bus (Routing)</a></p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="title">pubsub.c</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;stdlib.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;string.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;time.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;unistd.h&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/pubsub.h&gt;</span>
+
+<span class="preprocessor">#define</span> SERVER <span class="string"><span class="delimiter">&quot;</span><span class="content">server</span><span class="delimiter">&quot;</span></span>
+<span class="preprocessor">#define</span> CLIENT <span class="string"><span class="delimiter">&quot;</span><span class="content">client</span><span class="delimiter">&quot;</span></span>
+
+<span class="directive">void</span>
+fatal(<span class="directive">const</span> <span class="predefined-type">char</span> *func)
+{
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">%s: %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, func, nn_strerror(nn_errno()));
+}
+
+<span class="predefined-type">char</span> *
+date(<span class="directive">void</span>)
+{
+        time_t now = time(&amp;now);
+        <span class="keyword">struct</span> tm *info = localtime(&amp;now);
+        <span class="predefined-type">char</span> *text = asctime(info);
+        text[strlen(text)-<span class="integer">1</span>] = <span class="char">'\0'</span>; <span class="comment">// remove '\n'</span>
+        <span class="keyword">return</span> (text);
+}
+
+<span class="predefined-type">int</span>
+server(<span class="directive">const</span> <span class="predefined-type">char</span> *url)
+{
+        <span class="predefined-type">int</span> sock;
+
+        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_PUB)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        }
+          <span class="keyword">if</span> (nn_bind(sock, url) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_bind</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">for</span> (;;) {
+                <span class="predefined-type">char</span> *d = date();
+                <span class="predefined-type">int</span> sz_d = strlen(d) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+                printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">SERVER: PUBLISHING DATE %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, d);
+                <span class="predefined-type">int</span> bytes = nn_send(sock, d, sz_d, <span class="integer">0</span>);
+                <span class="keyword">if</span> (bytes &lt; <span class="integer">0</span>) {
+                        fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_send</span><span class="delimiter">&quot;</span></span>);
+                }
+                sleep(<span class="integer">1</span>);
+        }
+}
+
+<span class="predefined-type">int</span>
+client(<span class="directive">const</span> <span class="predefined-type">char</span> *url, <span class="directive">const</span> <span class="predefined-type">char</span> *name)
+{
+        <span class="predefined-type">int</span> sock;
+
+        <span class="keyword">if</span> ((sock = nn_socket(AF_SP, NN_SUB)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        }
+
+        <span class="comment">// subscribe to everything (&quot;&quot; means all topics)</span>
+        <span class="keyword">if</span> (nn_setsockopt(sock, NN_SUB, NN_SUB_SUBSCRIBE, <span class="string"><span class="delimiter">&quot;</span><span class="delimiter">&quot;</span></span>, <span class="integer">0</span>) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_setsockopt</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">if</span> (nn_connect(sock, url) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_connet</span><span class="delimiter">&quot;</span></span>);
+        }
+        <span class="keyword">for</span> (;;) {
+                <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+                <span class="predefined-type">int</span> bytes = nn_recv(sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+                <span class="keyword">if</span> (bytes &lt; <span class="integer">0</span>) {
+                        fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_recv</span><span class="delimiter">&quot;</span></span>);
+                }
+                printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">CLIENT (%s): RECEIVED %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                nn_freemsg(buf);
+        }
+}
+
+<span class="predefined-type">int</span>
+main(<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
+{
+        <span class="keyword">if</span> ((argc &gt;= <span class="integer">2</span>) &amp;&amp; (strcmp(SERVER, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (server(argv[<span class="integer">2</span>]));
+
+          <span class="keyword">if</span> ((argc &gt;= <span class="integer">3</span>) &amp;&amp; (strcmp(CLIENT, argv[<span class="integer">1</span>]) == <span class="integer">0</span>))
+                <span class="keyword">return</span> (client (argv[<span class="integer">2</span>], argv[<span class="integer">3</span>]));
+
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: pubsub %s|%s &lt;URL&gt; &lt;ARG&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>,
+            SERVER, CLIENT);
+        <span class="keyword">return</span> <span class="integer">1</span>;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">gcc pubsub.c /usr/local/lib/libnanomsg.a -o pubsub</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">./pubsub server ipc:///tmp/pubsub.ipc &amp; server=$! &amp;&amp; sleep 1
+./pubsub client ipc:///tmp/pubsub.ipc client0 &amp; client0=$!
+./pubsub client ipc:///tmp/pubsub.ipc client1 &amp; client1=$!
+./pubsub client ipc:///tmp/pubsub.ipc client2 &amp; client2=$!
+sleep 5
+kill $server $client0 $client1 $client2</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>SERVER: PUBLISHING DATE Sat Sep  7 17:40:11 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:12 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:13 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:13 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:13 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:13 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:14 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:14 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:14 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:14 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:15 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:15 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:15 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:15 2013
+SERVER: PUBLISHING DATE Sat Sep  7 17:40:16 2013
+CLIENT (client1): RECEIVED Sat Sep  7 17:40:16 2013
+CLIENT (client2): RECEIVED Sat Sep  7 17:40:16 2013
+CLIENT (client0): RECEIVED Sat Sep  7 17:40:16 2013</pre>
+</div>
 </div>
 </div>
 </div>

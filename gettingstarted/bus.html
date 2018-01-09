@@ -522,7 +522,7 @@ table.CodeRay td.code>pre{padding:0}
 </head>
 <body class="article">
 <div id="header">
-<h1><a href="#">Getting Started with 'nanomsg'</a></h1>
+<h1><a href="index.html">Getting Started with 'nanomsg'</a></h1>
 </div>
 <div id="content">
 <div id="preamble">
@@ -545,37 +545,138 @@ Tim&#8217;s original code is on <a href="https://github.com/dysinger/nanomsg-exa
 </div>
 </div>
 <div class="sect1">
-<h2 id="_messaging_patterns">Messaging Patterns</h2>
+<h2 id="_bus_routing">Bus (Routing)</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p><a href="http://nanomsg.org">Nanomsg</a> is a messaging framework that attempts to
-help solve common messaging problems with one of a few patterns ('protocols'
-in nanomsg parlance.)</p>
+<div class="imageblock">
+<div class="content">
+<img src="bus.png" alt="A Simple Bus">
+</div>
 </div>
 <div class="paragraph">
-<p>Following are examples of each pattern type in C.</p>
+<p>The bus protocol is useful for routing applications, or for building
+fully interconnected mesh networks.  In this pattern, messages are
+sent to every directly connected peer.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="pipeline.html">Pipeline (A One-Way Pipe)</a></p>
-</li>
-<li>
-<p><a href="reqrep.html">Request/Reply (I ask, you answer)</a></p>
-</li>
-<li>
-<p><a href="pair.html">Pair (Two Way Radio)</a></p>
-</li>
-<li>
-<p><a href="pubsub.html">Pub/Sub (Topics &amp; Broadcast)</a></p>
-</li>
-<li>
-<p><a href="survey.html">Survey (Everybody Votes)</a></p>
-</li>
-<li>
-<p><a href="bus.html">Bus (Routing)</a></p>
-</li>
-</ul>
+<div class="listingblock">
+<div class="title">bus.c</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="c"><span class="preprocessor">#include</span> <span class="include">&lt;stdio.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;stdlib.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;string.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;unistd.h&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/nn.h&gt;</span>
+<span class="preprocessor">#include</span> <span class="include">&lt;nanomsg/bus.h&gt;</span>
+
+<span class="directive">void</span>
+fatal(<span class="directive">const</span> <span class="predefined-type">char</span> *func)
+{
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">%s: %s</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, func, nn_strerror(nn_errno()));
+        exit(<span class="integer">1</span>);
+}
+
+<span class="predefined-type">int</span>
+node(<span class="directive">const</span> <span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
+{
+        <span class="predefined-type">int</span> sock;
+
+        <span class="keyword">if</span> ((sock = nn_socket (AF_SP, NN_BUS)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_socket</span><span class="delimiter">&quot;</span></span>);
+        }
+          <span class="keyword">if</span> (nn_bind(sock, argv[<span class="integer">2</span>]) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_bind</span><span class="delimiter">&quot;</span></span>);
+        }
+
+        sleep(<span class="integer">1</span>); <span class="comment">// wait for peers to bind</span>
+        <span class="keyword">if</span> (argc &gt;= <span class="integer">3</span>) {
+                <span class="keyword">for</span> (<span class="predefined-type">int</span> x = <span class="integer">3</span>; x &lt; argc; x++) {
+                        <span class="keyword">if</span> (nn_connect(sock, argv[x]) &lt; <span class="integer">0</span>) {
+                                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_connect</span><span class="delimiter">&quot;</span></span>);
+                        }
+                }
+        }
+        sleep(<span class="integer">1</span>); <span class="comment">// wait for connections</span>
+        <span class="predefined-type">int</span> to = <span class="integer">100</span>;
+        <span class="keyword">if</span> (nn_setsockopt(sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to,
+            <span class="keyword">sizeof</span> (to)) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_setsockopt</span><span class="delimiter">&quot;</span></span>);
+        }
+
+        <span class="comment">// SEND</span>
+        <span class="predefined-type">int</span> sz_n = strlen(argv[<span class="integer">1</span>]) + <span class="integer">1</span>; <span class="comment">// '\0' too</span>
+        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: SENDING '%s' ONTO BUS</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, argv[<span class="integer">1</span>], argv[<span class="integer">1</span>]);
+        <span class="keyword">if</span> (nn_send(sock, argv[<span class="integer">1</span>], sz_n, <span class="integer">0</span>) &lt; <span class="integer">0</span>) {
+                fatal(<span class="string"><span class="delimiter">&quot;</span><span class="content">nn_send</span><span class="delimiter">&quot;</span></span>);
+        }
+
+        <span class="comment">// RECV</span>
+        <span class="keyword">for</span> (;;) {
+                <span class="predefined-type">char</span> *buf = <span class="predefined-constant">NULL</span>;
+                <span class="predefined-type">int</span> recv = nn_recv(sock, &amp;buf, NN_MSG, <span class="integer">0</span>);
+                <span class="keyword">if</span> (recv &gt;= <span class="integer">0</span>) {
+                        printf(<span class="string"><span class="delimiter">&quot;</span><span class="content">%s: RECEIVED '%s' FROM BUS</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>, argv[<span class="integer">1</span>], buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                        nn_freemsg(buf);
+                }
+        }
+        <span class="keyword">return</span> (nn_shutdown(sock, <span class="integer">0</span>));
+}
+
+<span class="predefined-type">int</span>
+main(<span class="predefined-type">int</span> argc, <span class="directive">const</span> <span class="predefined-type">char</span> **argv)
+{
+        <span class="keyword">if</span> (argc &gt;= <span class="integer">3</span>) {
+                <span class="keyword">return</span> (node(argc, argv));
+        }
+        fprintf(stderr, <span class="string"><span class="delimiter">&quot;</span><span class="content">Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...</span><span class="char">\n</span><span class="delimiter">&quot;</span></span>);
+        <span class="keyword">return</span> <span class="integer">1</span>;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">gcc bus.c -lnanomsg.a -o bus</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">./bus node0 ipc:///tmp/node0.ipc ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc &amp; node0=$!
+./bus node1 ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node1=$!
+./bus node2 ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node2=$!
+./bus node3 ipc:///tmp/node3.ipc ipc:///tmp/node0.ipc &amp; node3=$!
+sleep 5
+kill $node0 $node1 $node2 $node3</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>node0: SENDING 'node0' ONTO BUS
+node1: SENDING 'node1' ONTO BUS
+node2: SENDING 'node2' ONTO BUS
+node3: SENDING 'node3' ONTO BUS
+node0: RECEIVED 'node1' FROM BUS
+node0: RECEIVED 'node2' FROM BUS
+node0: RECEIVED 'node3' FROM BUS
+node1: RECEIVED 'node0' FROM BUS
+node1: RECEIVED 'node2' FROM BUS
+node1: RECEIVED 'node3' FROM BUS
+node2: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node1' FROM BUS
+node2: RECEIVED 'node3' FROM BUS
+node3: RECEIVED 'node0' FROM BUS
+node3: RECEIVED 'node1' FROM BUS
+node3: RECEIVED 'node2' FROM BUS</pre>
+</div>
 </div>
 </div>
 </div>

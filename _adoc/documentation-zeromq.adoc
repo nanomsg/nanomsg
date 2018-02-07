@@ -25,13 +25,13 @@ ZeroMQ API, while modeled on BSD socket API, doesn't match the API fully. nanoms
 
 == Implementation Language
 
-The library is implemented in C instead of C++.
+The library is implemented in C instead of {cpp}.
 
-* From user's point of view it means that there's no dependency on C++ runtime (libstdc++ or similar) which may be handy in constrained and embedded environments.
+* From user's point of view it means that there's no dependency on {cpp} runtime (`libstdc++` or similar) which may be handy in constrained and embedded environments.
 * From nanomsg developer's point of view it makes life easier.
-* Number of memory allocations is drastically reduced as intrusive containers are used instead of C++ STL containers.
+* Number of memory allocations is drastically reduced as intrusive containers are used instead of {cpp} STL containers.
 * The above also means less memory fragmentation, less cache misses, etc.
-* More discussion on the C vs. C++ topic can be found http://250bpm.com/blog:4[here] and http://250bpm.com/blog:8[here].
+* More discussion on the C vs. {cpp} topic can be found http://250bpm.com/blog:4[here] and http://250bpm.com/blog:8[here].
 
 == Pluggable Transports and Protocols
 

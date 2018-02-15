@@ -74,11 +74,10 @@ do
 		printf "%s\n" "---" >> $output
 		;;
 	*)
-		# dofront >> $output < $input
+		dofront >> $output < $input
 		;;
 	esac
 
 
-	dofront < $input >> $output
 	env SOURCE_DATE_EPOCH=${when} asciidoctor ${aargs} -b html5 -o - -a skip-front-matter $input >> $output
 done

@@ -4,7 +4,7 @@ layout: default
 :source-highlighter: coderay
 :icons: font
 
-include::banner.adoc[]
+include::_banner.adoc[]
 
 == Pipeline (A One-Way Pipe)
 

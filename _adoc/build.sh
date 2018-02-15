@@ -5,6 +5,27 @@
 # of annoying, since Jekyll on github-pages doesn't support asciidoctor
 # properly.
 
+# File names starting with and underscore are skipped, as they are considered
+# as included content.
+
+dofront()
+{
+	read line
+	if [ "${line}" != "---" ]
+	then
+		return
+	fi
+	printf "%s\n" "---"
+	while read line
+	do
+		printf "%s\n" "${line}"
+		if [ "${line}" = "---" ]
+		then
+			break
+		fi
+	done
+}
+
 cd $(dirname $0)
 if [ -n "$1" ]
 then
@@ -19,6 +40,12 @@ do
 	indir=${indir#./}
 	output=../${input%.adoc}.html
         outdir=../${indir}
+	aargs=
+	case "${input##*/}" in
+	_*)	printf "Skipping %s\n" "$input"
+		continue
+		;;
+	esac
 
 	when=$(git log -n1 --format='%ad' '--date=format-local:%s' $f)
 	if [[ -z "${when}" ]]
@@ -27,54 +54,31 @@ do
 	fi
 	
 	echo "Processing $input -> $output"
-	infrontmatter=0
-	manpage=0
-	frontmatter=
+
+	if [ -n "$indir" ] && [ ! -d "$outdir" ]
+	then
+		mkdir -p $outdir
+	fi
+	> $output
+
+	aargs=
         case $input in
         v[0-9]*)
 		vers=${input#v}
 		vers=${vers%%/*}
 		aargs="${aargs} -aversion-label=nanomsg -arevnumber=${vers} -dmanpage"
-		manpage=1
+		# for man pages, we supply our own front matter
+		printf "%s\n" "---" >> $output
+		printf "version: %s\n" "${vers}" >> $output
+		printf "layout: default\n" >> $output
+		printf "%s\n" "---" >> $output
+		;;
+	*)
+		# dofront >> $output < $input
 		;;
 	esac
-	while read line; do
-		if [[ "$line" == "---" ]]
-		then
-			if (( $infrontmatter != 0 ))
-			then
-				break
-			else
-				infrontmatter=1
-			fi
-		elif [[ "$infrontmatter" != 0 ]]
-		then
-			if [[ -z "$frontmater" ]]
-			then
-				frontmatter="$line"
-			else
-				frontmatter="$frontmatter\n$line"
-			fi
-		elif (( $manpage != 0 ))
-		then
-			frontmatter="version: ${vers}\nlayout: default"
-			break
-		else
-			break
-		fi
 
-	done < $input
 
-	if [[ -n "$indir" ]] && [[ ! -d "$outdir" ]]
-	then
-		mkdir -p $outdir
-	fi
-
-	if [[ -n "$frontmatter" ]]
-	then
-		echo "---"
-		echo "$frontmatter"
-		echo "---"
-		env SOURCE_DATE_EPOCH=${when} asciidoctor ${aargs} -b html5 -o - -a skip-front-matter $input
-	fi > $output
+	dofront < $input >> $output
+	env SOURCE_DATE_EPOCH=${when} asciidoctor ${aargs} -b html5 -o - -a skip-front-matter $input >> $output
 done

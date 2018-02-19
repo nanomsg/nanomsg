@@ -73,8 +73,22 @@ For the SCALABILITY PROTOCOLS Mark, the preferred nouns are "`specifications`",
 
 This Policy also covers our logos (the "`Logos`"):
 
+[caption="Figure 1. "]
 .The nanomsg double-ended arrow logo.
-image::http://nanomsg.org/arrows.png[nanomsg,100,100]
+|===
+a|image::http://nanomsg.org/arrows.png[nanomsg,100,100]
+|===
+
++++
+<link href="https://fonts.googleapis.com/css?family=Comfortaa" rel="stylesheet">
++++
+[caption="Figure 2. "]
+.Stylized project name.
+|===
+|+++
+<b><p align=left style="font-family: 'Comfortaa', cursive; font-size: 36px; text-shadow: 4px 4px 4px #aaa">nano<font color="#ba5836">msg</font><sup style="font-family: 'Arial', sans; font-size: 14px; color: #aaa; text-shadow: none">&trade;</sup></p></b>
++++
+|===
 
 ==== Trade Dress
 

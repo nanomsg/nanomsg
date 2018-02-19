@@ -1,3 +1,6 @@
+---
+layout: default
+---
 = Trademark Policy
 :owner: Garrett D'Amore
 :project: NANOMSG

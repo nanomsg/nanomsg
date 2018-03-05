@@ -436,8 +436,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="details">
 <span id="author" class="author">Garrett D'Amore</span><br>
 <span id="email" class="email"><a href="mailto:garrett@damore.org">garrett@damore.org</a></span><br>
-<span id="revnumber">version 0.8,</span>
-<span id="revdate">2017-11-07</span>
+<span id="revnumber">version 0.10,</span>
+<span id="revdate">2018-03-05</span>
 </div>
 </div>
 <div id="content">
@@ -460,7 +460,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Authors: <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a></p>
 </li>
 <li>
-<p>Version 0.8</p>
+<p>Version 0.10</p>
 </li>
 </ul>
 </div>
@@ -482,8 +482,8 @@ and does not require a TCP/IP stack.</p>
 <h2 id="_license">License</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Copyright 2017 <a href="mailto:garrett@damore.org">Garrett D&#8217;Amore</a><br>
-Copyright 2017 <a href="mailto:info@capitar.com">Capitar IT Group BV</a></p>
+<p>Copyright 2018 <a href="mailto:info@staysail.tech">Staysail Systems, Inc.</a><br>
+Copyright 2018 <a href="mailto:info@capitar.com">Capitar IT Group BV</a></p>
 </div>
 <div class="paragraph">
 <p>This specification is licensed under the Apache License, Version 2.0
@@ -531,8 +531,8 @@ from a hash of the public key associated with the application.</p>
 </div>
 <div class="paragraph">
 <p>Sharing of ZeroTier IDs between applications, as well as use of multiple
-_ZTID_s within a single application, as well as management of the associated
-ZeroTier-specific state is out of scope for this document.</p>
+<em>ZTID</em> values within a single application, as well as management of the
+associated ZeroTier-specific state is out of scope for this document.</p>
 </div>
 <div class="paragraph">
 <p>ZeroTier networks have a standard MTU of 2800 bytes, but over typical
@@ -950,22 +950,18 @@ head-of-line blocking issues where backpressure on one consumer
 ZeroTier IDs, ZeroTier network IDs, and our own 24-bit ports.</p>
 </div>
 <div class="paragraph">
-<p>The format <strong>SHALL</strong> be <code>zt://<em>nwid</em>/<em>ztid:port</em></code>, where the <code><em>nwid</em></code>
+<p>The format <strong>SHALL</strong> be <code>zt://<em>ztid</em>.<em>nwid</em>:_port_</code>, where the <code><em>nwid</em></code>
 component represents the 64-bit hexadecimal ZeroTier network ID,
 the <code><em>ztid</em></code> represents the 40-bit hexadecimal ZeroTier Device ID,
 and the <code><em>port</em></code> is the 24-bit port number (decimal) previously described.</p>
 </div>
 <div class="paragraph">
-<p>A responder <strong>MAY</strong> elide the <code>/<em>ztid</em></code> portion, to just bind to itself,
-in which case the format will be <code>zt://<em>nwid:port</em></code>.</p>
-</div>
-<div class="paragraph">
-<p>A port number of 0 <strong>MAY</strong> be used when listening to indicate that a random
-ephemeral port should be chosen.</p>
-</div>
-<div class="paragraph">
 <p>An implementation <strong>MAY</strong> allow the <code><em>ztid</em></code> 0 be replaced with <code>*</code> to
 indicate that the node&#8217;s local <em>ZTID</em> be used.</p>
+</div>
+<div class="paragraph">
+<p>An implementation <strong>MAY</strong> permit the use of port number of 0 when listening,
+to indicate that a random ephemeral port should be chosen.</p>
 </div>
 </div>
 </div>
@@ -989,8 +985,8 @@ dealing with them.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 0.8<br>
-Last updated 2017-11-27 18:05:44 UTC
+Version 0.10<br>
+Last updated 2018-03-05 22:56:57 UTC
 </div>
 </div>
 </body>

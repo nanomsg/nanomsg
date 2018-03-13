@@ -15,6 +15,8 @@ layout: default
 
 * <<documentation-zeromq.adoc#,Differences between nanomsg and ZeroMQ>>, by Martin Sustrik (inventor of both nanomsg and ZeroMQ)
 
+* The https://nanomsg.github.io/nng/man/index.html[NNG Reference Manual], documenting the new NNG API, is available from https://leanpub.com/nngmanual[Leanpub].
+
 == Language bindings
 
 [[bindings]]
@@ -40,8 +42,8 @@ layout: default
 |
 
 |D
-|https://github.com/Laeeth/d-nanomsg[d-nanomsg]
-|
+|https://github.com/kaleidicassociates/nanomsg-wrapper[nanomsg-wrapper]
+|(note new location)
 
 |Dylan
 |https://github.com/dylan-foundry/nanomsg-dylan[nanomsg-dylan]

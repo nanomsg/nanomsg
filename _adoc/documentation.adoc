@@ -17,6 +17,8 @@ layout: default
 
 * The https://nanomsg.github.io/nng/man/index.html[NNG Reference Manual], documenting the new NNG API, is available from https://leanpub.com/nngmanual[Leanpub].
 
+* https://staysail.github.io/nng_presentation/nng_presentation.html[Scalability Protocols] presentation by Garrett D'Amore (Feb 2018)
+
 == Language bindings
 
 [[bindings]]

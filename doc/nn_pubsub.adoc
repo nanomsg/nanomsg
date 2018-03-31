@@ -71,9 +71,13 @@ int pub = nn_socket (AF_SP, NN_PUB);
 int sub = nn_socket (AF_SP, NN_SUB);
 int nbytes;
 void *buf = NULL;
+char *addr = "inproc://example";
 
 nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "foo", 3);
 nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "bar", 3);
+
+nn_bind(pub, addr);
+nn_connect(sub, addr);
 
 nbytes = nn_send (pub, "foo|Hello!", 10);
 assert(nbytes == 10);

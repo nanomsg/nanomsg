@@ -8,7 +8,7 @@ layout: default
 
 NOTE: The latest release of nanomsg is {{ site.latest }}.
 
-*_nanomsg_* is a  is a socket library that provides several common communication
+*_nanomsg_* is a socket library that provides several common communication
 patterns.
 It aims to make the networking layer fast, scalable, and easy to use.
 Implemented in C, it works on a wide range of operating systems with no further

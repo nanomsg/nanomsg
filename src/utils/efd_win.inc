@@ -1,7 +1,8 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2017 Garrett D'Amore <garrett@damore.org>
-    Copyright 2017 Capitar IT Group BV <info@capitar.com>
+    Copyright 2018 Staysail Systems, Inc. <info@staysail.tech>
+    Copyright 2018 Capitar IT Group BV <info@capitar.com>
 
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -34,49 +35,14 @@
 
 int nn_efd_init (struct nn_efd *self)
 {
-    SECURITY_ATTRIBUTES sa = {0};
-    SECURITY_DESCRIPTOR sd;
-    BOOL brc;
-    HANDLE sync;
-    DWORD dwrc;
     SOCKET listener;
     int rc;
     struct sockaddr_in addr;
-    int addrlen;
-    BOOL reuseaddr;
+    socklen_t addrlen;
+    int one;
     BOOL nodelay;
     u_long nonblock;
     int i;
-
-    /*  Make the following critical section accessible to everyone. */
-    sa.nLength = sizeof (sa);
-    sa.bInheritHandle = FALSE;
-    brc = InitializeSecurityDescriptor (&sd, SECURITY_DESCRIPTOR_REVISION);
-    win_assert (brc);
-    brc = SetSecurityDescriptorDacl(&sd, TRUE, (PACL) NULL, FALSE);
-    win_assert (brc);
-    sa.lpSecurityDescriptor = &sd;
-
-    /*  This function has to be enclosed in a system-wide critical section
-        so that two instances of the library don't accidentally create an efd
-        crossing the process boundary. */
-    sync = CreateMutex (&sa, FALSE, "Global\\nanomsg-port-mutex");
-    win_assert (sync != NULL);
-
-    /*  Enter the critical section.   If we cannot get the object in 10 seconds
-        then something is seriously wrong.  Just bail. */
-    dwrc = WaitForSingleObject (sync, 10000);
-    switch (dwrc) {
-    case WAIT_ABANDONED:
-    case WAIT_OBJECT_0:
-        break;
-    case WAIT_TIMEOUT:
-        rc = ETIMEDOUT;
-        goto wsafail3;
-    default:
-        rc = nn_err_wsa_to_posix (WSAGetLastError ());
-        goto wsafail3;
-    }
 
     /*  Unfortunately, on Windows the only way to send signal to a file
         descriptor (SOCKET) is to create a full-blown TCP connecting on top of
@@ -86,102 +52,69 @@ int nn_efd_init (struct nn_efd *self)
 
     /*  Create listening socket. */
     listener = socket (AF_INET, SOCK_STREAM, 0);
-    if (nn_slow (listener == SOCKET_ERROR))
+    if (listener == SOCKET_ERROR)
         goto wsafail;
-    brc = SetHandleInformation ((HANDLE) listener, HANDLE_FLAG_INHERIT, 0);
-    win_assert (brc);
 
-    /*  This prevents subsequent attempts to create a signaler to fail bacause
-        of "TCP port in use" problem. */
-    reuseaddr = 1;
-    rc = setsockopt (listener, SOL_SOCKET, SO_REUSEADDR,
-        (char*) &reuseaddr, sizeof (reuseaddr));
-    if (nn_slow (rc == SOCKET_ERROR))
+    one = 1;
+    rc = setsockopt (listener, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 
+        (char*) &one, sizeof (one));
+    if (rc == SOCKET_ERROR)
         goto wsafail;
 
     /*  Bind the listening socket to the local port. */
     memset (&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
-    addr.sin_port = htons (NN_EFD_PORT);
+    addr.sin_port = 0;
+
     rc = bind (listener, (const struct sockaddr*) &addr, sizeof (addr));
-    if (nn_slow (rc == SOCKET_ERROR))
+    if (rc == SOCKET_ERROR)
+        goto wsafail;
+
+    /*  Get the port we bound to (will be ephemeral.) */
+    addrlen = sizeof (addr);
+    rc = getsockname (listener, (struct sockaddr *) &addr, &addrlen);
+    if (rc == SOCKET_ERROR)
         goto wsafail;
 
     /*  Start listening for the incomming connections. In normal case we are
         going to accept just a single connection, so backlog buffer of size
         1 is sufficient. */
     rc = listen (listener, 1);
-    if (nn_slow (rc == SOCKET_ERROR))
+    if (rc == SOCKET_ERROR)
         goto wsafail;
 
     /*  The following code is in the loop, because windows sometimes delays
         WSAEADDRINUSE error to the `connect` call. But retrying the connection
         works like a charm. Still we want to limit number of retries  */
-    for(i = 0; i < NN_EFD_RETRIES; ++i) {
 
-        /*  Create the writer socket. */
-        self->w = socket (AF_INET, SOCK_STREAM, 0);
-        if (nn_slow (listener == SOCKET_ERROR))
-            goto wsafail;
-        brc = SetHandleInformation ((HANDLE) self->w, HANDLE_FLAG_INHERIT, 0);
-        win_assert (brc);
-
-        /*  Set TCP_NODELAY on the writer socket to make efd as fast as possible.
-            There's only one byte going to be written, so batching would not make
-            sense anyway. */
-        nodelay = 1;
-        rc = setsockopt (self->w, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
-            sizeof (nodelay));
-        if (nn_slow (rc == SOCKET_ERROR))
-            goto wsafail;
-
-        /*  Connect the writer socket to the listener socket. */
-        rc = connect (self->w, (struct sockaddr*) &addr, sizeof (addr));
-        if (nn_slow (rc == SOCKET_ERROR)) {
-            rc = nn_err_wsa_to_posix (WSAGetLastError ());
-            if (rc == EADDRINUSE) {
-                rc = closesocket (self->w);
-                if (nn_slow (rc == INVALID_SOCKET))
-                    goto wsafail;
-                continue;
-            }
-            goto wsafail2;
-        }
-        break;
-    }
-    if (i == NN_EFD_RETRIES)
-        goto wsafail2;
-
-    for (;;) {
-
-        /*  Accept new incoming connection. */
-        addrlen = sizeof (addr);
-        self->r = accept (listener, (struct sockaddr*) &addr, &addrlen);
-        if (nn_slow (self->r == INVALID_SOCKET || addrlen != sizeof (addr)))
-            goto wsafail2;
-
-        /*  Check that the connection actually comes from the localhost. */
-        if (nn_fast (addr.sin_addr.s_addr == htonl (INADDR_LOOPBACK)))
-            break;
-
-        /*  If not so, close the connection and try again. */
-        rc = closesocket (self->r);
-        if (nn_slow (rc == INVALID_SOCKET))
-            goto wsafail;
-    }
-
-    /*  Listener socket can be closed now as no more connections for this efd
-        are going to be established anyway. */
-    rc = closesocket (listener);
-    if (nn_slow (rc == INVALID_SOCKET))
+    /*  Create the writer socket. */
+    self->w = socket (AF_INET, SOCK_STREAM, 0);
+    if (listener == SOCKET_ERROR)
         goto wsafail;
 
-    /*  Leave the critical section. */
-    brc = ReleaseMutex (sync);
-    win_assert (brc != 0);
-    brc = CloseHandle (sync);
-    win_assert (brc != 0);
+    /*  Set TCP_NODELAY on the writer socket to make efd as fast as possible.
+        There's only one byte going to be written, so batching would not make
+        sense anyway. */
+        nodelay = 1;
+    rc = setsockopt (self->w, IPPROTO_TCP, TCP_NODELAY, (char*) &nodelay,
+        sizeof (nodelay));
+    if (nn_slow (rc == SOCKET_ERROR))
+        goto wsafail;
+
+    /*  Connect the writer socket to the listener socket. */
+    rc = connect (self->w, (struct sockaddr*) &addr, sizeof (addr));
+    if (rc == SOCKET_ERROR)
+        goto wsafail;
+
+    /*  Accept new incoming connection. */
+    addrlen = sizeof (addr);
+    self->r = accept (listener, (struct sockaddr*) &addr, &addrlen);
+    if (self->r == INVALID_SOCKET)
+        goto wsafail;
+
+    /*  Close the listener, we don't need it anymore. */
+    (void) closesocket (listener);
 
     /*  Make the receiving socket non-blocking. */
     nonblock = 1;
@@ -192,12 +125,6 @@ int nn_efd_init (struct nn_efd *self)
 
 wsafail:
     rc = nn_err_wsa_to_posix (WSAGetLastError ());
-wsafail2:
-    brc = ReleaseMutex (sync);
-    win_assert (brc != 0);
-wsafail3:
-    brc = CloseHandle (sync);
-    win_assert (brc != 0);
     return -rc;
 }
 

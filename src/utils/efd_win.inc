@@ -263,7 +263,7 @@ void nn_efd_unsignal (struct nn_efd *self)
         if (rc == SOCKET_ERROR && WSAGetLastError () == WSAEWOULDBLOCK)
             rc = 0;
         wsa_assert (rc != SOCKET_ERROR);
-        if (nn_fast (rc < sizeof (buf)))
+        if ((rc == SOCKET_ERROR) || (rc < sizeof (buf)))
             break;
     }
 }

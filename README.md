@@ -73,7 +73,7 @@ find the installed libraries/headers.
 
 1.  `% mkdir build`
 2.  `% cd build`
-3.  `% cmake -DCMAKE_TOOLCHAIN_FILE=../linux-arm.cmake \
+3.  `% cmake -DCMAKE_TOOLCHAIN_FILE=../arm-linux-gnueabihf.cmake \
              -DCMAKE_INSTALL_PREFIX=/usr/arm-linux-gnueabihf ..`
 4.  `% cmake --build .`
 5.  `% ctest .`

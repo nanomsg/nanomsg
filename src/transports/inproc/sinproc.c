@@ -236,6 +236,8 @@ static void nn_sinproc_shutdown_events (struct nn_sinproc *self, int src,
                 self->state = NN_SINPROC_STATE_STOPPING;
             }
             return;
+        default:
+            break;
         }
     case NN_SINPROC_SRC_PEER:
         switch (type) {

@@ -375,6 +375,7 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
 
                 default:
                     nn_assert (0);
+                    return;
                 }
 
             case NN_USOCK_SHUTDOWN:

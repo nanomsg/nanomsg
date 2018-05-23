@@ -100,6 +100,19 @@ be exported in a DLL or not.
 When using the .LIB on Windows, you will also need to link with the
 ws2_32, mswsock, and advapi32 libraries, as nanomsg depends on them.
 
+Support
+-------
+
+This library is considered to be in "sustaining" mode, which means that new
+feature development has ended, and bug fixes are made only when strictly
+necessary for severe issues.
+
+New development is now occuring in the [NNG](https://github.com/nanomsg/nng)
+project, which offers both protocol and API compatibility with this project.
+Please consider using NNG for new projects.
+
+Please see the file SUPPORT for more details.
+
 Resources
 ---------
 

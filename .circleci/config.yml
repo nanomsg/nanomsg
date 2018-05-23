@@ -1,0 +1,62 @@
+#
+# CircleCI 2.0 configuration. This was borrowed from NNG, but is adjusted
+# for libnanomsg.  (We don't need mbedTLS or use clang-format, for example.)
+#
+version: 2.0
+jobs:
+  "clang - build, test"
+    docker:
+      - image: ubuntu:16.04
+        environment:
+          CC: clang-6.0
+          CXX: clang++-6.0
+          CTEST_OUTPUT_ON_FAILURE: 1
+    steps:
+      - checkout
+      - run: apt-get update -qq
+      - run: apt-get install -y software-properties-common
+      - run: apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-
+xenial-6.0 main"
+      - run: apt-get update -qq
+      - run: >
+          apt-get install -y --allow-unauthenticated
+          build-essential
+          curl
+          asciidoctor
+          cmake
+          ninja-build
+          clang-6.0
+      - run: ./.circleci/build-and-test.sh
+
+  "gcc - build, test, coverage":
+    docker:
+      - image: ubuntu:16.04
+        environment:
+          CC: gcc-8
+          CXX: g++-8
+          COVERAGE: "ON"
+          GCOV: gcov-8
+    steps:
+      - checkout
+      - run: apt-get update -qq
+      - run: apt-get install -y software-properties-common
+      - run: add-apt-repository ppa:ubuntu-toolchain-r/test
+      - run: apt-get update -qq
+      - run: >
+          apt-get install -y --allow-unauthenticated
+          build-essential
+          curl
+          asciidoctor
+          cmake
+          ninja-build
+          gcc-8
+          g++-8
+      - run: ./.circleci/build-and-test.sh
+      - run: ./etc/codecov.sh
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - "clang - build, test"
+      - "gcc - build, test, coverage"

@@ -61,7 +61,6 @@ void nn_poller_term (struct nn_poller *self)
 void nn_poller_add (struct nn_poller *self, int fd,
     struct nn_poller_hndl *hndl)
 {
-    int rc;
     struct epoll_event ev;
 
     /*  Initialise the handle and add the file descriptor to the pollset. */

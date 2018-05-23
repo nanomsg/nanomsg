@@ -25,7 +25,7 @@
 
 #include "testutil.h"
 
-int main (int argc, const char *argv[])
+int main (NN_UNUSED int argc, const NN_UNUSED char *argv[])
 {
     int sb;
     int sc1;

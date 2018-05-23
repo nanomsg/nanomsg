@@ -98,6 +98,7 @@ endif()
 
 option (NN_STATIC_LIB "Build static library instead of shared library." OFF)
 option (NN_ENABLE_DOC "Enable building documentation." ON)
+option (NN_ENABLE_COVERAGE "Enable coverage reporting." OFF)
 option (NN_ENABLE_GETADDRINFO_A "Enable/disable use of getaddrinfo_a in place of getaddrinfo." ON)
 option (NN_TESTS "Build and run nanomsg tests" ON)
 option (NN_TOOLS "Build nanomsg tools" ON)
@@ -105,6 +106,32 @@ option (NN_ENABLE_NANOCAT "Enable building nanocat utility." ${NN_TOOLS})
 set (NN_MAX_SOCKETS 512 CACHE STRING "max number of nanomsg sockets that can be created")
 
 #  Platform checks.
+
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    set(NN_WARN_FLAGS "-Wall -Wextra")
+elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set(NN_WARN_FLAGS "-Wall -Wextra")
+elseif (CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+    set(NN_WARN_FLAGS "-Wall -Wextra")
+endif()
+
+if (NNG_ENABLE_COVERAGE)
+    # NB: This only works for GCC and Clang 3.0 and newer.  If your stuff
+    # is older than that, you will need to find something newer.  For
+    # correct reporting, we always turn off all optimizations.
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set(NN_COVERAGE_FLAGS "-g -O0 --coverage")
+    elseif (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+        set(NN_COVERAGE_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    elseif (CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+        set(NN_COVERAGE_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    else()
+        message(FATAL_ERROR "Unable to enable coverage for your compiler.")
+    endif()
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${NN_WARN_FLAGS} ${NN_COVERAGE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NN_WARN_FLAGS} ${NN_COVERAGE_FLAGS}")
 
 find_package (Threads REQUIRED)
 

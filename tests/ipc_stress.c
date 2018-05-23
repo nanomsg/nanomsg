@@ -95,7 +95,7 @@ static void client(void *arg)
         bytes = nn_send (cli_sock, msg, sz_msg, 0);
         /*  This would better be handled via semaphore or condvar. */
         nn_sleep (100);
-        nn_assert (bytes == sz_msg);
+        nn_assert ((size_t)bytes == sz_msg);
         nn_close (cli_sock);
     }
 }

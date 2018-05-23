@@ -3,7 +3,7 @@ Release process
 
  1. Check CI
 
-   * Travis: https://travis-ci.org/nanomsg/nanomsg
+   * CircleCI: https://circleci.com/gh/nanomsg/nanomsg/tree/master
    * AppVeyor: https://ci.appveyor.com/project/nanomsg/nanomsg
 
  2. Bump ABI version as appropriate (see the docs on versioning). This happens
@@ -19,25 +19,24 @@ Release process
 
  6. Push the tag to the repo, e.g. git push origin 0.3-beta.
 
- 7. Wait a little bit for Travis CI to build, and create artifacts.
-    (Travis does this automatically for tagged releases.)
+ 7. Wait a little bit for CI to build.
 
- 8. Also check the AppVeyor CI again just to be sure.
+ 8. Check the AppVeyor CI again just to be sure.
 
  9. Check the github releases page - a release for the tag should have
     already been created with artifacts ready to download.
 
-10. Upload the "download" page on the website (see gh-pages branch of the
-    repo).  The only thing that needs to be updated is the LATEST RELEASE
-    number and date.
+10. Update the _config.yml page on the website (see gh-pages branch of the
+    repo).  The only thing that needs to be updated is the "latest" and
+    "latest_date".
 
-11. In online docs (gh-pages) make a new folder (e.g. v0.3) and copy the HTML
-    docs (*.html from build directory) there.
+11. In the online docs (gh-pages branch), copy the man pages (adoc format)
+    into a subdirectory of _adoc named after the version (e.g.
+    "_adoc/v1.1.3"), then run the _adoc/build.sh script.  Add the resulting
+    "v1.1.3" directory, commit, and push.
 
-12. Link the docs from "documentation.html" page.
-
-13. Send the announcement about the release. These commands might be useful:
+12. Send the announcement about the release. These commands might be useful:
     git log --oneline 0.2-alpha..0.3-beta | wc -l
     git diff -U0 0.2-alpha..0.3-beta AUTHORS
 
-14. Update the topic in the chatroom accordingly.
+13. Update the topic in the Gitter chatroom accordingly.

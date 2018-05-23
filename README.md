@@ -72,7 +72,7 @@ It also assumes you are in the project directory.
 2.  `cd build`
 3.  `cmake ..`
 4.  `cmake --build . --config Debug`
-5.  `ctest --config Debug .`
+5.  `ctest -C Debug .`
 6.  `cmake --build . --config Debug --target install`
     *NB:* This may have to be done using an Administrator account.
 

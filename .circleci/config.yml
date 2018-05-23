@@ -59,6 +59,7 @@ jobs:
           COVERAGE: "ON"
           GCOV: gcov
           CTEST_OUTPUT_ON_FAILURE: 1
+    steps:
       - checkout
       - run: apt-get update -qq
       - run: apt-get install -y software-properties-common

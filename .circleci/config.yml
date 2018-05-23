@@ -4,7 +4,7 @@
 #
 version: 2.0
 jobs:
-  "clang - build, test":
+  "clang6 - build, test":
     docker:
       - image: ubuntu:16.04
         environment:
@@ -20,22 +20,45 @@ jobs:
       - run: >
           apt-get install -y --allow-unauthenticated
           build-essential
-          curl
           asciidoctor
           cmake
           ninja-build
           clang-6.0
       - run: ./.circleci/build-and-test.sh
 
-  "gcc - build, test, coverage":
+  "gcc8 - build, test":
     docker:
       - image: ubuntu:16.04
         environment:
           CC: gcc-8
           CXX: g++-8
-          COVERAGE: "ON"
           GCOV: gcov-8
+          CTEST_OUTPUT_ON_FAILURE: 1
     steps:
+      - checkout
+      - run: apt-get update -qq
+      - run: apt-get install -y software-properties-common
+      - run: add-apt-repository ppa:ubuntu-toolchain-r/test
+      - run: apt-get update -qq
+      - run: >
+          apt-get install -y --allow-unauthenticated
+          build-essential
+          asciidoctor
+          cmake
+          ninja-build
+          gcc-8
+          g++-8
+      - run: ./.circleci/build-and-test.sh
+
+  "gcc - coverage":
+    docker:
+      - image: ubuntu:16.04
+        environment:
+          CC: gcc
+          CXX: g++
+          COVERAGE: "ON"
+          GCOV: gcov
+          CTEST_OUTPUT_ON_FAILURE: 1
       - checkout
       - run: apt-get update -qq
       - run: apt-get install -y software-properties-common
@@ -48,8 +71,6 @@ jobs:
           asciidoctor
           cmake
           ninja-build
-          gcc-8
-          g++-8
       - run: ./.circleci/build-and-test.sh
       - run: ./.circleci/codecov.sh
 
@@ -57,5 +78,6 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - "clang - build, test"
-      - "gcc - build, test, coverage"
+      - "clang6 - build, test"
+      - "gcc8 - build, test"
+      - "gcc - coverage"

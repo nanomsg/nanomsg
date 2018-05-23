@@ -51,7 +51,7 @@ jobs:
           gcc-8
           g++-8
       - run: ./.circleci/build-and-test.sh
-      - run: ./etc/codecov.sh
+      - run: ./.circleci/codecov.sh
 
 workflows:
   version: 2

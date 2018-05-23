@@ -337,6 +337,7 @@ endforeach ()
 
 if (NN_STATIC_LIB)
     add_library (${PROJECT_NAME} STATIC ${NN_SOURCES})
+    target_compile_definitions (${PROJECT_NAME} PUBLIC NN_STATIC_LIB)
 else ()
     add_library (${PROJECT_NAME} SHARED ${NN_SOURCES})
     add_definitions (-DNN_SHARED_LIB)
@@ -366,11 +367,14 @@ if(NN_REQUIRED_LIBRARIES)
     endforeach()
 endif()
 configure_file (pkgconfig.in ${PROJECT_NAME}.pc @ONLY)
+target_include_directories(${PROJECT_NAME} PUBLIC $<INSTALL_INTERFACE:include>)
 install (
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 install (TARGETS ${PROJECT_NAME}
+    EXPORT ${PROJECT_NAME}-target
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+install (EXPORT ${PROJECT_NAME}-target DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME} FILE ${PROJECT_NAME}-config.cmake)

@@ -65,8 +65,11 @@ endif ()
 
 # Determine package version.
 find_package (Git QUIET)
-if (DEFINED ENV{TRAVIS_TAG})
+if (DEFINED ENV{TRAVIS_TAG} AND NOT "$ENV{TRAVIS_TAG}" STREQUAL "")
     set (NN_PACKAGE_VERSION "$ENV{TRAVIS_TAG}")
+elseif (DEFINED ENV{TRAVIS_JOB_NUMBER} AND EXISTS ${PROJECT_SOURCE_DIR}/.version)
+    file (STRINGS .version NN_PACKAGE_VERSION)
+    set (NN_PACKAGE_VERSION "${NN_PACKAGE_VERSION}-travisci-$ENV{TRAVIS_JOB_NUMBER}")
 elseif (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Working off a git repo, using git versioning
 
@@ -449,10 +452,39 @@ install (FILES src/pipeline.h DESTINATION include/nanomsg)
 install (FILES src/survey.h DESTINATION include/nanomsg)
 install (FILES src/bus.h DESTINATION include/nanomsg)
 
+include (CMakePackageConfigHelpers)
+write_basic_package_version_file (
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION "${NN_PACKAGE_VERSION}"
+    COMPATIBILITY AnyNewerVersion
+)
+export (
+    EXPORT ${PROJECT_NAME}Targets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Targets.cmake"
+    NAMESPACE ${PROJECT_NAME}::
+)
+configure_file (
+    cmake/${PROJECT_NAME}Config.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake"
+    COPYONLY
+)
+set (ConfigPackageLocation lib/cmake/${PROJECT_NAME})
+install (
+    EXPORT ${PROJECT_NAME}Targets
+    FILE ${PROJECT_NAME}Targets.cmake
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${ConfigPackageLocation}
+)
+install (
+    FILES
+    cmake/${PROJECT_NAME}Config.cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION ${ConfigPackageLocation}
+)
+
 if (NN_ENABLE_NANOCAT)
     install (TARGETS nanocat RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
-
 set (CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set (CPACK_PACKAGE_VERSION ${NN_PACKAGE_VERSION})
 set (CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")

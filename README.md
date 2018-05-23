@@ -3,8 +3,9 @@ Welcome to nanomsg
 
 [![Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)](https://github.com/nanomsg/nanomsg/releases/latest)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanomsg/nanomsg/blob/master/COPYING)
-[![Linux Status](https://img.shields.io/travis/nanomsg/nanomsg/master.svg?label=linux)](https://travis-ci.org/nanomsg/nanomsg)
+[![Linux Status](https://img.shields.io/circleci/project/github/nanomsg/nanomsg/master.svg?label=linux)](https://circleci.com/gh/nanomsg/nanomsg)
 [![Windows Status](https://img.shields.io/appveyor/ci/nanomsg/nanomsg/master.svg?label=windows)](https://ci.appveyor.com/project/nanomsg/nanomsg)
+[![Coverage](https://codecov.io/gh/nanomsg/nanomsg/branch/master/graph/badge.svg?label=coverage)](https://codecov.io/gh/nanomsg/nanomsg)
 [![Gitter](https://img.shields.io/badge/gitter-join-brightgreen.svg)](https://gitter.im/nanomsg/nanomsg)
 
 The nanomsg library is a simple high-performance implementation of several

@@ -5,7 +5,7 @@ layout: default
 
 ### LATEST RELEASE
 
-{{ site.latest }}, released on October 17, 2017.
+{{ site.latest }}, released on {{ site.latest_date }}.
 
 Releases with downloadable archives can  be found on the
 https://github.com/nanomsg/nanomsg/releases[GitHub releases] page.

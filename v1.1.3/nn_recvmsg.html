@@ -1,5 +1,5 @@
 ---
-title: Documentation
+version: 1.1.3
 layout: default
 ---
 <!DOCTYPE html>
@@ -9,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Documentation</title>
+<title>nn_recvmsg(3)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -429,231 +429,186 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .show-for-print{display:inherit!important}}
 </style>
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nn_recvmsg(3) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nn_recvmsg - fine-grained alternative to nn_recv</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_documentation">Documentation</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>The latest libnanomsg C API <a href="/v{{ site.latest }}/nanomsg.html">reference manual</a></p>
-</li>
-<li>
-<p><a href="gettingstarted/index.html">Getting Started with nanomsg</a> by Tim Dysinger</p>
-</li>
-<li>
-<p><a href="http://dirkjan.ochtman.nl/talks/2013/09/nanomsg-sss/#/step-1">Simple Smart Sockets</a> presentation by Dirkjan Ochtman</p>
-</li>
-<li>
-<p>Some <a href="rfcs/index.html">RFCs</a> describing the network protocols.</p>
-</li>
-<li>
-<p><a href="documentation-zeromq.html">Differences between nanomsg and ZeroMQ</a>, by Martin Sustrik (inventor of both nanomsg and ZeroMQ)</p>
-</li>
-<li>
-<p>The <a href="https://nanomsg.github.io/nng/man/index.html">NNG Reference Manual</a>, documenting the new NNG API, is available from <a href="https://leanpub.com/nngmanual">Leanpub</a>.</p>
-</li>
-<li>
-<p><a href="https://staysail.github.io/nng_presentation/nng_presentation.html">Scalability Protocols</a> presentation by Garrett D&#8217;Amore (Feb 2018)</p>
-</li>
-</ul>
+<div class="paragraph">
+<p><strong>#include &lt;nanomsg/nn.h&gt;</strong></p>
+</div>
+<div class="paragraph">
+<p><strong>NN_EXPORT int nn_recvmsg (int <em>s</em>, struct nn_msghdr <em>*msghdr</em>, int <em>flags</em>);</strong></p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_language_bindings">Language bindings</h2>
+<h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<table id="bindings" class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 20%;">
-<col style="width: 30%;">
-<col style="width: 50%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">C</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Reference implementation.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/nng">nng</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Next-gen implementation, under development.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">C++</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/achille-roussel/nanomsgxx">nanomsgxx</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/cppnanomsg">cppnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Clojure</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">D</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/kaleidicassociates/nanomsg-wrapper">nanomsg-wrapper</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(note new location)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dylan</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/dylan-foundry/nanomsg-dylan">nanomsg-dylan</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Erlang</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/basho/enm">enm</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fortran</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jshahbazi/nanofort">nanofort</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Go</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/go-mangos/mangos">mangos</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(full re-implementation of SP protocols in Go, recommended)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/op/go-nanomsg">go-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Haskell</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://hackage.haskell.org/package/nanomsg-haskell">nanomsg-haskell</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://hackage.haskell.org/package/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Haxe</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/michelkaeser/hx-nanomsg">hx-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">iOS</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/reqshark/nanomsg.ios">nanomsg.ios</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/swiftc-org/nanomsg">swiftc nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Java</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gonzus/jnano">jnano</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">JavaScript (Node.js)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nickdesaulniers/node-nanomsg">node-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Lua</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/Neopallium/lua-nanomsg">lua-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/luajit-nanomsg">luajit-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mbalmer/luananomsg">luananomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">.NET</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mhowlett/NNanomsg">NNanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Ocaml</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/rgrinberg/onanomsg">onanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Perl</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://metacpan.org/module/NanoMsg::Raw">NanoMsg::Raw</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PHP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mkoppanen/php-nano">php-nano</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PicoLisp</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/aw/picolisp-nanomsg">picolisp-nanomsg</a> FFI bindings</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Python</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tonysimpson/nanomsg-python">nanomsg-python</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(recommended)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/sdiehl/pynanomsg">pynanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/djc/nnpy">nnpy</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">R</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mhowlett/rnanomsg">rnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Ruby</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/chuckremes/nn-core">nn-core</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">FFI bindings: <code>ruby -S gem install nn-core</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://bitbucket.org/kschiess/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Native bindings: <code>gem install nanomsg</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rust</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/glycerine/rust-nanomsg">rust-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Scheme (CHICKEN)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/Adellica/chicken-nanomsg">chicken-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Smalltalk</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mumez/NanoStrand">NanoStrand</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-</tbody>
-</table>
 <div class="paragraph">
-<p>Finally, if you decide to implement your own language binding check this
-<a href="development-bindings.html">document</a>.</p>
+<p>Receives a message from socket <em>s</em> into buffers specified by <em>msghdr</em> parameter
+along with any additional control data. <em>msghdr</em> parameter should be nullified
+before being used.</p>
+</div>
+<div class="paragraph">
+<p>Structure <em>nn_msghdr</em> contains at least following members:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>struct nn_iovec *msg_iov;
+int msg_iovlen;
+void *msg_control;
+size_t msg_controllen;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>msg_iov</em> points to a gather array of buffers to fill in. <em>msg_iovlen</em> specifies
+the size of the array.</p>
+</div>
+<div class="paragraph">
+<p><em>msg_control</em> points to the buffer to hold control information  associated with
+the received message. <em>msg_controllen</em> specifies the length of the buffer.
+If the control information should not be retrieved, set <em>msg_control</em> parameter
+to NULL. For detailed discussion of how to parse the control information check
+<a href="nn_cmsg.html">nn_cmsg(3)</a> man page.</p>
+</div>
+<div class="paragraph">
+<p>Structure <em>nn_iovec</em> defines one element in the gather array (a buffer to be
+filled in by message data) and contains following members:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>void *iov_base;
+size_t iov_len;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Alternatively, <em>nanomsg</em> library can allocate the buffer for you. To do so,
+let the <em>iov_base</em> point to void* variable to receive the buffer and set
+<em>iov_len</em> to <em>NN_MSG</em>. After successful completion user is responsible
+for deallocating the message using <a href="nn_freemsg.html">nn_freemsg(3)</a> function. Gather
+array in <em>nn_msghdr</em> structure can contain only one element in this case.</p>
+</div>
+<div class="paragraph">
+<p>The <em>flags</em> argument is a combination of the flags defined below:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>NN_DONTWAIT</strong></dt>
+<dd>
+<p>Specifies that the operation should be performed in non-blocking mode. If the
+message cannot be received straight away, the function will fail with <em>errno</em>
+set to EAGAIN.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_return_value">RETURN VALUE</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>If the function succeeds number of bytes in the message is returned. Otherwise,
+-1 is returned and <em>errno</em> is set to to one of the values defined
+below.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_errors">ERRORS</h2>
+<div class="sectionbody">
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>EBADF</strong></dt>
+<dd>
+<p>The provided socket is invalid.</p>
+</dd>
+<dt class="hdlist1"><strong>ENOTSUP</strong></dt>
+<dd>
+<p>The operation is not supported by this socket type.</p>
+</dd>
+<dt class="hdlist1"><strong>EFSM</strong></dt>
+<dd>
+<p>The operation cannot be performed on this socket at the moment because socket is
+not in the appropriate state.  This error may occur with socket types that
+switch between several states.</p>
+</dd>
+<dt class="hdlist1"><strong>EAGAIN</strong></dt>
+<dd>
+<p>Non-blocking mode was requested and there&#8217;s no message to receive at the moment.</p>
+</dd>
+<dt class="hdlist1"><strong>EINTR</strong></dt>
+<dd>
+<p>The operation was interrupted by delivery of a signal before the message was
+received.</p>
+</dd>
+<dt class="hdlist1"><strong>ETIMEDOUT</strong></dt>
+<dd>
+<p>Individual socket types may define their own specific timeouts. If such timeout
+is hit this error will be returned.</p>
+</dd>
+<dt class="hdlist1"><strong>ETERM</strong></dt>
+<dd>
+<p>The library is terminating.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_example">EXAMPLE</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre>struct nn_msghdr hdr;
+struct nn_iovec iov [2];
+char buf0 [4];
+char buf1 [2];
+iov [0].iov_base = buf0;
+iov [0].iov_len = sizeof (buf0);
+iov [1].iov_base = buf1;
+iov [1].iov_len = sizeof (buf1);
+memset (&amp;hdr, 0, sizeof (hdr));
+hdr.msg_iov = iov;
+hdr.msg_iovlen = 2;
+nn_recvmsg (s, &amp;hdr, 0);</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nn_recv.html">nn_recv(3)</a>
+<a href="nn_sendmsg.html">nn_sendmsg(3)</a>
+<a href="nn_allocmsg.html">nn_allocmsg(3)</a>
+<a href="nn_freemsg.html">nn_freemsg(3)</a>
+<a href="nn_cmsg.html">nn_cmsg(3)</a>
+<a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:sustrik@250bpm.com">Martin Sustrik</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-03-23 15:28:26 UTC
+nanomsg 1.1.3<br>
+Last updated 2018-05-24 00:59:14 UTC
 </div>
 </div>
 </body>

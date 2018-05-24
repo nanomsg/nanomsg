@@ -1,5 +1,5 @@
 ---
-title: Documentation
+version: 1.1.3
 layout: default
 ---
 <!DOCTYPE html>
@@ -9,7 +9,7 @@ layout: default
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Documentation</title>
+<title>nanocat(1)</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -429,231 +429,317 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .show-for-print{display:inherit!important}}
 </style>
 </head>
-<body class="article">
+<body class="manpage">
 <div id="header">
+<h1>nanocat(1) Manual Page</h1>
+<h2>NAME</h2>
+<div class="sectionbody">
+<p>nanocat - a command-line interface to nanomsg</p>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_documentation">Documentation</h2>
+<h2 id="_synopsis">SYNOPSIS</h2>
 <div class="sectionbody">
-<div class="ulist">
-<ul>
-<li>
-<p>The latest libnanomsg C API <a href="/v{{ site.latest }}/nanomsg.html">reference manual</a></p>
-</li>
-<li>
-<p><a href="gettingstarted/index.html">Getting Started with nanomsg</a> by Tim Dysinger</p>
-</li>
-<li>
-<p><a href="http://dirkjan.ochtman.nl/talks/2013/09/nanomsg-sss/#/step-1">Simple Smart Sockets</a> presentation by Dirkjan Ochtman</p>
-</li>
-<li>
-<p>Some <a href="rfcs/index.html">RFCs</a> describing the network protocols.</p>
-</li>
-<li>
-<p><a href="documentation-zeromq.html">Differences between nanomsg and ZeroMQ</a>, by Martin Sustrik (inventor of both nanomsg and ZeroMQ)</p>
-</li>
-<li>
-<p>The <a href="https://nanomsg.github.io/nng/man/index.html">NNG Reference Manual</a>, documenting the new NNG API, is available from <a href="https://leanpub.com/nngmanual">Leanpub</a>.</p>
-</li>
-<li>
-<p><a href="https://staysail.github.io/nng_presentation/nng_presentation.html">Scalability Protocols</a> presentation by Garrett D&#8217;Amore (Feb 2018)</p>
-</li>
-</ul>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nanocat --push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nanocat --pull {--connect ADDR|--bind ADDR} [-AQ]
+nanocat --pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nanocat --sub {--connect ADDR|--bind ADDR} [--subscribe PREFIX ...] [-AQ]
+nanocat --surveyor {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --respondent {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nanocat --bus {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nanocat --pair {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the case symlinks are installed:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_req {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_rep {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nn_push {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nn_pull {--connect ADDR|--bind ADDR} [-AQ]
+nn_pub {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC]
+nn_sub {--connect ADDR|--bind ADDR} [--subscribe PREFIX ...] [-AQ]
+nn_surveyor {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_respondent {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-AQ]
+nn_bus {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]
+nn_pair {--connect ADDR|--bind ADDR} {--data DATA|--file PATH} [-i SEC] [-AQ]</pre>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_language_bindings">Language bindings</h2>
+<h2 id="_description">DESCRIPTION</h2>
 <div class="sectionbody">
-<table id="bindings" class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 20%;">
-<col style="width: 30%;">
-<col style="width: 50%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">C</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Reference implementation.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/nng">nng</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Next-gen implementation, under development.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">C++</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/achille-roussel/nanomsgxx">nanomsgxx</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/cppnanomsg">cppnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Clojure</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">D</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/kaleidicassociates/nanomsg-wrapper">nanomsg-wrapper</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(note new location)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Dylan</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/dylan-foundry/nanomsg-dylan">nanomsg-dylan</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Erlang</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/basho/enm">enm</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Fortran</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/jshahbazi/nanofort">nanofort</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Go</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/go-mangos/mangos">mangos</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(full re-implementation of SP protocols in Go, recommended)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/op/go-nanomsg">go-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Haskell</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://hackage.haskell.org/package/nanomsg-haskell">nanomsg-haskell</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://hackage.haskell.org/package/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Haxe</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/michelkaeser/hx-nanomsg">hx-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">iOS</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/reqshark/nanomsg.ios">nanomsg.ios</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/swiftc-org/nanomsg">swiftc nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Java</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/gonzus/jnano">jnano</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">JavaScript (Node.js)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nickdesaulniers/node-nanomsg">node-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Lua</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/Neopallium/lua-nanomsg">lua-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/nanomsg/luajit-nanomsg">luajit-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mbalmer/luananomsg">luananomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">.NET</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mhowlett/NNanomsg">NNanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Ocaml</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/rgrinberg/onanomsg">onanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Perl</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://metacpan.org/module/NanoMsg::Raw">NanoMsg::Raw</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PHP</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mkoppanen/php-nano">php-nano</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">PicoLisp</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/aw/picolisp-nanomsg">picolisp-nanomsg</a> FFI bindings</p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="3"><p class="tableblock">Python</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/tonysimpson/nanomsg-python">nanomsg-python</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">(recommended)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/sdiehl/pynanomsg">pynanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/djc/nnpy">nnpy</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">R</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mhowlett/rnanomsg">rnanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top" rowspan="2"><p class="tableblock">Ruby</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/chuckremes/nn-core">nn-core</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">FFI bindings: <code>ruby -S gem install nn-core</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://bitbucket.org/kschiess/nanomsg">nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Native bindings: <code>gem install nanomsg</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Rust</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/glycerine/rust-nanomsg">rust-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Scheme (CHICKEN)</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/Adellica/chicken-nanomsg">chicken-nanomsg</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Smalltalk</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="https://github.com/mumez/NanoStrand">NanoStrand</a></p></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-</tbody>
-</table>
 <div class="paragraph">
-<p>Finally, if you decide to implement your own language binding check this
-<a href="development-bindings.html">document</a>.</p>
+<p>The nanocat is a command-line tool to send and receive data via nanomsg
+sockets. It can be used for debugging purposes, sending files through the
+network, health checking the system or whatever else you can think of.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_options">OPTIONS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Generic:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--verbose,-v</strong></dt>
+<dd>
+<p>Increase verbosity of the nanocat</p>
+</dd>
+<dt class="hdlist1"><strong>--silent,-q</strong></dt>
+<dd>
+<p>Decrease verbosity of the nanocat</p>
+</dd>
+<dt class="hdlist1"><strong>--help,-h</strong></dt>
+<dd>
+<p>This help text</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Socket Types:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--push</strong></dt>
+<dd>
+<p>Use NN_PUSH socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pull</strong></dt>
+<dd>
+<p>Use NN_PULL socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pub</strong></dt>
+<dd>
+<p>Use NN_PUB socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--sub</strong></dt>
+<dd>
+<p>Use NN_SUB socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--req</strong></dt>
+<dd>
+<p>Use NN_REQ socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--rep</strong></dt>
+<dd>
+<p>Use NN_REP socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--surveyor</strong></dt>
+<dd>
+<p>Use NN_SURVEYOR socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--respondent</strong></dt>
+<dd>
+<p>Use NN_RESPONDENT socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--bus</strong></dt>
+<dd>
+<p>Use NN_BUS socket type</p>
+</dd>
+<dt class="hdlist1"><strong>--pair</strong></dt>
+<dd>
+<p>Use NN_PAIR socket type</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Socket Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--bind</strong> <em>ADDR</em></dt>
+<dd>
+<p>Bind socket to the address ADDR</p>
+</dd>
+<dt class="hdlist1"><strong>--connect</strong> <em>ADDR</em></dt>
+<dd>
+<p>Connect socket to the address ADDR</p>
+</dd>
+<dt class="hdlist1"><strong>--bind-ipc,-X</strong> <em>PATH</em></dt>
+<dd>
+<p>Bind socket to the ipc address "ipc://PATH".</p>
+</dd>
+<dt class="hdlist1"><strong>--connect-ipc,-x</strong> <em>PATH</em></dt>
+<dd>
+<p>Connect socket to the ipc address "ipc://PATH".</p>
+</dd>
+<dt class="hdlist1"><strong>--bind-local,-L</strong> <em>PORT</em></dt>
+<dd>
+<p>Bind socket to the tcp address "tcp://127.0.0.1:PORT".</p>
+</dd>
+<dt class="hdlist1"><strong>--connect-local,-l</strong> <em>PORT</em></dt>
+<dd>
+<p>Connect socket to the tcp address "tcp://127.0.0.1:PORT".</p>
+</dd>
+<dt class="hdlist1"><strong>--recv-timeout</strong> <em>SEC</em></dt>
+<dd>
+<p>Set timeout for receiving a message</p>
+</dd>
+<dt class="hdlist1"><strong>--send-timeout</strong> <em>SEC</em></dt>
+<dd>
+<p>Set timeout for sending a message</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>SUB Socket Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--subscribe</strong> <em>PREFIX</em></dt>
+<dd>
+<p>Subscribe to the prefix PREFIX. Note: socket will be
+subscribed to everything (empty prefix) if no prefixes
+are specified on the command-line.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Input Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--format</strong> <em>FORMAT</em></dt>
+<dd>
+<p>Use echo format FORMAT (same as the options below)</p>
+</dd>
+<dt class="hdlist1"><strong>--raw</strong></dt>
+<dd>
+<p>Dump message as is (Note: no delimiters are printed)</p>
+</dd>
+<dt class="hdlist1"><strong>--ascii,-A</strong></dt>
+<dd>
+<p>Print ASCII part of message delimited by newline. All
+                    non-ascii characters replaced by dot.</p>
+</dd>
+<dt class="hdlist1"><strong>--quoted,-Q</strong></dt>
+<dd>
+<p>Print each message on separate line in double quotes
+with C-like character escaping</p>
+</dd>
+<dt class="hdlist1"><strong>--msgpack</strong></dt>
+<dd>
+<p>Print each message as msgpacked string (raw type). This
+is useful for programmatic parsing.</p>
+</dd>
+</dl>
+</div>
+<div class="paragraph">
+<p>Output Options:</p>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1"><strong>--interval,-i</strong> <em>SEC</em></dt>
+<dd>
+<p>Send message (or request) every SEC seconds</p>
+</dd>
+<dt class="hdlist1"><strong>--delay,-d</strong> <em>SEC</em></dt>
+<dd>
+<p>Wait for SEC seconds before sending message (useful for one-shot
+PUB sockets)</p>
+</dd>
+<dt class="hdlist1"><strong>--data,-D</strong> <em>DATA</em></dt>
+<dd>
+<p>Send DATA to the socket and quit for PUB, PUSH, PAIR,
+BUS socket. Use DATA to reply for REP or  RESPONDENT
+socket. Send DATA as request for REQ or SURVEYOR socket.</p>
+</dd>
+<dt class="hdlist1"><strong>--file,-F</strong> <em>PATH</em></dt>
+<dd>
+<p>Same as --data but get data from file PATH</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_examples">EXAMPLES</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The ping-pong with nn_req/nn_rep sockets (must be run simultaneously):</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --rep --bind tcp://127.0.0.1:1234 --data pong --format ascii
+nanocat --req --connect tcp://127.0.0.1:1234 --data ping --format ascii</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or in shorter to write form:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_rep -L1234 -Dpong -A
+nn_req -l1234 -Dping -A</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Do periodic requests once a second:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nn_req -l1234 -Dping -A -i 1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The rep socket that never reply (no -D option), may be used to check if
+resending the requests is actually work:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --rep --connect ipc:///var/run/app/req.socket</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Send an output of the ls to whatever would connect to 127.0.0.1:1234 then exit:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>ls | nanocat --push -L1234 -F-</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Send heartbeats to imaginary monitoring service:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>nanocat --pub --connect tpc://monitoring.example.org -D"I am alive!" --interval 10</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_see_also">SEE ALSO</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="nanomsg.html">nanomsg(7)</a></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_authors">AUTHORS</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="mailto:paul@colomiets.name">Paul Colomiets</a></p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2018-03-23 15:28:26 UTC
+nanomsg 1.1.3<br>
+Last updated 2018-05-24 00:59:13 UTC
 </div>
 </div>
 </body>

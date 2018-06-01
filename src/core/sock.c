@@ -235,6 +235,7 @@ int nn_sock_term (struct nn_sock *self)
     nn_fsm_stopped_noevent (&self->fsm);
     nn_fsm_term (&self->fsm);
     nn_sem_term (&self->termsem);
+    nn_sem_term (&self->relesem);
     nn_list_term (&self->sdeps);
     nn_list_term (&self->eps);
     nn_ctx_term (&self->ctx);

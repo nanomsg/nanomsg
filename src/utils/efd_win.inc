@@ -42,7 +42,6 @@ int nn_efd_init (struct nn_efd *self)
     int one;
     BOOL nodelay;
     u_long nonblock;
-    int i;
 
     /*  Unfortunately, on Windows the only way to send signal to a file
         descriptor (SOCKET) is to create a full-blown TCP connecting on top of

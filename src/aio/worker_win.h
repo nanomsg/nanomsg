@@ -1,5 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright 2018 Staysail Systems, Inc. <info@staysail.tech>
+    Copyright 2018 Capitar IT Group BV <info@capitar.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -42,16 +44,21 @@ struct nn_worker_op {
     /*  This structure is to be used by the user, not nn_worker_op itself.
         Actual usage is specific to the asynchronous operation in question. */
     OVERLAPPED olpd;
+
+    /*  We might have transferred less than requested.  This keeps track. */
+    size_t resid;
+    char *buf;
+    void *arg;
+    void (*start)(struct nn_usock *);
+    int zero_is_error;
 };
 
 void nn_worker_op_init (struct nn_worker_op *self, int src,
     struct nn_fsm *owner);
 void nn_worker_op_term (struct nn_worker_op *self);
 
-/*  Call this function when asynchronous operation is started.
-    If 'zeroiserror' is set to 1, zero bytes transferred will be treated
-    as an error. */
-void nn_worker_op_start (struct nn_worker_op *self, int zeroiserror);
+/*  Call this function when asynchronous operation is started. */
+void nn_worker_op_start (struct nn_worker_op *self);
 
 int nn_worker_op_isidle (struct nn_worker_op *self);
 

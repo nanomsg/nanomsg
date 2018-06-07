@@ -1,6 +1,8 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
+    Copyright 2018 Staysail Systems, Inc. <info@staysail.tech>
+    Copyright 2018 Capitar IT Group BV <info@capitar.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -311,7 +313,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     listener->asock = self;
 
     /*  Asynchronous accept. */
-    nn_worker_op_start (&listener->in, 0);
+    nn_worker_op_start (&listener->in);
 }
 
 void nn_usock_activate (struct nn_usock *self)
@@ -371,7 +373,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     }
 
     /*  Asynchronous connect. */
-    nn_worker_op_start (&self->out, 0);
+    nn_worker_op_start (&self->out);
 }
 
 void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
@@ -418,7 +420,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
         }
         brc = WriteFile (self->p, self->pipesendbuf, (DWORD) len, NULL, &self->out.olpd);
         if (nn_fast (brc || GetLastError() == ERROR_IO_PENDING)) {
-            nn_worker_op_start (&self->out, 0);
+            nn_worker_op_start (&self->out);
             return;
         }
         error = GetLastError();
@@ -430,12 +432,12 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     rc = WSASend (self->s, wbuf, iovcnt, NULL, 0, &self->out.olpd, NULL);
     if (nn_fast (rc == 0)) {
-        nn_worker_op_start (&self->out, 0);
+        nn_worker_op_start (&self->out);
         return;
     }
     error = WSAGetLastError();
     if (nn_fast (error == WSA_IO_PENDING)) {
-        nn_worker_op_start (&self->out, 0);
+        nn_worker_op_start (&self->out);
         return;
     }
     wsa_assert (error == WSAECONNABORTED || error == WSAECONNRESET ||
@@ -445,14 +447,67 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
 }
 
-void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
+void nn_usock_recv_start_wsock (void *arg)
 {
-    int rc;
-    BOOL brc;
+    struct nn_usock *self = arg;
     WSABUF wbuf;
-    DWORD wflags;
+    DWORD flags;
     DWORD error;
 
+    /*  Start the receive operation. */
+    wbuf.len = (ULONG) self->in.resid;
+    wbuf.buf = (char FAR*) self->in.buf;
+    flags = MSG_WAITALL;
+    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+
+    if (WSARecv (self->s, &wbuf, 1, NULL, &flags, &self->in.olpd, NULL) == 0) {
+        error = ERROR_SUCCESS;
+    } else {
+        error = WSAGetLastError ();
+    }
+
+    switch (error) {
+    case ERROR_SUCCESS:
+    case WSA_IO_PENDING:
+        nn_worker_op_start (&self->in);
+        return;
+
+    default:
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+        return;
+    }
+}
+
+void nn_usock_recv_start_pipe (void *arg)
+{
+    struct nn_usock *self = arg;
+    void *buf = self->in.buf;
+    DWORD len = (DWORD) self->in.resid;
+    DWORD error;
+
+    /*  Start the receive operation. */
+    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
+
+    if (ReadFile (self->p, buf, len, NULL, &self->in.olpd)) {
+        error = ERROR_SUCCESS;
+    } else {
+        error = GetLastError ();
+    }
+
+    switch (error) {
+    case ERROR_SUCCESS:
+    case ERROR_IO_PENDING:
+        nn_worker_op_start (&self->in);
+        return;
+
+    default:
+        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+        return;
+   }
+}
+
+void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
+{
     /*  Passing file descriptors is not implemented on Windows platform. */
     if (fd)
         *fd = -1;
@@ -460,44 +515,18 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     /*  Make sure that the socket is actually alive. */
     nn_assert_state (self, NN_USOCK_STATE_ACTIVE);
 
-    /*  Start the receive operation. */
-    wbuf.len = (ULONG) len;
-    wbuf.buf = (char FAR*) buf;
-    wflags = MSG_WAITALL;
-    memset (&self->in.olpd, 0, sizeof (self->in.olpd));
-
+    self->in.resid = len;
+    self->in.buf = buf;
+    self->in.arg = self;
+    self->in.zero_is_error = 1;
     if (self->domain == AF_UNIX) {
-
-        /*  Ensure the total buffer size does not exceed size limitation
-            of WriteFile. */
-        nn_assert (len <= MAXDWORD);
-        brc = ReadFile (self->p, buf, (DWORD) len, NULL, &self->in.olpd);
-        error = brc ? ERROR_SUCCESS : GetLastError ();
+        self->in.start = nn_usock_recv_start_pipe;
     }
     else {
-        rc = WSARecv (self->s, &wbuf, 1, NULL, &wflags, &self->in.olpd, NULL);
-        error = (rc == 0) ? ERROR_SUCCESS : WSAGetLastError ();
+        self->in.start = nn_usock_recv_start_wsock;
     }
 
-    if (nn_fast (error == ERROR_SUCCESS)) {
-        nn_worker_op_start (&self->in, 1);
-        return;
-    }
-
-    if (nn_fast (error == WSA_IO_PENDING)) {
-        nn_worker_op_start (&self->in, 1);
-        return;
-    }
-
-    if (error == WSAECONNABORTED || error == WSAECONNRESET ||
-          error == WSAENETDOWN || error == WSAENETRESET ||
-          error == WSAETIMEDOUT || error == WSAEWOULDBLOCK ||
-          error == ERROR_PIPE_NOT_CONNECTED || error == ERROR_BROKEN_PIPE) {
-        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
-        return;
-   }
-
-    wsa_assert (0);
+    self->in.start (self->in.arg);
 }
 
 static void nn_usock_create_io_completion (struct nn_usock *self)
@@ -628,7 +657,7 @@ void nn_usock_accept_pipe (struct nn_usock *self, struct nn_usock *listener)
     listener->asock = self;
 
     /*  Asynchronous accept. */
-    nn_worker_op_start (&listener->in, 0);
+    nn_worker_op_start (&listener->in);
 }
 
 static void nn_usock_close (struct nn_usock *self)

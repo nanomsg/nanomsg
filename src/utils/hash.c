@@ -52,7 +52,8 @@ void nn_hash_term (struct nn_hash *self)
     nn_free (self->array);
 }
 
-static void nn_hash_rehash (struct nn_hash *self) {
+static void nn_hash_rehash (struct nn_hash *self)
+{
     uint32_t i;
     uint32_t oldslots;
     struct nn_list *oldarray;
@@ -66,26 +67,25 @@ static void nn_hash_rehash (struct nn_hash *self) {
     self->array = nn_alloc (sizeof (struct nn_list) * self->slots, "hash map");
     alloc_assert (self->array);
     for (i = 0; i != self->slots; ++i)
-    nn_list_init (&self->array [i]);
+        nn_list_init (&self->array [i]);
 
     /*  Move the items from old slot array to new slot array. */
     for (i = 0; i != oldslots; ++i) {
-    while (!nn_list_empty (&oldarray [i])) {
-        hitm = nn_cont (nn_list_begin (&oldarray [i]),
-                struct nn_hash_item, list);
-        nn_list_erase (&oldarray [i], &hitm->list);
-        newslot = nn_hash_key (hitm->key) % self->slots;
-        nn_list_insert (&self->array [newslot], &hitm->list,
-                nn_list_end (&self->array [newslot]));
-    }
+        while (!nn_list_empty (&oldarray [i])) {
+            hitm = nn_cont (nn_list_begin (&oldarray [i]),
+                    struct nn_hash_item, list);
+            nn_list_erase (&oldarray [i], &hitm->list);
+            newslot = nn_hash_key (hitm->key) % self->slots;
+            nn_list_insert (&self->array [newslot], &hitm->list,
+                    nn_list_end (&self->array [newslot]));
+        }
 
-    nn_list_term (&oldarray [i]);
+        nn_list_term (&oldarray [i]);
     }
 
     /*  Deallocate the old array of slots. */
     nn_free (oldarray);
 }
-
 
 void nn_hash_insert (struct nn_hash *self, uint32_t key,
     struct nn_hash_item *item)
@@ -108,7 +108,7 @@ void nn_hash_insert (struct nn_hash *self, uint32_t key,
     /*  If the hash is getting full, double the amount of slots and
         re-hash all the items. */
     if (nn_slow (self->items * 2 > self->slots && self->slots < 0x80000000))
-    nn_hash_rehash(self);
+        nn_hash_rehash(self);
 }
 
 void nn_hash_erase (struct nn_hash *self, struct nn_hash_item *item)

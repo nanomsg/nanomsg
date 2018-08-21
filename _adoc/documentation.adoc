@@ -27,17 +27,20 @@ layout: default
 
 .2+<|C
 |https://github.com/nanomsg/nanomsg[nanomsg]
-|Reference implementation.
+|Reference implementation, sustaining mode
 
-|https://github.com/nanomsg/nng[nng]
-|Next-gen implementation, under development.
+|https://github.com/nanomsg/nng[NNG]
+|Modern re-implementation. 
 
-.2+<|C++
+.3+<|C++
 |https://github.com/achille-roussel/nanomsgxx[nanomsgxx]
 |
 
 |https://github.com/nanomsg/cppnanomsg[cppnanomsg]
 |
+
+|https://github.com/cwzx/nngpp[nngpp]
+|(NNG binding)
 
 |Clojure
 |https://github.com/niwibe/jnanomsg[jnanomsg]
@@ -85,12 +88,15 @@ layout: default
 |https://github.com/swiftc-org/nanomsg[swiftc nanomsg]
 |
 
-.2+<|Java
+.3+<|Java
 |https://github.com/gonzus/jnano[jnano]
 |
 
 |https://github.com/niwibe/jnanomsg[jnanomsg]
 |
+
+|https://github.com/babeloff/nngjvm[nngjvm]
+|(NNG binding for JNA.)
 
 |JavaScript (Node.js)
 |https://github.com/nickdesaulniers/node-nanomsg[node-nanomsg]
@@ -126,7 +132,7 @@ layout: default
 |https://github.com/aw/picolisp-nanomsg[picolisp-nanomsg] FFI bindings
 |
 
-.3+<|Python
+.4+<|Python
 |https://github.com/tonysimpson/nanomsg-python[nanomsg-python]
 |(recommended)
 
@@ -135,6 +141,9 @@ layout: default
 
 |https://github.com/djc/nnpy[nnpy]
 |
+
+|https://github.com/mark-r-stevens/pynng[pynng]
+|(NNG binding, work in progress)
 
 |R
 |https://github.com/mhowlett/rnanomsg[rnanomsg]

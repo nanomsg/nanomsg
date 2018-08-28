@@ -24,9 +24,6 @@
     IN THE SOFTWARE.
 */
 
-#define NN_EFD_PORT 5907
-#define NN_EFD_RETRIES 1000
-
 #include "err.h"
 #include "fast.h"
 

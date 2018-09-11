@@ -24,7 +24,7 @@
 #   IN THE SOFTWARE.
 #
 
-cmake_minimum_required (VERSION 2.8.7)
+cmake_minimum_required (VERSION 2.8.12)
 
 project (nanomsg C)
 include (CheckFunctionExists)

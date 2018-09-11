@@ -3,6 +3,7 @@
 #   Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
 #   Copyright (c) 2015-2016 Jack R. Dunaway. All rights reserved.
 #   Copyright 2016 Garrett D'Amore <garrett@damore.org>
+#   Copyright (c) 2018 Dennis Klein <d.klein@gsi.de>
 #
 #   Permission is hereby granted, free of charge, to any person obtaining a copy
 #   of this software and associated documentation files (the "Software"),
@@ -377,4 +378,28 @@ install (TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install (EXPORT ${PROJECT_NAME}-target DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME} FILE ${PROJECT_NAME}-config.cmake)
+
+# Generate and install CMake package
+include(CMakePackageConfigHelpers)
+set(PACKAGE_INSTALL_DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${NN_PACKAGE_VERSION}
+)
+install(EXPORT ${PROJECT_NAME}-target
+    DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+    VERSION ${NN_PACKAGE_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+    INSTALL_DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+    PATH_VARS CMAKE_INSTALL_PREFIX
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake
+    DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+)

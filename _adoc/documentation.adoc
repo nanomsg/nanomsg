@@ -156,9 +156,12 @@ layout: default
 |https://bitbucket.org/kschiess/nanomsg[nanomsg]
 |Native bindings: `gem install nanomsg`
 
-|Rust
+.2+<|Rust
 |https://github.com/glycerine/rust-nanomsg[rust-nanomsg]
 |
+
+|https://crates.io/crates/nng[nng-rs]
+|Safe wrapper for NNG
 
 |Scheme (CHICKEN)
 |https://github.com/Adellica/chicken-nanomsg[chicken-nanomsg]

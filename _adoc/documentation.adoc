@@ -62,9 +62,12 @@ layout: default
 |https://github.com/jshahbazi/nanofort[nanofort]
 |
 
-.2+<|Go
-|https://github.com/go-mangos/mangos[mangos]
-|(full re-implementation of SP protocols in Go, recommended)
+.3+<|Go
+|https://github.com/nanomsg/mangos-v2[mangos v2]
+|(pure Go implementation, version 2, recommended)
+
+|https://github.com/nanomsg/mangos[mangos]
+|(pure Go implementation)
 
 |https://github.com/op/go-nanomsg[go-nanomsg]
 |

@@ -271,7 +271,7 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     int rc;
     BOOL brc;
     DWORD nbytes;
- 
+
     /* NamedPipes have their own accepting mechanism. */
     if (listener->domain == AF_UNIX) {
         nn_usock_accept_pipe (self, listener);
@@ -403,7 +403,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
     if (self->domain == AF_UNIX)
     {
-        /* TODO: Do not copy the buffer, find an efficent way to Write 
+        /* TODO: Do not copy the buffer, find an efficent way to Write
            multiple buffers that doesn't affect the state machine. */
 
         /*  Ensure the total buffer size does not exceed size limitation
@@ -910,6 +910,10 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 return;
             case NN_WORKER_OP_ERROR:
                 if (nn_usock_cancel_io (usock) == 0) {
+                    if (usock->pipesendbuf) {
+                        nn_free(usock->pipesendbuf);
+                        usock->pipesendbuf = NULL;
+                    }
                     nn_fsm_raise(&usock->fsm, &usock->event_error,
                         NN_USOCK_ERROR);
                     nn_usock_close(usock);

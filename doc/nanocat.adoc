@@ -162,7 +162,7 @@ Send an output of the ls to whatever would connect to 127.0.0.1:1234 then exit:
 
 Send heartbeats to imaginary monitoring service:
 
-    nanocat --pub --connect tpc://monitoring.example.org -D"I am alive!" --interval 10
+    nanocat --pub --connect tcp://monitoring.example.org -D"I am alive!" --interval 10
 
 
 SEE ALSO

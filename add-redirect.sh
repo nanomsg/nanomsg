@@ -48,9 +48,7 @@ if [[ -n "$SUFFIX" ]]; then
   SRC_DIR="$SRC_DIR/$SUFFIX"
 fi
 
-if [[ ! -d "$SRC_DIR" ]]; then
-	mkdir "$SRC_DIR"
-fi
+mkdir "$SRC_DIR"
 
 echo "<!DOCTYPE html>
 <html>

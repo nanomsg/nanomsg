@@ -135,18 +135,15 @@ layout: default
 |https://github.com/aw/picolisp-nanomsg[picolisp-nanomsg] FFI bindings
 |
 
-.4+<|Python
+.3+<|Python
 |https://github.com/tonysimpson/nanomsg-python[nanomsg-python]
-|(recommended)
-
-|https://github.com/sdiehl/pynanomsg[pynanomsg]
 |
 
 |https://github.com/djc/nnpy[nnpy]
 |
 
-|https://github.com/mark-r-stevens/pynng[pynng]
-|(NNG binding, work in progress)
+|https://github.com/codypiersall/pynng[pynng]
+|NNG binding. https://pynng.readthedocs.io[Docs here].
 
 |R
 |https://github.com/mhowlett/rnanomsg[rnanomsg]

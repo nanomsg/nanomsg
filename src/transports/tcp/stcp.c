@@ -29,6 +29,8 @@
 #include "../../utils/wire.h"
 #include "../../utils/attr.h"
 
+#include <stdlib.h>
+
 /*  States of the object as a whole. */
 #define NN_STCP_STATE_IDLE 1
 #define NN_STCP_STATE_PROTOHDR 2
@@ -313,10 +315,29 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
 
                 /*  The message is now fully sent. */
                 nn_assert (stcp->outstate == NN_STCP_OUTSTATE_SENDING);
-                stcp->outstate = NN_STCP_OUTSTATE_IDLE;
-                nn_msg_term (&stcp->outmsg);
-                nn_msg_init (&stcp->outmsg, 0);
-                nn_pipebase_sent (&stcp->pipebase);
+
+                nn_mutex_lock(&stcp->pipebase.out_msgs_mutex);
+                int is_empty = nn_queue_empty (&stcp->pipebase.out_msgs);
+                nn_mutex_unlock(&stcp->pipebase.out_msgs_mutex);
+
+                if(is_empty)
+                {
+                    nn_msg_term (&stcp->outmsg);
+                    nn_msg_init (&stcp->outmsg, 0);
+                    stcp->outstate = NN_STCP_OUTSTATE_IDLE;
+                    nn_pipebase_sent (&stcp->pipebase);
+                } else
+                {
+                    nn_mutex_lock(&stcp->pipebase.out_msgs_mutex);
+                    struct nn_queue_item *item = nn_queue_pop (&stcp->pipebase.out_msgs);
+                    stcp->pipebase.n_outmsgs--;
+                    nn_mutex_unlock(&stcp->pipebase.out_msgs_mutex);
+                    struct nn_msg *msg = nn_cont (item, struct nn_msg, queue_item);
+                    stcp->outstate = NN_STCP_OUTSTATE_IDLE;
+                    nn_stcp_send (&stcp->pipebase, msg);
+                    free(msg);
+                }
+
                 return;
 
             case NN_USOCK_RECEIVED:

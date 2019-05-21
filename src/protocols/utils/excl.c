@@ -25,12 +25,17 @@
 #include "../../utils/fast.h"
 #include "../../utils/err.h"
 #include "../../utils/attr.h"
+#include "../../utils/queue.h"
+#include "../../transport.h"
+
+#include <stdlib.h>
 
 void nn_excl_init (struct nn_excl *self)
 {
     self->pipe = NULL;
     self->inpipe = NULL;
     self->outpipe = NULL;
+    self->outpipe_pipe = NULL;
 }
 
 void nn_excl_term (struct nn_excl *self)
@@ -38,6 +43,7 @@ void nn_excl_term (struct nn_excl *self)
     nn_assert (!self->pipe);
     nn_assert (!self->inpipe);
     nn_assert (!self->outpipe);
+    nn_assert (!self->outpipe_pipe);
 }
 
 int nn_excl_add (struct nn_excl *self, struct nn_pipe *pipe)
@@ -58,6 +64,7 @@ void nn_excl_rm (struct nn_excl *self, NN_UNUSED struct nn_pipe *pipe)
    self->pipe = NULL;
    self->inpipe = NULL;
    self->outpipe = NULL;
+   self->outpipe_pipe = NULL;
 }
 
 void nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe)
@@ -72,6 +79,7 @@ void nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
     nn_assert (!self->outpipe);
     nn_assert (pipe == self->pipe);
     self->outpipe = pipe;
+    self->outpipe_pipe = pipe;
 }
 
 int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
@@ -79,7 +87,27 @@ int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
     int rc;
 
     if (nn_slow (!self->outpipe))
+    {
+        if(self->outpipe_pipe)
+        {
+            struct nn_pipebase *pipebase = (struct nn_pipebase *)(self->outpipe_pipe);
+            struct nn_msg *msg_cp = malloc(sizeof(struct nn_msg));
+            nn_msg_mv (msg_cp, msg);
+            nn_queue_item_init (&msg_cp->queue_item);
+            nn_mutex_lock(&pipebase->out_msgs_mutex);
+            if(pipebase->n_outmsgs >= NN_MAX_OUT_MSGS_IN_QUEUE)
+            {
+                nn_mutex_unlock(&pipebase->out_msgs_mutex);
+                free(msg_cp);
+                return -EAGAIN;
+            }
+            nn_queue_push (&pipebase->out_msgs, &msg_cp->queue_item);
+            pipebase->n_outmsgs++;
+            nn_mutex_unlock(&pipebase->out_msgs_mutex);
+            return 0;
+        }
         return -EAGAIN;
+    }
 
     rc = nn_pipe_send (self->outpipe, msg);
     errnum_assert (rc >= 0, -rc);

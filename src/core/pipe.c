@@ -29,6 +29,8 @@
 
 #include "../utils/err.h"
 #include "../utils/fast.h"
+#include "../utils/cont.h"
+#include <stdlib.h>
 
 /*  Internal pipe states. */
 #define NN_PIPEBASE_STATE_IDLE 1
@@ -47,6 +49,8 @@
 #define NN_PIPEBASE_OUTSTATE_SENT 3
 #define NN_PIPEBASE_OUTSTATE_ASYNC 4
 
+struct nn_msg;
+
 void nn_pipebase_init (struct nn_pipebase *self,
     const struct nn_pipebase_vfptr *vfptr, struct nn_ep *ep)
 {
@@ -61,6 +65,10 @@ void nn_pipebase_init (struct nn_pipebase *self,
     memcpy (&self->options, &ep->options, sizeof (struct nn_ep_options));
     nn_fsm_event_init (&self->in);
     nn_fsm_event_init (&self->out);
+
+    self->n_outmsgs = 0;
+    nn_queue_init(&self->out_msgs);
+    nn_mutex_init(&self->out_msgs_mutex);
 }
 
 void nn_pipebase_term (struct nn_pipebase *self)
@@ -70,6 +78,17 @@ void nn_pipebase_term (struct nn_pipebase *self)
     nn_fsm_event_term (&self->out);
     nn_fsm_event_term (&self->in);
     nn_fsm_term (&self->fsm);
+
+    while(!nn_queue_empty(&self->out_msgs))
+    {
+        struct nn_queue_item *item = nn_queue_pop(&self->out_msgs);
+        struct nn_msg *msg = nn_cont (item, struct nn_msg, queue_item);
+        nn_msg_term (msg);
+        free(msg);
+    }
+    self->n_outmsgs = 0;
+    nn_queue_term(&self->out_msgs);
+    nn_mutex_term(&self->out_msgs_mutex);
 }
 
 int nn_pipebase_start (struct nn_pipebase *self)

@@ -24,10 +24,13 @@
 #define NN_MSG_INCLUDED
 
 #include "chunkref.h"
+#include "queue.h"
 
 #include <stddef.h>
 
 struct nn_msg {
+    
+    struct nn_queue_item queue_item;
 
     /*  Contains SP message header. This field directly corresponds
         to SP message header as defined in SP RFCs. There's no leading

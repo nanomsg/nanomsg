@@ -41,6 +41,7 @@ struct nn_excl {
 
     /*  Pipe ready for sending. It's either equal to 'pipe' or NULL. */
     struct nn_pipe *outpipe;
+    struct nn_pipe *outpipe_pipe;
 
 };
 

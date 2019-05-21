@@ -68,11 +68,10 @@ uint64_t nn_clock_ms (void)
     return gethrtime () / 1000000;
 
 #elif defined NN_HAVE_CLOCK_MONOTONIC
-
     int rc;
     struct timespec tv;
 
-    rc = clock_gettime (CLOCK_MONOTONIC, &tv);
+    rc = clock_gettime (CLOCK_MONOTONIC_RAW, &tv);
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_nsec / 1000000;
 
@@ -86,6 +85,5 @@ uint64_t nn_clock_ms (void)
     rc = gettimeofday (&tv, NULL);
     errno_assert (rc == 0);
     return tv.tv_sec * (uint64_t) 1000 + tv.tv_usec / 1000;
-
 #endif
 }

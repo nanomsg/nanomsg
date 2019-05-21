@@ -31,8 +31,11 @@
 
 #include "utils/list.h"
 #include "utils/msg.h"
+#include "utils/mutex.h"
 
 #include <stddef.h>
+
+#define NN_MAX_OUT_MSGS_IN_QUEUE (1000)
 
 /*  This is the API between the nanomsg core and individual transports. */
 
@@ -166,6 +169,9 @@ struct nn_pipebase {
     struct nn_fsm_event in;
     struct nn_fsm_event out;
     struct nn_ep_options options;
+    struct nn_queue out_msgs;
+    struct nn_mutex out_msgs_mutex;
+    int n_outmsgs;
 };
 
 /*  Initialise the pipe.  */

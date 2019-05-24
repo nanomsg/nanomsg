@@ -74,12 +74,18 @@ void nn_excl_in (struct nn_excl *self, struct nn_pipe *pipe)
     self->inpipe = pipe;
 }
 
+extern const struct nn_pipebase_vfptr nn_stcp_pipebase_vfptr;
 void nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
 {
     nn_assert (!self->outpipe);
     nn_assert (pipe == self->pipe);
     self->outpipe = pipe;
-    self->outpipe_pipe = pipe;
+    struct nn_pipebase *pipebase = (struct nn_pipebase*) pipe;
+    /* only tcp support the out queuing */
+    if(pipebase->vfptr->send == nn_stcp_pipebase_vfptr.send)
+    {
+        self->outpipe_pipe = pipe;
+    }
 }
 
 int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)

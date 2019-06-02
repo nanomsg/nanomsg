@@ -160,6 +160,7 @@ void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         /*  No request was sent. Getting a reply doesn't make sense. */
         if (nn_slow (!nn_req_inprogress (req))) {
             nn_msg_term (&req->task.reply);
+            nn_msg_init (&req->task.reply, 0);
             continue;
         }
 
@@ -167,6 +168,7 @@ void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         if (nn_slow (nn_chunkref_size (&req->task.reply.sphdr) !=
               sizeof (uint32_t))) {
             nn_msg_term (&req->task.reply);
+            nn_msg_init (&req->task.reply, 0);
             continue;
         }
 
@@ -174,10 +176,12 @@ void nn_req_in (struct nn_sockbase *self, struct nn_pipe *pipe)
         reqid = nn_getl (nn_chunkref_data (&req->task.reply.sphdr));
         if (nn_slow (!(reqid & 0x80000000))) {
             nn_msg_term (&req->task.reply);
+            nn_msg_init (&req->task.reply, 0);
             continue;
         }
         if (nn_slow (reqid != (req->task.id | 0x80000000))) {
             nn_msg_term (&req->task.reply);
+            nn_msg_init (&req->task.reply, 0);
             continue;
         }
 

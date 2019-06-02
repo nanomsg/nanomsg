@@ -189,6 +189,7 @@ int nn_xreq_recv (struct nn_sockbase *self, struct nn_msg *msg)
         /*  Ignore malformed replies. */
         if (nn_slow (nn_chunkref_size (&msg->body) < sizeof (uint32_t))) {
             nn_msg_term (msg);
+            nn_msg_init (msg, 0);
             return -EAGAIN;
         }
 

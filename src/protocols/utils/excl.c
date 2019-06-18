@@ -105,6 +105,7 @@ int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
             {
                 nn_mutex_unlock(&pipebase->out_msgs_mutex);
                 free(msg_cp);
+                nn_err_log("ERROR", "EAGAIN: queue size %d", pipebase->n_outmsgs);
                 return -EAGAIN;
             }
             nn_queue_push (&pipebase->out_msgs, &msg_cp->queue_item);

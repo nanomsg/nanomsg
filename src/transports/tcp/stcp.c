@@ -87,8 +87,9 @@ void nn_stcp_init (struct nn_stcp *self, int src,
 
 void nn_stcp_term (struct nn_stcp *self)
 {
-    nn_assert_state (self, NN_STCP_STATE_IDLE);
+    nn_err_log("INFO", "terminating stcp");
 
+    nn_assert_state (self, NN_STCP_STATE_IDLE);
     nn_fsm_event_term (&self->done);
     nn_msg_term (&self->outmsg);
     nn_msg_term (&self->inmsg);
@@ -320,10 +321,11 @@ static void nn_stcp_handler (struct nn_fsm *self, int src, int type,
                 int is_empty = nn_queue_empty (&stcp->pipebase.out_msgs);
                 nn_mutex_unlock(&stcp->pipebase.out_msgs_mutex);
 
+                nn_msg_term (&stcp->outmsg);
+                nn_msg_init (&stcp->outmsg, 0);
+                
                 if(is_empty)
                 {
-                    nn_msg_term (&stcp->outmsg);
-                    nn_msg_init (&stcp->outmsg, 0);
                     stcp->outstate = NN_STCP_OUTSTATE_IDLE;
                     nn_pipebase_sent (&stcp->pipebase);
                 } else

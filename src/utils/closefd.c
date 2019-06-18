@@ -35,6 +35,7 @@ void nn_closefd (int fd)
     if (nn_slow (fd < 0)) {
         return;
     }
+    nn_err_log("INFO", "closing socket %d", fd);
     rc = close (fd);
     if (nn_fast (rc == 0))
         return;

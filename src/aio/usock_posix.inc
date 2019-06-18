@@ -171,7 +171,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
     s = socket (domain, type, protocol);
     if (nn_slow (s < 0))
        return -errno;
-
+    nn_err_log("INFO", "created socket %d", s);
     nn_usock_init_from_fd (self, s);
 
     /*  Start the state machine. */
@@ -592,13 +592,14 @@ static void nn_usock_shutdown (struct nn_fsm *self, int src, int type,
         nn_assert (type == NN_WORKER_TASK_EXECUTE);
         nn_worker_rm_fd (usock->worker, &usock->wfd);
 finish1:
+        if(usock->in.batch_len != usock->in.batch_pos)
+        {
+            nn_err_log("ERROR", "closing socket with non empty buffers batch_len %d batch_pos %d. sz %d",
+                usock->in.batch_len, usock->in.batch_pos, usock->in.batch_len - usock->in.batch_pos);
+        }
         usock->in.batch_len = 0;
         usock->in.batch_pos = 0;
         memset (&usock->out.hdr, 0, sizeof (struct msghdr));
-        if(usock->in.batch_len != usock->in.batch_pos)
-        {
-            printf("nanomsg: closing socket with size not empty \n");
-        }
         nn_closefd (usock->s);
         usock->s = -1;
 finish2:
@@ -755,6 +756,7 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 } else {
                     usock->errnum = sockerr;
                     nn_worker_rm_fd (usock->worker, &usock->wfd);
+                    nn_err_log("ERROR", "NN_USOCK_STATE_CONNECTING: closing socket %d. %s", usock->s, strerror(sockerr));
                     rc = close (usock->s);
                     errno_assert (rc == 0);
                     usock->s = -1;
@@ -1051,7 +1053,7 @@ static int nn_usock_send_raw (struct nn_usock *self, struct msghdr *hdr)
         if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))
             nbytes = 0;
         else {
-
+            nn_err_log("ERROR", "Tx failed reseting connection socket %d %s", self->s, strerror(errno));
             /*  If the connection fails, return ECONNRESET. */
             return -ECONNRESET;
         }
@@ -1143,13 +1145,16 @@ static int nn_usock_recv_raw (struct nn_usock *self, void *buf, size_t *len)
     if (nn_slow (nbytes <= 0)) {
 
         if (nn_slow (nbytes == 0))
+        {
+            nn_err_log("ERROR", "Rx failed reseting socket %d, other side closed connection", self->s);
             return -ECONNRESET;
+        }
 
         /*  Zero bytes received. */
         if (nn_fast (errno == EAGAIN || errno == EWOULDBLOCK))
             nbytes = 0;
         else {
-
+            nn_err_log("ERROR", "Rx failed reseting socket %d %s", self->s, strerror(errno));
             /*  If the peer closes the connection, return ECONNRESET. */
             return -ECONNRESET;
         }

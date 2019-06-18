@@ -79,6 +79,14 @@ void nn_pipebase_term (struct nn_pipebase *self)
     nn_fsm_event_term (&self->in);
     nn_fsm_term (&self->fsm);
 
+    char *sev = "INFO";
+    if(self->n_outmsgs)
+    {
+        sev = "ERROR";
+    }
+
+    nn_err_log(sev, "nn_pipebase_term socket %s with %d msgs, dropping", self->sock->socket_name, self->n_outmsgs);
+
     while(!nn_queue_empty(&self->out_msgs))
     {
         struct nn_queue_item *item = nn_queue_pop(&self->out_msgs);
@@ -94,7 +102,7 @@ void nn_pipebase_term (struct nn_pipebase *self)
 int nn_pipebase_start (struct nn_pipebase *self)
 {
     int rc;
-
+    nn_err_log("INFO", "nn_pipebase_start socket %s", self->sock->socket_name);
     nn_assert_state (self, NN_PIPEBASE_STATE_IDLE);
 
     self->state = NN_PIPEBASE_STATE_ACTIVE;

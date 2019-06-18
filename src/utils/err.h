@@ -41,6 +41,8 @@
 #define NN_NORETURN
 #endif
 
+void nn_err_log(const char* severity, char *fmt, ...);
+
 /*  Same as system assert(). However, under Win32 assert has some deficiencies.
     Thus this macro. */
 #define nn_assert(x) \
@@ -172,3 +174,4 @@ void nn_win_error (int err, char *buf, size_t bufsize);
 #endif
 
 #endif
+

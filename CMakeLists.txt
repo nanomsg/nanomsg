@@ -245,6 +245,7 @@ else ()
     nn_check_lib (pthread sem_wait  NN_HAVE_SEMAPHORE_PTHREAD)
     nn_check_lib (nsl gethostbyname NN_HAVE_LIBNSL)
     nn_check_lib (socket socket NN_HAVE_LIBSOCKET)
+    set(NN_REQUIRED_LIBRARIES ${NN_REQUIRED_LIBRARIES} m)
 
     nn_check_sym (CLOCK_MONOTONIC time.h NN_HAVE_CLOCK_MONOTONIC)
     nn_check_sym (atomic_cas_32 atomic.h NN_HAVE_ATOMIC_SOLARIS)

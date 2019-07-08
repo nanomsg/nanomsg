@@ -107,7 +107,7 @@ This library is considered to be in "sustaining" mode, which means that new
 feature development has ended, and bug fixes are made only when strictly
 necessary for severe issues.
 
-New development is now occuring in the [NNG](https://github.com/nanomsg/nng)
+New development is now occurring in the [NNG](https://github.com/nanomsg/nng)
 project, which offers both protocol and API compatibility with this project.
 Please consider using NNG for new projects.
 

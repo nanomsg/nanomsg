@@ -21,12 +21,11 @@ It aims to make the networking layer fast, scalable, and easy to use.
 Implemented in C, it works on a wide range of operating systems with no further
 dependencies.
 
-TIP: A new project, https://github.com/nanomsg/nng[_nng_], is underway
-as reimplementation of these same protocols.
-_nng_ is wire compatible with _nanomsg_, and offers a number of additional
-advanced capabilities.
-Although _nng_ itself is still in pre-release state, we are encouraging
-people using or considering using _nanomsg_ to look at _nng_.
+NOTE: This project has largely been superceded by the 
+https://github.com/nanomsg/nng[_nng_] project.
+Users are encouraged to use _nng_ if they are able.
+The _nng_ project is wire compatible with this library, and supports
+a significant superset of capabilities.
 
 The communication patterns, also called "scalability protocols", are basic
 blocks for building distributed systems.

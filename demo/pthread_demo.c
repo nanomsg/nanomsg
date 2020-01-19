@@ -47,6 +47,7 @@
 #include <poll.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 
 #include <nanomsg/nn.h>
 #include <nanomsg/reqrep.h>
@@ -170,8 +171,8 @@ int server(const char *url)
 
     /*  Now wait on them to finish. */
     for (i = 0; i < MAXWORKERS; i++) {
-        if (tids[i] != NULL) {
-            pthread_join (tids[i], NULL);
+        if (tids[i] != '\0') {
+            pthread_join (tids[i], '\0');
         }
     }
     return (-1);

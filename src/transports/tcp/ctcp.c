@@ -329,7 +329,15 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
             default:
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
-
+        case NN_CTCP_SRC_USOCK:
+            switch (type) {
+            case NN_USOCK_STOPPED:
+                nn_backoff_start (&ctcp->retry);
+                ctcp->state = NN_CTCP_STATE_WAITING;
+                return;
+            default:
+                nn_fsm_bad_action (ctcp->state, src, type);
+            }
         default:
             nn_fsm_bad_source (ctcp->state, src, type);
         }
@@ -606,9 +614,9 @@ static void nn_ctcp_start_connecting (struct nn_ctcp *self,
 
     /*  Bind the socket to the local network interface. */
     rc = nn_usock_bind (&self->usock, (struct sockaddr*) &local, locallen);
-    if (nn_slow (rc != 0)) {
-        nn_backoff_start (&self->retry);
-        self->state = NN_CTCP_STATE_WAITING;
+    if (nn_slow (rc != 0)) 
+    {
+        nn_usock_stop (&self->usock);
         return;
     }
 

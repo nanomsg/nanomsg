@@ -218,28 +218,14 @@ void nn_win_error (int err, char *buf, size_t bufsize)
 #include <unistd.h>
 #include <sys/syscall.h>
 
-FILE *fp = NULL;
-
 extern char *__progname;
 
 
 
 void nn_err_log(const char* severity, char *fmt, ...)
 {
-    int result;
-
+    return;
     pid_t tid = syscall(__NR_gettid);
-
-    if(fp == NULL)
-    {
-        char filename[512];
-        snprintf(filename, sizeof(filename), "/var/log/dn/%s-nanomsg", __progname);
-        fp = fopen(filename, "a");
-        if(fp == NULL)
-        {
-            printf("nanomsg: failed to create log file\n");
-        }
-    }
 
 	char timeBuffer[64];
 	int millisec;
@@ -259,30 +245,12 @@ void nn_err_log(const char* severity, char *fmt, ...)
 
 	strftime(timeBuffer, 64, "%F %X", time_info);
 
-	// fprintf(stdout, "%s.%03d [%-6s] (%d) nanomsg: ", timeBuffer, millisec, severity, tid);
-    if(fp)
-    {
-        fprintf(fp, "%s.%03d [%-6s] (%d) nanomsg: ", timeBuffer, millisec, severity, tid);
-    }
+    printf("%s.%03d [%-6s] (%d) nanomsg: ", timeBuffer, millisec, severity, tid);
     va_list args;
-    // va_start(args, fmt);
-    // result = vfprintf(stdout, fmt, args);
-    // va_end(args);
-
-    if(fp)
-    {
-        va_start(args, fmt);
-        result = vfprintf(fp, fmt, args);
-        va_end(args);
-    }
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
 
     // printf("\n");
-    if(fp)
-    {
-        result = fprintf(fp, "\n");
-    }
-    if(result < 0)
-    {
-        printf("Failed to vprints for %s\n", fmt);
-    }
+    printf("\n");
 }

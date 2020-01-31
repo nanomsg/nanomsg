@@ -78,9 +78,9 @@ int main (int argc, const char* argv[])
         for (i = 0; i < n_send; i++)
         {
             int err = nn_send(sb, buf, len, NN_DONTWAIT);
-            if(err < 0)
+            if(err <= 0)
             {
-                err++;
+                n_err++;
                 if(errno == -EAGAIN)
                 {
                     // printf("%d: got eagain\n", i);

@@ -5,6 +5,7 @@
 
 #include <nng/nng.h>
 #include <nng/protocol/bus0/bus.h>
+#include <nng/supplemental/util/platform.h> // for nng_msleep
 
 void
 fatal(const char *func, int rv)
@@ -27,7 +28,7 @@ node(int argc, char **argv)
                 fatal("nng_listen", rv);
         }
 
-        sleep(1); // wait for peers to bind
+        nng_msleep(200); // wait for peers to bind
         if (argc >= 3) {
                 for (int x = 3; x < argc; x++) {
                         if ((rv = nng_dial(sock, argv[x], NULL, 0)) != 0) {
@@ -36,7 +37,7 @@ node(int argc, char **argv)
                 }
         }
 
-	sleep(1); // wait for connects to establish
+	nng_msleep(200); // wait for connects to establish
 
         // SEND
         sz = strlen(argv[1]) + 1; // '\0' too

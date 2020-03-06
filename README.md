@@ -77,6 +77,17 @@ It also assumes you are in the project directory.
 6.  `cmake --build . --config Debug --target install`
     *NB:* This may have to be done using an Administrator account.
 
+Alternatively, you can build and install nanomsg using [vcpkg](https://github.com/microsoft/vcpkg/) dependency manager:
+
+1.  `git clone https://github.com/Microsoft/vcpkg.git`
+2.  `cd vcpkg`
+3.  `./bootstrap-vcpkg.bat`
+4.  `./vcpkg integrate install`
+5.  `./vcpkg install nanomsg`
+
+The nanomsg port in vcpkg is kept up to date by microsoft team members and community contributors.
+If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
+
 Static Library
 --------------
 

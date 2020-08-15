@@ -88,6 +88,7 @@ void nn_excl_out (struct nn_excl *self, struct nn_pipe *pipe)
     }
 }
 
+int nn_max_out_msgs_in_queue = 1000;
 int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
 {
     int rc;
@@ -101,7 +102,7 @@ int nn_excl_send (struct nn_excl *self, struct nn_msg *msg)
             nn_msg_mv (msg_cp, msg);
             nn_queue_item_init (&msg_cp->queue_item);
             nn_mutex_lock(&pipebase->out_msgs_mutex);
-            if(pipebase->n_outmsgs >= NN_MAX_OUT_MSGS_IN_QUEUE)
+            if(pipebase->n_outmsgs >= nn_max_out_msgs_in_queue)
             {
                 nn_mutex_unlock(&pipebase->out_msgs_mutex);
                 free(msg_cp);

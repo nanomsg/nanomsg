@@ -35,8 +35,6 @@
 
 #include <stddef.h>
 
-#define NN_MAX_OUT_MSGS_IN_QUEUE (1000)
-
 /*  This is the API between the nanomsg core and individual transports. */
 
 struct nn_sock;

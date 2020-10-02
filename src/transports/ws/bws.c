@@ -47,7 +47,7 @@
 #endif
 
 /*  The backlog is set relatively high so that there are not too many failed
-    connection attemps during re-connection storms. */
+    connection attempts during re-connection storms. */
 #define NN_BWS_BACKLOG 100
 
 #define NN_BWS_STATE_IDLE 1

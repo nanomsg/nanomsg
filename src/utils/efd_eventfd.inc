@@ -74,7 +74,11 @@ void nn_efd_signal (struct nn_efd *self)
     if (nn_slow (fd < 0))
         return;
 
-    nbytes = write (fd, &one, sizeof (one));
+    do
+    {
+        nbytes = write (fd, &one, sizeof (one));
+    } while(nbytes < 0 && (errno == EAGAIN || errno == EINTR));
+    
     errno_assert (nbytes == sizeof (one));
 }
 
@@ -87,7 +91,11 @@ void nn_efd_unsignal (struct nn_efd *self)
         return;
 
     /*  Extract all the signals from the eventfd. */
-    ssize_t sz = read (fd, &count, sizeof (count));
+    ssize_t sz;
+    do
+    {
+        sz = read (fd, &count, sizeof (count));
+    } while(sz < 0 && (errno == EAGAIN || errno == EINTR));
     errno_assert (sz >= 0);
     nn_assert (sz == sizeof (count));
 }

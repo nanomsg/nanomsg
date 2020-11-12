@@ -20,6 +20,8 @@
     IN THE SOFTWARE.
 */
 
+#include <netdb.h>
+
 #include "literal.h"
 
 #include "../../utils/err.h"
@@ -32,6 +34,28 @@
 #include <netinet/in.h>
 #endif
 
+int nn_literal_link_local_resolve(struct in6_addr *in6addr, int64_t *sin6_scope_id, char *addr)
+{
+    struct addrinfo hints, *res;
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family = AF_INET6;
+    hints.ai_socktype = 0;
+    hints.ai_flags |= AI_CANONNAME;
+    int rc = getaddrinfo(addr, NULL, &hints, &res);
+    if (0 != rc || ! res) {
+        return 0;
+    }
+    // case address is not link-local IP: do nothing
+    struct sockaddr_in6 * curr = (struct sockaddr_in6 *) res->ai_addr;
+    if (! IN6_IS_ADDR_LINKLOCAL(&(curr->sin6_addr))) {
+        return 0;
+    }
+    // set address and scope_id
+    memcpy(in6addr, &(curr->sin6_addr), sizeof(curr->sin6_addr));
+    *sin6_scope_id = (int64_t) curr->sin6_scope_id;
+    return 1;
+}
+
 int nn_literal_resolve (const char *addr, size_t addrlen,
     int ipv4only, struct sockaddr_storage *result, size_t *resultlen)
 {
@@ -40,6 +64,7 @@ int nn_literal_resolve (const char *addr, size_t addrlen,
         INET6_ADDRSTRLEN :  INET_ADDRSTRLEN];
     struct in_addr inaddr;
     struct in6_addr in6addr;
+    int64_t sin6_scope_id = -1;
 
     /*  Try to treat the address as a literal string. If the size of
         the address is larger than longest possible literal, skip the step.
@@ -62,10 +87,17 @@ int nn_literal_resolve (const char *addr, size_t addrlen,
     /*  Try to interpret the literal as an IPv6 address. */
     if (!ipv4only) {
         rc = inet_pton (AF_INET6, addrz, &in6addr);
-        if (rc == 1) {
+        if (1 != rc) {
+            // try to resolve link-local IP
+            rc = nn_literal_link_local_resolve(&in6addr, &sin6_scope_id, addrz);
+        }
+        if (1 == rc){
             if (result) {
                 result->ss_family = AF_INET6;
                 ((struct sockaddr_in6*) result)->sin6_addr = in6addr;
+                if (-1 < sin6_scope_id) {
+                    ((struct sockaddr_in6*) result)->sin6_scope_id = (uint32_t) sin6_scope_id;
+                }
              }
              if (resultlen)
                 *resultlen = sizeof (struct sockaddr_in6);

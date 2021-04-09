@@ -34,16 +34,7 @@ include (CheckLibraryExists)
 include (CheckCSourceCompiles)
 include (GNUInstallDirs)
 
-if (POLICY CMP0042)
-    # Newer cmake on MacOS should use @rpath
-    cmake_policy (SET CMP0042 NEW)
-endif ()
-
-set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-list (FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
-if ("${isSystemDir}" STREQUAL "-1")
-    set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-endif ("${isSystemDir}" STREQUAL "-1")
+set(CMAKE_SKIP_RPATH TRUE)
 
 set (NN_DESCRIPTION "High-Performance Scalability Protocols")
 set (ISSUE_REPORT_MSG "Please consider opening an issue at https://github.com/nanomsg/nanomsg")

@@ -113,6 +113,7 @@ int nn_btcp_create (struct nn_ep *ep)
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_btcp), "btcp");
+    alloc_assert (self);
     self->ep = ep;
     alloc_assert (self);
 

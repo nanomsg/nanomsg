@@ -81,6 +81,10 @@ int main ()
     /*  Send something large enough to trigger overlapped I/O on Windows. */
     size = 10000;
     buf = malloc (size);
+    if (!buf){
+        fprintf (stderr, "Out of memory");
+        exit(1);
+    }
     for (i = 0; i < size; ++i) {
         buf[i] = 48 + i % 10;
     }

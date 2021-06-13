@@ -315,7 +315,7 @@ static void nn_cipc_handler (struct nn_fsm *self, int src, int type,
 /******************************************************************************/
 /*  WAITING state.                                                            */
 /*  Waiting before re-connection is attempted. This way we won't overload     */
-/*  the system by continuous re-connection attempts.                           */
+/*  the system by continuous re-connection attempts.                          */
 /******************************************************************************/
     case NN_CIPC_STATE_WAITING:
         switch (src) {

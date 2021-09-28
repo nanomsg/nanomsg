@@ -503,7 +503,7 @@ int nn_sock_add_ep (struct nn_sock *self, const struct nn_transport *transport,
 
     /*  Instantiate the endpoint. */
     ep = nn_alloc (sizeof (struct nn_ep), "endpoint");
-    if (!ep){
+    if (!ep) {
         return -ENOMEM;
     }
     rc = nn_ep_init (ep, NN_SOCK_SRC_EP, self, self->eid, transport,

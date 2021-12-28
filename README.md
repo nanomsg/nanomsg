@@ -25,13 +25,13 @@ Prerequisites
    * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64.
      (Specifically mingw and older Microsoft compilers are *NOT supported,
      and we do not test mingw-w64 at all, so YMMV.)
-   * CMake 2.8.7 or newer, available in $PATH as `cmake`
+   * CMake 2.8.12 or newer, available in $PATH as `cmake`
 
 2. POSIX (Linux, MacOS X, UNIX)
    * ANSI C compiler supporting C89
    * POSIX pthreads (should be present on all modern POSIX systems)
    * BSD sockets support for both TCP and UNIX domain sockets
-   * CMake (http://cmake.org) 2.8.7 or newer, available in $PATH as `cmake`
+   * CMake (http://cmake.org) 2.8.12 or newer, available in $PATH as `cmake`
 
 3. Documentation (optional)
    * asciidoctor (http://asciidoctor.org/) available as `asciidoctor`

@@ -393,7 +393,7 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion
 )
 configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}-config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake
     INSTALL_DESTINATION ${PACKAGE_INSTALL_DESTINATION}
     PATH_VARS CMAKE_INSTALL_PREFIX

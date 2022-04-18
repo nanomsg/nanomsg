@@ -6,7 +6,6 @@ Welcome to nanomsg
 [![Linux](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/linux?logoColor=grey&logo=linux&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/linux.yml)
 [![Windows](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/windows?logoColor=grey&logo=windows&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/windows.yml)
 [![Darwin](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/darwin?logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
-[![Coverage](https://codecov.io/gh/nanomsg/nanomsg/branch/master/graph/badge.svg?label=coverage)](https://codecov.io/gh/nanomsg/nanomsg)
 [![Discord](https://img.shields.io/discord/639573728212156478?label=&logo=discord)](https://discord.com/channels/639573728212156478/639574516812742686)
 
 The nanomsg library is a simple high-performance implementation of several

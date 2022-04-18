@@ -1,0 +1,22 @@
+name: linux
+on: [push, pull_request]
+jobs:
+
+  build:
+    name: build
+    runs-on: [ ubuntu-latest ]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v1
+
+    - name: Install ninja
+      run: sudo apt-get install ninja-build
+
+    - name: Configure
+      run: mkdir build && cd build && cmake -G Ninja -D NNG_ENABLE_TLS=ON ..
+
+    - name: Build
+      run: cd build && ninja
+
+    - name: Test
+      run: cd build && ctest --output-on-failure

@@ -5,9 +5,9 @@ Welcome to nanomsg
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanomsg/nanomsg/blob/master/COPYING)
 [![Linux](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/linux?logoColor=grey&logo=linux&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/linux.yml)
 [![Windows](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/windows?logoColor=grey&logo=windows&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/windows.yml)
-[![Dwarwin](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/darwin?logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
+[![Darwin](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/darwin?logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
 [![Coverage](https://codecov.io/gh/nanomsg/nanomsg/branch/master/graph/badge.svg?label=coverage)](https://codecov.io/gh/nanomsg/nanomsg)
-[![Gitter](https://img.shields.io/badge/gitter-join-brightgreen.svg)](https://gitter.im/nanomsg/nanomsg)
+[![Discord](https://img.shields.io/discord/639573728212156478?label=&logo=discord)](https://discord.com/channels/639573728212156478/639574516812742686)
 
 The nanomsg library is a simple high-performance implementation of several
 "scalability protocols". These scalability protocols are light-weight messaging
@@ -37,7 +37,7 @@ Prerequisites
 3. Documentation (optional)
    * asciidoctor (http://asciidoctor.org/) available as `asciidoctor`
    * If not present, docs are not formatted, but left in readable ASCII
-   * Also available on-line at http://nanomsg.org/documentation
+   * Available on-line at http://nanomsg.org/documentation
 
 Quick Build Instructions
 ------------------------
@@ -124,20 +124,3 @@ project, which offers both protocol and API compatibility with this project.
 Please consider using NNG for new projects.
 
 Please see the file SUPPORT for more details.
-
-Resources
----------
-
-Website: [http://nanomsg.org](http://nanomsg.org)
-
-Source code: [https://github.com/nanomsg/nanomsg](http://github.com/nanomsg/nanomsg)
-
-Documentation: [http://nanomsg.org/documentation.html](http://nanomsg.org/documentation.html)
-
-Bug tracker: [https://github.com/nanomsg/nanomsg/issues](http://github.com/nanomsg/nanomsg/issues)
-
-Mailing list: [nanomsg@freelists.org](http://www.freelists.org/list/nanomsg)
-
-Gitter Chat: [https://gitter.im/nanomsg/nanomsg](https://gitter.im/nanomsg/nanomsg)
-
-IRC chatroom: [#nanomsg at irc.freenode.net/8001](http://webchat.freenode.net?channels=%23nanomsg)

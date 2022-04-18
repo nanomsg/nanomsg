@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
+    Copyright 2022 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -25,12 +26,14 @@
 #include "../../utils/err.h"
 #include "../../utils/fast.h"
 
-#include <netdb.h>
 #include <string.h>
 
 #ifndef NN_HAVE_WINDOWS
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#else
+#include <winsock.h>
 #endif
 
 void nn_literal_link_local_resolve(struct in6_addr *in6addr, int64_t *sin6_scope_id, char *addr)

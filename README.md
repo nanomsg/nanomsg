@@ -3,8 +3,9 @@ Welcome to nanomsg
 
 [![Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)](https://github.com/nanomsg/nanomsg/releases/latest)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanomsg/nanomsg/blob/master/COPYING)
-[![Linux Status](https://img.shields.io/circleci/project/github/nanomsg/nanomsg/master.svg?label=linux)](https://circleci.com/gh/nanomsg/nanomsg)
-[![Windows Status](https://img.shields.io/appveyor/ci/nanomsg/nanomsg/master.svg?label=windows)](https://ci.appveyor.com/project/nanomsg/nanomsg)
+[![Linux](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/linux?logoColor=grey&logo=linux&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/linux.yml)
+[![Windows](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/windows?logoColor=grey&logo=windows&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/windows.yml)
+[![Dwarwin](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/darwin?logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
 [![Coverage](https://codecov.io/gh/nanomsg/nanomsg/branch/master/graph/badge.svg?label=coverage)](https://codecov.io/gh/nanomsg/nanomsg)
 [![Gitter](https://img.shields.io/badge/gitter-join-brightgreen.svg)](https://gitter.im/nanomsg/nanomsg)
 

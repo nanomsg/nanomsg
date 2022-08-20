@@ -23,7 +23,7 @@ Prerequisites
 1. Windows.
    * Windows Vista or newer (Windows XP and 2003 are *NOT* supported)
    * Microsoft Visual Studio 2010 (including C++) or newer, or mingw-w64.
-     (Specifically mingw and older Microsoft compilers are *NOT supported,
+     (Specifically mingw and older Microsoft compilers are *NOT* supported,
      and we do not test mingw-w64 at all, so YMMV.)
    * CMake 2.8.12 or newer, available in $PATH as `cmake`
 

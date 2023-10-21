@@ -3,9 +3,9 @@ Welcome to nanomsg
 
 [![Release](https://img.shields.io/github/release/nanomsg/nanomsg.svg)](https://github.com/nanomsg/nanomsg/releases/latest)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/nanomsg/nanomsg/blob/master/COPYING)
-[![Linux](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/linux?logoColor=grey&logo=linux&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/linux.yml)
-[![Windows](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/windows?logoColor=grey&logo=windows&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/windows.yml)
-[![Darwin](https://img.shields.io/github/workflow/status/nanomsg/nanomsg/darwin?logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
+[![Linux](https://img.shields.io/github/actions/workflow/status/nanomsg/nanomsg/linux.yml?branch=master&logoColor=grey&logo=linux&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/linux.yml)
+[![Windows](https://img.shields.io/github/actions/workflow/status/nanomsg/nanomsg/windows.yml?branch=master&logoColor=grey&logo=windows&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/windows.yml)
+[![Darwin](https://img.shields.io/github/actions/workflow/status/nanomsg/nanomsg/darwin.yml?branch=master&logoColor=grey&logo=apple&label=)](https://github.com/nanomsg/nanomsg/actions/workflows/darwin.yml)
 [![Discord](https://img.shields.io/discord/639573728212156478?label=&logo=discord)](https://discord.com/channels/639573728212156478/639574516812742686)
 
 The nanomsg library is a simple high-performance implementation of several

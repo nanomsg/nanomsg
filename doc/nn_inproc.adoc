@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-In-process transport allows to send messages between threads or modules inside a
+In-process transport allows one to send messages between threads or modules inside a
 process. In-process address is an arbitrary case-sensitive string preceded by
 'inproc://' protocol specifier. All in-process addresses are visible from any
 module within the process. They are not visible from outside of the process.

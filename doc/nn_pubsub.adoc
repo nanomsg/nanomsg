@@ -28,7 +28,7 @@ initial bytes in the incoming message, up to the size of the topic.
 nn_setsockopt (s, NN_SUB, NN_SUB_SUBSCRIBE, "Hello", 5);
 ----
 
-Will match any message with intial 5 bytes being "Hello", for example,
+Will match any message with initial 5 bytes being "Hello", for example,
 message "Hello, World!" will match.
 
 Topic with zero length matches any message.

@@ -17,7 +17,7 @@ DESCRIPTION
 -----------
 Deallocates a message allocated using <<nn_allocmsg#,nn_allocmsg(3)>> function or
 received via <<nn_recv#,nn_recv(3)>> or <<nn_recvmsg#,nn_recvmsg(3)>> function.
-While <<nn_recv#,nn_recv(3)>> and <<nn_recvmsg#,nn_recvmsg(3)>> allow to receive data
+While <<nn_recv#,nn_recv(3)>> and <<nn_recvmsg#,nn_recvmsg(3)>> allow one to receive data
 into arbitrary buffers, using library-allocated buffers can be more
 efficient for large messages as it allows for using zero-copy techniques.
 

@@ -15,7 +15,7 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Allows to broadcast a survey to multiple locations and gather the responses.
+Allows one to broadcast a survey to multiple locations and gather the responses.
 
 Socket Types
 ~~~~~~~~~~~~

@@ -37,12 +37,10 @@
     we can avoid additional memory allocation per message. */
 
 struct nn_chunkref {
+    size_t size; /* if <= NN_CHUNKREF_MAX then data is in ref */
     union {
-        uint8_t ref [NN_CHUNKREF_MAX];
-
-        /* This option is present only to force alignemt of nn_chunkref to
-           the word boudnary. */
-        void *unused;
+        void *chunk; /* actually an nn_chunk  */
+        uint8_t ref [NN_CHUNKREF_MAX]; /* inline data for the chunk */
     } u;
 };
 
@@ -87,4 +85,3 @@ void nn_chunkref_bulkcopy_start (struct nn_chunkref *self, uint32_t copies);
 void nn_chunkref_bulkcopy_cp (struct nn_chunkref *dst, struct nn_chunkref *src);
 
 #endif
-

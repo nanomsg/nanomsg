@@ -24,6 +24,7 @@
 #include "worker.h"
 
 #include "../utils/win.h"
+#include "worker_win.h"
 
 struct nn_usock {
 

@@ -447,9 +447,8 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
     nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
 }
 
-void nn_usock_recv_start_wsock (void *arg)
+void nn_usock_recv_start_wsock (struct nn_usock *self)
 {
-    struct nn_usock *self = arg;
     WSABUF wbuf;
     DWORD flags;
     DWORD error;
@@ -478,9 +477,8 @@ void nn_usock_recv_start_wsock (void *arg)
     }
 }
 
-void nn_usock_recv_start_pipe (void *arg)
+void nn_usock_recv_start_pipe (struct nn_usock *self)
 {
-    struct nn_usock *self = arg;
     void *buf = self->in.buf;
     DWORD len = (DWORD) self->in.resid;
     DWORD error;

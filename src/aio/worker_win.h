@@ -22,6 +22,9 @@
     IN THE SOFTWARE.
 */
 
+#ifndef NN_WORKER_WIN_INCLUDED
+#define NN_WORKER_WIN_INCLUDED
+
 #include "fsm.h"
 #include "timerset.h"
 
@@ -35,6 +38,8 @@ struct nn_worker_task {
 
 #define NN_WORKER_OP_DONE 1
 #define NN_WORKER_OP_ERROR 2
+
+struct nn_usock;
 
 struct nn_worker_op {
     int src;
@@ -69,3 +74,5 @@ struct nn_worker {
 };
 
 HANDLE nn_worker_getcp (struct nn_worker *self);
+
+#endif

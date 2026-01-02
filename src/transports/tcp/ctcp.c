@@ -454,6 +454,15 @@ static void nn_ctcp_handler (struct nn_fsm *self, int src, int type,
                 nn_fsm_bad_action (ctcp->state, src, type);
             }
 
+        case NN_CTCP_SRC_USOCK:
+            /*  Ignore late-arriving usock events while waiting to reconnect. */
+            switch (type) {
+            case NN_USOCK_SHUTDOWN:
+                return;
+            default:
+                return;  /* Ignore other events */
+            }
+
         default:
             nn_fsm_bad_source (ctcp->state, src, type);
         }

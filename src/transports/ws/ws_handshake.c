@@ -1281,7 +1281,6 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
 {
     struct nn_iovec response;
     char *code;
-    char *version;
     char *protocol;
     int rc;
 
@@ -1304,7 +1303,7 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
         strncpy (protocol, self->protocol, self->protocol_len);
         protocol [self->protocol_len] = '\0';
 
-        sprintf (self->response,
+        snprintf (self->response, sizeof (self->response),
             "HTTP/1.1 101 Switching Protocols\r\n"
             "Upgrade: websocket\r\n"
             "Connection: Upgrade\r\n"
@@ -1341,18 +1340,11 @@ static void nn_ws_handshake_server_reply (struct nn_ws_handshake *self)
             break;
         }
 
-        version = nn_alloc (self->version_len + 1, "WebSocket version");
-        alloc_assert (version);
-        strncpy (version, self->version, self->version_len);
-        version [self->version_len] = '\0';
-
         /*  Fail connection as per RFC 6455 4.4. */
-        sprintf (self->response,
+        snprintf (self->response, sizeof (self->response),
             "HTTP/1.1 %s\r\n"
-            "Sec-WebSocket-Version: %s\r\n",
-            code, version);
-
-        nn_free (version);
+            "Sec-WebSocket-Version: 13\r\n",
+            code);
     }
 
     response.iov_len = strlen (self->response);
@@ -1383,4 +1375,3 @@ static int nn_ws_handshake_hash_key (const char *key, size_t key_len,
 
     return rc;
 }
-

@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
-    Copyright 2015 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Garrett D'Amore <garrett@damore.org>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -80,14 +80,16 @@ void nn_efd_signal (struct nn_efd *self)
 
 void nn_efd_unsignal (struct nn_efd *self)
 {
-    uint64_t count;
+    uint64_t count = 0;
     int fd = self->efd;
 
     if (nn_slow (fd < 0))
         return;
 
-    /*  Extract all the signals from the eventfd. */
-    ssize_t sz = read (fd, &count, sizeof (count));
-    errno_assert (sz >= 0);
-    nn_assert (sz == sizeof (count));
+    /*  Extract all the signals from the eventfd.
+     *  Errors that occur reading this are generally benign, since this is
+     *  just used to consume / clear the level signal. (EAGAIN can occur if
+     *  the file descriptor was not in a signaled state.)
+     */
+    (void) read (fd, &count, sizeof (count));
 }

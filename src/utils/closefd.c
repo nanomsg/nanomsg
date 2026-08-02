@@ -31,7 +31,6 @@
 
 void nn_closefd (int fd)
 {
-    int rc;
     if (nn_slow (fd < 0)) {
         return;
     }
@@ -39,4 +38,3 @@ void nn_closefd (int fd)
 }
 
 #endif
-

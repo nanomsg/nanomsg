@@ -330,10 +330,14 @@ static void nn_sipc_handler (struct nn_fsm *self, int src, int type,
                 switch (sipc->instate) {
                 case NN_SIPC_INSTATE_HDR:
 
-                    /*  Message header was received. Check that message size
-                        is acceptable by comparing with NN_RCVMAXSIZE;
-                        if it's too large, drop the connection. */
-                    nn_assert (sipc->inhdr [0] == NN_SIPC_MSG_NORMAL);
+                    /*  Message header was received. Reject unsupported
+                        message types and sizes larger than NN_RCVMAXSIZE by
+                        dropping the connection. */
+                    if (sipc->inhdr [0] != NN_SIPC_MSG_NORMAL) {
+                        sipc->state = NN_SIPC_STATE_DONE;
+                        nn_fsm_raise (&sipc->fsm, &sipc->done, NN_SIPC_ERROR);
+                        return;
+                    }
                     size = nn_getll (sipc->inhdr + 1);
 
                     nn_pipebase_getopt (&sipc->pipebase, NN_SOL_SOCKET,

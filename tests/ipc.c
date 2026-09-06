@@ -25,8 +25,15 @@
 #include "../src/pair.h"
 #include "../src/pubsub.h"
 #include "../src/ipc.h"
+#include "../src/utils/wire.h"
 
 #include "testutil.h"
+
+#if defined NN_HAVE_UNIX_SOCKETS
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#endif
 
 /*  Tests IPC transport. */
 
@@ -46,6 +53,14 @@ int main ()
 
     int size;
     char * buf;
+
+#if defined NN_HAVE_UNIX_SOCKETS
+    int raw;
+    int raw_rc;
+    struct sockaddr_un raw_addr;
+    uint8_t protohdr [8];
+    uint8_t msghdr [9];
+#endif
 
     /*  Try closing a IPC socket while it not connected. */
     sc = test_socket (AF_SP, NN_PAIR);
@@ -95,6 +110,37 @@ int main ()
 
     test_close (sc);
     test_close (sb);
+
+#if defined NN_HAVE_UNIX_SOCKETS
+    /*  An invalid message type from a raw peer must only drop that
+        connection; it must not abort the process. */
+    sb = test_socket (AF_SP, NN_PAIR);
+    test_bind (sb, SOCKET_ADDRESS);
+    raw = socket (AF_UNIX, SOCK_STREAM, 0);
+    errno_assert (raw >= 0);
+    memset (&raw_addr, 0, sizeof (raw_addr));
+    raw_addr.sun_family = AF_UNIX;
+    strcpy (raw_addr.sun_path, "test.ipc");
+    raw_rc = connect (raw, (struct sockaddr *) &raw_addr, sizeof (raw_addr));
+    errno_assert (raw_rc == 0);
+    memcpy (protohdr, "\0SP\0\0\0\0\0", sizeof (protohdr));
+    nn_puts (protohdr + 4, NN_PAIR);
+    raw_rc = (int) send (raw, protohdr, sizeof (protohdr), 0);
+    errno_assert (raw_rc == sizeof (protohdr));
+    memset (msghdr, 0, sizeof (msghdr));
+    raw_rc = (int) send (raw, msghdr, sizeof (msghdr), 0);
+    errno_assert (raw_rc == sizeof (msghdr));
+    nn_sleep (100);
+    raw_rc = close (raw);
+    errno_assert (raw_rc == 0);
+
+    sc = test_socket (AF_SP, NN_PAIR);
+    test_connect (sc, SOCKET_ADDRESS);
+    test_send (sc, "ABC");
+    test_recv (sb, "ABC");
+    test_close (sc);
+    test_close (sb);
+#endif
 
     /*  Test whether connection rejection is handled decently. */
     sb = test_socket (AF_SP, NN_PAIR);

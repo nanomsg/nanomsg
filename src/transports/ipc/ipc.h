@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,14 +21,34 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CIPC_INCLUDED
-#define NN_CIPC_INCLUDED
+#ifndef NN_IPC_TRANSPORT_INCLUDED
+#define NN_IPC_TRANSPORT_INCLUDED
 
-#include "../../transport.h"
-#include "../../ipc.h"
+#if defined NN_HAVE_WINDOWS
+#include "../../utils/win.h"
+#else
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#endif
 
-/*  State machine managing connected IPC socket. */
+/*  Identity of the file created by a bound AF_UNIX endpoint. */
+struct nn_ipc_file {
+#if defined NN_HAVE_WINDOWS
+    HANDLE handle;
+#else
+    dev_t dev;
+    ino_t ino;
+    int owned;
+#endif
+};
 
-int nn_cipc_create (struct nn_ep *ep, int domain);
+/*  Returns address size, or a negative errno for an invalid address. */
+int nn_ipc_resolve (const char *addr, int domain, struct sockaddr_storage *ss);
+void nn_ipc_unlink (const char *addr);
+void nn_ipc_file_init (struct nn_ipc_file *self);
+void nn_ipc_file_capture (struct nn_ipc_file *self, const char *addr);
+void nn_ipc_file_unlink (struct nn_ipc_file *self, const char *addr);
+void nn_ipc_file_term (struct nn_ipc_file *self);
 
 #endif

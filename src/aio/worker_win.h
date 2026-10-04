@@ -2,6 +2,7 @@
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright 2018 Staysail Systems, Inc. <info@staysail.tech>
     Copyright 2018 Capitar IT Group BV <info@capitar.com>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -49,7 +50,7 @@ struct nn_worker_op {
     size_t resid;
     char *buf;
     void *arg;
-    void (*start)(struct nn_usock *);
+    void (*start)(void *);
     int zero_is_error;
 };
 

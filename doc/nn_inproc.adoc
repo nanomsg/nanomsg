@@ -44,6 +44,8 @@ nn_connect (s2, "inproc://test);
 
 SEE ALSO
 --------
+<<nn_unix#,nn_unix(7)>>
+<<nn_winpipe#,nn_winpipe(7)>>
 <<nn_ipc#,nn_ipc(7)>>
 <<nn_tcp#,nn_tcp(7)>>
 <<nn_bind#,nn_bind(3)>>

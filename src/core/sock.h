@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -37,7 +38,7 @@
 struct nn_pipe;
 
 /*  The maximum implemented transport ID. */
-#define NN_MAX_TRANSPORT 4
+#define NN_MAX_TRANSPORT 5
 
 struct nn_sock
 {

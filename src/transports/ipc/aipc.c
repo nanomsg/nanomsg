@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -94,10 +95,17 @@ void nn_aipc_start (struct nn_aipc *self, struct nn_usock *listener)
     nn_usock_swap_owner (listener, &self->listener_owner);
 
 #if defined NN_HAVE_WINDOWS
-    /* Get/Set security attribute pointer*/
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
+    if (listener->domain == NN_USOCK_WINPIPE) {
+        sz = sizeof (self->usock.sec_attr);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR,
+            &self->usock.sec_attr, &sz);
+        sz = sizeof (int);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ,
+            &self->usock.outbuffersz, &sz);
+        sz = sizeof (int);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ,
+            &self->usock.inbuffersz, &sz);
+    }
 #endif
 
     /*  Start the state machine. */

@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -33,8 +34,20 @@
 #include <process.h>
 #include <ws2tcpip.h>
 
-/* This structure does not exist on Windows platform. Let's fake it. */
+/*  Use the native AF_UNIX layout, including with older SDKs. */
+#if defined NN_HAVE_AFUNIX_H
+#include <afunix.h>
+#else
 struct sockaddr_un {
+    ADDRESS_FAMILY sun_family;
+    char sun_path [108];
+};
+#endif
+
+/*  Named pipes retain the address capacity of the original IPC transport.
+    This private domain must never be passed to Winsock. */
+#define NN_USOCK_WINPIPE -1
+struct nn_sockaddr_winpipe {
     short sun_family;
     char sun_path [sizeof (struct sockaddr_storage) -
         sizeof (short)];

@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,14 +21,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CIPC_INCLUDED
-#define NN_CIPC_INCLUDED
+#ifndef NN_UNIX_H_INCLUDED
+#define NN_UNIX_H_INCLUDED
 
-#include "../../transport.h"
-#include "../../ipc.h"
-
-/*  State machine managing connected IPC socket. */
-
-int nn_cipc_create (struct nn_ep *ep, int domain);
+/*  Preserve the historical IPC transport ID on POSIX. */
+#if defined _WIN32
+#define NN_UNIX -5
+#else
+#define NN_UNIX -2
+#endif
 
 #endif

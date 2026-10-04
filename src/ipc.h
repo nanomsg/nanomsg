@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2012 Martin Sustrik  All rights reserved.
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,16 +24,23 @@
 #ifndef IPC_H_INCLUDED
 #define IPC_H_INCLUDED
 
+#include "unix.h"
+#include "winpipe.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define NN_IPC -2
+#if defined _WIN32
+#define NN_IPC NN_WINPIPE
+#else
+#define NN_IPC NN_UNIX
+#endif
 
 /* The object set here must be valid as long as you are using the socket */
-#define NN_IPC_SEC_ATTR 1
-#define NN_IPC_OUTBUFSZ 2
-#define NN_IPC_INBUFSZ 3
+#define NN_IPC_SEC_ATTR NN_WINPIPE_SEC_ATTR
+#define NN_IPC_OUTBUFSZ NN_WINPIPE_OUTBUFSZ
+#define NN_IPC_INBUFSZ NN_WINPIPE_INBUFSZ
 
 #ifdef __cplusplus
 }

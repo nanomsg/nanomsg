@@ -28,6 +28,8 @@ set (NN_SOURCES
     nn.h
     inproc.h
     ipc.h
+    unix.h
+    winpipe.h
     tcp.h
     ws.h
     pair.h
@@ -208,6 +210,7 @@ set (NN_SOURCES
     transports/ipc/cipc.h
     transports/ipc/cipc.c
     transports/ipc/ipc.c
+    transports/ipc/ipc.h
     transports/ipc/sipc.h
     transports/ipc/sipc.c
 

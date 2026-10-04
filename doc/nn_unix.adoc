@@ -1,0 +1,54 @@
+nn_unix(7)
+==========
+
+NAME
+----
+nn_unix - UNIX domain socket transport
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/unix.h>*
+
+DESCRIPTION
+-----------
+The UNIX domain socket transport sends messages between processes on the same
+machine using AF_UNIX stream sockets. It is available on POSIX systems and on
+Windows versions that provide AF_UNIX support. Windows systems without that
+support can still use the <<nn_winpipe#,nn_winpipe(7)>> transport.
+
+Addresses use the form 'unix://PATH'. Both relative paths ('unix://test.sock')
+and absolute paths ('unix:///tmp/test.sock' on POSIX, or
+'unix://C:/temp/test.sock' on Windows) are supported. The parent directory must
+exist, and file permissions must allow the participating processes to access
+the socket. Windows socket paths are UTF-8. The path must fit in the platform's
+sockaddr_un.sun_path field, including its terminating null byte; on Windows
+this allows at most 107 bytes.
+
+The bound endpoint cleans up its socket file when it shuts down. On POSIX,
+cleanup checks the file's identity and unlinks it before closing the listener.
+On Windows, cleanup uses a handle retained for the bound socket file. If the
+file's identity cannot be established, cleanup leaves the pathname in place.
+A socket file moved to another pathname on POSIX must be removed by the
+application. A stale socket file left by an earlier process is removed before
+binding, provided no listener is using it.
+
+On POSIX, 'ipc://' is a compatibility alias for 'unix://', and NN_IPC equals
+NN_UNIX. On Windows, 'ipc://' refers to named pipes instead. UNIX sockets use
+the same message framing as the original POSIX IPC transport.
+
+EXAMPLE
+-------
+----
+nn_bind (s1, "unix://test.sock");
+nn_connect (s2, "unix://test.sock");
+----
+
+SEE ALSO
+--------
+<<nn_ipc#,nn_ipc(7)>>
+<<nn_winpipe#,nn_winpipe(7)>>
+<<nn_bind#,nn_bind(3)>>
+<<nn_connect#,nn_connect(3)>>
+<<nanomsg#,nanomsg(7)>>

@@ -83,10 +83,19 @@ Socket Options:
     Bind socket to the address ADDR
  *--connect* 'ADDR'::
     Connect socket to the address ADDR
+ *--bind-unix* 'PATH'::
+    Bind socket to the UNIX domain socket address "unix://PATH".
+ *--connect-unix* 'PATH'::
+    Connect socket to the UNIX domain socket address "unix://PATH".
+ *--bind-winpipe* 'NAME'::
+    Bind socket to the named pipe address "winpipe://NAME" (Windows only).
+ *--connect-winpipe* 'NAME'::
+    Connect socket to the named pipe address "winpipe://NAME" (Windows only).
  *--bind-ipc,-X* 'PATH'::
-    Bind socket to the ipc address "ipc://PATH".
+    Bind socket to the compatibility address "ipc://PATH" (UNIX domain sockets
+    on POSIX, named pipes on Windows).
  *--connect-ipc,-x* 'PATH'::
-    Connect socket to the ipc address "ipc://PATH".
+    Connect socket to the compatibility address "ipc://PATH".
  *--bind-local,-L* 'PORT'::
     Bind socket to the tcp address "tcp://127.0.0.1:PORT".
  *--connect-local,-l* 'PORT'::

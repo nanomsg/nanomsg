@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2013 Insollo Entertainment, LLC.  All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -199,6 +200,28 @@ struct nn_option nn_options[] = {
      NN_OPT_LIST_APPEND, offsetof (nn_options_t, connect_addresses), NULL,
      NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,
      "Socket Options", "ADDR", "Connect socket to the address ADDR"},
+    {"bind-unix", 0, NULL, NN_OPT_LIST_APPEND_FMT,
+     offsetof (nn_options_t, bind_addresses), "unix://%s",
+     NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Socket Options", "PATH", "Bind socket to the Unix socket address "
+                               "\"unix://PATH\"."},
+    {"connect-unix", 0, NULL, NN_OPT_LIST_APPEND_FMT,
+     offsetof (nn_options_t, connect_addresses), "unix://%s",
+     NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Socket Options", "PATH", "Connect socket to the Unix socket address "
+                               "\"unix://PATH\"."},
+#if defined NN_HAVE_WINDOWS
+    {"bind-winpipe", 0, NULL, NN_OPT_LIST_APPEND_FMT,
+     offsetof (nn_options_t, bind_addresses), "winpipe://%s",
+     NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Socket Options", "NAME", "Bind socket to the named pipe address "
+                               "\"winpipe://NAME\"."},
+    {"connect-winpipe", 0, NULL, NN_OPT_LIST_APPEND_FMT,
+     offsetof (nn_options_t, connect_addresses), "winpipe://%s",
+     NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,
+     "Socket Options", "NAME", "Connect socket to the named pipe address "
+                               "\"winpipe://NAME\"."},
+#endif
     {"bind-ipc", 'X' , NULL, NN_OPT_LIST_APPEND_FMT,
      offsetof (nn_options_t, bind_addresses), "ipc://%s",
      NN_MASK_ENDPOINT, NN_NO_CONFLICTS, NN_NO_REQUIRES,

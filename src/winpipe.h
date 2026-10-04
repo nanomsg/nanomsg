@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 Martin Sustrik  All rights reserved.
+    Copyright (c) 2012 Martin Sustrik  All rights reserved.
     Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,14 +21,14 @@
     IN THE SOFTWARE.
 */
 
-#ifndef NN_CIPC_INCLUDED
-#define NN_CIPC_INCLUDED
+#ifndef NN_WINPIPE_H_INCLUDED
+#define NN_WINPIPE_H_INCLUDED
 
-#include "../../transport.h"
-#include "../../ipc.h"
+#define NN_WINPIPE -2
 
-/*  State machine managing connected IPC socket. */
-
-int nn_cipc_create (struct nn_ep *ep, int domain);
+/*  The security attributes must remain valid while the socket is in use. */
+#define NN_WINPIPE_SEC_ATTR 1
+#define NN_WINPIPE_OUTBUFSZ 2
+#define NN_WINPIPE_INBUFSZ 3
 
 #endif

@@ -2,6 +2,7 @@
     Copyright (c) 2012-2014 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -131,13 +132,19 @@ const struct nn_socktype *nn_socktypes[] = {
    only consumer, so just declare them inline. */
 
 extern struct nn_transport nn_inproc;
-extern struct nn_transport nn_ipc;
+extern struct nn_transport nn_unix;
+#if defined NN_HAVE_WINDOWS
+extern struct nn_transport nn_winpipe;
+#endif
 extern struct nn_transport nn_tcp;
 extern struct nn_transport nn_ws;
 
 const struct nn_transport *nn_transports[] = {
     &nn_inproc,
-    &nn_ipc,
+    &nn_unix,
+#if defined NN_HAVE_WINDOWS
+    &nn_winpipe,
+#endif
     &nn_tcp,
     &nn_ws,
     NULL,
@@ -1077,6 +1084,17 @@ static int nn_global_create_ep (struct nn_sock *sock, const char *addr,
         return -EINVAL;
     protosz = delim - addr;
     addr += protosz + 3;
+
+    /*  IPC is the compatibility name for the platform's native transport. */
+    if (protosz == 3 && memcmp (proto, "ipc", 3) == 0) {
+#if defined NN_HAVE_WINDOWS
+        proto = "winpipe";
+        protosz = 7;
+#else
+        proto = "unix";
+        protosz = 4;
+#endif
+    }
 
     /*  Find the specified protocol. */
     tp = NULL;

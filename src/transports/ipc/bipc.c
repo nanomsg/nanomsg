@@ -2,6 +2,7 @@
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Franklin "Snaipe" Mathieu <franklinmathieu@gmail.com>
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -23,6 +24,7 @@
 */
 
 #include "bipc.h"
+#include "ipc.h"
 #include "aipc.h"
 
 #include "../../aio/fsm.h"
@@ -53,14 +55,19 @@
 
 #define NN_BIPC_SRC_USOCK 1
 #define NN_BIPC_SRC_AIPC 2
+#define NN_BIPC_SRC_LISTEN_ERROR 3
 
 struct nn_bipc {
 
     /*  The state machine. */
     struct nn_fsm fsm;
     int state;
+    int failed;
+    struct nn_ipc_file file;
+    struct nn_fsm_event listen_error;
 
     struct nn_ep *ep;
+    int domain;
 
     /*  The underlying listening IPC socket. */
     struct nn_usock usock;
@@ -88,10 +95,15 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
 static int nn_bipc_listen (struct nn_bipc *self);
 static void nn_bipc_start_accepting (struct nn_bipc *self);
 
-int nn_bipc_create (struct nn_ep *ep)
+int nn_bipc_create (struct nn_ep *ep, int domain)
 {
     struct nn_bipc *self;
     int rc;
+    struct sockaddr_storage ss;
+
+    rc = nn_ipc_resolve (nn_ep_getaddr (ep), domain, &ss);
+    if (rc < 0)
+        return rc;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_bipc), "bipc");
@@ -100,10 +112,14 @@ int nn_bipc_create (struct nn_ep *ep)
 
     /*  Initialise the structure. */
     self->ep = ep;
+    self->domain = domain;
     nn_ep_tran_setup (ep, &nn_bipc_ep_ops, self);
     nn_fsm_init_root (&self->fsm, nn_bipc_handler, nn_bipc_shutdown,
         nn_ep_getctx (ep));
     self->state = NN_BIPC_STATE_IDLE;
+    self->failed = 0;
+    nn_ipc_file_init (&self->file);
+    nn_fsm_event_init (&self->listen_error);
     self->aipc = NULL;
     nn_list_init (&self->aipcs);
 
@@ -114,6 +130,10 @@ int nn_bipc_create (struct nn_ep *ep)
 
     rc = nn_bipc_listen (self);
     if (rc != 0) {
+        /*  Drain the socket's stop event before freeing the endpoint. */
+        self->failed = 1;
+        nn_fsm_raise_from_src (&self->fsm, &self->listen_error,
+            NN_BIPC_SRC_LISTEN_ERROR, 1);
         return rc;
     }
 
@@ -135,6 +155,8 @@ static void nn_bipc_destroy (void *self)
     nn_list_term (&bipc->aipcs);
     nn_assert (bipc->aipc == NULL);
     nn_usock_term (&bipc->usock);
+    nn_ipc_file_term (&bipc->file);
+    nn_fsm_event_term (&bipc->listen_error);
     nn_fsm_term (&bipc->fsm);
 
     nn_free (bipc);
@@ -143,11 +165,6 @@ static void nn_bipc_destroy (void *self)
 static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr)
 {
-#if defined NN_HAVE_UNIX_SOCKETS
-    const char *addr;
-    int rc;
-#endif
-
     struct nn_bipc *bipc;
     struct nn_list_item *it;
     struct nn_aipc *aipc;
@@ -155,6 +172,17 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
     bipc = nn_cont (self, struct nn_bipc, fsm);
 
     if (nn_slow (src == NN_FSM_ACTION && type == NN_FSM_STOP)) {
+        if (bipc->failed) {
+            bipc->state = NN_BIPC_STATE_IDLE;
+            nn_fsm_stopped_noevent (&bipc->fsm);
+            return;
+        }
+#if !defined NN_HAVE_WINDOWS
+        /*  Unlink while the listener is alive: another binder must not
+            recover the name between listener close and our cleanup. */
+        if (bipc->domain == AF_UNIX)
+            nn_ipc_file_unlink (&bipc->file, nn_ep_getaddr (bipc->ep));
+#endif
         if (bipc->aipc) {
             nn_aipc_stop (bipc->aipc);
             bipc->state = NN_BIPC_STATE_STOPPING_AIPC;
@@ -169,13 +197,6 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
         nn_aipc_term (bipc->aipc);
         nn_free (bipc->aipc);
         bipc->aipc = NULL;
-
-        /* On *nixes, unlink the domain socket file */
-#if defined NN_HAVE_UNIX_SOCKETS
-        addr = nn_ep_getaddr (bipc->ep);
-        rc = unlink(addr);
-        errno_assert (rc == 0 || errno == ENOENT);
-#endif
 
         nn_usock_stop (&bipc->usock);
         bipc->state = NN_BIPC_STATE_STOPPING_USOCK;
@@ -203,6 +224,12 @@ static void nn_bipc_shutdown (struct nn_fsm *self, int src, int type,
             bipc object. */
 aipcs_stopping:
         if (nn_list_empty (&bipc->aipcs)) {
+#if defined NN_HAVE_WINDOWS
+            /*  Windows cleanup uses the captured file handle after all
+                sockets close, never a fresh lookup of the old pathname. */
+            if (bipc->domain == AF_UNIX)
+                nn_ipc_file_unlink (&bipc->file, nn_ep_getaddr (bipc->ep));
+#endif
             bipc->state = NN_BIPC_STATE_IDLE;
             nn_fsm_stopped_noevent (&bipc->fsm);
             nn_ep_stopped (bipc->ep);
@@ -239,6 +266,11 @@ static void nn_bipc_handler (struct nn_fsm *self, int src, int type,
 /*  The execution is yielded to the aipc state machine in this state.         */
 /******************************************************************************/
     case NN_BIPC_STATE_ACTIVE:
+        if (src == NN_BIPC_SRC_LISTEN_ERROR) {
+            nn_fsm_stop (&bipc->fsm);
+            nn_bipc_destroy (bipc);
+            return;
+        }
         if (src == NN_BIPC_SRC_USOCK) {
             nn_assert (type == NN_USOCK_SHUTDOWN || type == NN_USOCK_STOPPED);
             return;
@@ -279,56 +311,92 @@ static int nn_bipc_listen (struct nn_bipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    struct sockaddr_un *un;
+    int addrlen;
     const char *addr;
 #if defined NN_HAVE_UNIX_SOCKETS
     int fd;
 #endif
 
-    /*  First, create the AF_UNIX address. */
     addr = nn_ep_getaddr (self->ep);
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    addrlen = nn_ipc_resolve (addr, self->domain, &ss);
+    nn_assert (addrlen > 0);
 
-    /*  Delete the IPC file left over by eventual previous runs of
-        the application. We'll check whether the file is still in use by
-        connecting to the endpoint. On Windows platform, NamedPipe is used
-        which does not have an underlying file. */
-#if defined NN_HAVE_UNIX_SOCKETS
+    /*  Remove a stale socket file only when no listener is using it. */
+#if defined NN_HAVE_WINDOWS
+    if (self->domain == AF_UNIX) {
+        SOCKET probe;
+        u_long nonblocking = 1;
+        int error;
+        int errorlen;
+        fd_set writable;
+        fd_set failed;
+        struct timeval timeout = {0, 100000};
+
+        probe = socket (AF_UNIX, SOCK_STREAM, 0);
+        if (probe != INVALID_SOCKET) {
+            rc = ioctlsocket (probe, FIONBIO, &nonblocking);
+            wsa_assert (rc == 0);
+            rc = connect (probe, (struct sockaddr *) &ss, addrlen);
+            error = rc == SOCKET_ERROR ? WSAGetLastError () : 0;
+            if (error == WSAEWOULDBLOCK) {
+                /*  A nonblocking connect can report its error later. */
+                FD_ZERO (&writable);
+                FD_ZERO (&failed);
+                FD_SET (probe, &writable);
+                FD_SET (probe, &failed);
+                rc = select (0, NULL, &writable, &failed, &timeout);
+                if (rc > 0) {
+                    errorlen = sizeof (error);
+                    rc = getsockopt (probe, SOL_SOCKET, SO_ERROR,
+                        (char *) &error, &errorlen);
+                    if (rc == SOCKET_ERROR)
+                        error = WSAGetLastError ();
+                }
+            }
+            if (error == WSAECONNREFUSED)
+                nn_ipc_unlink (addr);
+            closesocket (probe);
+        }
+    }
+#elif defined NN_HAVE_UNIX_SOCKETS
     fd = socket (AF_UNIX, SOCK_STREAM, 0);
     if (fd >= 0) {
         rc = fcntl (fd, F_SETFL, O_NONBLOCK);
         errno_assert (rc != -1 || errno == EINVAL);
-        rc = connect (fd, (struct sockaddr*) &ss,
-            sizeof (struct sockaddr_un));
-        if (rc == -1 && errno == ECONNREFUSED) {
-            rc = unlink (addr);
-            errno_assert (rc == 0 || errno == ENOENT);
-        }
+        rc = connect (fd, (struct sockaddr*) &ss, addrlen);
+        if (rc == -1 && errno == ECONNREFUSED)
+            nn_ipc_unlink (addr);
         rc = close (fd);
         errno_assert (rc == 0);
     }
 #endif
 
     /*  Start listening for incoming connections. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start (&self->usock, self->domain, SOCK_STREAM, 0);
     if (rc < 0) {
         return rc;
     }
 
     rc = nn_usock_bind (&self->usock,
-        (struct sockaddr*) &ss, sizeof (struct sockaddr_un));
+        (struct sockaddr*) &ss, addrlen);
     if (rc < 0) {
         nn_usock_stop (&self->usock);
         return rc;
     }
 
+    if (self->domain == AF_UNIX)
+        nn_ipc_file_capture (&self->file, addr);
     rc = nn_usock_listen (&self->usock, NN_BIPC_BACKLOG);
     if (rc < 0) {
+#if !defined NN_HAVE_WINDOWS
+        if (self->domain == AF_UNIX)
+            nn_ipc_file_unlink (&self->file, addr);
+#endif
         nn_usock_stop (&self->usock);
+#if defined NN_HAVE_WINDOWS
+        if (self->domain == AF_UNIX)
+            nn_ipc_file_unlink (&self->file, addr);
+#endif
         return rc;
     }
     nn_bipc_start_accepting (self);

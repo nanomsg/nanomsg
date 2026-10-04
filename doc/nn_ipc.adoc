@@ -15,19 +15,19 @@ SYNOPSIS
 
 DESCRIPTION
 -----------
-Inter-process transport allows for sending messages between processes within
-a single box. The implementation uses native IPC mechanism provided by the local
-operating system and the IPC addresses are thus OS-specific.
+The 'ipc://' scheme is a compatibility alias for the platform's native
+inter-process transport. Existing IPC addresses and NN_IPC socket options
+continue to work.
 
-On POSIX-compliant systems, UNIX domain sockets are used and IPC addresses are
-file references. Note that both relative (ipc://test.ipc) and absolute
-(ipc:///tmp/test.ipc) paths may be used. Also note that access rights on the IPC
-files must be set in such a way that the appropriate applications can actually
-use them.
+On POSIX systems, 'ipc://' aliases <<nn_unix#,nn_unix(7)>>. Addresses identify
+UNIX domain socket files. Both relative ('ipc://test.ipc') and absolute
+('ipc:///tmp/test.ipc') paths are supported.
 
-On Windows, named pipes are used for IPC. IPC address is an arbitrary
-case-insensitive string containing any character except for backslash.
-Internally, address ipc://test means that named pipe \\.\pipe\test will be used.
+On Windows, 'ipc://' aliases <<nn_winpipe#,nn_winpipe(7)>>. Addresses identify
+named pipes; 'ipc://test' uses the pipe '\\.\pipe\test'. Windows applications
+can explicitly select 'unix://' to use AF_UNIX sockets instead.
+
+New applications can use the explicit 'unix://' and 'winpipe://' schemes.
 
 EXAMPLE
 -------
@@ -39,6 +39,8 @@ nn_connect (s2, "ipc:///tmp/test.ipc");
 
 SEE ALSO
 --------
+<<nn_unix#,nn_unix(7)>>
+<<nn_winpipe#,nn_winpipe(7)>>
 <<nn_inproc#,nn_inproc(7)>>
 <<nn_tcp#,nn_tcp(7)>>
 <<nn_bind#,nn_bind(3)>>

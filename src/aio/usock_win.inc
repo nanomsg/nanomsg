@@ -1,7 +1,7 @@
 /*
     Copyright (c) 2013 Martin Sustrik  All rights reserved.
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
-    Copyright 2018 Staysail Systems, Inc. <info@staysail.tech>
+    Copyright 2026 Staysail Systems, Inc.
     Copyright 2018 Capitar IT Group BV <info@capitar.com>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -136,7 +136,7 @@ int nn_usock_start (struct nn_usock *self, int domain, int type, int protocol)
 
     /* NamedPipes aren't sockets. They don't need all the socket
        initialisation stuff. */
-    if (domain != AF_UNIX) {
+    if (domain != NN_USOCK_WINPIPE) {
 
         /*  Open the underlying socket. */
         self->s = socket (domain, type, protocol);
@@ -196,7 +196,7 @@ int nn_usock_setsockopt (struct nn_usock *self, int level, int optname,
 
     /*  NamedPipes aren't sockets. We can't set socket options on them.
         For now we'll ignore the options. */
-    if (self->domain == AF_UNIX)
+    if (self->domain == NN_USOCK_WINPIPE)
         return 0;
 
     /*  The socket can be modified only before it's active. */
@@ -220,8 +220,8 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  In the case of named pipes, let's save the address
         for the later use. */
-    if (self->domain == AF_UNIX) {
-        if (addrlen > sizeof (struct sockaddr_un))
+    if (self->domain == NN_USOCK_WINPIPE) {
+        if (addrlen > sizeof (struct nn_sockaddr_winpipe))
             return -EINVAL;
         memcpy (&self->pipename, addr, addrlen);
         return 0;
@@ -232,10 +232,12 @@ int nn_usock_bind (struct nn_usock *self, const struct sockaddr *addr,
 
     /*  On Windows, the bound port can be hijacked
         if SO_EXCLUSIVEADDRUSE is not set. */
-    opt = 1;
-    rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
-        (const char*) &opt, sizeof (opt));
-    wsa_assert (rc != SOCKET_ERROR);
+    if (self->domain != AF_UNIX) {
+        opt = 1;
+        rc = setsockopt (self->s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+            (const char*) &opt, sizeof (opt));
+        wsa_assert (rc != SOCKET_ERROR);
+    }
 
     nn_assert (addrlen < INT_MAX);
     rc = bind (self->s, addr, (int) addrlen);
@@ -254,7 +256,7 @@ int nn_usock_listen (struct nn_usock *self, int backlog)
 
     /*  Start listening for incoming connections. NamedPipes are already
         created in the listening state, so no need to do anything here. */
-    if (self->domain != AF_UNIX) {
+    if (self->domain != NN_USOCK_WINPIPE) {
         rc = listen (self->s, backlog);
         if (nn_slow (rc == SOCKET_ERROR))
            return -nn_err_wsa_to_posix (WSAGetLastError ());
@@ -271,9 +273,11 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
     int rc;
     BOOL brc;
     DWORD nbytes;
+    GUID fid = WSAID_ACCEPTEX;
+    LPFN_ACCEPTEX pacceptex;
 
     /* NamedPipes have their own accepting mechanism. */
-    if (listener->domain == AF_UNIX) {
+    if (listener->domain == NN_USOCK_WINPIPE) {
         nn_usock_accept_pipe (self, listener);
         return;
     }
@@ -293,18 +297,17 @@ void nn_usock_accept (struct nn_usock *self, struct nn_usock *listener)
 
     /*  Wait for the incoming connection. */
     memset (&listener->in.olpd, 0, sizeof (listener->in.olpd));
-    brc = AcceptEx (listener->s, self->s, listener->ainfo, 0, 256, 256, &nbytes,
-        &listener->in.olpd);
+    /*  Extension functions are specific to the socket provider. */
+    rc = WSAIoctl (listener->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
+        &fid, sizeof (fid), &pacceptex, sizeof (pacceptex),
+        &nbytes, NULL, NULL);
+    wsa_assert (rc == 0);
+    brc = pacceptex (listener->s, self->s, listener->ainfo, 0, 256, 256,
+        &nbytes, &listener->in.olpd);
 
-    /*  Immediate success. */
-    if (nn_fast (brc == TRUE)) {
-        nn_fsm_action (&listener->fsm, NN_USOCK_ACTION_DONE);
-        nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
-        return;
-    }
-
-    /*  We don't expect a synchronous failure at this point. */
-    wsa_assert (nn_slow (WSAGetLastError () == WSA_IO_PENDING));
+    /*  Even synchronous socket success queues an IOCP completion. */
+    if (!brc)
+        wsa_assert (WSAGetLastError () == WSA_IO_PENDING);
 
     /*  Pair the two sockets. */
     nn_assert (!self->asock);
@@ -329,6 +332,7 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     LPFN_CONNECTEX pconnectex;
     DWORD nbytes;
     DWORD winerror;
+    struct sockaddr local;
 
     /*  Fail if the socket is already connected, closed or such. */
     nn_assert_state (self, NN_USOCK_STATE_STARTING);
@@ -338,16 +342,32 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
 
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
 
-    if (self->domain == AF_UNIX) {
-        winerror = nn_usock_open_pipe (self, ((struct sockaddr_un*) addr)->sun_path);
+    if (self->domain == NN_USOCK_WINPIPE) {
+        winerror = nn_usock_open_pipe (self,
+            ((struct nn_sockaddr_winpipe*) addr)->sun_path);
     }
     else
     {
+        /*  ConnectEx requires an unnamed local bind for AF_UNIX. */
+        if (self->domain == AF_UNIX) {
+            memset (&local, 0, sizeof (local));
+            local.sa_family = AF_UNIX;
+            if (bind (self->s, &local, sizeof (local)) == SOCKET_ERROR) {
+                self->errnum = nn_err_wsa_to_posix (WSAGetLastError ());
+                nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+                return;
+            }
+        }
+
         /*  Get the pointer to connect function. */
         brc = WSAIoctl (self->s, SIO_GET_EXTENSION_FUNCTION_POINTER,
             &fid, sizeof (fid), &pconnectex, sizeof (pconnectex),
             &nbytes, NULL, NULL) == 0;
-        wsa_assert (brc == TRUE);
+        if (!brc) {
+            self->errnum = nn_err_wsa_to_posix (WSAGetLastError ());
+            nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
+            return;
+        }
         nn_assert (nbytes == sizeof (pconnectex));
 
         /*  Ensure it is safe to cast this value to what might be a smaller
@@ -361,13 +381,16 @@ void nn_usock_connect (struct nn_usock *self, const struct sockaddr *addr,
     }
 
     /*  Immediate success. */
-    if (nn_fast (winerror == ERROR_SUCCESS)) {
+    if (nn_fast (winerror == ERROR_SUCCESS &&
+          self->domain == NN_USOCK_WINPIPE)) {
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_DONE);
         return;
     }
 
     /*  Immediate error. */
-    if (nn_slow (winerror != WSA_IO_PENDING)) {
+    if (nn_slow (winerror != ERROR_SUCCESS && winerror != WSA_IO_PENDING)) {
+        self->errnum = self->domain == NN_USOCK_WINPIPE ? EINVAL :
+            nn_err_wsa_to_posix (winerror);
         nn_fsm_action (&self->fsm, NN_USOCK_ACTION_ERROR);
         return;
     }
@@ -401,7 +424,7 @@ void nn_usock_send (struct nn_usock *self, const struct nn_iovec *iov,
 
     /*  Start the send operation. */
     memset (&self->out.olpd, 0, sizeof (self->out.olpd));
-    if (self->domain == AF_UNIX)
+    if (self->domain == NN_USOCK_WINPIPE)
     {
         /* TODO: Do not copy the buffer, find an efficient way to Write
            multiple buffers that doesn't affect the state machine. */
@@ -519,7 +542,7 @@ void nn_usock_recv (struct nn_usock *self, void *buf, size_t len, int *fd)
     self->in.buf = buf;
     self->in.arg = self;
     self->in.zero_is_error = 1;
-    if (self->domain == AF_UNIX) {
+    if (self->domain == NN_USOCK_WINPIPE) {
         self->in.start = nn_usock_recv_start_pipe;
     }
     else {
@@ -665,7 +688,7 @@ static void nn_usock_close (struct nn_usock *self)
     int rc;
     BOOL brc;
 
-    if (self->domain == AF_UNIX) {
+    if (self->domain == NN_USOCK_WINPIPE) {
         if (self->p == INVALID_HANDLE_VALUE)
             return;
         if (self->isaccepted)
@@ -996,7 +1019,8 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
                 usock->state = NN_USOCK_STATE_LISTENING;
                 return;
             case NN_USOCK_ACTION_CANCEL:
-                if (usock->p == INVALID_HANDLE_VALUE && usock->asock != NULL && usock->domain == AF_UNIX) {
+                if (usock->p == INVALID_HANDLE_VALUE && usock->asock != NULL &&
+                      usock->domain == NN_USOCK_WINPIPE) {
                     usock->p = usock->asock->p;
                     nn_usock_cancel_io (usock);
                     usock->p = INVALID_HANDLE_VALUE;
@@ -1016,6 +1040,14 @@ static void nn_usock_handler (struct nn_fsm *self, int src, int type,
 
                 /*  Adjust the new usock object. */
                 usock->asock->state = NN_USOCK_STATE_ACCEPTED;
+                if (usock->domain != NN_USOCK_WINPIPE) {
+                    int rc;
+
+                    rc = setsockopt (usock->asock->s, SOL_SOCKET,
+                        SO_UPDATE_ACCEPT_CONTEXT, (const char *) &usock->s,
+                        sizeof (usock->s));
+                    wsa_assert (rc == 0);
+                }
 
                 /*  Notify the user that connection was accepted. */
                 nn_fsm_raise (&usock->asock->fsm,

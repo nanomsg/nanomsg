@@ -110,7 +110,13 @@ Following transport mechanisms are provided by nanomsg:
 In-process transport::
     <<nn_inproc#,nn_inproc(7)>>
 
-Inter-process transport::
+UNIX domain socket transport (POSIX and Windows)::
+    <<nn_unix#,nn_unix(7)>>
+
+Windows named pipe transport::
+    <<nn_winpipe#,nn_winpipe(7)>>
+
+Inter-process compatibility alias::
     <<nn_ipc#,nn_ipc(7)>>
 
 TCP transport::

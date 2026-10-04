@@ -1,6 +1,7 @@
 /*
     Copyright (c) 2012-2013 Martin Sustrik  All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -22,6 +23,7 @@
 */
 
 #include "cipc.h"
+#include "ipc.h"
 #include "sipc.h"
 
 #include "../../aio/fsm.h"
@@ -64,6 +66,7 @@ struct nn_cipc {
     int state;
 
     struct nn_ep *ep;
+    int domain;
 
     /*  The underlying IPC socket. */
     struct nn_usock usock;
@@ -91,12 +94,18 @@ static void nn_cipc_shutdown (struct nn_fsm *self, int src, int type,
     void *srcptr);
 static void nn_cipc_start_connecting (struct nn_cipc *self);
 
-int nn_cipc_create (struct nn_ep *ep)
+int nn_cipc_create (struct nn_ep *ep, int domain)
 {
     struct nn_cipc *self;
+    struct sockaddr_storage ss;
+    int rc;
     int reconnect_ivl;
     int reconnect_ivl_max;
     size_t sz;
+
+    rc = nn_ipc_resolve (nn_ep_getaddr (ep), domain, &ss);
+    if (rc < 0)
+        return rc;
 
     /*  Allocate the new endpoint object. */
     self = nn_alloc (sizeof (struct nn_cipc), "cipc");
@@ -104,6 +113,7 @@ int nn_cipc_create (struct nn_ep *ep)
 
     /*  Initialise the structure. */
     self->ep = ep;
+    self->domain = domain;
     nn_ep_tran_setup (ep, &nn_cipc_ep_ops, self);
     nn_fsm_init_root (&self->fsm, nn_cipc_handler, nn_cipc_shutdown,
         nn_ep_getctx (ep));
@@ -370,13 +380,12 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
 {
     int rc;
     struct sockaddr_storage ss;
-    struct sockaddr_un *un;
-    const char *addr;
+    int addrlen;
     int val;
     size_t sz;
 
     /*  Try to start the underlying socket. */
-    rc = nn_usock_start (&self->usock, AF_UNIX, SOCK_STREAM, 0);
+    rc = nn_usock_start (&self->usock, self->domain, SOCK_STREAM, 0);
     if (nn_slow (rc < 0)) {
         nn_backoff_start (&self->retry);
         self->state = NN_CIPC_STATE_WAITING;
@@ -395,25 +404,26 @@ static void nn_cipc_start_connecting (struct nn_cipc *self)
     nn_usock_setsockopt (&self->usock, SOL_SOCKET, SO_RCVBUF,
         &val, sizeof (val));
 
-    /*  Create the IPC address from the address string. */
-    addr = nn_ep_getaddr (self->ep);
-    memset (&ss, 0, sizeof (ss));
-    un = (struct sockaddr_un*) &ss;
-    nn_assert (strlen (addr) < sizeof (un->sun_path));
-    ss.ss_family = AF_UNIX;
-    strncpy (un->sun_path, addr, sizeof (un->sun_path));
+    addrlen = nn_ipc_resolve (nn_ep_getaddr (self->ep), self->domain, &ss);
+    nn_assert (addrlen > 0);
 
 #if defined NN_HAVE_WINDOWS
-    /* Get/Set security attribute pointer*/
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR, &self->usock.sec_attr, &sz);
-
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ, &self->usock.outbuffersz, &sz);
-    nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ, &self->usock.inbuffersz, &sz);
+    if (self->domain == NN_USOCK_WINPIPE) {
+        sz = sizeof (self->usock.sec_attr);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_SEC_ATTR,
+            &self->usock.sec_attr, &sz);
+        sz = sizeof (int);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_OUTBUFSZ,
+            &self->usock.outbuffersz, &sz);
+        sz = sizeof (int);
+        nn_ep_getopt (self->ep, NN_IPC, NN_IPC_INBUFSZ,
+            &self->usock.inbuffersz, &sz);
+    }
 #endif
 
     /*  Start connecting. */
     nn_usock_connect (&self->usock, (struct sockaddr*) &ss,
-        sizeof (struct sockaddr_un));
+        addrlen);
     self->state  = NN_CIPC_STATE_CONNECTING;
 
     nn_ep_stat_increment (self->ep, NN_STAT_INPROGRESS_CONNECTIONS, 1);

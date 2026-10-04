@@ -3,6 +3,7 @@
     Copyright (c) 2013 GoPivotal, Inc.  All rights reserved.
     Copyright (c) 2016 Bent Cardan. All rights reserved.
     Copyright 2016 Garrett D'Amore <garrett@damore.org>
+    Copyright 2026 Staysail Systems, Inc.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"),
@@ -27,6 +28,8 @@
 
 #include "../inproc.h"
 #include "../ipc.h"
+#include "../unix.h"
+#include "../winpipe.h"
 #include "../tcp.h"
 
 #include "../pair.h"
@@ -80,6 +83,10 @@ static const struct nn_symbol_properties sym_value_names [] = {
 
     NN_SYM(NN_INPROC, TRANSPORT, NONE, NONE),
     NN_SYM(NN_IPC, TRANSPORT, NONE, NONE),
+    NN_SYM(NN_UNIX, TRANSPORT, NONE, NONE),
+#if defined NN_HAVE_WINDOWS
+    NN_SYM(NN_WINPIPE, TRANSPORT, NONE, NONE),
+#endif
     NN_SYM(NN_TCP, TRANSPORT, NONE, NONE),
     NN_SYM(NN_WS, TRANSPORT, NONE, NONE),
 

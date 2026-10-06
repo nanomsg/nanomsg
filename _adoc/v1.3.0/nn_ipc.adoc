@@ -1,0 +1,53 @@
+nn_ipc(7)
+=========
+
+NAME
+----
+nn_ipc - inter-process transport mechanism
+
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/ipc.h>*
+
+
+DESCRIPTION
+-----------
+The 'ipc://' scheme is a compatibility alias for the platform's native
+inter-process transport. Existing IPC addresses and NN_IPC socket options
+continue to work.
+
+On POSIX systems, 'ipc://' aliases <<nn_unix#,nn_unix(7)>>. Addresses identify
+UNIX domain socket files. Both relative ('ipc://test.ipc') and absolute
+('ipc:///tmp/test.ipc') paths are supported.
+
+On Windows, 'ipc://' aliases <<nn_winpipe#,nn_winpipe(7)>>. Addresses identify
+named pipes; 'ipc://test' uses the pipe '\\.\pipe\test'. Windows applications
+can explicitly select 'unix://' to use AF_UNIX sockets instead.
+
+New applications can use the explicit 'unix://' and 'winpipe://' schemes.
+
+EXAMPLE
+-------
+
+----
+nn_bind (s1, "ipc:///tmp/test.ipc");
+nn_connect (s2, "ipc:///tmp/test.ipc");
+----
+
+SEE ALSO
+--------
+<<nn_unix#,nn_unix(7)>>
+<<nn_winpipe#,nn_winpipe(7)>>
+<<nn_inproc#,nn_inproc(7)>>
+<<nn_tcp#,nn_tcp(7)>>
+<<nn_bind#,nn_bind(3)>>
+<<nn_connect#,nn_connect(3)>>
+<<nanomsg#,nanomsg(7)>>
+
+
+AUTHORS
+-------
+link:mailto:sustrik@250bpm.com[Martin Sustrik]

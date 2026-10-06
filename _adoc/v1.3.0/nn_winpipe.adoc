@@ -1,0 +1,49 @@
+nn_winpipe(7)
+=============
+
+NAME
+----
+nn_winpipe - Windows named pipe transport
+
+SYNOPSIS
+--------
+*#include <nanomsg/nn.h>*
+
+*#include <nanomsg/winpipe.h>*
+
+DESCRIPTION
+-----------
+The Windows named pipe transport sends messages between processes on the same
+machine. It is available only on Windows.
+
+Addresses use the form 'winpipe://NAME'. The name is case-insensitive and
+must not contain a backslash. Internally, 'winpipe://test' uses the named pipe
+'\\.\pipe\test'. It does not create a socket file.
+
+On Windows, 'ipc://' is a compatibility alias for 'winpipe://'. NN_IPC equals
+NN_WINPIPE, and the historical NN_IPC socket options have equivalent
+NN_WINPIPE names:
+
+* NN_WINPIPE_SEC_ATTR specifies the SECURITY_ATTRIBUTES pointer. The attributes
+  must remain valid while the socket is in use.
+* NN_WINPIPE_OUTBUFSZ sets the named pipe output buffer size (default 4096).
+* NN_WINPIPE_INBUFSZ sets the named pipe input buffer size (default 4096).
+
+These options use the NN_WINPIPE level with nn_setsockopt and nn_getsockopt.
+They do not apply to the <<nn_unix#,nn_unix(7)>> transport, which uses AF_UNIX
+sockets on Windows. The two transports can use the same name independently.
+
+EXAMPLE
+-------
+----
+nn_bind (s1, "winpipe://test");
+nn_connect (s2, "winpipe://test");
+----
+
+SEE ALSO
+--------
+<<nn_ipc#,nn_ipc(7)>>
+<<nn_unix#,nn_unix(7)>>
+<<nn_bind#,nn_bind(3)>>
+<<nn_connect#,nn_connect(3)>>
+<<nanomsg#,nanomsg(7)>>
